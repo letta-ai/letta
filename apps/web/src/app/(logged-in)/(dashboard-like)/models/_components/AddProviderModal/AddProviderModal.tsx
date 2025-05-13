@@ -48,13 +48,20 @@ function TestConnectionButton() {
       try {
         setIsTesting(true);
         setTestingStatus(null);
-        await fetch(`/v1/providers/check?provider_type=${providerType}`, {
-          method: 'GET',
-          headers: {
-            'x-api-key': apiKey,
-            'Content-Type': 'application/json',
+        const res = await fetch(
+          `/v1/providers/check?provider_type=${providerType}`,
+          {
+            method: 'GET',
+            headers: {
+              'x-api-key': apiKey,
+              'Content-Type': 'application/json',
+            },
           },
-        });
+        );
+
+        if (res.status !== 200) {
+          throw new Error('Failed to connect');
+        }
 
         setTestingStatus('success');
       } catch (_) {
