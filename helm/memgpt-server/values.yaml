@@ -61,11 +61,11 @@ ingress:
 
 resources:
   limits:
-    cpu: 4000m
-    memory: 8Gi
+    cpu: 250m
+    memory: 2Gi
   requests:
-    cpu: 2000m
-    memory: 4Gi
+    cpu: 150m
+    memory: 1Gi
 
 livenessProbe:
   failureThreshold: 5

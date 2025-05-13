@@ -63,10 +63,10 @@ ingress:
 resources:
   limits:
     cpu: 500m
-    memory: 512Mi
+    memory: 1024Mi
   requests:
     cpu: 200m
-    memory: 256Mi
+    memory: 512Mi
 
 # livenessProbe:
 #   tcpSocket:

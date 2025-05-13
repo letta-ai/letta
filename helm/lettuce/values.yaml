@@ -55,11 +55,11 @@ env:
 
 resources:
   limits:
-    cpu: 1000m
-    memory: 4096Mi
-  requests:
-    cpu: 400m
+    cpu: 1200m
     memory: 2048Mi
+  requests:
+    cpu: 1000m
+    memory: 1024Mi
 
 # Additional volumes on the output Deployment definition.
 volumes: []
