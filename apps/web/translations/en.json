@@ -912,9 +912,9 @@
         "cancelPeriod": "Your plan will be canceled on {date}."
       }
     },
-    "AccountDetails": {
+    "SubscriptionDetails": {
       "freeTitle": "Plan details",
-      "title": "Account",
+      "title": "Subscription details",
       "description": {
         "free": "You are currently on the Letta Cloud Free plan.",
         "pro": "You are currently on the Letta Cloud Pro plan.",

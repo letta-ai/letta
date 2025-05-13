@@ -50,7 +50,7 @@ function ProView(props: ProViewProps) {
       <CancelPlanDialog
         trigger={
           <Button
-            color="tertiary"
+            color="secondary"
             bold
             size="small"
             label={t('AccountDetailsCTA.pro.cancel')}
@@ -86,7 +86,7 @@ function ProView(props: ProViewProps) {
         <CancelPlanDialog
           trigger={
             <Button
-              color="tertiary"
+              color="secondary"
               bold
               size="small"
               label={t('AccountDetailsCTA.pro.cancel')}
@@ -172,7 +172,7 @@ function FreePlanUpsellDetails() {
   );
 }
 
-function AccountDetails() {
+function SubscriptionDetails() {
   const t = useTranslations('organization/billing');
 
   const { data } =
@@ -183,11 +183,11 @@ function AccountDetails() {
   const description = useMemo(() => {
     switch (data?.body.billingTier) {
       case 'free':
-        return t('AccountDetails.description.free');
+        return t('SubscriptionDetails.description.free');
       case 'pro':
-        return t('AccountDetails.description.pro');
+        return t('SubscriptionDetails.description.pro');
       case 'enterprise':
-        return t('AccountDetails.description.enterprise');
+        return t('SubscriptionDetails.description.enterprise');
     }
   }, [data, t]);
 
@@ -200,7 +200,7 @@ function AccountDetails() {
   }
 
   return (
-    <Section title={t('AccountDetails.title')}>
+    <Section title={t('SubscriptionDetails.title')}>
       <Typography>{description}</Typography>
       <AccountDetailsCTA
         billingPeriodEnd={data.body.billingPeriodEnd}
@@ -307,7 +307,6 @@ function BillingOverview() {
 
   return (
     <VStack gap="large" width="largeContained">
-      {isProPlanEnabled && <AccountDetails />}
       {isProPlanEnabled && data.body.billingTier !== 'enterprise' && (
         <CustomerQuotaView />
       )}
@@ -344,6 +343,7 @@ function BillingOverview() {
           </HStack>
         </VStack>
       </Section>
+      {isProPlanEnabled && <SubscriptionDetails />}
     </VStack>
   );
 }
