@@ -24,14 +24,13 @@ from letta.schemas.letta_message_content import OmittedReasoningContent, Reasoni
 from letta.schemas.letta_request import LettaBatchRequest
 from letta.schemas.letta_response import LettaBatchResponse, LettaResponse
 from letta.schemas.llm_batch_job import LLMBatchItem
-from letta.schemas.message import Message, MessageCreate, MessageUpdate
+from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import ToolCall as OpenAIToolCall
 from letta.schemas.sandbox_config import SandboxConfig, SandboxType
 from letta.schemas.user import User
 from letta.server.rest_api.utils import create_heartbeat_system_message, create_letta_messages_from_llm_response
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import compile_system_message
 from letta.services.job_manager import JobManager
 from letta.services.llm_batch_manager import LLMBatchManager
 from letta.services.message_manager import MessageManager
@@ -40,7 +39,6 @@ from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
 from letta.settings import tool_settings
 from letta.tracing import log_event, trace_method
-from letta.utils import united_diff
 
 logger = get_logger(__name__)
 

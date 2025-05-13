@@ -22,7 +22,7 @@ from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState, AgentType
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_response import LettaResponse
-from letta.schemas.message import Message, MessageCreate, MessageUpdate
+from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_request import (
     AssistantMessage,
     ChatCompletionRequest,
@@ -47,7 +47,6 @@ from letta.services.passage_manager import PassageManager
 from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
 from letta.settings import model_settings
-from letta.utils import united_diff
 
 logger = get_logger(__name__)
 

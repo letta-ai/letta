@@ -139,15 +139,50 @@ class BlockManager:
 
     @enforce_types
     async def get_all_blocks_by_ids_async(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
-        """Retrieve blocks by their ids. Async implementation."""
+        """Retrieve blocks by their ids without loading unnecessary relationships. Async implementation."""
+        from sqlalchemy import select
+        from sqlalchemy.orm import noload
+
+        from letta.orm.sqlalchemy_base import AccessType
+
+        if not block_ids:
+            return []
+
         async with db_registry.async_session() as session:
-            blocks = [
-                block.to_pydantic()
-                for block in await BlockModel.read_multiple_async(db_session=session, identifiers=block_ids, actor=actor)
-            ]
-            # backwards compatibility. previous implementation added None for every block not found.
-            blocks.extend([None for _ in range(len(block_ids) - len(blocks))])
-            return blocks
+            # Start with a basic query
+            query = select(BlockModel)
+
+            # Add ID filter
+            query = query.where(BlockModel.id.in_(block_ids))
+
+            # Explicitly avoid loading relationships
+            query = query.options(noload(BlockModel.agents), noload(BlockModel.identities), noload(BlockModel.groups))
+
+            # Apply access control if actor is provided
+            if actor:
+                query = BlockModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
+
+            # Add soft delete filter if applicable
+            if hasattr(BlockModel, "is_deleted"):
+                query = query.where(BlockModel.is_deleted == False)
+
+            # Execute the query
+            result = await session.execute(query)
+            blocks = result.scalars().all()
+
+            # Convert to Pydantic models
+            pydantic_blocks = [block.to_pydantic() for block in blocks]
+
+            # For backward compatibility, add None for missing blocks
+            if len(pydantic_blocks) < len(block_ids):
+                {block.id for block in pydantic_blocks}
+                result_blocks = []
+                for block_id in block_ids:
+                    block = next((b for b in pydantic_blocks if b.id == block_id), None)
+                    result_blocks.append(block)
+                return result_blocks
+
+            return pydantic_blocks
 
     @enforce_types
     def add_default_blocks(self, actor: PydanticUser):
