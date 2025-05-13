@@ -15,6 +15,7 @@ from letta.schemas.enums import JobStatus, ToolRuleType
 from letta.schemas.group import GroupUpdate, ManagerType, SleeptimeManagerUpdate
 from letta.schemas.message import MessageCreate
 from letta.schemas.run import Run
+from letta.server.db import db_registry
 from letta.server.server import SyncServer
 from letta.utils import get_human_text, get_persona_text
 
@@ -37,7 +38,7 @@ def org_id(server):
     yield org.id
 
     # cleanup
-    with server.organization_manager.session_maker() as session:
+    with db_registry.session() as session:
         session.execute(delete(Step))
         session.execute(delete(Provider))
         session.commit()

@@ -5,20 +5,16 @@ from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.providers import Provider as PydanticProvider
 from letta.schemas.providers import ProviderCheck, ProviderCreate, ProviderUpdate
 from letta.schemas.user import User as PydanticUser
+from letta.server.db import db_registry
 from letta.utils import enforce_types
 
 
 class ProviderManager:
 
-    def __init__(self):
-        from letta.server.db import db_context
-
-        self.session_maker = db_context
-
     @enforce_types
     def create_provider(self, request: ProviderCreate, actor: PydanticUser) -> PydanticProvider:
         """Create a new provider if it doesn't already exist."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             provider_create_args = {**request.model_dump(), "provider_category": ProviderCategory.byok}
             provider = PydanticProvider(**provider_create_args)
 
@@ -38,7 +34,7 @@ class ProviderManager:
     @enforce_types
     def update_provider(self, provider_id: str, provider_update: ProviderUpdate, actor: PydanticUser) -> PydanticProvider:
         """Update provider details."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Retrieve the existing provider by ID
             existing_provider = ProviderModel.read(db_session=session, identifier=provider_id, actor=actor)
 
@@ -54,7 +50,7 @@ class ProviderManager:
     @enforce_types
     def delete_provider_by_id(self, provider_id: str, actor: PydanticUser):
         """Delete a provider."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Clear api key field
             existing_provider = ProviderModel.read(db_session=session, identifier=provider_id, actor=actor)
             existing_provider.api_key = None
@@ -80,7 +76,7 @@ class ProviderManager:
             filter_kwargs["name"] = name
         if provider_type:
             filter_kwargs["provider_type"] = provider_type
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             providers = ProviderModel.list(
                 db_session=session,
                 after=after,

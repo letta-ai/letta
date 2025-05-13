@@ -15,6 +15,7 @@ from letta.schemas.group import (
     SupervisorManager,
 )
 from letta.schemas.message import MessageCreate
+from letta.server.db import db_registry
 from letta.server.server import SyncServer
 
 
@@ -36,7 +37,7 @@ def org_id(server):
     yield org.id
 
     # cleanup
-    with server.organization_manager.session_maker() as session:
+    with db_registry.session() as session:
         session.execute(delete(Step))
         session.execute(delete(Provider))
         session.commit()

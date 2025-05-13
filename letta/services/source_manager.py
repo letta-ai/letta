@@ -8,16 +8,12 @@ from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.source import SourceUpdate
 from letta.schemas.user import User as PydanticUser
+from letta.server.db import db_registry
 from letta.utils import enforce_types, printd
 
 
 class SourceManager:
     """Manager class to handle business logic related to Sources."""
-
-    def __init__(self):
-        from letta.server.db import db_context
-
-        self.session_maker = db_context
 
     @enforce_types
     def create_source(self, source: PydanticSource, actor: PydanticUser) -> PydanticSource:
@@ -27,7 +23,7 @@ class SourceManager:
         if db_source:
             return db_source
         else:
-            with self.session_maker() as session:
+            with db_registry.session() as session:
                 # Provide default embedding config if not given
                 source.organization_id = actor.organization_id
                 source = SourceModel(**source.model_dump(to_orm=True, exclude_none=True))
@@ -37,7 +33,7 @@ class SourceManager:
     @enforce_types
     def update_source(self, source_id: str, source_update: SourceUpdate, actor: PydanticUser) -> PydanticSource:
         """Update a source by its ID with the given SourceUpdate object."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             source = SourceModel.read(db_session=session, identifier=source_id, actor=actor)
 
             # get update dictionary
@@ -59,7 +55,7 @@ class SourceManager:
     @enforce_types
     def delete_source(self, source_id: str, actor: PydanticUser) -> PydanticSource:
         """Delete a source by its ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             source = SourceModel.read(db_session=session, identifier=source_id)
             source.hard_delete(db_session=session, actor=actor)
             return source.to_pydantic()
@@ -67,7 +63,7 @@ class SourceManager:
     @enforce_types
     def list_sources(self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, **kwargs) -> List[PydanticSource]:
         """List all sources with optional pagination."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             sources = SourceModel.list(
                 db_session=session,
                 after=after,
@@ -85,7 +81,7 @@ class SourceManager:
         """
         Get the total count of sources for the given user.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             return SourceModel.size(db_session=session, actor=actor)
 
     @enforce_types
@@ -100,7 +96,7 @@ class SourceManager:
         Returns:
             List[PydanticAgentState]: List of agents that have this source attached
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Verify source exists and user has permission to access it
             source = SourceModel.read(db_session=session, identifier=source_id, actor=actor)
 
@@ -112,7 +108,7 @@ class SourceManager:
     @enforce_types
     def get_source_by_id(self, source_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticSource]:
         """Retrieve a source by its ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             try:
                 source = SourceModel.read(db_session=session, identifier=source_id, actor=actor)
                 return source.to_pydantic()
@@ -122,7 +118,7 @@ class SourceManager:
     @enforce_types
     def get_source_by_name(self, source_name: str, actor: PydanticUser) -> Optional[PydanticSource]:
         """Retrieve a source by its name."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             sources = SourceModel.list(
                 db_session=session,
                 name=source_name,
@@ -141,7 +137,7 @@ class SourceManager:
         if db_file:
             return db_file
         else:
-            with self.session_maker() as session:
+            with db_registry.session() as session:
                 file_metadata.organization_id = actor.organization_id
                 file_metadata = FileMetadataModel(**file_metadata.model_dump(to_orm=True, exclude_none=True))
                 file_metadata.create(session, actor=actor)
@@ -151,7 +147,7 @@ class SourceManager:
     @enforce_types
     def get_file_by_id(self, file_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticFileMetadata]:
         """Retrieve a file by its ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             try:
                 file = FileMetadataModel.read(db_session=session, identifier=file_id, actor=actor)
                 return file.to_pydantic()
@@ -163,7 +159,7 @@ class SourceManager:
         self, source_id: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50
     ) -> List[PydanticFileMetadata]:
         """List all files with optional pagination."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             files = FileMetadataModel.list(
                 db_session=session, after=after, limit=limit, organization_id=actor.organization_id, source_id=source_id
             )
@@ -172,7 +168,7 @@ class SourceManager:
     @enforce_types
     def delete_file(self, file_id: str, actor: PydanticUser) -> PydanticFileMetadata:
         """Delete a file by its ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             file = FileMetadataModel.read(db_session=session, identifier=file_id)
             file.hard_delete(db_session=session, actor=actor)
             return file.to_pydantic()

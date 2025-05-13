@@ -12,6 +12,7 @@ from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate, Human, Persona
 from letta.schemas.user import User as PydanticUser
+from letta.server.db import db_registry
 from letta.utils import enforce_types, list_human_files, list_persona_files
 
 logger = get_logger(__name__)
@@ -19,12 +20,6 @@ logger = get_logger(__name__)
 
 class BlockManager:
     """Manager class to handle business logic related to Blocks."""
-
-    def __init__(self):
-        # Fetching the db_context similarly as in ToolManager
-        from letta.server.db import db_context
-
-        self.session_maker = db_context
 
     @enforce_types
     def create_or_update_block(self, block: PydanticBlock, actor: PydanticUser) -> PydanticBlock:
@@ -34,7 +29,7 @@ class BlockManager:
             update_data = BlockUpdate(**block.model_dump(to_orm=True, exclude_none=True))
             self.update_block(block.id, update_data, actor)
         else:
-            with self.session_maker() as session:
+            with db_registry.session() as session:
                 data = block.model_dump(to_orm=True, exclude_none=True)
                 block = BlockModel(**data, organization_id=actor.organization_id)
                 block.create(session, actor=actor)
@@ -53,7 +48,7 @@ class BlockManager:
         if not blocks:
             return []
 
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             block_models = [
                 BlockModel(**block.model_dump(to_orm=True, exclude_none=True), organization_id=actor.organization_id) for block in blocks
             ]
@@ -68,7 +63,7 @@ class BlockManager:
         """Update a block by its ID with the given BlockUpdate object."""
         # Safety check for block
 
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
             update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
 
@@ -81,7 +76,7 @@ class BlockManager:
     @enforce_types
     def delete_block(self, block_id: str, actor: PydanticUser) -> PydanticBlock:
         """Delete a block by its ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             block = BlockModel.read(db_session=session, identifier=block_id)
             block.hard_delete(db_session=session, actor=actor)
             return block.to_pydantic()
@@ -100,7 +95,7 @@ class BlockManager:
         limit: Optional[int] = 50,
     ) -> List[PydanticBlock]:
         """Retrieve blocks based on various optional filters."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Prepare filters
             filters = {"organization_id": actor.organization_id}
             if label:
@@ -126,7 +121,7 @@ class BlockManager:
     @enforce_types
     def get_block_by_id(self, block_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticBlock]:
         """Retrieve a block by its name."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             try:
                 block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
                 return block.to_pydantic()
@@ -136,8 +131,20 @@ class BlockManager:
     @enforce_types
     def get_all_blocks_by_ids(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
         """Retrieve blocks by their ids."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             blocks = [block.to_pydantic() for block in BlockModel.read_multiple(db_session=session, identifiers=block_ids, actor=actor)]
+            # backwards compatibility. previous implementation added None for every block not found.
+            blocks.extend([None for _ in range(len(block_ids) - len(blocks))])
+            return blocks
+
+    @enforce_types
+    async def get_all_blocks_by_ids_async(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
+        """Retrieve blocks by their ids. Async implementation."""
+        async with db_registry.async_session() as session:
+            blocks = [
+                block.to_pydantic()
+                for block in await BlockModel.read_multiple_async(db_session=session, identifiers=block_ids, actor=actor)
+            ]
             # backwards compatibility. previous implementation added None for every block not found.
             blocks.extend([None for _ in range(len(block_ids) - len(blocks))])
             return blocks
@@ -161,7 +168,7 @@ class BlockManager:
         """
         Retrieve all agents associated with a given block.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
             agents_orm = block.agents
             agents_pydantic = [agent.to_pydantic() for agent in agents_orm]
@@ -176,7 +183,7 @@ class BlockManager:
         """
         Get the total count of blocks for the given user.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             return BlockModel.size(db_session=session, actor=actor)
 
     # Block History Functions
@@ -199,7 +206,7 @@ class BlockManager:
           strictly linear history.
         - A single commit at the end ensures atomicity.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # 1) Load the Block
             if use_preloaded_block is not None:
                 block = session.merge(use_preloaded_block)
@@ -291,7 +298,7 @@ class BlockManager:
         If older sequences have been pruned, we jump to the largest sequence
         number that is still < current_seq.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # 1) Load the current block
             block = (
                 session.merge(use_preloaded_block)
@@ -333,7 +340,7 @@ class BlockManager:
         If some middle checkpoints have been pruned, we jump to the smallest
         sequence > current_seq that remains.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             block = (
                 session.merge(use_preloaded_block)
                 if use_preloaded_block
@@ -383,7 +390,7 @@ class BlockManager:
             NoResultFound if any block_id doesn’t exist or isn’t visible to this actor
             ValueError     if any new value exceeds its block’s limit
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             q = session.query(BlockModel).filter(BlockModel.id.in_(updates.keys()), BlockModel.organization_id == actor.organization_id)
             blocks = q.all()
 

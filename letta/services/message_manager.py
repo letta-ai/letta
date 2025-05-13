@@ -12,6 +12,7 @@ from letta.schemas.letta_message import LettaMessageUpdateUnion
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageUpdate
 from letta.schemas.user import User as PydanticUser
+from letta.server.db import db_registry
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -20,15 +21,10 @@ logger = get_logger(__name__)
 class MessageManager:
     """Manager class to handle business logic related to Messages."""
 
-    def __init__(self):
-        from letta.server.db import db_context
-
-        self.session_maker = db_context
-
     @enforce_types
     def get_message_by_id(self, message_id: str, actor: PydanticUser) -> Optional[PydanticMessage]:
         """Fetch a message by ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             try:
                 message = MessageModel.read(db_session=session, identifier=message_id, actor=actor)
                 return message.to_pydantic()
@@ -38,7 +34,7 @@ class MessageManager:
     @enforce_types
     def get_messages_by_ids(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
         """Fetch messages by ID and return them in the requested order."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             results = MessageModel.list(db_session=session, id=message_ids, organization_id=actor.organization_id, limit=len(message_ids))
 
             if len(results) != len(message_ids):
@@ -53,7 +49,7 @@ class MessageManager:
     @enforce_types
     def create_message(self, pydantic_msg: PydanticMessage, actor: PydanticUser) -> PydanticMessage:
         """Create a new message."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Set the organization id of the Pydantic message
             pydantic_msg.organization_id = actor.organization_id
             msg_data = pydantic_msg.model_dump(to_orm=True)
@@ -86,7 +82,7 @@ class MessageManager:
             orm_messages.append(MessageModel(**msg_data))
 
         # Use the batch_create method for efficient creation
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             created_messages = MessageModel.batch_create(orm_messages, session, actor=actor)
 
             # Convert back to Pydantic models
@@ -173,7 +169,7 @@ class MessageManager:
         """
         Updates an existing record in the database with values from the provided record object.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Fetch existing message from database
             message = MessageModel.read(
                 db_session=session,
@@ -181,31 +177,57 @@ class MessageManager:
                 actor=actor,
             )
 
-            # Some safety checks specific to messages
-            if message_update.tool_calls and message.role != MessageRole.assistant:
-                raise ValueError(
-                    f"Tool calls {message_update.tool_calls} can only be added to assistant messages. Message {message_id} has role {message.role}."
-                )
-            if message_update.tool_call_id and message.role != MessageRole.tool:
-                raise ValueError(
-                    f"Tool call IDs {message_update.tool_call_id} can only be added to tool messages. Message {message_id} has role {message.role}."
-                )
-
-            # get update dictionary
-            update_data = message_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
-            # Remove redundant update fields
-            update_data = {key: value for key, value in update_data.items() if getattr(message, key) != value}
-
-            for key, value in update_data.items():
-                setattr(message, key, value)
+            message = self._update_message_by_id_impl(message_id, message_update, actor, message)
             message.update(db_session=session, actor=actor)
-
             return message.to_pydantic()
+
+    @enforce_types
+    async def update_message_by_id_async(self, message_id: str, message_update: MessageUpdate, actor: PydanticUser) -> PydanticMessage:
+        """
+        Updates an existing record in the database with values from the provided record object.
+        Async version of the function above.
+        """
+        async with db_registry.async_session() as session:
+            # Fetch existing message from database
+            message = await MessageModel.read_async(
+                db_session=session,
+                identifier=message_id,
+                actor=actor,
+            )
+
+            message = self._update_message_by_id_impl(message_id, message_update, actor, message)
+            await message.update_async(db_session=session, actor=actor)
+            return message.to_pydantic()
+
+    def _update_message_by_id_impl(
+        self, message_id: str, message_update: MessageUpdate, actor: PydanticUser, message: MessageModel
+    ) -> MessageModel:
+        """
+        Modifies the existing message object to update the database in the sync/async functions.
+        """
+        # Some safety checks specific to messages
+        if message_update.tool_calls and message.role != MessageRole.assistant:
+            raise ValueError(
+                f"Tool calls {message_update.tool_calls} can only be added to assistant messages. Message {message_id} has role {message.role}."
+            )
+        if message_update.tool_call_id and message.role != MessageRole.tool:
+            raise ValueError(
+                f"Tool call IDs {message_update.tool_call_id} can only be added to tool messages. Message {message_id} has role {message.role}."
+            )
+
+        # get update dictionary
+        update_data = message_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+        # Remove redundant update fields
+        update_data = {key: value for key, value in update_data.items() if getattr(message, key) != value}
+
+        for key, value in update_data.items():
+            setattr(message, key, value)
+        return message
 
     @enforce_types
     def delete_message_by_id(self, message_id: str, actor: PydanticUser) -> bool:
         """Delete a message."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             try:
                 msg = MessageModel.read(
                     db_session=session,
@@ -229,7 +251,7 @@ class MessageManager:
             actor: The user requesting the count
             role: The role of the message
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             return MessageModel.size(db_session=session, actor=actor, role=role, agent_id=agent_id)
 
     @enforce_types
@@ -293,7 +315,7 @@ class MessageManager:
             NoResultFound: If the provided after/before message IDs do not exist.
         """
 
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Permission check: raise if the agent doesn't exist or actor is not allowed.
             AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
@@ -356,7 +378,7 @@ class MessageManager:
         Efficiently deletes all messages associated with a given agent_id,
         while enforcing permission checks and avoiding any ORM‑level loads.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # 1) verify the agent exists and the actor has access
             AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 

@@ -203,6 +203,7 @@ class Settings(BaseSettings):
     use_experimental: bool = False
     use_vertex_structured_outputs_experimental: bool = False
     use_vertex_async_loop_experimental: bool = False
+    experimental_enable_async_db_engine: bool = False
 
     # LLM provider client settings
     httpx_max_retries: int = 5
