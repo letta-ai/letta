@@ -907,18 +907,18 @@
     "AccountDetailsCTA": {
       "upgrade": "Upgrade to Pro",
       "pro": {
-        "billingPeriod": "You will be charged on {date} for the Pro plan",
+        "billingPeriod": "Your requests quota will reset on {date}.",
         "cancel": "Cancel plan",
-        "cancelPeriod": "Your plan will be canceled on {date}"
+        "cancelPeriod": "Your plan will be canceled on {date}."
       }
     },
     "AccountDetails": {
       "freeTitle": "Plan details",
       "title": "Account",
       "description": {
-        "free": "You are currently on the Free plan.",
-        "pro": "You are currently on the Pro plan.",
-        "enterprise": "You are currently on our Enterprise plan."
+        "free": "You are currently on the Letta Cloud Free plan.",
+        "pro": "You are currently on the Letta Cloud Pro plan.",
+        "enterprise": "You are currently on our Letta Cloud Enterprise plan."
       }
     },
     "noPermission": "You do not have permission to view billing information for this organization, please contact your organization's administrator.",
@@ -971,7 +971,7 @@
       "error": "There was an error loading billing information, please try again or contact support.",
       "Credits": {
         "title": "Usage-based pricing",
-        "description": "Enabling usage-based pricing allows you to pay for additional model requests beyond your monthly limits.",
+        "description": "Adding credits allows you to consume additional model requests beyond your monthly limits.",
         "add": "Buy credits",
         "available": "credits",
         "used": "of {total} credits used"
