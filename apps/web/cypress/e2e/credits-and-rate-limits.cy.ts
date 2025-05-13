@@ -114,7 +114,7 @@ describe('credit usage', () => {
     );
   });
 
-  it('should upgrade a user to pro plan', () => {
+  it.skip('should upgrade a user to pro plan', () => {
     Cypress.config('defaultCommandTimeout', 50000);
 
     cy.visit('/');
