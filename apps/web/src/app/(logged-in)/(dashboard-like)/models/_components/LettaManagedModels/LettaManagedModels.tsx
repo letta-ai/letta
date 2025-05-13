@@ -6,8 +6,6 @@ import {
   HStack,
   isBrandKey,
   InfoTooltip,
-  EyeOpenIcon,
-  Tooltip,
   ChevronRightIcon,
   brandKeyToOwnerMap,
 } from '@letta-cloud/ui-component-library';
@@ -69,16 +67,6 @@ function BaseCostCell(props: BaseCostCellProps) {
       })}
       <InfoTooltip text={t('BaseCostCell.perStepInfo')} />
     </HStack>
-  );
-}
-
-function VisibilityCell() {
-  const t = useTranslations('pages/models/LettaManagedModels');
-
-  return (
-    <Tooltip content={t('VisibilityCell.visible.tooltip')}>
-      <EyeOpenIcon />
-    </Tooltip>
   );
 }
 
@@ -147,7 +135,6 @@ export function LettaManagedModels() {
           const { modelName, brand } = row.original;
           return (
             <HStack gap="medium" align="center">
-              <VisibilityCell />
               <ModelName modelName={modelName} brand={brand} />
             </HStack>
           );

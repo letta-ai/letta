@@ -393,11 +393,6 @@
       "brand": "Provider",
       "baseCost": "Price"
     },
-    "VisibilityCell": {
-      "visible": {
-        "tooltip": "This model is visible in the model selector"
-      }
-    },
     "ModelDetailsOverlay": {
       "trigger": "Explore model details",
       "pricing": {
