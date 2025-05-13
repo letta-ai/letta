@@ -76,7 +76,7 @@ export async function getCustomerSubscription(
     };
   }
 
-  console.log('fa', activeSubscriptions);
+  console.log('fa', JSON.stringify(activeSubscriptions, null, 2));
   try {
     return {
       billingPeriodEnd: new Date(
