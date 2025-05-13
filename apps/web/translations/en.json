@@ -691,8 +691,7 @@
       "billing": "Billing and usage",
       "auditLog": "Audit log",
       "usage": "Usage",
-      "rateLimits": "Rate limits",
-      "costExplorer": "Pricing"
+      "rateLimits": "Rate limits"
     }
   },
   "organization/costs": {

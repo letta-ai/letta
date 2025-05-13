@@ -78,11 +78,6 @@ function SettingsLayout(props: SettingsLayoutProps) {
                     href: '/settings/organization/rate-limits',
                   },
                   {
-                    id: 'cost-explorer',
-                    label: t('organization.costExplorer'),
-                    href: '/settings/organization/cost-explorer',
-                  },
-                  {
                     id: 'audit-log',
                     label: t('organization.auditLog'),
                     href: '/settings/organization/audit-log',
