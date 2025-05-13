@@ -9,18 +9,8 @@ variable "region" {
   default     = "us-central1"
 }
 
-variable "cluster_name" {
-  description = "GKE Cluster Name"
-  default     = "letta"
-}
-
-variable "registry_name" {
-  description = "Name of the Artifact Registry repository"
+variable "env" {
+  description = "Environment in which to deploy"
   type        = string
-  default     = "letta"
-}
-
-variable "db_password" {
-  description = "Password for the database"
-  type        = string
+  default     = "prod"
 }

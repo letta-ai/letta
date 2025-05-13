@@ -1,13 +1,13 @@
 locals {
     env_region_suffix = "${var.env}-${var.region}"
-    cluster_name = "${var.cluster_prefix}-${local.env_region_suffix}"
+    # if env == prod use existing names for everything
+    cluster_name = var.env == "prod" ? "letta" : "${var.cluster_prefix}-${local.env_region_suffix}"
 }
 
 resource "google_container_cluster" "primary" {
   name     = local.cluster_name
   location = var.region
 
-  remove_default_node_pool = true
   initial_node_count       = var.initial_node_count
 
   network    = var.vpc_network_name
@@ -19,6 +19,10 @@ resource "google_container_cluster" "primary" {
     enable_private_endpoint = false
     master_ipv4_cidr_block  = var.private_cluster_ipv4_block
   }
+
+  # trying to make prod importable
+  remove_default_node_pool = var.env == "prod" ? false : true
+  timeouts {}
 
   # Enable Workload Identity
   workload_identity_config {
@@ -49,11 +53,17 @@ resource "google_container_node_pool" "default_pool" {
     machine_type = var.machine_type
     disk_size_gb = var.disk_size_gb
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-
+    resource_labels = {
+      goog-gke-node-pool-provisioning-model = "on-demand"
+    }
     metadata = {
       disable-legacy-endpoints = "true"
     }
-
+    kubelet_config {
+      cpu_manager_policy = ""
+      cpu_cfs_quota  = false
+      pod_pids_limit = 0
+    }
     # Enable Workload Identity on nodes
     workload_metadata_config {
       mode = "GKE_METADATA"
