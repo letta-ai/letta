@@ -147,6 +147,7 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
               onSelectPlan('pro');
             }}
             bold
+            data-testid="choose-pro"
             size="large"
             label={t('PlanComparisonView.pro.cta')}
           />
@@ -284,6 +285,7 @@ function ConfirmView(props: ConfirmViewProps) {
                 color="primary"
                 fullWidth
                 size="large"
+                data-testid="confirm-purchase"
                 label={t('cta')}
                 onClick={confirmPurchase}
               />

@@ -114,6 +114,33 @@ describe('credit usage', () => {
     );
   });
 
+  it('should upgrade a user to pro plan', () => {
+    Cypress.config('defaultCommandTimeout', 50000);
+
+    cy.visit('/');
+    cy.location('pathname').should('eq', '/login');
+
+    cy.googleLogin();
+
+    cy.visit('/settings/organization/billing');
+
+    cy.findByTestId('upgrade-to-pro', {
+      timeout: 50000,
+    }).click();
+
+    cy.findByTestId('choose-pro', {
+      timeout: 50000,
+    }).click();
+
+    cy.findByTestId('confirm-purchase', {
+      timeout: 50000,
+    }).click();
+
+    cy.findByTestId('subscription-details', { timeout: 5000 }).contains(
+      'You are currently on the Letta Cloud Pro plan.',
+    );
+  });
+
   it('should deduct credits from a user', () => {
     Cypress.config('defaultCommandTimeout', 50000);
 
@@ -162,7 +189,7 @@ describe('credit usage', () => {
 
     cy.findByTestId('total-credits', {
       timeout: 50000,
-    }).contains('159');
+    }).contains('0.16');
 
     cy.visit('/');
 
@@ -215,7 +242,7 @@ describe('credit usage', () => {
 
     cy.findByTestId('total-credits', {
       timeout: 50000,
-    }).contains('64', { timeout: 50000 });
+    }).contains('0.06', { timeout: 50000 });
   });
 
   it('should rate limit a user', () => {

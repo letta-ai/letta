@@ -20,7 +20,6 @@ import {
 import React, { useEffect, useMemo, useState } from 'react';
 import { webApi, webApiQueryKeys } from '$web/client';
 import type { BillingHistorySchemaType } from '$web/web-api/contracts';
-import { useFeatureFlag } from '$web/web-api/contracts';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { AddCreditCardDialog } from '$web/client/components/AddCreditCardDialog/AddCreditCardDialog';
 import { useUserHasPermission } from '$web/client/hooks';
@@ -136,6 +135,7 @@ function FreePlanUpsellDetails() {
         <UpgradePlanDialog
           trigger={
             <Button
+              data-testid="upgrade-to-pro"
               preIcon={<LettaInvaderIcon />}
               bold
               label={t('AccountDetailsCTA.upgrade')}
@@ -201,7 +201,7 @@ function SubscriptionDetails() {
 
   return (
     <Section title={t('SubscriptionDetails.title')}>
-      <Typography>{description}</Typography>
+      <Typography data-testid="subscription-details">{description}</Typography>
       <AccountDetailsCTA
         billingPeriodEnd={data.body.billingPeriodEnd}
         isCancelled={data.body.isCancelled}
@@ -291,9 +291,19 @@ function BillingOverview() {
 
   const t = useTranslations('organization/billing');
 
-  const { data: isProPlanEnabled } = useFeatureFlag('PRO_PLAN');
-
   const { formatCurrency } = useFormatters();
+
+  const showCreditsViewer = useMemo(() => {
+    if (data?.body.billingTier !== 'free') {
+      return true;
+    }
+
+    if (data?.body.totalCredits > 0) {
+      return true;
+    }
+
+    return false;
+  }, [data]);
 
   if (!data) {
     return (
@@ -308,43 +318,58 @@ function BillingOverview() {
   return (
     <VStack gap="large" width="largeContained">
       {data.body.billingTier === 'free' && <FreePlanUpsellDetails />}
-      {isProPlanEnabled && data.body.billingTier !== 'enterprise' && (
-        <CustomerQuotaView />
-      )}
-      <Section
-        title={t('BillingOverview.Credits.title')}
-        description={t('BillingOverview.Credits.description')}
-      >
-        <VStack color="background-grey" border padding>
-          <VStack paddingY="small" align="start">
-            <HStack align="end">
-              <HStack align="center">
-                <Typography
-                  variant="heading2"
-                  /* eslint-disable-next-line react/forbid-component-props */
-                  className="leading-none"
-                  data-testid="total-credits"
-                  bold
-                >
-                  {formatCurrency(creditsToDollars(data.body.totalCredits))}
-                </Typography>
+      {data.body.billingTier !== 'enterprise' && <CustomerQuotaView />}
+      {showCreditsViewer && (
+        <Section
+          title={t('BillingOverview.Credits.title')}
+          description={t('BillingOverview.Credits.description')}
+        >
+          <VStack color="background-grey" border padding>
+            <VStack paddingY="small" align="start">
+              <HStack align="end">
+                <HStack align="center">
+                  <Typography>
+                    <HStack as="span" align="end">
+                      {t.rich('BillingOverview.Credits.used', {
+                        total: () => (
+                          <Typography
+                            variant="heading2"
+                            /* eslint-disable-next-line react/forbid-component-props */
+                            className="leading-none"
+                            data-testid="total-credits"
+                            overrideEl="span"
+                            bold
+                          >
+                            {formatCurrency(
+                              creditsToDollars(data.body.totalCredits),
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              },
+                            )}
+                          </Typography>
+                        ),
+                      })}
+                    </HStack>
+                  </Typography>
+                </HStack>
               </HStack>
+            </VStack>
+            <HStack>
+              <PurchaseCreditsDialog
+                trigger={
+                  <Button
+                    preIcon={<TollIcon />}
+                    label={t('BillingOverview.Credits.add')}
+                    color="primary"
+                  />
+                }
+              />
             </HStack>
           </VStack>
-          <HStack>
-            <PurchaseCreditsDialog
-              trigger={
-                <Button
-                  preIcon={<TollIcon />}
-                  label={t('BillingOverview.Credits.add')}
-                  color="primary"
-                />
-              }
-            />
-          </HStack>
-        </VStack>
-      </Section>
-      {isProPlanEnabled && <SubscriptionDetails />}
+        </Section>
+      )}
+      <SubscriptionDetails />
     </VStack>
   );
 }

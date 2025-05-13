@@ -975,7 +975,7 @@
         "description": "Adding credits allows you to consume additional model requests beyond your monthly limits.",
         "add": "Buy credits",
         "available": "credits",
-        "used": "of {total} credits used"
+        "used": "<total></total> credits available"
       },
       "Preferences": {
         "title": "Preferences",
