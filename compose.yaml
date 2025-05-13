@@ -14,7 +14,7 @@ services:
       - ./.persist/pgdata:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - "5432:5432"
+      - "${LETTA_PG_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U letta"]
       interval: 5s
@@ -32,11 +32,7 @@ services:
     env_file:
       - .env
     environment:
-      - LETTA_PG_DB=${LETTA_PG_DB:-letta}
-      - LETTA_PG_USER=${LETTA_PG_USER:-letta}
-      - LETTA_PG_PASSWORD=${LETTA_PG_PASSWORD:-letta}
-      - LETTA_PG_HOST=pgvector_db
-      - LETTA_PG_PORT=5432
+      - LETTA_PG_URI=${LETTA_PG_URI:-postgresql://${LETTA_PG_USER:-letta}:${LETTA_PG_PASSWORD:-letta}@${LETTA_DB_HOST:-letta-db}:${LETTA_PG_PORT:-5432}/${LETTA_PG_DB:-letta}}
       - LETTA_DEBUG=True
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
