@@ -19,6 +19,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.providers import ProviderCreate
 from letta.schemas.sandbox_config import SandboxType
 from letta.schemas.user import User
+from letta.server.db import db_registry
 
 utils.DEBUG = True
 from letta.config import LettaConfig
@@ -284,7 +285,7 @@ def org_id(server):
     yield org.id
 
     # cleanup
-    with server.organization_manager.session_maker() as session:
+    with db_registry.session() as session:
         session.execute(delete(Step))
         session.execute(delete(Provider))
         session.commit()

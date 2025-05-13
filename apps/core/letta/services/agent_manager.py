@@ -56,6 +56,7 @@ from letta.serialize_schemas import MarshmallowAgentSchema
 from letta.serialize_schemas.marshmallow_message import SerializedMessageSchema
 from letta.serialize_schemas.marshmallow_tool import SerializedToolSchema
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
+from letta.server.db import db_registry
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import (
     _apply_filters,
@@ -85,9 +86,6 @@ class AgentManager:
     """Manager class to handle business logic related to Agents."""
 
     def __init__(self):
-        from letta.server.db import db_context
-
-        self.session_maker = db_context
         self.block_manager = BlockManager()
         self.tool_manager = ToolManager()
         self.source_manager = SourceManager()
@@ -200,7 +198,7 @@ class AgentManager:
         identity_ids = agent_create.identity_ids or []
         tag_values = agent_create.tags or []
 
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             with session.begin():
                 name_to_id, id_to_name = self._resolve_tools(
                     session,
@@ -356,7 +354,7 @@ class AgentManager:
         new_idents = set(agent_update.identity_ids or [])
         new_tags = set(agent_update.tags or [])
 
-        with self.session_maker() as session, session.begin():
+        with db_registry.session() as session, session.begin():
 
             agent: AgentModel = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             agent.updated_at = datetime.now(timezone.utc)
@@ -503,7 +501,7 @@ class AgentManager:
         Returns:
             List[PydanticAgentState]: The filtered list of matching agents.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             query = select(AgentModel).distinct(AgentModel.created_at, AgentModel.id)
             query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
 
@@ -541,7 +539,7 @@ class AgentManager:
         Returns:
             List[PydanticAgentState: The filtered list of matching agents.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             query = select(AgentModel).where(AgentModel.organization_id == actor.organization_id)
 
             if match_all:
@@ -569,20 +567,20 @@ class AgentManager:
         """
         Get the total count of agents for the given user.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             return AgentModel.size(db_session=session, actor=actor)
 
     @enforce_types
     def get_agent_by_id(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         """Fetch an agent by its ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             return agent.to_pydantic()
 
     @enforce_types
     def get_agent_by_name(self, agent_name: str, actor: PydanticUser) -> PydanticAgentState:
         """Fetch an agent by its ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, name=agent_name, actor=actor)
             return agent.to_pydantic()
 
@@ -599,7 +597,7 @@ class AgentManager:
         Raises:
             NoResultFound: If agent doesn't exist
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Retrieve the agent
             logger.debug(f"Hard deleting Agent with ID: {agent_id} with actor={actor}")
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
@@ -635,7 +633,7 @@ class AgentManager:
 
     @enforce_types
     def serialize(self, agent_id: str, actor: PydanticUser) -> AgentSchema:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             schema = MarshmallowAgentSchema(session=session, actor=actor)
             data = schema.dump(agent)
@@ -665,7 +663,7 @@ class AgentManager:
 
         serialized_agent_dict[MarshmallowAgentSchema.FIELD_MESSAGE_IDS] = message_ids
 
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             schema = MarshmallowAgentSchema(session=session, actor=actor)
             agent = schema.load(serialized_agent_dict, session=session)
 
@@ -728,7 +726,7 @@ class AgentManager:
         Returns:
             PydanticAgentState: The updated agent as a Pydantic model.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Retrieve the agent
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
@@ -767,7 +765,7 @@ class AgentManager:
 
     @enforce_types
     def list_groups(self, agent_id: str, actor: PydanticUser, manager_type: Optional[str] = None) -> List[PydanticGroup]:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             if manager_type:
                 return [group.to_pydantic() for group in agent.groups if group.manager_type == manager_type]
@@ -908,7 +906,7 @@ class AgentManager:
         Returns:
             PydanticAgentState: The updated agent state with no linked messages.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Retrieve the existing agent (will raise NoResultFound if invalid)
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
@@ -985,6 +983,17 @@ class AgentManager:
         )
         return agent_state
 
+    @enforce_types
+    async def refresh_memory_async(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
+        block_ids = [b.id for b in agent_state.memory.blocks]
+        if not block_ids:
+            return agent_state
+
+        agent_state.memory.blocks = await self.block_manager.get_all_blocks_by_ids_async(
+            block_ids=[b.id for b in agent_state.memory.blocks], actor=actor
+        )
+        return agent_state
+
     # ======================================================================================================================
     # Source Management
     # ======================================================================================================================
@@ -1003,7 +1012,7 @@ class AgentManager:
             IntegrityError: If the source is already attached to the agent
         """
 
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Verify both agent and source exist and user has permission to access them
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
@@ -1056,7 +1065,7 @@ class AgentManager:
         Returns:
             List[str]: List of source IDs attached to the agent
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Verify agent exists and user has permission to access it
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
@@ -1073,7 +1082,7 @@ class AgentManager:
             source_id: ID of the source to detach
             actor: User performing the action
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Verify agent exists and user has permission to access it
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
@@ -1101,7 +1110,7 @@ class AgentManager:
         actor: PydanticUser,
     ) -> PydanticBlock:
         """Gets a block attached to an agent by its label."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             for block in agent.core_memory:
                 if block.label == block_label:
@@ -1117,7 +1126,7 @@ class AgentManager:
         actor: PydanticUser,
     ) -> PydanticAgentState:
         """Updates which block is assigned to a specific label for an agent."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             new_block = BlockModel.read(db_session=session, identifier=new_block_id, actor=actor)
 
@@ -1135,7 +1144,7 @@ class AgentManager:
     @enforce_types
     def attach_block(self, agent_id: str, block_id: str, actor: PydanticUser) -> PydanticAgentState:
         """Attaches a block to an agent."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
 
@@ -1151,7 +1160,7 @@ class AgentManager:
         actor: PydanticUser,
     ) -> PydanticAgentState:
         """Detaches a block from an agent."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             original_length = len(agent.core_memory)
 
@@ -1171,7 +1180,7 @@ class AgentManager:
         actor: PydanticUser,
     ) -> PydanticAgentState:
         """Detaches a block with the specified label from an agent."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             original_length = len(agent.core_memory)
 
@@ -1215,7 +1224,7 @@ class AgentManager:
             embedded_text = np.array(embedded_text)
             embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
 
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Start with base query for source passages
             source_passages = None
             if not agent_only:  # Include source passages
@@ -1389,7 +1398,7 @@ class AgentManager:
         agent_only: bool = False,
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             main_query = self._build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
@@ -1447,7 +1456,7 @@ class AgentManager:
         agent_only: bool = False,
     ) -> int:
         """Returns the count of passages matching the given criteria."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             main_query = self._build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
@@ -1487,7 +1496,7 @@ class AgentManager:
         Returns:
             PydanticAgentState: The updated agent state.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Verify the agent exists and user has permission to access it
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
@@ -1522,7 +1531,7 @@ class AgentManager:
         Returns:
             PydanticAgentState: The updated agent state.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Verify the agent exists and user has permission to access it
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
@@ -1551,7 +1560,7 @@ class AgentManager:
         Returns:
             List[PydanticTool]: List of tools attached to the agent.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             return [tool.to_pydantic() for tool in agent.tools]
 
@@ -1574,7 +1583,7 @@ class AgentManager:
         Returns:
             List[str]: List of all tags.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             query = (
                 session.query(AgentsTags.tag)
                 .join(AgentModel, AgentModel.id == AgentsTags.agent_id)

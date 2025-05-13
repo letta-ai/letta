@@ -812,7 +812,7 @@ def printd(*args, **kwargs):
         print(*args, **kwargs)
 
 
-def united_diff(str1, str2):
+def united_diff(str1: str, str2: str) -> str:
     lines1 = str1.splitlines(True)
     lines2 = str2.splitlines(True)
     diff = difflib.unified_diff(lines1, lines2)

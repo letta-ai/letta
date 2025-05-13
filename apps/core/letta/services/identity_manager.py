@@ -10,15 +10,11 @@ from letta.orm.identity import Identity as IdentityModel
 from letta.schemas.identity import Identity as PydanticIdentity
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate, IdentityUpsert
 from letta.schemas.user import User as PydanticUser
+from letta.server.db import db_registry
 from letta.utils import enforce_types
 
 
 class IdentityManager:
-
-    def __init__(self):
-        from letta.server.db import db_context
-
-        self.session_maker = db_context
 
     @enforce_types
     def list_identities(
@@ -32,7 +28,7 @@ class IdentityManager:
         limit: Optional[int] = 50,
         actor: PydanticUser = None,
     ) -> list[PydanticIdentity]:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             filters = {"organization_id": actor.organization_id}
             if project_id:
                 filters["project_id"] = project_id
@@ -52,13 +48,13 @@ class IdentityManager:
 
     @enforce_types
     def get_identity(self, identity_id: str, actor: PydanticUser) -> PydanticIdentity:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             identity = IdentityModel.read(db_session=session, identifier=identity_id, actor=actor)
             return identity.to_pydantic()
 
     @enforce_types
     def create_identity(self, identity: IdentityCreate, actor: PydanticUser) -> PydanticIdentity:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             new_identity = IdentityModel(**identity.model_dump(exclude={"agent_ids", "block_ids"}, exclude_unset=True))
             new_identity.organization_id = actor.organization_id
             self._process_relationship(
@@ -82,7 +78,7 @@ class IdentityManager:
 
     @enforce_types
     def upsert_identity(self, identity: IdentityUpsert, actor: PydanticUser) -> PydanticIdentity:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             existing_identity = IdentityModel.read(
                 db_session=session,
                 identifier_key=identity.identifier_key,
@@ -107,7 +103,7 @@ class IdentityManager:
 
     @enforce_types
     def update_identity(self, identity_id: str, identity: IdentityUpdate, actor: PydanticUser, replace: bool = False) -> PydanticIdentity:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             try:
                 existing_identity = IdentityModel.read(db_session=session, identifier=identity_id, actor=actor)
             except NoResultFound:
@@ -167,7 +163,7 @@ class IdentityManager:
 
     @enforce_types
     def upsert_identity_properties(self, identity_id: str, properties: List[IdentityProperty], actor: PydanticUser) -> PydanticIdentity:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             existing_identity = IdentityModel.read(db_session=session, identifier=identity_id, actor=actor)
             if existing_identity is None:
                 raise HTTPException(status_code=404, detail="Identity not found")
@@ -181,7 +177,7 @@ class IdentityManager:
 
     @enforce_types
     def delete_identity(self, identity_id: str, actor: PydanticUser) -> None:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             identity = IdentityModel.read(db_session=session, identifier=identity_id)
             if identity is None:
                 raise HTTPException(status_code=404, detail="Identity not found")
@@ -198,7 +194,7 @@ class IdentityManager:
         """
         Get the total count of identities for the given user.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             return IdentityModel.size(db_session=session, actor=actor)
 
     def _process_relationship(

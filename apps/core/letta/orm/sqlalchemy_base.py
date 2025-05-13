@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, List, Literal, Optional, Tuple, Union
 
 from sqlalchemy import String, and_, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError, TimeoutError
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from letta.log import get_logger
@@ -302,6 +303,44 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
     @classmethod
     @handle_db_timeout
+    async def read_async(
+        cls,
+        db_session: "Session",
+        identifier: Optional[str] = None,
+        actor: Optional["User"] = None,
+        access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
+        access_type: AccessType = AccessType.ORGANIZATION,
+        **kwargs,
+    ) -> "SqlalchemyBase":
+        """The primary accessor for an ORM record. Async version of read method.
+        Args:
+            db_session: the database session to use when retrieving the record
+            identifier: the identifier of the record to read, can be the id string or the UUID object for backwards compatibility
+            actor: if specified, results will be scoped only to records the user is able to access
+            access: if actor is specified, records will be filtered to the minimum permission level for the actor
+            kwargs: additional arguments to pass to the read, used for more complex objects
+        Returns:
+            The matching object
+        Raises:
+            NoResultFound: if the object is not found
+        """
+        # this is ok because read_multiple will check if the
+        identifiers = [] if identifier is None else [identifier]
+        found = await cls.read_multiple_async(db_session, identifiers, actor, access, access_type, **kwargs)
+        if len(found) == 0:
+            # for backwards compatibility.
+            conditions = []
+            if identifier:
+                conditions.append(f"id={identifier}")
+            if actor:
+                conditions.append(f"access level in {access} for {actor}")
+            if hasattr(cls, "is_deleted"):
+                conditions.append("is_deleted=False")
+            raise NoResultFound(f"{cls.__name__} not found with {', '.join(conditions if conditions else ['no conditions'])}")
+        return found[0]
+
+    @classmethod
+    @handle_db_timeout
     def read_multiple(
         cls,
         db_session: "Session",
@@ -323,6 +362,38 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         Raises:
             NoResultFound: if the object is not found
         """
+        query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, **kwargs)
+        results = db_session.execute(query).scalars().all()
+        return cls._read_multiple_postprocess(results, identifiers, query_conditions)
+
+    @classmethod
+    @handle_db_timeout
+    async def read_multiple_async(
+        cls,
+        db_session: "AsyncSession",
+        identifiers: List[str] = [],
+        actor: Optional["User"] = None,
+        access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
+        access_type: AccessType = AccessType.ORGANIZATION,
+        **kwargs,
+    ) -> List["SqlalchemyBase"]:
+        """
+        Async version of read_multiple(...)
+        The primary accessor for ORM record(s)
+        """
+        query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, **kwargs)
+        results = await db_session.execute(query)
+        return cls._read_multiple_postprocess(results.scalars().all(), identifiers, query_conditions)
+
+    @classmethod
+    def _read_multiple_preprocess(
+        cls,
+        identifiers: List[str],
+        actor: Optional["User"],
+        access: Optional[List[Literal["read", "write", "admin"]]],
+        access_type: AccessType,
+        **kwargs,
+    ):
         logger.debug(f"Reading {cls.__name__} with ID(s): {identifiers} with actor={actor}")
 
         # Start the query
@@ -350,7 +421,10 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             query = query.where(cls.is_deleted == False)
             query_conditions.append("is_deleted=False")
 
-        results = db_session.execute(query).scalars().all()
+        return query, query_conditions
+
+    @classmethod
+    def _read_multiple_postprocess(cls, results, identifiers: List[str], query_conditions) -> List["SqlalchemyBase"]:
         if results:  # if empty list a.k.a. no results
             if len(identifiers) > 0:
                 # find which identifiers were not found
@@ -469,6 +543,22 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         else:
             db_session.commit()
         db_session.refresh(self)
+        return self
+
+    @handle_db_timeout
+    async def update_async(self, db_session: AsyncSession, actor: "User | None" = None, no_commit: bool = False) -> "SqlalchemyBase":
+        """Async version of update function"""
+        logger.debug(...)
+        if actor:
+            self._set_created_and_updated_by_fields(actor.id)
+        self.set_updated_at()
+
+        db_session.add(self)
+        if no_commit:
+            await db_session.flush()
+        else:
+            await db_session.commit()
+        await db_session.refresh(self)
         return self
 
     @classmethod

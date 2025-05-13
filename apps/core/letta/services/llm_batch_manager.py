@@ -16,6 +16,7 @@ from letta.schemas.llm_batch_job import LLMBatchJob as PydanticLLMBatchJob
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.user import User as PydanticUser
+from letta.server.db import db_registry
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -23,11 +24,6 @@ logger = get_logger(__name__)
 
 class LLMBatchManager:
     """Manager for handling both LLMBatchJob and LLMBatchItem operations."""
-
-    def __init__(self):
-        from letta.server.db import db_context
-
-        self.session_maker = db_context
 
     @enforce_types
     def create_llm_batch_job(
@@ -39,7 +35,7 @@ class LLMBatchManager:
         status: JobStatus = JobStatus.created,
     ) -> PydanticLLMBatchJob:
         """Create a new LLM batch job."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             batch = LLMBatchJob(
                 status=status,
                 llm_provider=llm_provider,
@@ -53,7 +49,7 @@ class LLMBatchManager:
     @enforce_types
     def get_llm_batch_job_by_id(self, llm_batch_id: str, actor: Optional[PydanticUser] = None) -> PydanticLLMBatchJob:
         """Retrieve a single batch job by ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             batch = LLMBatchJob.read(db_session=session, identifier=llm_batch_id, actor=actor)
             return batch.to_pydantic()
 
@@ -66,7 +62,7 @@ class LLMBatchManager:
         latest_polling_response: Optional[BetaMessageBatch] = None,
     ) -> PydanticLLMBatchJob:
         """Update a batch job’s status and optionally its polling response."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             batch = LLMBatchJob.read(db_session=session, identifier=llm_batch_id, actor=actor)
             batch.status = status
             batch.latest_polling_response = latest_polling_response
@@ -85,7 +81,7 @@ class LLMBatchManager:
         """
         now = datetime.datetime.now(datetime.timezone.utc)
 
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             mappings = []
             for llm_batch_id, status, response in updates:
                 mappings.append(
@@ -119,7 +115,7 @@ class LLMBatchManager:
 
         The results are ordered by their id in ascending order.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             query = session.query(LLMBatchJob).filter(LLMBatchJob.letta_batch_job_id == letta_batch_id)
 
             if actor is not None:
@@ -140,7 +136,7 @@ class LLMBatchManager:
     @enforce_types
     def delete_llm_batch_request(self, llm_batch_id: str, actor: PydanticUser) -> None:
         """Hard delete a batch job by ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             batch = LLMBatchJob.read(db_session=session, identifier=llm_batch_id, actor=actor)
             batch.hard_delete(db_session=session, actor=actor)
 
@@ -158,7 +154,7 @@ class LLMBatchManager:
         Retrieve messages across all LLM batch jobs associated with a Letta batch job.
         Optimized for PostgreSQL performance using ID-based keyset pagination.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # If cursor is provided, get sequence_id for that message
             cursor_sequence_id = None
             if cursor:
@@ -203,7 +199,7 @@ class LLMBatchManager:
     @enforce_types
     def list_running_llm_batches(self, actor: Optional[PydanticUser] = None) -> List[PydanticLLMBatchJob]:
         """Return all running LLM batch jobs, optionally filtered by actor's organization."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             query = session.query(LLMBatchJob).filter(LLMBatchJob.status == JobStatus.running)
 
             if actor is not None:
@@ -224,7 +220,7 @@ class LLMBatchManager:
         step_state: Optional[AgentStepState] = None,
     ) -> PydanticLLMBatchItem:
         """Create a new batch item."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             item = LLMBatchItem(
                 llm_batch_id=llm_batch_id,
                 agent_id=agent_id,
@@ -249,7 +245,7 @@ class LLMBatchManager:
         Returns:
             List of created batch items as Pydantic models
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Convert Pydantic models to ORM objects
             orm_items = []
             for item in llm_batch_items:
@@ -274,7 +270,7 @@ class LLMBatchManager:
     @enforce_types
     def get_llm_batch_item_by_id(self, item_id: str, actor: PydanticUser) -> PydanticLLMBatchItem:
         """Retrieve a single batch item by ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             item = LLMBatchItem.read(db_session=session, identifier=item_id, actor=actor)
             return item.to_pydantic()
 
@@ -289,7 +285,7 @@ class LLMBatchManager:
         step_state: Optional[AgentStepState] = None,
     ) -> PydanticLLMBatchItem:
         """Update fields on a batch item."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             item = LLMBatchItem.read(db_session=session, identifier=item_id, actor=actor)
 
             if request_status:
@@ -325,7 +321,7 @@ class LLMBatchManager:
 
         The results are ordered by their id in ascending order.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             query = session.query(LLMBatchItem).filter(LLMBatchItem.llm_batch_id == llm_batch_id)
 
             if actor is not None:
@@ -367,7 +363,7 @@ class LLMBatchManager:
         if len(llm_batch_id_agent_id_pairs) != len(field_updates):
             raise ValueError("llm_batch_id_agent_id_pairs and field_updates must have the same length")
 
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Lookup primary keys for all requested (batch_id, agent_id) pairs
             items = (
                 session.query(LLMBatchItem.id, LLMBatchItem.llm_batch_id, LLMBatchItem.agent_id)
@@ -434,7 +430,7 @@ class LLMBatchManager:
     @enforce_types
     def delete_llm_batch_item(self, item_id: str, actor: PydanticUser) -> None:
         """Hard delete a batch item by ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             item = LLMBatchItem.read(db_session=session, identifier=item_id, actor=actor)
             item.hard_delete(db_session=session, actor=actor)
 
@@ -449,6 +445,6 @@ class LLMBatchManager:
         Returns:
             int: The total number of batch items associated with the given llm_batch_id.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             count = session.query(func.count(LLMBatchItem.id)).filter(LLMBatchItem.llm_batch_id == llm_batch_id).scalar()
             return count or 0

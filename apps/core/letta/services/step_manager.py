@@ -11,16 +11,12 @@ from letta.orm.step import Step as StepModel
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.step import Step as PydanticStep
 from letta.schemas.user import User as PydanticUser
+from letta.server.db import db_registry
 from letta.tracing import get_trace_id
 from letta.utils import enforce_types
 
 
 class StepManager:
-
-    def __init__(self):
-        from letta.server.db import db_context
-
-        self.session_maker = db_context
 
     @enforce_types
     def list_steps(
@@ -36,7 +32,7 @@ class StepManager:
         agent_id: Optional[str] = None,
     ) -> List[PydanticStep]:
         """List all jobs with optional pagination and status filter."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             filter_kwargs = {"organization_id": actor.organization_id}
             if model:
                 filter_kwargs["model"] = model
@@ -85,7 +81,7 @@ class StepManager:
             "tid": None,
             "trace_id": get_trace_id(),  # Get the current trace ID
         }
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             if job_id:
                 self._verify_job_access(session, job_id, actor, access=["write"])
             new_step = StepModel(**step_data)
@@ -94,7 +90,7 @@ class StepManager:
 
     @enforce_types
     def get_step(self, step_id: str, actor: PydanticUser) -> PydanticStep:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             step = StepModel.read(db_session=session, identifier=step_id, actor=actor)
             return step.to_pydantic()
 
@@ -113,7 +109,7 @@ class StepManager:
         Raises:
             NoResultFound: If the step does not exist
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             step = session.get(StepModel, step_id)
             if not step:
                 raise NoResultFound(f"Step with id {step_id} does not exist")
