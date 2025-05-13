@@ -317,11 +317,11 @@ export async function handleMessageRateLimiting(
     ['free', 'premium'].includes(modelTierInformation)
   ) {
     if (modelTierInformation === 'free') {
-      if (freeUsage + 1 >= usageLimits.freeInferencesPerMonth) {
+      if (freeUsage + 1 > usageLimits.freeInferencesPerMonth) {
         rateLimitThresholds.push('free-usage-exceeded');
       }
     } else if (modelTierInformation === 'premium') {
-      if (premiumUsage + 1 >= usageLimits.premiumInferencesPerMonth) {
+      if (premiumUsage + 1 > usageLimits.premiumInferencesPerMonth) {
         rateLimitThresholds.push('premium-usage-exceeded');
       }
     }

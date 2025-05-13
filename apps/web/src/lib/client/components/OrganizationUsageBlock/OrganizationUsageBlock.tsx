@@ -33,6 +33,7 @@ export function OrganizationUsageBlock() {
   const { data: quotaData } =
     webApi.organizations.getOrganizationQuotas.useQuery({
       queryKey: webApiQueryKeys.organizations.getOrganizationQuotas,
+      refetchOnMount: true,
     });
 
   const { data: billingData } =
