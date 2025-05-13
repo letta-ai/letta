@@ -181,7 +181,10 @@ class LettaAgent(BaseAgent):
         if settings.experimental_enable_async_db_engine:
             in_context_messages = await self._rebuild_memory_async(in_context_messages, agent_state)
         else:
-            in_context_messages = self._rebuild_memory(in_context_messages, agent_state)
+            if settings.experimental_skip_rebuild_memory and agent_state.llm_config.model_endpoint_type == "google_vertex":
+                logger.info("Skipping memory rebuild")
+            else:
+                in_context_messages = self._rebuild_memory(in_context_messages, agent_state)
 
         tools = [
             t
