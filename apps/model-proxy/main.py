@@ -165,12 +165,18 @@ def log_request(
     # publish
     try:
         future = app.state.publisher.publish(app.state.topic_path, data=data)
+        # Wait for the result to surface potential issues
+        try:
+            message_id = future.result(timeout=10)  # Add a timeout to prevent blocking indefinitely
+            logger.info(f"Published message with ID: {message_id}")
+            return future
+        except Exception as result_error:
+            logger.error(f"Failed to publish message: {str(result_error)}")
+            # Re-raise with more specific information about the PubSub operation
+            raise Exception(f"PubSub publish operation failed: {str(result_error)}")
     except Exception as e:
-        print("Logging error", str(e))
+        logger.error(f"Logging error during publish attempt: {str(e)}")
         raise e
-
-    return future  # not used
-
 
 # POST endpoint for chat completions
 @app.post("/chat/completions")
@@ -300,7 +306,7 @@ def on_startup():
         if os.getenv("GCP_PUBSUB_PROJECT_ID"):
             project_id = os.getenv("GCP_PUBSUB_PROJECT_ID")
         else:
-            msg = f"Failed to get project id from {GCP_PUBSUB_PROJECT_ID}"
+            msg = f"Failed to get project id from GCP_PUBSUB_PROJECT_ID environment variable"
             logger.error(msg)
             raise ValueError(msg)
 
@@ -308,7 +314,7 @@ def on_startup():
         if os.getenv("GCP_PUBSUB_TOPIC_ID"):
             topic_id = os.getenv("GCP_PUBSUB_TOPIC_ID")
         else:
-            msg = f"Failed to get project id from {GCP_PUBSUB_TOPIC_ID}"
+            msg = f"Failed to get topic id from GCP_PUBSUB_TOPIC_ID environment variable"
             logger.error(msg)
             raise ValueError(msg)
 
@@ -323,8 +329,17 @@ def on_startup():
         data = '{"Success": true}'.encode('utf-8')
         try:
             future = app.state.publisher.publish(app.state.topic_path, data=data)
+            try:
+                # Check the result to surface any permission or access control issues
+                message_id = future.result(timeout=30)  # Longer timeout for startup
+                logger.info(f"Successfully published startup message with ID: {message_id}")
+            except Exception as result_error:
+                logger.error(f"Failed to publish startup message: {str(result_error)}")
+                # Don't raise here to allow the server to start anyway, but log clearly
+                print(f"WARNING: PubSub permission issue detected: {str(result_error)}")
         except Exception as e:
-            print("Logging error", str(e))
-            raise e
+            logger.error(f"Logging error during startup publish attempt: {str(e)}")
+            # Log but don't prevent server from starting
+            print(f"ERROR: PubSub configuration issue: {str(e)}")
 
         print(f"Publisher and topic path set up: project id {project_id}, topic id {topic_id}")

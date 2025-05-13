@@ -1,6 +1,11 @@
 variable "project_number" {
+  description = "GCP Project Number (different than ID)"
+  type        = string
+}
+variable "project_id" {
   description = "GCP Project ID"
   type        = string
+  default     = "memgpt-428419"
 }
 
 variable "env" {
