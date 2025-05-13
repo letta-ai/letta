@@ -3241,14 +3241,14 @@ pytest = ["pytest (>=7.0.0)", "rich (>=13.9.4,<14.0.0)"]
 
 [[package]]
 name = "letta-client"
-version = "0.1.141"
+version = "0.1.143"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.8"
 groups = ["main"]
 files = [
-    {file = "letta_client-0.1.141-py3-none-any.whl", hash = "sha256:c37a5d74f0e45267a43b95f32e5170309c9887049944726e46b17329e386ea5e"},
-    {file = "letta_client-0.1.141.tar.gz", hash = "sha256:acdf59965ee54ac36739399d4c19ab1b92c8f3f9a1d953deaf775877f325b036"},
+    {file = "letta_client-0.1.143-py3-none-any.whl", hash = "sha256:814651c142063191726b4933d6ff10039f84e7a90dbe196e00ae9c997c40b9b1"},
+    {file = "letta_client-0.1.143.tar.gz", hash = "sha256:bdff6a752145e1e2acc629c552afc433a20263f8723d8b1074d24b877cf71451"},
 ]
 
 [package.dependencies]
@@ -7570,4 +7570,4 @@ tests = ["wikipedia"]
 [metadata]
 lock-version = "2.1"
 python-versions = "<3.14,>=3.10"
-content-hash = "862dc5a31d4385e89dc9a751cd171a611da3102c6832447a5f61926b25f03e06"
+content-hash = "7322eb70314d3f078fda8cf9b580d416f13663b399d4b0f6a9e0c4a8914808b5"
