@@ -9,7 +9,6 @@ from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from letta.agents.base_agent import BaseAgent
 from letta.agents.helpers import _create_letta_response, _prepare_in_context_messages
 from letta.helpers import ToolRulesSolver
-from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.llm_api.llm_client import LLMClient
@@ -22,20 +21,18 @@ from letta.schemas.enums import MessageRole, MessageStreamStatus
 from letta.schemas.letta_message import AssistantMessage
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
-from letta.schemas.message import Message, MessageCreate, MessageUpdate
+from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import ToolCall
 from letta.schemas.user import User
 from letta.server.rest_api.utils import create_letta_messages_from_llm_response
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import compile_system_message
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
 from letta.settings import settings
 from letta.system import package_function_response
 from letta.tracing import log_event, trace_method
-from letta.utils import united_diff
 
 logger = get_logger(__name__)
 
