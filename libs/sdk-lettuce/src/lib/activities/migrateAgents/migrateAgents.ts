@@ -46,7 +46,7 @@ export async function getAgentsByIds(
   agentIds: string[],
 ): Promise<AgentResponse[]> {
   const res = await db.query.deployedAgentVariables.findMany({
-    where: inArray(deployedAgentTemplates.id, agentIds),
+    where: inArray(deployedAgentVariables.deployedAgentId, agentIds),
   });
 
   return res.map(({ deployedAgentId, value }) => ({
