@@ -417,10 +417,9 @@ tests-mypy = ["mypy (>=1.11.1) ; platform_python_implementation == \"CPython\" a
 name = "autoflake"
 version = "2.3.1"
 description = "Removes unused imports and unused variables"
-optional = true
+optional = false
 python-versions = ">=3.8"
-groups = ["main"]
-markers = "extra == \"dev\" or extra == \"all\""
+groups = ["main", "dev"]
 files = [
     {file = "autoflake-2.3.1-py3-none-any.whl", hash = "sha256:3ae7495db9084b7b32818b4140e6dc4fc280b712fb414f5b8fe57b0a8e85a840"},
     {file = "autoflake-2.3.1.tar.gz", hash = "sha256:c98b75dc5b0a86459c4f01a1d32ac7eb4338ec4317a4469515ff1e687ecd909e"},
@@ -5358,10 +5357,9 @@ yaml = ["pyyaml (>=6.0.1)"]
 name = "pyflakes"
 version = "3.3.2"
 description = "passive checker of Python programs"
-optional = true
+optional = false
 python-versions = ">=3.9"
-groups = ["main"]
-markers = "extra == \"dev\" or extra == \"all\""
+groups = ["main", "dev"]
 files = [
     {file = "pyflakes-3.3.2-py2.py3-none-any.whl", hash = "sha256:5039c8339cbb1944045f4ee5466908906180f13cc99cc9949348d10f82a5c32a"},
     {file = "pyflakes-3.3.2.tar.gz", hash = "sha256:6dfd61d87b97fba5dcfaaf781171ac16be16453be6d816147989e7f6e6a9576b"},
@@ -7570,4 +7568,4 @@ tests = ["wikipedia"]
 [metadata]
 lock-version = "2.1"
 python-versions = "<3.14,>=3.10"
-content-hash = "862dc5a31d4385e89dc9a751cd171a611da3102c6832447a5f61926b25f03e06"
+content-hash = "b7d93aa73a2b41ffda9b20526ff460609f7aa217eebfa03bae31d04847b92894"
