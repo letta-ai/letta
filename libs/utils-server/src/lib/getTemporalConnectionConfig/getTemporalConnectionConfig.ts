@@ -1,6 +1,10 @@
 import { environment } from '@letta-cloud/config-environment-variables';
 
-export function getConnectionConfig() {
+/**
+ * Gets the Temporal connection configuration based on environment variables
+ * @returns Connection configuration object for Temporal client
+ */
+export function getTemporalConnectionConfig() {
   if (!environment.TEMPORAL_LETTUCE_CA_PEM) {
     return {
       address: environment.TEMPORAL_LETTUCE_API_HOST,

@@ -13,9 +13,13 @@ import {
 } from '@letta-cloud/service-database';
 import { AgentsService } from '@letta-cloud/sdk-core';
 import type { AgentState } from '@letta-cloud/sdk-core';
-import { getDeployedTemplateByVersion } from '@letta-cloud/utils-server';
-import { copyAgentById } from '@letta-cloud/utils-server';
-import { updateAgentFromAgentId } from '@letta-cloud/utils-server';
+import {
+  getDeployedTemplateByVersion,
+  copyAgentById,
+  updateAgentFromAgentId,
+  listTemplateAgentMigrations,
+  abortTemplateAgentMigration,
+} from '@letta-cloud/utils-server';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { createTemplate } from 'tmp-cloud-api-router';
 import type { GeneralRequestContext } from '../../server';
@@ -1006,16 +1010,113 @@ async function importAgentFileAsTemplate(
   };
 }
 
+type ListAgentMigrationsRequest = ServerInferRequest<
+  typeof contracts.agentTemplates.listAgentMigrations
+>;
+
+type ListAgentMigrationsResponse = ServerInferResponses<
+  typeof contracts.agentTemplates.listAgentMigrations
+>;
+
+async function listAgentMigrations(
+  req: ListAgentMigrationsRequest,
+): Promise<ListAgentMigrationsResponse> {
+  const { templateName } = req.query;
+  const { activeOrganizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+  const organizationId = req.query.organizationId || activeOrganizationId;
+
+  if (!permissions.has(ApplicationServices.READ_TEMPLATES)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
+
+  if (!templateName) {
+    return {
+      status: 400,
+      body: {
+        message: 'Template name is required',
+      },
+    };
+  }
+
+  try {
+    return {
+      status: 200,
+      body: await listTemplateAgentMigrations(templateName, organizationId),
+    };
+  } catch (error) {
+    console.error('Error fetching migrations from Temporal:', error);
+    return {
+      status: 500,
+      body: {
+        message: error as string,
+      },
+    };
+  }
+}
+
+type AbortAgentMigrationRequest = ServerInferRequest<
+  typeof contracts.agentTemplates.abortAgentMigration
+>;
+
+type AbortAgentMigrationResponse = ServerInferResponses<
+  typeof contracts.agentTemplates.abortAgentMigration
+>;
+
+/**
+ * Aborts an ongoing agent migration workflow
+ * @param req - Request with workflow ID to abort
+ * @returns Response with success or error status
+ */
+async function abortAgentMigration(
+  req: AbortAgentMigrationRequest,
+): Promise<AbortAgentMigrationResponse> {
+  const { workflowId } = req.params;
+  const { permissions } = await getUserWithActiveOrganizationIdOrThrow();
+  try {
+    if (!permissions.has(ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES)) {
+      return {
+        status: 403,
+        body: {
+          success: false,
+          message: 'Insufficient permissions to abort agent migration',
+        },
+      };
+    }
+    await abortTemplateAgentMigration(workflowId);
+    return {
+      status: 200,
+      body: {
+        success: true,
+      },
+    };
+  } catch (error) {
+    console.error('Error aborting agent migration:', error);
+    return {
+      status: 500,
+      body: {
+        success: false,
+        message: `Failed to abort migration: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      },
+    };
+  }
+}
+
 export const agentTemplateRoutes = {
+  listAgentMigrations,
+  abortAgentMigration,
   listAgentTemplates,
   getAgentTemplateByVersion,
   forkAgentTemplate,
-  deleteAgentTemplateSimulatorSession,
-  createAgentTemplateSimulatorSession,
   getAgentTemplateSimulatorSession,
+  createAgentTemplateSimulatorSession,
   refreshAgentTemplateSimulatorSession,
+  deleteAgentTemplateSimulatorSession,
+  listTemplateVersions,
   getAgentTemplateById,
   getDeployedAgentTemplateById,
-  listTemplateVersions,
   importAgentFileAsTemplate,
 };

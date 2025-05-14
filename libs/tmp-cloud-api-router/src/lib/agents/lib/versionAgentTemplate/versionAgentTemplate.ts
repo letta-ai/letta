@@ -152,6 +152,7 @@ export async function versionAgentTemplate(
       };
     }
 
+    // Set this to true if you want to connect to your local Temporal server for testing (just start-temporal, just lettuce)
     const shouldUseTemporal = await getSingleFlag(
       'USE_TEMPORAL_FOR_MIGRATIONS',
       organizationId,

@@ -1,11 +1,11 @@
 import { Client, Connection } from '@temporalio/client';
 import { environment } from '@letta-cloud/config-environment-variables';
-import { getConnectionConfig } from './utils/getConnectionConfig/getConnectionConfig';
+import { getTemporalConnectionConfig } from '@letta-cloud/utils-server';
 
 const client: Client = makeClient();
 
 function makeClient(): Client {
-  const connection = Connection.lazy(getConnectionConfig());
+  const connection = Connection.lazy(getTemporalConnectionConfig());
 
   return new Client({
     connection,

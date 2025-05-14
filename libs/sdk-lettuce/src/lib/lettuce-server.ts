@@ -2,7 +2,7 @@ import { NativeConnection, Worker } from '@temporalio/worker';
 import { activities } from './activities';
 import { TASK_QUEUE_NAME } from './config';
 import { environment } from '@letta-cloud/config-environment-variables';
-import { getConnectionConfig } from './utils/getConnectionConfig/getConnectionConfig';
+import { getTemporalConnectionConfig } from '@letta-cloud/utils-server';
 
 export async function startLettuceServer() {
   console.log(
@@ -10,7 +10,9 @@ export async function startLettuceServer() {
     environment.TEMPORAL_LETTUCE_API_HOST,
   );
 
-  const connection = await NativeConnection.connect(getConnectionConfig());
+  const connection = await NativeConnection.connect(
+    getTemporalConnectionConfig(),
+  );
 
   console.log(
     'Connected to Temporal API at',

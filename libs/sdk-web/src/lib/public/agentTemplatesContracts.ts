@@ -3,7 +3,7 @@ import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import { VersionedTemplateType, zodTypes } from '@letta-cloud/sdk-core';
 import type { AgentState as AgentStateType } from '@letta-cloud/sdk-core';
-
+import { MigrationStatus } from '@letta-cloud/sdk-cloud-api';
 import { ProjectAgentTemplateSchema } from './projectContracts';
 
 const c = initContract();
@@ -218,6 +218,69 @@ export type ListTemplateVersionsQuery = z.infer<
   typeof ListTemplateVersionsQuerySchema
 >;
 
+export const MigrationDetailSchema = z.object({
+  workflowId: z.string(),
+  status: z.nativeEnum(MigrationStatus),
+  completedAt: z.string().optional(),
+  startedAt: z.string(),
+  templateVersion: z.string().optional(),
+});
+
+export type MigrationDetail = z.infer<typeof MigrationDetailSchema>;
+
+export const ListAgentMigrationsResponseSchema = z.object({
+  migrations: z.array(MigrationDetailSchema),
+});
+
+export type ListAgentMigrationsResponse = z.infer<
+  typeof ListAgentMigrationsResponseSchema
+>;
+
+export const ListAgentMigrationsQuerySchema = z.object({
+  templateName: z.string(),
+  organizationId: z.string().optional(),
+});
+
+export type ListAgentMigrationsQuery = z.infer<
+  typeof ListAgentMigrationsQuerySchema
+>;
+
+const listAgentMigrationsContract = c.query({
+  method: 'GET',
+  path: '/agent-templates/migrations',
+  query: ListAgentMigrationsQuerySchema,
+  responses: {
+    200: ListAgentMigrationsResponseSchema,
+  },
+});
+
+/* Abort Agent Migration */
+export const AbortAgentMigrationParamsSchema = z.object({
+  workflowId: z.string(),
+});
+
+export type AbortAgentMigrationParams = z.infer<
+  typeof AbortAgentMigrationParamsSchema
+>;
+
+export const AbortAgentMigrationResponseSchema = z.object({
+  success: z.boolean(),
+});
+
+export type AbortAgentMigrationResponse = z.infer<
+  typeof AbortAgentMigrationResponseSchema
+>;
+
+const abortAgentMigrationContract = c.mutation({
+  method: 'POST',
+  path: '/agent-templates/migrations/:workflowId/abort',
+  pathParams: AbortAgentMigrationParamsSchema,
+  body: z.undefined(),
+  responses: {
+    200: AbortAgentMigrationResponseSchema,
+  },
+});
+
 export const ShortVersionedTemplateType = z.object({
   id: z.string(),
   version: z.string(),
@@ -271,7 +334,9 @@ export const agentTemplatesContracts = c.router({
   getAgentTemplateById: getAgentTemplateByIdContract,
   getDeployedAgentTemplateById: getDeployedAgentTemplateByIdContract,
   listTemplateVersions: listTemplateVersionsContract,
+  listAgentMigrations: listAgentMigrationsContract,
   importAgentFileAsTemplate: importAgentFileAsTemplateContract,
+  abortAgentMigration: abortAgentMigrationContract,
 });
 
 export const agentTemplatesQueryClientKeys = {
@@ -303,5 +368,13 @@ export const agentTemplatesQueryClientKeys = {
   ) => [
     ...agentTemplatesQueryClientKeys.listTemplateVersions(agentTemplateId),
     query,
+  ],
+  listAgentMigrations: (params: {
+    templateName: string;
+    organizationId?: string;
+  }) => ['listAgentMigrations', params],
+  abortAgentMigration: (workflowId: string) => [
+    'abortAgentMigration',
+    { workflowId },
   ],
 };
