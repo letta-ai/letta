@@ -696,7 +696,7 @@ async def send_message_streaming(
     feature_enabled = settings.use_experimental or experimental_header
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
 
-    if agent_eligible and feature_enabled and model_compatible:
+    if agent_eligible and feature_enabled and model_compatible and request.stream_tokens:
         experimental_agent = LettaAgent(
             agent_id=agent_id,
             message_manager=server.message_manager,
