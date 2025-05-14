@@ -896,17 +896,10 @@
   },
   "organization/billing": {
     "FreePlanUpsellDetails": {
-      "title": "Do more with Pro",
-      "description": "The Free plan is ideal for getting started, but Pro gives you room to grow. Upgrade to access:",
-      "features": {
-        "free": "Cancel at any time, no lock in.",
-        "agents": "Create up to {agents} active agents.",
-        "premiumModels": "{limit} Premium model requests per month.",
-        "freeModels": "{limit} Standard model requests per month."
-      }
+      "title": "Get more agents and requests "
     },
     "AccountDetailsCTA": {
-      "upgrade": "Upgrade to Pro",
+      "upgrade": "Upgrade Plan",
       "pro": {
         "billingPeriod": "Your requests quota will reset on {date}.",
         "cancel": "Cancel plan",
@@ -1061,14 +1054,14 @@
   },
   "components/PlanBenefits": {
     "free": {
-      "templates": "Create up to {templates} templates.",
+      "templates": "Create up to {limit} templates.",
       "agent": "Create up to {limit} agents",
       "standardRequests": "<limit></limit> <link>standard model</link> requests per month",
       "premiumRequests": "<limit></limit> <link>premium model</link> requests per month",
       "storage": "{limit} GB of storage"
     },
     "pro": {
-      "templates": "Create up to {templates} templates.",
+      "templates": "Create up to {limit} templates.",
       "standardRequests": "Up to <limit></limit> <link>standard model</link> requests per month",
       "premiumModelUsage": "Up to <limit></limit> <link>premium model</link> requests per month",
       "agent": "Create up to {limit} agents",
