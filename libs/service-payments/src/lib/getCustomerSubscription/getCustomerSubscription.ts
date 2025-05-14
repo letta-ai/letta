@@ -65,7 +65,7 @@ export async function getCustomerSubscription(
   });
 
   const activeSubscriptions = subscriptions.data.find((sub) => {
-    return sub.status === 'active';
+    return sub.status === 'active' || sub.status === 'trialing';
   });
 
   if (!activeSubscriptions) {
@@ -76,7 +76,6 @@ export async function getCustomerSubscription(
     };
   }
 
-  console.log('fa', JSON.stringify(activeSubscriptions, null, 2));
   try {
     return {
       billingPeriodEnd: new Date(
