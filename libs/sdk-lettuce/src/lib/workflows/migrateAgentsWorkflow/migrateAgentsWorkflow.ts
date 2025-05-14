@@ -4,6 +4,9 @@ import type { MigrateAgentsPayload } from '../../types';
 
 const { migrateAgents } = proxyActivities<typeof activities>({
   startToCloseTimeout: '1 hour',
+  retry: {
+    maximumAttempts: 5,
+  },
 });
 
 export async function migrateAgentsWorkflow(
