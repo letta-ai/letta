@@ -4,10 +4,7 @@ on:
     # branches: [main] # TODO: uncomment before merge
     types: [labeled]
     paths:
-      - 'letta/schemas/**'
-      - 'letta/llm_api/**'
-      - 'letta/agent.py'
-      - 'letta/embeddings.py'
+      - 'letta/**'
 
 jobs:
   send-messages:
