@@ -14,9 +14,9 @@ def _create_letta_response(new_in_context_messages: list[Message], use_assistant
     """
     Converts the newly created/persisted messages into a LettaResponse.
     """
-    response_messages = []
-    for msg in new_in_context_messages:
-        response_messages.extend(msg.to_letta_messages(use_assistant_message=use_assistant_message))
+    response_messages = Message.to_letta_messages_from_list(
+        messages=new_in_context_messages, use_assistant_message=use_assistant_message, reverse=False
+    )
     return LettaResponse(messages=response_messages, usage=LettaUsageStatistics())
 
 

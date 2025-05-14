@@ -93,8 +93,11 @@ class LettaAgent(BaseAgent):
             )
 
             tool_call = response.choices[0].message.tool_calls[0]
+            reasoning = [TextContent(text=response.choices[0].message.content)]  # reasoning placed into content for legacy reasons
 
-            persisted_messages, should_continue = await self._handle_ai_response(tool_call, agent_state, tool_rules_solver)
+            persisted_messages, should_continue = await self._handle_ai_response(
+                tool_call, agent_state, tool_rules_solver, reasoning_content=reasoning
+            )
             self.response_messages.extend(persisted_messages)
             new_in_context_messages.extend(persisted_messages)
 
