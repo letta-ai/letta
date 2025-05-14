@@ -107,7 +107,6 @@ class LettaAgentBatch(BaseAgent):
         sandbox_config_manager: SandboxConfigManager,
         job_manager: JobManager,
         actor: User,
-        use_assistant_message: bool = True,
         max_steps: int = 10,
     ):
         self.message_manager = message_manager
@@ -117,7 +116,6 @@ class LettaAgentBatch(BaseAgent):
         self.batch_manager = batch_manager
         self.sandbox_config_manager = sandbox_config_manager
         self.job_manager = job_manager
-        self.use_assistant_message = use_assistant_message
         self.actor = actor
         self.max_steps = max_steps
 

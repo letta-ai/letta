@@ -58,7 +58,7 @@ class VoiceSleeptimeAgent(LettaAgent):
     def update_message_transcript(self, message_transcripts: List[str]):
         self.message_transcripts = message_transcripts
 
-    async def step(self, input_messages: List[MessageCreate], max_steps: int = 20) -> LettaResponse:
+    async def step(self, input_messages: List[MessageCreate], max_steps: int = 20, use_assistant_message: bool = True) -> LettaResponse:
         """
         Process the user's input message, allowing the model to call memory-related tools
         until it decides to stop and provide a final response.
@@ -84,7 +84,7 @@ class VoiceSleeptimeAgent(LettaAgent):
             agent_id=self.agent_id, message_ids=[m.id for m in new_in_context_messages], actor=self.actor
         )
 
-        return _create_letta_response(new_in_context_messages=new_in_context_messages, use_assistant_message=self.use_assistant_message)
+        return _create_letta_response(new_in_context_messages=new_in_context_messages, use_assistant_message=use_assistant_message)
 
     @trace_method
     async def _execute_tool(self, tool_name: str, tool_args: dict, agent_state: AgentState) -> Tuple[str, bool]:
@@ -146,7 +146,7 @@ class VoiceSleeptimeAgent(LettaAgent):
             return f"Failed to store memory given start_index {start_index} and end_index {end_index}: {e}", False
 
     async def step_stream(
-        self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = False
+        self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = True
     ) -> AsyncGenerator[Union[LettaMessage, LegacyLettaMessage, MessageStreamStatus], None]:
         """
         This agent is synchronous-only. If called in an async context, raise an error.

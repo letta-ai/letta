@@ -646,7 +646,7 @@ async def send_message(
             actor=actor,
         )
 
-        result = await experimental_agent.step(request.messages, max_steps=10)
+        result = await experimental_agent.step(request.messages, max_steps=10, use_assistant_message=request.use_assistant_message)
     else:
         result = await server.send_message_to_agent(
             agent_id=agent_id,
