@@ -61,6 +61,11 @@ export const featureFlags = {
     expiryDate: '2024-07-01',
     flagValue: z.boolean(),
   },
+  MORE_MEMORY_FIELDS: {
+    description: 'More memory fields',
+    expiryDate: '2024-07-01',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;

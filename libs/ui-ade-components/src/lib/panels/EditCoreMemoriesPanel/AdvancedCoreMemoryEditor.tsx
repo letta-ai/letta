@@ -2,6 +2,7 @@ import {
   Alert,
   BillingLink,
   Button,
+  Checkbox,
   CloseIcon,
   CloseMiniApp,
   Dialog,
@@ -44,6 +45,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSortedMemories } from '@letta-cloud/utils-client';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface CurrentAdvancedCoreMemoryState {
   selectedMemoryBlockLabel?: string;
@@ -120,6 +122,8 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
         .number()
         .min(100, t('AdvancedMemoryEditorForm.maxCharacters.error')),
       value: z.string(),
+      readOnly: z.boolean(),
+      description: z.string(),
     });
   }, [t]);
 
@@ -131,6 +135,8 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
       label: memory.label || '',
       maxCharacters: memory.limit,
       value: memory.value,
+      description: memory.description || '',
+      readOnly: memory.read_only || false,
     },
   });
 
@@ -140,6 +146,9 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
     useAgentsServiceModifyCoreMemoryBlock();
   const [isPending, setIsPending] = useState(false);
   const [isError, setIsError] = useState(false);
+
+  const { data: isMoreMemoryFieldsEnabled } =
+    useFeatureFlag('MORE_MEMORY_FIELDS');
 
   const handleUpdate = useCallback(
     async (values: MemoryUpdatePayload) => {
@@ -163,6 +172,12 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
           agentId: agent.id,
           blockLabel: memory.label,
           requestBody: {
+            ...(isMoreMemoryFieldsEnabled
+              ? { description: values.description }
+              : {}),
+            ...(isMoreMemoryFieldsEnabled
+              ? { read_only: values.readOnly }
+              : {}),
             limit: values.maxCharacters,
             value: values.value,
           },
@@ -188,6 +203,8 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
                     return {
                       ...block,
                       limit: values.maxCharacters,
+                      description: values.description,
+                      read_only: values.readOnly,
                       value: values.value,
                     };
                   }
@@ -207,6 +224,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
     [
       agent.id,
       canUpdateAgent,
+      isMoreMemoryFieldsEnabled,
       isPending,
       memory.label,
       queryClient,
@@ -260,6 +278,25 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
               />
             )}
           />
+          {isMoreMemoryFieldsEnabled && (
+            <FormField
+              name="description"
+              render={({ field }) => (
+                <TextArea
+                  autosize={false}
+                  maxRows={3}
+                  disabled={!canUpdateAgent}
+                  infoTooltip={{
+                    text: t('AdvancedMemoryEditorForm.description.tooltip'),
+                  }}
+                  data-testid="advanced-memory-editor-description"
+                  fullWidth
+                  label={t('AdvancedMemoryEditorForm.description.label')}
+                  {...field}
+                />
+              )}
+            />
+          )}
           <FormField
             name="value"
             render={({ field }) => (
@@ -275,6 +312,26 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
               />
             )}
           />
+
+          {isMoreMemoryFieldsEnabled && (
+            <FormField
+              name="readOnly"
+              render={({ field }) => (
+                <div className="w-[300px]">
+                  <Checkbox
+                    infoTooltip={{
+                      text: t('AdvancedMemoryEditorForm.readOnly.tooltip'),
+                    }}
+                    label={t('AdvancedMemoryEditorForm.readOnly.label')}
+                    onCheckedChange={(checked) => {
+                      field.onChange(checked);
+                    }}
+                    checked={field.value}
+                  />
+                </div>
+              )}
+            />
+          )}
 
           {canUpdateAgent && (
             <FormActions

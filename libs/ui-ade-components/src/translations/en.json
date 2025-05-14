@@ -698,6 +698,14 @@
       "id": {
         "label": "Block ID"
       },
+      "description": {
+        "label": "Description",
+        "tooltip": "A description of this memory block, this is used not used by the agent, but is useful for you to remember what this memory block is for."
+      },
+      "readOnly": {
+        "label": "Is read only",
+        "tooltip": "If enabled, this memory block will not be editable by the agent. This is useful for system instructions or other read-only data."
+      },
       "label": {
         "label": "Label",
         "placeholder": "my-label",
