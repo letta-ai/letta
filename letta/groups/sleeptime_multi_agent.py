@@ -42,6 +42,7 @@ class SleeptimeMultiAgent(Agent):
         self.group_manager = GroupManager()
         self.message_manager = MessageManager()
         self.job_manager = JobManager()
+        self.mcp_clients = mcp_clients
 
     def _run_async_in_new_thread(self, coro):
         """Run an async coroutine in a new thread with its own event loop"""
