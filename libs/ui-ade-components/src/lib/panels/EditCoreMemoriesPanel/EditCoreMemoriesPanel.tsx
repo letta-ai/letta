@@ -121,37 +121,36 @@ function EditMemoryForm(props: EditMemoryFormProps) {
     >
       <VStack fullWidth fullHeight>
         {isLocked ? (
-          <VStack fullHeight fullWidth>
-            <ReadonlyTextArea
-              showDiff
-              hideInput={collapsed}
-              labelBadge={<SharedMemoryIndicator memory={memory} />}
-              label={label}
-              value={value}
-              testId={`edit-memory-block-${label}-content`}
-              rightOfLabelContent={
-                <HStack align="center" gap="small">
-                  <Typography variant="body3" color="muted">
-                    {t('EditMemoryForm.characterLimit', {
-                      count: value.length,
-                      limit: memory.limit,
-                    })}
-                  </Typography>
-                  <CollapseComponent
-                    collapsed={collapsed}
-                    onToggle={() => {
-                      setCollapsed(!collapsed);
-                    }}
-                  />
-                </HStack>
-              }
-            />
-          </VStack>
+          <ReadonlyTextArea
+            showDiff
+            hideInput={collapsed}
+            labelBadge={<SharedMemoryIndicator memory={memory} />}
+            label={label}
+            value={value}
+            testId={`edit-memory-block-${label}-content`}
+            rightOfLabelContent={
+              <HStack align="center" gap="small">
+                <Typography variant="body3" color="muted">
+                  {t('EditMemoryForm.characterLimit', {
+                    count: value.length,
+                    limit: memory.limit,
+                  })}
+                </Typography>
+                <CollapseComponent
+                  collapsed={collapsed}
+                  onToggle={() => {
+                    setCollapsed(!collapsed);
+                  }}
+                />
+              </HStack>
+            }
+          />
         ) : (
           <RawTextArea
-            minRows={3}
             hideInput={collapsed}
             variant="secondary"
+            minRows={4}
+            autosize={false}
             labelBadge={<SharedMemoryIndicator memory={memory} />}
             rightOfLabelContent={
               <HStack align="center" gap="small">

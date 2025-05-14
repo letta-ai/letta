@@ -604,7 +604,7 @@ export function ProfilePopover(props: ProfilePopoverProps) {
         />
       }
     >
-      <VStack border color="background-grey2" gap={false}>
+      <VStack border color="background-grey" gap={false}>
         <HStack borderBottom>
           <CurrentUserDetailsBlock />
         </HStack>
