@@ -271,11 +271,61 @@ class ToolExecutionSandbox:
                     source = f.read()
                 code_obj = compile(source, temp_file_path, "exec")
 
-                # Provide a dict for globals.
-                globals_dict = dict(env)  # or {}
-                # If you need to mimic `__main__` behavior:
-                globals_dict["__name__"] = "__main__"
-                globals_dict["__file__"] = temp_file_path
+                # Safe modules that are needed for basic functionality
+                safe_modules = {
+                    'pickle': pickle,
+                    'base64': base64,
+                    'sys': sys,
+                    'letta': __import__('letta'),
+                    'json': __import__('json'),
+                    'typing': __import__('typing'),
+                    'datetime': __import__('datetime'),
+                    'collections': __import__('collections'),
+                    'math': __import__('math'),
+                    're': __import__('re'),
+                    'time': __import__('time'),
+                    'random': __import__('random')
+                }
+                
+                # Safe import
+                def safe_import(name, *args, **kwargs):
+                    if name in safe_modules:
+                        return safe_modules[name]
+                    
+                    if name.startswith('letta.'):
+                        base_module = 'letta'
+                        if base_module in safe_modules:
+                            submodule = name[len(base_module)+1:]
+                            try:
+                                return __import__(name, fromlist=[submodule])
+                            except ImportError:
+                                pass
+                    
+                    raise ImportError(f"Import of module '{name}' is not allowed for security reasons")
+                
+                restricted_builtins = dict(__builtins__)
+                restricted_builtins['__import__'] = safe_import
+                
+                # Remove dangerous built-ins
+                dangerous_builtins = ['open', 'eval', 'exec', 'compile', 'globals', 'locals', 
+                                     'getattr', 'setattr', 'delattr', 'classmethod', 
+                                     'staticmethod', 'memoryview', 'breakpoint']
+                for name in dangerous_builtins:
+                    if name in restricted_builtins:
+                        restricted_builtins.pop(name)
+                
+                # Prepare globals with environment variables and safe modules
+                globals_dict = {
+                    '__builtins__': restricted_builtins,
+                    '__name__': "__restricted__",
+                    '__file__': temp_file_path,
+                }
+                
+                globals_dict.update(safe_modules)
+                
+                # Add environment variables
+                for key, value in env.items():
+                    globals_dict[key] = value
 
                 # Execute the compiled code
                 log_event(name="start exec", attributes={"temp_file_path": temp_file_path})
