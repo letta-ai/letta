@@ -33,8 +33,7 @@ def check_and_split_text(text: str, embedding_model: str) -> List[str]:
     if embedding_model in EMBEDDING_TO_TOKENIZER_MAP:
         encoding = tiktoken.get_encoding(EMBEDDING_TO_TOKENIZER_MAP[embedding_model])
     else:
-        print(
-            f"Warning: couldn't find tokenizer for model {embedding_model}, using default tokenizer {EMBEDDING_TO_TOKENIZER_DEFAULT}")
+        print(f"Warning: couldn't find tokenizer for model {embedding_model}, using default tokenizer {EMBEDDING_TO_TOKENIZER_DEFAULT}")
         encoding = tiktoken.get_encoding(EMBEDDING_TO_TOKENIZER_DEFAULT)
 
     num_tokens = len(encoding.encode(text))
@@ -116,8 +115,7 @@ class EmbeddingEndpoint:
             try:
                 embedding = response_json["data"][0]["embedding"]
             except (KeyError, IndexError):
-                raise TypeError(
-                    f"Got back an unexpected payload from text embedding function, response=\n{response_json}")
+                raise TypeError(f"Got back an unexpected payload from text embedding function, response=\n{response_json}")
         else:
             # unknown response, can't parse
             raise TypeError(f"Got back an unexpected payload from text embedding function, response=\n{response_json}")
@@ -197,8 +195,7 @@ class GoogleVertexEmbeddings:
     def __init__(self, model: str, project_id: str, region: str):
         from google import genai
 
-        self.client = genai.Client(vertexai=True, project=project_id, location=region,
-                                   http_options={"api_version": "v1"})
+        self.client = genai.Client(vertexai=True, project=project_id, location=region,http_options={"api_version": "v1"})
         self.model = model
 
     def get_text_embedding(self, text: str):
