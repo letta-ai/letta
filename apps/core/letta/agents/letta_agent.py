@@ -47,7 +47,6 @@ class LettaAgent(BaseAgent):
         block_manager: BlockManager,
         passage_manager: PassageManager,
         actor: User,
-        use_assistant_message: bool = True,
     ):
         super().__init__(agent_id=agent_id, openai_client=None, message_manager=message_manager, agent_manager=agent_manager, actor=actor)
 
@@ -55,7 +54,6 @@ class LettaAgent(BaseAgent):
         # Summarizer settings
         self.block_manager = block_manager
         self.passage_manager = passage_manager
-        self.use_assistant_message = use_assistant_message
         self.response_messages: List[Message] = []
 
         self.last_function_response = self._load_last_function_response()
@@ -65,12 +63,12 @@ class LettaAgent(BaseAgent):
         self.num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_id)
 
     @trace_method
-    async def step(self, input_messages: List[MessageCreate], max_steps: int = 10) -> LettaResponse:
+    async def step(self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = True) -> LettaResponse:
         agent_state = self.agent_manager.get_agent_by_id(self.agent_id, actor=self.actor)
         current_in_context_messages, new_in_context_messages = await self._step(
             agent_state=agent_state, input_messages=input_messages, max_steps=max_steps
         )
-        return _create_letta_response(new_in_context_messages=new_in_context_messages, use_assistant_message=self.use_assistant_message)
+        return _create_letta_response(new_in_context_messages=new_in_context_messages, use_assistant_message=use_assistant_message)
 
     async def _step(
         self, agent_state: AgentState, input_messages: List[MessageCreate], max_steps: int = 10
@@ -112,7 +110,7 @@ class LettaAgent(BaseAgent):
 
     @trace_method
     async def step_stream(
-        self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = False
+        self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = True
     ) -> AsyncGenerator[str, None]:
         """
         Main streaming loop that yields partial tokens.
@@ -159,6 +157,10 @@ class LettaAgent(BaseAgent):
             )
             self.response_messages.extend(persisted_messages)
             new_in_context_messages.extend(persisted_messages)
+
+            if not use_assistant_message or should_continue:
+                tool_return = persisted_messages[-1].to_letta_messages()[0]
+                yield f"data: {tool_return.model_dump_json()}\n\n"
 
             if not should_continue:
                 break
@@ -359,7 +361,6 @@ class LettaAgent(BaseAgent):
                     block_manager=self.block_manager,
                     passage_manager=self.passage_manager,
                     actor=self.actor,
-                    use_assistant_message=True,
                 )
 
                 augmented_message = (
