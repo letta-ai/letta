@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   Badge,
@@ -13,7 +13,6 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
-import { CreditCardForm } from '$web/client/components/AddCreditCardDialog/AddCreditCardDialog';
 import type { BillingTiersType } from '@letta-cloud/types';
 import { PlanBenefits } from '$web/client/components/PlanBenefits/PlanBenefits';
 import { Blox } from '$web/client/components/UpgradePlanDialog/Blox';
@@ -214,14 +213,6 @@ function ConfirmView(props: ConfirmViewProps) {
       queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
     });
 
-  const isMissingCreditCard = useMemo(() => {
-    if (!billingData) {
-      return true;
-    }
-
-    return billingData.body.creditCards.length === 0;
-  }, [billingData]);
-
   const defaultCard = useMemo(() => {
     if (!billingData?.body.creditCards) {
       return undefined;
@@ -246,52 +237,48 @@ function ConfirmView(props: ConfirmViewProps) {
         <SelectedPlan plan="pro" />
       </VStack>
       <VStack fullHeight padding position="relative" fullWidth>
-        {isMissingCreditCard ? (
-          <CreditCardForm label={t('cta')} onComplete={confirmPurchase} />
-        ) : (
+        <VStack>
           <VStack>
-            <VStack>
-              <Typography variant="body3" bold uppercase>
-                {t('confirmation.paymentMethod')}
-              </Typography>
-              {defaultCard && (
-                <CreditCardSlot creditCard={defaultCard} disabled />
-              )}
-            </VStack>
-            <VStack paddingBottom="small">
-              <Typography variant="body2">
-                {t.rich('confirmation.terms', {
-                  terms: (chunks) => (
-                    <a
-                      className="underline"
-                      href="https://letta.com/terms-of-service"
-                    >
-                      {chunks}
-                    </a>
-                  ),
-                  privacy: (chunks) => (
-                    <a
-                      className="underline"
-                      href="https://letta.com/privacy-policy"
-                    >
-                      {chunks}
-                    </a>
-                  ),
-                })}
-              </Typography>
-            </VStack>
-            <HStack paddingTop="large" paddingBottom="small">
-              <Button
-                color="primary"
-                fullWidth
-                size="large"
-                data-testid="confirm-purchase"
-                label={t('cta')}
-                onClick={confirmPurchase}
-              />
-            </HStack>
+            <Typography variant="body3" bold uppercase>
+              {t('confirmation.paymentMethod')}
+            </Typography>
+            {defaultCard && (
+              <CreditCardSlot creditCard={defaultCard} disabled />
+            )}
           </VStack>
-        )}
+          <VStack paddingBottom="small">
+            <Typography variant="body2">
+              {t.rich('confirmation.terms', {
+                terms: (chunks) => (
+                  <a
+                    className="underline"
+                    href="https://letta.com/terms-of-service"
+                  >
+                    {chunks}
+                  </a>
+                ),
+                privacy: (chunks) => (
+                  <a
+                    className="underline"
+                    href="https://letta.com/privacy-policy"
+                  >
+                    {chunks}
+                  </a>
+                ),
+              })}
+            </Typography>
+          </VStack>
+          <HStack paddingTop="large" paddingBottom="small">
+            <Button
+              color="primary"
+              fullWidth
+              size="large"
+              data-testid="confirm-purchase"
+              label={t('cta')}
+              onClick={confirmPurchase}
+            />
+          </HStack>
+        </VStack>
       </VStack>
     </HStack>
   );
@@ -315,6 +302,29 @@ export function UpgradePlanDialog(props: UpgradeToProPlanProps) {
         toast.error(t('error'));
       },
     });
+
+  const { data: billingData } =
+    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
+      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+    });
+
+  const defaultCard = useMemo(() => {
+    if (!billingData?.body.creditCards) {
+      return undefined;
+    }
+
+    return billingData.body.creditCards.find((card) => card.isDefault);
+  }, [billingData]);
+
+  const handleSelectPlan = useCallback(() => {
+    if (defaultCard) {
+      setStage('confirm');
+
+      return;
+    }
+
+    window.location.href = '/upgrade/pro';
+  }, [defaultCard]);
 
   return (
     <Dialog
@@ -342,7 +352,7 @@ export function UpgradePlanDialog(props: UpgradeToProPlanProps) {
           {stage === 'view' && (
             <PlanComparisonView
               onSelectPlan={() => {
-                setStage('confirm');
+                handleSelectPlan();
               }}
             />
           )}

@@ -13,3 +13,4 @@ export * from './lib/getCustomerSubscription/getCustomerSubscription';
 export * from './lib/upgradeUserToProPlan/upgradeUserToProPlan';
 export * from './lib/cancelSubscription/cancelSubscription';
 export * from './lib/resumeSubscription/resumeSubscription';
+export * from './lib/createPaymentLink/createPaymentLink';

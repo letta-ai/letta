@@ -187,7 +187,7 @@ function PurchaseCreditsForm(props: PurchaseCreditsFormProps) {
 
   const form = useForm<PurchaseCreditsFormValues>({
     resolver: zodResolver(purchaseCreditsSchema),
-    defaultValues: { credits: '10000' },
+    defaultValues: { credits: '20000' },
   });
 
   const handleSubmit = useCallback(
@@ -200,6 +200,19 @@ function PurchaseCreditsForm(props: PurchaseCreditsFormProps) {
     },
     [mutate],
   );
+
+  const { data: billingInfo } =
+    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
+      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+    });
+
+  const defaultCard = useMemo(() => {
+    if (!billingInfo?.body.creditCards) {
+      return undefined;
+    }
+
+    return billingInfo.body.creditCards.find((card) => card.isDefault);
+  }, [billingInfo]);
 
   return (
     <VStack paddingBottom>
@@ -238,10 +251,15 @@ function PurchaseCreditsForm(props: PurchaseCreditsFormProps) {
               /* eslint-disable-next-line react/forbid-component-props */
               className="max-w-[40%]"
             >
-              <ConfirmationText />
+              {defaultCard ? (
+                <ConfirmationText />
+              ) : (
+                <Alert title={t('noDefaultCard')} variant="warning" />
+              )}
               <Button
                 fullWidth
                 type="submit"
+                disabled={!defaultCard}
                 size="large"
                 busy={isPending}
                 label={t('confirm')}
