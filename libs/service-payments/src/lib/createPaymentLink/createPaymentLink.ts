@@ -51,6 +51,12 @@ export async function createPaymentLink(organizationId: string) {
     },
     customer: customer.id,
     success_url: `${process.env.NEXT_PUBLIC_CURRENT_HOST}/settings/organization/billing`,
+    automatic_tax: {
+      enabled: true,
+    },
+    customer_update: {
+      address: 'auto',
+    },
   });
 
   return paymentLink.url;
