@@ -10,14 +10,18 @@ from letta.server.rest_api.utils import create_input_messages
 from letta.services.message_manager import MessageManager
 
 
-def _create_letta_response(new_in_context_messages: list[Message], use_assistant_message: bool) -> LettaResponse:
+def _create_letta_response(
+    new_in_context_messages: list[Message], use_assistant_message: bool, usage: LettaUsageStatistics
+) -> LettaResponse:
     """
     Converts the newly created/persisted messages into a LettaResponse.
     """
+    # NOTE: hacky solution to avoid returning heartbeat messages and the original user message
+    filter_user_messages = [m for m in new_in_context_messages if m.role != "user"]
     response_messages = Message.to_letta_messages_from_list(
-        messages=new_in_context_messages, use_assistant_message=use_assistant_message, reverse=False
+        messages=filter_user_messages, use_assistant_message=use_assistant_message, reverse=False
     )
-    return LettaResponse(messages=response_messages, usage=LettaUsageStatistics())
+    return LettaResponse(messages=response_messages, usage=usage)
 
 
 def _prepare_in_context_messages(

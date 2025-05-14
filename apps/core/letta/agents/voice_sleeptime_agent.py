@@ -74,7 +74,7 @@ class VoiceSleeptimeAgent(LettaAgent):
         ]
 
         # Summarize
-        current_in_context_messages, new_in_context_messages = await super()._step(
+        current_in_context_messages, new_in_context_messages, usage = await super()._step(
             agent_state=agent_state, input_messages=input_messages, max_steps=max_steps
         )
         new_in_context_messages, updated = self.summarizer.summarize(
@@ -84,7 +84,9 @@ class VoiceSleeptimeAgent(LettaAgent):
             agent_id=self.agent_id, message_ids=[m.id for m in new_in_context_messages], actor=self.actor
         )
 
-        return _create_letta_response(new_in_context_messages=new_in_context_messages, use_assistant_message=use_assistant_message)
+        return _create_letta_response(
+            new_in_context_messages=new_in_context_messages, use_assistant_message=use_assistant_message, usage=usage
+        )
 
     @trace_method
     async def _execute_tool(self, tool_name: str, tool_args: dict, agent_state: AgentState) -> Tuple[str, bool]:
