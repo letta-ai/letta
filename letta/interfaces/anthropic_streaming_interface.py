@@ -83,6 +83,9 @@ class AnthropicStreamingInterface:
         self.inner_thoughts_complete = False
         self.put_inner_thoughts_in_kwarg = put_inner_thoughts_in_kwarg
 
+        # Buffer to handle partial XML tags across chunks
+        self.partial_tag_buffer = ""
+
     def get_tool_call_object(self) -> ToolCall:
         """Useful for agent loop"""
         return ToolCall(id=self.tool_call_id, function=FunctionCall(arguments=self.accumulated_tool_call_args, name=self.tool_call_name))
@@ -154,8 +157,22 @@ class AnthropicStreamingInterface:
                                     f"Streaming integrity failed - received BetaTextDelta object while not in TEXT EventMode: {delta}"
                                 )
 
-                            # TODO: Strip out </thinking> more robustly, this is pretty hacky lol
-                            delta.text = delta.text.replace("</thinking>", "")
+                            # Combine buffer with current text to handle tags split across chunks
+                            combined_text = self.partial_tag_buffer + delta.text
+
+                            # Remove all occurrences of </thinking> tag
+                            cleaned_text = combined_text.replace("</thinking>", "")
+
+                            # Extract just the new content (without the buffer part)
+                            if len(self.partial_tag_buffer) <= len(cleaned_text):
+                                delta.text = cleaned_text[len(self.partial_tag_buffer) :]
+                            else:
+                                # Edge case: the tag was removed and now the text is shorter than the buffer
+                                delta.text = ""
+
+                            # Store the last 10 characters (or all if less than 10) for the next chunk
+                            # This is enough to catch "</thinking" which is 10 characters
+                            self.partial_tag_buffer = combined_text[-10:] if len(combined_text) > 10 else combined_text
                             self.accumulated_inner_thoughts.append(delta.text)
 
                             reasoning_message = ReasoningMessage(
