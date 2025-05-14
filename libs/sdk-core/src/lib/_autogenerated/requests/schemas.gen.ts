@@ -1485,6 +1485,12 @@ export const $Block = {
       description:
         "Label of the block (e.g. 'human', 'persona') in the context window.",
     },
+    read_only: {
+      type: 'boolean',
+      title: 'Read Only',
+      description: 'Whether the agent has read-only access to the block.',
+      default: false,
+    },
     description: {
       anyOf: [
         {
@@ -1630,6 +1636,12 @@ export const $BlockUpdate = {
       title: 'Label',
       description:
         "Label of the block (e.g. 'human', 'persona') in the context window.",
+    },
+    read_only: {
+      type: 'boolean',
+      title: 'Read Only',
+      description: 'Whether the agent has read-only access to the block.',
+      default: false,
     },
     description: {
       anyOf: [
@@ -3931,6 +3943,12 @@ export const $CreateBlock = {
       type: 'string',
       title: 'Label',
       description: 'Label of the block.',
+    },
+    read_only: {
+      type: 'boolean',
+      title: 'Read Only',
+      description: 'Whether the agent has read-only access to the block.',
+      default: false,
     },
     description: {
       anyOf: [
@@ -6243,9 +6261,10 @@ export const $Memory = {
       title: 'Prompt Template',
       description:
         'Jinja2 template for compiling memory blocks into a prompt string',
-      default: `{% for block in blocks %}<{{ block.label }} characters="{{ block.value|length }}/{{ block.limit }}">
-{{ block.value }}
-</{{ block.label }}>{% if not loop.last %}
+      default: `{% for block in blocks %}<{{ block.label }}>
+<metadata>read_only="{{ block.read_only}}" chars_current="{{ block.value|length }}" chars_limit="{{ block.limit }}"</metadata><value>{{ block.value }}
+</value></{{ block.label }}>
+{% if not loop.last %}
 {% endif %}{% endfor %}`,
     },
   },

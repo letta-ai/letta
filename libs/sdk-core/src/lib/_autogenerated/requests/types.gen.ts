@@ -492,6 +492,10 @@ export type Block = {
    */
   label?: string | null;
   /**
+   * Whether the agent has read-only access to the block.
+   */
+  read_only?: boolean;
+  /**
    * Description of the block.
    */
   description?: string | null;
@@ -543,6 +547,10 @@ export type BlockUpdate = {
    * Label of the block (e.g. 'human', 'persona') in the context window.
    */
   label?: string | null;
+  /**
+   * Whether the agent has read-only access to the block.
+   */
+  read_only?: boolean;
   /**
    * Description of the block.
    */
@@ -1251,6 +1259,10 @@ export type CreateBlock = {
    * Label of the block.
    */
   label: string;
+  /**
+   * Whether the agent has read-only access to the block.
+   */
+  read_only?: boolean;
   /**
    * Description of the block.
    */

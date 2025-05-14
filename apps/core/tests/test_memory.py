@@ -25,23 +25,6 @@ def test_memory_limit_validation(sample_memory: Memory):
         sample_memory.get_block("persona").value = "x " * 10000
 
 
-def test_memory_jinja2_template(sample_memory: Memory):
-    """Test to make sure the jinja2 template string is equivalent to the old __repr__ method"""
-
-    def old_repr(self: Memory) -> str:
-        """Generate a string representation of the memory in-context"""
-        section_strs = []
-        for block in sample_memory.get_blocks():
-            section = block.label
-            module = block
-            section_strs.append(f'<{section} characters="{len(module.value)}/{module.limit}">\n{module.value}\n</{section}>')
-        return "\n".join(section_strs)
-
-    old_repr_str = old_repr(sample_memory)
-    new_repr_str = sample_memory.compile()
-    assert new_repr_str == old_repr_str, f"Expected '{old_repr_str}' to be '{new_repr_str}'"
-
-
 def test_memory_jinja2_set_template(sample_memory: Memory):
     """Test setting the template for the memory"""
 

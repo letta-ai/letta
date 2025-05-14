@@ -1526,6 +1526,14 @@
                                       ],
                                       "nullable": true
                                     },
+                                    "read_only": {
+                                      "oneOf": [
+                                        {
+                                          "type": "boolean"
+                                        },
+                                        {}
+                                      ]
+                                    },
                                     "description": {
                                       "oneOf": [
                                         {
@@ -5349,6 +5357,14 @@
                                         {}
                                       ],
                                       "nullable": true
+                                    },
+                                    "read_only": {
+                                      "oneOf": [
+                                        {
+                                          "type": "boolean"
+                                        },
+                                        {}
+                                      ]
                                     },
                                     "description": {
                                       "oneOf": [

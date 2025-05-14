@@ -192,6 +192,7 @@ export const BlockSchema: ToZod<Omit<Block, 'metadata'>> = z.object({
   last_updated_by_id: z.string().nullable().optional(),
   is_template: z.boolean().optional(),
   identity_ids: z.array(z.string()).optional(),
+  read_only: z.boolean().optional(),
 });
 
 export const MemorySchema = z.object({
@@ -209,6 +210,7 @@ export const CreateBlockSchema: ToZod<Omit<CreateBlock, 'metadata'>> = z.object(
     metadata: BlockMetadataSchema.optional(),
     is_template: z.boolean().optional(),
     identity_ids: z.array(z.string()).nullable().optional(),
+    read_only: z.boolean().optional(),
   },
 );
 

@@ -670,6 +670,7 @@ export const Block = z.object({
       z.undefined(),
     ])
     .optional(),
+  read_only: z.union([z.boolean(), z.undefined()]).optional(),
   description: z
     .union([
       z.string(),
@@ -1426,6 +1427,7 @@ export const BlockUpdate = z.object({
   label: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
+  read_only: z.boolean().optional(),
   description: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
@@ -2953,6 +2955,7 @@ export const CreateBlock = z.object({
     .optional(),
   is_template: z.union([z.boolean(), z.undefined()]).optional(),
   label: z.string(),
+  read_only: z.union([z.boolean(), z.undefined()]).optional(),
   description: z
     .union([
       z.string(),

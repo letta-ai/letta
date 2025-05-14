@@ -9122,6 +9122,12 @@
             "title": "Label",
             "description": "Label of the block (e.g. 'human', 'persona') in the context window."
           },
+          "read_only": {
+            "type": "boolean",
+            "title": "Read Only",
+            "description": "Whether the agent has read-only access to the block.",
+            "default": false
+          },
           "description": {
             "anyOf": [
               {
@@ -9240,6 +9246,12 @@
             ],
             "title": "Label",
             "description": "Label of the block (e.g. 'human', 'persona') in the context window."
+          },
+          "read_only": {
+            "type": "boolean",
+            "title": "Read Only",
+            "description": "Whether the agent has read-only access to the block.",
+            "default": false
           },
           "description": {
             "anyOf": [
@@ -11472,6 +11484,12 @@
             "title": "Label",
             "description": "Label of the block."
           },
+          "read_only": {
+            "type": "boolean",
+            "title": "Read Only",
+            "description": "Whether the agent has read-only access to the block.",
+            "default": false
+          },
           "description": {
             "anyOf": [
               {
@@ -13623,7 +13641,7 @@
             "type": "string",
             "title": "Prompt Template",
             "description": "Jinja2 template for compiling memory blocks into a prompt string",
-            "default": "{% for block in blocks %}<{{ block.label }} characters=\"{{ block.value|length }}/{{ block.limit }}\">\n{{ block.value }}\n</{{ block.label }}>{% if not loop.last %}\n{% endif %}{% endfor %}"
+            "default": "{% for block in blocks %}<{{ block.label }}>\n<metadata>read_only=\"{{ block.read_only}}\" chars_current=\"{{ block.value|length }}\" chars_limit=\"{{ block.limit }}\"</metadata><value>{{ block.value }}\n</value></{{ block.label }}>\n{% if not loop.last %}\n{% endif %}{% endfor %}"
           }
         },
         "type": "object",

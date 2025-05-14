@@ -312,9 +312,17 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
         )
     return (
         "{% for block in blocks %}"
-        '<{{ block.label }} characters="{{ block.value|length }}/{{ block.limit }}">\n'
+        "<{{ block.label }}>\n"
+        "<description>\n"
+        "{{ block.description }}\n"
+        "</description>\n"
+        "<metadata>\n"
+        '{% if block.read_only %}read_only="true" {% endif %}chars_current="{{ block.value|length }}" chars_limit="{{ block.limit }}"\n'
+        "</metadata>\n"
+        "<value>\n"
         "{{ block.value }}\n"
-        "</{{ block.label }}>"
+        "</value>\n"
+        "</{{ block.label }}>\n"
         "{% if not loop.last %}\n{% endif %}"
         "{% endfor %}"
     )

@@ -69,9 +69,14 @@ class Memory(BaseModel, validate_assignment=True):
     # Memory.template is a Jinja2 template for compiling memory module into a prompt string.
     prompt_template: str = Field(
         default="{% for block in blocks %}"
-        '<{{ block.label }} characters="{{ block.value|length }}/{{ block.limit }}">\n'
+        "<{{ block.label }}>\n"
+        "<metadata>"
+        'read_only="{{ block.read_only}}" chars_current="{{ block.value|length }}" chars_limit="{{ block.limit }}"'
+        "</metadata>"
+        "<value>"
         "{{ block.value }}\n"
-        "</{{ block.label }}>"
+        "</value>"
+        "</{{ block.label }}>\n"
         "{% if not loop.last %}\n{% endif %}"
         "{% endfor %}",
         description="Jinja2 template for compiling memory blocks into a prompt string",
