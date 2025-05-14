@@ -16,6 +16,7 @@ import React, { useRef } from 'react';
 import { useSendMessage } from '@letta-cloud/ui-ade-components';
 import { useTranslations } from '@letta-cloud/translations';
 import { ProfilePopover } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
+import type { RoleOption } from '@letta-cloud/ui-component-library';
 
 function useChatId() {
   const params = useParams<{ chatId: string }>();
@@ -93,7 +94,6 @@ export default function ChatPage() {
           </VStack>
           <ChatInput
             disabled={!agentId}
-            defaultRole="user"
             roles={[
               {
                 value: 'user',
@@ -110,7 +110,7 @@ export default function ChatPage() {
               hasFailedToSendMessage ? t('hasFailedToSendMessage') : ''
             }
             sendingMessageText={t('sendingMessage')}
-            onSendMessage={(role: string, content: string) => {
+            onSendMessage={(role: RoleOption, content: string) => {
               sendMessage({ role, content });
             }}
             isSendingMessage={isPending}

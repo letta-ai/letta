@@ -24,8 +24,12 @@ import {
   Checkbox,
   Link,
   OnboardingAsideFocus,
+  Avatar,
 } from '@letta-cloud/ui-component-library';
-import type { ChatInputRef } from '@letta-cloud/ui-component-library';
+import type {
+  ChatInputRef,
+  RoleOption,
+} from '@letta-cloud/ui-component-library';
 import { PanelBar } from '@letta-cloud/ui-component-library';
 import { VStack } from '@letta-cloud/ui-component-library';
 import { useEffect } from 'react';
@@ -34,13 +38,17 @@ import { useMemo } from 'react';
 import React, { useCallback, useRef, useState } from 'react';
 import type {
   AgentState,
+  Identity,
   LettaMessageUnion,
   ListMessagesResponse,
   SystemMessage,
   UserMessage,
 } from '@letta-cloud/sdk-core';
 import { v4 as uuidv4 } from 'uuid';
-import { useAgentsServiceResetMessages } from '@letta-cloud/sdk-core';
+import {
+  IdentitiesService,
+  useAgentsServiceResetMessages,
+} from '@letta-cloud/sdk-core';
 import { isAgentState } from '@letta-cloud/sdk-core';
 import { ErrorMessageSchema } from '@letta-cloud/sdk-core';
 import { getIsAgentState } from '@letta-cloud/sdk-core';
@@ -90,7 +98,7 @@ import type { RateLimitReason } from '@letta-cloud/types';
 type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
 interface SendMessagePayload {
-  role: string;
+  role: RoleOption;
   content: string;
 }
 
@@ -179,10 +187,12 @@ export function useSendMessage(
       }
 
       const newMessage: SystemMessage | UserMessage = {
-        message_type: role === 'user' ? 'user_message' : 'system_message',
+        message_type:
+          role.value !== 'system' ? 'user_message' : 'system_message',
         otid: userMessageOtid,
+        sender_id: role.identityId || '',
         content:
-          role === 'user'
+          role.value !== 'system'
             ? message
             : JSON.stringify({
                 type: 'system_alert',
@@ -259,7 +269,8 @@ export function useSendMessage(
             use_assistant_message: false,
             messages: [
               {
-                role,
+                role: role.value !== 'system' ? 'user' : 'system',
+                ...(role.identityId ? { sender_id: role.identityId } : {}),
                 content: message,
                 otid: userMessageOtid,
               },
@@ -749,6 +760,28 @@ function InvalidMessages() {
   );
 }
 
+function useSimulatorIdentities(): Identity[] {
+  const { identity_ids } = useCurrentAgent();
+  const [identities, setIdentities] = useState<Identity[]>([]);
+
+  useEffect(() => {
+    if (identity_ids && identity_ids.length > 0) {
+      const promises = identity_ids.map((identityId) =>
+        IdentitiesService.retrieveIdentity({ identityId }),
+      );
+      Promise.all(promises)
+        .then((results) => {
+          setIdentities(results);
+        })
+        .catch((error) => {
+          console.error('Error fetching identities:', error);
+        });
+    }
+  }, [identity_ids]);
+
+  return identities;
+}
+
 function useBillingTier() {
   const { isLocal } = useCurrentAgentMetaData();
 
@@ -945,7 +978,7 @@ export function AgentSimulator() {
     attachApiKey: false,
   });
   const getSendSnippet = useCallback(
-    (role: string, message: string) => {
+    (role: RoleOption, message: string) => {
       if (isTemplate) {
         return undefined;
       }
@@ -958,7 +991,12 @@ export function AgentSimulator() {
           Accept: 'text/event-stream',
         },
         body: {
-          messages: [{ role, content: message }],
+          messages: [
+            {
+              role: role.value !== 'system' ? 'user' : 'system',
+              content: message,
+            },
+          ],
           stream_steps: true,
           stream_tokens: true,
         },
@@ -967,6 +1005,8 @@ export function AgentSimulator() {
     },
     [agentIdToUse, hostConfig.headers, hostConfig.url, isTemplate],
   );
+
+  const identities = useSimulatorIdentities();
 
   return (
     <AgentSimulatorOnboarding>
@@ -1016,16 +1056,22 @@ export function AgentSimulator() {
               </VStack>
               <ChatInput
                 disabled={!agentIdToUse}
-                defaultRole="user"
                 roles={[
+                  ...(identities.length > 0
+                    ? identities.map((identity) => ({
+                        value: identity?.identity_type || '',
+                        identityId: identity?.id || '',
+                        label: identity?.name || '',
+                        icon: (
+                          <Avatar name={identity?.name || ''} size="xsmall" />
+                        ),
+                      }))
+                    : []),
                   {
                     value: 'user',
+                    identityId: 'placeholderId',
                     label: t('role.user'),
                     icon: <PersonIcon />,
-                    color: {
-                      background: 'hsl(var(--user-color))',
-                      text: 'hsl(var(--user-color-content))',
-                    },
                   },
                   {
                     value: 'system',
@@ -1037,7 +1083,7 @@ export function AgentSimulator() {
                 getSendSnippet={getSendSnippet}
                 hasFailedToSendMessageText={hasFailedToSendMessageText}
                 sendingMessageText={t('sendingMessage')}
-                onSendMessage={(role: string, content: string) => {
+                onSendMessage={(role: RoleOption, content: string) => {
                   sendMessage({ role, content });
                 }}
                 isSendingMessage={isPending}

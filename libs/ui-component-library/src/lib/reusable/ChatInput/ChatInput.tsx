@@ -23,9 +23,10 @@ import { CopyWithCodePreview } from '../CopyWithCodePreview/CopyWithCodePreview'
 import { HiddenOnMobile } from '../../framing/HiddenOnMobile/HiddenOnMobile';
 import { VisibleOnMobile } from '../../framing/VisibleOnMobile/VisibleOnMobile';
 
-interface RoleOption {
+export interface RoleOption {
   value: string;
   label: string;
+  identityId?: string;
   icon?: React.ReactNode;
   color?: {
     text: string;
@@ -34,13 +35,12 @@ interface RoleOption {
 }
 
 interface ChatInputProps {
-  onSendMessage: (role: string, message: string) => void;
+  onSendMessage: (role: RoleOption, message: string) => void;
   isSendingMessage: boolean;
   disabled?: boolean;
-  defaultRole: string;
   hasFailedToSendMessageText?: React.ReactNode;
   roles: RoleOption[];
-  getSendSnippet?: (role: string, message: string) => string | undefined;
+  getSendSnippet?: (role: RoleOption, message: string) => string | undefined;
   sendingMessageText?: string;
 }
 
@@ -71,8 +71,8 @@ function CopySendMessageRequestButton(
 
 interface RoleSelectorProps {
   roles: RoleOption[];
-  role: string;
-  setRole: Dispatch<SetStateAction<string>>;
+  role: RoleOption;
+  setRole: Dispatch<SetStateAction<RoleOption>>;
 }
 
 function RoleSelector(props: RoleSelectorProps) {
@@ -80,10 +80,14 @@ function RoleSelector(props: RoleSelectorProps) {
   const { roles, role, setRole } = props;
   const [open, setOpen] = useState(false);
 
-  const selectedRole = useMemo(
-    () => roles.find((r) => r.value === role),
-    [role, roles],
-  );
+  const selectedRole = useMemo(() => {
+    if (role.identityId) {
+      const byIdentity = roles.find((r) => r.identityId === role.identityId);
+      if (byIdentity) return byIdentity;
+    }
+
+    return roles.find((r) => r.value === role.value);
+  }, [role, roles]);
 
   if (roles.length <= 1) {
     return null;
@@ -108,21 +112,23 @@ function RoleSelector(props: RoleSelectorProps) {
           {selectedRole?.icon && (
             <Slot className="w-5">{selectedRole.icon}</Slot>
           )}
-          <div className="sr-only">{t('role.label', { role })}</div>
-          <span>{selectedRole?.label || role}</span>
+          <div className="sr-only">
+            {t('role.label', { role: selectedRole?.label || role.label })}
+          </div>
+          <span>{selectedRole?.label || role.label}</span>
         </button>
       }
     >
       <VStack gap={false}>
         {roles.map((r) => (
           <Button
-            key={r.value}
+            key={r.value + '_' + r.identityId}
             color="tertiary"
             label={r.label}
             preIcon={r.icon}
             onClick={() => {
               setOpen(false);
-              setRole(r.value);
+              setRole(r);
             }}
           />
         ))}
@@ -138,13 +144,12 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
       disabled,
       roles,
       getSendSnippet,
-      defaultRole,
       sendingMessageText,
       isSendingMessage,
       hasFailedToSendMessageText,
     } = props;
     const [text, setText] = useState('');
-    const [role, setRole] = useState(defaultRole);
+    const [role, setRole] = useState(roles?.[0]);
     const t = useTranslations('ui-component-library/reusable/ChatInput');
 
     useImperativeHandle(ref, () => ({
