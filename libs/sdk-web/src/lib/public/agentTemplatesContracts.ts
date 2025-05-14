@@ -230,6 +230,7 @@ export type MigrationDetail = z.infer<typeof MigrationDetailSchema>;
 
 export const ListAgentMigrationsResponseSchema = z.object({
   migrations: z.array(MigrationDetailSchema),
+  nextPage: z.string().nullable(),
 });
 
 export type ListAgentMigrationsResponse = z.infer<
@@ -238,7 +239,8 @@ export type ListAgentMigrationsResponse = z.infer<
 
 export const ListAgentMigrationsQuerySchema = z.object({
   templateName: z.string(),
-  organizationId: z.string().optional(),
+  limit: z.number().max(50).optional(),
+  cursor: z.any().optional(),
 });
 
 export type ListAgentMigrationsQuery = z.infer<
@@ -369,10 +371,14 @@ export const agentTemplatesQueryClientKeys = {
     ...agentTemplatesQueryClientKeys.listTemplateVersions(agentTemplateId),
     query,
   ],
-  listAgentMigrations: (params: {
-    templateName: string;
-    organizationId?: string;
-  }) => ['listAgentMigrations', params],
+  listAgentMigrations: (params: { templateName: string }) => [
+    'listAgentMigrations',
+    params,
+  ],
+  listAgentMigrationsWithSearch: (params: ListAgentMigrationsQuery) => [
+    ...agentTemplatesQueryClientKeys.listAgentMigrations(params),
+    params,
+  ],
   abortAgentMigration: (workflowId: string) => [
     'abortAgentMigration',
     { workflowId },

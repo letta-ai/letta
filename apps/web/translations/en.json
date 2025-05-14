@@ -2126,6 +2126,29 @@
   "components/CodeWithAPIKeyInjection": {
     "showAPIKey": "Show API Key"
   },
+  "pages/migrations": {
+    "MigrationsTable": {
+      "loading": "Loading migrations...",
+      "error": "There was an error loading migrations, please try again or contact support.",
+      "noMigrations": "We could not find any migrations for this template, you can migrate agents when you create a new version of your template.",
+      "columns": {
+        "startedAt": "Started at",
+        "templateVersion": "Migrating version",
+        "workflowId": "ID",
+        "completedAt": "Completed at",
+        "status": "Status"
+      },
+      "status": {
+        "running": "Running",
+        "completed": "Completed",
+        "failed": "Failed",
+        "cancelled": "Canceled",
+        "unknown": "Unknown"
+      }
+    },
+    "title": "Template Migrations",
+    "description": "Migrations are a way to update your agent templates to the latest version of Letta. This is useful when you want to take advantage of new features or bug fixes."
+  },
   "data-sources/files/page": {
     "title": "Source Files",
     "emptyMessage": "This source has no files",
@@ -2147,6 +2170,7 @@
       "description": "Ready to deploy your agent to production? The distribution tab lets you create agents from your template and manage them in Letta Cloud.\n\nYou'll find options for API keys, framework integrations, and usage tracking."
     },
     "nav": {
+      "migrations": "Migrations",
       "templateEditor": "Template Editor",
       "distribution": "Distribution"
     }

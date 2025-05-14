@@ -102,7 +102,10 @@ export function LoadingEmptyStatusComponent(
           size="large"
         />
         {!hideText && (
-          <div className="max-w-[400px] text-sm text-muted	 text-center">
+          <div
+            style={{ whiteSpace: 'normal' }}
+            className="max-w-[400px] text-sm text-muted whitespace-normal	text-wrap text-center"
+          >
             {message || 'Reticulating splines...'}
           </div>
         )}

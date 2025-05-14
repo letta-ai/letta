@@ -1021,10 +1021,10 @@ type ListAgentMigrationsResponse = ServerInferResponses<
 async function listAgentMigrations(
   req: ListAgentMigrationsRequest,
 ): Promise<ListAgentMigrationsResponse> {
-  const { templateName } = req.query;
+  const { templateName, limit, cursor } = req.query;
   const { activeOrganizationId, permissions } =
     await getUserWithActiveOrganizationIdOrThrow();
-  const organizationId = req.query.organizationId || activeOrganizationId;
+  const organizationId = activeOrganizationId;
 
   if (!permissions.has(ApplicationServices.READ_TEMPLATES)) {
     return {
@@ -1042,10 +1042,24 @@ async function listAgentMigrations(
     };
   }
 
+  const nextPageToken = cursor
+    ? new TextEncoder().encode(JSON.stringify(cursor))
+    : null;
+
+  const response = await listTemplateAgentMigrations({
+    templateName,
+    organizationId,
+    pageSize: limit,
+    nextPageToken,
+  });
+
   try {
     return {
       status: 200,
-      body: await listTemplateAgentMigrations(templateName, organizationId),
+      body: {
+        migrations: response.migrations,
+        nextPage: response.nextPage ? response.nextPage.toString() : null,
+      },
     };
   } catch (error) {
     console.error('Error fetching migrations from Temporal:', error);

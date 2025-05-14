@@ -4,14 +4,18 @@ import {
   LettaAlienChatIcon,
   OnboardingAsideFocus,
   RocketIcon,
+  ConveyorBeltIcon,
   VStack,
+  WrapNotificationDot,
 } from '@letta-cloud/ui-component-library';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentProject';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
+import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { MigrationStatus } from '@letta-cloud/sdk-cloud-api';
 
 interface SidebarButtonProps {
   href: string;
@@ -71,10 +75,55 @@ function DistributionOnboardingStep(props: DistributionOnboardingStepProps) {
   );
 }
 
+function MigrationsButton() {
+  const { templateName } = useCurrentAgentMetaData();
+
+  const { data: isEnabled } = useFeatureFlag('MIGRATIONS_VIEWER');
+  const { slug } = useCurrentProject();
+
+  const { data } = webApi.agentTemplates.listAgentMigrations.useQuery({
+    queryKey: webApiQueryKeys.agentTemplates.listAgentMigrationsWithSearch({
+      templateName: templateName || '',
+      limit: 1,
+    }),
+    queryData: {
+      query: {
+        templateName: templateName || '',
+        limit: 1,
+      },
+    },
+    refetchInterval: 5000,
+    enabled: !!templateName && isEnabled,
+  });
+
+  const t = useTranslations('components/TemplateNavigationSidebar');
+
+  const hasRunningMigrations = useMemo(() => {
+    return data?.body.migrations[0]?.status === MigrationStatus.RUNNING;
+  }, [data]);
+
+  if (!isEnabled) {
+    return null;
+  }
+
+  return (
+    <SidebarButton
+      label={t('nav.migrations')}
+      icon={
+        <WrapNotificationDot disabled={!hasRunningMigrations}>
+          <ConveyorBeltIcon />
+        </WrapNotificationDot>
+      }
+      href={`/projects/${slug}/templates/${templateName}/migrations`}
+    />
+  );
+}
+
 export function TemplateSidebarInner() {
   const t = useTranslations('components/TemplateNavigationSidebar');
   const { slug } = useCurrentProject();
   const { templateName } = useCurrentAgentMetaData();
+
   return (
     <VStack
       align="center"
@@ -86,6 +135,7 @@ export function TemplateSidebarInner() {
         label={t('nav.templateEditor')}
         href={`/projects/${slug}/templates/${templateName}`}
       />
+      <MigrationsButton />
       <DistributionOnboardingStep>
         <SidebarButton
           label={t('nav.distribution')}

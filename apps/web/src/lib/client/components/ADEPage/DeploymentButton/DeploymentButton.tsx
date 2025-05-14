@@ -204,6 +204,13 @@ function CreateNewTemplateVersionDialog(
           exact: false,
         });
 
+        void queryClient.refetchQueries({
+          queryKey: webApiQueryKeys.agentTemplates.listAgentMigrations({
+            templateName: name || '',
+          }),
+          exact: false,
+        });
+
         void queryClient.setQueriesData<
           ServerInferResponses<
             typeof contracts.agentTemplates.getAgentTemplateByVersion,

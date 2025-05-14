@@ -430,6 +430,11 @@ lettuce:
     # Check if temporal server is running at localhost:8088
     # curl -s http://localhost:8233/metrics > /dev/null || (echo "\n\n\n\n🚨 Temporal server is not running. Please start it with 'just start-temporal'." && exit 1)
     @echo "🚧 Running lettuce..."
+
+    temporal operator search-attribute create --name="OrganizationId" --type="Text"
+
+    temporal operator search-attribute create --name="Id" --type="Text"
+
     npm run lettuce:dev
 
 build-lettuce:

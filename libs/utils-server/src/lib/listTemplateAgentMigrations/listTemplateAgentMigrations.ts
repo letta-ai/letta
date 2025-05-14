@@ -48,21 +48,35 @@ export interface MigrationDetail {
   templateVersion?: string;
 }
 
-/**
- * Lists migrations for a specific agent template through fetching workflows from Temporal
- * @param templateName - The name of the template to get migrations for
- * @param organizationId - The organization ID to filter migrations by
- * @returns Promise with the list of migrations
- */
+interface ListTemplateAgentMigrationsOptions {
+  templateName: string;
+  organizationId: string;
+  pageSize?: number;
+  nextPageToken?: Uint8Array | null;
+}
+
+interface ListTemplateAgentMigrationsResponse {
+  migrations: MigrationDetail[];
+  nextPage: Uint8Array | null;
+}
+
 export async function listTemplateAgentMigrations(
-  templateName: string,
-  organizationId: string,
-): Promise<{ migrations: MigrationDetail[] }> {
+  options: ListTemplateAgentMigrationsOptions,
+): Promise<ListTemplateAgentMigrationsResponse> {
+  const {
+    templateName,
+    organizationId,
+    pageSize = 1000,
+    nextPageToken,
+  } = options;
+
   try {
     const connection = await Connection.connect(getTemporalConnectionConfig());
     const query = `Id = "${templateName}" AND OrganizationId = "${organizationId}"`;
     const response = await connection.workflowService.listWorkflowExecutions({
       namespace: 'default',
+      pageSize,
+      nextPageToken: nextPageToken ? nextPageToken : null,
       query,
     });
 
@@ -97,6 +111,7 @@ export async function listTemplateAgentMigrations(
 
     return {
       migrations,
+      nextPage: response.nextPageToken,
     };
   } catch (error) {
     console.error('Error fetching migrations:', error);

@@ -350,10 +350,6 @@ function useRecentAgents(props: UseRecentAgentsProps) {
   });
 }
 
-function MigrateAgents() {
-  return <VStack fullHeight>{'TBA'}</VStack>;
-}
-
 function RecentAgents() {
   const [search, setSearch] = useState('');
   const t = useTranslations('pages/distribution');
@@ -572,7 +568,7 @@ function AgentsPanel() {
   );
 }
 
-type AgentPanelTabs = 'distribute-agent' | 'migrate-agents' | 'recent-agents';
+type AgentPanelTabs = 'distribute-agent' | 'recent-agents';
 
 interface AgentsPanelInnerProps {
   defaultTab: AgentPanelTabs;
@@ -582,9 +578,6 @@ function AgentsPanelInner(props: AgentsPanelInnerProps) {
   const { defaultTab } = props;
   const [tab, setTab] = useState<AgentPanelTabs>(defaultTab);
   const t = useTranslations('pages/distribution');
-
-  const { data: isMigrationsViewerEnabled } =
-    useFeatureFlag('MIGRATIONS_VIEWER');
 
   return (
     <VStack gap={false} fullWidth fullHeight>
@@ -597,14 +590,6 @@ function AgentsPanelInner(props: AgentsPanelInnerProps) {
               value: 'recent-agents',
               label: t('RecentAgents.title'),
             },
-            ...(isMigrationsViewerEnabled
-              ? [
-                  {
-                    value: 'migrate-agents',
-                    label: t('MigrationsViewer.title'),
-                  },
-                ]
-              : []),
             {
               value: 'distribute-agent',
               label: t('DeploymentInstructions.title'),
@@ -618,7 +603,6 @@ function AgentsPanelInner(props: AgentsPanelInnerProps) {
         />
       </HStack>
       {tab === 'recent-agents' && <RecentAgents />}
-      {tab === 'migrate-agents' && <MigrateAgents />}
       {tab === 'distribute-agent' && <DeploymentInstructions />}
     </VStack>
   );
