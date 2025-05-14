@@ -122,6 +122,45 @@ def test_shared_blocks(client: LettaSDKClient):
     client.agents.delete(agent_state2.id)
 
 
+def test_read_only_block(client: LettaSDKClient):
+    block_value = "username: sarah"
+    agent = client.agents.create(
+        memory_blocks=[
+            CreateBlock(
+                label="human",
+                value=block_value,
+                read_only=True,
+            ),
+        ],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-ada-002",
+    )
+
+    # make sure agent cannot update read-only block
+    client.agents.messages.create(
+        agent_id=agent.id,
+        messages=[
+            MessageCreate(
+                role="user",
+                content="my name is actually charles",
+            )
+        ],
+    )
+
+    # make sure block value is still the same
+    block = client.agents.blocks.retrieve(agent_id=agent.id, block_label="human")
+    assert block.value == block_value
+
+    # make sure can update from client
+    new_value = "hello"
+    client.agents.blocks.modify(agent_id=agent.id, block_label="human", value=new_value)
+    block = client.agents.blocks.retrieve(agent_id=agent.id, block_label="human")
+    assert block.value == new_value
+
+    # cleanup
+    client.agents.delete(agent.id)
+
+
 def test_add_and_manage_tags_for_agent(client: LettaSDKClient):
     """
     Comprehensive happy path test for adding, retrieving, and managing tags on an agent.
