@@ -794,6 +794,54 @@ class SyncServer(Server):
 
         return main_agent
 
+    @trace_method
+    async def create_agent_async(
+        self,
+        request: CreateAgent,
+        actor: User,
+        # interface
+        interface: Union[AgentInterface, None] = None,
+    ) -> AgentState:
+        if request.llm_config is None:
+            if request.model is None:
+                raise ValueError("Must specify either model or llm_config in request")
+            config_params = {
+                "handle": request.model,
+                "context_window_limit": request.context_window_limit,
+                "max_tokens": request.max_tokens,
+                "max_reasoning_tokens": request.max_reasoning_tokens,
+                "enable_reasoner": request.enable_reasoner,
+            }
+            log_event(name="start get_cached_llm_config", attributes=config_params)
+            request.llm_config = self.get_cached_llm_config(actor=actor, **config_params)
+            log_event(name="end get_cached_llm_config", attributes=config_params)
+
+        if request.embedding_config is None:
+            if request.embedding is None:
+                raise ValueError("Must specify either embedding or embedding_config in request")
+            embedding_config_params = {
+                "handle": request.embedding,
+                "embedding_chunk_size": request.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
+            }
+            log_event(name="start get_cached_embedding_config", attributes=embedding_config_params)
+            request.embedding_config = self.get_cached_embedding_config(actor=actor, **embedding_config_params)
+            log_event(name="end get_cached_embedding_config", attributes=embedding_config_params)
+
+        log_event(name="start create_agent db")
+        main_agent = await self.agent_manager.create_agent_async(
+            agent_create=request,
+            actor=actor,
+        )
+        log_event(name="end create_agent db")
+
+        if request.enable_sleeptime:
+            if request.agent_type == AgentType.voice_convo_agent:
+                main_agent = self.create_voice_sleeptime_agent(main_agent=main_agent, actor=actor)
+            else:
+                main_agent = self.create_sleeptime_agent(main_agent=main_agent, actor=actor)
+
+        return main_agent
+
     def update_agent(
         self,
         agent_id: str,
@@ -815,6 +863,32 @@ class SyncServer(Server):
                     self.create_sleeptime_agent(main_agent=agent, actor=actor)
 
         return self.agent_manager.update_agent(
+            agent_id=agent_id,
+            agent_update=request,
+            actor=actor,
+        )
+
+    async def update_agent_async(
+        self,
+        agent_id: str,
+        request: UpdateAgent,
+        actor: User,
+    ) -> AgentState:
+        if request.model is not None:
+            request.llm_config = self.get_llm_config_from_handle(handle=request.model, actor=actor)
+
+        if request.embedding is not None:
+            request.embedding_config = self.get_embedding_config_from_handle(handle=request.embedding, actor=actor)
+
+        if request.enable_sleeptime:
+            agent = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
+            if agent.multi_agent_group is None:
+                if agent.agent_type == AgentType.voice_convo_agent:
+                    self.create_voice_sleeptime_agent(main_agent=agent, actor=actor)
+                else:
+                    self.create_sleeptime_agent(main_agent=agent, actor=actor)
+
+        return await self.agent_manager.update_agent_async(
             agent_id=agent_id,
             agent_update=request,
             actor=actor,
