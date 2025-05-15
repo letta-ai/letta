@@ -8,7 +8,7 @@ from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from letta.agents.base_agent import BaseAgent
-from letta.agents.helpers import _create_letta_response, _prepare_in_context_messages
+from letta.agents.helpers import _create_letta_response, _prepare_in_context_messages_async
 from letta.helpers import ToolRulesSolver
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
@@ -77,7 +77,7 @@ class LettaAgent(BaseAgent):
     async def _step(
         self, agent_state: AgentState, input_messages: List[MessageCreate], max_steps: int = 10
     ) -> Tuple[List[Message], List[Message], CompletionUsage]:
-        current_in_context_messages, new_in_context_messages = _prepare_in_context_messages(
+        current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_async(
             input_messages, agent_state, self.message_manager, self.actor
         )
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
@@ -132,7 +132,7 @@ class LettaAgent(BaseAgent):
         Whenever we detect a tool call, we yield from _handle_ai_response as well.
         """
         agent_state = await self.agent_manager.get_agent_by_id_async(self.agent_id, actor=self.actor)
-        current_in_context_messages, new_in_context_messages = _prepare_in_context_messages(
+        current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_async(
             input_messages, agent_state, self.message_manager, self.actor
         )
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
