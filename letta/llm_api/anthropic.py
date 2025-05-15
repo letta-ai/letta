@@ -2,7 +2,7 @@ import json
 import re
 import time
 import warnings
-from typing import Generator, List, Optional, Union
+from typing import Generator, List, Mapping, Optional, Union
 
 import anthropic
 from anthropic import PermissionDeniedError
@@ -752,6 +752,19 @@ def _prepare_anthropic_request(
     return data
 
 
+def _prepare_default_headers(data: ChatCompletionRequest) -> Optional[Mapping[str, str]]:
+    """
+    Enable beta headers for Anthropic to leverage token efficient headers.
+
+    https://docs.anthropic.com/en/docs/build-with-claude/tool-use/token-efficient-tool-use
+    https://www.anthropic.com/news/token-saving-updates
+    """
+    if data.model == "claude-3-7-sonnet-20250219":
+        return {"anthropic-beta": "token-efficient-tools-2025-02-19"}
+    else:
+        return None
+
+
 def anthropic_chat_completions_request(
     data: ChatCompletionRequest,
     inner_thoughts_xml_tag: Optional[str] = "thinking",
@@ -768,9 +781,11 @@ def anthropic_chat_completions_request(
     if provider_category == ProviderCategory.byok:
         actor = UserManager().get_user_or_default(user_id=user_id)
         api_key = ProviderManager().get_override_key(provider_name, actor=actor)
-        anthropic_client = anthropic.Anthropic(api_key=api_key)
+        default_headers = _prepare_default_headers(data)
+        anthropic_client = anthropic.Anthropic(api_key=api_key, default_headers=default_headers)
     elif model_settings.anthropic_api_key:
-        anthropic_client = anthropic.Anthropic()
+        default_headers = _prepare_default_headers(data)
+        anthropic_client = anthropic.Anthropic(default_headers=default_headers)
     else:
         raise ValueError("No available Anthropic API key")
     data = _prepare_anthropic_request(
