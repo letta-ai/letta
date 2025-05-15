@@ -85,7 +85,6 @@ class MessageManager:
     def create_many_messages(self, pydantic_msgs: List[PydanticMessage], actor: PydanticUser) -> List[PydanticMessage]:
         """
         Create multiple messages in a single database transaction.
-
         Args:
             pydantic_msgs: List of Pydantic message models to create
             actor: User performing the action

@@ -402,6 +402,25 @@ def _apply_pagination(query, before: Optional[str], after: Optional[str], sessio
     return query
 
 
+async def _apply_pagination_async(query, before: Optional[str], after: Optional[str], session, ascending: bool = True) -> any:
+    if after:
+        result = (await session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == after))).first()
+        if result:
+            after_created_at, after_id = result
+            query = query.where(_cursor_filter(AgentModel.created_at, AgentModel.id, after_created_at, after_id, forward=ascending))
+
+    if before:
+        result = (await session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == before))).first()
+        if result:
+            before_created_at, before_id = result
+            query = query.where(_cursor_filter(AgentModel.created_at, AgentModel.id, before_created_at, before_id, forward=not ascending))
+
+    # Apply ordering
+    order_fn = asc if ascending else desc
+    query = query.order_by(order_fn(AgentModel.created_at), order_fn(AgentModel.id))
+    return query
+
+
 def _apply_tag_filter(query, tags: Optional[List[str]], match_all_tags: bool):
     """
     Apply tag-based filtering to the agent query.
