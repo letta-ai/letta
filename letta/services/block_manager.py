@@ -1,5 +1,6 @@
 from typing import Dict, List, Optional
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from letta.log import get_logger
@@ -454,7 +455,7 @@ class BlockManager:
             return block.to_pydantic()
 
     @enforce_types
-    def bulk_update_block_values(
+    async def bulk_update_block_values_async(
         self, updates: Dict[str, str], actor: PydanticUser, return_hydrated: bool = False
     ) -> Optional[List[PydanticBlock]]:
         """
@@ -469,12 +470,13 @@ class BlockManager:
             the updated Block objects as Pydantic schemas
 
         Raises:
-            NoResultFound if any block_id doesn’t exist or isn’t visible to this actor
-            ValueError     if any new value exceeds its block’s limit
+            NoResultFound if any block_id doesn't exist or isn't visible to this actor
+            ValueError     if any new value exceeds its block's limit
         """
-        with db_registry.session() as session:
-            q = session.query(BlockModel).filter(BlockModel.id.in_(updates.keys()), BlockModel.organization_id == actor.organization_id)
-            blocks = q.all()
+        async with db_registry.async_session() as session:
+            query = select(BlockModel).where(BlockModel.id.in_(updates.keys()), BlockModel.organization_id == actor.organization_id)
+            result = await session.execute(query)
+            blocks = result.scalars().all()
 
             found_ids = {b.id for b in blocks}
             missing = set(updates.keys()) - found_ids
@@ -488,8 +490,10 @@ class BlockManager:
                     new_val = new_val[: block.limit]
                 block.value = new_val
 
-            session.commit()
+            await session.commit()
 
             if return_hydrated:
-                return [b.to_pydantic() for b in blocks]
+                # TODO: implement for async
+                pass
+
             return None
