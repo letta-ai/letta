@@ -7,7 +7,7 @@ from aiomultiprocess import Pool
 from anthropic.types.beta.messages import BetaMessageBatchCanceledResult, BetaMessageBatchErroredResult, BetaMessageBatchSucceededResult
 
 from letta.agents.base_agent import BaseAgent
-from letta.agents.helpers import _prepare_in_context_messages
+from letta.agents.helpers import _prepare_in_context_messages_async
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.tool_execution_helper import enable_strict_mode
@@ -126,6 +126,7 @@ class LettaAgentBatch(BaseAgent):
         letta_batch_job_id: str,
         agent_step_state_mapping: Optional[Dict[str, AgentStepState]] = None,
     ) -> LettaBatchResponse:
+        """Carry out agent steps until the LLM request is sent."""
         log_event(name="validate_inputs")
         if not batch_requests:
             raise ValueError("Empty list of batch_requests passed in!")
@@ -133,15 +134,26 @@ class LettaAgentBatch(BaseAgent):
             agent_step_state_mapping = {}
 
         log_event(name="load_and_prepare_agents")
-        agent_messages_mapping: Dict[str, List[Message]] = {}
-        agent_tools_mapping: Dict[str, List[dict]] = {}
+        # prepares (1) agent states, (2) step states, (3) LLMBatchItems (4) message batch_item_ids (5) messages per agent (6) tools per agent
+
+        agent_messages_mapping: dict[str, list[Message]] = {}
+        agent_tools_mapping: dict[str, list[dict]] = {}
         # TODO: This isn't optimal, moving fast - prone to bugs because we pass around this half formed pydantic object
-        agent_batch_item_mapping: Dict[str, LLMBatchItem] = {}
+        agent_batch_item_mapping: dict[str, LLMBatchItem] = {}
+
+        # fetch agent states in batch
+        agent_mapping = {
+            agent_state.id: agent_state
+            for agent_state in await self.agent_manager.get_agents_by_ids_async(
+                agent_ids=[request.agent_id for request in batch_requests], actor=self.actor
+            )
+        }
+
         agent_states = []
         for batch_request in batch_requests:
             agent_id = batch_request.agent_id
-            agent_state = self.agent_manager.get_agent_by_id(agent_id, actor=self.actor)
-            agent_states.append(agent_state)
+            agent_state = agent_mapping[agent_id]
+            agent_states.append(agent_state)  # keeping this to maintain ordering, but may not be necessary
 
             if agent_id not in agent_step_state_mapping:
                 agent_step_state_mapping[agent_id] = AgentStepState(
@@ -162,7 +174,7 @@ class LettaAgentBatch(BaseAgent):
             for msg in batch_request.messages:
                 msg.batch_item_id = llm_batch_item.id
 
-            agent_messages_mapping[agent_id] = self._prepare_in_context_messages_per_agent(
+            agent_messages_mapping[agent_id] = await self._prepare_in_context_messages_per_agent_async(
                 agent_state=agent_state, input_messages=batch_request.messages
             )
 
@@ -528,12 +540,14 @@ class LettaAgentBatch(BaseAgent):
         valid_tool_names = tool_rules_solver.get_allowed_tool_names(available_tools=set([t.name for t in tools]))
         return [enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names)]
 
-    def _prepare_in_context_messages_per_agent(self, agent_state: AgentState, input_messages: List[MessageCreate]) -> List[Message]:
-        current_in_context_messages, new_in_context_messages = _prepare_in_context_messages(
+    async def _prepare_in_context_messages_per_agent_async(
+        self, agent_state: AgentState, input_messages: List[MessageCreate]
+    ) -> List[Message]:
+        current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_async(
             input_messages, agent_state, self.message_manager, self.actor
         )
 
-        in_context_messages = self._rebuild_memory(current_in_context_messages + new_in_context_messages, agent_state)
+        in_context_messages = await self._rebuild_memory_async(current_in_context_messages + new_in_context_messages, agent_state)
         return in_context_messages
 
     # TODO: Make this a bullk function

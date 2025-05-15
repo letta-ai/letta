@@ -12,7 +12,7 @@ from composio.exceptions import (
 )
 
 
-class AsyncComposioToolSet(BaseComposioToolSet, runtime="letta"):
+class AsyncComposioToolSet(BaseComposioToolSet, runtime="letta", description_char_limit=1024):
     """
     Async version of ComposioToolSet client for interacting with Composio API
     Used to asynchronously hit the execute action endpoint
