@@ -247,7 +247,9 @@ class LettaAgentBatch(BaseAgent):
         log_event(name="prepare_next")
         next_reqs, next_step_state = self._prepare_next_iteration(exec_results, ctx, msg_map)
         if len(next_reqs) == 0:
-            self.job_manager.update_job_by_id(job_id=letta_batch_id, job_update=JobUpdate(status=JobStatus.completed), actor=self.actor)
+            await self.job_manager.update_job_by_id_async(
+                job_id=letta_batch_id, job_update=JobUpdate(status=JobStatus.completed), actor=self.actor
+            )
             return LettaBatchResponse(
                 letta_batch_id=llm_batch_job.letta_batch_job_id,
                 last_llm_batch_id=llm_batch_job.id,
@@ -358,14 +360,14 @@ class LettaAgentBatch(BaseAgent):
                 tool_params.append(param)
 
         if rethink_memory_params:
-            return self._bulk_rethink_memory(rethink_memory_params)
+            return await self._bulk_rethink_memory_async(rethink_memory_params)
 
         if tool_params:
             async with Pool() as pool:
                 return await pool.map(execute_tool_wrapper, tool_params)
 
     @trace_method
-    def _bulk_rethink_memory(self, params: List[ToolExecutionParams]) -> Sequence[Tuple[str, Tuple[str, bool]]]:
+    async def _bulk_rethink_memory_async(self, params: List[ToolExecutionParams]) -> Sequence[Tuple[str, Tuple[str, bool]]]:
         updates = {}
         result = []
         for param in params:
@@ -386,7 +388,7 @@ class LettaAgentBatch(BaseAgent):
             # TODO: This is quite ugly and confusing - this is mostly to align with the returns of other tools
             result.append((param.agent_id, ("", True)))
 
-        self.block_manager.bulk_update_block_values(updates=updates, actor=self.actor)
+        await self.block_manager.bulk_update_block_values_async(updates=updates, actor=self.actor)
 
         return result
 
