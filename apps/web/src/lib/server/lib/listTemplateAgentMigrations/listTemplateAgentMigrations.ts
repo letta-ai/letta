@@ -3,7 +3,7 @@ import { MigrationStatus } from '@letta-cloud/sdk-cloud-api';
 import {
   getTemporalConnectionConfig,
   TEMPORAL_LETTUCE_NAMESPACE,
-} from '../getTemporalConnectionConfig/getTemporalConnectionConfig';
+} from '@letta-cloud/utils-server';
 
 /**
  * Temporal workflow execution status enum
@@ -88,7 +88,6 @@ export async function listTemplateAgentMigrations(
       const workflowId = execution?.workflowId || '';
       const executionStatus = getStatusString(Number(status));
       const memoFields = memo?.fields || {};
-      const agentIdsData = memoFields['agentIds']?.data;
       const templateVersionData = memoFields['templateVersion']?.data;
       const templateVersion = templateVersionData
         ? Buffer.from(templateVersionData).toString()

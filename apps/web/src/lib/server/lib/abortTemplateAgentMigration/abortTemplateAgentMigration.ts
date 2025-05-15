@@ -2,7 +2,7 @@ import { Connection } from '@temporalio/client';
 import {
   getTemporalConnectionConfig,
   TEMPORAL_LETTUCE_NAMESPACE,
-} from '../getTemporalConnectionConfig/getTemporalConnectionConfig';
+} from '@letta-cloud/utils-server';
 
 /**
  * Aborts an agent template migration by canceling the workflow execution in Temporal

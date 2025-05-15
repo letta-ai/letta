@@ -17,12 +17,12 @@ import {
   getDeployedTemplateByVersion,
   copyAgentById,
   updateAgentFromAgentId,
-  listTemplateAgentMigrations,
-  abortTemplateAgentMigration,
 } from '@letta-cloud/utils-server';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { createTemplate } from 'tmp-cloud-api-router';
 import type { GeneralRequestContext } from '../../server';
+import { listTemplateAgentMigrations } from '$web/server/lib/listTemplateAgentMigrations/listTemplateAgentMigrations';
+import { abortTemplateAgentMigration } from '$web/server/lib/abortTemplateAgentMigration/abortTemplateAgentMigration';
 
 function randomThreeDigitNumber() {
   return Math.floor(Math.random() * 1000);
