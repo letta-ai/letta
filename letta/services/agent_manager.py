@@ -578,6 +578,14 @@ class AgentManager:
             return agent.to_pydantic()
 
     @enforce_types
+    async def get_agent_by_id_async(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
+        """Fetch an agent by its ID."""
+        print("ASYNC")
+        async with db_registry.async_session() as session:
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            return agent.to_pydantic()
+
+    @enforce_types
     async def get_agents_by_ids_async(self, agent_ids: list[str], actor: PydanticUser) -> list[PydanticAgentState]:
         """Fetch a list of agents by their IDs."""
         async with db_registry.async_session() as session:
