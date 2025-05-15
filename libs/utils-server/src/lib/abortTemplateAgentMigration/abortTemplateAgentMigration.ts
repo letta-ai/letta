@@ -1,5 +1,8 @@
 import { Connection } from '@temporalio/client';
-import { getTemporalConnectionConfig } from '../getTemporalConnectionConfig/getTemporalConnectionConfig';
+import {
+  getTemporalConnectionConfig,
+  TEMPORAL_LETTUCE_NAMESPACE,
+} from '../getTemporalConnectionConfig/getTemporalConnectionConfig';
 
 /**
  * Aborts an agent template migration by canceling the workflow execution in Temporal
@@ -13,7 +16,7 @@ export async function abortTemplateAgentMigration(
   try {
     const connection = await Connection.connect(getTemporalConnectionConfig());
     await connection.workflowService.requestCancelWorkflowExecution({
-      namespace: 'default', // TODO: use the right namespace when talking to temporal cloud, update env?
+      namespace: TEMPORAL_LETTUCE_NAMESPACE,
       workflowExecution: {
         workflowId,
       },

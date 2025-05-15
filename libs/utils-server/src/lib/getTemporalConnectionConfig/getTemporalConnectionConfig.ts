@@ -1,5 +1,8 @@
 import { environment } from '@letta-cloud/config-environment-variables';
 
+export const TEMPORAL_LETTUCE_NAMESPACE =
+  environment.TEMPORAL_LETTUCE_NAMESPACE;
+
 /**
  * Gets the Temporal connection configuration based on environment variables
  * @returns Connection configuration object for Temporal client

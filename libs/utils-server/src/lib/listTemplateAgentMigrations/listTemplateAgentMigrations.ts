@@ -1,6 +1,9 @@
 import { Connection } from '@temporalio/client';
 import { MigrationStatus } from '@letta-cloud/sdk-cloud-api';
-import { getTemporalConnectionConfig } from '../getTemporalConnectionConfig/getTemporalConnectionConfig';
+import {
+  getTemporalConnectionConfig,
+  TEMPORAL_LETTUCE_NAMESPACE,
+} from '../getTemporalConnectionConfig/getTemporalConnectionConfig';
 
 /**
  * Temporal workflow execution status enum
@@ -74,7 +77,7 @@ export async function listTemplateAgentMigrations(
     const connection = await Connection.connect(getTemporalConnectionConfig());
     const query = `Id = "${templateName}" AND OrganizationId = "${organizationId}"`;
     const response = await connection.workflowService.listWorkflowExecutions({
-      namespace: 'default',
+      namespace: TEMPORAL_LETTUCE_NAMESPACE,
       pageSize,
       nextPageToken: nextPageToken ? nextPageToken : null,
       query,
