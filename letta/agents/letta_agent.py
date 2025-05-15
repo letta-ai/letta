@@ -64,6 +64,10 @@ class LettaAgent(BaseAgent):
         self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_id)
         self.num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_id)
 
+        # Cached archival memory/message size
+        self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_id)
+        self.num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_id)
+
     @trace_method
     async def step(self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = True) -> LettaResponse:
         agent_state = await self.agent_manager.get_agent_by_id_async(self.agent_id, actor=self.actor)
