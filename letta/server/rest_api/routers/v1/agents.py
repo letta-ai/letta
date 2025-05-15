@@ -44,7 +44,7 @@ logger = get_logger(__name__)
 
 
 @router.get("/", response_model=List[AgentState], operation_id="list_agents")
-def list_agents(
+async def list_agents(
     name: Optional[str] = Query(None, description="Name of the agent"),
     tags: Optional[List[str]] = Query(None, description="List of tags to filter agents by"),
     match_all_tags: bool = Query(
@@ -86,7 +86,7 @@ def list_agents(
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     # Call list_agents directly without unnecessary dict handling
-    return server.agent_manager.list_agents(
+    return await server.agent_manager.list_agents_async(
         actor=actor,
         name=name,
         before=before,
@@ -223,7 +223,7 @@ class CreateAgentRequest(CreateAgent):
 
 
 @router.post("/", response_model=AgentState, operation_id="create_agent")
-def create_agent(
+async def create_agent(
     agent: CreateAgentRequest = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -234,14 +234,14 @@ def create_agent(
     """
     try:
         actor = server.user_manager.get_user_or_default(user_id=actor_id)
-        return server.create_agent(agent, actor=actor)
+        return await server.create_agent_async(agent, actor=actor)
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.patch("/{agent_id}", response_model=AgentState, operation_id="modify_agent")
-def modify_agent(
+async def modify_agent(
     agent_id: str,
     update_agent: UpdateAgent = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
@@ -249,7 +249,7 @@ def modify_agent(
 ):
     """Update an existing agent"""
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.update_agent(agent_id=agent_id, request=update_agent, actor=actor)
+    return await server.update_agent_async(agent_id=agent_id, request=update_agent, actor=actor)
 
 
 @router.get("/{agent_id}/tools", response_model=List[Tool], operation_id="list_agent_tools")
@@ -632,8 +632,8 @@ async def send_message(
     # TODO: This is redundant, remove soon
     agent = server.agent_manager.get_agent_by_id(agent_id, actor)
     agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
-    experimental_header = request_obj.headers.get("x-experimental")
-    feature_enabled = settings.use_experimental or experimental_header
+    experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
+    feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "google_vertex", "google_ai"]
 
     if agent_eligible and feature_enabled and model_compatible:
@@ -646,7 +646,7 @@ async def send_message(
             actor=actor,
         )
 
-        result = await experimental_agent.step(request.messages, max_steps=10)
+        result = await experimental_agent.step(request.messages, max_steps=10, use_assistant_message=request.use_assistant_message)
     else:
         result = await server.send_message_to_agent(
             agent_id=agent_id,
@@ -690,11 +690,11 @@ async def send_message_streaming(
     # TODO: This is redundant, remove soon
     agent = server.agent_manager.get_agent_by_id(agent_id, actor)
     agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
-    experimental_header = request_obj.headers.get("x-experimental")
-    feature_enabled = settings.use_experimental or experimental_header
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
+    experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
+    feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
+    model_compatible = agent.llm_config.model_endpoint_type == "anthropic"
 
-    if agent_eligible and feature_enabled and model_compatible:
+    if agent_eligible and feature_enabled and model_compatible and request.stream_tokens:
         experimental_agent = LettaAgent(
             agent_id=agent_id,
             message_manager=server.message_manager,

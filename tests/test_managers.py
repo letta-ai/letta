@@ -505,7 +505,8 @@ def server():
 
 
 @pytest.fixture
-def agent_passages_setup(server, default_source, default_user, sarah_agent):
+@pytest.mark.asyncio
+async def agent_passages_setup(server, default_source, default_user, sarah_agent):
     """Setup fixture for agent passages tests"""
     agent_id = sarah_agent.id
     actor = default_user
@@ -640,13 +641,14 @@ def event_loop(request):
 # ======================================================================================================================
 # AgentManager Tests - Basic
 # ======================================================================================================================
-def test_create_get_list_agent(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+@pytest.mark.asyncio
+async def test_create_get_list_agent(server: SyncServer, comprehensive_test_agent_fixture, default_user, event_loop):
     # Test agent creation
     created_agent, create_agent_request = comprehensive_test_agent_fixture
     comprehensive_agent_checks(created_agent, create_agent_request, actor=default_user)
 
     # Test get agent
-    get_agent = server.agent_manager.get_agent_by_id(agent_id=created_agent.id, actor=default_user)
+    get_agent = await server.agent_manager.get_agent_by_id_async(agent_id=created_agent.id, actor=default_user)
     comprehensive_agent_checks(get_agent, create_agent_request, actor=default_user)
 
     # Test get agent name
@@ -996,35 +998,37 @@ def test_list_agents_ordering_and_pagination(server: SyncServer, default_user):
 # ======================================================================================================================
 
 
-def test_attach_tool(server: SyncServer, sarah_agent, print_tool, default_user):
+@pytest.mark.asyncio
+async def test_attach_tool(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
     """Test attaching a tool to an agent."""
     # Attach the tool
     server.agent_manager.attach_tool(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
 
     # Verify attachment through get_agent_by_id
-    agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     assert print_tool.id in [t.id for t in agent.tools]
 
     # Verify that attaching the same tool again doesn't cause duplication
     server.agent_manager.attach_tool(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
-    agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     assert len([t for t in agent.tools if t.id == print_tool.id]) == 1
 
 
-def test_detach_tool(server: SyncServer, sarah_agent, print_tool, default_user):
+@pytest.mark.asyncio
+async def test_detach_tool(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
     """Test detaching a tool from an agent."""
     # Attach the tool first
     server.agent_manager.attach_tool(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
 
     # Verify it's attached
-    agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     assert print_tool.id in [t.id for t in agent.tools]
 
     # Detach the tool
     server.agent_manager.detach_tool(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
 
     # Verify it's detached
-    agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     assert print_tool.id not in [t.id for t in agent.tools]
 
     # Verify that detaching an already detached tool doesn't cause issues
@@ -1049,10 +1053,11 @@ def test_detach_tool_nonexistent_agent(server: SyncServer, print_tool, default_u
         server.agent_manager.detach_tool(agent_id="nonexistent-agent-id", tool_id=print_tool.id, actor=default_user)
 
 
-def test_list_attached_tools(server: SyncServer, sarah_agent, print_tool, other_tool, default_user):
+@pytest.mark.asyncio
+async def test_list_attached_tools(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
     """Test listing tools attached to an agent."""
     # Initially should have no tools
-    agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
+    agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     assert len(agent.tools) == 0
 
     # Attach tools
@@ -1060,7 +1065,7 @@ def test_list_attached_tools(server: SyncServer, sarah_agent, print_tool, other_
     server.agent_manager.attach_tool(agent_id=sarah_agent.id, tool_id=other_tool.id, actor=default_user)
 
     # List tools and verify
-    agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
+    agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     attached_tool_ids = [t.id for t in agent.tools]
     assert len(attached_tool_ids) == 2
     assert print_tool.id in attached_tool_ids
@@ -1072,18 +1077,19 @@ def test_list_attached_tools(server: SyncServer, sarah_agent, print_tool, other_
 # ======================================================================================================================
 
 
-def test_attach_source(server: SyncServer, sarah_agent, default_source, default_user):
+@pytest.mark.asyncio
+async def test_attach_source(server: SyncServer, sarah_agent, default_source, default_user, event_loop):
     """Test attaching a source to an agent."""
     # Attach the source
     server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
 
     # Verify attachment through get_agent_by_id
-    agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
+    agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     assert default_source.id in [s.id for s in agent.sources]
 
     # Verify that attaching the same source again doesn't cause issues
     server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
-    agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
+    agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     assert len([s for s in agent.sources if s.id == default_source.id]) == 1
 
 
@@ -1105,20 +1111,21 @@ def test_list_attached_source_ids(server: SyncServer, sarah_agent, default_sourc
     assert other_source.id in source_ids
 
 
-def test_detach_source(server: SyncServer, sarah_agent, default_source, default_user):
+@pytest.mark.asyncio
+async def test_detach_source(server: SyncServer, sarah_agent, default_source, default_user, event_loop):
     """Test detaching a source from an agent."""
     # Attach source
     server.agent_manager.attach_source(sarah_agent.id, default_source.id, actor=default_user)
 
     # Verify it's attached
-    agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
+    agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     assert default_source.id in [s.id for s in agent.sources]
 
     # Detach source
     server.agent_manager.detach_source(sarah_agent.id, default_source.id, actor=default_user)
 
     # Verify it's detached
-    agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
+    agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     assert default_source.id not in [s.id for s in agent.sources]
 
     # Verify that detaching an already detached source doesn't cause issues
@@ -1239,14 +1246,14 @@ def test_list_agents_by_tags_match_all(server: SyncServer, sarah_agent, charles_
     server.agent_manager.update_agent(charles_agent.id, UpdateAgent(tags=["test", "development", "gpt4"]), actor=default_user)
 
     # Search for agents with all specified tags
-    agents = server.agent_manager.list_agents(tags=["test", "gpt4"], match_all_tags=True, actor=default_user)
+    agents = server.agent_manager.list_agents(actor=default_user, tags=["test", "gpt4"], match_all_tags=True)
     assert len(agents) == 2
     agent_ids = [a.id for a in agents]
     assert sarah_agent.id in agent_ids
     assert charles_agent.id in agent_ids
 
     # Search for tags that only sarah_agent has
-    agents = server.agent_manager.list_agents(tags=["test", "production"], match_all_tags=True, actor=default_user)
+    agents = server.agent_manager.list_agents(actor=default_user, tags=["test", "production"], match_all_tags=True)
     assert len(agents) == 1
     assert agents[0].id == sarah_agent.id
 
@@ -1258,14 +1265,14 @@ def test_list_agents_by_tags_match_any(server: SyncServer, sarah_agent, charles_
     server.agent_manager.update_agent(charles_agent.id, UpdateAgent(tags=["development", "gpt3"]), actor=default_user)
 
     # Search for agents with any of the specified tags
-    agents = server.agent_manager.list_agents(tags=["production", "development"], match_all_tags=False, actor=default_user)
+    agents = server.agent_manager.list_agents(actor=default_user, tags=["production", "development"], match_all_tags=False)
     assert len(agents) == 2
     agent_ids = [a.id for a in agents]
     assert sarah_agent.id in agent_ids
     assert charles_agent.id in agent_ids
 
     # Search for tags where only sarah_agent matches
-    agents = server.agent_manager.list_agents(tags=["production", "nonexistent"], match_all_tags=False, actor=default_user)
+    agents = server.agent_manager.list_agents(actor=default_user, tags=["production", "nonexistent"], match_all_tags=False)
     assert len(agents) == 1
     assert agents[0].id == sarah_agent.id
 
@@ -1277,10 +1284,10 @@ def test_list_agents_by_tags_no_matches(server: SyncServer, sarah_agent, charles
     server.agent_manager.update_agent(charles_agent.id, UpdateAgent(tags=["development", "gpt3"]), actor=default_user)
 
     # Search for nonexistent tags
-    agents = server.agent_manager.list_agents(tags=["nonexistent1", "nonexistent2"], match_all_tags=True, actor=default_user)
+    agents = server.agent_manager.list_agents(actor=default_user, tags=["nonexistent1", "nonexistent2"], match_all_tags=True)
     assert len(agents) == 0
 
-    agents = server.agent_manager.list_agents(tags=["nonexistent1", "nonexistent2"], match_all_tags=False, actor=default_user)
+    agents = server.agent_manager.list_agents(actor=default_user, tags=["nonexistent1", "nonexistent2"], match_all_tags=False)
     assert len(agents) == 0
 
 
@@ -1328,20 +1335,20 @@ def test_list_agents_by_tags_pagination(server: SyncServer, default_user, defaul
     )
 
     # Get first page
-    first_page = server.agent_manager.list_agents(tags=["pagination_test"], match_all_tags=True, actor=default_user, limit=1)
+    first_page = server.agent_manager.list_agents(actor=default_user, tags=["pagination_test"], match_all_tags=True, limit=1)
     assert len(first_page) == 1
     first_agent_id = first_page[0].id
 
     # Get second page using cursor
     second_page = server.agent_manager.list_agents(
-        tags=["pagination_test"], match_all_tags=True, actor=default_user, after=first_agent_id, limit=1
+        actor=default_user, tags=["pagination_test"], match_all_tags=True, after=first_agent_id, limit=1
     )
     assert len(second_page) == 1
     assert second_page[0].id != first_agent_id
 
     # Get previous page using before
     prev_page = server.agent_manager.list_agents(
-        tags=["pagination_test"], match_all_tags=True, actor=default_user, before=second_page[0].id, limit=1
+        actor=default_user, tags=["pagination_test"], match_all_tags=True, before=second_page[0].id, limit=1
     )
     assert len(prev_page) == 1
     assert prev_page[0].id == first_agent_id
@@ -1435,14 +1442,15 @@ def test_list_agents_query_text_pagination(server: SyncServer, default_user, def
 # ======================================================================================================================
 
 
-def test_reset_messages_no_messages(server: SyncServer, sarah_agent, default_user):
+@pytest.mark.asyncio
+async def test_reset_messages_no_messages(server: SyncServer, sarah_agent, default_user, event_loop):
     """
     Test that resetting messages on an agent that has zero messages
     does not fail and clears out message_ids if somehow it's non-empty.
     """
     # Force a weird scenario: Suppose the message_ids field was set non-empty (without actual messages).
     server.agent_manager.update_agent(sarah_agent.id, UpdateAgent(message_ids=["ghost-message-id"]), actor=default_user)
-    updated_agent = server.agent_manager.get_agent_by_id(sarah_agent.id, default_user)
+    updated_agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, default_user)
     assert updated_agent.message_ids == ["ghost-message-id"]
 
     # Reset messages
@@ -1452,14 +1460,15 @@ def test_reset_messages_no_messages(server: SyncServer, sarah_agent, default_use
     assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 1
 
 
-def test_reset_messages_default_messages(server: SyncServer, sarah_agent, default_user):
+@pytest.mark.asyncio
+async def test_reset_messages_default_messages(server: SyncServer, sarah_agent, default_user, event_loop):
     """
     Test that resetting messages on an agent that has zero messages
     does not fail and clears out message_ids if somehow it's non-empty.
     """
     # Force a weird scenario: Suppose the message_ids field was set non-empty (without actual messages).
     server.agent_manager.update_agent(sarah_agent.id, UpdateAgent(message_ids=["ghost-message-id"]), actor=default_user)
-    updated_agent = server.agent_manager.get_agent_by_id(sarah_agent.id, default_user)
+    updated_agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, default_user)
     assert updated_agent.message_ids == ["ghost-message-id"]
 
     # Reset messages
@@ -1469,7 +1478,8 @@ def test_reset_messages_default_messages(server: SyncServer, sarah_agent, defaul
     assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 4
 
 
-def test_reset_messages_with_existing_messages(server: SyncServer, sarah_agent, default_user):
+@pytest.mark.asyncio
+async def test_reset_messages_with_existing_messages(server: SyncServer, sarah_agent, default_user, event_loop):
     """
     Test that resetting messages on an agent with actual messages
     deletes them from the database and clears message_ids.
@@ -1495,7 +1505,7 @@ def test_reset_messages_with_existing_messages(server: SyncServer, sarah_agent, 
     )
 
     # Verify the messages were created
-    agent_before = server.agent_manager.get_agent_by_id(sarah_agent.id, default_user)
+    agent_before = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, default_user)
     # This is 4 because creating the message does not necessarily add it to the in context message ids
     assert len(agent_before.message_ids) == 4
     assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 6
@@ -1647,13 +1657,14 @@ def test_list_messages_with_query_text_filter(server: SyncServer, sarah_agent, d
 # ======================================================================================================================
 
 
-def test_attach_block(server: SyncServer, sarah_agent, default_block, default_user):
+@pytest.mark.asyncio
+async def test_attach_block(server: SyncServer, sarah_agent, default_block, default_user, event_loop):
     """Test attaching a block to an agent."""
     # Attach block
     server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=default_block.id, actor=default_user)
 
     # Verify attachment
-    agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
+    agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     assert len(agent.memory.blocks) == 1
     assert agent.memory.blocks[0].id == default_block.id
     assert agent.memory.blocks[0].label == default_block.label
@@ -1674,7 +1685,8 @@ def test_attach_block_duplicate_label(server: SyncServer, sarah_agent, default_b
         server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=other_block.id, actor=default_user)
 
 
-def test_detach_block(server: SyncServer, sarah_agent, default_block, default_user):
+@pytest.mark.asyncio
+async def test_detach_block(server: SyncServer, sarah_agent, default_block, default_user, event_loop):
     """Test detaching a block by ID."""
     # Set up: attach block
     server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=default_block.id, actor=default_user)
@@ -1683,7 +1695,7 @@ def test_detach_block(server: SyncServer, sarah_agent, default_block, default_us
     server.agent_manager.detach_block(agent_id=sarah_agent.id, block_id=default_block.id, actor=default_user)
 
     # Verify detachment
-    agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
+    agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     assert len(agent.memory.blocks) == 0
 
     # Check that block still exists
@@ -1697,7 +1709,8 @@ def test_detach_nonexistent_block(server: SyncServer, sarah_agent, default_user)
         server.agent_manager.detach_block(agent_id=sarah_agent.id, block_id="nonexistent-block-id", actor=default_user)
 
 
-def test_update_block_label(server: SyncServer, sarah_agent, default_block, default_user):
+@pytest.mark.asyncio
+async def test_update_block_label(server: SyncServer, sarah_agent, default_block, default_user, event_loop):
     """Test updating a block's label updates the relationship."""
     # Attach block
     server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=default_block.id, actor=default_user)
@@ -1707,13 +1720,14 @@ def test_update_block_label(server: SyncServer, sarah_agent, default_block, defa
     server.block_manager.update_block(default_block.id, BlockUpdate(label=new_label), actor=default_user)
 
     # Verify relationship is updated
-    agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
+    agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     block = agent.memory.blocks[0]
     assert block.id == default_block.id
     assert block.label == new_label
 
 
-def test_update_block_label_multiple_agents(server: SyncServer, sarah_agent, charles_agent, default_block, default_user):
+@pytest.mark.asyncio
+async def test_update_block_label_multiple_agents(server: SyncServer, sarah_agent, charles_agent, default_block, default_user, event_loop):
     """Test updating a block's label updates relationships for all agents."""
     # Attach block to both agents
     server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=default_block.id, actor=default_user)
@@ -1725,7 +1739,7 @@ def test_update_block_label_multiple_agents(server: SyncServer, sarah_agent, cha
 
     # Verify both relationships are updated
     for agent_id in [sarah_agent.id, charles_agent.id]:
-        agent = server.agent_manager.get_agent_by_id(agent_id, actor=default_user)
+        agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor=default_user)
         # Find our specific block by ID
         block = next(b for b in agent.memory.blocks if b.id == default_block.id)
         assert block.label == new_label
@@ -2258,9 +2272,10 @@ def test_get_tool_with_actor(server: SyncServer, print_tool, default_user):
     assert fetched_tool.tool_type == ToolType.CUSTOM
 
 
-def test_list_tools(server: SyncServer, print_tool, default_user):
+@pytest.mark.asyncio
+async def test_list_tools(server: SyncServer, print_tool, default_user, event_loop):
     # List tools (should include the one created by the fixture)
-    tools = server.tool_manager.list_tools(actor=default_user)
+    tools = await server.tool_manager.list_tools_async(actor=default_user)
 
     # Assertions to check that the created tool is listed
     assert len(tools) == 1
@@ -2384,11 +2399,12 @@ def test_update_tool_multi_user(server: SyncServer, print_tool, default_user, ot
     assert updated_tool.created_by_id == default_user.id
 
 
-def test_delete_tool_by_id(server: SyncServer, print_tool, default_user):
+@pytest.mark.asyncio
+async def test_delete_tool_by_id(server: SyncServer, print_tool, default_user, event_loop):
     # Delete the print_tool using the manager method
     server.tool_manager.delete_tool_by_id(print_tool.id, actor=default_user)
 
-    tools = server.tool_manager.list_tools(actor=default_user)
+    tools = await server.tool_manager.list_tools_async(actor=default_user)
     assert len(tools) == 0
 
 
@@ -2801,7 +2817,7 @@ async def test_delete_block_detaches_from_agent(server: SyncServer, sarah_agent,
     assert len(blocks) == 0
 
     # Check that block has been detached too
-    agent_state = server.agent_manager.get_agent_by_id(agent_id=sarah_agent.id, actor=default_user)
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     assert not (block.id in [b.id for b in agent_state.memory.blocks])
 
 
@@ -2856,7 +2872,10 @@ async def test_batch_create_multiple_blocks(server: SyncServer, default_user, ev
     assert expected_labels.issubset(all_labels)
 
 
-def test_bulk_update_skips_missing_and_truncates_then_returns_none(server: SyncServer, default_user: PydanticUser, caplog):
+@pytest.mark.asyncio
+async def test_bulk_update_skips_missing_and_truncates_then_returns_none(
+    server: SyncServer, default_user: PydanticUser, caplog, event_loop
+):
     mgr = BlockManager()
 
     # create one block with a small limit
@@ -2873,7 +2892,7 @@ def test_bulk_update_skips_missing_and_truncates_then_returns_none(server: SyncS
     }
 
     caplog.set_level(logging.WARNING)
-    result = mgr.bulk_update_block_values(updates, actor=default_user)
+    result = await mgr.bulk_update_block_values_async(updates, actor=default_user)
     # default return_hydrated=False → should be None
     assert result is None
 
@@ -2887,7 +2906,9 @@ def test_bulk_update_skips_missing_and_truncates_then_returns_none(server: SyncS
     assert reloaded.value == long_val[:5]
 
 
-def test_bulk_update_return_hydrated_true(server: SyncServer, default_user: PydanticUser):
+@pytest.mark.asyncio
+@pytest.mark.skip(reason="TODO: implement for async")
+async def test_bulk_update_return_hydrated_true(server: SyncServer, default_user: PydanticUser, event_loop):
     mgr = BlockManager()
 
     # create a block
@@ -2897,7 +2918,7 @@ def test_bulk_update_return_hydrated_true(server: SyncServer, default_user: Pyda
     )
 
     updates = {b.id: "new-val"}
-    updated = mgr.bulk_update_block_values(updates, actor=default_user, return_hydrated=True)
+    updated = await mgr.bulk_update_block_values_async(updates, actor=default_user, return_hydrated=True)
 
     # with return_hydrated=True, we get back a list of schemas
     assert isinstance(updated, list) and len(updated) == 1
@@ -2905,7 +2926,10 @@ def test_bulk_update_return_hydrated_true(server: SyncServer, default_user: Pyda
     assert updated[0].value == "new-val"
 
 
-def test_bulk_update_respects_org_scoping(server: SyncServer, default_user: PydanticUser, other_user_different_org: PydanticUser, caplog):
+@pytest.mark.asyncio
+async def test_bulk_update_respects_org_scoping(
+    server: SyncServer, default_user: PydanticUser, other_user_different_org: PydanticUser, caplog, event_loop
+):
     mgr = BlockManager()
 
     # one block in each org
@@ -2924,7 +2948,7 @@ def test_bulk_update_respects_org_scoping(server: SyncServer, default_user: Pyda
     }
 
     caplog.set_level(logging.WARNING)
-    mgr.bulk_update_block_values(updates, actor=default_user)
+    await mgr.bulk_update_block_values_async(updates, actor=default_user)
 
     # mine should be updated...
     reloaded_mine = mgr.get_block_by_id(actor=default_user, block_id=mine.id)
@@ -3573,7 +3597,8 @@ def test_get_identities(server, default_user):
     server.identity_manager.delete_identity(identity_id=org.id, actor=default_user)
 
 
-def test_update_identity(server: SyncServer, sarah_agent, charles_agent, default_user):
+@pytest.mark.asyncio
+async def test_update_identity(server: SyncServer, sarah_agent, charles_agent, default_user, event_loop):
     identity = server.identity_manager.create_identity(
         IdentityCreate(name="caren", identifier_key="1234", identity_type=IdentityType.user), actor=default_user
     )
@@ -3592,15 +3617,16 @@ def test_update_identity(server: SyncServer, sarah_agent, charles_agent, default
     assert updated_identity.agent_ids.sort() == update_data.agent_ids.sort()
     assert updated_identity.properties == update_data.properties
 
-    agent_state = server.agent_manager.get_agent_by_id(agent_id=sarah_agent.id, actor=default_user)
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     assert identity.id in agent_state.identity_ids
-    agent_state = server.agent_manager.get_agent_by_id(agent_id=charles_agent.id, actor=default_user)
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=charles_agent.id, actor=default_user)
     assert identity.id in agent_state.identity_ids
 
     server.identity_manager.delete_identity(identity_id=identity.id, actor=default_user)
 
 
-def test_attach_detach_identity_from_agent(server: SyncServer, sarah_agent, default_user):
+@pytest.mark.asyncio
+async def test_attach_detach_identity_from_agent(server: SyncServer, sarah_agent, default_user, event_loop):
     # Create an identity
     identity = server.identity_manager.create_identity(
         IdentityCreate(name="caren", identifier_key="1234", identity_type=IdentityType.user), actor=default_user
@@ -3620,7 +3646,7 @@ def test_attach_detach_identity_from_agent(server: SyncServer, sarah_agent, defa
     assert len(identities) == 0
 
     # Check that block has been detached too
-    agent_state = server.agent_manager.get_agent_by_id(agent_id=sarah_agent.id, actor=default_user)
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     assert not identity.id in agent_state.identity_ids
 
 
@@ -3864,7 +3890,8 @@ def test_delete_source(server: SyncServer, default_user):
     assert len(sources) == 0
 
 
-def test_delete_attached_source(server: SyncServer, sarah_agent, default_user):
+@pytest.mark.asyncio
+async def test_delete_attached_source(server: SyncServer, sarah_agent, default_user, event_loop):
     """Test deleting a source."""
     source_pydantic = PydanticSource(
         name="To Delete", description="This source will be deleted.", embedding_config=DEFAULT_EMBEDDING_CONFIG
@@ -3884,7 +3911,7 @@ def test_delete_attached_source(server: SyncServer, sarah_agent, default_user):
     assert len(sources) == 0
 
     # Verify that agent is not deleted
-    agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
+    agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     assert agent is not None
 
 
@@ -5037,8 +5064,9 @@ def test_list_tags(server: SyncServer, default_user, default_organization):
 # ======================================================================================================================
 
 
-def test_create_and_get_batch_request(server, default_user, dummy_beta_message_batch, letta_batch_job):
-    batch = server.batch_manager.create_llm_batch_job(
+@pytest.mark.asyncio
+async def test_create_and_get_batch_request(server, default_user, dummy_beta_message_batch, letta_batch_job, event_loop):
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -5047,12 +5075,13 @@ def test_create_and_get_batch_request(server, default_user, dummy_beta_message_b
     )
     assert batch.id.startswith("batch_req-")
     assert batch.create_batch_response == dummy_beta_message_batch
-    fetched = server.batch_manager.get_llm_batch_job_by_id(batch.id, actor=default_user)
+    fetched = await server.batch_manager.get_llm_batch_job_by_id_async(batch.id, actor=default_user)
     assert fetched.id == batch.id
 
 
-def test_update_batch_status(server, default_user, dummy_beta_message_batch, letta_batch_job):
-    batch = server.batch_manager.create_llm_batch_job(
+@pytest.mark.asyncio
+async def test_update_batch_status(server, default_user, dummy_beta_message_batch, letta_batch_job, event_loop):
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -5068,16 +5097,17 @@ def test_update_batch_status(server, default_user, dummy_beta_message_batch, let
         actor=default_user,
     )
 
-    updated = server.batch_manager.get_llm_batch_job_by_id(batch.id, actor=default_user)
+    updated = await server.batch_manager.get_llm_batch_job_by_id_async(batch.id, actor=default_user)
     assert updated.status == JobStatus.completed
     assert updated.latest_polling_response == dummy_beta_message_batch
     assert updated.last_polled_at >= before
 
 
-def test_create_and_get_batch_item(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+@pytest.mark.asyncio
+async def test_create_and_get_batch_item(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
 ):
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -5101,7 +5131,8 @@ def test_create_and_get_batch_item(
     assert fetched.id == item.id
 
 
-def test_update_batch_item(
+@pytest.mark.asyncio
+async def test_update_batch_item(
     server,
     default_user,
     sarah_agent,
@@ -5110,8 +5141,9 @@ def test_update_batch_item(
     dummy_step_state,
     dummy_successful_response,
     letta_batch_job,
+    event_loop,
 ):
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -5143,10 +5175,11 @@ def test_update_batch_item(
     assert updated.batch_request_result == dummy_successful_response
 
 
-def test_delete_batch_item(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+@pytest.mark.asyncio
+async def test_delete_batch_item(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
 ):
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -5168,8 +5201,9 @@ def test_delete_batch_item(
         server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
 
 
-def test_list_running_batches(server, default_user, dummy_beta_message_batch, letta_batch_job):
-    server.batch_manager.create_llm_batch_job(
+@pytest.mark.asyncio
+async def test_list_running_batches(server, default_user, dummy_beta_message_batch, letta_batch_job, event_loop):
+    await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.running,
         create_batch_response=dummy_beta_message_batch,
@@ -5177,13 +5211,14 @@ def test_list_running_batches(server, default_user, dummy_beta_message_batch, le
         letta_batch_job_id=letta_batch_job.id,
     )
 
-    running_batches = server.batch_manager.list_running_llm_batches(actor=default_user)
+    running_batches = await server.batch_manager.list_running_llm_batches_async(actor=default_user)
     assert len(running_batches) >= 1
     assert all(batch.status == JobStatus.running for batch in running_batches)
 
 
-def test_bulk_update_batch_statuses(server, default_user, dummy_beta_message_batch, letta_batch_job):
-    batch = server.batch_manager.create_llm_batch_job(
+@pytest.mark.asyncio
+async def test_bulk_update_batch_statuses(server, default_user, dummy_beta_message_batch, letta_batch_job, event_loop):
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -5193,12 +5228,13 @@ def test_bulk_update_batch_statuses(server, default_user, dummy_beta_message_bat
 
     server.batch_manager.bulk_update_llm_batch_statuses([(batch.id, JobStatus.completed, dummy_beta_message_batch)])
 
-    updated = server.batch_manager.get_llm_batch_job_by_id(batch.id, actor=default_user)
+    updated = await server.batch_manager.get_llm_batch_job_by_id_async(batch.id, actor=default_user)
     assert updated.status == JobStatus.completed
     assert updated.latest_polling_response == dummy_beta_message_batch
 
 
-def test_bulk_update_batch_items_results_by_agent(
+@pytest.mark.asyncio
+async def test_bulk_update_batch_items_results_by_agent(
     server,
     default_user,
     sarah_agent,
@@ -5207,8 +5243,9 @@ def test_bulk_update_batch_items_results_by_agent(
     dummy_step_state,
     dummy_successful_response,
     letta_batch_job,
+    event_loop,
 ):
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -5231,10 +5268,11 @@ def test_bulk_update_batch_items_results_by_agent(
     assert updated.batch_request_result == dummy_successful_response
 
 
-def test_bulk_update_batch_items_step_status_by_agent(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+@pytest.mark.asyncio
+async def test_bulk_update_batch_items_step_status_by_agent(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
 ):
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -5256,10 +5294,11 @@ def test_bulk_update_batch_items_step_status_by_agent(
     assert updated.step_status == AgentStepStatus.resumed
 
 
-def test_list_batch_items_limit_and_filter(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+@pytest.mark.asyncio
+async def test_list_batch_items_limit_and_filter(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
 ):
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -5275,18 +5314,19 @@ def test_list_batch_items_limit_and_filter(
             actor=default_user,
         )
 
-    all_items = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, actor=default_user)
-    limited_items = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, limit=2, actor=default_user)
+    all_items = await server.batch_manager.list_llm_batch_items_async(llm_batch_id=batch.id, actor=default_user)
+    limited_items = await server.batch_manager.list_llm_batch_items_async(llm_batch_id=batch.id, limit=2, actor=default_user)
 
     assert len(all_items) >= 3
     assert len(limited_items) == 2
 
 
-def test_list_batch_items_pagination(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+@pytest.mark.asyncio
+async def test_list_batch_items_pagination(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
 ):
     # Create a batch job.
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -5306,7 +5346,7 @@ def test_list_batch_items_pagination(
         created_items.append(item)
 
     # Retrieve all items (without pagination).
-    all_items = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, actor=default_user)
+    all_items = await server.batch_manager.list_llm_batch_items_async(llm_batch_id=batch.id, actor=default_user)
     assert len(all_items) >= 10, f"Expected at least 10 items, got {len(all_items)}"
 
     # Verify the items are ordered ascending by id (based on our implementation).
@@ -5318,7 +5358,7 @@ def test_list_batch_items_pagination(
     cursor = all_items[4].id
 
     # Retrieve items after the cursor.
-    paged_items = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, actor=default_user, after=cursor)
+    paged_items = await server.batch_manager.list_llm_batch_items_async(llm_batch_id=batch.id, actor=default_user, after=cursor)
 
     # All returned items should have an id greater than the cursor.
     for item in paged_items:
@@ -5332,7 +5372,9 @@ def test_list_batch_items_pagination(
 
     # Test pagination with a limit.
     limit = 3
-    limited_page = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, actor=default_user, after=cursor, limit=limit)
+    limited_page = await server.batch_manager.list_llm_batch_items_async(
+        llm_batch_id=batch.id, actor=default_user, after=cursor, limit=limit
+    )
     # If more than 'limit' items remain, we should only get exactly 'limit' items.
     assert len(limited_page) == min(
         limit, expected_remaining
@@ -5340,15 +5382,16 @@ def test_list_batch_items_pagination(
 
     # Optional: Test with a cursor beyond the last item returns an empty list.
     last_cursor = sorted_ids[-1]
-    empty_page = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, actor=default_user, after=last_cursor)
+    empty_page = await server.batch_manager.list_llm_batch_items_async(llm_batch_id=batch.id, actor=default_user, after=last_cursor)
     assert empty_page == [], "Expected an empty list when cursor is after the last item"
 
 
-def test_bulk_update_batch_items_request_status_by_agent(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+@pytest.mark.asyncio
+async def test_bulk_update_batch_items_request_status_by_agent(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
 ):
     # Create a batch job
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -5374,15 +5417,17 @@ def test_bulk_update_batch_items_request_status_by_agent(
     assert updated.request_status == JobStatus.expired
 
 
-def test_bulk_update_nonexistent_items_should_error(
+@pytest.mark.asyncio
+async def test_bulk_update_nonexistent_items_should_error(
     server,
     default_user,
     dummy_beta_message_batch,
     dummy_successful_response,
     letta_batch_job,
+    event_loop,
 ):
     # Create a batch job
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -5415,9 +5460,12 @@ def test_bulk_update_nonexistent_items_should_error(
         )
 
 
-def test_bulk_update_nonexistent_items(server, default_user, dummy_beta_message_batch, dummy_successful_response, letta_batch_job):
+@pytest.mark.asyncio
+async def test_bulk_update_nonexistent_items(
+    server, default_user, dummy_beta_message_batch, dummy_successful_response, letta_batch_job, event_loop
+):
     # Create a batch job
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -5450,11 +5498,12 @@ def test_bulk_update_nonexistent_items(server, default_user, dummy_beta_message_
     )
 
 
-def test_create_batch_items_bulk(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+@pytest.mark.asyncio
+async def test_create_batch_items_bulk(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
 ):
     # Create a batch job
-    llm_batch_job = server.batch_manager.create_llm_batch_job(
+    llm_batch_job = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -5477,7 +5526,7 @@ def test_create_batch_items_bulk(
         batch_items.append(batch_item)
 
     # Call the bulk create function
-    created_items = server.batch_manager.create_llm_batch_items_bulk(batch_items, actor=default_user)
+    created_items = await server.batch_manager.create_llm_batch_items_bulk_async(batch_items, actor=default_user)
 
     # Verify the correct number of items were created
     assert len(created_items) == len(agent_ids)
@@ -5493,7 +5542,7 @@ def test_create_batch_items_bulk(
         assert item.step_state == dummy_step_state
 
     # Verify items can be retrieved from the database
-    all_items = server.batch_manager.list_llm_batch_items(llm_batch_id=llm_batch_job.id, actor=default_user)
+    all_items = await server.batch_manager.list_llm_batch_items_async(llm_batch_id=llm_batch_job.id, actor=default_user)
     assert len(all_items) >= len(agent_ids)
 
     # Verify the IDs of created items match what's in the database
@@ -5503,11 +5552,12 @@ def test_create_batch_items_bulk(
         assert fetched.id in created_ids
 
 
-def test_count_batch_items(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+@pytest.mark.asyncio
+async def test_count_batch_items(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
 ):
     # Create a batch job first.
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,

@@ -179,6 +179,15 @@ class Agent(BaseAgent):
                     raise ValueError(f"Invalid JSON format in message: {text_content}")
         return None
 
+    def ensure_read_only_block_not_modified(self, new_memory: Memory) -> None:
+        """
+        Throw an error if a read-only block has been modified
+        """
+        for label in self.agent_state.memory.list_block_labels():
+            if self.agent_state.memory.get_block(label).read_only:
+                if new_memory.get_block(label).value != self.agent_state.memory.get_block(label).value:
+                    raise ValueError(READ_ONLY_BLOCK_EDIT_ERROR)
+
     def update_memory_if_changed(self, new_memory: Memory) -> bool:
         """
         Update internal memory object and system prompt if there have been modifications.
@@ -1277,6 +1286,9 @@ class Agent(BaseAgent):
                 agent_state_copy = self.agent_state.__deepcopy__()
                 function_args["agent_state"] = agent_state_copy  # need to attach self to arg since it's dynamically linked
                 function_response = callable_func(**function_args)
+                self.ensure_read_only_block_not_modified(
+                    new_memory=agent_state_copy.memory
+                )  # memory editing tools cannot edit read-only blocks
                 self.update_memory_if_changed(agent_state_copy.memory)
             elif target_letta_tool.tool_type == ToolType.EXTERNAL_COMPOSIO:
                 action_name = generate_composio_action_from_func_name(target_letta_tool.name)

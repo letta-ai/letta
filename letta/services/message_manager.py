@@ -36,15 +36,29 @@ class MessageManager:
         """Fetch messages by ID and return them in the requested order."""
         with db_registry.session() as session:
             results = MessageModel.list(db_session=session, id=message_ids, organization_id=actor.organization_id, limit=len(message_ids))
+        return self._get_messages_by_id_postprocess(results, message_ids)
 
-            if len(results) != len(message_ids):
-                logger.warning(
-                    f"Expected {len(message_ids)} messages, but found {len(results)}. Missing ids={set(message_ids) - set([r.id for r in results])}"
-                )
+    @enforce_types
+    async def get_messages_by_ids_async(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
+        """Fetch messages by ID and return them in the requested order. Async version of above function."""
+        async with db_registry.async_session() as session:
+            results = await MessageModel.list_async(
+                db_session=session, id=message_ids, organization_id=actor.organization_id, limit=len(message_ids)
+            )
+        return self._get_messages_by_id_postprocess(results, message_ids)
 
-            # Sort results directly based on message_ids
-            result_dict = {msg.id: msg.to_pydantic() for msg in results}
-            return list(filter(lambda x: x is not None, [result_dict.get(msg_id, None) for msg_id in message_ids]))
+    def _get_messages_by_id_postprocess(
+        self,
+        results: List[MessageModel],
+        message_ids: List[str],
+    ) -> List[PydanticMessage]:
+        if len(results) != len(message_ids):
+            logger.warning(
+                f"Expected {len(message_ids)} messages, but found {len(results)}. Missing ids={set(message_ids) - set([r.id for r in results])}"
+            )
+        # Sort results directly based on message_ids
+        result_dict = {msg.id: msg.to_pydantic() for msg in results}
+        return list(filter(lambda x: x is not None, [result_dict.get(msg_id, None) for msg_id in message_ids]))
 
     @enforce_types
     def create_message(self, pydantic_msg: PydanticMessage, actor: PydanticUser) -> PydanticMessage:
@@ -57,10 +71,39 @@ class MessageManager:
             msg.create(session, actor=actor)  # Persist to database
             return msg.to_pydantic()
 
+    def _create_many_preprocess(self, pydantic_msgs: List[PydanticMessage], actor: PydanticUser) -> List[MessageModel]:
+        # Create ORM model instances for all messages
+        orm_messages = []
+        for pydantic_msg in pydantic_msgs:
+            # Set the organization id of the Pydantic message
+            pydantic_msg.organization_id = actor.organization_id
+            msg_data = pydantic_msg.model_dump(to_orm=True)
+            orm_messages.append(MessageModel(**msg_data))
+        return orm_messages
+
     @enforce_types
     def create_many_messages(self, pydantic_msgs: List[PydanticMessage], actor: PydanticUser) -> List[PydanticMessage]:
         """
         Create multiple messages in a single database transaction.
+        Args:
+            pydantic_msgs: List of Pydantic message models to create
+            actor: User performing the action
+
+        Returns:
+            List of created Pydantic message models
+        """
+        if not pydantic_msgs:
+            return []
+
+        orm_messages = self._create_many_preprocess(pydantic_msgs, actor)
+        with db_registry.session() as session:
+            created_messages = MessageModel.batch_create(orm_messages, session, actor=actor)
+            return [msg.to_pydantic() for msg in created_messages]
+
+    @enforce_types
+    async def create_many_messages_async(self, pydantic_msgs: List[PydanticMessage], actor: PydanticUser) -> List[PydanticMessage]:
+        """
+        Create multiple messages in a single database transaction asynchronously.
 
         Args:
             pydantic_msgs: List of Pydantic message models to create
@@ -69,23 +112,12 @@ class MessageManager:
         Returns:
             List of created Pydantic message models
         """
-
         if not pydantic_msgs:
             return []
 
-        # Create ORM model instances for all messages
-        orm_messages = []
-        for pydantic_msg in pydantic_msgs:
-            # Set the organization id of the Pydantic message
-            pydantic_msg.organization_id = actor.organization_id
-            msg_data = pydantic_msg.model_dump(to_orm=True)
-            orm_messages.append(MessageModel(**msg_data))
-
-        # Use the batch_create method for efficient creation
-        with db_registry.session() as session:
-            created_messages = MessageModel.batch_create(orm_messages, session, actor=actor)
-
-            # Convert back to Pydantic models
+        orm_messages = self._create_many_preprocess(pydantic_msgs, actor)
+        async with db_registry.async_session() as session:
+            created_messages = await MessageModel.batch_create_async(orm_messages, session, actor=actor)
             return [msg.to_pydantic() for msg in created_messages]
 
     @enforce_types

@@ -2,7 +2,7 @@ import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 from anthropic.types.beta.messages import BetaMessageBatch, BetaMessageBatchIndividualResponse
-from sqlalchemy import desc, func, tuple_
+from sqlalchemy import desc, func, select, tuple_
 
 from letta.jobs.types import BatchPollingResult, ItemUpdateInfo, RequestStatusUpdateInfo, StepStatusUpdateInfo
 from letta.log import get_logger
@@ -26,7 +26,7 @@ class LLMBatchManager:
     """Manager for handling both LLMBatchJob and LLMBatchItem operations."""
 
     @enforce_types
-    def create_llm_batch_job(
+    async def create_llm_batch_job_async(
         self,
         llm_provider: ProviderType,
         create_batch_response: BetaMessageBatch,
@@ -35,7 +35,7 @@ class LLMBatchManager:
         status: JobStatus = JobStatus.created,
     ) -> PydanticLLMBatchJob:
         """Create a new LLM batch job."""
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             batch = LLMBatchJob(
                 status=status,
                 llm_provider=llm_provider,
@@ -43,14 +43,14 @@ class LLMBatchManager:
                 organization_id=actor.organization_id,
                 letta_batch_job_id=letta_batch_job_id,
             )
-            batch.create(session, actor=actor)
+            await batch.create_async(session, actor=actor)
             return batch.to_pydantic()
 
     @enforce_types
-    def get_llm_batch_job_by_id(self, llm_batch_id: str, actor: Optional[PydanticUser] = None) -> PydanticLLMBatchJob:
+    async def get_llm_batch_job_by_id_async(self, llm_batch_id: str, actor: Optional[PydanticUser] = None) -> PydanticLLMBatchJob:
         """Retrieve a single batch job by ID."""
-        with db_registry.session() as session:
-            batch = LLMBatchJob.read(db_session=session, identifier=llm_batch_id, actor=actor)
+        async with db_registry.async_session() as session:
+            batch = await LLMBatchJob.read_async(db_session=session, identifier=llm_batch_id, actor=actor)
             return batch.to_pydantic()
 
     @enforce_types
@@ -197,16 +197,16 @@ class LLMBatchManager:
             return [message.to_pydantic() for message in results]
 
     @enforce_types
-    def list_running_llm_batches(self, actor: Optional[PydanticUser] = None) -> List[PydanticLLMBatchJob]:
+    async def list_running_llm_batches_async(self, actor: Optional[PydanticUser] = None) -> List[PydanticLLMBatchJob]:
         """Return all running LLM batch jobs, optionally filtered by actor's organization."""
-        with db_registry.session() as session:
-            query = session.query(LLMBatchJob).filter(LLMBatchJob.status == JobStatus.running)
+        async with db_registry.async_session() as session:
+            query = select(LLMBatchJob).where(LLMBatchJob.status == JobStatus.running)
 
             if actor is not None:
-                query = query.filter(LLMBatchJob.organization_id == actor.organization_id)
+                query = query.where(LLMBatchJob.organization_id == actor.organization_id)
 
-            results = query.all()
-            return [batch.to_pydantic() for batch in results]
+            results = await session.execute(query)
+            return [batch.to_pydantic() for batch in results.scalars().all()]
 
     @enforce_types
     def create_llm_batch_item(
@@ -234,7 +234,9 @@ class LLMBatchManager:
             return item.to_pydantic()
 
     @enforce_types
-    def create_llm_batch_items_bulk(self, llm_batch_items: List[PydanticLLMBatchItem], actor: PydanticUser) -> List[PydanticLLMBatchItem]:
+    async def create_llm_batch_items_bulk_async(
+        self, llm_batch_items: List[PydanticLLMBatchItem], actor: PydanticUser
+    ) -> List[PydanticLLMBatchItem]:
         """
         Create multiple batch items in bulk for better performance.
 
@@ -245,7 +247,7 @@ class LLMBatchManager:
         Returns:
             List of created batch items as Pydantic models
         """
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             # Convert Pydantic models to ORM objects
             orm_items = []
             for item in llm_batch_items:
@@ -261,8 +263,7 @@ class LLMBatchManager:
                 )
                 orm_items.append(orm_item)
 
-            # Use the batch_create method to create all items at once
-            created_items = LLMBatchItem.batch_create(orm_items, session, actor=actor)
+            created_items = await LLMBatchItem.batch_create_async(orm_items, session, actor=actor)
 
             # Convert back to Pydantic models
             return [item.to_pydantic() for item in created_items]
@@ -300,7 +301,7 @@ class LLMBatchManager:
             return item.update(db_session=session, actor=actor).to_pydantic()
 
     @enforce_types
-    def list_llm_batch_items(
+    async def list_llm_batch_items_async(
         self,
         llm_batch_id: str,
         limit: Optional[int] = None,
@@ -321,29 +322,29 @@ class LLMBatchManager:
 
         The results are ordered by their id in ascending order.
         """
-        with db_registry.session() as session:
-            query = session.query(LLMBatchItem).filter(LLMBatchItem.llm_batch_id == llm_batch_id)
+        async with db_registry.async_session() as session:
+            query = select(LLMBatchItem).where(LLMBatchItem.llm_batch_id == llm_batch_id)
 
             if actor is not None:
-                query = query.filter(LLMBatchItem.organization_id == actor.organization_id)
+                query = query.where(LLMBatchItem.organization_id == actor.organization_id)
 
             # Additional optional filters
             if agent_id is not None:
-                query = query.filter(LLMBatchItem.agent_id == agent_id)
+                query = query.where(LLMBatchItem.agent_id == agent_id)
             if request_status is not None:
-                query = query.filter(LLMBatchItem.request_status == request_status)
+                query = query.where(LLMBatchItem.request_status == request_status)
             if step_status is not None:
-                query = query.filter(LLMBatchItem.step_status == step_status)
+                query = query.where(LLMBatchItem.step_status == step_status)
             if after is not None:
-                query = query.filter(LLMBatchItem.id > after)
+                query = query.where(LLMBatchItem.id > after)
 
             query = query.order_by(LLMBatchItem.id.asc())
 
             if limit is not None:
                 query = query.limit(limit)
 
-            results = query.all()
-            return [item.to_pydantic() for item in results]
+            results = await session.execute(query)
+            return [item.to_pydantic() for item in results.scalars()]
 
     def bulk_update_llm_batch_items(
         self, llm_batch_id_agent_id_pairs: List[Tuple[str, str]], field_updates: List[Dict[str, Any]], strict: bool = True

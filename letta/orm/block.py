@@ -39,6 +39,9 @@ class Block(OrganizationMixin, SqlalchemyBase):
     limit: Mapped[BigInteger] = mapped_column(Integer, default=CORE_MEMORY_BLOCK_CHAR_LIMIT, doc="Character limit of the block.")
     metadata_: Mapped[Optional[dict]] = mapped_column(JSON, default={}, doc="arbitrary information related to the block.")
 
+    # permissions of the agent
+    read_only: Mapped[bool] = mapped_column(doc="whether the agent has read-only access to the block", default=False)
+
     # history pointers / locking mechanisms
     current_history_entry_id: Mapped[Optional[str]] = mapped_column(
         String, ForeignKey("block_history.id", name="fk_block_current_history_entry", use_alter=True), nullable=True, index=True

@@ -25,6 +25,9 @@ class BaseBlock(LettaBase, validate_assignment=True):
     # context window label
     label: Optional[str] = Field(None, description="Label of the block (e.g. 'human', 'persona') in the context window.")
 
+    # permissions of the agent
+    read_only: bool = Field(False, description="Whether the agent has read-only access to the block.")
+
     # metadata
     description: Optional[str] = Field(None, description="Description of the block.")
     metadata: Optional[dict] = Field({}, description="Metadata of the block.")

@@ -45,6 +45,19 @@ class JobManager:
         return job.to_pydantic()
 
     @enforce_types
+    async def create_job_async(
+        self, pydantic_job: Union[PydanticJob, PydanticRun, PydanticBatchJob], actor: PydanticUser
+    ) -> Union[PydanticJob, PydanticRun, PydanticBatchJob]:
+        """Create a new job based on the JobCreate schema."""
+        async with db_registry.async_session() as session:
+            # Associate the job with the user
+            pydantic_job.user_id = actor.id
+            job_data = pydantic_job.model_dump(to_orm=True)
+            job = JobModel(**job_data)
+            await job.create_async(session, actor=actor)  # Save job in the database
+            return job.to_pydantic()
+
+    @enforce_types
     def update_job_by_id(self, job_id: str, job_update: JobUpdate, actor: PydanticUser) -> PydanticJob:
         """Update a job by its ID with the given JobUpdate object."""
         with db_registry.session() as session:
@@ -69,11 +82,43 @@ class JobManager:
             return job.to_pydantic()
 
     @enforce_types
+    async def update_job_by_id_async(self, job_id: str, job_update: JobUpdate, actor: PydanticUser) -> PydanticJob:
+        """Update a job by its ID with the given JobUpdate object asynchronously."""
+        async with db_registry.async_session() as session:
+            # Fetch the job by ID
+            job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor, access=["write"])
+
+            # Update job attributes with only the fields that were explicitly set
+            update_data = job_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+
+            # Automatically update the completion timestamp if status is set to 'completed'
+            for key, value in update_data.items():
+                setattr(job, key, value)
+
+            if update_data.get("status") == JobStatus.completed and not job.completed_at:
+                job.completed_at = get_utc_time()
+                if job.callback_url:
+                    await self._dispatch_callback_async(session, job)
+
+            # Save the updated job to the database
+            await job.update_async(db_session=session, actor=actor)
+
+            return job.to_pydantic()
+
+    @enforce_types
     def get_job_by_id(self, job_id: str, actor: PydanticUser) -> PydanticJob:
         """Fetch a job by its ID."""
         with db_registry.session() as session:
             # Retrieve job by ID using the Job model's read method
             job = JobModel.read(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.USER)
+            return job.to_pydantic()
+
+    @enforce_types
+    async def get_job_by_id_async(self, job_id: str, actor: PydanticUser) -> PydanticJob:
+        """Fetch a job by its ID asynchronously."""
+        async with db_registry.async_session() as session:
+            # Retrieve job by ID using the Job model's read method
+            job = await JobModel.read_async(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.USER)
             return job.to_pydantic()
 
     @enforce_types
@@ -438,6 +483,35 @@ class JobManager:
             raise NoResultFound(f"Job with id {job_id} does not exist or user does not have access")
         return job
 
+    async def _verify_job_access_async(
+        self,
+        session: Session,
+        job_id: str,
+        actor: PydanticUser,
+        access: List[Literal["read", "write", "delete"]] = ["read"],
+    ) -> JobModel:
+        """
+        Verify that a job exists and the user has the required access.
+
+        Args:
+            session: The database session
+            job_id: The ID of the job to verify
+            actor: The user making the request
+
+        Returns:
+            The job if it exists and the user has access
+
+        Raises:
+            NoResultFound: If the job does not exist or user does not have access
+        """
+        job_query = select(JobModel).where(JobModel.id == job_id)
+        job_query = JobModel.apply_access_predicate(job_query, actor, access, AccessType.USER)
+        result = await session.execute(job_query)
+        job = result.scalar_one_or_none()
+        if not job:
+            raise NoResultFound(f"Job with id {job_id} does not exist or user does not have access")
+        return job
+
     def _get_run_request_config(self, run_id: str) -> LettaRequestConfig:
         """
         Get the request config for a job.
@@ -476,3 +550,28 @@ class JobManager:
 
         session.add(job)
         session.commit()
+
+    async def _dispatch_callback_async(self, session, job: JobModel) -> None:
+        """
+        POST a standard JSON payload to job.callback_url
+        and record timestamp + HTTP status asynchronously.
+        """
+
+        payload = {
+            "job_id": job.id,
+            "status": job.status,
+            "completed_at": job.completed_at.isoformat(),
+        }
+        try:
+            import httpx
+
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(job.callback_url, json=payload, timeout=5.0)
+                job.callback_sent_at = get_utc_time()
+                job.callback_status_code = resp.status_code
+
+        except Exception:
+            return
+
+        session.add(job)
+        await session.commit()
