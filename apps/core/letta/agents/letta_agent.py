@@ -66,7 +66,7 @@ class LettaAgent(BaseAgent):
 
     @trace_method
     async def step(self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = True) -> LettaResponse:
-        agent_state = self.agent_manager.get_agent_by_id(self.agent_id, actor=self.actor)
+        agent_state = await self.agent_manager.get_agent_by_id_async(self.agent_id, actor=self.actor)
         current_in_context_messages, new_in_context_messages, usage = await self._step(
             agent_state=agent_state, input_messages=input_messages, max_steps=max_steps
         )
@@ -131,7 +131,7 @@ class LettaAgent(BaseAgent):
         Main streaming loop that yields partial tokens.
         Whenever we detect a tool call, we yield from _handle_ai_response as well.
         """
-        agent_state = self.agent_manager.get_agent_by_id(self.agent_id, actor=self.actor)
+        agent_state = await self.agent_manager.get_agent_by_id_async(self.agent_id, actor=self.actor)
         current_in_context_messages, new_in_context_messages = _prepare_in_context_messages(
             input_messages, agent_state, self.message_manager, self.actor
         )

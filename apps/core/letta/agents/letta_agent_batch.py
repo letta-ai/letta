@@ -268,16 +268,20 @@ class LettaAgentBatch(BaseAgent):
         # NOTE: We only continue for items with successful results
         batch_items = await self.batch_manager.list_llm_batch_items_async(llm_batch_id=llm_batch_id, request_status=JobStatus.completed)
 
-        agent_ids, agent_state_map = [], {}
-        provider_results, name_map, args_map, cont_map = {}, {}, {}, {}
+        agent_ids = []
+        provider_results = {}
         request_status_updates: List[RequestStatusUpdateInfo] = []
 
         for item in batch_items:
             aid = item.agent_id
             agent_ids.append(aid)
-            agent_state_map[aid] = self.agent_manager.get_agent_by_id(aid, actor=self.actor)
             provider_results[aid] = item.batch_request_result.result
 
+        agent_states = await self.agent_manager.get_agents_by_ids_async(agent_ids, actor=self.actor)
+        agent_state_map = {agent.id: agent for agent in agent_states}
+
+        name_map, args_map, cont_map = {}, {}, {}
+        for aid in agent_ids:
             # status bookkeeping
             pr = provider_results[aid]
             status = (
