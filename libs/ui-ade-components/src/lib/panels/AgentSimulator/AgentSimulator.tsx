@@ -12,6 +12,7 @@ import {
   HStack,
   PersonIcon,
   RawToggleGroup,
+  RawSwitch,
   SystemIcon,
   toast,
   Typography,
@@ -65,6 +66,7 @@ import { z } from 'zod';
 import { useTranslations } from '@letta-cloud/translations';
 import { useDebouncedCallback, useLocalStorage } from '@mantine/hooks';
 import {
+  useFeatureFlag,
   useSetOnboardingStep,
   webApi,
   webApiQueryKeys,
@@ -107,6 +109,7 @@ export type SendMessageType = (payload: SendMessagePayload) => void;
 
 interface UseSendMessageOptions {
   onFailedToSendMessage?: (existingMessage: string) => void;
+  experimental?: boolean;
 }
 
 function errorHasResponseAndStatus(e: unknown): e is {
@@ -128,6 +131,7 @@ export function useSendMessage(
   const { isLocal } = useCurrentAgentMetaData();
   const [failedToSendMessage, setFailedToSendMessage] = useState(false);
   const [errorCode, setErrorCode] = useState<ErrorCode | undefined>(undefined);
+  const experimental = options.experimental === true;
 
   const { baseUrl, password } = useLettaAgentsAPI();
 
@@ -249,6 +253,7 @@ export function useSendMessage(
           disableRetry: true,
           keepalive: false,
           headers: {
+            ...(experimental ? { 'X-EXPERIMENTAL': 'true' } : {}),
             'X-SOURCE-CLIENT': window.location.pathname,
             'Content-Type': 'application/json',
             Accept: 'text/event-stream',
@@ -439,7 +444,16 @@ export function useSendMessage(
         setIsPending(false);
       };
     },
-    [agentId, baseUrl, isLocal, options, password, queryClient, setIsPending],
+    [
+      agentId,
+      baseUrl,
+      isLocal,
+      options,
+      password,
+      queryClient,
+      setIsPending,
+      experimental,
+    ],
   );
 
   return { isPending, isError: failedToSendMessage, sendMessage, errorCode };
@@ -702,6 +716,26 @@ function AgentSimulatorOptionsMenu() {
   );
 }
 
+interface BetaToggleProps {
+  experimental: boolean;
+  setExperimental: Dispatch<SetStateAction<boolean>>;
+}
+
+function BetaToggle({ experimental, setExperimental }: BetaToggleProps) {
+  return (
+    <HStack paddingTop="xxsmall" justify="spaceBetween">
+      <RawSwitch
+        checked={experimental}
+        onCheckedChange={setExperimental}
+        aria-label="Toggle experimental async loop"
+        label=""
+        hideLabel
+      />
+      <Typography variant="body2">Beta</Typography>
+    </HStack>
+  );
+}
+
 interface AgentSimulatorOnboardingProps {
   children: React.ReactNode;
 }
@@ -802,6 +836,10 @@ export function AgentSimulator() {
     defaultValue: 'interactive',
     key: 'chatroom-render-mode',
   });
+  const { data: experimentalAsyncLoopEnabled } = useFeatureFlag(
+    'EXPERIMENTAL_ASYNC_LOOP',
+  );
+  const [experimental, setExperimental] = useState(true);
 
   const billingTier = useBillingTier();
 
@@ -901,6 +939,7 @@ export function AgentSimulator() {
     onFailedToSendMessage: (message) => {
       ref.current?.setChatMessage(message);
     },
+    experimental: experimentalAsyncLoopEnabled && experimental,
   });
 
   const hasVariableIssue = useMemo(() => {
@@ -1022,23 +1061,31 @@ export function AgentSimulator() {
             }
           >
             <VStack paddingLeft="small">
-              <AgentVariablesModal
-                trigger={
-                  <Button
-                    data-testid="toggle-variables-button"
-                    preIcon={
-                      hasVariableIssue ? (
-                        <WarningIcon color="warning" />
-                      ) : (
-                        <VariableIcon />
-                      )
-                    }
-                    color="secondary"
-                    label={t('showVariables')}
-                    size="small"
+              <HStack>
+                <AgentVariablesModal
+                  trigger={
+                    <Button
+                      data-testid="toggle-variables-button"
+                      preIcon={
+                        hasVariableIssue ? (
+                          <WarningIcon color="warning" />
+                        ) : (
+                          <VariableIcon />
+                        )
+                      }
+                      color="secondary"
+                      label={t('showVariables')}
+                      size="small"
+                    />
+                  }
+                />
+                {experimentalAsyncLoopEnabled && (
+                  <BetaToggle
+                    experimental={experimental}
+                    setExperimental={setExperimental}
                   />
-                }
-              />
+                )}
+              </HStack>
             </VStack>
           </PanelBar>
           <VStack collapseHeight gap={false} fullWidth>

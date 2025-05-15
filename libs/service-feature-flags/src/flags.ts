@@ -66,6 +66,11 @@ export const featureFlags = {
     expiryDate: '2024-07-01',
     flagValue: z.boolean(),
   },
+  EXPERIMENTAL_ASYNC_LOOP: {
+    description: 'Enable experimental async loop for streaming messages',
+    expiryDate: '2025-07-01',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;
