@@ -333,7 +333,7 @@ def detach_source(
 
 
 @router.get("/{agent_id}", response_model=AgentState, operation_id="retrieve_agent")
-def retrieve_agent(
+async def retrieve_agent(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -344,7 +344,7 @@ def retrieve_agent(
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
-        return server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
+        return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -414,7 +414,7 @@ def retrieve_block(
 
 
 @router.get("/{agent_id}/core-memory/blocks", response_model=List[Block], operation_id="list_core_memory_blocks")
-def list_blocks(
+async def list_blocks(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -424,7 +424,7 @@ def list_blocks(
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     try:
-        agent = server.agent_manager.get_agent_by_id(agent_id, actor)
+        agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor)
         return agent.memory.blocks
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -630,7 +630,7 @@ async def send_message(
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     # TODO: This is redundant, remove soon
-    agent = server.agent_manager.get_agent_by_id(agent_id, actor)
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor)
     agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
     experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
@@ -690,7 +690,7 @@ async def send_message_streaming(
     request_start_timestamp_ns = get_utc_timestamp_ns()
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     # TODO: This is redundant, remove soon
-    agent = server.agent_manager.get_agent_by_id(agent_id, actor)
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor)
     agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
     experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
