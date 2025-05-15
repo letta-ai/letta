@@ -268,7 +268,7 @@ def _assert_valid_chunk(chunk, idx, chunks):
 # --- Tests --- #
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 @pytest.mark.parametrize("model", ["openai/gpt-4o-mini", "anthropic/claude-3-5-sonnet-20241022"])
 async def test_model_compatibility(disable_e2b_api_key, client, model, server, group_id, actor):
     request = _get_chat_request("How are you?")
@@ -303,7 +303,7 @@ async def test_model_compatibility(disable_e2b_api_key, client, model, server, g
                 print(chunk.choices[0].delta.content)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 @pytest.mark.parametrize("message", ["Use search memory tool to recall what my name is."])
 @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
 async def test_voice_recall_memory(disable_e2b_api_key, client, voice_agent, message, endpoint):
@@ -318,7 +318,7 @@ async def test_voice_recall_memory(disable_e2b_api_key, client, voice_agent, mes
                 print(chunk.choices[0].delta.content)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
 async def test_trigger_summarization(disable_e2b_api_key, client, server, voice_agent, group_id, endpoint, actor):
     server.group_manager.modify_group(
@@ -350,7 +350,7 @@ async def test_trigger_summarization(disable_e2b_api_key, client, server, voice_
                 print(chunk.choices[0].delta.content)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_summarization(disable_e2b_api_key, voice_agent):
     agent_manager = AgentManager()
     user_manager = UserManager()
@@ -422,16 +422,17 @@ async def test_summarization(disable_e2b_api_key, voice_agent):
     summarizer.fire_and_forget.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_voice_sleeptime_agent(disable_e2b_api_key, client, voice_agent):
     """Tests chat completion streaming using the Async OpenAI client."""
     agent_manager = AgentManager()
+    tool_manager = ToolManager()
     user_manager = UserManager()
     actor = user_manager.get_default_user()
 
-    finish_rethinking_memory_tool = client.tools.list(name="finish_rethinking_memory")[0]
-    store_memories_tool = client.tools.list(name="store_memories")[0]
-    rethink_user_memory_tool = client.tools.list(name="rethink_user_memory")[0]
+    finish_rethinking_memory_tool = tool_manager.get_tool_by_name(tool_name="finish_rethinking_memory", actor=actor)
+    store_memories_tool = tool_manager.get_tool_by_name(tool_name="store_memories", actor=actor)
+    rethink_user_memory_tool = tool_manager.get_tool_by_name(tool_name="rethink_user_memory", actor=actor)
     request = CreateAgent(
         name=voice_agent.name + "-sleeptime",
         agent_type=AgentType.voice_sleeptime_agent,
@@ -487,7 +488,7 @@ async def test_voice_sleeptime_agent(disable_e2b_api_key, client, voice_agent):
     assert not missing, f"Did not see calls to: {', '.join(missing)}"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_init_voice_convo_agent(voice_agent, server, actor):
 
     assert voice_agent.enable_sleeptime == True

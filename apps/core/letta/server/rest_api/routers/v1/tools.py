@@ -76,7 +76,7 @@ def retrieve_tool(
 
 
 @router.get("/", response_model=List[Tool], operation_id="list_tools")
-def list_tools(
+async def list_tools(
     after: Optional[str] = None,
     limit: Optional[int] = 50,
     name: Optional[str] = None,
@@ -89,9 +89,9 @@ def list_tools(
     try:
         actor = server.user_manager.get_user_or_default(user_id=actor_id)
         if name is not None:
-            tool = server.tool_manager.get_tool_by_name(tool_name=name, actor=actor)
+            tool = await server.tool_manager.get_tool_by_name_async(tool_name=name, actor=actor)
             return [tool] if tool else []
-        return server.tool_manager.list_tools(actor=actor, after=after, limit=limit)
+        return await server.tool_manager.list_tools_async(actor=actor, after=after, limit=limit)
     except Exception as e:
         # Log or print the full exception here for debugging
         print(f"Error occurred: {e}")

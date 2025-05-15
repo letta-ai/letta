@@ -47,7 +47,7 @@ autoflake = {version = "^2.3.0", optional = true}
 python-multipart = "^0.0.19"
 sqlalchemy-utils = "^0.41.2"
 pytest-order = {version = "^1.2.0", optional = true}
-pytest-asyncio = {version = "^0.23.2", optional = true}
+pytest-asyncio = {version = "^0.24.0", optional = true}
 pydantic-settings = "^2.2.1"
 httpx-sse = "^0.4.0"
 isort = { version = "^5.13.2", optional = true }

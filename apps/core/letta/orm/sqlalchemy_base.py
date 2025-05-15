@@ -631,6 +631,24 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         except (DBAPIError, IntegrityError) as e:
             self._handle_dbapi_error(e)
 
+    @handle_db_timeout
+    async def create_async(self, db_session: "AsyncSession", actor: Optional["User"] = None, no_commit: bool = False) -> "SqlalchemyBase":
+        """Async version of create function"""
+        logger.debug(f"Creating {self.__class__.__name__} with ID: {self.id} with actor={actor}")
+
+        if actor:
+            self._set_created_and_updated_by_fields(actor.id)
+        try:
+            db_session.add(self)
+            if no_commit:
+                await db_session.flush()  # no commit, just flush to get PK
+            else:
+                await db_session.commit()
+            await db_session.refresh(self)
+            return self
+        except (DBAPIError, IntegrityError) as e:
+            self._handle_dbapi_error(e)
+
     @classmethod
     @handle_db_timeout
     def batch_create(cls, items: List["SqlalchemyBase"], db_session: "Session", actor: Optional["User"] = None) -> List["SqlalchemyBase"]:
@@ -668,6 +686,51 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                     query = query.order_by(cls.created_at)
 
                 return list(session.execute(query).scalars())
+
+        except (DBAPIError, IntegrityError) as e:
+            cls._handle_dbapi_error(e)
+
+    @classmethod
+    @handle_db_timeout
+    async def batch_create_async(
+        cls, items: List["SqlalchemyBase"], db_session: "AsyncSession", actor: Optional["User"] = None
+    ) -> List["SqlalchemyBase"]:
+        """
+        Async version of batch_create method.
+        Create multiple records in a single transaction for better performance.
+        Args:
+            items: List of model instances to create
+            db_session: AsyncSession session
+            actor: Optional user performing the action
+        Returns:
+            List of created model instances
+        """
+        logger.debug(f"Async batch creating {len(items)} {cls.__name__} items with actor={actor}")
+        if not items:
+            return []
+
+        # Set created/updated by fields if actor is provided
+        if actor:
+            for item in items:
+                item._set_created_and_updated_by_fields(actor.id)
+
+        try:
+            async with db_session as session:
+                session.add_all(items)
+                await session.flush()  # Flush to generate IDs but don't commit yet
+
+                # Collect IDs to fetch the complete objects after commit
+                item_ids = [item.id for item in items]
+
+                await session.commit()
+
+                # Re-query the objects to get them with relationships loaded
+                query = select(cls).where(cls.id.in_(item_ids))
+                if hasattr(cls, "created_at"):
+                    query = query.order_by(cls.created_at)
+
+                result = await session.execute(query)
+                return list(result.scalars())
 
         except (DBAPIError, IntegrityError) as e:
             cls._handle_dbapi_error(e)

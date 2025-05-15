@@ -45,6 +45,19 @@ class JobManager:
         return job.to_pydantic()
 
     @enforce_types
+    async def create_job_async(
+        self, pydantic_job: Union[PydanticJob, PydanticRun, PydanticBatchJob], actor: PydanticUser
+    ) -> Union[PydanticJob, PydanticRun, PydanticBatchJob]:
+        """Create a new job based on the JobCreate schema."""
+        async with db_registry.async_session() as session:
+            # Associate the job with the user
+            pydantic_job.user_id = actor.id
+            job_data = pydantic_job.model_dump(to_orm=True)
+            job = JobModel(**job_data)
+            await job.create_async(session, actor=actor)  # Save job in the database
+            return job.to_pydantic()
+
+    @enforce_types
     def update_job_by_id(self, job_id: str, job_update: JobUpdate, actor: PydanticUser) -> PydanticJob:
         """Update a job by its ID with the given JobUpdate object."""
         with db_registry.session() as session:

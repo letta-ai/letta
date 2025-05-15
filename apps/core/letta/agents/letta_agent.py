@@ -58,7 +58,7 @@ class LettaAgent(BaseAgent):
         self.passage_manager = passage_manager
         self.response_messages: List[Message] = []
 
-        self.last_function_response = self._load_last_function_response()
+        self.last_function_response = None
 
         # Cached archival memory/message size
         self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_id)
@@ -237,6 +237,8 @@ class LettaAgent(BaseAgent):
         ]
 
         # Mirror the sync agent loop: get allowed tools or allow all if none are allowed
+        if self.last_function_response is None:
+            self.last_function_response = await self._load_last_function_response_async()
         valid_tool_names = tool_rules_solver.get_allowed_tool_names(
             available_tools=set([t.name for t in tools]),
             last_function_response=self.last_function_response,
@@ -330,7 +332,7 @@ class LettaAgent(BaseAgent):
             pre_computed_assistant_message_id=pre_computed_assistant_message_id,
             pre_computed_tool_message_id=pre_computed_tool_message_id,
         )
-        persisted_messages = self.message_manager.create_many_messages(tool_call_messages, actor=self.actor)
+        persisted_messages = await self.message_manager.create_many_messages_async(tool_call_messages, actor=self.actor)
         self.last_function_response = function_response
 
         return persisted_messages, continue_stepping
@@ -416,9 +418,9 @@ class LettaAgent(BaseAgent):
         results = await asyncio.gather(*tasks)
         return results
 
-    def _load_last_function_response(self):
+    async def _load_last_function_response_async(self):
         """Load the last function response from message history"""
-        in_context_messages = self.agent_manager.get_in_context_messages(agent_id=self.agent_id, actor=self.actor)
+        in_context_messages = await self.agent_manager.get_in_context_messages_async(agent_id=self.agent_id, actor=self.actor)
         for msg in reversed(in_context_messages):
             if msg.role == MessageRole.tool and msg.content and len(msg.content) == 1 and isinstance(msg.content[0], TextContent):
                 text_content = msg.content[0].text

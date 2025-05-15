@@ -71,6 +71,16 @@ class MessageManager:
             msg.create(session, actor=actor)  # Persist to database
             return msg.to_pydantic()
 
+    def _create_many_preprocess(self, pydantic_msgs: List[PydanticMessage], actor: PydanticUser) -> List[MessageModel]:
+        # Create ORM model instances for all messages
+        orm_messages = []
+        for pydantic_msg in pydantic_msgs:
+            # Set the organization id of the Pydantic message
+            pydantic_msg.organization_id = actor.organization_id
+            msg_data = pydantic_msg.model_dump(to_orm=True)
+            orm_messages.append(MessageModel(**msg_data))
+        return orm_messages
+
     @enforce_types
     def create_many_messages(self, pydantic_msgs: List[PydanticMessage], actor: PydanticUser) -> List[PydanticMessage]:
         """
@@ -83,23 +93,32 @@ class MessageManager:
         Returns:
             List of created Pydantic message models
         """
-
         if not pydantic_msgs:
             return []
 
-        # Create ORM model instances for all messages
-        orm_messages = []
-        for pydantic_msg in pydantic_msgs:
-            # Set the organization id of the Pydantic message
-            pydantic_msg.organization_id = actor.organization_id
-            msg_data = pydantic_msg.model_dump(to_orm=True)
-            orm_messages.append(MessageModel(**msg_data))
-
-        # Use the batch_create method for efficient creation
+        orm_messages = self._create_many_preprocess(pydantic_msgs, actor)
         with db_registry.session() as session:
             created_messages = MessageModel.batch_create(orm_messages, session, actor=actor)
+            return [msg.to_pydantic() for msg in created_messages]
 
-            # Convert back to Pydantic models
+    @enforce_types
+    async def create_many_messages_async(self, pydantic_msgs: List[PydanticMessage], actor: PydanticUser) -> List[PydanticMessage]:
+        """
+        Create multiple messages in a single database transaction asynchronously.
+
+        Args:
+            pydantic_msgs: List of Pydantic message models to create
+            actor: User performing the action
+
+        Returns:
+            List of created Pydantic message models
+        """
+        if not pydantic_msgs:
+            return []
+
+        orm_messages = self._create_many_preprocess(pydantic_msgs, actor)
+        async with db_registry.async_session() as session:
+            created_messages = await MessageModel.batch_create_async(orm_messages, session, actor=actor)
             return [msg.to_pydantic() for msg in created_messages]
 
     @enforce_types
