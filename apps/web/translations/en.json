@@ -1555,7 +1555,7 @@
       "showAll": "+{count} more"
     },
     "importAgents": {
-      "title": "Import Agents"
+      "title": "Import agent file (.af)"
     },
     "useQueryDefinition": {
       "identities": {
@@ -1715,13 +1715,13 @@
           "cta": "Early access"
         },
         "createAgent": {
-          "title": "New Agent",
+          "title": "Create a new agent",
           "cta": "Create agent",
-          "description": "Create an agent to deploy to on your server"
+          "description": "Create an agent on your server"
         },
         "viewAgents": {
-          "title": "View agents",
-          "description": "View all of your agents on your server",
+          "title": "View all agents",
+          "description": "View agents on your server",
           "cta": "View agents"
         }
       }
@@ -1826,7 +1826,7 @@
     "title": "Local agents",
     "description": "View your available agents running inside the Letta server",
     "createAgent": "Create a new agent",
-    "importAgent": "Import agent",
+    "importAgent": "Import agent file (.af)",
     "searchInput": {
       "placeholder": "Search agents"
     },

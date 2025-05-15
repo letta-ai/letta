@@ -1747,15 +1747,15 @@
       "content": "You are about to import an agent from a third-party source, please ensure you trust the source before proceeding.",
       "title": "Warning"
     },
-    "dropText": "Drop an .af file here",
-    "chooseFileText": "or click here to upload",
+    "dropText": "Drop your .af file here",
+    "chooseFileText": "or click to upload",
     "changeAgent": "Change agent",
     "removeAgent": "Remove agent",
     "confirm": "Start import",
     "label": "Agent to upload",
-    "chooseAgent": "or click here to upload",
+    "chooseAgent": "or click to upload",
     "title": "Import Agent",
-    "dropAgent": "Drop an .af file here"
+    "dropAgent": "Drop your .af file here"
   },
   "DeleteAgentDialog": {
     "nameError": "Agent name does not match",
