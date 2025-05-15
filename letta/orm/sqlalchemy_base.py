@@ -114,154 +114,323 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             if before_obj and after_obj and before_obj.created_at < after_obj.created_at:
                 raise ValueError("'before' reference must be later than 'after' reference")
 
-            query = select(cls)
+            query = cls._list_preprocess(
+                before_obj=before_obj,
+                after_obj=after_obj,
+                start_date=start_date,
+                end_date=end_date,
+                limit=limit,
+                query_text=query_text,
+                query_embedding=query_embedding,
+                ascending=ascending,
+                tags=tags,
+                match_all_tags=match_all_tags,
+                actor=actor,
+                access=access,
+                access_type=access_type,
+                join_model=join_model,
+                join_conditions=join_conditions,
+                identifier_keys=identifier_keys,
+                identity_id=identity_id,
+                **kwargs,
+            )
 
-            if join_model and join_conditions:
-                query = query.join(join_model, and_(*join_conditions))
+            # Execute the query
+            results = session.execute(query)
 
-            # Apply access predicate if actor is provided
-            if actor:
-                query = cls.apply_access_predicate(query, actor, access, access_type)
-
-            # Handle tag filtering if the model has tags
-            if tags and hasattr(cls, "tags"):
-                query = select(cls)
-
-                if match_all_tags:
-                    # Match ALL tags - use subqueries
-                    subquery = (
-                        select(cls.tags.property.mapper.class_.agent_id)
-                        .where(cls.tags.property.mapper.class_.tag.in_(tags))
-                        .group_by(cls.tags.property.mapper.class_.agent_id)
-                        .having(func.count() == len(tags))
-                    )
-                    query = query.filter(cls.id.in_(subquery))
-                else:
-                    # Match ANY tag - use join and filter
-                    query = (
-                        query.join(cls.tags).filter(cls.tags.property.mapper.class_.tag.in_(tags)).distinct(cls.id).order_by(cls.id)
-                    )  # Deduplicate results
-
-                # select distinct primary key
-                query = query.distinct(cls.id).order_by(cls.id)
-
-            if identifier_keys and hasattr(cls, "identities"):
-                query = query.join(cls.identities).filter(cls.identities.property.mapper.class_.identifier_key.in_(identifier_keys))
-
-            # given the identity_id, we can find within the agents table any agents that have the identity_id in their identity_ids
-            if identity_id and hasattr(cls, "identities"):
-                query = query.join(cls.identities).filter(cls.identities.property.mapper.class_.id == identity_id)
-
-            # Apply filtering logic from kwargs
-            for key, value in kwargs.items():
-                if "." in key:
-                    # Handle joined table columns
-                    table_name, column_name = key.split(".")
-                    joined_table = locals().get(table_name) or globals().get(table_name)
-                    column = getattr(joined_table, column_name)
-                else:
-                    # Handle columns from main table
-                    column = getattr(cls, key)
-
-                if isinstance(value, (list, tuple, set)):
-                    query = query.where(column.in_(value))
-                else:
-                    query = query.where(column == value)
-
-            # Date range filtering
-            if start_date:
-                query = query.filter(cls.created_at > start_date)
-            if end_date:
-                query = query.filter(cls.created_at < end_date)
-
-            # Handle pagination based on before/after
-            if before or after:
-                conditions = []
-
-                if before and after:
-                    # Window-based query - get records between before and after
-                    conditions = [
-                        or_(cls.created_at < before_obj.created_at, and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id)),
-                        or_(cls.created_at > after_obj.created_at, and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id)),
-                    ]
-                else:
-                    # Pure pagination query
-                    if before:
-                        conditions.append(
-                            or_(
-                                cls.created_at < before_obj.created_at,
-                                and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id),
-                            )
-                        )
-                    if after:
-                        conditions.append(
-                            or_(
-                                cls.created_at > after_obj.created_at,
-                                and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id),
-                            )
-                        )
-
-                if conditions:
-                    query = query.where(and_(*conditions))
-
-            # Text search
-            if query_text:
-                if hasattr(cls, "text"):
-                    query = query.filter(func.lower(cls.text).contains(func.lower(query_text)))
-                elif hasattr(cls, "name"):
-                    # Special case for Agent model - search across name
-                    query = query.filter(func.lower(cls.name).contains(func.lower(query_text)))
-
-            # Embedding search (for Passages)
-            is_ordered = False
-            if query_embedding:
-                if not hasattr(cls, "embedding"):
-                    raise ValueError(f"Class {cls.__name__} does not have an embedding column")
-
-                from letta.settings import settings
-
-                if settings.letta_pg_uri_no_default:
-                    # PostgreSQL with pgvector
-                    query = query.order_by(cls.embedding.cosine_distance(query_embedding).asc())
-                else:
-                    # SQLite with custom vector type
-                    query_embedding_binary = adapt_array(query_embedding)
-                    query = query.order_by(
-                        func.cosine_distance(cls.embedding, query_embedding_binary).asc(),
-                        cls.created_at.asc() if ascending else cls.created_at.desc(),
-                        cls.id.asc(),
-                    )
-                    is_ordered = True
-
-            # Handle soft deletes
-            if hasattr(cls, "is_deleted"):
-                query = query.where(cls.is_deleted == False)
-
-            # Apply ordering
-            if not is_ordered:
-                if ascending:
-                    query = query.order_by(cls.created_at.asc(), cls.id.asc())
-                else:
-                    query = query.order_by(cls.created_at.desc(), cls.id.desc())
-
-            # Apply limit, adjusting for both bounds if necessary
-            if before and after:
-                # When both bounds are provided, we need to fetch enough records to satisfy
-                # the limit while respecting both bounds. We'll fetch more and then trim.
-                query = query.limit(limit * 2)
-            else:
-                query = query.limit(limit)
-
-            results = list(session.execute(query).scalars())
-
-            # If we have both bounds, take the middle portion
-            if before and after and len(results) > limit:
-                middle = len(results) // 2
-                start = max(0, middle - limit // 2)
-                end = min(len(results), start + limit)
-                results = results[start:end]
+            results = list(results.scalars())
+            results = cls._list_postprocess(
+                before=before,
+                after=after,
+                limit=limit,
+                results=results,
+            )
 
             return results
+
+    @classmethod
+    @handle_db_timeout
+    async def list_async(
+        cls,
+        *,
+        db_session: "AsyncSession",
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        limit: Optional[int] = 50,
+        query_text: Optional[str] = None,
+        query_embedding: Optional[List[float]] = None,
+        ascending: bool = True,
+        tags: Optional[List[str]] = None,
+        match_all_tags: bool = False,
+        actor: Optional["User"] = None,
+        access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
+        access_type: AccessType = AccessType.ORGANIZATION,
+        join_model: Optional[Base] = None,
+        join_conditions: Optional[Union[Tuple, List]] = None,
+        identifier_keys: Optional[List[str]] = None,
+        identity_id: Optional[str] = None,
+        **kwargs,
+    ) -> List["SqlalchemyBase"]:
+        """
+        Async version of list method above.
+        NOTE: Keep in sync.
+        List records with before/after pagination, ordering by created_at.
+        Can use both before and after to fetch a window of records.
+
+        Args:
+            db_session: SQLAlchemy session
+            before: ID of item to paginate before (upper bound)
+            after: ID of item to paginate after (lower bound)
+            start_date: Filter items after this date
+            end_date: Filter items before this date
+            limit: Maximum number of items to return
+            query_text: Text to search for
+            query_embedding: Vector to search for similar embeddings
+            ascending: Sort direction
+            tags: List of tags to filter by
+            match_all_tags: If True, return items matching all tags. If False, match any tag.
+            **kwargs: Additional filters to apply
+        """
+        if start_date and end_date and start_date > end_date:
+            raise ValueError("start_date must be earlier than or equal to end_date")
+
+        logger.debug(f"Listing {cls.__name__} with kwarg filters {kwargs}")
+
+        async with db_session as session:
+            # Get the reference objects for pagination
+            before_obj = None
+            after_obj = None
+
+            if before:
+                before_obj = await session.get(cls, before)
+                if not before_obj:
+                    raise NoResultFound(f"No {cls.__name__} found with id {before}")
+
+            if after:
+                after_obj = await session.get(cls, after)
+                if not after_obj:
+                    raise NoResultFound(f"No {cls.__name__} found with id {after}")
+
+            # Validate that before comes after the after object if both are provided
+            if before_obj and after_obj and before_obj.created_at < after_obj.created_at:
+                raise ValueError("'before' reference must be later than 'after' reference")
+
+            query = cls._list_preprocess(
+                before_obj=before_obj,
+                after_obj=after_obj,
+                start_date=start_date,
+                end_date=end_date,
+                limit=limit,
+                query_text=query_text,
+                query_embedding=query_embedding,
+                ascending=ascending,
+                tags=tags,
+                match_all_tags=match_all_tags,
+                actor=actor,
+                access=access,
+                access_type=access_type,
+                join_model=join_model,
+                join_conditions=join_conditions,
+                identifier_keys=identifier_keys,
+                identity_id=identity_id,
+                **kwargs,
+            )
+
+            # Execute the query
+            results = await session.execute(query)
+
+            results = list(results.scalars())
+            results = cls._list_postprocess(
+                before=before,
+                after=after,
+                limit=limit,
+                results=results,
+            )
+
+            return results
+
+    @classmethod
+    def _list_preprocess(
+        cls,
+        *,
+        before_obj,
+        after_obj,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        limit: Optional[int] = 50,
+        query_text: Optional[str] = None,
+        query_embedding: Optional[List[float]] = None,
+        ascending: bool = True,
+        tags: Optional[List[str]] = None,
+        match_all_tags: bool = False,
+        actor: Optional["User"] = None,
+        access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
+        access_type: AccessType = AccessType.ORGANIZATION,
+        join_model: Optional[Base] = None,
+        join_conditions: Optional[Union[Tuple, List]] = None,
+        identifier_keys: Optional[List[str]] = None,
+        identity_id: Optional[str] = None,
+        **kwargs,
+    ):
+        """
+        Constructs the query for listing records.
+        """
+        query = select(cls)
+
+        if join_model and join_conditions:
+            query = query.join(join_model, and_(*join_conditions))
+
+        # Apply access predicate if actor is provided
+        if actor:
+            query = cls.apply_access_predicate(query, actor, access, access_type)
+
+        # Handle tag filtering if the model has tags
+        if tags and hasattr(cls, "tags"):
+            query = select(cls)
+
+            if match_all_tags:
+                # Match ALL tags - use subqueries
+                subquery = (
+                    select(cls.tags.property.mapper.class_.agent_id)
+                    .where(cls.tags.property.mapper.class_.tag.in_(tags))
+                    .group_by(cls.tags.property.mapper.class_.agent_id)
+                    .having(func.count() == len(tags))
+                )
+                query = query.filter(cls.id.in_(subquery))
+            else:
+                # Match ANY tag - use join and filter
+                query = (
+                    query.join(cls.tags).filter(cls.tags.property.mapper.class_.tag.in_(tags)).distinct(cls.id).order_by(cls.id)
+                )  # Deduplicate results
+
+            # select distinct primary key
+            query = query.distinct(cls.id).order_by(cls.id)
+
+        if identifier_keys and hasattr(cls, "identities"):
+            query = query.join(cls.identities).filter(cls.identities.property.mapper.class_.identifier_key.in_(identifier_keys))
+
+        # given the identity_id, we can find within the agents table any agents that have the identity_id in their identity_ids
+        if identity_id and hasattr(cls, "identities"):
+            query = query.join(cls.identities).filter(cls.identities.property.mapper.class_.id == identity_id)
+
+        # Apply filtering logic from kwargs
+        for key, value in kwargs.items():
+            if "." in key:
+                # Handle joined table columns
+                table_name, column_name = key.split(".")
+                joined_table = locals().get(table_name) or globals().get(table_name)
+                column = getattr(joined_table, column_name)
+            else:
+                # Handle columns from main table
+                column = getattr(cls, key)
+
+            if isinstance(value, (list, tuple, set)):
+                query = query.where(column.in_(value))
+            else:
+                query = query.where(column == value)
+
+        # Date range filtering
+        if start_date:
+            query = query.filter(cls.created_at > start_date)
+        if end_date:
+            query = query.filter(cls.created_at < end_date)
+
+        # Handle pagination based on before/after
+        if before_obj or after_obj:
+            conditions = []
+
+            if before_obj and after_obj:
+                # Window-based query - get records between before and after
+                conditions = [
+                    or_(cls.created_at < before_obj.created_at, and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id)),
+                    or_(cls.created_at > after_obj.created_at, and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id)),
+                ]
+            else:
+                # Pure pagination query
+                if before_obj:
+                    conditions.append(
+                        or_(
+                            cls.created_at < before_obj.created_at,
+                            and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id),
+                        )
+                    )
+                if after_obj:
+                    conditions.append(
+                        or_(
+                            cls.created_at > after_obj.created_at,
+                            and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id),
+                        )
+                    )
+
+            if conditions:
+                query = query.where(and_(*conditions))
+
+        # Text search
+        if query_text:
+            if hasattr(cls, "text"):
+                query = query.filter(func.lower(cls.text).contains(func.lower(query_text)))
+            elif hasattr(cls, "name"):
+                # Special case for Agent model - search across name
+                query = query.filter(func.lower(cls.name).contains(func.lower(query_text)))
+
+        # Embedding search (for Passages)
+        is_ordered = False
+        if query_embedding:
+            if not hasattr(cls, "embedding"):
+                raise ValueError(f"Class {cls.__name__} does not have an embedding column")
+
+            from letta.settings import settings
+
+            if settings.letta_pg_uri_no_default:
+                # PostgreSQL with pgvector
+                query = query.order_by(cls.embedding.cosine_distance(query_embedding).asc())
+            else:
+                # SQLite with custom vector type
+                query_embedding_binary = adapt_array(query_embedding)
+                query = query.order_by(
+                    func.cosine_distance(cls.embedding, query_embedding_binary).asc(),
+                    cls.created_at.asc() if ascending else cls.created_at.desc(),
+                    cls.id.asc(),
+                )
+                is_ordered = True
+
+        # Handle soft deletes
+        if hasattr(cls, "is_deleted"):
+            query = query.where(cls.is_deleted == False)
+
+        # Apply ordering
+        if not is_ordered:
+            if ascending:
+                query = query.order_by(cls.created_at.asc(), cls.id.asc())
+            else:
+                query = query.order_by(cls.created_at.desc(), cls.id.desc())
+
+        # Apply limit, adjusting for both bounds if necessary
+        if before_obj and after_obj:
+            # When both bounds are provided, we need to fetch enough records to satisfy
+            # the limit while respecting both bounds. We'll fetch more and then trim.
+            query = query.limit(limit * 2)
+        else:
+            query = query.limit(limit)
+        return query
+
+    @classmethod
+    def _list_postprocess(
+        cls,
+        before: str | None,
+        after: str | None,
+        limit: int | None,
+        results: list,
+    ):
+        # If we have both bounds, take the middle portion
+        if before and after and len(results) > limit:
+            middle = len(results) // 2
+            start = max(0, middle - limit // 2)
+            end = min(len(results), start + limit)
+            results = results[start:end]
+        return results
 
     @classmethod
     @handle_db_timeout
@@ -305,7 +474,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
     @handle_db_timeout
     async def read_async(
         cls,
-        db_session: "Session",
+        db_session: "AsyncSession",
         identifier: Optional[str] = None,
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],

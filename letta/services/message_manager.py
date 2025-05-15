@@ -36,15 +36,29 @@ class MessageManager:
         """Fetch messages by ID and return them in the requested order."""
         with db_registry.session() as session:
             results = MessageModel.list(db_session=session, id=message_ids, organization_id=actor.organization_id, limit=len(message_ids))
+        return self._get_messages_by_id_postprocess(results, message_ids)
 
-            if len(results) != len(message_ids):
-                logger.warning(
-                    f"Expected {len(message_ids)} messages, but found {len(results)}. Missing ids={set(message_ids) - set([r.id for r in results])}"
-                )
+    @enforce_types
+    async def get_messages_by_ids_async(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
+        """Fetch messages by ID and return them in the requested order. Async version of above function."""
+        async with db_registry.async_session() as session:
+            results = await MessageModel.list_async(
+                db_session=session, id=message_ids, organization_id=actor.organization_id, limit=len(message_ids)
+            )
+        return self._get_messages_by_id_postprocess(results, message_ids)
 
-            # Sort results directly based on message_ids
-            result_dict = {msg.id: msg.to_pydantic() for msg in results}
-            return list(filter(lambda x: x is not None, [result_dict.get(msg_id, None) for msg_id in message_ids]))
+    def _get_messages_by_id_postprocess(
+        self,
+        results: List[MessageModel],
+        message_ids: List[str],
+    ) -> List[PydanticMessage]:
+        if len(results) != len(message_ids):
+            logger.warning(
+                f"Expected {len(message_ids)} messages, but found {len(results)}. Missing ids={set(message_ids) - set([r.id for r in results])}"
+            )
+        # Sort results directly based on message_ids
+        result_dict = {msg.id: msg.to_pydantic() for msg in results}
+        return list(filter(lambda x: x is not None, [result_dict.get(msg_id, None) for msg_id in message_ids]))
 
     @enforce_types
     def create_message(self, pydantic_msg: PydanticMessage, actor: PydanticUser) -> PydanticMessage:

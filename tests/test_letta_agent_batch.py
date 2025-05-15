@@ -1,3 +1,4 @@
+import asyncio
 import os
 import threading
 from datetime import datetime, timezone
@@ -162,6 +163,14 @@ def step_state_map(agents):
     """
     solver = ToolRulesSolver(tool_rules=[InitToolRule(tool_name="get_weather")])
     return {agent.id: AgentStepState(step_number=0, tool_rules_solver=solver) for agent in agents}
+
+
+@pytest.fixture(scope="session")
+def event_loop(request):
+    """Create an instance of the default event loop for each test case."""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
 def create_batch_response(batch_id: str, processing_status: str = "in_progress") -> BetaMessageBatch:
@@ -452,7 +461,7 @@ async def test_rethink_tool_modify_agent_state(client, disable_e2b_api_key, serv
 
 @pytest.mark.asyncio
 async def test_partial_error_from_anthropic_batch(
-    disable_e2b_api_key, server, default_user, agents: Tuple[AgentState], batch_requests, step_state_map, batch_job
+    disable_e2b_api_key, server, default_user, agents: Tuple[AgentState], batch_requests, step_state_map, batch_job, event_loop
 ):
     anthropic_batch_id = "msgbatch_test_12345"
     dummy_batch_response = create_batch_response(
@@ -594,7 +603,7 @@ async def test_partial_error_from_anthropic_batch(
                     letta_batch_job_id=pre_resume_response.letta_batch_id, limit=200, actor=default_user
                 )
                 assert len(messages) == (len(agents) - 1) * 4 + 1
-                assert_descending_order(messages)
+                _assert_descending_order(messages)
                 # Check that each agent is represented
                 for agent in agents_continue:
                     agent_messages = [m for m in messages if m.agent_id == agent.id]
@@ -612,7 +621,7 @@ async def test_partial_error_from_anthropic_batch(
 
 @pytest.mark.asyncio
 async def test_resume_step_some_stop(
-    disable_e2b_api_key, server, default_user, agents: Tuple[AgentState], batch_requests, step_state_map, batch_job
+    disable_e2b_api_key, server, default_user, agents: Tuple[AgentState], batch_requests, step_state_map, batch_job, event_loop
 ):
     anthropic_batch_id = "msgbatch_test_12345"
     dummy_batch_response = create_batch_response(
@@ -743,7 +752,7 @@ async def test_resume_step_some_stop(
                     letta_batch_job_id=pre_resume_response.letta_batch_id, limit=200, actor=default_user
                 )
                 assert len(messages) == len(agents) * 3 + 1
-                assert_descending_order(messages)
+                _assert_descending_order(messages)
                 # Check that each agent is represented
                 for agent in agents_continue:
                     agent_messages = [m for m in messages if m.agent_id == agent.id]
@@ -761,23 +770,21 @@ async def test_resume_step_some_stop(
                     assert agent_messages[-3].role == MessageRole.tool, "Expected tool response after assistant tool call"
 
 
-def assert_descending_order(messages):
-    """Assert messages are in descending order by created_at timestamps."""
+def _assert_descending_order(messages):
+    """Assert messages are in monotonically decreasing by created_at timestamps."""
     if len(messages) <= 1:
         return True
 
-    for i in range(1, len(messages)):
-        assert messages[i].created_at <= messages[i - 1].created_at, (
-            f"Order violation: {messages[i - 1].id} ({messages[i - 1].created_at}) "
-            f"followed by {messages[i].id} ({messages[i].created_at})"
-        )
-
+    for prev, next in zip(messages[:-1], messages[1:]):
+        assert (
+            prev.created_at >= next.created_at
+        ), f"Order violation: {prev.id} ({prev.created_at}) followed by {next.id} ({next.created_at})"
     return True
 
 
 @pytest.mark.asyncio
 async def test_resume_step_after_request_all_continue(
-    disable_e2b_api_key, server, default_user, agents: Tuple[AgentState], batch_requests, step_state_map, batch_job
+    disable_e2b_api_key, server, default_user, agents: Tuple[AgentState], batch_requests, step_state_map, batch_job, event_loop
 ):
     anthropic_batch_id = "msgbatch_test_12345"
     dummy_batch_response = create_batch_response(
@@ -902,7 +909,7 @@ async def test_resume_step_after_request_all_continue(
                     letta_batch_job_id=pre_resume_response.letta_batch_id, limit=200, actor=default_user
                 )
                 assert len(messages) == len(agents) * 4
-                assert_descending_order(messages)
+                _assert_descending_order(messages)
                 # Check that each agent is represented
                 for agent in agents:
                     agent_messages = [m for m in messages if m.agent_id == agent.id]
@@ -915,7 +922,7 @@ async def test_resume_step_after_request_all_continue(
 
 @pytest.mark.asyncio
 async def test_step_until_request_prepares_and_submits_batch_correctly(
-    disable_e2b_api_key, server, default_user, agents, batch_requests, step_state_map, dummy_batch_response, batch_job
+    disable_e2b_api_key, server, default_user, agents, batch_requests, step_state_map, dummy_batch_response, batch_job, event_loop
 ):
     """
     Test that step_until_request correctly:
