@@ -14,7 +14,7 @@ function Toaster() {
             margin: 0,
             borderRadius: 0,
             padding: 0,
-            background: 'transparent',
+            background: 'hsl(var(--background))',
             boxShadow: 'none',
             border: 0,
           }}
