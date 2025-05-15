@@ -1,4 +1,4 @@
-import { createProPaymentLink } from '@letta-cloud/service-payments';
+import { createScalePaymentLink } from '@letta-cloud/service-payments';
 import { NextResponse } from 'next/server';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 
@@ -16,7 +16,7 @@ export async function GET() {
     );
   }
 
-  const paymentLink = await createProPaymentLink(user.activeOrganizationId);
+  const paymentLink = await createScalePaymentLink(user.activeOrganizationId);
 
   if (!paymentLink) {
     return NextResponse.redirect(

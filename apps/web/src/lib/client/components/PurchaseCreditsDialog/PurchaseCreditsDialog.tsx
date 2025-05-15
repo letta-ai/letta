@@ -28,6 +28,7 @@ import { get } from 'lodash-es';
 import type { ServerInferResponses } from '@ts-rest/core';
 import { useFormContext } from 'react-hook-form';
 import { CreditCardSlot } from '$web/client/components';
+import { useGetDefaultOrFirstCard } from '$web/client/hooks/useGetDefaultOrFirstCard/useGetDefaultOrFirstCard';
 
 interface PurchaseCreditsDialogProps {
   trigger: React.ReactNode;
@@ -73,19 +74,7 @@ function ConfirmationText() {
   const t = useTranslations('components/PurchaseCreditsDialog');
   const credits = form.watch('credits');
   const { formatCurrency } = useFormatters();
-
-  const { data: billingInfo } =
-    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
-      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
-    });
-
-  const defaultCard = useMemo(() => {
-    if (!billingInfo?.body.creditCards) {
-      return undefined;
-    }
-
-    return billingInfo.body.creditCards.find((card) => card.isDefault);
-  }, [billingInfo]);
+  const defaultCard = useGetDefaultOrFirstCard();
 
   return (
     <VStack gap="xlarge">
@@ -167,6 +156,7 @@ function PurchaseCreditsForm(props: PurchaseCreditsFormProps) {
   const { formatCurrency } = useFormatters();
 
   const errorTranslation = useErrorMessages(error);
+  const defaultCard = useGetDefaultOrFirstCard();
 
   const renderOption = useCallback(
     (credits: string) => {
@@ -192,28 +182,19 @@ function PurchaseCreditsForm(props: PurchaseCreditsFormProps) {
 
   const handleSubmit = useCallback(
     (values: PurchaseCreditsFormValues) => {
+      if (!defaultCard) {
+        return;
+      }
+
       mutate({
         body: {
+          cardId: defaultCard.id,
           credits: parseInt(values.credits, 10),
         },
       });
     },
-    [mutate],
+    [mutate, defaultCard],
   );
-
-  const { data: billingInfo } =
-    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
-      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
-    });
-
-  const defaultCard = useMemo(() => {
-    if (!billingInfo?.body.creditCards) {
-      return undefined;
-    }
-
-    return billingInfo.body.creditCards.find((card) => card.isDefault);
-  }, [billingInfo]);
-
   return (
     <VStack paddingBottom>
       <FormProvider {...form}>
@@ -251,15 +232,10 @@ function PurchaseCreditsForm(props: PurchaseCreditsFormProps) {
               /* eslint-disable-next-line react/forbid-component-props */
               className="max-w-[40%]"
             >
-              {defaultCard ? (
-                <ConfirmationText />
-              ) : (
-                <Alert title={t('noDefaultCard')} variant="warning" />
-              )}
+              <ConfirmationText />
               <Button
                 fullWidth
                 type="submit"
-                disabled={!defaultCard}
                 size="large"
                 busy={isPending}
                 label={t('confirm')}

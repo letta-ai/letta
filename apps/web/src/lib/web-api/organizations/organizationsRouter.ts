@@ -48,7 +48,7 @@ import {
 } from '@letta-cloud/utils-server';
 import { creditsToDollars } from '@letta-cloud/utils-shared';
 import { sendEmail } from '@letta-cloud/service-email';
-import { upgradeUserToProPlan } from '@letta-cloud/service-payments';
+import { upgradeCustomer } from '@letta-cloud/service-payments';
 import { getRedisModelTransactions } from '@letta-cloud/utils-server';
 import {
   EmbeddingsService,
@@ -856,10 +856,11 @@ export async function purchaseCredits(
     };
   }
 
-  const { credits } = req.body;
+  const { credits, cardId } = req.body;
 
   const payment = await createPayment({
     organizationId: activeOrganizationId,
+    cardId,
     amountInCents: creditsToDollars(credits) * 100,
   });
 
@@ -1308,11 +1309,17 @@ export async function getOrganizationCreditsRoute(): Promise<GetOrganizationCred
   };
 }
 
-type UpgradeOrganizationToProResponse = ServerInferResponses<
-  typeof contracts.organizations.upgradeOrganizationToPro
+type UpgradeOrganizationRequest = ServerInferRequest<
+  typeof contracts.organizations.upgradeOrganization
 >;
 
-async function upgradeOrganizationToPro(): Promise<UpgradeOrganizationToProResponse> {
+type UpgradeOrganizationResponse = ServerInferResponses<
+  typeof contracts.organizations.upgradeOrganization
+>;
+
+async function upgradeOrganization(
+  req: UpgradeOrganizationRequest,
+): Promise<UpgradeOrganizationResponse> {
   const { activeOrganizationId, permissions } =
     await getUserWithActiveOrganizationIdOrThrow();
 
@@ -1325,7 +1332,13 @@ async function upgradeOrganizationToPro(): Promise<UpgradeOrganizationToProRespo
     };
   }
 
-  await upgradeUserToProPlan(activeOrganizationId);
+  const { tier, cardId } = req.body;
+
+  await upgradeCustomer({
+    organizationId: activeOrganizationId,
+    tier,
+    cardId,
+  });
 
   return {
     status: 200,
@@ -1512,7 +1525,7 @@ export const organizationsRouter = {
   resumeOrganizationSubscription,
   inviteNewTeamMember,
   unInviteTeamMember,
-  upgradeOrganizationToPro,
+  upgradeOrganization,
   listInvitedMembers,
   deleteOrganization,
   updateOrganization,

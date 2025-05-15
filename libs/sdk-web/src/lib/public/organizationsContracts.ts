@@ -264,6 +264,7 @@ const purchaseCreditsContract = c.mutation({
   method: 'POST',
   body: z.object({
     credits: z.number(),
+    cardId: z.string(),
   }),
   responses: {
     200: z.object({
@@ -504,10 +505,13 @@ const getOrganizationCreditsContract = c.query({
   },
 });
 
-const upgradeOrganizationToProContract = c.mutation({
+const upgradeOrganizationContract = c.mutation({
   path: '/organizations/self/upgrade',
   method: 'POST',
-  body: z.undefined(),
+  body: z.object({
+    cardId: z.string(),
+    tier: BillingTiers,
+  }),
   responses: {
     200: z.object({
       success: z.boolean(),
@@ -598,7 +602,7 @@ export const organizationsContract = c.router({
   getFullOrganizationQuotas: getFullOrganizationQuotasContract,
   regenerateInviteCode: regenerateInviteCodeContract,
   getInviteByCode: GetInviteByCodeContract,
-  upgradeOrganizationToPro: upgradeOrganizationToProContract,
+  upgradeOrganization: upgradeOrganizationContract,
   getCurrentOrganizationBillingInfo: getCurrentOrganizationBillingInfoContract,
   startSetupIntent: startSetupIntentContract,
   removeOrganizationBillingMethod: removeOrganizationBillingMethodContract,

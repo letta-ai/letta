@@ -30,6 +30,8 @@ export function CurrentUserDetailsBlock() {
         return t('subscription.free');
       case 'pro':
         return t('subscription.pro');
+      case 'scale':
+        return t('subscription.scale');
       case 'enterprise':
         return t('subscription.enterprise');
       default:
@@ -42,6 +44,8 @@ export function CurrentUserDetailsBlock() {
       case 'free':
         return 'warning';
       case 'pro':
+        return 'info';
+      case 'scale':
         return 'info';
       case 'enterprise':
         return 'info';

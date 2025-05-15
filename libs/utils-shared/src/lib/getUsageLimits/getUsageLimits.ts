@@ -14,6 +14,7 @@ export interface UsageLimits {
   fileSize: number; // in bytes
   groups: number;
   blocks: number;
+  monthlyCost: number; // in dollars
 }
 
 const OneGB = 1_073_741_824; // 1024 * 1024 * 1024
@@ -23,6 +24,7 @@ const FiveMB = 1024 * 1024 * 5; // 5 MB
 
 const limitMap: Record<BillingTiersType, UsageLimits> = {
   enterprise: {
+    monthlyCost: 99999999999,
     providers: 50,
     agents: 50_000_000,
     identities: 10_000_000,
@@ -38,6 +40,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     storage: OneGB * 100, // 100 GB
   },
   pro: {
+    monthlyCost: 20,
     providers: 50,
     identities: 1000,
     agents: 1000,
@@ -49,10 +52,27 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     blocks: 100_000,
     premiumInferencesPerMonth: 500,
     freeInferencesPerMonth: 5_000,
-    fileSize: TwentyFiveMB, // 100 MB
+    fileSize: TwentyFiveMB,
     storage: OneGB * 10, // 1 GB
   },
+  scale: {
+    monthlyCost: 750,
+    providers: 50,
+    identities: 100_000,
+    agents: 100_000,
+    projects: 100,
+    dataSources: 1000,
+    templates: 100,
+    tools: 250,
+    groups: 10,
+    blocks: 100_000_0000,
+    premiumInferencesPerMonth: 5_000,
+    freeInferencesPerMonth: 50_000,
+    fileSize: TwentyFiveMB,
+    storage: OneGB * 100, // 1 GB
+  },
   free: {
+    monthlyCost: 0,
     providers: 50,
     agents: 10,
     dataSources: 25,

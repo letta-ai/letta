@@ -1,4 +1,4 @@
-import { createProPaymentLink } from '@letta-cloud/service-payments';
+import { generateManagePlanLink } from '@letta-cloud/service-payments';
 import { NextResponse } from 'next/server';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 
@@ -16,16 +16,16 @@ export async function GET() {
     );
   }
 
-  const paymentLink = await createProPaymentLink(user.activeOrganizationId);
+  const planLink = await generateManagePlanLink(user.activeOrganizationId);
 
-  if (!paymentLink) {
+  if (!planLink) {
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_CURRENT_HOST}/settings/organization/billing`,
       302,
     );
   }
 
-  return NextResponse.redirect(paymentLink, 302);
+  return NextResponse.redirect(planLink, 302);
 }
 
 export const dynamic = 'force-dynamic';

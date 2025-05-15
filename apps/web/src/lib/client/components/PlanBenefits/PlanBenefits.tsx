@@ -106,6 +106,45 @@ function ProPlanBenefits() {
   );
 }
 
+function ScalePlanBenefits() {
+  const t = useTranslations('components/PlanBenefits');
+
+  const limits = getUsageLimits('scale');
+
+  const { formatFileSize, formatNumber } = useFormatters();
+
+  return (
+    <BenefitContainer>
+      <Benefit
+        label={t.rich('scale.premiumModelUsage', {
+          limit: () => formatNumber(limits.premiumInferencesPerMonth),
+          link: (chunks) => <Link href="/models">{chunks}</Link>,
+        })}
+      />
+      <Benefit
+        label={t.rich('scale.standardRequests', {
+          limit: () => formatNumber(limits.freeInferencesPerMonth),
+          link: (chunks) => <Link href="/models">{chunks}</Link>,
+        })}
+      />
+      <Benefit
+        label={t('scale.agent', { limit: formatNumber(limits.agents) })}
+      />
+      <Benefit
+        label={t('scale.templates', { limit: formatNumber(limits.agents) })}
+      />
+      <Benefit
+        label={t('scale.storage', {
+          limit: formatFileSize(limits.storage, {
+            unit: 'GB',
+            maximumFractionDigits: 0,
+          }),
+        })}
+      />
+    </BenefitContainer>
+  );
+}
+
 function EnterprisePlanBenefits() {
   const t = useTranslations('components/PlanBenefits');
 
@@ -133,6 +172,8 @@ export function PlanBenefits(props: PlanBenefitsProps) {
       return <ProPlanBenefits />;
     case 'enterprise':
       return <EnterprisePlanBenefits />;
+    case 'scale':
+      return <ScalePlanBenefits />;
     default:
       return null;
   }

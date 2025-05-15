@@ -3,12 +3,35 @@ import { db, organizationBillingDetails } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 import type { BillingTiersType } from '@letta-cloud/types';
 import { startOfMonth, endOfMonth } from 'date-fns';
+import type { Stripe } from 'stripe';
+import { PRO_PLAN_PRODUCT_IDS, SCALE_PLAN_PRODUCT_IDS } from '../constants';
 
 interface GetCustomerSubscriptionResponse {
   tier: BillingTiersType;
   billingPeriodEnd: string;
   billingPeriodStart: string;
   cancelled?: boolean;
+  id?: string;
+}
+
+function getProductFromStripeSubscription(
+  subscription: Stripe.Subscription,
+): BillingTiersType {
+  const product = subscription.items.data[0].price.product as string;
+
+  if (!product) {
+    return 'free';
+  }
+
+  if (SCALE_PLAN_PRODUCT_IDS.includes(product)) {
+    return 'scale';
+  }
+
+  if (PRO_PLAN_PRODUCT_IDS.includes(product)) {
+    return 'pro';
+  }
+
+  return 'free';
 }
 
 export async function getCustomerSubscription(
@@ -64,11 +87,11 @@ export async function getCustomerSubscription(
     customer: customer.stripeCustomerId,
   });
 
-  const activeSubscriptions = subscriptions.data.find((sub) => {
+  const activeSubscription = subscriptions.data.find((sub) => {
     return sub.status === 'active' || sub.status === 'trialing';
   });
 
-  if (!activeSubscriptions) {
+  if (!activeSubscription) {
     return {
       billingPeriodStart,
       billingPeriodEnd,
@@ -76,24 +99,28 @@ export async function getCustomerSubscription(
     };
   }
 
+  const tier = getProductFromStripeSubscription(activeSubscription);
+
   try {
     return {
+      id: activeSubscription.id,
       billingPeriodEnd: new Date(
-        activeSubscriptions.current_period_end * 1000,
+        activeSubscription.current_period_end * 1000,
       ).toISOString(),
       billingPeriodStart: new Date(
-        activeSubscriptions.current_period_start * 1000,
+        activeSubscription.current_period_start * 1000,
       ).toISOString(),
-      cancelled: activeSubscriptions.cancel_at_period_end,
-      tier: 'pro',
+      cancelled: activeSubscription.cancel_at_period_end,
+      tier,
     };
   } catch (error) {
     console.error('Error parsing subscription data:', error);
     return {
+      id: activeSubscription.id,
       billingPeriodStart,
       billingPeriodEnd,
-      cancelled: activeSubscriptions.cancel_at_period_end,
-      tier: 'pro',
+      cancelled: activeSubscription.cancel_at_period_end,
+      tier,
     };
   }
 }

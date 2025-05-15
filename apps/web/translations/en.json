@@ -693,6 +693,7 @@
     "subscription": {
       "free": "Free",
       "pro": "Pro",
+      "scale": "Scale",
       "enterprise": "Enterprise"
     }
   },
@@ -866,10 +867,10 @@
     },
     "confirmation": {
       "paymentMethod": "Payment method",
-      "terms": "By upgrading, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy> and you will pay 20$/month. You can cancel at any time."
+      "terms": "By upgrading, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy> and you will pay {cost}/month. You can cancel at any time."
     },
     "PlanComparisonView": {
-      "cta": "Upgrade to Pro",
+      "cta": "Upgrade",
       "free": {
         "cta": "You are currently on the Free Plan",
         "label": "Free",
@@ -880,6 +881,11 @@
         "label": "Pro",
         "usage": "For developers shipping agents."
       },
+      "scale": {
+        "cta": "Upgrade to Scale",
+        "label": "Scale",
+        "usage": "For teams deploying agents at scale."
+      },
       "enterprise": {
         "cost": "Contact us",
         "cta": "Contact sales",
@@ -888,9 +894,9 @@
       },
       "cost": "<cost></cost> per month"
     },
-    "error": "There was an error upgrading to the Pro plan, please try again or contact support.",
-    "legal": "By upgrading, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy> and you will pay 20$/month. You can cancel at any time.",
-    "cta": "Upgrade for 20$ per month",
+    "error": "There was an error upgrading your plan, please try again or contact support.",
+    "legal": "By upgrading, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy> and you will pay {cost}/month. You can cancel at any time.",
+    "cta": "Upgrade for {cost} per month",
     "heading": "Upgrade to Pro",
     "purchasing": "Upgrading your plan..."
   },
@@ -898,13 +904,14 @@
     "FreePlanUpsellDetails": {
       "title": "Get more agents and requests "
     },
+    "SubscribedView": {
+      "manage": "Manage plan",
+      "billingPeriod": "Your requests quota will reset on {date}.",
+      "cancel": "Cancel plan",
+      "cancelPeriod": "Your plan will be canceled on {date}."
+    },
     "AccountDetailsCTA": {
-      "upgrade": "Upgrade Plan",
-      "pro": {
-        "billingPeriod": "Your requests quota will reset on {date}.",
-        "cancel": "Cancel plan",
-        "cancelPeriod": "Your plan will be canceled on {date}."
-      }
+      "upgrade": "Upgrade Plan"
     },
     "SubscriptionDetails": {
       "freeTitle": "Plan details",
@@ -912,6 +919,7 @@
       "description": {
         "free": "You are currently on the Letta Cloud Free plan.",
         "pro": "You are currently on the Letta Cloud Pro plan.",
+        "scale": "You are currently on the Letta Cloud Scale plan.",
         "enterprise": "You are currently on our Letta Cloud Enterprise plan."
       }
     },
@@ -1067,6 +1075,13 @@
       "agent": "Create up to {limit} agents",
       "storage": "{limit} GB of storage"
     },
+    "scale": {
+      "templates": "Create up to {limit} templates.",
+      "standardRequests": "Up to <limit></limit> <link>standard model</link> requests per month",
+      "premiumModelUsage": "Up to <limit></limit> <link>premium model</link> requests per month",
+      "agent": "Create up to {limit} agents",
+      "storage": "{limit} GB of storage"
+    },
     "enterprise": {
       "enhanced": "Enhanced rate limits",
       "customModelDeployments": "Custom model deployments",
@@ -1087,6 +1102,9 @@
       },
       "pro": {
         "title": "Pro"
+      },
+      "scale": {
+        "title": "Scale"
       },
       "enterprise": {
         "title": "Enterprise"

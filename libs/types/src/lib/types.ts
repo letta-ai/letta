@@ -135,7 +135,7 @@ export type ModelTiersType = z.infer<typeof ModelTiers>;
 
 export type AccessPolicyVersionOneType = z.infer<typeof accessPolicyVersionOne>;
 
-export const BillingTiers = z.enum(['free', 'pro', 'enterprise']);
+export const BillingTiers = z.enum(['free', 'pro', 'scale', 'enterprise']);
 
 export type BillingTiersType = z.infer<typeof BillingTiers>;
 

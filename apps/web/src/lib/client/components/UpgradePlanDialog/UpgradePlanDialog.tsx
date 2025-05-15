@@ -12,11 +12,13 @@ import {
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useFormatters } from '@letta-cloud/utils-client';
-import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { webApi } from '@letta-cloud/sdk-web';
 import type { BillingTiersType } from '@letta-cloud/types';
 import { PlanBenefits } from '$web/client/components/PlanBenefits/PlanBenefits';
 import { Blox } from '$web/client/components/UpgradePlanDialog/Blox';
 import { CreditCardSlot } from '$web/client/components';
+import { useGetDefaultOrFirstCard } from '$web/client/hooks/useGetDefaultOrFirstCard/useGetDefaultOrFirstCard';
+import { getUsageLimits } from '@letta-cloud/utils-shared';
 
 interface SelectedPlanProps {
   plan: BillingTiersType;
@@ -35,6 +37,8 @@ function SelectedPlan(props: SelectedPlanProps) {
         return t('PlanComparisonView.free.usage');
       case 'pro':
         return t('PlanComparisonView.pro.usage');
+      case 'scale':
+        return t('PlanComparisonView.scale.usage');
       case 'enterprise':
         return t('PlanComparisonView.enterprise.usage');
     }
@@ -51,7 +55,7 @@ function SelectedPlan(props: SelectedPlanProps) {
       );
     }
 
-    const cost = plan === 'pro' ? 20 : 0;
+    const cost = getUsageLimits(plan).monthlyCost;
 
     return (
       <HStack gap={false} paddingBottom="small">
@@ -77,6 +81,8 @@ function SelectedPlan(props: SelectedPlanProps) {
         return t('PlanComparisonView.free.label');
       case 'pro':
         return t('PlanComparisonView.pro.label');
+      case 'scale':
+        return t('PlanComparisonView.scale.label');
       case 'enterprise':
         return t('PlanComparisonView.enterprise.label');
     }
@@ -121,6 +127,10 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
         value: 'pro',
       },
       {
+        label: t('PlanComparisonView.scale.label'),
+        value: 'scale',
+      },
+      {
         label: t('PlanComparisonView.enterprise.label'),
         value: 'enterprise',
       },
@@ -149,6 +159,18 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
             data-testid="choose-pro"
             size="large"
             label={t('PlanComparisonView.pro.cta')}
+          />
+        );
+      case 'scale':
+        return (
+          <Button
+            onClick={() => {
+              onSelectPlan('scale');
+            }}
+            bold
+            data-testid="choose-scale"
+            size="large"
+            label={t('PlanComparisonView.scale.cta')}
           />
         );
       case 'enterprise':
@@ -203,23 +225,17 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
 
 interface ConfirmViewProps {
   confirmPurchase: () => void;
+  plan: BillingTiersType;
 }
 
 function ConfirmView(props: ConfirmViewProps) {
   const t = useTranslations('components/UpgradeToProPlanDialog');
-  const { confirmPurchase } = props;
-  const { data: billingData } =
-    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
-      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
-    });
+  const { confirmPurchase, plan } = props;
 
-  const defaultCard = useMemo(() => {
-    if (!billingData?.body.creditCards) {
-      return undefined;
-    }
+  const defaultCard = useGetDefaultOrFirstCard();
 
-    return billingData.body.creditCards.find((card) => card.isDefault);
-  }, [billingData]);
+  const cost = getUsageLimits(plan).monthlyCost;
+  const { formatCurrency } = useFormatters();
 
   return (
     <HStack
@@ -234,7 +250,7 @@ function ConfirmView(props: ConfirmViewProps) {
         <Typography uppercase bold variant="body3">
           {t('ConfirmView.title')}
         </Typography>
-        <SelectedPlan plan="pro" />
+        <SelectedPlan plan={plan} />
       </VStack>
       <VStack fullHeight padding position="relative" fullWidth>
         <VStack>
@@ -249,6 +265,10 @@ function ConfirmView(props: ConfirmViewProps) {
           <VStack paddingBottom="small">
             <Typography variant="body2">
               {t.rich('confirmation.terms', {
+                cost: formatCurrency(cost, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                }),
                 terms: (chunks) => (
                   <a
                     className="underline"
@@ -274,7 +294,12 @@ function ConfirmView(props: ConfirmViewProps) {
               fullWidth
               size="large"
               data-testid="confirm-purchase"
-              label={t('cta')}
+              label={t('cta', {
+                cost: formatCurrency(cost, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                }),
+              })}
               onClick={confirmPurchase}
             />
           </HStack>
@@ -284,17 +309,17 @@ function ConfirmView(props: ConfirmViewProps) {
   );
 }
 
-type Stage = 'confirm' | 'view';
-
 export function UpgradePlanDialog(props: UpgradeToProPlanProps) {
   const { trigger } = props;
   const t = useTranslations('components/UpgradeToProPlanDialog');
 
   const [isOpen, setIsOpen] = useState(false);
-  const [stage, setStage] = useState<Stage>('view');
+  const [selectedPlan, setSelectedPlan] = useState<BillingTiersType | null>(
+    null,
+  );
 
   const { isPending, mutate, isSuccess } =
-    webApi.organizations.upgradeOrganizationToPro.useMutation({
+    webApi.organizations.upgradeOrganization.useMutation({
       onSuccess: () => {
         window.location.reload();
       },
@@ -303,28 +328,38 @@ export function UpgradePlanDialog(props: UpgradeToProPlanProps) {
       },
     });
 
-  const { data: billingData } =
-    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
-      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
-    });
+  const defaultCard = useGetDefaultOrFirstCard();
 
-  const defaultCard = useMemo(() => {
-    if (!billingData?.body.creditCards) {
-      return undefined;
+  const handleSelectPlan = useCallback(
+    (selectedPlan: BillingTiersType) => {
+      if (defaultCard) {
+        setSelectedPlan(selectedPlan);
+
+        return;
+      }
+
+      switch (selectedPlan) {
+        case 'pro':
+          window.location.href = '/upgrade/pro';
+          break;
+        case 'scale':
+          window.location.href = '/upgrade/scale';
+          break;
+      }
+    },
+    [defaultCard],
+  );
+
+  const handleSubmit = useCallback(() => {
+    if (defaultCard && selectedPlan) {
+      mutate({
+        body: {
+          cardId: defaultCard.id,
+          tier: selectedPlan,
+        },
+      });
     }
-
-    return billingData.body.creditCards.find((card) => card.isDefault);
-  }, [billingData]);
-
-  const handleSelectPlan = useCallback(() => {
-    if (defaultCard) {
-      setStage('confirm');
-
-      return;
-    }
-
-    window.location.href = '/upgrade/pro';
-  }, [defaultCard]);
+  }, [defaultCard, mutate, selectedPlan]);
 
   return (
     <Dialog
@@ -332,7 +367,7 @@ export function UpgradePlanDialog(props: UpgradeToProPlanProps) {
       size="xlarge"
       onOpenChange={(open) => {
         if (!open) {
-          setStage('view');
+          setSelectedPlan(null);
         }
         setIsOpen(open);
       }}
@@ -349,17 +384,17 @@ export function UpgradePlanDialog(props: UpgradeToProPlanProps) {
         />
       ) : (
         <>
-          {stage === 'view' && (
-            <PlanComparisonView
-              onSelectPlan={() => {
-                handleSelectPlan();
+          {selectedPlan ? (
+            <ConfirmView
+              plan={selectedPlan}
+              confirmPurchase={() => {
+                handleSubmit();
               }}
             />
-          )}
-          {stage === 'confirm' && (
-            <ConfirmView
-              confirmPurchase={() => {
-                mutate({});
+          ) : (
+            <PlanComparisonView
+              onSelectPlan={(plan) => {
+                handleSelectPlan(plan);
               }}
             />
           )}

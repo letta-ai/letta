@@ -961,7 +961,19 @@ export function AgentSimulator() {
           return t('hasFailedToSendMessageText.freeUsageExceeded.enterprise');
         }
         if (billingTier === 'pro') {
-          return t('hasFailedToSendMessageText.freeUsageExceeded.pro');
+          return t.rich('hasFailedToSendMessageText.freeUsageExceeded.pro', {
+            link: (chunks) => {
+              return (
+                <Link target="_blank" href="/settings/organization/billing">
+                  {chunks}
+                </Link>
+              );
+            },
+          });
+        }
+
+        if (billingTier === 'scale') {
+          return t('hasFailedToSendMessageText.freeUsageExceeded.scale');
         }
 
         return t.rich('hasFailedToSendMessageText.freeUsageExceeded.free', {
@@ -979,8 +991,21 @@ export function AgentSimulator() {
             'hasFailedToSendMessageText.premiumUsageExceeded.enterprise',
           );
         }
+
+        if (billingTier === 'scale') {
+          return t('hasFailedToSendMessageText.premiumUsageExceeded.scale');
+        }
+
         if (billingTier === 'pro') {
-          return t('hasFailedToSendMessageText.premiumUsageExceeded.pro');
+          return t.rich('hasFailedToSendMessageText.premiumUsageExceeded.pro', {
+            link: (chunks) => {
+              return (
+                <Link target="_blank" href="/settings/organization/billing">
+                  {chunks}
+                </Link>
+              );
+            },
+          });
         }
 
         return t.rich('hasFailedToSendMessageText.premiumUsageExceeded.free', {

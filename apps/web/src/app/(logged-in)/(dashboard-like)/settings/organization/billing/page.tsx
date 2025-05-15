@@ -34,28 +34,45 @@ import { CustomerQuotaView } from '$web/client/components/CustomerQuotaView/Cust
 import { creditsToDollars } from '@letta-cloud/utils-shared';
 import { Voxel } from './Voxel';
 
+function ManagePlanButton() {
+  const t = useTranslations('organization/billing');
+
+  return (
+    <Button
+      color="secondary"
+      bold
+      size="small"
+      href="/upgrade/support"
+      label={t('SubscribedView.manage')}
+    />
+  );
+}
+
 interface ProViewProps {
   billingPeriodEnd: string | undefined;
   isCancelled: boolean;
 }
 
-function ProView(props: ProViewProps) {
+function SubscribedView(props: ProViewProps) {
   const { billingPeriodEnd, isCancelled } = props;
   const t = useTranslations('organization/billing');
   const { formatDate } = useFormatters();
 
   if (!billingPeriodEnd) {
     return (
-      <CancelPlanDialog
-        trigger={
-          <Button
-            color="secondary"
-            bold
-            size="small"
-            label={t('AccountDetailsCTA.pro.cancel')}
-          />
-        }
-      />
+      <HStack>
+        <ManagePlanButton />
+        <CancelPlanDialog
+          trigger={
+            <Button
+              color="tertiary"
+              bold
+              size="small"
+              label={t('SubscribedView.cancel')}
+            />
+          }
+        />
+      </HStack>
     );
   }
 
@@ -63,7 +80,7 @@ function ProView(props: ProViewProps) {
     return (
       <VStack>
         <Typography>
-          {t('AccountDetailsCTA.pro.cancelPeriod', {
+          {t('SubscribedView.cancelPeriod', {
             date: formatDate(billingPeriodEnd),
           })}
         </Typography>
@@ -77,18 +94,20 @@ function ProView(props: ProViewProps) {
   return (
     <VStack>
       <Typography>
-        {t('AccountDetailsCTA.pro.billingPeriod', {
+        {t('SubscribedView.billingPeriod', {
           date: formatDate(billingPeriodEnd),
         })}
       </Typography>
       <HStack>
+        <ManagePlanButton />
+
         <CancelPlanDialog
           trigger={
             <Button
-              color="secondary"
+              color="tertiary"
               bold
               size="small"
-              label={t('AccountDetailsCTA.pro.cancel')}
+              label={t('SubscribedView.cancel')}
             />
           }
         />
@@ -110,8 +129,9 @@ function AccountDetailsCTA(props: AccountDetailsCTAProps) {
     case 'free':
       return <HStack></HStack>;
     case 'pro':
+    case 'scale':
       return (
-        <ProView
+        <SubscribedView
           billingPeriodEnd={billingPeriodEnd}
           isCancelled={isCancelled}
         />
@@ -200,6 +220,8 @@ function SubscriptionDetails() {
         return t('SubscriptionDetails.description.free');
       case 'pro':
         return t('SubscriptionDetails.description.pro');
+      case 'scale':
+        return t('SubscriptionDetails.description.scale');
       case 'enterprise':
         return t('SubscriptionDetails.description.enterprise');
     }

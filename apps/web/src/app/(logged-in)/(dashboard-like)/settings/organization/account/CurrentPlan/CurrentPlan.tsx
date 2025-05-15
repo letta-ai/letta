@@ -56,6 +56,8 @@ export function CurrentPlan() {
         return t('tiers.free.title');
       case 'pro':
         return t('tiers.pro.title');
+      case 'scale':
+        return t('tiers.scale.title');
       case 'enterprise':
         return t('tiers.enterprise.title');
       default:

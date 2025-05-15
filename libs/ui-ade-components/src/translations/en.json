@@ -933,12 +933,14 @@
       "rateLimitExceeded": "Rate limit reached, please wait a few moments before trying again.",
       "freeUsageExceeded": {
         "free": "You've hit your limit of standard model requests. Please <link>upgrade your plan</link> to continue using your agent.",
-        "pro": "You've hit your limit of standard model requests. Please contact support to see your options.",
+        "pro": "You've hit your limit of standard model requests. Please <link>upgrade your plan</link> to continue using your agent.",
+        "scale": "You've hit your limit of standard model requests. Please contact support to see your option.",
         "enterprise": "You've hit your limit of standard model requests. Please contact support to see your options."
       },
       "premiumUsageExceeded": {
         "free": "You've hit your limit of premium model requests. Please <link>upgrade your plan</link> or change to a standard model.",
-        "pro": "You've hit your limit of premium model requests. Please contact support to see your options.",
+        "pro": "You've hit your limit of premium model requests. Please <link>upgrade your plan</link> or change to a standard model.",
+        "scale": "You've hit your limit of premium model requests. Please contact support to see your options.",
         "enterprise": "You've hit your limit of premium model requests. Please contact support to see your options."
       },
       "creditLimitExceeded": "You have run out of credits, please <link>buy more credits</link> to continue using your agent."

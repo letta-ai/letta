@@ -1,13 +1,9 @@
 import { getStripeClient } from '../getStripeClient/getStripeClient';
 import { getPaymentCustomer } from '../getPaymentCustomer/getPaymentCustomer';
 import { getCustomerSubscription } from '../getCustomerSubscription/getCustomerSubscription';
+import { PRO_PLAN_PRICE_IDS } from '../constants';
 
-const PRO_PLAN_PRICE_IDS = [
-  'price_1RH71QIITVhFnB4W94dbGkOr',
-  'price_1RH6z1IITVhFnB4Wya5Ln5fy',
-];
-
-export async function createPaymentLink(organizationId: string) {
+export async function createProPaymentLink(organizationId: string) {
   const stripe = getStripeClient();
 
   if (!stripe) {
@@ -22,7 +18,7 @@ export async function createPaymentLink(organizationId: string) {
 
   const subscription = await getCustomerSubscription(organizationId);
 
-  if (subscription.tier === 'pro') {
+  if (subscription.tier !== 'free') {
     return null;
   }
 

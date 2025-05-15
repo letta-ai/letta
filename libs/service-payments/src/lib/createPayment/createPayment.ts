@@ -4,11 +4,12 @@ import { getPaymentCustomer } from '../getPaymentCustomer/getPaymentCustomer';
 interface CreatePaymentPayload {
   organizationId: string;
   amountInCents: number;
+  cardId: string;
 }
 
 export async function createPayment(payload: CreatePaymentPayload) {
   const stripe = getStripeClient();
-  const { organizationId, amountInCents } = payload;
+  const { organizationId, amountInCents, cardId } = payload;
   const customer = await getPaymentCustomer(organizationId);
 
   if (!customer) {
@@ -20,10 +21,7 @@ export async function createPayment(payload: CreatePaymentPayload) {
     currency: 'usd',
     confirm: true,
     customer: customer.id,
-    payment_method:
-      typeof customer.invoice_settings.default_payment_method === 'string'
-        ? customer.invoice_settings.default_payment_method
-        : undefined,
+    payment_method: cardId,
     receipt_email: customer.email || undefined,
     automatic_payment_methods: {
       enabled: true,
