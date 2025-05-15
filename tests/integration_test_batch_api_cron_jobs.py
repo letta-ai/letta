@@ -174,16 +174,16 @@ def create_test_agent(name, actor, test_id: Optional[str] = None, model="anthrop
     return agent_manager.create_agent(agent_create=agent_create, actor=actor, _test_only_force_id=test_id)
 
 
-def create_test_letta_batch_job(server, default_user):
+async def create_test_letta_batch_job_async(server, default_user):
     """Create a test batch job with the given batch response."""
-    return server.job_manager.create_job(BatchJob(user_id=default_user.id), actor=default_user)
+    return await server.job_manager.create_job_async(BatchJob(user_id=default_user.id), actor=default_user)
 
 
-def create_test_llm_batch_job(server, batch_response, default_user):
+async def create_test_llm_batch_job_async(server, batch_response, default_user):
     """Create a test batch job with the given batch response."""
-    letta_batch_job = create_test_letta_batch_job(server, default_user)
+    letta_batch_job = await create_test_letta_batch_job_async(server, default_user)
 
-    return server.batch_manager.create_llm_batch_job(
+    return await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=batch_response,
         actor=default_user,
@@ -262,7 +262,7 @@ def mock_anthropic_client(server, batch_a_resp, batch_b_resp, agent_b_id, agent_
 # -----------------------------
 # End-to-End Test
 # -----------------------------
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_polling_simple_real_batch(client, default_user, server):
     # --- Step 1: Prepare test data ---
     # Create batch responses with different statuses
@@ -276,7 +276,7 @@ async def test_polling_simple_real_batch(client, default_user, server):
     agent_c = create_test_agent("agent_c", default_user, test_id="agent-6156f470-a09d-4d51-aa62-7114e0971d56")
 
     # --- Step 2: Create batch jobs ---
-    job_a = create_test_llm_batch_job(server, batch_a_resp, default_user)
+    job_a = await create_test_llm_batch_job_async(server, batch_a_resp, default_user)
 
     # --- Step 3: Create batch items ---
     item_a = create_test_batch_item(server, job_a.id, agent_a.id, default_user)
@@ -293,7 +293,7 @@ async def test_polling_simple_real_batch(client, default_user, server):
     await poll_running_llm_batches(server)
 
     # --- Step 5: Verify batch job status updates ---
-    updated_job_a = server.batch_manager.get_llm_batch_job_by_id(llm_batch_id=job_a.id, actor=default_user)
+    updated_job_a = await server.batch_manager.get_llm_batch_job_by_id_async(llm_batch_id=job_a.id, actor=default_user)
 
     assert updated_job_a.status == JobStatus.completed
 
@@ -403,7 +403,7 @@ async def test_polling_simple_real_batch(client, default_user, server):
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_polling_mixed_batch_jobs(client, default_user, server):
     """
     End-to-end test for polling batch jobs with mixed statuses and idempotency.
@@ -433,8 +433,8 @@ async def test_polling_mixed_batch_jobs(client, default_user, server):
     agent_c = create_test_agent("agent_c", default_user)
 
     # --- Step 2: Create batch jobs ---
-    job_a = create_test_llm_batch_job(server, batch_a_resp, default_user)
-    job_b = create_test_llm_batch_job(server, batch_b_resp, default_user)
+    job_a = await create_test_llm_batch_job_async(server, batch_a_resp, default_user)
+    job_b = await create_test_llm_batch_job_async(server, batch_b_resp, default_user)
 
     # --- Step 3: Create batch items ---
     item_a = create_test_batch_item(server, job_a.id, agent_a.id, default_user)
@@ -449,8 +449,8 @@ async def test_polling_mixed_batch_jobs(client, default_user, server):
     await poll_running_llm_batches(server)
 
     # --- Step 6: Verify batch job status updates ---
-    updated_job_a = server.batch_manager.get_llm_batch_job_by_id(llm_batch_id=job_a.id, actor=default_user)
-    updated_job_b = server.batch_manager.get_llm_batch_job_by_id(llm_batch_id=job_b.id, actor=default_user)
+    updated_job_a = await server.batch_manager.get_llm_batch_job_by_id_async(llm_batch_id=job_a.id, actor=default_user)
+    updated_job_b = await server.batch_manager.get_llm_batch_job_by_id_async(llm_batch_id=job_b.id, actor=default_user)
 
     # Job A should remain running since its processing_status is "in_progress"
     assert updated_job_a.status == JobStatus.running
@@ -498,8 +498,8 @@ async def test_polling_mixed_batch_jobs(client, default_user, server):
 
     # --- Step 9: Verify that nothing changed for completed jobs ---
     # Refresh all objects
-    final_job_a = server.batch_manager.get_llm_batch_job_by_id(llm_batch_id=job_a.id, actor=default_user)
-    final_job_b = server.batch_manager.get_llm_batch_job_by_id(llm_batch_id=job_b.id, actor=default_user)
+    final_job_a = await server.batch_manager.get_llm_batch_job_by_id_async(llm_batch_id=job_a.id, actor=default_user)
+    final_job_b = await server.batch_manager.get_llm_batch_job_by_id_async(llm_batch_id=job_b.id, actor=default_user)
     final_item_a = server.batch_manager.get_llm_batch_item_by_id(item_a.id, actor=default_user)
     final_item_b = server.batch_manager.get_llm_batch_item_by_id(item_b.id, actor=default_user)
     final_item_c = server.batch_manager.get_llm_batch_item_by_id(item_c.id, actor=default_user)

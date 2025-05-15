@@ -792,6 +792,11 @@ class AgentManager:
         return self.message_manager.get_messages_by_ids(message_ids=message_ids, actor=actor)
 
     @enforce_types
+    async def get_in_context_messages_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticMessage]:
+        message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
+        return await self.message_manager.get_messages_by_ids_async(message_ids=message_ids, actor=actor)
+
+    @enforce_types
     def get_system_message(self, agent_id: str, actor: PydanticUser) -> PydanticMessage:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         return self.message_manager.get_message_by_id(message_id=message_ids[0], actor=actor)

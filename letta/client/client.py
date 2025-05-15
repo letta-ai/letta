@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import sys
 import time
@@ -3055,7 +3056,21 @@ class LocalClient(AbstractClient):
         Returns:
             tools (List[Tool]): List of tools
         """
-        return self.server.tool_manager.list_tools(after=after, limit=limit, actor=self.user)
+        # Get the current event loop or create a new one if there isn't one
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # We're in an async context but can't await - use a new loop via run_coroutine_threadsafe
+                concurrent_future = asyncio.run_coroutine_threadsafe(
+                    self.server.tool_manager.list_tools_async(actor=self.user, after=after, limit=limit), loop
+                )
+                return concurrent_future.result()
+            else:
+                # We have a loop but it's not running - we can just run the coroutine
+                return loop.run_until_complete(self.server.tool_manager.list_tools_async(actor=self.user, after=after, limit=limit))
+        except RuntimeError:
+            # No running event loop - create a new one with asyncio.run
+            return asyncio.run(self.server.tool_manager.list_tools_async(actor=self.user, after=after, limit=limit))
 
     def get_tool(self, id: str) -> Optional[Tool]:
         """

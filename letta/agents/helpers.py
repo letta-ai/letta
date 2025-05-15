@@ -92,8 +92,7 @@ async def _prepare_in_context_messages_async(
         current_in_context_messages = await message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor)
 
     # Create a new user message from the input and store it
-    # TODO: make this async
-    new_in_context_messages = message_manager.create_many_messages(
+    new_in_context_messages = await message_manager.create_many_messages_async(
         create_input_messages(input_messages=input_messages, agent_id=agent_state.id, actor=actor), actor=actor
     )
 

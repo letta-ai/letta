@@ -180,7 +180,7 @@ async def poll_running_llm_batches(server: "SyncServer") -> List[LettaBatchRespo
 
     try:
         # 1. Retrieve running batch jobs
-        batches = server.batch_manager.list_running_llm_batches()
+        batches = await server.batch_manager.list_running_llm_batches_async()
         metrics.total_batches = len(batches)
 
         # TODO: Expand to more providers
@@ -220,7 +220,11 @@ async def poll_running_llm_batches(server: "SyncServer") -> List[LettaBatchRespo
                 )
 
             # launch them all at once
-            tasks = [_resume(server.batch_manager.get_llm_batch_job_by_id(bid)) for bid, *_ in completed]
+            async def get_and_resume(batch_id):
+                batch = await server.batch_manager.get_llm_batch_job_by_id_async(batch_id)
+                return await _resume(batch)
+
+            tasks = [get_and_resume(bid) for bid, *_ in completed]
             new_batch_responses = await asyncio.gather(*tasks, return_exceptions=True)
 
             return new_batch_responses

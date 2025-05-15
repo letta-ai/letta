@@ -196,7 +196,7 @@ class LettaAgentBatch(BaseAgent):
         )
 
         log_event(name="persist_llm_batch_job")
-        llm_batch_job = self.batch_manager.create_llm_batch_job(
+        llm_batch_job = await self.batch_manager.create_llm_batch_job_async(
             llm_provider=ProviderType.anthropic,  # TODO: Expand to more providers
             create_batch_response=batch_response,
             actor=self.actor,
@@ -214,7 +214,7 @@ class LettaAgentBatch(BaseAgent):
 
         if batch_items:
             log_event(name="bulk_create_batch_items")
-            batch_items_persisted = self.batch_manager.create_llm_batch_items_bulk(batch_items, actor=self.actor)
+            batch_items_persisted = await self.batch_manager.create_llm_batch_items_bulk_async(batch_items, actor=self.actor)
 
         log_event(name="return_batch_response")
         return LettaBatchResponse(
@@ -229,7 +229,7 @@ class LettaAgentBatch(BaseAgent):
     @trace_method
     async def resume_step_after_request(self, letta_batch_id: str, llm_batch_id: str) -> LettaBatchResponse:
         log_event(name="load_context")
-        llm_batch_job = self.batch_manager.get_llm_batch_job_by_id(llm_batch_id=llm_batch_id, actor=self.actor)
+        llm_batch_job = await self.batch_manager.get_llm_batch_job_by_id_async(llm_batch_id=llm_batch_id, actor=self.actor)
         ctx = await self._collect_resume_context(llm_batch_id)
 
         log_event(name="update_statuses")
@@ -239,7 +239,7 @@ class LettaAgentBatch(BaseAgent):
         exec_results = await self._execute_tools(ctx)
 
         log_event(name="persist_messages")
-        msg_map = self._persist_tool_messages(exec_results, ctx)
+        msg_map = await self._persist_tool_messages(exec_results, ctx)
 
         log_event(name="mark_steps_done")
         self._mark_steps_complete(llm_batch_id, ctx.agent_ids)
@@ -266,7 +266,7 @@ class LettaAgentBatch(BaseAgent):
     @trace_method
     async def _collect_resume_context(self, llm_batch_id: str) -> _ResumeContext:
         # NOTE: We only continue for items with successful results
-        batch_items = self.batch_manager.list_llm_batch_items(llm_batch_id=llm_batch_id, request_status=JobStatus.completed)
+        batch_items = await self.batch_manager.list_llm_batch_items_async(llm_batch_id=llm_batch_id, request_status=JobStatus.completed)
 
         agent_ids, agent_state_map = [], {}
         provider_results, name_map, args_map, cont_map = {}, {}, {}, {}
@@ -386,7 +386,7 @@ class LettaAgentBatch(BaseAgent):
 
         return result
 
-    def _persist_tool_messages(
+    async def _persist_tool_messages(
         self,
         exec_results: Sequence[Tuple[str, Tuple[str, bool]]],
         ctx: _ResumeContext,
@@ -408,7 +408,7 @@ class LettaAgentBatch(BaseAgent):
             )
             msg_map[aid] = msgs
         # flatten & persist
-        self.message_manager.create_many_messages([m for msgs in msg_map.values() for m in msgs], actor=self.actor)
+        await self.message_manager.create_many_messages_async([m for msgs in msg_map.values() for m in msgs], actor=self.actor)
         return msg_map
 
     def _mark_steps_complete(self, llm_batch_id: str, agent_ids: List[str]) -> None:

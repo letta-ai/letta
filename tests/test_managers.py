@@ -2218,9 +2218,10 @@ def test_get_tool_with_actor(server: SyncServer, print_tool, default_user):
     assert fetched_tool.tool_type == ToolType.CUSTOM
 
 
-def test_list_tools(server: SyncServer, print_tool, default_user):
+@pytest.mark.asyncio
+async def test_list_tools(server: SyncServer, print_tool, default_user, event_loop):
     # List tools (should include the one created by the fixture)
-    tools = server.tool_manager.list_tools(actor=default_user)
+    tools = await server.tool_manager.list_tools_async(actor=default_user)
 
     # Assertions to check that the created tool is listed
     assert len(tools) == 1
@@ -2344,11 +2345,12 @@ def test_update_tool_multi_user(server: SyncServer, print_tool, default_user, ot
     assert updated_tool.created_by_id == default_user.id
 
 
-def test_delete_tool_by_id(server: SyncServer, print_tool, default_user):
+@pytest.mark.asyncio
+async def test_delete_tool_by_id(server: SyncServer, print_tool, default_user, event_loop):
     # Delete the print_tool using the manager method
     server.tool_manager.delete_tool_by_id(print_tool.id, actor=default_user)
 
-    tools = server.tool_manager.list_tools(actor=default_user)
+    tools = await server.tool_manager.list_tools_async(actor=default_user)
     assert len(tools) == 0
 
 
@@ -4997,8 +4999,9 @@ def test_list_tags(server: SyncServer, default_user, default_organization):
 # ======================================================================================================================
 
 
-def test_create_and_get_batch_request(server, default_user, dummy_beta_message_batch, letta_batch_job):
-    batch = server.batch_manager.create_llm_batch_job(
+@pytest.mark.asyncio
+async def test_create_and_get_batch_request(server, default_user, dummy_beta_message_batch, letta_batch_job, event_loop):
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -5007,12 +5010,13 @@ def test_create_and_get_batch_request(server, default_user, dummy_beta_message_b
     )
     assert batch.id.startswith("batch_req-")
     assert batch.create_batch_response == dummy_beta_message_batch
-    fetched = server.batch_manager.get_llm_batch_job_by_id(batch.id, actor=default_user)
+    fetched = await server.batch_manager.get_llm_batch_job_by_id_async(batch.id, actor=default_user)
     assert fetched.id == batch.id
 
 
-def test_update_batch_status(server, default_user, dummy_beta_message_batch, letta_batch_job):
-    batch = server.batch_manager.create_llm_batch_job(
+@pytest.mark.asyncio
+async def test_update_batch_status(server, default_user, dummy_beta_message_batch, letta_batch_job, event_loop):
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -5028,16 +5032,17 @@ def test_update_batch_status(server, default_user, dummy_beta_message_batch, let
         actor=default_user,
     )
 
-    updated = server.batch_manager.get_llm_batch_job_by_id(batch.id, actor=default_user)
+    updated = await server.batch_manager.get_llm_batch_job_by_id_async(batch.id, actor=default_user)
     assert updated.status == JobStatus.completed
     assert updated.latest_polling_response == dummy_beta_message_batch
     assert updated.last_polled_at >= before
 
 
-def test_create_and_get_batch_item(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+@pytest.mark.asyncio
+async def test_create_and_get_batch_item(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
 ):
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -5061,7 +5066,8 @@ def test_create_and_get_batch_item(
     assert fetched.id == item.id
 
 
-def test_update_batch_item(
+@pytest.mark.asyncio
+async def test_update_batch_item(
     server,
     default_user,
     sarah_agent,
@@ -5070,8 +5076,9 @@ def test_update_batch_item(
     dummy_step_state,
     dummy_successful_response,
     letta_batch_job,
+    event_loop,
 ):
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -5103,10 +5110,11 @@ def test_update_batch_item(
     assert updated.batch_request_result == dummy_successful_response
 
 
-def test_delete_batch_item(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+@pytest.mark.asyncio
+async def test_delete_batch_item(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
 ):
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -5128,8 +5136,9 @@ def test_delete_batch_item(
         server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
 
 
-def test_list_running_batches(server, default_user, dummy_beta_message_batch, letta_batch_job):
-    server.batch_manager.create_llm_batch_job(
+@pytest.mark.asyncio
+async def test_list_running_batches(server, default_user, dummy_beta_message_batch, letta_batch_job, event_loop):
+    await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.running,
         create_batch_response=dummy_beta_message_batch,
@@ -5137,13 +5146,14 @@ def test_list_running_batches(server, default_user, dummy_beta_message_batch, le
         letta_batch_job_id=letta_batch_job.id,
     )
 
-    running_batches = server.batch_manager.list_running_llm_batches(actor=default_user)
+    running_batches = await server.batch_manager.list_running_llm_batches_async(actor=default_user)
     assert len(running_batches) >= 1
     assert all(batch.status == JobStatus.running for batch in running_batches)
 
 
-def test_bulk_update_batch_statuses(server, default_user, dummy_beta_message_batch, letta_batch_job):
-    batch = server.batch_manager.create_llm_batch_job(
+@pytest.mark.asyncio
+async def test_bulk_update_batch_statuses(server, default_user, dummy_beta_message_batch, letta_batch_job, event_loop):
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -5153,12 +5163,13 @@ def test_bulk_update_batch_statuses(server, default_user, dummy_beta_message_bat
 
     server.batch_manager.bulk_update_llm_batch_statuses([(batch.id, JobStatus.completed, dummy_beta_message_batch)])
 
-    updated = server.batch_manager.get_llm_batch_job_by_id(batch.id, actor=default_user)
+    updated = await server.batch_manager.get_llm_batch_job_by_id_async(batch.id, actor=default_user)
     assert updated.status == JobStatus.completed
     assert updated.latest_polling_response == dummy_beta_message_batch
 
 
-def test_bulk_update_batch_items_results_by_agent(
+@pytest.mark.asyncio
+async def test_bulk_update_batch_items_results_by_agent(
     server,
     default_user,
     sarah_agent,
@@ -5167,8 +5178,9 @@ def test_bulk_update_batch_items_results_by_agent(
     dummy_step_state,
     dummy_successful_response,
     letta_batch_job,
+    event_loop,
 ):
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -5191,10 +5203,11 @@ def test_bulk_update_batch_items_results_by_agent(
     assert updated.batch_request_result == dummy_successful_response
 
 
-def test_bulk_update_batch_items_step_status_by_agent(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+@pytest.mark.asyncio
+async def test_bulk_update_batch_items_step_status_by_agent(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
 ):
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -5216,10 +5229,11 @@ def test_bulk_update_batch_items_step_status_by_agent(
     assert updated.step_status == AgentStepStatus.resumed
 
 
-def test_list_batch_items_limit_and_filter(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+@pytest.mark.asyncio
+async def test_list_batch_items_limit_and_filter(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
 ):
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -5235,18 +5249,19 @@ def test_list_batch_items_limit_and_filter(
             actor=default_user,
         )
 
-    all_items = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, actor=default_user)
-    limited_items = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, limit=2, actor=default_user)
+    all_items = await server.batch_manager.list_llm_batch_items_async(llm_batch_id=batch.id, actor=default_user)
+    limited_items = await server.batch_manager.list_llm_batch_items_async(llm_batch_id=batch.id, limit=2, actor=default_user)
 
     assert len(all_items) >= 3
     assert len(limited_items) == 2
 
 
-def test_list_batch_items_pagination(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+@pytest.mark.asyncio
+async def test_list_batch_items_pagination(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
 ):
     # Create a batch job.
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -5266,7 +5281,7 @@ def test_list_batch_items_pagination(
         created_items.append(item)
 
     # Retrieve all items (without pagination).
-    all_items = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, actor=default_user)
+    all_items = await server.batch_manager.list_llm_batch_items_async(llm_batch_id=batch.id, actor=default_user)
     assert len(all_items) >= 10, f"Expected at least 10 items, got {len(all_items)}"
 
     # Verify the items are ordered ascending by id (based on our implementation).
@@ -5278,7 +5293,7 @@ def test_list_batch_items_pagination(
     cursor = all_items[4].id
 
     # Retrieve items after the cursor.
-    paged_items = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, actor=default_user, after=cursor)
+    paged_items = await server.batch_manager.list_llm_batch_items_async(llm_batch_id=batch.id, actor=default_user, after=cursor)
 
     # All returned items should have an id greater than the cursor.
     for item in paged_items:
@@ -5292,7 +5307,9 @@ def test_list_batch_items_pagination(
 
     # Test pagination with a limit.
     limit = 3
-    limited_page = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, actor=default_user, after=cursor, limit=limit)
+    limited_page = await server.batch_manager.list_llm_batch_items_async(
+        llm_batch_id=batch.id, actor=default_user, after=cursor, limit=limit
+    )
     # If more than 'limit' items remain, we should only get exactly 'limit' items.
     assert len(limited_page) == min(
         limit, expected_remaining
@@ -5300,15 +5317,16 @@ def test_list_batch_items_pagination(
 
     # Optional: Test with a cursor beyond the last item returns an empty list.
     last_cursor = sorted_ids[-1]
-    empty_page = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, actor=default_user, after=last_cursor)
+    empty_page = await server.batch_manager.list_llm_batch_items_async(llm_batch_id=batch.id, actor=default_user, after=last_cursor)
     assert empty_page == [], "Expected an empty list when cursor is after the last item"
 
 
-def test_bulk_update_batch_items_request_status_by_agent(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+@pytest.mark.asyncio
+async def test_bulk_update_batch_items_request_status_by_agent(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
 ):
     # Create a batch job
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -5334,15 +5352,17 @@ def test_bulk_update_batch_items_request_status_by_agent(
     assert updated.request_status == JobStatus.expired
 
 
-def test_bulk_update_nonexistent_items_should_error(
+@pytest.mark.asyncio
+async def test_bulk_update_nonexistent_items_should_error(
     server,
     default_user,
     dummy_beta_message_batch,
     dummy_successful_response,
     letta_batch_job,
+    event_loop,
 ):
     # Create a batch job
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -5375,9 +5395,12 @@ def test_bulk_update_nonexistent_items_should_error(
         )
 
 
-def test_bulk_update_nonexistent_items(server, default_user, dummy_beta_message_batch, dummy_successful_response, letta_batch_job):
+@pytest.mark.asyncio
+async def test_bulk_update_nonexistent_items(
+    server, default_user, dummy_beta_message_batch, dummy_successful_response, letta_batch_job, event_loop
+):
     # Create a batch job
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -5410,11 +5433,12 @@ def test_bulk_update_nonexistent_items(server, default_user, dummy_beta_message_
     )
 
 
-def test_create_batch_items_bulk(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+@pytest.mark.asyncio
+async def test_create_batch_items_bulk(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
 ):
     # Create a batch job
-    llm_batch_job = server.batch_manager.create_llm_batch_job(
+    llm_batch_job = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -5437,7 +5461,7 @@ def test_create_batch_items_bulk(
         batch_items.append(batch_item)
 
     # Call the bulk create function
-    created_items = server.batch_manager.create_llm_batch_items_bulk(batch_items, actor=default_user)
+    created_items = await server.batch_manager.create_llm_batch_items_bulk_async(batch_items, actor=default_user)
 
     # Verify the correct number of items were created
     assert len(created_items) == len(agent_ids)
@@ -5453,7 +5477,7 @@ def test_create_batch_items_bulk(
         assert item.step_state == dummy_step_state
 
     # Verify items can be retrieved from the database
-    all_items = server.batch_manager.list_llm_batch_items(llm_batch_id=llm_batch_job.id, actor=default_user)
+    all_items = await server.batch_manager.list_llm_batch_items_async(llm_batch_id=llm_batch_job.id, actor=default_user)
     assert len(all_items) >= len(agent_ids)
 
     # Verify the IDs of created items match what's in the database
@@ -5463,11 +5487,12 @@ def test_create_batch_items_bulk(
         assert fetched.id in created_ids
 
 
-def test_count_batch_items(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+@pytest.mark.asyncio
+async def test_count_batch_items(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
 ):
     # Create a batch job first.
-    batch = server.batch_manager.create_llm_batch_job(
+    batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
