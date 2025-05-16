@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -905,12 +906,7 @@ class AgentManager:
 
             result = await session.execute(query)
             agents = result.scalars().all()
-            pydantic_agents = []
-            for agent in agents:
-                pydantic_agent = await agent.to_pydantic_async(include_relationships=include_relationships)
-                pydantic_agents.append(pydantic_agent)
-
-            return pydantic_agents
+            return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
 
     @enforce_types
     def list_agents_matching_tags(
