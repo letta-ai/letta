@@ -16,7 +16,6 @@ from anthropic.types.beta.messages import (
     BetaMessageBatchSucceededResult,
 )
 from dotenv import load_dotenv
-from letta_client import Letta
 
 from letta.config import LettaConfig
 from letta.helpers import ToolRulesSolver
@@ -73,12 +72,6 @@ def server():
     print("CONFIG PATH", config.config_path)
     config.save()
     return SyncServer()
-
-
-@pytest.fixture(scope="session")
-def client(server_url):
-    """Creates a REST client for testing."""
-    return Letta(base_url=server_url)
 
 
 # --- Dummy Response Factories --- #
@@ -263,7 +256,7 @@ def mock_anthropic_client(server, batch_a_resp, batch_b_resp, agent_b_id, agent_
 # End-to-End Test
 # -----------------------------
 @pytest.mark.asyncio(loop_scope="session")
-async def test_polling_simple_real_batch(client, default_user, server):
+async def test_polling_simple_real_batch(default_user, server):
     # --- Step 1: Prepare test data ---
     # Create batch responses with different statuses
     # NOTE: This is a REAL batch id!
@@ -404,7 +397,7 @@ async def test_polling_simple_real_batch(client, default_user, server):
 
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_polling_mixed_batch_jobs(client, default_user, server):
+async def test_polling_mixed_batch_jobs(default_user, server):
     """
     End-to-end test for polling batch jobs with mixed statuses and idempotency.
 
