@@ -45,6 +45,14 @@ class UserManager:
             return new_user.to_pydantic()
 
     @enforce_types
+    async def create_actor_async(self, pydantic_user: PydanticUser) -> PydanticUser:
+        """Create a new user if it doesn't already exist (async version)."""
+        async with db_registry.async_session() as session:
+            new_user = UserModel(**pydantic_user.model_dump(to_orm=True))
+            await new_user.create_async(session)
+            return new_user.to_pydantic()
+
+    @enforce_types
     def update_user(self, user_update: UserUpdate) -> PydanticUser:
         """Update user details."""
         with db_registry.session() as session:
@@ -61,6 +69,22 @@ class UserManager:
             return existing_user.to_pydantic()
 
     @enforce_types
+    async def update_actor_async(self, user_update: UserUpdate) -> PydanticUser:
+        """Update user details (async version)."""
+        async with db_registry.async_session() as session:
+            # Retrieve the existing user by ID
+            existing_user = await UserModel.read_async(db_session=session, identifier=user_update.id)
+
+            # Update only the fields that are provided in UserUpdate
+            update_data = user_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+            for key, value in update_data.items():
+                setattr(existing_user, key, value)
+
+            # Commit the updated user
+            await existing_user.update_async(session)
+            return existing_user.to_pydantic()
+
+    @enforce_types
     def delete_user_by_id(self, user_id: str):
         """Delete a user and their associated records (agents, sources, mappings)."""
         with db_registry.session() as session:
@@ -71,10 +95,25 @@ class UserManager:
             session.commit()
 
     @enforce_types
+    async def delete_actor_by_id_async(self, user_id: str):
+        """Delete a user and their associated records (agents, sources, mappings) asynchronously."""
+        async with db_registry.async_session() as session:
+            # Delete from user table
+            user = await UserModel.read_async(db_session=session, identifier=user_id)
+            await user.hard_delete_async(session)
+
+    @enforce_types
     def get_user_by_id(self, user_id: str) -> PydanticUser:
         """Fetch a user by ID."""
         with db_registry.session() as session:
             user = UserModel.read(db_session=session, identifier=user_id)
+            return user.to_pydantic()
+
+    @enforce_types
+    async def get_actor_by_id_async(self, actor_id: str) -> PydanticUser:
+        """Fetch a user by ID asynchronously."""
+        async with db_registry.async_session() as session:
+            user = await UserModel.read_async(db_session=session, identifier=actor_id)
             return user.to_pydantic()
 
     @enforce_types
@@ -97,10 +136,41 @@ class UserManager:
             return self.get_default_user()
 
     @enforce_types
+    async def get_default_actor_async(self) -> PydanticUser:
+        """Fetch the default user asynchronously. If it doesn't exist, create it."""
+        try:
+            return await self.get_actor_by_id_async(self.DEFAULT_USER_ID)
+        except NoResultFound:
+            # Fall back to synchronous version since create_default_user isn't async yet
+            return self.create_default_user(org_id=self.DEFAULT_ORG_ID)
+
+    @enforce_types
+    async def get_actor_or_default_async(self, actor_id: Optional[str] = None):
+        """Fetch the user or default user asynchronously."""
+        if not actor_id:
+            return await self.get_default_actor_async()
+
+        try:
+            return await self.get_actor_by_id_async(actor_id=actor_id)
+        except NoResultFound:
+            return await self.get_default_actor_async()
+
+    @enforce_types
     def list_users(self, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticUser]:
         """List all users with optional pagination."""
         with db_registry.session() as session:
             users = UserModel.list(
+                db_session=session,
+                after=after,
+                limit=limit,
+            )
+            return [user.to_pydantic() for user in users]
+
+    @enforce_types
+    async def list_actors_async(self, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticUser]:
+        """List all users with optional pagination (async version)."""
+        async with db_registry.async_session() as session:
+            users = await UserModel.list_async(
                 db_session=session,
                 after=after,
                 limit=limit,

@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -905,12 +906,7 @@ class AgentManager:
 
             result = await session.execute(query)
             agents = result.scalars().all()
-            pydantic_agents = []
-            for agent in agents:
-                pydantic_agent = await agent.to_pydantic_async(include_relationships=include_relationships)
-                pydantic_agents.append(pydantic_agent)
-
-            return pydantic_agents
+            return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
 
     @enforce_types
     def list_agents_matching_tags(
@@ -1195,8 +1191,8 @@ class AgentManager:
 
     @enforce_types
     async def get_in_context_messages_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticMessage]:
-        message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
-        return await self.message_manager.get_messages_by_ids_async(message_ids=message_ids, actor=actor)
+        agent = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        return await self.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=actor)
 
     @enforce_types
     def get_system_message(self, agent_id: str, actor: PydanticUser) -> PydanticMessage:

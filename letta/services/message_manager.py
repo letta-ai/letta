@@ -287,6 +287,21 @@ class MessageManager:
             return MessageModel.size(db_session=session, actor=actor, role=role, agent_id=agent_id)
 
     @enforce_types
+    async def size_async(
+        self,
+        actor: PydanticUser,
+        role: Optional[MessageRole] = None,
+        agent_id: Optional[str] = None,
+    ) -> int:
+        """Get the total count of messages with optional filters.
+        Args:
+            actor: The user requesting the count
+            role: The role of the message
+        """
+        async with db_registry.async_session() as session:
+            return await MessageModel.size_async(db_session=session, actor=actor, role=role, agent_id=agent_id)
+
+    @enforce_types
     def list_user_messages_for_agent(
         self,
         agent_id: str,

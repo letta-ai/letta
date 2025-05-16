@@ -216,6 +216,20 @@ class PassageManager:
         with db_registry.session() as session:
             return AgentPassage.size(db_session=session, actor=actor, agent_id=agent_id)
 
+    @enforce_types
+    async def size_async(
+        self,
+        actor: PydanticUser,
+        agent_id: Optional[str] = None,
+    ) -> int:
+        """Get the total count of messages with optional filters.
+        Args:
+            actor: The user requesting the count
+            agent_id: The agent ID of the messages
+        """
+        async with db_registry.async_session() as session:
+            return await AgentPassage.size_async(db_session=session, actor=actor, agent_id=agent_id)
+
     def estimate_embeddings_size(
         self,
         actor: PydanticUser,

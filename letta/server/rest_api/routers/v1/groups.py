@@ -135,7 +135,7 @@ async def send_group_message(
     Process a user message and return the group's response.
     This endpoint accepts a message from a user and processes it through through agents in the group based on the specified pattern
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     result = await server.send_group_message_to_agent(
         group_id=group_id,
         actor=actor,
@@ -174,7 +174,7 @@ async def send_group_message_streaming(
     This endpoint accepts a message from a user and processes it through agents in the group based on the specified pattern.
     It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     result = await server.send_group_message_to_agent(
         group_id=group_id,
         actor=actor,

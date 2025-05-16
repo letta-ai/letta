@@ -83,7 +83,7 @@ async def list_agents(
     """
 
     # Retrieve the actor (user) details
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     # Call list_agents directly without unnecessary dict handling
     return await server.agent_manager.list_agents_async(
@@ -163,7 +163,7 @@ async def import_agent_serialized(
     """
     Import a serialized agent file and recreate the agent in the system.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
         serialized_data = await file.read()
@@ -233,7 +233,7 @@ async def create_agent(
     Create a new agent with the specified configuration.
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
         return await server.create_agent_async(agent, actor=actor)
     except Exception as e:
         traceback.print_exc()
@@ -248,7 +248,7 @@ async def modify_agent(
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """Update an existing agent"""
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     return await server.update_agent_async(agent_id=agent_id, request=update_agent, actor=actor)
 
 
@@ -333,7 +333,7 @@ def detach_source(
 
 
 @router.get("/{agent_id}", response_model=AgentState, operation_id="retrieve_agent")
-def retrieve_agent(
+async def retrieve_agent(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -344,7 +344,7 @@ def retrieve_agent(
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
-        return server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
+        return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -414,7 +414,7 @@ def retrieve_block(
 
 
 @router.get("/{agent_id}/core-memory/blocks", response_model=List[Block], operation_id="list_core_memory_blocks")
-def list_blocks(
+async def list_blocks(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -424,7 +424,7 @@ def list_blocks(
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     try:
-        agent = server.agent_manager.get_agent_by_id(agent_id, actor)
+        agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor)
         return agent.memory.blocks
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -628,9 +628,9 @@ async def send_message(
     Process a user message and return the agent's response.
     This endpoint accepts a message from a user and processes it through the agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     # TODO: This is redundant, remove soon
-    agent = server.agent_manager.get_agent_by_id(agent_id, actor)
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor)
     agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
     experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
@@ -686,13 +686,13 @@ async def send_message_streaming(
     It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
     """
     request_start_timestamp_ns = get_utc_timestamp_ns()
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     # TODO: This is redundant, remove soon
-    agent = server.agent_manager.get_agent_by_id(agent_id, actor)
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor)
     agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
     experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
-    model_compatible = agent.llm_config.model_endpoint_type == "anthropic"
+    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
 
     if agent_eligible and feature_enabled and model_compatible and request.stream_tokens:
         experimental_agent = LettaAgent(
@@ -705,7 +705,9 @@ async def send_message_streaming(
         )
 
         result = StreamingResponse(
-            experimental_agent.step_stream(request.messages, max_steps=10, use_assistant_message=request.use_assistant_message),
+            experimental_agent.step_stream(
+                request.messages, max_steps=10, use_assistant_message=request.use_assistant_message, stream_tokens=request.stream_tokens
+            ),
             media_type="text/event-stream",
         )
     else:
@@ -784,7 +786,7 @@ async def send_message_async(
     Asynchronously process a user message and return a run object.
     The actual processing happens in the background, and the status can be checked using the run ID.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     # Create a new job
     run = Run(
@@ -838,6 +840,6 @@ async def list_agent_groups(
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """Lists the groups for an agent"""
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     print("in list agents with manager_type", manager_type)
     return server.agent_manager.list_groups(agent_id=agent_id, manager_type=manager_type, actor=actor)

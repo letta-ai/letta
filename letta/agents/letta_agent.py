@@ -8,10 +8,11 @@ from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from letta.agents.base_agent import BaseAgent
-from letta.agents.helpers import _create_letta_response, _prepare_in_context_messages
+from letta.agents.helpers import _create_letta_response, _prepare_in_context_messages_async
 from letta.helpers import ToolRulesSolver
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
+from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
 from letta.llm_api.llm_client import LLMClient
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
@@ -61,12 +62,8 @@ class LettaAgent(BaseAgent):
         self.last_function_response = None
 
         # Cached archival memory/message size
-        self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_id)
-        self.num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_id)
-
-        # Cached archival memory/message size
-        self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_id)
-        self.num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_id)
+        self.num_messages = 0
+        self.num_archival_memories = 0
 
     @trace_method
     async def step(self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = True) -> LettaResponse:
@@ -81,7 +78,7 @@ class LettaAgent(BaseAgent):
     async def _step(
         self, agent_state: AgentState, input_messages: List[MessageCreate], max_steps: int = 10
     ) -> Tuple[List[Message], List[Message], CompletionUsage]:
-        current_in_context_messages, new_in_context_messages = _prepare_in_context_messages(
+        current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_async(
             input_messages, agent_state, self.message_manager, self.actor
         )
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
@@ -129,14 +126,14 @@ class LettaAgent(BaseAgent):
 
     @trace_method
     async def step_stream(
-        self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = True
+        self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = True, stream_tokens: bool = False
     ) -> AsyncGenerator[str, None]:
         """
         Main streaming loop that yields partial tokens.
         Whenever we detect a tool call, we yield from _handle_ai_response as well.
         """
         agent_state = await self.agent_manager.get_agent_by_id_async(self.agent_id, actor=self.actor)
-        current_in_context_messages, new_in_context_messages = _prepare_in_context_messages(
+        current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_async(
             input_messages, agent_state, self.message_manager, self.actor
         )
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
@@ -157,9 +154,16 @@ class LettaAgent(BaseAgent):
             )
             # TODO: THIS IS INCREDIBLY UGLY
             # TODO: THERE ARE MULTIPLE COPIES OF THE LLM_CONFIG EVERYWHERE THAT ARE GETTING MANIPULATED
-            interface = AnthropicStreamingInterface(
-                use_assistant_message=use_assistant_message, put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs
-            )
+            if agent_state.llm_config.model_endpoint_type == "anthropic":
+                interface = AnthropicStreamingInterface(
+                    use_assistant_message=use_assistant_message,
+                    put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs,
+                )
+            elif agent_state.llm_config.model_endpoint_type == "openai":
+                interface = OpenAIStreamingInterface(
+                    use_assistant_message=use_assistant_message,
+                    put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs,
+                )
             async for chunk in interface.process(stream):
                 yield f"data: {chunk.model_dump_json()}\n\n"
 
@@ -197,8 +201,8 @@ class LettaAgent(BaseAgent):
 
         # TODO: This may be out of sync, if in between steps users add files
         # NOTE (cliandy): temporary for now for particlar use cases.
-        self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_state.id)
-        self.num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_state.id)
+        self.num_messages = await self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id)
+        self.num_archival_memories = await self.passage_manager.size_async(actor=self.actor, agent_id=agent_state.id)
 
         # TODO: Also yield out a letta usage stats SSE
         yield f"data: {usage.model_dump_json()}\n\n"
@@ -215,6 +219,10 @@ class LettaAgent(BaseAgent):
         stream: bool,
     ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:
         if settings.experimental_enable_async_db_engine:
+            self.num_messages = self.num_messages or (await self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id))
+            self.num_archival_memories = self.num_archival_memories or (
+                await self.passage_manager.size_async(actor=self.actor, agent_id=agent_state.id)
+            )
             in_context_messages = await self._rebuild_memory_async(
                 in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
             )
