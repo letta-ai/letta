@@ -910,7 +910,8 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             query = cls._size_preprocess(db_session=session, actor=actor, access=access, access_type=access_type, **kwargs)
 
             try:
-                count = await session.execute(query).scalar()
+                result = await session.execute(query)
+                count = result.scalar()
                 return count if count else 0
             except DBAPIError as e:
                 logger.exception(f"Failed to calculate size for {cls.__name__}")
