@@ -12,6 +12,7 @@ from letta.agents.helpers import _create_letta_response, _prepare_in_context_mes
 from letta.helpers import ToolRulesSolver
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
+from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
 from letta.llm_api.llm_client import LLMClient
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
@@ -125,7 +126,7 @@ class LettaAgent(BaseAgent):
 
     @trace_method
     async def step_stream(
-        self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = True
+        self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = True, stream_tokens: bool = False
     ) -> AsyncGenerator[str, None]:
         """
         Main streaming loop that yields partial tokens.
@@ -153,9 +154,16 @@ class LettaAgent(BaseAgent):
             )
             # TODO: THIS IS INCREDIBLY UGLY
             # TODO: THERE ARE MULTIPLE COPIES OF THE LLM_CONFIG EVERYWHERE THAT ARE GETTING MANIPULATED
-            interface = AnthropicStreamingInterface(
-                use_assistant_message=use_assistant_message, put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs
-            )
+            if agent_state.llm_config.model_endpoint_type == "anthropic":
+                interface = AnthropicStreamingInterface(
+                    use_assistant_message=use_assistant_message,
+                    put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs,
+                )
+            elif agent_state.llm_config.model_endpoint_type == "openai":
+                interface = OpenAIStreamingInterface(
+                    use_assistant_message=use_assistant_message,
+                    put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs,
+                )
             async for chunk in interface.process(stream):
                 yield f"data: {chunk.model_dump_json()}\n\n"
 
