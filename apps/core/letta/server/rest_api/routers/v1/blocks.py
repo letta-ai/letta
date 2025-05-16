@@ -99,7 +99,7 @@ def retrieve_block(
 
 
 @router.get("/{block_id}/agents", response_model=List[AgentState], operation_id="list_agents_for_block")
-def list_agents_for_block(
+async def list_agents_for_block(
     block_id: str,
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
@@ -108,9 +108,9 @@ def list_agents_for_block(
     Retrieves all agents associated with the specified block.
     Raises a 404 if the block does not exist.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     try:
-        agents = server.block_manager.get_agents_for_block(block_id=block_id, actor=actor)
+        agents = await server.block_manager.get_agents_for_block_async(block_id=block_id, actor=actor)
         return agents
     except NoResultFound:
         raise HTTPException(status_code=404, detail=f"Block with id={block_id} not found")
