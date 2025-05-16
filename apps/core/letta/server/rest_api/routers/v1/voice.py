@@ -38,7 +38,7 @@ async def create_voice_chat_completions(
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=user_id)
 
     # Create OpenAI async client
     client = openai.AsyncClient(

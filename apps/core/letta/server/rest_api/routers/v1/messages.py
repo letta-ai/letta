@@ -52,7 +52,7 @@ async def create_messages_batch(
             detail=f"Server misconfiguration: LETTA_ENABLE_BATCH_JOB_POLLING is set to False.",
         )
 
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     batch_job = BatchJob(
         user_id=actor.id,
         status=JobStatus.running,
@@ -100,7 +100,7 @@ async def retrieve_batch_run(
     """
     Get the status of a batch run.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
         job = await server.job_manager.get_job_by_id_async(job_id=batch_id, actor=actor)
@@ -118,7 +118,7 @@ async def list_batch_runs(
     List all batch runs.
     """
     # TODO: filter
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     jobs = server.job_manager.list_jobs(actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.BATCH)
     return [BatchJob.from_job(job) for job in jobs]
@@ -150,7 +150,7 @@ async def list_batch_messages(
     - For subsequent pages, use the ID of the last message from the previous response as the cursor
     - Results will include messages before/after the cursor based on sort_descending
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     # First, verify the batch job exists and the user has access to it
     try:
@@ -177,7 +177,7 @@ async def cancel_batch_run(
     """
     Cancel a batch run.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
         job = await server.job_manager.get_job_by_id_async(job_id=batch_id, actor=actor)
