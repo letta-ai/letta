@@ -259,6 +259,18 @@ class BlockManager:
             return agents_pydantic
 
     @enforce_types
+    async def get_agents_for_block_async(self, block_id: str, actor: PydanticUser) -> List[PydanticAgentState]:
+        """
+        Retrieve all agents associated with a given block.
+        """
+        async with db_registry.async_session() as session:
+            block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
+            agents_orm = block.agents
+            agents_pydantic = [agent.to_pydantic() for agent in agents_orm]
+
+            return agents_pydantic
+
+    @enforce_types
     def size(
         self,
         actor: PydanticUser,
