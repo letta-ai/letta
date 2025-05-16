@@ -72,7 +72,7 @@ class JobManager:
                 setattr(job, key, value)
 
             if update_data.get("status") == JobStatus.completed and not job.completed_at:
-                job.completed_at = get_utc_time()
+                job.completed_at = get_utc_time().replace(tzinfo=None)
                 if job.callback_url:
                     self._dispatch_callback(session, job)
 
@@ -96,7 +96,7 @@ class JobManager:
                 setattr(job, key, value)
 
             if update_data.get("status") == JobStatus.completed and not job.completed_at:
-                job.completed_at = get_utc_time()
+                job.completed_at = get_utc_time().replace(tzinfo=None)
                 if job.callback_url:
                     await self._dispatch_callback_async(session, job)
 
