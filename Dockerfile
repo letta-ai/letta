@@ -40,18 +40,22 @@ RUN poetry lock && \
 # Runtime stage
 FROM ankane/pgvector:v0.5.1 AS runtime
 
-# Install Python packages and OpenTelemetry Collector
-RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-venv \
-    curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && mkdir -p /app \
+# Overridable Node.js version with --build-arg NODE_VERSION
+ARG NODE_VERSION=22
+
+RUN apt-get update && \
+    # Install curl and Python
+    apt-get install -y curl python3 python3-venv && \
+    # Install Node.js
+    curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - && \
+    apt-get install -y nodejs && \
     # Install OpenTelemetry Collector
-    && curl -L https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.96.0/otelcol-contrib_0.96.0_linux_amd64.tar.gz -o /tmp/otel-collector.tar.gz \
-    && tar xzf /tmp/otel-collector.tar.gz -C /usr/local/bin \
-    && rm /tmp/otel-collector.tar.gz \
-    && mkdir -p /etc/otel
+    curl -L https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.96.0/otelcol-contrib_0.96.0_linux_amd64.tar.gz -o /tmp/otel-collector.tar.gz && \
+    tar xzf /tmp/otel-collector.tar.gz -C /usr/local/bin && \
+    rm /tmp/otel-collector.tar.gz && \
+    mkdir -p /etc/otel && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Add OpenTelemetry Collector configs
 COPY otel/otel-collector-config-file.yaml /etc/otel/config-file.yaml
