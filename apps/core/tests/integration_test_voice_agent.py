@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from dotenv import load_dotenv
-from letta_client import Letta
+from letta_client import AsyncLetta
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionChunk
 
@@ -130,12 +130,12 @@ def server_url():
 @pytest.fixture(scope="session")
 def client(server_url):
     """Creates a REST client for testing."""
-    client = Letta(base_url=server_url)
+    client = AsyncLetta(base_url=server_url)
     yield client
 
 
 @pytest.fixture(scope="function")
-def roll_dice_tool(client):
+async def roll_dice_tool(client):
     def roll_dice():
         """
         Rolls a 6 sided die.
@@ -145,13 +145,13 @@ def roll_dice_tool(client):
         """
         return "Rolled a 10!"
 
-    tool = client.tools.upsert_from_function(func=roll_dice)
+    tool = await client.tools.upsert_from_function(func=roll_dice)
     # Yield the created tool
     yield tool
 
 
 @pytest.fixture(scope="function")
-def weather_tool(client):
+async def weather_tool(client):
     def get_weather(location: str) -> str:
         """
         Fetches the current weather for a given location.
@@ -176,7 +176,7 @@ def weather_tool(client):
         else:
             raise RuntimeError(f"Failed to get weather data, status code: {response.status_code}")
 
-    tool = client.tools.upsert_from_function(func=get_weather)
+    tool = await client.tools.upsert_from_function(func=get_weather)
     # Yield the created tool
     yield tool
 
@@ -270,7 +270,7 @@ def _assert_valid_chunk(chunk, idx, chunks):
 
 @pytest.mark.asyncio(loop_scope="session")
 @pytest.mark.parametrize("model", ["openai/gpt-4o-mini", "anthropic/claude-3-5-sonnet-20241022"])
-async def test_model_compatibility(disable_e2b_api_key, client, model, server, group_id, actor):
+async def test_model_compatibility(disable_e2b_api_key, voice_agent, model, server, group_id, actor):
     request = _get_chat_request("How are you?")
     server.tool_manager.upsert_base_tools(actor=actor)
 
@@ -306,7 +306,7 @@ async def test_model_compatibility(disable_e2b_api_key, client, model, server, g
 @pytest.mark.asyncio(loop_scope="session")
 @pytest.mark.parametrize("message", ["Use search memory tool to recall what my name is."])
 @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
-async def test_voice_recall_memory(disable_e2b_api_key, client, voice_agent, message, endpoint):
+async def test_voice_recall_memory(disable_e2b_api_key, voice_agent, message, endpoint):
     """Tests chat completion streaming using the Async OpenAI client."""
     request = _get_chat_request(message)
 
@@ -320,7 +320,7 @@ async def test_voice_recall_memory(disable_e2b_api_key, client, voice_agent, mes
 
 @pytest.mark.asyncio(loop_scope="session")
 @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
-async def test_trigger_summarization(disable_e2b_api_key, client, server, voice_agent, group_id, endpoint, actor):
+async def test_trigger_summarization(disable_e2b_api_key, server, voice_agent, group_id, endpoint, actor):
     server.group_manager.modify_group(
         group_id=group_id,
         group_update=GroupUpdate(
@@ -423,7 +423,7 @@ async def test_summarization(disable_e2b_api_key, voice_agent):
 
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_voice_sleeptime_agent(disable_e2b_api_key, client, voice_agent):
+async def test_voice_sleeptime_agent(disable_e2b_api_key, voice_agent):
     """Tests chat completion streaming using the Async OpenAI client."""
     agent_manager = AgentManager()
     tool_manager = ToolManager()
