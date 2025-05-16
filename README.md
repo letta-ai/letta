@@ -130,7 +130,7 @@ This project uses [Just](https://github.com/casey/just) as a command runner. Her
 
 ### Authentication and Configuration
 
-- `gcloud` - [linky](https://formulae.brew.sh/formula/postgresql@14)
+- `gcloud` - [linky](https://github.com/gcloud/cli)
 ```sh
 # Install gcloud CLI on mac
 brew install --cask google-cloud-sdk
