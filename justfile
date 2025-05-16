@@ -9,7 +9,7 @@ REGISTRY_NAME := if CLUSTER_CONTEXT == "letta-dev-us-central1" { "letta-dev-us-c
 DOCKER_REGISTRY := REGION + "-docker.pkg.dev/" + PROJECT_NAME + "/" + REGISTRY_NAME
 SYSTEM_ARCH := `uname -m`
 BUILD_ARCH := if SYSTEM_ARCH == "x86_64" { "amd64" } else { "arm64" }
-HELM_CHARTS_DIR := "helm"
+HELM_CHARTS_DIR := if CLUSTER_CONTEXT == "letta-dev-us-central1" { "helm/dev" } else { "helm" }
 WEB_HELM_CHART_NAME := "letta-web"
 CORE_HELM_CHART_NAME := "memgpt-server"
 REDIS_HOST := "10.167.199.148"
