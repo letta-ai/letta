@@ -106,6 +106,15 @@ class ToolManager:
             return tool.to_pydantic()
 
     @enforce_types
+    async def get_tool_by_id_async(self, tool_id: str, actor: PydanticUser) -> PydanticTool:
+        """Fetch a tool by its ID."""
+        async with db_registry.async_session() as session:
+            # Retrieve tool by id using the Tool model's read method
+            tool = await ToolModel.read_async(db_session=session, identifier=tool_id, actor=actor)
+            # Convert the SQLAlchemy Tool object to PydanticTool
+            return tool.to_pydantic()
+
+    @enforce_types
     def get_tool_by_name(self, tool_name: str, actor: PydanticUser) -> Optional[PydanticTool]:
         """Retrieve a tool by its name and a user. We derive the organization from the user, and retrieve that tool."""
         try:

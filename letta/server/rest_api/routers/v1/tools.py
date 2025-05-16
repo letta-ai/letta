@@ -59,7 +59,7 @@ def count_tools(
 
 
 @router.get("/{tool_id}", response_model=Tool, operation_id="retrieve_tool")
-def retrieve_tool(
+async def retrieve_tool(
     tool_id: str,
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -67,8 +67,8 @@ def retrieve_tool(
     """
     Get a tool by ID
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    tool = server.tool_manager.get_tool_by_id(tool_id=tool_id, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    tool = await server.tool_manager.get_tool_by_id_async(tool_id=tool_id, actor=actor)
     if tool is None:
         # return 404 error
         raise HTTPException(status_code=404, detail=f"Tool with id {tool_id} not found.")
