@@ -131,6 +131,10 @@ class GoogleAIClient(LLMClientBase):
         try:
             choices = []
             index = 0
+
+            if "candidates" not in response_data:
+                raise ValueError(f"No candidates found in response data from LLM: {response_data}")
+
             for candidate in response_data["candidates"]:
                 content = candidate["content"]
 
