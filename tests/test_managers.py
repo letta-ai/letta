@@ -124,16 +124,16 @@ def default_user(server: SyncServer, default_organization):
 
 
 @pytest.fixture
-def other_user(server: SyncServer, default_organization):
+async def other_user(server: SyncServer, default_organization):
     """Fixture to create and return the default user within the default organization."""
-    user = server.user_manager.create_user(PydanticUser(name="other", organization_id=default_organization.id))
+    user = await server.user_manager.create_actor_async(PydanticUser(name="other", organization_id=default_organization.id))
     yield user
 
 
 @pytest.fixture
-def other_user_different_org(server: SyncServer, other_organization):
+async def other_user_different_org(server: SyncServer, other_organization):
     """Fixture to create and return the default user within the default organization."""
-    user = server.user_manager.create_user(PydanticUser(name="other", organization_id=other_organization.id))
+    user = await server.user_manager.create_actor_async(PydanticUser(name="other", organization_id=other_organization.id))
     yield user
 
 
@@ -2120,20 +2120,21 @@ def test_passage_cascade_deletion(
 # ======================================================================================================================
 # User Manager Tests
 # ======================================================================================================================
-def test_list_users(server: SyncServer):
+@pytest.mark.asyncio
+async def test_list_users(server: SyncServer, event_loop):
     # Create default organization
     org = server.organization_manager.create_default_organization()
 
     user_name = "user"
-    user = server.user_manager.create_user(PydanticUser(name=user_name, organization_id=org.id))
+    user = await server.user_manager.create_actor_async(PydanticUser(name=user_name, organization_id=org.id))
 
-    users = server.user_manager.list_users()
+    users = await server.user_manager.list_actors_async()
     assert len(users) == 1
     assert users[0].name == user_name
 
     # Delete it after
-    server.user_manager.delete_user_by_id(user.id)
-    assert len(server.user_manager.list_users()) == 0
+    await server.user_manager.delete_actor_by_id_async(user.id)
+    assert len(await server.user_manager.list_actors_async()) == 0
 
 
 def test_create_default_user(server: SyncServer):
@@ -2143,7 +2144,8 @@ def test_create_default_user(server: SyncServer):
     assert retrieved.name == server.user_manager.DEFAULT_USER_NAME
 
 
-def test_update_user(server: SyncServer):
+@pytest.mark.asyncio
+async def test_update_user(server: SyncServer, event_loop):
     # Create default organization
     default_org = server.organization_manager.create_default_organization()
     test_org = server.organization_manager.create_organization(PydanticOrganization(name="test_org"))
@@ -2152,16 +2154,16 @@ def test_update_user(server: SyncServer):
     user_name_b = "b"
 
     # Assert it's been created
-    user = server.user_manager.create_user(PydanticUser(name=user_name_a, organization_id=default_org.id))
+    user = await server.user_manager.create_actor_async(PydanticUser(name=user_name_a, organization_id=default_org.id))
     assert user.name == user_name_a
 
     # Adjust name
-    user = server.user_manager.update_user(UserUpdate(id=user.id, name=user_name_b))
+    user = await server.user_manager.update_actor_async(UserUpdate(id=user.id, name=user_name_b))
     assert user.name == user_name_b
     assert user.organization_id == OrganizationManager.DEFAULT_ORG_ID
 
     # Adjust org id
-    user = server.user_manager.update_user(UserUpdate(id=user.id, organization_id=test_org.id))
+    user = await server.user_manager.update_actor_async(UserUpdate(id=user.id, organization_id=test_org.id))
     assert user.name == user_name_b
     assert user.organization_id == test_org.id
 

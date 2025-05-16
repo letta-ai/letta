@@ -746,6 +746,17 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         return self.update(db_session)
 
     @handle_db_timeout
+    async def delete_async(self, db_session: "AsyncSession", actor: Optional["User"] = None) -> "SqlalchemyBase":
+        """Soft delete a record asynchronously (mark as deleted)."""
+        logger.debug(f"Soft deleting {self.__class__.__name__} with ID: {self.id} with actor={actor} (async)")
+
+        if actor:
+            self._set_created_and_updated_by_fields(actor.id)
+
+        self.is_deleted = True
+        return await self.update_async(db_session)
+
+    @handle_db_timeout
     def hard_delete(self, db_session: "Session", actor: Optional["User"] = None) -> None:
         """Permanently removes the record from the database."""
         logger.debug(f"Hard deleting {self.__class__.__name__} with ID: {self.id} with actor={actor}")
@@ -760,6 +771,20 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 raise ValueError(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}: {e}")
             else:
                 logger.debug(f"{self.__class__.__name__} with ID {self.id} successfully hard deleted")
+
+    @handle_db_timeout
+    async def hard_delete_async(self, db_session: "AsyncSession", actor: Optional["User"] = None) -> None:
+        """Permanently removes the record from the database asynchronously."""
+        logger.debug(f"Hard deleting {self.__class__.__name__} with ID: {self.id} with actor={actor} (async)")
+
+        async with db_session as session:
+            try:
+                await session.delete(self)
+                await session.commit()
+            except Exception as e:
+                await session.rollback()
+                logger.exception(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}")
+                raise ValueError(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}: {e}")
 
     @handle_db_timeout
     def update(self, db_session: Session, actor: Optional["User"] = None, no_commit: bool = False) -> "SqlalchemyBase":

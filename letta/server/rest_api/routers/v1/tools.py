@@ -87,7 +87,7 @@ async def list_tools(
     Get a list of all tools available to agents belonging to the org of the user
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
         if name is not None:
             tool = await server.tool_manager.get_tool_by_name_async(tool_name=name, actor=actor)
             return [tool] if tool else []

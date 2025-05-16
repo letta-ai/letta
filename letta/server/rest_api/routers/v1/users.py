@@ -14,7 +14,7 @@ router = APIRouter(prefix="/users", tags=["users", "admin"])
 
 
 @router.get("/", tags=["admin"], response_model=List[User], operation_id="list_users")
-def list_users(
+async def list_users(
     after: Optional[str] = Query(None),
     limit: Optional[int] = Query(50),
     server: "SyncServer" = Depends(get_letta_server),
@@ -23,7 +23,7 @@ def list_users(
     Get a list of all users in the database
     """
     try:
-        users = server.user_manager.list_users(after=after, limit=limit)
+        users = await server.user_manager.list_actors_async(after=after, limit=limit)
     except HTTPException:
         raise
     except Exception as e:
@@ -32,7 +32,7 @@ def list_users(
 
 
 @router.post("/", tags=["admin"], response_model=User, operation_id="create_user")
-def create_user(
+async def create_user(
     request: UserCreate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
 ):
@@ -40,33 +40,33 @@ def create_user(
     Create a new user in the database
     """
     user = User(**request.model_dump())
-    user = server.user_manager.create_user(user)
+    user = await server.user_manager.create_actor_async(user)
     return user
 
 
 @router.put("/", tags=["admin"], response_model=User, operation_id="update_user")
-def update_user(
+async def update_user(
     user: UserUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
 ):
     """
     Update a user in the database
     """
-    user = server.user_manager.update_user(user)
+    user = await server.user_manager.update_actor_async(user)
     return user
 
 
 @router.delete("/", tags=["admin"], response_model=User, operation_id="delete_user")
-def delete_user(
+async def delete_user(
     user_id: str = Query(..., description="The user_id key to be deleted."),
     server: "SyncServer" = Depends(get_letta_server),
 ):
     # TODO make a soft deletion, instead of a hard deletion
     try:
-        user = server.user_manager.get_user_by_id(user_id=user_id)
+        user = await server.user_manager.get_actor_by_id_async(actor_id=user_id)
         if user is None:
             raise HTTPException(status_code=404, detail=f"User does not exist")
-        server.user_manager.delete_user_by_id(user_id=user_id)
+        await server.user_manager.delete_actor_by_id_async(user_id=user_id)
     except HTTPException:
         raise
     except Exception as e:

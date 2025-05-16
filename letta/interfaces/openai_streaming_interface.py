@@ -1,16 +1,14 @@
 from datetime import datetime, timezone
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import AsyncGenerator, List, Optional
 
 from openai import AsyncStream
-from openai.types.chat.chat_completion_chunk import ChatCompletionChunk, Choice, ChoiceDelta
+from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
-from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, PRE_EXECUTION_MESSAGE_ARG
-from letta.interfaces.utils import _format_sse_chunk
+from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.schemas.letta_message import AssistantMessage, LettaMessage, ReasoningMessage, ToolCallDelta, ToolCallMessage
-from letta.schemas.letta_message_content import ReasoningContent, RedactedReasoningContent, TextContent
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
-from letta.schemas.usage import LettaUsageStatistics
 from letta.server.rest_api.json_parser import OptimisticJSONParser
 from letta.streaming_utils import JSONInnerThoughtsExtractor
 

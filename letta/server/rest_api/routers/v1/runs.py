@@ -115,7 +115,7 @@ async def list_run_messages(
     if order not in ["asc", "desc"]:
         raise HTTPException(status_code=400, detail="Order must be 'asc' or 'desc'")
 
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
         messages = server.job_manager.get_run_messages(
@@ -182,7 +182,7 @@ async def list_run_steps(
     if order not in ["asc", "desc"]:
         raise HTTPException(status_code=400, detail="Order must be 'asc' or 'desc'")
 
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
         steps = server.job_manager.get_job_steps(
