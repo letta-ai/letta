@@ -819,6 +819,39 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         return self
 
     @classmethod
+    def _size_preprocess(
+        cls,
+        *,
+        db_session: "Session",
+        actor: Optional["User"] = None,
+        access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
+        access_type: AccessType = AccessType.ORGANIZATION,
+        **kwargs,
+    ):
+        logger.debug(f"Calculating size for {cls.__name__} with filters {kwargs}")
+        query = select(func.count()).select_from(cls)
+
+        if actor:
+            query = cls.apply_access_predicate(query, actor, access, access_type)
+
+        # Apply filtering logic based on kwargs
+        for key, value in kwargs.items():
+            if value:
+                column = getattr(cls, key, None)
+                if not column:
+                    raise AttributeError(f"{cls.__name__} has no attribute '{key}'")
+                if isinstance(value, (list, tuple, set)):  # Check for iterables
+                    query = query.where(column.in_(value))
+                else:  # Single value for equality filtering
+                    query = query.where(column == value)
+
+        # Handle soft deletes if the class has the 'is_deleted' attribute
+        if hasattr(cls, "is_deleted"):
+            query = query.where(cls.is_deleted == False)
+
+        return query
+
+    @classmethod
     @handle_db_timeout
     def size(
         cls,
@@ -842,31 +875,42 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         Raises:
             DBAPIError: If a database error occurs
         """
-        logger.debug(f"Calculating size for {cls.__name__} with filters {kwargs}")
-
         with db_session as session:
-            query = select(func.count()).select_from(cls)
-
-            if actor:
-                query = cls.apply_access_predicate(query, actor, access, access_type)
-
-            # Apply filtering logic based on kwargs
-            for key, value in kwargs.items():
-                if value:
-                    column = getattr(cls, key, None)
-                    if not column:
-                        raise AttributeError(f"{cls.__name__} has no attribute '{key}'")
-                    if isinstance(value, (list, tuple, set)):  # Check for iterables
-                        query = query.where(column.in_(value))
-                    else:  # Single value for equality filtering
-                        query = query.where(column == value)
-
-            # Handle soft deletes if the class has the 'is_deleted' attribute
-            if hasattr(cls, "is_deleted"):
-                query = query.where(cls.is_deleted == False)
+            query = cls._size_preprocess(db_session=session, actor=actor, access=access, access_type=access_type, **kwargs)
 
             try:
                 count = session.execute(query).scalar()
+                return count if count else 0
+            except DBAPIError as e:
+                logger.exception(f"Failed to calculate size for {cls.__name__}")
+                raise e
+
+    @classmethod
+    @handle_db_timeout
+    async def size_async(
+        cls,
+        *,
+        db_session: "AsyncSession",
+        actor: Optional["User"] = None,
+        access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
+        access_type: AccessType = AccessType.ORGANIZATION,
+        **kwargs,
+    ) -> int:
+        """
+        Get the count of rows that match the provided filters.
+        Args:
+            db_session: SQLAlchemy session
+            **kwargs: Filters to apply to the query (e.g., column_name=value)
+        Returns:
+            int: The count of rows that match the filters
+        Raises:
+            DBAPIError: If a database error occurs
+        """
+        async with db_session as session:
+            query = cls._size_preprocess(db_session=session, actor=actor, access=access, access_type=access_type, **kwargs)
+
+            try:
+                count = await session.execute(query).scalar()
                 return count if count else 0
             except DBAPIError as e:
                 logger.exception(f"Failed to calculate size for {cls.__name__}")

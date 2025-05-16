@@ -62,8 +62,8 @@ class LettaAgent(BaseAgent):
         self.last_function_response = None
 
         # Cached archival memory/message size
-        self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_id)
-        self.num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_id)
+        self.num_messages = 0
+        self.num_archival_memories = 0
 
     @trace_method
     async def step(self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = True) -> LettaResponse:
@@ -201,8 +201,8 @@ class LettaAgent(BaseAgent):
 
         # TODO: This may be out of sync, if in between steps users add files
         # NOTE (cliandy): temporary for now for particlar use cases.
-        self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_state.id)
-        self.num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_state.id)
+        self.num_messages = await self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id)
+        self.num_archival_memories = await self.passage_manager.size_async(actor=self.actor, agent_id=agent_state.id)
 
         # TODO: Also yield out a letta usage stats SSE
         yield f"data: {usage.model_dump_json()}\n\n"
@@ -219,6 +219,10 @@ class LettaAgent(BaseAgent):
         stream: bool,
     ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:
         if settings.experimental_enable_async_db_engine:
+            self.num_messages = self.num_messages or (await self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id))
+            self.num_archival_memories = self.num_archival_memories or (
+                await self.passage_manager.size_async(actor=self.actor, agent_id=agent_state.id)
+            )
             in_context_messages = await self._rebuild_memory_async(
                 in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
             )
