@@ -26,7 +26,7 @@
     "QuotaRow": {
       "limit": "<value></value> used of {max}"
     },
-    "title": "Usage",
+    "title": "Usage (resets monthly)",
     "premiumModelUsage": {
       "label": "Premium model requests"
     },
