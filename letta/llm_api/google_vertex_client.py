@@ -235,6 +235,8 @@ class GoogleVertexClient(GoogleAIClient):
                             )
 
                         except json.decoder.JSONDecodeError:
+                            if candidate.finish_reason == "MAX_TOKENS":
+                                raise ValueError(f"Could not parse response data from LLM: exceeded max token limit")
                             # Inner thoughts are the content by default
                             inner_thoughts = response_message.text
 
