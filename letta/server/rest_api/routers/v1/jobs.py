@@ -33,16 +33,16 @@ def list_jobs(
 
 
 @router.get("/active", response_model=List[Job], operation_id="list_active_jobs")
-def list_active_jobs(
+async def list_active_jobs(
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     List all active jobs.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    return server.job_manager.list_jobs(actor=actor, statuses=[JobStatus.created, JobStatus.running])
+    return await server.job_manager.list_jobs_async(actor=actor, statuses=[JobStatus.created, JobStatus.running])
 
 
 @router.get("/{job_id}", response_model=Job, operation_id="retrieve_job")
