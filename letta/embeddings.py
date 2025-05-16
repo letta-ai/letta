@@ -1,3 +1,4 @@
+import json
 import uuid
 from typing import Any, List, Optional
 
@@ -67,12 +68,12 @@ class EmbeddingEndpoint:
     # _base_url: str = PrivateAttr()
 
     def __init__(
-        self,
-        model: str,
-        base_url: str,
-        user: str,
-        timeout: float = 60.0,
-        **kwargs: Any,
+            self,
+            model: str,
+            base_url: str,
+            user: str,
+            timeout: float = 60.0,
+            **kwargs: Any,
     ):
         if not is_valid_url(base_url):
             raise ValueError(
@@ -194,7 +195,7 @@ class GoogleVertexEmbeddings:
     def __init__(self, model: str, project_id: str, region: str):
         from google import genai
 
-        self.client = genai.Client(vertexai=True, project=project_id, location=region, http_options={"api_version": "v1"})
+        self.client = genai.Client(vertexai=True, project=project_id, location=region,http_options={"api_version": "v1"})
         self.model = model
 
     def get_text_embedding(self, text: str):
@@ -216,6 +217,26 @@ class OpenAIEmbeddings:
 
         return response.data[0].embedding
 
+class AWSBedrockEmbeddings:
+    def _init_(self, model: str, api_key: str, api_secret: str, region: str):
+        import boto3
+        self.client = boto3.client("bedrock-runtime", region_name=region,
+                                   aws_access_key_id=api_key,
+                                   aws_secret_access_key=api_secret)
+
+    def get_text_embedding(self, text: str):
+        payload = {
+            "texts": [text],
+            "input_type": 'search_document'
+        }
+        response = self.client.invoke_model(
+            modelId="cohere.embed-english-v3",
+            contentType="application/json",
+            accept="application/json",
+            body=json.dumps(payload)
+        )
+        body = json.loads(response['body'].read())
+        return body['embeddings'][0]
 
 def query_embedding(embedding_model, query_text: str):
     """Generate padded embedding for querying database"""
@@ -286,6 +307,16 @@ def embedding_model(config: EmbeddingConfig, user_id: Optional[uuid.UUID] = None
             base_url=model_settings.gemini_base_url,
         )
         return model
+
+    elif endpoint_type == 'bedrock':
+        model = AWSBedrockEmbeddings(
+            model=config.embedding_model,
+            api_key=model_settings.aws_access_key,
+            api_secret=model_settings.aws_secret_access_key,
+            region=model_settings.aws_region
+        )
+        return model
+
 
     else:
         raise ValueError(f"Unknown endpoint type {endpoint_type}")
