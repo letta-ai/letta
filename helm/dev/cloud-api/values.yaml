@@ -1,11 +1,11 @@
-# Default values for model-proxy.
+# Default values for cloud-api.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-replicaCount: 1
+replicaCount: 4
 
 image:
-  repository: us-central1-docker.pkg.dev/memgpt-428419/letta/model-proxy
+  repository: us-central1-docker.pkg.dev/memgpt-428419/letta/cloud-api
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
@@ -20,11 +20,10 @@ serviceAccount:
   # Automatically mount a ServiceAccount's API credentials?
   automount: true
   # Annotations to add to the service account
-  annotations:
-    iam.gke.io/gcp-service-account: "model-proxy-prod-sa@memgpt-428419.iam.gserviceaccount.com"
+  annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: "model-proxy"
+  name: ""
 
 podAnnotations: {}
 podLabels: {}
@@ -51,7 +50,7 @@ ingress:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/rewrite-target: /$1
   hosts:
-    - host: model-proxy.letta.com
+    - host: api.letta.com
       paths:
         - path: /(.*)
           pathType: ImplementationSpecific
@@ -63,31 +62,19 @@ ingress:
 resources:
   limits:
     cpu: 500m
-    memory: 1024Mi
+    memory: 512Mi
   requests:
     cpu: 200m
-    memory: 512Mi
+    memory: 256Mi
 
-# livenessProbe:
-#   tcpSocket:
-#     port: 8080
-#   initialDelaySeconds: 60
-#   periodSeconds: 15
-#   failureThreshold: 3
-
-# readinessProbe:
-#   tcpSocket:
-#     port: 8080
-#   initialDelaySeconds: 30
-#   periodSeconds: 10
-#   failureThreshold: 3
-
-# startupProbe:
-#   httpGet:
-#     path: /healthz
-#     port: 8080
-#   failureThreshold: 30
-#   periodSeconds: 10
+livenessProbe:
+  httpGet:
+    path: /
+    port: 8080
+readinessProbe:
+  httpGet:
+    path: /
+    port: 8080
 
 autoscaling:
   enabled: false

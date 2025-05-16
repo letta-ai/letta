@@ -1,11 +1,11 @@
-# Default values for model-proxy.
+# Default values for letta-web.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 replicaCount: 1
 
 image:
-  repository: us-central1-docker.pkg.dev/memgpt-428419/letta/model-proxy
+  repository: us-central1-docker.pkg.dev/memgpt-428419/letta/web
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
@@ -20,11 +20,10 @@ serviceAccount:
   # Automatically mount a ServiceAccount's API credentials?
   automount: true
   # Annotations to add to the service account
-  annotations:
-    iam.gke.io/gcp-service-account: "model-proxy-prod-sa@memgpt-428419.iam.gserviceaccount.com"
+  annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: "model-proxy"
+  name: ""
 
 podAnnotations: {}
 podLabels: {}
@@ -43,55 +42,49 @@ securityContext: {}
 service:
   type: LoadBalancer
   port: 80
+  loadBalancerIp: 34.45.207.17
 
 ingress:
-  enabled: true
-  className: "nginx"
+  enabled: false
+  className: ""
   annotations:
-    kubernetes.io/ingress.class: nginx
-    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    kubernetes.io/ingress.global-static-ip-name: "letta-web"
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: model-proxy.letta.com
+    - host: chart-example.local
       paths:
-        - path: /(.*)
+        - path: /
           pathType: ImplementationSpecific
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local
 
-resources:
-  limits:
-    cpu: 500m
-    memory: 1024Mi
-  requests:
-    cpu: 200m
-    memory: 512Mi
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 1000m
+  #   memory: 8Gi
+  # requests:
+  #   cpu: 1000m
+  #   memory: 10Gi
 
-# livenessProbe:
-#   tcpSocket:
-#     port: 8080
-#   initialDelaySeconds: 60
-#   periodSeconds: 15
-#   failureThreshold: 3
-
-# readinessProbe:
-#   tcpSocket:
-#     port: 8080
-#   initialDelaySeconds: 30
-#   periodSeconds: 10
-#   failureThreshold: 3
-
-# startupProbe:
-#   httpGet:
-#     path: /healthz
-#     port: 8080
-#   failureThreshold: 30
-#   periodSeconds: 10
+livenessProbe:
+  httpGet:
+    path: /
+    port: 8080
+readinessProbe:
+  httpGet:
+    path: /
+    port: 8080
 
 autoscaling:
-  enabled: false
-  minReplicas: 1
+  enabled: true
+  minReplicas: 4
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
@@ -116,5 +109,14 @@ tolerations: []
 affinity: {}
 
 env:
+  DATABASE_URL: ""
+  GOOGLE_CLIENT_ID: ""
+  GOOGLE_CLIENT_SECRET: ""
+  GOOGLE_REDIRECT_URI: ""
   LETTA_AGENTS_ENDPOINT: ""
-  PORT: "8080"
+  REDIS_HOST: ""
+  E2B_SANDBOX_TEMPLATE_ID: ""
+  E2B_API_KEY: ""
+  HUBSPOT_API_KEY: ""
+  RESEND_API_KEY: ""
+  COMPOSIO_API_KEY: ""

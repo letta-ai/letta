@@ -21,7 +21,7 @@ serviceAccount:
   automount: true
   # Annotations to add to the service account
   annotations:
-    iam.gke.io/gcp-service-account: "model-proxy-prod-sa@memgpt-428419.iam.gserviceaccount.com"
+    iam.gke.io/gcp-service-account: "model-proxy-dev-sa@memgpt-428419.iam.gserviceaccount.com"
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
   name: "model-proxy"

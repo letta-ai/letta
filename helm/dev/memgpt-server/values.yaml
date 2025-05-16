@@ -1,14 +1,14 @@
-# Default values for model-proxy.
+# Default values for memgpt-server.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 replicaCount: 1
 
 image:
-  repository: us-central1-docker.pkg.dev/memgpt-428419/letta/model-proxy
+  repository: nginx
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
+  tag: ""
 
 imagePullSecrets: []
 nameOverride: ""
@@ -20,11 +20,10 @@ serviceAccount:
   # Automatically mount a ServiceAccount's API credentials?
   automount: true
   # Annotations to add to the service account
-  annotations:
-    iam.gke.io/gcp-service-account: "model-proxy-prod-sa@memgpt-428419.iam.gserviceaccount.com"
+  annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: "model-proxy"
+  name: ""
 
 podAnnotations: {}
 podLabels: {}
@@ -42,18 +41,18 @@ securityContext: {}
 
 service:
   type: LoadBalancer
-  port: 80
+  port: 8083
 
 ingress:
-  enabled: true
-  className: "nginx"
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    nginx.ingress.kubernetes.io/rewrite-target: /$1
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: model-proxy.letta.com
+    - host: chart-example.local
       paths:
-        - path: /(.*)
+        - path: /
           pathType: ImplementationSpecific
   tls: []
   #  - secretName: chart-example-tls
@@ -62,36 +61,37 @@ ingress:
 
 resources:
   limits:
-    cpu: 500m
-    memory: 1024Mi
+    cpu: 250m
+    memory: 2Gi
   requests:
-    cpu: 200m
-    memory: 512Mi
+    cpu: 150m
+    memory: 1Gi
 
-# livenessProbe:
-#   tcpSocket:
-#     port: 8080
-#   initialDelaySeconds: 60
-#   periodSeconds: 15
-#   failureThreshold: 3
+livenessProbe:
+  failureThreshold: 5
+  httpGet:
+    path: /v1/health/
+    port: 8083
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 15
+  successThreshold: 1
+  timeoutSeconds: 15
 
-# readinessProbe:
-#   tcpSocket:
-#     port: 8080
-#   initialDelaySeconds: 30
-#   periodSeconds: 10
-#   failureThreshold: 3
-
-# startupProbe:
-#   httpGet:
-#     path: /healthz
-#     port: 8080
-#   failureThreshold: 30
-#   periodSeconds: 10
+readinessProbe:
+  failureThreshold: 3
+  httpGet:
+    path: /v1/health/
+    port: 8083
+    scheme: HTTP
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 15
 
 autoscaling:
-  enabled: false
-  minReplicas: 1
+  enabled: true
+  minReplicas: 8
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
@@ -115,6 +115,23 @@ tolerations: []
 
 affinity: {}
 
-env:
-  LETTA_AGENTS_ENDPOINT: ""
-  PORT: "8080"
+secrets:
+  OPENAI_API_KEY: ""
+  TOGETHER_API_KEY: ""
+  MEMGPT_SERVER_PASS: ""
+  MEMGPT_PG_DB: ""
+  MEMGPT_PG_USER: ""
+  MEMGPT_PG_PASSWORD: ""
+  MEMGPT_PG_URL: ""
+  MEMGPT_PG_HOST: ""
+  MEMGPT_PG_PORT: "5432"
+  POSTGRES_URI: ""
+  ANTHROPIC_API_KEY: ""
+  E2B_SANDBOX_TEMPLATE_ID: ""
+  E2B_API_KEY: ""
+  SENTRY_DSN: ""
+  LETTA_OTEL_EXPORTER_OTLP_ENDPOINT: ""
+  CLICKHOUSE_ENDPOINT: ""
+  CLICKHOUSE_DATABASE: ""
+  CLICKHOUSE_USERNAME: ""
+  CLICKHOUSE_PASSWORD: ""
