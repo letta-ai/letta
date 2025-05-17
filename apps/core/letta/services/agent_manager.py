@@ -961,6 +961,16 @@ class AgentManager:
         with db_registry.session() as session:
             return AgentModel.size(db_session=session, actor=actor)
 
+    async def size_async(
+        self,
+        actor: PydanticUser,
+    ) -> int:
+        """
+        Get the total count of agents for the given user.
+        """
+        async with db_registry.async_session() as session:
+            return await AgentModel.size_async(db_session=session, actor=actor)
+
     @enforce_types
     def get_agent_by_id(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         """Fetch an agent by its ID."""
