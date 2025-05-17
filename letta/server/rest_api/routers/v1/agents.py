@@ -106,14 +106,15 @@ async def list_agents(
 
 
 @router.get("/count", response_model=int, operation_id="count_agents")
-def count_agents(
+async def count_agents(
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     Get the count of all agents associated with a given user.
     """
-    return server.agent_manager.size(actor=server.user_manager.get_user_or_default(user_id=actor_id))
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.agent_manager.size_async(actor=actor)
 
 
 class IndentedORJSONResponse(Response):
@@ -124,7 +125,7 @@ class IndentedORJSONResponse(Response):
 
 
 @router.get("/{agent_id}/export", response_class=IndentedORJSONResponse, operation_id="export_agent_serialized")
-def export_agent_serialized(
+async def export_agent_serialized(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
@@ -135,7 +136,7 @@ def export_agent_serialized(
     """
     Export the serialized JSON representation of an agent, formatted with indentation.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
         agent = server.agent_manager.serialize(agent_id=agent_id, actor=actor)
@@ -341,7 +342,7 @@ async def retrieve_agent(
     """
     Get the state of the agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
         return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
