@@ -752,6 +752,19 @@ def _prepare_anthropic_request(
     return data
 
 
+def _betas_list(data: ChatCompletionRequest, betas: List[str]):
+    """
+    Enable beta headers for Anthropic to leverage token efficient headers.
+
+    https://docs.anthropic.com/en/docs/build-with-claude/tool-use/token-efficient-tool-use
+    https://www.anthropic.com/news/token-saving-updates
+    """
+    if data.model == "claude-3-7-sonnet-20250219":
+        betas.append("token-efficient-tools-2025-02-19")
+
+    return betas
+
+
 def anthropic_chat_completions_request(
     data: ChatCompletionRequest,
     inner_thoughts_xml_tag: Optional[str] = "thinking",
@@ -773,6 +786,7 @@ def anthropic_chat_completions_request(
         anthropic_client = anthropic.Anthropic()
     else:
         raise ValueError("No available Anthropic API key")
+    betas_list = _betas_list(data, betas)
     data = _prepare_anthropic_request(
         data=data,
         inner_thoughts_xml_tag=inner_thoughts_xml_tag,
@@ -783,7 +797,7 @@ def anthropic_chat_completions_request(
     log_event(name="llm_request_sent", attributes=data)
     response = anthropic_client.beta.messages.create(
         **data,
-        betas=betas,
+        betas=betas_list,
     )
     log_event(name="llm_response_received", attributes={"response": response.json()})
     return convert_anthropic_response_to_chatcompletion(response=response, inner_thoughts_xml_tag=inner_thoughts_xml_tag)
@@ -830,6 +844,7 @@ def anthropic_chat_completions_request_stream(
     Similar to OpenAI's streaming, but using Anthropic's native streaming support.
     See: https://docs.anthropic.com/claude/reference/messages-streaming
     """
+    betas_list = _betas_list(data, betas)
     data = _prepare_anthropic_request(
         data=data,
         inner_thoughts_xml_tag=inner_thoughts_xml_tag,
@@ -846,7 +861,7 @@ def anthropic_chat_completions_request_stream(
 
     with anthropic_client.beta.messages.stream(
         **data,
-        betas=betas,
+        betas=betas_list,
     ) as stream:
         # Stream: https://github.com/anthropics/anthropic-sdk-python/blob/d212ec9f6d5e956f13bc0ddc3d86b5888a954383/src/anthropic/lib/streaming/_beta_messages.py#L22
         message_id = None
@@ -966,6 +981,7 @@ def anthropic_chat_completions_process_stream(
     completion_tokens = 0
     prev_message_type = None
     message_idx = 0
+    betas_list = _betas_list(chat_completion_request, betas)
     try:
         for chunk_idx, chat_completion_chunk in enumerate(
             anthropic_chat_completions_request_stream(
@@ -976,7 +992,7 @@ def anthropic_chat_completions_process_stream(
                 max_reasoning_tokens=max_reasoning_tokens,
                 provider_name=provider_name,
                 provider_category=provider_category,
-                betas=betas,
+                betas=betas_list,
                 user_id=user_id,
             )
         ):
