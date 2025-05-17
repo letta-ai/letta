@@ -71,6 +71,9 @@ def generate_openapi_schema(app: FastAPI):
     letta_docs["components"]["schemas"]["LettaAssistantMessageContentUnion"] = create_letta_assistant_message_content_union_schema()
     letta_docs["components"]["schemas"]["LettaUserMessageContentUnion"] = create_letta_user_message_content_union_schema()
 
+    # Fix Media Type Object description fields
+    fix_media_type_descriptions(letta_docs)
+    
     # Update the app's schema with our modified version
     app.openapi_schema = letta_docs
 
@@ -82,7 +85,30 @@ def generate_openapi_schema(app: FastAPI):
     ]:
         if settings.cors_origins:
             docs["servers"] = [{"url": host} for host in settings.cors_origins]
-        Path(f"openapi_{name}.json").write_text(json.dumps(docs, indent=2))
+        Path(f"openapi_{name}.json").write_text(json.dumps(docs, indent=2))       
+
+
+def fix_media_type_descriptions(schema):
+    """
+    Convert any 'description' fields found in Media Type Objects to 'x-description'.
+    
+    This makes the schema compliant with the OpenAPI specification, which doesn't
+    allow a description field directly in Media Type Objects.
+    """
+    # Iterate through all paths
+    for path_item in schema.get("paths", {}).values():
+        # Iterate through all operations (GET, POST, etc.)
+        for operation in path_item.values():
+            if isinstance(operation, dict) and "responses" in operation:
+                # Iterate through all responses
+                for response in operation["responses"].values():
+                    if isinstance(response, dict) and "content" in response:
+                        # Iterate through all media types
+                        for media_type in response["content"].values():
+                            if isinstance(media_type, dict) and "description" in media_type:
+                                # Convert 'description' to 'x-description'
+                                media_type["x-description"] = media_type.pop("description")
+    return schema
 
 
 # middleware that only allows requests to pass through if user provides a password thats randomly generated and stored in memory
