@@ -1343,3 +1343,54 @@ class AnthropicBedrockProvider(Provider):
         print(model_name)
         model = model_name.split(".")[-1]
         return f"bedrock/{model}"
+
+
+class VeniceProvider(Provider):
+    """Venice AI provider implementation."""
+    
+    name: str = "venice"
+    api_key: str = Field(..., description="API key for the Venice AI API.")
+    base_url: str = "https://api.venice.ai"
+
+    def list_llm_models(self) -> List[LLMConfig]:
+        from letta.llm_api.venice import venice_get_model_list
+
+        response = venice_get_model_list(self.base_url, self.api_key)
+        
+        if "data" not in response:
+            warnings.warn(f"Venice AI model query response missing 'data' field: {response}")
+            return []
+
+        configs = []
+        for model in response["data"]:
+            assert "id" in model, f"Venice AI model missing 'id' field: {model}"
+            model_name = model["id"]
+
+            # Get context window size if available, otherwise use default
+            if "context_length" in model:
+                context_window_size = model["context_length"]
+            else:
+                context_window_size = self.get_model_context_window(model_name)
+                if not context_window_size:
+                    warnings.warn(f"Couldn't find context window size for model {model_name}")
+                    continue
+
+            configs.append(
+                LLMConfig(
+                    model=model_name,
+                    model_endpoint_type="venice",
+                    model_endpoint=self.base_url,
+                    context_window=context_window_size,
+                    handle=self.get_handle(model_name),
+                )
+            )
+
+        return configs
+
+    def list_embedding_models(self) -> List[EmbeddingConfig]:
+        # Venice AI doesn't support embeddings yet
+        return []
+
+    def get_model_context_window(self, model_name: str) -> Optional[int]:
+        # Default context window size if not specified
+        return 4096  # TODO: Update with actual context windows when available

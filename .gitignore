@@ -2,6 +2,10 @@
 # Created by https://www.toptal.com/developers/gitignore/api/vim,linux,macos,pydev,python,eclipse,pycharm,windows,netbeans,pycharm+all,pycharm+iml,visualstudio,jupyternotebooks,visualstudiocode,xcode,xcodeinjection
 # Edit at https://www.toptal.com/developers/gitignore?templates=vim,linux,macos,pydev,python,eclipse,pycharm,windows,netbeans,pycharm+all,pycharm+iml,visualstudio,jupyternotebooks,visualstudiocode,xcode,xcodeinjection
 
+# Include Venice test files
+!tests/test_venice_client.py
+!tests/test_venice_live.py
+
 openapi_letta.json
 openapi_openai.json
 
@@ -1025,3 +1029,16 @@ tests/test_tool_sandbox/restaurant_management_system/venv
 
 ## custom scripts
 test
+letta/llm_api/docs/VeniceAI API Docs.md
+letta/llm_api/unit-test/__init__.py
+letta/llm_api/unit-test/conftest.py
+letta/llm_api/unit-test/test_venice_client.py
+letta/llm_api/unit-test/venice_client.py
+letta/llm_api/unit-test/test_venice_client_isolated.py
+live-test/test_venice_live.py
+test_venice_client_isolated.py
+tests/test_venice_client.py
+tests/test_venice_live.py
+tests/test_venice_simple.py
+venice_tests/test_venice_live.py
+venice_tests/test_venice.py
