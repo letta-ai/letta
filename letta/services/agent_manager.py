@@ -1209,6 +1209,11 @@ class AgentManager:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         return self.message_manager.get_message_by_id(message_id=message_ids[0], actor=actor)
 
+    @enforce_types
+    async def get_system_message_async(self, agent_id: str, actor: PydanticUser) -> PydanticMessage:
+        agent = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        return await self.message_manager.get_message_by_id_async(message_id=agent.message_ids[0], actor=actor)
+
     # TODO: This is duplicated below
     # TODO: This is legacy code and should be cleaned up
     # TODO: A lot of the memory "compilation" should be offset to a separate class
@@ -1278,8 +1283,79 @@ class AgentManager:
             return agent_state
 
     @enforce_types
+    async def rebuild_system_prompt_async(
+        self, agent_id: str, actor: PydanticUser, force=False, update_timestamp=True
+    ) -> PydanticAgentState:
+        """Rebuilds the system message with the latest memory object and any shared memory block updates
+
+        Updates to core memory blocks should trigger a "rebuild", which itself will create a new message object
+
+        Updates to the memory header should *not* trigger a rebuild, since that will simply flood recall storage with excess messages
+        """
+        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+
+        curr_system_message = await self.get_system_message_async(
+            agent_id=agent_id, actor=actor
+        )  # this is the system + memory bank, not just the system prompt
+        curr_system_message_openai = curr_system_message.to_openai_dict()
+
+        # note: we only update the system prompt if the core memory is changed
+        # this means that the archival/recall memory statistics may be someout out of date
+        curr_memory_str = agent_state.memory.compile()
+        if curr_memory_str in curr_system_message_openai["content"] and not force:
+            # NOTE: could this cause issues if a block is removed? (substring match would still work)
+            logger.debug(
+                f"Memory hasn't changed for agent id={agent_id} and actor=({actor.id}, {actor.name}), skipping system prompt rebuild"
+            )
+            return agent_state
+
+        # If the memory didn't update, we probably don't want to update the timestamp inside
+        # For example, if we're doing a system prompt swap, this should probably be False
+        if update_timestamp:
+            memory_edit_timestamp = get_utc_time()
+        else:
+            # NOTE: a bit of a hack - we pull the timestamp from the message created_by
+            memory_edit_timestamp = curr_system_message.created_at
+
+        num_messages = await self.message_manager.size_async(actor=actor, agent_id=agent_id)
+        num_archival_memories = await self.passage_manager.size_async(actor=actor, agent_id=agent_id)
+
+        # update memory (TODO: potentially update recall/archival stats separately)
+        new_system_message_str = compile_system_message(
+            system_prompt=agent_state.system,
+            in_context_memory=agent_state.memory,
+            in_context_memory_last_edit=memory_edit_timestamp,
+            recent_passages=self.list_passages(actor=actor, agent_id=agent_id, ascending=False, limit=10),
+            previous_message_count=num_messages,
+            archival_memory_size=num_archival_memories,
+        )
+
+        diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
+        if len(diff) > 0:  # there was a diff
+            logger.debug(f"Rebuilding system with new memory...\nDiff:\n{diff}")
+
+            # Swap the system message out (only if there is a diff)
+            message = PydanticMessage.dict_to_message(
+                agent_id=agent_id,
+                model=agent_state.llm_config.model,
+                openai_message_dict={"role": "system", "content": new_system_message_str},
+            )
+            message = await self.message_manager.update_message_by_id_async(
+                message_id=curr_system_message.id,
+                message_update=MessageUpdate(**message.model_dump()),
+                actor=actor,
+            )
+            return await self.set_in_context_messages_async(agent_id=agent_id, message_ids=agent_state.message_ids, actor=actor)
+        else:
+            return agent_state
+
+    @enforce_types
     def set_in_context_messages(self, agent_id: str, message_ids: List[str], actor: PydanticUser) -> PydanticAgentState:
         return self.update_agent(agent_id=agent_id, agent_update=UpdateAgent(message_ids=message_ids), actor=actor)
+
+    @enforce_types
+    async def set_in_context_messages_async(self, agent_id: str, message_ids: List[str], actor: PydanticUser) -> PydanticAgentState:
+        return await self.update_agent_async(agent_id=agent_id, agent_update=UpdateAgent(message_ids=message_ids), actor=actor)
 
     @enforce_types
     def trim_older_in_context_messages(self, num: int, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
@@ -1536,6 +1612,33 @@ class AgentManager:
                 if block.label == block_label:
                     return block.to_pydantic()
             raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
+
+    @enforce_types
+    async def modify_block_by_label_async(
+        self,
+        agent_id: str,
+        block_label: str,
+        block_update: BlockUpdate,
+        actor: PydanticUser,
+    ) -> PydanticBlock:
+        """Gets a block attached to an agent by its label."""
+        async with db_registry.async_session() as session:
+            block = None
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            for block in agent.core_memory:
+                if block.label == block_label:
+                    block = block
+                    break
+            if not block:
+                raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
+
+            update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+
+            for key, value in update_data.items():
+                setattr(block, key, value)
+
+            await block.update_async(session, actor=actor)
+            return block.to_pydantic()
 
     @enforce_types
     def update_block_with_label(

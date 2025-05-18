@@ -32,6 +32,16 @@ class MessageManager:
                 return None
 
     @enforce_types
+    async def get_message_by_id_async(self, message_id: str, actor: PydanticUser) -> Optional[PydanticMessage]:
+        """Fetch a message by ID."""
+        async with db_registry.async_session() as session:
+            try:
+                message = await MessageModel.read_async(db_session=session, identifier=message_id, actor=actor)
+                return message.to_pydantic()
+            except NoResultFound:
+                return None
+
+    @enforce_types
     def get_messages_by_ids(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
         """Fetch messages by ID and return them in the requested order."""
         with db_registry.session() as session:
