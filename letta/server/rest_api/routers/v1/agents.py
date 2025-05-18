@@ -635,7 +635,7 @@ async def send_message(
     agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
     experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
+    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together"]
 
     if agent_eligible and feature_enabled and model_compatible:
         experimental_agent = LettaAgent(
@@ -695,7 +695,8 @@ async def send_message_streaming(
     agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
     experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
+    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together"]
+    model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
 
     if agent_eligible and feature_enabled and model_compatible:
         experimental_agent = LettaAgent(
@@ -706,7 +707,7 @@ async def send_message_streaming(
             passage_manager=server.passage_manager,
             actor=actor,
         )
-        if request.stream_tokens:
+        if request.stream_tokens and model_compatible_token_streaming:
             result = StreamingResponse(
                 experimental_agent.step_stream(request.messages, max_steps=10, use_assistant_message=request.use_assistant_message),
                 media_type="text/event-stream",
