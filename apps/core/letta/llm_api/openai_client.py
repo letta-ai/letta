@@ -22,7 +22,7 @@ from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_st
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
 from letta.log import get_logger
-from letta.schemas.enums import ProviderCategory
+from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
@@ -113,6 +113,8 @@ class OpenAIClient(LLMClientBase):
             from letta.services.provider_manager import ProviderManager
 
             api_key = ProviderManager().get_override_key(llm_config.provider_name, actor=self.actor)
+        if llm_config.model_endpoint_type == ProviderType.together:
+            api_key = model_settings.together_api_key or os.environ.get("TOGETHER_API_KEY")
 
         if not api_key:
             api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
