@@ -641,6 +641,33 @@ async def test_streaming_tool_call_async_client(
     TESTED_LLM_CONFIGS,
     ids=[c.model for c in TESTED_LLM_CONFIGS],
 )
+def test_step_streaming_greeting_with_assistant_message(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending a streaming message with a synchronous client.
+    Checks that each chunk in the stream has the correct message types.
+    """
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    response = client.agents.messages.create_stream(
+        agent_id=agent_state.id,
+        messages=USER_MESSAGE_GREETING,
+        stream_tokens=False,
+    )
+    messages = []
+    for message in response:
+        messages.append(message)
+    assert_greeting_with_assistant_message_response(messages, streaming=True)
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
 def test_token_streaming_greeting_with_assistant_message(
     disable_e2b_api_key: Any,
     client: Letta,

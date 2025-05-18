@@ -635,7 +635,7 @@ async def send_message(
     agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
     experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "google_vertex", "google_ai"]
+    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
 
     if agent_eligible and feature_enabled and model_compatible:
         experimental_agent = LettaAgent(
@@ -706,13 +706,18 @@ async def send_message_streaming(
             passage_manager=server.passage_manager,
             actor=actor,
         )
-
-        result = StreamingResponse(
-            experimental_agent.step_stream(
-                request.messages, max_steps=10, use_assistant_message=request.use_assistant_message, stream_tokens=request.stream_tokens
-            ),
-            media_type="text/event-stream",
-        )
+        if request.stream_tokens:
+            result = StreamingResponse(
+                experimental_agent.step_stream(request.messages, max_steps=10, use_assistant_message=request.use_assistant_message),
+                media_type="text/event-stream",
+            )
+        else:
+            result = StreamingResponse(
+                experimental_agent.step_stream_no_tokens(
+                    request.messages, max_steps=10, use_assistant_message=request.use_assistant_message
+                ),
+                media_type="text/event-stream",
+            )
     else:
         result = await server.send_message_to_agent(
             agent_id=agent_id,
