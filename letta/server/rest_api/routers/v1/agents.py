@@ -635,7 +635,7 @@ async def send_message(
     agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
     experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together"]
+    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
 
     if agent_eligible and feature_enabled and model_compatible:
         experimental_agent = LettaAgent(
@@ -695,7 +695,7 @@ async def send_message_streaming(
     agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
     experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together"]
+    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
 
     if agent_eligible and feature_enabled and model_compatible:
