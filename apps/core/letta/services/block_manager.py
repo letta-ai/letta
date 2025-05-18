@@ -266,9 +266,7 @@ class BlockManager:
         async with db_registry.async_session() as session:
             block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
             agents_orm = block.agents
-            agents_pydantic = [agent.to_pydantic() for agent in agents_orm]
-
-            return agents_pydantic
+            return await asyncio.gather(*[agent.to_pydantic_async() for agent in agents_orm])
 
     @enforce_types
     def size(
