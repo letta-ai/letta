@@ -100,15 +100,15 @@ def delete_sandbox_config(
 
 
 @router.get("/", response_model=List[PydanticSandboxConfig])
-def list_sandbox_configs(
+async def list_sandbox_configs(
     limit: int = Query(1000, description="Number of results to return"),
     after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
     sandbox_type: Optional[SandboxType] = Query(None, description="Filter for this specific sandbox type"),
     server: SyncServer = Depends(get_letta_server),
     actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.sandbox_config_manager.list_sandbox_configs(actor, limit=limit, after=after, sandbox_type=sandbox_type)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.sandbox_config_manager.list_sandbox_configs_async(actor, limit=limit, after=after, sandbox_type=sandbox_type)
 
 
 @router.post("/local/recreate-venv", response_model=PydanticSandboxConfig)
@@ -190,12 +190,12 @@ def delete_sandbox_env_var(
 
 
 @router.get("/{sandbox_config_id}/environment-variable", response_model=List[PydanticEnvVar])
-def list_sandbox_env_vars(
+async def list_sandbox_env_vars(
     sandbox_config_id: str,
     limit: int = Query(1000, description="Number of results to return"),
     after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
     server: SyncServer = Depends(get_letta_server),
     actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.sandbox_config_manager.list_sandbox_env_vars(sandbox_config_id, actor, limit=limit, after=after)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.sandbox_config_manager.list_sandbox_env_vars_async(sandbox_config_id, actor, limit=limit, after=after)
