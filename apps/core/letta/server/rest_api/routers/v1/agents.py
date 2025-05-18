@@ -432,7 +432,7 @@ async def list_blocks(
 
 
 @router.patch("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="modify_core_memory_block")
-def modify_block(
+async def modify_block(
     agent_id: str,
     block_label: str,
     block_update: BlockUpdate = Body(...),
@@ -442,10 +442,11 @@ def modify_block(
     """
     Updates a core memory block of an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    block = server.agent_manager.get_block_with_label(agent_id=agent_id, block_label=block_label, actor=actor)
-    block = server.block_manager.update_block(block.id, block_update=block_update, actor=actor)
+    block = await server.agent_manager.modify_block_by_label_async(
+        agent_id=agent_id, block_label=block_label, block_update=block_update, actor=actor
+    )
 
     # This should also trigger a system prompt change in the agent
     server.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True, update_timestamp=False)
