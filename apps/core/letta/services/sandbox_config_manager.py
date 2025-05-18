@@ -123,6 +123,23 @@ class SandboxConfigManager:
             return [sandbox.to_pydantic() for sandbox in sandboxes]
 
     @enforce_types
+    async def list_sandbox_configs_async(
+        self,
+        actor: PydanticUser,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        sandbox_type: Optional[SandboxType] = None,
+    ) -> List[PydanticSandboxConfig]:
+        """List all sandbox configurations with optional pagination."""
+        kwargs = {"organization_id": actor.organization_id}
+        if sandbox_type:
+            kwargs.update({"type": sandbox_type})
+
+        async with db_registry.async_session() as session:
+            sandboxes = await SandboxConfigModel.list_async(db_session=session, after=after, limit=limit, **kwargs)
+            return [sandbox.to_pydantic() for sandbox in sandboxes]
+
+    @enforce_types
     def get_sandbox_config_by_id(self, sandbox_config_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticSandboxConfig]:
         """Retrieve a sandbox configuration by its ID."""
         with db_registry.session() as session:
@@ -216,6 +233,25 @@ class SandboxConfigManager:
         """List all sandbox environment variables with optional pagination."""
         with db_registry.session() as session:
             env_vars = SandboxEnvVarModel.list(
+                db_session=session,
+                after=after,
+                limit=limit,
+                organization_id=actor.organization_id,
+                sandbox_config_id=sandbox_config_id,
+            )
+            return [env_var.to_pydantic() for env_var in env_vars]
+
+    @enforce_types
+    async def list_sandbox_env_vars_async(
+        self,
+        sandbox_config_id: str,
+        actor: PydanticUser,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+    ) -> List[PydanticEnvVar]:
+        """List all sandbox environment variables with optional pagination."""
+        async with db_registry.async_session() as session:
+            env_vars = await SandboxEnvVarModel.list_async(
                 db_session=session,
                 after=after,
                 limit=limit,
