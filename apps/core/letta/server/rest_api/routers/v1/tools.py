@@ -181,15 +181,15 @@ def modify_tool(
 
 
 @router.post("/add-base-tools", response_model=List[Tool], operation_id="add_base_tools")
-def upsert_base_tools(
+async def upsert_base_tools(
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Upsert base tools
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.tool_manager.upsert_base_tools(actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.tool_manager.upsert_base_tools_async(actor=actor)
 
 
 @router.post("/run", response_model=ToolReturnMessage, operation_id="run_tool_from_source")
