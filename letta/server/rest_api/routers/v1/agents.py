@@ -9,6 +9,7 @@ from marshmallow import ValidationError
 from orjson import orjson
 from pydantic import Field
 from sqlalchemy.exc import IntegrityError, OperationalError
+from starlette.background import BackgroundTask
 from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
@@ -33,6 +34,7 @@ from letta.schemas.user import User
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
+from letta.services.telemetry_manager import NoopTelemetryManager
 from letta.settings import settings
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
@@ -646,6 +648,8 @@ async def send_message(
             block_manager=server.block_manager,
             passage_manager=server.passage_manager,
             actor=actor,
+            step_manager=server.step_manager,
+            telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
         )
 
         result = await experimental_agent.step(request.messages, max_steps=10, use_assistant_message=request.use_assistant_message)
@@ -707,14 +711,18 @@ async def send_message_streaming(
             block_manager=server.block_manager,
             passage_manager=server.passage_manager,
             actor=actor,
+            step_manager=server.step_manager,
+            telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
         )
+        from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
+
         if request.stream_tokens and model_compatible_token_streaming:
-            result = StreamingResponse(
+            result = StreamingResponseWithStatusCode(
                 experimental_agent.step_stream(request.messages, max_steps=10, use_assistant_message=request.use_assistant_message),
                 media_type="text/event-stream",
             )
         else:
-            result = StreamingResponse(
+            result = StreamingResponseWithStatusCode(
                 experimental_agent.step_stream_no_tokens(
                     request.messages, max_steps=10, use_assistant_message=request.use_assistant_message
                 ),

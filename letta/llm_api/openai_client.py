@@ -256,14 +256,6 @@ class OpenAIClient(LLMClientBase):
 
         return chat_completion_response
 
-    def stream(self, request_data: dict, llm_config: LLMConfig) -> Stream[ChatCompletionChunk]:
-        """
-        Performs underlying streaming request to OpenAI and returns the stream iterator.
-        """
-        client = OpenAI(**self._prepare_client_kwargs(llm_config))
-        response_stream: Stream[ChatCompletionChunk] = client.chat.completions.create(**request_data, stream=True)
-        return response_stream
-
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[ChatCompletionChunk]:
         """
         Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.

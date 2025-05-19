@@ -12,6 +12,7 @@ from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.step import Step as PydanticStep
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.services.helpers.noop_helper import singleton
 from letta.tracing import get_trace_id
 from letta.utils import enforce_types
 
@@ -63,6 +64,7 @@ class StepManager:
         usage: UsageStatistics,
         provider_id: Optional[str] = None,
         job_id: Optional[str] = None,
+        step_id: Optional[str] = None,
     ) -> PydanticStep:
         step_data = {
             "origin": None,
@@ -81,11 +83,53 @@ class StepManager:
             "tid": None,
             "trace_id": get_trace_id(),  # Get the current trace ID
         }
+        if step_id:
+            step_data["id"] = step_id
         with db_registry.session() as session:
             if job_id:
                 self._verify_job_access(session, job_id, actor, access=["write"])
             new_step = StepModel(**step_data)
             new_step.create(session)
+            return new_step.to_pydantic()
+
+    @enforce_types
+    async def log_step_async(
+        self,
+        actor: PydanticUser,
+        agent_id: str,
+        provider_name: str,
+        model: str,
+        model_endpoint: Optional[str],
+        context_window_limit: int,
+        usage: UsageStatistics,
+        provider_id: Optional[str] = None,
+        job_id: Optional[str] = None,
+        step_id: Optional[str] = None,
+    ) -> PydanticStep:
+        step_data = {
+            "origin": None,
+            "organization_id": actor.organization_id,
+            "agent_id": agent_id,
+            "provider_id": provider_id,
+            "provider_name": provider_name,
+            "model": model,
+            "model_endpoint": model_endpoint,
+            "context_window_limit": context_window_limit,
+            "completion_tokens": usage.completion_tokens,
+            "prompt_tokens": usage.prompt_tokens,
+            "total_tokens": usage.total_tokens,
+            "job_id": job_id,
+            "tags": [],
+            "tid": None,
+            "trace_id": get_trace_id(),  # Get the current trace ID
+        }
+        if step_id:
+            step_data["id"] = step_id
+        async with db_registry.async_session() as session:
+            if job_id:
+                self._verify_job_access(session, job_id, actor, access=["write"])
+            new_step = StepModel(**step_data)
+            await new_step.create_async(session)
             return new_step.to_pydantic()
 
     @enforce_types
@@ -147,3 +191,44 @@ class StepManager:
         if not job:
             raise NoResultFound(f"Job with id {job_id} does not exist or user does not have access")
         return job
+
+
+@singleton
+class NoopStepManager(StepManager):
+    """
+    Noop implementation of StepManager.
+    Temporarily used for migrations, but allows for different implementations in the future.
+    Will not allow for writes, but will still allow for reads.
+    """
+
+    @enforce_types
+    def log_step(
+        self,
+        actor: PydanticUser,
+        agent_id: str,
+        provider_name: str,
+        model: str,
+        model_endpoint: Optional[str],
+        context_window_limit: int,
+        usage: UsageStatistics,
+        provider_id: Optional[str] = None,
+        job_id: Optional[str] = None,
+        step_id: Optional[str] = None,
+    ) -> PydanticStep:
+        return
+
+    @enforce_types
+    async def log_step_async(
+        self,
+        actor: PydanticUser,
+        agent_id: str,
+        provider_name: str,
+        model: str,
+        model_endpoint: Optional[str],
+        context_window_limit: int,
+        usage: UsageStatistics,
+        provider_id: Optional[str] = None,
+        job_id: Optional[str] = None,
+        step_id: Optional[str] = None,
+    ) -> PydanticStep:
+        return

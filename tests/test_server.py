@@ -11,7 +11,7 @@ from sqlalchemy import delete
 
 import letta.utils as utils
 from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, LETTA_DIR, LETTA_TOOL_EXECUTION_DIR
-from letta.orm import Provider, Step
+from letta.orm import Provider, ProviderTrace, Step
 from letta.schemas.block import CreateBlock
 from letta.schemas.enums import MessageRole, ProviderCategory, ProviderType
 from letta.schemas.letta_message import LettaMessage, ReasoningMessage, SystemMessage, ToolCallMessage, ToolReturnMessage, UserMessage
@@ -286,6 +286,7 @@ def org_id(server):
 
     # cleanup
     with db_registry.session() as session:
+        session.execute(delete(ProviderTrace))
         session.execute(delete(Step))
         session.execute(delete(Provider))
         session.commit()
