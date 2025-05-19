@@ -488,8 +488,11 @@ class LettaAgent(BaseAgent):
 
         try:
             tool_args = json.loads(tool_call_args_str)
+            assert isinstance(tool_args, dict), "tool_args must be a dict"
         except json.JSONDecodeError:
             tool_args = {}
+        except AssertionError:
+            tool_args = json.loads(tool_args)
 
         # Get request heartbeats and coerce to bool
         request_heartbeat = tool_args.pop("request_heartbeat", False)
