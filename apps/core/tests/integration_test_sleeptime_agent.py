@@ -6,7 +6,7 @@ from sqlalchemy import delete
 from letta.config import LettaConfig
 from letta.constants import DEFAULT_HUMAN
 from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
-from letta.orm import Provider, Step
+from letta.orm import Provider, ProviderTrace, Step
 from letta.orm.enums import JobType
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import CreateAgent
@@ -39,6 +39,7 @@ def org_id(server):
 
     # cleanup
     with db_registry.session() as session:
+        session.execute(delete(ProviderTrace))
         session.execute(delete(Step))
         session.execute(delete(Provider))
         session.commit()

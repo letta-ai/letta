@@ -20,6 +20,7 @@ import {
   SourcesService,
   StepsService,
   TagService,
+  TelemetryService,
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
@@ -2399,6 +2400,38 @@ export const useAdminServiceListOrgsSuspense = <
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAdminServiceListOrgsKeyFn({ after, limit }, queryKey),
     queryFn: () => AdminService.listOrgs({ after, limit }) as TData,
+    ...options,
+  });
+/**
+ * Retrieve Provider Trace By Step Id
+ * @param data The data for the request.
+ * @param data.stepId
+ * @param data.userId
+ * @returns ProviderTrace Successful Response
+ * @throws ApiError
+ */
+export const useTelemetryServiceRetrieveProviderTraceSuspense = <
+  TData = Common.TelemetryServiceRetrieveProviderTraceDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    stepId,
+    userId,
+  }: {
+    stepId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseTelemetryServiceRetrieveProviderTraceKeyFn(
+      { stepId, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      TelemetryService.retrieveProviderTrace({ stepId, userId }) as TData,
     ...options,
   });
 /**

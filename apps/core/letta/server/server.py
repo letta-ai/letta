@@ -94,6 +94,7 @@ from letta.services.provider_manager import ProviderManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.source_manager import SourceManager
 from letta.services.step_manager import StepManager
+from letta.services.telemetry_manager import TelemetryManager
 from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
@@ -213,6 +214,7 @@ class SyncServer(Server):
         self.identity_manager = IdentityManager()
         self.group_manager = GroupManager()
         self.batch_manager = LLMBatchManager()
+        self.telemetry_manager = TelemetryManager()
 
         # A resusable httpx client
         timeout = httpx.Timeout(connect=10.0, read=20.0, write=10.0, pool=10.0)

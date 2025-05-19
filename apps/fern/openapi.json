@@ -6384,6 +6384,46 @@
         }
       }
     },
+    "/v1/telemetry/{step_id}": {
+      "get": {
+        "tags": ["telemetry"],
+        "summary": "Retrieve Provider Trace By Step Id",
+        "operationId": "retrieve_provider_trace",
+        "parameters": [
+          {
+            "name": "step_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Step Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderTrace"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/messages/batches": {
       "post": {
         "tags": ["messages"],
@@ -14703,6 +14743,89 @@
         "type": "object",
         "required": ["name", "provider_type", "api_key"],
         "title": "ProviderCreate"
+      },
+      "ProviderTrace": {
+        "properties": {
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this object."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The timestamp when the object was created."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the object was last updated."
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^provider_trace-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Provider_trace",
+            "examples": ["provider_trace-123e4567-e89b-12d3-a456-426614174000"]
+          },
+          "request_json": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Request Json",
+            "description": "JSON content of the provider request"
+          },
+          "response_json": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Response Json",
+            "description": "JSON content of the provider response"
+          },
+          "step_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step Id",
+            "description": "ID of the step that this trace is associated with"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["request_json", "response_json", "organization_id"],
+        "title": "ProviderTrace",
+        "description": "Letta's internal representation of a provider trace.\n\nAttributes:\n    id (str): The unique identifier of the provider trace.\n    request_json (Dict[str, Any]): JSON content of the provider request.\n    response_json (Dict[str, Any]): JSON content of the provider response.\n    step_id (str): ID of the step that this trace is associated with.\n    organization_id (str): The unique identifier of the organization.\n    created_at (datetime): The timestamp when the object was created."
       },
       "ProviderType": {
         "type": "string",

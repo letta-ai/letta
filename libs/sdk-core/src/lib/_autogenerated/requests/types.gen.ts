@@ -2666,6 +2666,60 @@ export type ProviderCreate = {
   api_key: string;
 };
 
+/**
+ * Letta's internal representation of a provider trace.
+ *
+ * Attributes:
+ * id (str): The unique identifier of the provider trace.
+ * request_json (Dict[str, Any]): JSON content of the provider request.
+ * response_json (Dict[str, Any]): JSON content of the provider response.
+ * step_id (str): ID of the step that this trace is associated with.
+ * organization_id (str): The unique identifier of the organization.
+ * created_at (datetime): The timestamp when the object was created.
+ */
+export type ProviderTrace = {
+  /**
+   * The id of the user that made this object.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this object.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * The timestamp when the object was created.
+   */
+  created_at?: string;
+  /**
+   * The timestamp when the object was last updated.
+   */
+  updated_at?: string | null;
+  /**
+   * The human-friendly ID of the Provider_trace
+   */
+  id?: string;
+  /**
+   * JSON content of the provider request
+   */
+  request_json: {
+    [key: string]: unknown;
+  };
+  /**
+   * JSON content of the provider response
+   */
+  response_json: {
+    [key: string]: unknown;
+  };
+  /**
+   * ID of the step that this trace is associated with
+   */
+  step_id?: string | null;
+  /**
+   * The unique identifier of the organization.
+   */
+  organization_id: string;
+};
+
 export type ProviderType =
   | 'anthropic'
   | 'bedrock'
@@ -5261,6 +5315,13 @@ export type UpdateOrganizationData = {
 
 export type UpdateOrganizationResponse = Organization;
 
+export type RetrieveProviderTraceData = {
+  stepId: string;
+  userId?: string | null;
+};
+
+export type RetrieveProviderTraceResponse = ProviderTrace;
+
 export type CreateMessagesBatchData = {
   requestBody: CreateBatch;
   userId?: string | null;
@@ -7194,6 +7255,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Organization;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/telemetry/{step_id}': {
+    get: {
+      req: RetrieveProviderTraceData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: ProviderTrace;
         /**
          * Validation Error
          */

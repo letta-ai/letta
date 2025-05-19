@@ -74,6 +74,7 @@ class AnthropicStreamingInterface:
         # usage trackers
         self.input_tokens = 0
         self.output_tokens = 0
+        self.model = None
 
         # reasoning object trackers
         self.reasoning_messages = []
@@ -311,6 +312,7 @@ class AnthropicStreamingInterface:
                         self.message_id = event.message.id
                         self.input_tokens += event.message.usage.input_tokens
                         self.output_tokens += event.message.usage.output_tokens
+                        self.model = event.message.model
                     elif isinstance(event, BetaRawMessageDeltaEvent):
                         self.output_tokens += event.usage.output_tokens
                     elif isinstance(event, BetaRawMessageStopEvent):

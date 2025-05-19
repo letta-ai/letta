@@ -1,12 +1,14 @@
 import json
 import time
 import traceback
+import uuid
 import warnings
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Tuple, Union
 
 from openai.types.beta.function_tool import FunctionTool as OpenAITool
 
+from letta.agents.helpers import generate_step_id
 from letta.constants import (
     CLI_WARNING_PREFIX,
     COMPOSIO_ENTITY_ENV_VAR_KEY,
@@ -61,9 +63,10 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.provider_manager import ProviderManager
 from letta.services.step_manager import StepManager
+from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
 from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
-from letta.settings import summarizer_settings
+from letta.settings import settings, summarizer_settings
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from letta.system import get_heartbeat, get_token_limit_warning, package_function_response, package_summarize_message, package_user_message
 from letta.tracing import log_event, trace_method
@@ -141,6 +144,7 @@ class Agent(BaseAgent):
         self.agent_manager = AgentManager()
         self.job_manager = JobManager()
         self.step_manager = StepManager()
+        self.telemetry_manager = TelemetryManager() if settings.llm_api_logging else NoopTelemetryManager()
 
         # State needed for heartbeat pausing
 
@@ -298,6 +302,7 @@ class Agent(BaseAgent):
         step_count: Optional[int] = None,
         last_function_failed: bool = False,
         put_inner_thoughts_first: bool = True,
+        step_id: Optional[str] = None,
     ) -> ChatCompletionResponse | None:
         """Get response from LLM API with robust retry mechanism."""
         log_telemetry(self.logger, "_get_ai_reply start")
@@ -347,8 +352,9 @@ class Agent(BaseAgent):
                         messages=message_sequence,
                         llm_config=self.agent_state.llm_config,
                         tools=allowed_functions,
-                        stream=stream,
                         force_tool_call=force_tool_call,
+                        telemetry_manager=self.telemetry_manager,
+                        step_id=step_id,
                     )
                 else:
                     # Fallback to existing flow
@@ -365,6 +371,9 @@ class Agent(BaseAgent):
                         stream_interface=self.interface,
                         put_inner_thoughts_first=put_inner_thoughts_first,
                         name=self.agent_state.name,
+                        telemetry_manager=self.telemetry_manager,
+                        step_id=step_id,
+                        actor=self.user,
                     )
                 log_telemetry(self.logger, "_get_ai_reply create finish")
 
@@ -840,6 +849,9 @@ class Agent(BaseAgent):
             # Extract job_id from metadata if present
             job_id = metadata.get("job_id") if metadata else None
 
+            # Declare step_id for the given step to be used as the step is processing.
+            step_id = generate_step_id()
+
             # Step 0: update core memory
             # only pulling latest block data if shared memory is being used
             current_persisted_memory = Memory(
@@ -870,6 +882,7 @@ class Agent(BaseAgent):
                 step_count=step_count,
                 last_function_failed=last_function_failed,
                 put_inner_thoughts_first=put_inner_thoughts_first,
+                step_id=step_id,
             )
             if not response:
                 # EDGE CASE: Function call failed AND there's no tools left for agent to call -> return early
@@ -953,6 +966,7 @@ class Agent(BaseAgent):
                     actor=self.user,
                 ),
                 job_id=job_id,
+                step_id=step_id,
             )
             for message in all_new_messages:
                 message.step_id = step.id

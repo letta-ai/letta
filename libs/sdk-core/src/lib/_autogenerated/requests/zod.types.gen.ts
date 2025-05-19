@@ -4480,6 +4480,47 @@ export const ProviderCreate = z.object({
   api_key: z.string(),
 });
 
+export type ProviderTrace = z.infer<typeof ProviderTrace>;
+export const ProviderTrace = z.object({
+  created_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  last_updated_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_at: z.union([z.string(), z.undefined()]).optional(),
+  updated_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.union([z.string(), z.undefined()]).optional(),
+  request_json: z.unknown(),
+  response_json: z.unknown(),
+  step_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  organization_id: z.string(),
+});
+
 export type ProviderUpdate = z.infer<typeof ProviderUpdate>;
 export const ProviderUpdate = z.object({
   api_key: z.string(),
@@ -7883,6 +7924,24 @@ export const get_List_tags = {
   response: z.array(z.string()),
 };
 
+export type get_Retrieve_provider_trace = typeof get_Retrieve_provider_trace;
+export const get_Retrieve_provider_trace = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/telemetry/{step_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      step_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: ProviderTrace,
+};
+
 export type post_Create_messages_batch = typeof post_Create_messages_batch;
 export const post_Create_messages_batch = {
   method: z.literal('POST'),
@@ -8230,6 +8289,7 @@ export const EndpointByMethod = {
     '/v1/steps/': get_List_steps,
     '/v1/steps/{step_id}': get_Retrieve_step,
     '/v1/tags/': get_List_tags,
+    '/v1/telemetry/{step_id}': get_Retrieve_provider_trace,
     '/v1/messages/batches': get_List_batch_runs,
     '/v1/messages/batches/{batch_id}': get_Retrieve_batch_run,
     '/v1/messages/batches/{batch_id}/messages': get_List_batch_messages,

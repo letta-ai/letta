@@ -21,6 +21,7 @@ import {
   SourcesService,
   StepsService,
   TagService,
+  TelemetryService,
   ToolsService,
   UsersService,
   VoiceService,
@@ -1469,6 +1470,28 @@ export const UseAdminServiceListOrgsKeyFn = (
   } = {},
   queryKey?: Array<unknown>,
 ) => [useAdminServiceListOrgsKey, ...(queryKey ?? [{ after, limit }])];
+export type TelemetryServiceRetrieveProviderTraceDefaultResponse = Awaited<
+  ReturnType<typeof TelemetryService.retrieveProviderTrace>
+>;
+export type TelemetryServiceRetrieveProviderTraceQueryResult<
+  TData = TelemetryServiceRetrieveProviderTraceDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useTelemetryServiceRetrieveProviderTraceKey =
+  'TelemetryServiceRetrieveProviderTrace';
+export const UseTelemetryServiceRetrieveProviderTraceKeyFn = (
+  {
+    stepId,
+    userId,
+  }: {
+    stepId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useTelemetryServiceRetrieveProviderTraceKey,
+  ...(queryKey ?? [{ stepId, userId }]),
+];
 export type MessagesServiceListBatchRunsDefaultResponse = Awaited<
   ReturnType<typeof MessagesService.listBatchRuns>
 >;

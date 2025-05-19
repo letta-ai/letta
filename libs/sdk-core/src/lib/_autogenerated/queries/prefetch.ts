@@ -20,6 +20,7 @@ import {
   SourcesService,
   StepsService,
   TagService,
+  TelemetryService,
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
@@ -1970,6 +1971,31 @@ export const prefetchUseAdminServiceListOrgs = (
   queryClient.prefetchQuery({
     queryKey: Common.UseAdminServiceListOrgsKeyFn({ after, limit }),
     queryFn: () => AdminService.listOrgs({ after, limit }),
+  });
+/**
+ * Retrieve Provider Trace By Step Id
+ * @param data The data for the request.
+ * @param data.stepId
+ * @param data.userId
+ * @returns ProviderTrace Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseTelemetryServiceRetrieveProviderTrace = (
+  queryClient: QueryClient,
+  {
+    stepId,
+    userId,
+  }: {
+    stepId: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseTelemetryServiceRetrieveProviderTraceKeyFn({
+      stepId,
+      userId,
+    }),
+    queryFn: () => TelemetryService.retrieveProviderTrace({ stepId, userId }),
   });
 /**
  * List Batch Runs

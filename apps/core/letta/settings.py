@@ -190,6 +190,7 @@ class Settings(BaseSettings):
     verbose_telemetry_logging: bool = False
     otel_exporter_otlp_endpoint: Optional[str] = None  # otel default: "http://localhost:4317"
     disable_tracing: bool = False
+    llm_api_logging: bool = True
 
     # uvicorn settings
     uvicorn_workers: int = 1

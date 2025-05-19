@@ -7440,6 +7440,103 @@ export const $ProviderCreate = {
   title: 'ProviderCreate',
 } as const;
 
+export const $ProviderTrace = {
+  properties: {
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      type: 'string',
+      format: 'date-time',
+      title: 'Created At',
+      description: 'The timestamp when the object was created.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
+    id: {
+      type: 'string',
+      pattern: '^provider_trace-[a-fA-F0-9]{8}',
+      title: 'Id',
+      description: 'The human-friendly ID of the Provider_trace',
+      examples: ['provider_trace-123e4567-e89b-12d3-a456-426614174000'],
+    },
+    request_json: {
+      additionalProperties: true,
+      type: 'object',
+      title: 'Request Json',
+      description: 'JSON content of the provider request',
+    },
+    response_json: {
+      additionalProperties: true,
+      type: 'object',
+      title: 'Response Json',
+      description: 'JSON content of the provider response',
+    },
+    step_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Step Id',
+      description: 'ID of the step that this trace is associated with',
+    },
+    organization_id: {
+      type: 'string',
+      title: 'Organization Id',
+      description: 'The unique identifier of the organization.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['request_json', 'response_json', 'organization_id'],
+  title: 'ProviderTrace',
+  description: `Letta's internal representation of a provider trace.
+
+Attributes:
+    id (str): The unique identifier of the provider trace.
+    request_json (Dict[str, Any]): JSON content of the provider request.
+    response_json (Dict[str, Any]): JSON content of the provider response.
+    step_id (str): ID of the step that this trace is associated with.
+    organization_id (str): The unique identifier of the organization.
+    created_at (datetime): The timestamp when the object was created.`,
+} as const;
+
 export const $ProviderType = {
   type: 'string',
   enum: [

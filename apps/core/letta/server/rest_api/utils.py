@@ -190,6 +190,7 @@ def create_letta_messages_from_llm_response(
     pre_computed_assistant_message_id: Optional[str] = None,
     pre_computed_tool_message_id: Optional[str] = None,
     llm_batch_item_id: Optional[str] = None,
+    step_id: str | None = None,
 ) -> List[Message]:
     messages = []
 
@@ -243,6 +244,9 @@ def create_letta_messages_from_llm_response(
             agent_id=agent_id, model=model, function_call_success=function_call_success, actor=actor, llm_batch_item_id=llm_batch_item_id
         )
         messages.append(heartbeat_system_message)
+
+    for message in messages:
+        message.step_id = step_id
 
     return messages
 

@@ -93,7 +93,6 @@ def summarize_messages(
         response = llm_client.send_llm_request(
             messages=message_sequence,
             llm_config=llm_config_no_inner_thoughts,
-            stream=False,
         )
     else:
         response = create(

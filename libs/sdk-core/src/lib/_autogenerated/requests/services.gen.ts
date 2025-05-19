@@ -261,6 +261,8 @@ import type {
   DeleteOrganizationByIdResponse,
   UpdateOrganizationData,
   UpdateOrganizationResponse,
+  RetrieveProviderTraceData,
+  RetrieveProviderTraceResponse,
   CreateMessagesBatchData,
   CreateMessagesBatchResponse,
   ListBatchRunsData,
@@ -3953,6 +3955,33 @@ export class AdminService {
       },
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+}
+
+export class TelemetryService {
+  /**
+   * Retrieve Provider Trace By Step Id
+   * @param data The data for the request.
+   * @param data.stepId
+   * @param data.userId
+   * @returns ProviderTrace Successful Response
+   * @throws ApiError
+   */
+  public static retrieveProviderTrace(
+    data: RetrieveProviderTraceData,
+    headers?: { user_id: string },
+  ): CancelablePromise<RetrieveProviderTraceResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/telemetry/{step_id}',
+      path: {
+        step_id: data.stepId,
+      },
       errors: {
         422: 'Validation Error',
       },
