@@ -78,6 +78,7 @@
       "@letta-cloud/utils-server": ["libs/utils-server/src/index.ts"],
       "@letta-cloud/utils-shared": ["libs/utils-shared/src/index.ts"],
       "@letta-cloud/utils-types": ["libs/utils-types/src/index.ts"],
+      "service-sms": ["libs/service-sms/src/index.ts"],
       "tmp-cloud-api-router": ["libs/tmp-cloud-api-router/src/index.ts"]
     },
     "jsx": "react"

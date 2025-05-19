@@ -22,6 +22,7 @@ export const PublicUserSchema = z.object({
   theme: z.string(),
   locale: z.string(),
   activeOrganizationId: z.string(),
+  isVerified: z.boolean(),
   hasOnboarded: z.boolean(),
   hasCloudAccess: z.boolean(),
   onboardingStatus: OnboardingStepSchema.nullable(),
@@ -162,11 +163,31 @@ const updatePasswordFromForgotPasswordContract = c.mutation({
   },
 });
 
-const CreateUserWithPasswordSchema = z.object({
+const CreateUserWithPasswordAndInviteCodeSchema = z.object({
   name: z.string(),
   email: z.string(),
   password: z.string(),
   inviteCode: z.string(),
+});
+
+const createAccountWithPasswordAndInviteCodeContract = c.mutation({
+  path: '/user/new-with-invite',
+  method: 'POST',
+  body: CreateUserWithPasswordAndInviteCodeSchema,
+  responses: {
+    201: z.object({
+      success: z.boolean(),
+    }),
+    400: z.object({
+      errorCode: z.enum(['emailAlreadyTaken', 'invalidInviteCode']),
+    }),
+  },
+});
+
+const CreateUserWithPasswordSchema = z.object({
+  email: z.string(),
+  name: z.string(),
+  password: z.string(),
 });
 
 const createAccountWithPasswordContract = c.mutation({
@@ -178,7 +199,7 @@ const createAccountWithPasswordContract = c.mutation({
       success: z.boolean(),
     }),
     400: z.object({
-      errorCode: z.enum(['emailAlreadyTaken', 'invalidInviteCode']),
+      errorCode: z.enum(['emailAlreadyTaken']),
     }),
   },
 });
@@ -238,6 +259,89 @@ const UnpauseOnboardingContract = c.mutation({
   },
 });
 
+const startPhoneVerificationContract = c.mutation({
+  path: '/user/self/phone-verification/start',
+  method: 'POST',
+  body: z.object({
+    phoneNumber: z.string(),
+  }),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+      nextResendTime: z.string(),
+    }),
+    400: z.object({
+      nextResendTime: z.string().nullable(),
+      errorCode: z.enum([
+        'invalidPhoneNumber',
+        'phoneAlreadyVerified',
+        'tooEarly',
+      ]),
+    }),
+  },
+});
+
+const completePhoneVerificationContract = c.mutation({
+  path: '/user/self/phone-verification/complete',
+  method: 'POST',
+  body: z.object({
+    verificationCode: z.string(),
+    phoneNumber: z.string(),
+  }),
+  responses: {
+    200: z.object({
+      allVerified: z.boolean(),
+      success: z.boolean(),
+    }),
+    400: z.object({
+      errorCode: z.enum(['invalidVerificationCode', 'phoneAlreadyVerified']),
+    }),
+  },
+});
+
+const startEmailVerificationContract = c.mutation({
+  path: '/user/self/email-verification/start',
+  method: 'POST',
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+      nextResendTime: z.string(),
+    }),
+    400: z.object({
+      errorCode: z.enum(['invalidEmail', 'emailAlreadyVerified', 'tooEarly']),
+    }),
+  },
+});
+
+const completeEmailVerificationContract = c.mutation({
+  path: '/user/self/email-verification/complete',
+  method: 'POST',
+  body: z.object({
+    verificationCode: z.string(),
+  }),
+  responses: {
+    200: z.object({
+      allVerified: z.boolean(),
+      success: z.boolean(),
+    }),
+    400: z.object({
+      errorCode: z.enum(['invalidVerificationCode', 'emailAlreadyVerified']),
+    }),
+  },
+});
+
+const getUserVerifiedContactsContract = c.query({
+  path: '/user/self/verified-contacts',
+  method: 'GET',
+  responses: {
+    200: z.object({
+      email: z.string().nullable(),
+      phone: z.string().nullable(),
+    }),
+  },
+});
+
 export const userContract = c.router({
   getCurrentUser: getUserContract,
   updateCurrentUser: updateCurrentUserContract,
@@ -247,14 +351,22 @@ export const userContract = c.router({
   updateActiveOrganization: updateActiveOrganizationContract,
   deleteCurrentUser: deleteCurrentUserCurrent,
   setUserAsOnboarded: setUserAsOnboardedContract,
+  createAccountWithPasswordAndInviteCode:
+    createAccountWithPasswordAndInviteCodeContract,
   createAccountWithPassword: createAccountWithPasswordContract,
   loginWithPassword: loginWithPasswordContract,
   updateUserOnboardingStep: updateUserOnboardingStepContract,
   pauseUserOnboarding: PauseOnboardingContract,
   unpauseUserOnboarding: UnpauseOnboardingContract,
+  startPhoneVerification: startPhoneVerificationContract,
+  completePhoneVerification: completePhoneVerificationContract,
+  startEmailVerification: startEmailVerificationContract,
+  completeEmailVerification: completeEmailVerificationContract,
+  getUserVerifiedContacts: getUserVerifiedContactsContract,
 });
 
 export const userQueryClientKeys = {
   getCurrentUser: ['user', 'self'],
+  getUserVerifiedContacts: ['user', 'self', 'verified-contacts'],
   listUserOrganizations: ['user', 'self', 'organizations'],
 };

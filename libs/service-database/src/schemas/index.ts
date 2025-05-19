@@ -159,6 +159,7 @@ export const users = pgTable('users', {
   lettaAgentsId: text('letta_agents_id').notNull().unique(),
   theme: text('theme').default('auto'),
   locale: text('locale').default('en'),
+  verifiedAt: timestamp('verified_at'),
   submittedOnboardingAt: timestamp('submitted_onboarding_at'),
   deletedAt: timestamp('deleted_at'),
   bannedAt: timestamp('banned_at'),
@@ -168,11 +169,60 @@ export const users = pgTable('users', {
     .$onUpdate(() => new Date()),
 });
 
+export const verifiedEmail = pgTable('verified_email', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  email: text('email').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export const verifiedPhoneNumber = pgTable('verified_phone_number', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  phoneNumber: text('phone_number').notNull().unique(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export const verifiedEmailRelations = relations(verifiedEmail, ({ one }) => ({
+  user: one(users, {
+    fields: [verifiedEmail.userId],
+    references: [users.id],
+  }),
+}));
+
+export const verifiedPhoneNumberRelations = relations(
+  verifiedPhoneNumber,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [verifiedPhoneNumber.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
 export const userRelations = relations(users, ({ many, one }) => ({
   organizationUsers: many(organizationUsers),
   activeOrganization: one(organizations, {
     fields: [users.activeOrganizationId],
     references: [organizations.id],
+  }),
+  verifiedEmail: one(verifiedEmail, {
+    fields: [users.id],
+    references: [verifiedEmail.userId],
+  }),
+  verifiedPhoneNumber: one(verifiedPhoneNumber, {
+    fields: [users.id],
+    references: [verifiedPhoneNumber.userId],
   }),
   userMarketingDetails: one(userMarketingDetails, {
     fields: [users.id],

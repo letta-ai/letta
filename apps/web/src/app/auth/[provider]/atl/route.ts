@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
 
   const { newUserDetails } = await signInUserFromProviderLogin({
     ...userPayload,
+    isVerified: true,
     skipOnboarding: true,
   });
 

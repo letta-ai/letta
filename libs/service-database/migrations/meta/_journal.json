@@ -519,6 +519,13 @@
       "when": 1745862286521,
       "tag": "0073_pretty_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1747418257615,
+      "tag": "0074_sticky_absorbing_man",
+      "breakpoints": true
     }
   ]
 }

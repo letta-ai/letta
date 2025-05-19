@@ -27,6 +27,7 @@ export async function extractGoogleIdTokenData(
     email: decodedData.email,
     uniqueId: `google-${decodedData.sub}`,
     provider: 'google',
+    isVerified: true,
     imageUrl: decodedData.picture || '',
     name: decodedData.name || '',
   };

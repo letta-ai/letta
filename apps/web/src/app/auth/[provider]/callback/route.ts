@@ -100,6 +100,7 @@ async function getDetailsFromWorkOS(
     uniqueId: `workos-sso-${profile.id}`,
     name: [profile.firstName, profile.lastName].filter(Boolean).join(' '),
     imageUrl: '',
+    isVerified: true,
     organizationOverride: org.organizationId,
     provider: 'workos-sso',
   };

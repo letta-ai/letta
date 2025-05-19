@@ -21,6 +21,8 @@ import {
   userPassword,
   userProductOnboarding,
   users,
+  verifiedEmail,
+  verifiedPhoneNumber,
 } from '@letta-cloud/service-database';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { cookies } from 'next/headers';
@@ -31,10 +33,19 @@ import * as Sentry from '@sentry/node';
 import { environment } from '@letta-cloud/config-environment-variables';
 import { trackServerSideEvent } from '@letta-cloud/service-analytics/server';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
-import { goToNextOnboardingStep } from '@letta-cloud/utils-server';
+import {
+  checkIfUserIsAllVerified,
+  getTheUserVerifiedContacts,
+  goToNextOnboardingStep,
+} from '@letta-cloud/utils-server';
 import { getRedisData, setRedisData } from '@letta-cloud/service-redis';
 import { getCookie } from '$web/server/cookies';
+import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 import { sendEmail } from '@letta-cloud/service-email';
+import {
+  sendSMSVerificationMessage,
+  verifySMSVerificationMessage,
+} from 'service-sms';
 
 type ResponseShapes = ServerInferResponses<typeof userContract>;
 
@@ -58,6 +69,7 @@ async function getCurrentUser(): Promise<ResponseShapes['getCurrentUser']> {
       email: user.email,
       locale: user.locale,
       imageUrl: user.imageUrl,
+      isVerified: user.isVerified,
       permissions: Array.from(user.permissions),
       hasCloudAccess: user.hasCloudAccess,
       hasOnboarded: user.hasOnboarded,
@@ -118,6 +130,7 @@ async function updateCurrentUser(
       name: updatedUser.name,
       hasOnboarded: updatedUser.hasOnboarded,
       locale: updatedUser.locale,
+      isVerified: updatedUser.isVerified,
       email: updatedUser.email,
       permissions: Array.from(user.permissions),
       hasCloudAccess: user.hasCloudAccess,
@@ -368,18 +381,27 @@ async function setUserAsOnboarded(
   };
 }
 
-type CreateAccountWithPasswordResponse = ServerInferResponses<
-  typeof contracts.user.createAccountWithPassword
+type CreateAccountWithPasswordAndInviteCodeResponse = ServerInferResponses<
+  typeof contracts.user.createAccountWithPasswordAndInviteCode
 >;
 
-type CreateAccountWithPasswordRequest = ServerInferRequest<
-  typeof contracts.user.createAccountWithPassword
+type CreateAccountWithPasswordAndInviteCodeRequest = ServerInferRequest<
+  typeof contracts.user.createAccountWithPasswordAndInviteCode
 >;
 
-async function createAccountWithPassword(
-  req: CreateAccountWithPasswordRequest,
-): Promise<CreateAccountWithPasswordResponse> {
+async function createAccountWithPasswordAndInviteCode(
+  req: CreateAccountWithPasswordAndInviteCodeRequest,
+): Promise<CreateAccountWithPasswordAndInviteCodeResponse> {
   const { email, password, name, inviteCode } = req.body;
+
+  const flag = await getSingleFlag('EMAIL_SIGNUP');
+
+  if (!flag) {
+    return {
+      status: 401,
+      body: {},
+    };
+  }
 
   const invitedUserList = await db.query.organizationInvitedUsers.findFirst({
     where: and(
@@ -414,6 +436,70 @@ async function createAccountWithPassword(
     name,
     email,
     provider: 'email',
+    isVerified: true,
+    uniqueId: `${email}-password`,
+    imageUrl: '',
+    skipOnboarding: false,
+  });
+
+  if (!isNewUser) {
+    await signOutUser();
+
+    return {
+      status: 400,
+      body: {
+        errorCode: 'emailAlreadyTaken',
+      },
+    };
+  }
+
+  const { hash, salt } = hashPassword(password);
+
+  await db.insert(userPassword).values({
+    userId: user.id,
+    password: hash,
+    salt,
+  });
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
+type CreateAccountWithPasswordResponse = ServerInferResponses<
+  typeof contracts.user.createAccountWithPassword
+>;
+
+type CreateAccountWithPasswordRequest = ServerInferRequest<
+  typeof contracts.user.createAccountWithPassword
+>;
+
+async function createAccountWithPassword(
+  req: CreateAccountWithPasswordRequest,
+): Promise<CreateAccountWithPasswordResponse> {
+  const { email, password, name } = req.body;
+
+  const existingUser = await db.query.users.findFirst({
+    where: eq(users.email, email),
+  });
+
+  if (existingUser) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'emailAlreadyTaken',
+      },
+    };
+  }
+
+  const { isNewUser, user } = await signInUserFromProviderLogin({
+    name,
+    email,
+    provider: 'email',
+    isVerified: false,
     uniqueId: `${email}-password`,
     imageUrl: '',
     skipOnboarding: false,
@@ -500,6 +586,7 @@ async function loginWithPassword(
     name: user.name,
     email: user.email,
     provider: 'email',
+    isVerified: true,
     uniqueId: `${user.email}-password`,
     imageUrl: '',
     skipOnboarding: false,
@@ -768,6 +855,361 @@ async function unpauseUserOnboarding(): Promise<UnpauseUserOnboardingResponse> {
   };
 }
 
+type StartPhoneVerificationResponse = ServerInferResponses<
+  typeof contracts.user.startPhoneVerification
+>;
+
+type StartPhoneVerificationRequest = ServerInferRequest<
+  typeof contracts.user.startPhoneVerification
+>;
+
+function generate6DigitHexCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+const ONE_HOUR_IN_MS = 60 * 60 * 1000;
+const ONE_MINUTE_IN_MS = 60 * 1000;
+
+async function startPhoneVerification(
+  req: StartPhoneVerificationRequest,
+): Promise<StartPhoneVerificationResponse> {
+  const { phoneNumber } = req.body;
+
+  const user = await getUser();
+
+  if (!user) {
+    return {
+      status: 401,
+      body: {
+        message: 'User not found',
+      },
+    };
+  }
+
+  const currentTime = Date.now();
+  const nextExpiration = currentTime + ONE_HOUR_IN_MS;
+  const nextResendTime = currentTime + ONE_MINUTE_IN_MS;
+
+  // get verified phone number
+  const existingNumber = await db.query.verifiedPhoneNumber.findFirst({
+    where: eq(verifiedPhoneNumber.userId, user.id),
+  });
+
+  if (existingNumber) {
+    return {
+      status: 400,
+      body: {
+        nextResendTime: '',
+        errorCode: 'phoneAlreadyVerified',
+      },
+    };
+  }
+
+  // existing email verification code
+  const existingPhoneTotp = await getRedisData('phoneTotp', {
+    phone: phoneNumber,
+  });
+
+  // if the existing email verification code is 1 minute older than the next expiration, we can resend the email
+  if (
+    existingPhoneTotp &&
+    existingPhoneTotp.expiresAt > nextExpiration - ONE_MINUTE_IN_MS
+  ) {
+    return {
+      status: 400,
+      body: {
+        nextResendTime: new Date(
+          existingPhoneTotp.expiresAt - ONE_HOUR_IN_MS + ONE_MINUTE_IN_MS,
+        ).toISOString(),
+        errorCode: 'tooEarly',
+      },
+    };
+  }
+
+  const code = generate6DigitHexCode();
+
+  await setRedisData(
+    'phoneTotp',
+    {
+      phone: phoneNumber,
+    },
+    {
+      expiresAt: Date.now() + ONE_HOUR_IN_MS,
+      data: {
+        expiresAt: Date.now() + ONE_HOUR_IN_MS,
+        code,
+      },
+    },
+  );
+
+  // send sms
+  await sendSMSVerificationMessage({
+    phoneNumber,
+  });
+
+  return {
+    status: 200,
+    body: {
+      nextResendTime: new Date(nextResendTime).toISOString(),
+      success: true,
+    },
+  };
+}
+
+type CompletePhoneVerificationResponse = ServerInferResponses<
+  typeof contracts.user.completePhoneVerification
+>;
+
+type CompletePhoneVerificationRequest = ServerInferRequest<
+  typeof contracts.user.completePhoneVerification
+>;
+
+async function completePhoneVerification(
+  req: CompletePhoneVerificationRequest,
+): Promise<CompletePhoneVerificationResponse> {
+  const { verificationCode, phoneNumber } = req.body;
+
+  const user = await getUser();
+
+  if (!user) {
+    return {
+      status: 401,
+      body: {
+        message: 'User not found',
+      },
+    };
+  }
+
+  const phoneTotp = await getRedisData('phoneTotp', {
+    phone: phoneNumber,
+  });
+
+  if (!phoneTotp) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'invalidVerificationCode',
+      },
+    };
+  }
+
+  const status = await verifySMSVerificationMessage({
+    phoneNumber,
+    code: verificationCode,
+  });
+
+  if (!status) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'invalidVerificationCode',
+      },
+    };
+  }
+
+  // if (phoneTotp.code !== verificationCode) {
+  //   return {
+  //     status: 400,
+  //     body: {
+  //       errorCode: 'invalidVerificationCode',
+  //     },
+  //   };
+  // }
+
+  await db.insert(verifiedPhoneNumber).values({
+    userId: user.id,
+    phoneNumber: phoneNumber,
+  });
+
+  const allVerified = await checkIfUserIsAllVerified(user.id);
+
+  return {
+    status: 200,
+    body: {
+      allVerified,
+      success: true,
+    },
+  };
+}
+
+type StartEmailVerificationResponse = ServerInferResponses<
+  typeof contracts.user.startEmailVerification
+>;
+
+async function startEmailVerification(): Promise<StartEmailVerificationResponse> {
+  const user = await getUser();
+
+  if (!user) {
+    return {
+      status: 401,
+      body: {
+        message: 'User not found',
+      },
+    };
+  }
+
+  // get verified email
+
+  const existingEmail = await db.query.verifiedEmail.findFirst({
+    where: eq(verifiedEmail.userId, user.id),
+  });
+
+  if (existingEmail) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'emailAlreadyVerified',
+      },
+    };
+  }
+
+  const currentTime = Date.now();
+  const nextExpiration = currentTime + ONE_HOUR_IN_MS;
+  const nextResendTime = currentTime + ONE_MINUTE_IN_MS;
+
+  // existing email verification code
+  const existingEmailTotp = await getRedisData('emailTotp', {
+    email: user.email,
+  });
+
+  // if the existing email verification code is 1 minute older than the next expiration, we can resend the email
+  if (
+    existingEmailTotp &&
+    existingEmailTotp.expiresAt > nextExpiration - 60000
+  ) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'tooEarly',
+      },
+    };
+  }
+
+  const code = generate6DigitHexCode();
+
+  await setRedisData(
+    'emailTotp',
+    {
+      email: user.email,
+    },
+    {
+      expiresAt: nextExpiration,
+      data: {
+        expiresAt: nextExpiration,
+        code,
+      },
+    },
+  );
+
+  await sendEmail({
+    to: user.email,
+    type: 'verifyEmail',
+    options: {
+      locale: 'en',
+      link: `${environment.NEXT_PUBLIC_CURRENT_HOST}/verify-email?code=${code}&email=${encodeURIComponent(user.email)}`,
+    },
+  });
+
+  return {
+    status: 200,
+    body: {
+      nextResendTime: new Date(nextResendTime).toISOString(),
+      success: true,
+    },
+  };
+}
+
+type CompleteEmailVerificationResponse = ServerInferResponses<
+  typeof contracts.user.completeEmailVerification
+>;
+
+type CompleteEmailVerificationRequest = ServerInferRequest<
+  typeof contracts.user.completeEmailVerification
+>;
+
+async function completeEmailVerification(
+  req: CompleteEmailVerificationRequest,
+): Promise<CompleteEmailVerificationResponse> {
+  const { verificationCode } = req.body;
+
+  const user = await getUser();
+
+  if (!user) {
+    return {
+      status: 401,
+      body: {
+        message: 'User not found',
+      },
+    };
+  }
+
+  const emailTotp = await getRedisData('emailTotp', {
+    email: user.email,
+  });
+
+  if (!emailTotp) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'invalidVerificationCode',
+      },
+    };
+  }
+
+  if (emailTotp.code !== verificationCode) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'invalidVerificationCode',
+      },
+    };
+  }
+
+  await db.insert(verifiedEmail).values({
+    userId: user.id,
+    email: user.email,
+  });
+
+  const allVerified = await checkIfUserIsAllVerified(user.id);
+
+  return {
+    status: 200,
+    body: {
+      allVerified,
+      success: true,
+    },
+  };
+}
+
+type GetUserVerifiedContacts = ServerInferResponses<
+  typeof contracts.user.getUserVerifiedContacts
+>;
+
+async function getUserVerifiedContacts(): Promise<GetUserVerifiedContacts> {
+  const user = await getUser();
+
+  if (!user) {
+    return {
+      status: 401,
+      body: {
+        message: 'User not found',
+      },
+    };
+  }
+
+  const { verifiedPhone, verifiedEmail } = await getTheUserVerifiedContacts(
+    user.id,
+  );
+
+  return {
+    status: 200,
+    body: {
+      email: verifiedEmail || null,
+      phone: verifiedPhone || null,
+    },
+  };
+}
+
 export const userRouter = {
   getCurrentUser,
   updateCurrentUser,
@@ -778,8 +1220,14 @@ export const userRouter = {
   setUserAsOnboarded,
   deleteCurrentUser,
   createAccountWithPassword,
+  createAccountWithPasswordAndInviteCode,
   loginWithPassword,
+  startEmailVerification,
+  completeEmailVerification,
   updateUserOnboardingStep,
   pauseUserOnboarding,
+  completePhoneVerification,
   unpauseUserOnboarding,
+  startPhoneVerification,
+  getUserVerifiedContacts,
 };

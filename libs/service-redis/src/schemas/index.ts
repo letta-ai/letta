@@ -40,11 +40,12 @@ function generateDefinitionSatisfies<
 const userSessionDefinition = generateDefinitionSatisfies({
   baseKey: 'userSession',
   input: z.object({ sessionId: z.string() }),
-  getKey: (args) => `userSession:${args.sessionId}`,
+  getKey: (args) => `userSession_1:${args.sessionId}`,
   output: z.object({
     email: z.string(),
     name: z.string(),
     imageUrl: z.string(),
+    isVerified: z.boolean(),
     activeOrganizationId: z.string(),
     id: z.string(),
     coreUserId: z.string(),
@@ -338,6 +339,26 @@ const modelIdToModelTierDefinition = generateDefinitionSatisfies({
   },
 });
 
+const phoneTotpDefinition = generateDefinitionSatisfies({
+  baseKey: 'phoneTotp',
+  input: z.object({ phone: z.string() }),
+  getKey: (args) => `phoneTotp:${args.phone}`,
+  output: z.object({
+    code: z.string(),
+    expiresAt: z.number(),
+  }),
+});
+
+const emailTotpDefinition = generateDefinitionSatisfies({
+  baseKey: 'emailTotp',
+  input: z.object({ email: z.string() }),
+  getKey: (args) => `emailTotp:${args.email}`,
+  output: z.object({
+    code: z.string(),
+    expiresAt: z.number(),
+  }),
+});
+
 export const redisDefinitions = {
   userSession: userSessionDefinition,
   organizationRateLimitsPerModel: organizationRateLimitsPerModelDefinition,
@@ -355,6 +376,8 @@ export const redisDefinitions = {
   apiKeys: apiKeysDefinition,
   clientSideApiKeys: clientSideApiKeysDefinition,
   modelIdToModelTier: modelIdToModelTierDefinition,
+  phoneTotp: phoneTotpDefinition,
+  emailTotp: emailTotpDefinition,
 } satisfies Record<
   string,
   RedisDefinition<

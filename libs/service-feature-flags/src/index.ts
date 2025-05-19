@@ -77,13 +77,24 @@ export async function getOrganizationFeatureFlags(org: OrgDetails) {
 
 export async function getSingleFlag<SingleFlag extends Flag>(
   flag: SingleFlag,
-  orgId: string,
+  orgId?: string,
 ): Promise<FlagValue<SingleFlag> | undefined> {
   if (!environment.LAUNCH_DARKLY_SDK_KEY) {
     return undefined;
   }
 
   const ldClient = await getLaunchDarklyClient();
+
+  if (!orgId) {
+    return ldClient.variation(
+      flag,
+      {
+        key: 'default',
+        anonymous: true,
+      },
+      false,
+    );
+  }
 
   return ldClient.variation(
     flag,

@@ -16,6 +16,7 @@ export async function getAPIKey() {
     skipOnboarding: true,
     name: 'API tester',
     uniqueId: 'apitester',
+    isVerified: true,
     imageUrl: '',
   });
 

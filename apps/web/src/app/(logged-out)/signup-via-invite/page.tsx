@@ -48,7 +48,7 @@ function EmailRegistration(props: EmailRegistrationProps) {
   const t = useTranslations('signup-via-invite');
 
   const { mutate, error, isPending, isSuccess } =
-    webApi.user.createAccountWithPassword.useMutation();
+    webApi.user.createAccountWithPasswordAndInviteCode.useMutation();
 
   const emailFormSchema = z
     .object({
@@ -82,7 +82,7 @@ function EmailRegistration(props: EmailRegistrationProps) {
       invalidInviteCode: t('EmailRegistration.errors.invalidInviteCode'),
       default: t('EmailRegistration.errors.default'),
     },
-    contract: webApiContracts.user.createAccountWithPassword,
+    contract: webApiContracts.user.createAccountWithPasswordAndInviteCode,
   });
 
   const handleSubmit = useCallback(

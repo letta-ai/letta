@@ -102,6 +102,7 @@ export async function getGithubUserDetails(
     uniqueId: `github-${userResponse.data.node_id.toString()}`,
     imageUrl: userResponse.data.avatar_url,
     provider: 'github',
+    isVerified: true,
     name: userResponse.data.name || primaryEmail.email,
   };
 }

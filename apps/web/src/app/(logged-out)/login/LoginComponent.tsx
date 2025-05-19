@@ -19,6 +19,7 @@ import { useSearchParams } from 'next/navigation';
 import { isTextALoginError, LoginErrorsMap } from '$web/errors';
 import { useTranslations } from '@letta-cloud/translations';
 import { OAuthButtons } from '../OAuthButtons/OAuthButtons';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 function LoginErrorBanner() {
   const searchParams = useSearchParams();
@@ -58,6 +59,8 @@ export function LoginComponent() {
   }, []);
 
   const searchParams = useSearchParams();
+
+  const { data: isEmailSignupEnabled } = useFeatureFlag('EMAIL_SIGNUP');
 
   const [mode, setMode] = useState<Mode>(() => {
     return searchParams.get('signup') === 'true' ? 'signup' : 'login';
@@ -102,11 +105,26 @@ export function LoginComponent() {
               ]}
             />
           </HStack>
-          <OAuthButtons
-            type={mode}
-            spinOnClick={spinOnClick}
-            searchParams={searchParams}
-          />
+          <VStack fullWidth gap="small">
+            <OAuthButtons
+              type={mode}
+              spinOnClick={spinOnClick}
+              searchParams={searchParams}
+            />
+            {(isEmailSignupEnabled || mode === 'login') && (
+              <Button
+                label={
+                  mode === 'login'
+                    ? t('loginWithPassword')
+                    : t('signupWithPassword')
+                }
+                fullWidth
+                preIcon={<KeyIcon />}
+                color="secondary"
+                href={mode === 'login' ? '/login/password' : '/signup/password'}
+              />
+            )}
+          </VStack>
           <VStack>
             <Typography variant="body3">{t('info')}</Typography>
             <Typography variant="body3">
@@ -137,13 +155,6 @@ export function LoginComponent() {
                 {t('corporateLogin')}
               </Typography>
             </HStack>
-            <Button
-              label={t('loginWithPassword')}
-              fullWidth
-              preIcon={<KeyIcon />}
-              color="secondary"
-              href="/login/password"
-            />
             <Button
               label={t('loginWithSSO')}
               fullWidth

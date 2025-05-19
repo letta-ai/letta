@@ -24,3 +24,4 @@ export * from './lib/redisModelTransactions/redisModelTransactions';
 export * from './lib/shouldItemRateLimit/shouldItemRateLimit';
 export * from './lib/verifyUpdateAgent/verifyUpdateAgent';
 export * from './lib/getTemporalConnectionConfig/getTemporalConnectionConfig';
+export * from './lib/checkIfUserIsAllVerified/checkIfUserIsAllVerified';

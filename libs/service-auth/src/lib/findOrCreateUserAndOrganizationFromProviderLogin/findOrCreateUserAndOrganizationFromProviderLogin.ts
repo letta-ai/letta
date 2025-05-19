@@ -180,6 +180,7 @@ async function createUserAndOrganization(
         name: userData.name || 'New User',
         lettaAgentsId: lettaAgentsUser.id,
         imageUrl: userData.imageUrl,
+        verifiedAt: userData.isVerified ? new Date() : null,
         email: userData.email,
         submittedOnboardingAt: userData.skipOnboarding ? new Date() : null,
         providerId: userData.uniqueId,
@@ -235,6 +236,7 @@ async function createUserAndOrganization(
       theme: 'light',
       name: userData.name,
       imageUrl: userData.imageUrl,
+      isVerified: userData.isVerified,
       id: createdUser.userId,
       activeOrganizationId: organizationId,
       coreUserId: lettaAgentsUser.id,
@@ -269,6 +271,7 @@ async function findExistingUser(
     activeOrganizationId: user.activeOrganizationId || '',
     imageUrl: user.imageUrl,
     name: user.name,
+    isVerified: !!user.verifiedAt,
     coreUserId: user.lettaAgentsId,
   };
 }
@@ -381,6 +384,7 @@ export async function findOrCreateUserAndOrganizationFromProviderLogin(
         id: user.id,
       });
 
+      user.isVerified = userData.isVerified;
       user.email = userData.email;
       user.imageUrl = userData.imageUrl;
       user.name = userData.name;
@@ -414,6 +418,7 @@ export async function findOrCreateUserAndOrganizationFromProviderLogin(
       theme: user.theme,
       email: user.email,
       id: user.id,
+      isVerified: user.isVerified,
       activeOrganizationId: user.activeOrganizationId,
       imageUrl: user.imageUrl,
       name: user.name,

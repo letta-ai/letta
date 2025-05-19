@@ -18,7 +18,7 @@ import { SpinnerPrimitive } from '../../../primitives';
 import { HStack } from '../../framing/HStack/HStack';
 import { VStack } from '../../framing/VStack/VStack';
 
-const inputVariants = cva(
+export const inputVariants = cva(
   'flex  items-center overflow-hidden border border-input text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring',
   {
     variants: {

@@ -16,6 +16,7 @@ import { LoggedInClientSideProviders } from './LoggedInClientSideProviders/Logge
 import { WelcomeOverlayWrapper } from './WelcomeOverlayWrapper/WelcomeOverlayWrapper';
 import { router } from '$web/web-api/router';
 import { OnboardingProvider } from '$web/client/hooks/useOnboarding';
+import { VerifyAccountLoginWrapper } from '$web/server/components/LoggedInLayout/VerifyAccountLoginWrapper/VerifyAccountLoginWrapper';
 
 interface InAppProps {
   children: ReactNode;
@@ -63,9 +64,11 @@ export async function LoggedInLayout(props: InAppProps) {
       <IdentifyUserForMixpanel userId={user.id} />
       <HydrationBoundary state={dehydrate(queryClient)}>
         <LoggedInClientSideProviders>
-          <WelcomeOverlayWrapper>
-            <OnboardingProvider>{children}</OnboardingProvider>
-          </WelcomeOverlayWrapper>
+          <VerifyAccountLoginWrapper>
+            <WelcomeOverlayWrapper>
+              <OnboardingProvider>{children}</OnboardingProvider>
+            </WelcomeOverlayWrapper>
+          </VerifyAccountLoginWrapper>
         </LoggedInClientSideProviders>
       </HydrationBoundary>
     </GlobalSessionSettingsProvider>

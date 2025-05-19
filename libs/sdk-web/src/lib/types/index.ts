@@ -17,6 +17,7 @@ export interface ProviderUserPayload {
   imageUrl: string;
   provider: SupportedProviders;
   organizationOverride?: string;
+  isVerified: boolean;
   skipOnboarding?: boolean;
   name: string;
 }

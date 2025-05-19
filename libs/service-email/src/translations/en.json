@@ -14,5 +14,10 @@
     "subject": "Your Letta credit balance is below {{threshold}}",
     "heading": "Hello {{organizationName}},",
     "content": "Your Letta credit balance is below {{threshold}}. Please top up your account to avoid any disruptions to your service."
+  },
+  "verifyEmail": {
+    "subject": "Verify you Letta Account",
+    "heading": "Hello",
+    "content": "Please verify your email address by clicking the link below. This will help us keep your account secure. This link expires in one hour"
   }
 }

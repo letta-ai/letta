@@ -16,6 +16,7 @@ export interface GetUserDataResponse {
   email: string;
   imageUrl: string;
   permissions: Set<ApplicationServices>;
+  isVerified: boolean;
   theme: string;
   locale: string;
   hasOnboarded: boolean;
@@ -47,6 +48,7 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
       email: true,
       theme: true,
       submittedOnboardingAt: true,
+      verifiedAt: true,
       imageUrl: true,
       locale: true,
       name: true,
@@ -114,6 +116,7 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
     lettaAgentsId: userFromDb.lettaAgentsId,
     email: userFromDb.email,
     imageUrl: userFromDb.imageUrl,
+    isVerified: !!userFromDb.verifiedAt,
     permissions: new Set(permissions),
     onboardingStatus: {
       pausedAt: userFromDb.userProductOnboarding?.pausedAt

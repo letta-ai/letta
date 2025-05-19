@@ -71,6 +71,11 @@ export const featureFlags = {
     expiryDate: '2025-07-01',
     flagValue: z.boolean(),
   },
+  EMAIL_SIGNUP: {
+    description: 'Email signup',
+    expiryDate: '2024-07-01',
+    flagValue: z.boolean(),
+  },
   GENERAL_ACCESS: {
     description: 'General access',
     expiryDate: '2025-07-01',

@@ -6,6 +6,7 @@ export const userSessionSchema = z.object({
   imageUrl: z.string(),
   theme: z.string(),
   activeOrganizationId: z.string(),
+  isVerified: z.boolean(),
   id: z.string(),
   coreUserId: z.string(),
 });

@@ -2061,7 +2061,8 @@
     "title": "Welcome to Letta Cloud",
     "corporateLogin": "Enterprise options",
     "loginWithSSO": "Sign in with SSO",
-    "loginWithPassword": "Sign in with password",
+    "loginWithPassword": "Sign in with email",
+    "signupWithPassword": "Sign up with email",
     "google": "{type} with Google",
     "github": "{type} with GitHub",
     "info": "By clicking the button above, you will be signed in to an existing account or have an new account created for you.",
@@ -2078,6 +2079,91 @@
       "invalidSSO": "Your email domain was not associated with a valid SSO provider, please try again or contact your organization administrator.",
       "default": "There was an error signing in, please try again or contact support"
     }
+  },
+  "VerifyAccountLoginWrapper": {
+    "info": "If you want to skip verification process, you can instead sign up with our social login options. <link>Sign out here</link> to return to the login page.",
+    "title": "Welcome to Letta",
+    "success": "Verified",
+    "subtitle": "Before you start using our platform, please verify the following information:"
+  },
+  "VerifyAccountLoginWrapper/VerifyEmailDialog": {
+    "title": "Verify your email",
+    "description": "We have sent you an email with a verification link, please check your inbox and click the link to verify your email address.",
+    "resend": "Resend verification email",
+    "errors": {
+      "invalidEmail": "Invalid email address",
+      "tooEarly": "You have already sent a verification email, please wait before sending another one",
+      "emailAlreadyVerified": "Your email address is already verified",
+      "default": "There was an error sending the verification email, please try again or contact support"
+    },
+    "success": "We have sent you an email with a verification link, please check your inbox and click the link to verify your email address."
+  },
+  "VerifyAccountLoginWrapper/VerifyPhoneNumberDialog": {
+    "title": "Verify your phone number",
+    "VerifySMSCodeSchema": {
+      "label": "Verification code",
+      "placeholder": "123456",
+      "cta": "Verify",
+      "goBack": "Go back",
+      "description": "Enter the verification code you received via SMS",
+      "errors": {
+        "invalidVerificationCode": "Invalid verification code",
+        "phoneAlreadyVerified": "Your phone number is already verified",
+        "default": "There was an error verifying your phone number, please try again or contact support"
+      }
+    },
+    "errors": {
+      "invalidPhoneNumber": "Invalid phone number",
+      "phoneAlreadyVerified": "Your phone number is already verified",
+      "tooEarly": "You have already sent a verification code, please wait before sending another one",
+      "default": "There was an error sending the verification code, please try again or contact support"
+    },
+    "SubmitPhoneNumberForm": {
+      "label": "Phone number",
+      "cta": "Send verification code",
+      "resend": "You can resend the code in {seconds} seconds"
+    },
+    "description": "Please provide a valid phone number to verify your account, you will receive a verification code via SMS"
+  },
+  "VerifyAccountLoginWrapper/VerifyComponent": {
+    "email": {
+      "title": "Verify your email",
+      "description": "Press the button to send a verification email to your email address",
+      "cta": "Start verification"
+    },
+    "phone": {
+      "title": "Verify your phone number",
+      "description": "Please provide a valid phone number to verify your account, you will receive a verification code via SMS",
+      "cta": "Start verification"
+    }
+  },
+  "pages/password": {
+    "title": "Sign up for Letta Cloud",
+    "errors": {
+      "passwordMinLength": "Password must be at least 6 characters",
+      "passwordMismatch": "Passwords do not match",
+      "default": "There was an error creating your account, please try again or contact support",
+      "emailAlreadyTaken": "This email is already in use, please contact support if you cannot access your account"
+    },
+    "name": {
+      "label": "Display name",
+      "placeholder": "Your name"
+    },
+    "email": {
+      "label": "Email",
+      "placeholder": "email@email.com"
+    },
+    "password": {
+      "label": "Password",
+      "placeholder": "···················"
+    },
+    "confirmPassword": {
+      "label": "Confirm password",
+      "placeholder": "···················"
+    },
+    "terms": "By signing up, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
+    "submit": "Sign up",
+    "info": "You will be asked to provide a valid phone number after signing up to verify your account. If you do not want to provide a phone number, please sign in through our <link>other options</link>."
   },
   "password-login": {
     "title": "Sign in to Letta Cloud",

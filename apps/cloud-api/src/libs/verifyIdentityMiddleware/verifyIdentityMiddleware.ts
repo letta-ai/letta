@@ -95,6 +95,7 @@ async function handleFakeUser(req: Request) {
     provider: 'google',
     email: 'api-tester@letta.com',
     skipOnboarding: true,
+    isVerified: true,
     name: 'API tester',
     uniqueId: 'apitester',
     imageUrl: '',

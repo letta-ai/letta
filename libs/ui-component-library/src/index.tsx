@@ -226,3 +226,5 @@ export * from './lib/core/QuotaProgressBar/QuotaProgressBar';
 export * from './lib/reusable/QuotaBlock/QuotaBlock';
 
 export * from './lib/reusable/BillingLink/BillingLink';
+
+export * from './lib/core/PhoneInput/PhoneInput';

@@ -3,6 +3,7 @@ import Invite, { getInviteSubject } from '../../emails/Invite';
 import { createElement } from 'react';
 import type { ComponentProps } from 'react';
 import LowBalance, { getLowBalanceSubject } from '../../emails/LowBalance';
+import VerifyEmail, { getVerifyEmailSubject } from '../../emails/VerifyEmail';
 import ForgotPassword, {
   getForgotPasswordSubject,
 } from '../../emails/ForgotPassword';
@@ -19,6 +20,10 @@ const emailMap = {
   lowBalance: {
     Component: LowBalance,
     getSubject: getLowBalanceSubject,
+  },
+  verifyEmail: {
+    Component: VerifyEmail,
+    getSubject: getVerifyEmailSubject,
   },
 };
 
