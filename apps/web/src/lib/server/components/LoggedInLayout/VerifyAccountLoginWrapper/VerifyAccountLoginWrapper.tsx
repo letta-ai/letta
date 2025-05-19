@@ -36,6 +36,7 @@ export function VerifyAccountLoginWrapper(
     queryKey: webApiQueryKeys.user.getUserVerifiedContacts,
     refetchInterval: 2500,
     refetchOnWindowFocus: true,
+    enabled: !user?.isVerified,
   });
 
   const verifiedPhoneNumber = useMemo(() => {
