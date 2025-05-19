@@ -35,6 +35,7 @@ from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.openai.chat_completion_response import Message as ChoiceMessage
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
 from letta.services.provider_manager import ProviderManager
+from letta.settings import model_settings
 from letta.tracing import trace_method
 
 DUMMY_FIRST_USER_MESSAGE = "User initializing bootup sequence."
@@ -120,8 +121,16 @@ class AnthropicClient(LLMClientBase):
             override_key = ProviderManager().get_override_key(llm_config.provider_name, actor=self.actor)
 
         if async_client:
-            return anthropic.AsyncAnthropic(api_key=override_key) if override_key else anthropic.AsyncAnthropic()
-        return anthropic.Anthropic(api_key=override_key) if override_key else anthropic.Anthropic()
+            return (
+                anthropic.AsyncAnthropic(api_key=override_key, max_retries=model_settings.anthropic_max_retries)
+                if override_key
+                else anthropic.AsyncAnthropic(max_retries=model_settings.anthropic_max_retries)
+            )
+        return (
+            anthropic.Anthropic(api_key=override_key, max_retries=model_settings.anthropic_max_retries)
+            if override_key
+            else anthropic.Anthropic(max_retries=model_settings.anthropic_max_retries)
+        )
 
     @trace_method
     def build_request_data(

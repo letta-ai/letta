@@ -95,6 +95,7 @@ class ModelSettings(BaseSettings):
 
     # anthropic
     anthropic_api_key: Optional[str] = None
+    anthropic_max_retries: int = 3
 
     # ollama
     ollama_base_url: Optional[str] = None
