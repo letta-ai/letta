@@ -82,15 +82,15 @@ async def retrieve_identity(
 
 
 @router.post("/", tags=["identities"], response_model=Identity, operation_id="create_identity")
-def create_identity(
+async def create_identity(
     identity: IdentityCreate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
     x_project: Optional[str] = Header(None, alias="X-Project"),  # Only handled by next js middleware
 ):
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
-        return server.identity_manager.create_identity(identity=identity, actor=actor)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        return await server.identity_manager.create_identity_async(identity=identity, actor=actor)
     except HTTPException:
         raise
     except UniqueConstraintViolationError:
@@ -106,15 +106,15 @@ def create_identity(
 
 
 @router.put("/", tags=["identities"], response_model=Identity, operation_id="upsert_identity")
-def upsert_identity(
+async def upsert_identity(
     identity: IdentityUpsert = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
     x_project: Optional[str] = Header(None, alias="X-Project"),  # Only handled by next js middleware
 ):
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
-        return server.identity_manager.upsert_identity(identity=identity, actor=actor)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        return await server.identity_manager.upsert_identity_async(identity=identity, actor=actor)
     except HTTPException:
         raise
     except NoResultFound as e:
@@ -124,36 +124,33 @@ def upsert_identity(
 
 
 @router.patch("/{identity_id}", tags=["identities"], response_model=Identity, operation_id="update_identity")
-def modify_identity(
+async def modify_identity(
     identity_id: str,
     identity: IdentityUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
-        return server.identity_manager.update_identity(identity_id=identity_id, identity=identity, actor=actor)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        return await server.identity_manager.update_identity_async(identity_id=identity_id, identity=identity, actor=actor)
     except HTTPException:
         raise
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        import traceback
-
-        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"{e}")
 
 
 @router.put("/{identity_id}/properties", tags=["identities"], operation_id="upsert_identity_properties")
-def upsert_identity_properties(
+async def upsert_identity_properties(
     identity_id: str,
     properties: List[IdentityProperty] = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
-        return server.identity_manager.upsert_identity_properties(identity_id=identity_id, properties=properties, actor=actor)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        return await server.identity_manager.upsert_identity_properties_async(identity_id=identity_id, properties=properties, actor=actor)
     except HTTPException:
         raise
     except NoResultFound as e:
@@ -163,7 +160,7 @@ def upsert_identity_properties(
 
 
 @router.delete("/{identity_id}", tags=["identities"], operation_id="delete_identity")
-def delete_identity(
+async def delete_identity(
     identity_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -172,8 +169,8 @@ def delete_identity(
     Delete an identity by its identifier key
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
-        server.identity_manager.delete_identity(identity_id=identity_id, actor=actor)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        await server.identity_manager.delete_identity_async(identity_id=identity_id, actor=actor)
     except HTTPException:
         raise
     except NoResultFound as e:
