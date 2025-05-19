@@ -41,9 +41,7 @@ env:
   WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
   WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
   LAUNCH_DARKLY_SDK_KEY: ${{ secrets.LAUNCH_DARKLY_SDK_KEY }}
-  E2B_API_KEY: ${{ secrets.E2B_API_KEY }}
   HUBSPOT_API_KEY: ${{ secrets.HUBSPOT_API_KEY }}
-  COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
   AUTH_GITHUB_CLIENT_ID: ${{ secrets.AUTH_GITHUB_CLIENT_ID }}
   AUTH_GITHUB_CLIENT_SECRET: ${{ secrets.AUTH_GITHUB_CLIENT_SECRET }}
@@ -70,15 +68,33 @@ jobs:
     # if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
-
-      - id: auth
-        name: Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        id: auth
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
+
+      - name: Inject env vars into environment
+        working-directory: apps/core
+        run: |
+          # Install required package
+          poetry run pip install google-cloud-secret-manager
+
+          # Get secrets and mask them before adding to environment
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            # Check if line is not empty
+            if [[ -n "$line" ]]; then
+              # Extract the value after the equals sign
+              value=$(echo "$line" | cut -d= -f2-)
+              # Mask the value so it doesn't appear in logs
+              echo "::add-mask::$value"
+              # Add to GitHub environment
+              echo "$line" >> $GITHUB_ENV
+            fi
+          done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py -e dev -s ci)
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -136,4 +152,7 @@ jobs:
 
       - name: Deploy
         id: deploy
+        env:
+          E2B_API_KEY: ${{ env.E2B_API_KEY }}
+          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
         run: just build-web deploy-web "${DEPLOY_MESSAGE}"

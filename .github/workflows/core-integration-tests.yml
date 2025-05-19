@@ -1,15 +1,6 @@
 name: 🐍🧪 [Core] Integration Tests
 
 env:
-  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-  COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
-  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-  AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
-  AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
-  E2B_API_KEY: ${{ secrets.E2B_API_KEY }}
-  E2B_SANDBOX_TEMPLATE_ID: ${{ secrets.E2B_SANDBOX_TEMPLATE_ID }}
   LETTA_ENABLE_BATCH_JOB_POLLING: true
 
 on:
@@ -152,6 +143,32 @@ jobs:
           poetry run pip install -e ../fern/.preview/fern-python-sdk/.
           poetry run pip install letta
 
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Inject env vars into environment
+        working-directory: apps/core
+        run: |
+          # Install required package
+          poetry run pip install google-cloud-secret-manager
+
+          # Get secrets and mask them before adding to environment
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            # Check if line is not empty
+            if [[ -n "$line" ]]; then
+              # Extract the value after the equals sign
+              value=$(echo "$line" | cut -d= -f2-)
+              # Mask the value so it doesn't appear in logs
+              echo "::add-mask::$value"
+              # Add to GitHub environment
+              echo "$line" >> $GITHUB_ENV
+            fi
+          done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py --env dev --service ci)
       - name: Run core integration tests
         working-directory: apps/core
         env:
@@ -161,6 +178,15 @@ jobs:
           LETTA_PG_DB: postgres
           LETTA_PG_HOST: localhost
           LETTA_SERVER_PASS: test_server_token
+          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
+          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ env.GROQ_API_KEY }}
+          AZURE_API_KEY: ${{ env.AZURE_API_KEY }}
+          AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
+          E2B_API_KEY: ${{ env.E2B_API_KEY }}
+          E2B_SANDBOX_TEMPLATE_ID: ${{ secrets.E2B_SANDBOX_TEMPLATE_ID }}
         run: |
           set -o xtrace
           poetry run pip show letta

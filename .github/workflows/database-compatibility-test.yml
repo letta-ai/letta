@@ -153,6 +153,32 @@ jobs:
         shell: bash
         working-directory: branch-code/apps/core
         run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Inject env vars into environment
+        working-directory: main-code/apps/core
+        run: |
+          # Install required package
+          poetry run pip install google-cloud-secret-manager
+
+          # Get secrets and mask them before adding to environment
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            # Check if line is not empty
+            if [[ -n "$line" ]]; then
+              # Extract the value after the equals sign
+              value=$(echo "$line" | cut -d= -f2-)
+              # Mask the value so it doesn't appear in logs
+              echo "::add-mask::$value"
+              # Add to GitHub environment
+              echo "$line" >> $GITHUB_ENV
+            fi
+          done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py --env dev --service ci)
       - name: Turn on Letta agents on main branch
         working-directory: main-code/apps/core
         env:
@@ -161,7 +187,7 @@ jobs:
           LETTA_PG_PASSWORD: postgres
           LETTA_PG_DB: postgres
           LETTA_PG_HOST: localhost
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
         run: poetry run letta server &
       - name: Cache npm dependencies
         id: cache-branch
@@ -176,7 +202,7 @@ jobs:
           path: ./main-code/apps/cloud-api/node_modules
           key: modules-${{ hashFiles('./main-code/apps/cloud-api/package-lock.json') }}
       - name: Turn on letta web on main branch
-        working-directory: main-code
+        working-directory: main-code/apps/cloud-api
         run: just setup-cloud-api
       - name: Migrate Cloud DB
         working-directory: main-code
@@ -192,7 +218,7 @@ jobs:
           LETTA_AGENTS_ENDPOINT: http://localhost:8283
           NEXT_PUBLIC_CURRENT_HOST: http://localhost:3006
           IS_API_STABILITY_TEST: yes
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
           TEST_STAGE: main
       - name: Run database compatibility tests
         working-directory: main-code
@@ -221,7 +247,7 @@ jobs:
           LETTA_PG_PASSWORD: postgres
           LETTA_PG_DB: postgres
           LETTA_PG_HOST: localhost
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
         # Detach
         run: poetry run letta server &
       - name: Install deps on branch code
@@ -240,7 +266,7 @@ jobs:
           REDIS_PORT: 6379
           NEXT_PUBLIC_CURRENT_HOST: http://localhost:3006
           IS_API_STABILITY_TEST: yes
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
           TEST_STAGE: branch
       - name: Run database stability tests on branch code
         working-directory: branch-code

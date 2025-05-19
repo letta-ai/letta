@@ -24,7 +24,6 @@ env:
   TAG: ${{ github.sha }}
   PORT: "8080"
   LETTA_AGENTS_ENDPOINT: http://memgpt-server:8083
-  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   REGION: us-central1
   GCP_SA_EMAIL: github-actions-service-account@memgpt-428419.iam.gserviceaccount.com
   SLACK_WEBHOOK_URL: https://hooks.slack.com/services/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
@@ -37,12 +36,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     # TODO: remove this
-    # if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
 
-      - id: auth
-        name: Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        id: auth
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
@@ -50,12 +49,24 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Create GitHub deployment
-        id: deployment
-        uses: chrnorm/deployment-action@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          environment: production
+      - name: Inject env vars into environment
+        working-directory: apps/core
+        run: |
+          # Install required package
+          poetry run pip install google-cloud-secret-manager
+
+          # Get secrets and mask them before adding to environment
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            # Check if line is not empty
+            if [[ -n "$line" ]]; then
+              # Extract the value after the equals sign
+              value=$(echo "$line" | cut -d= -f2-)
+              # Mask the value so it doesn't appear in logs
+              echo "::add-mask::$value"
+              # Add to GitHub environment
+              echo "$line" >> $GITHUB_ENV
+            fi
+          done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py -e dev -s ci)
 
       # - name: Set up Node.js
       #   uses: actions/setup-node@v4
@@ -125,6 +136,8 @@ jobs:
 
       - name: Deploy
         id: deploy
+        env:
+          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
         run: just deploy-model-proxy
 
       - name: Update deployment status to success

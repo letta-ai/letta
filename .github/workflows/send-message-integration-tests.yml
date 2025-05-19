@@ -1,16 +1,5 @@
 name: 🐍🧪 [Core] Send Message SDK Tests
 
-env:
-  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-  AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
-  AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
-  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-  COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
-  GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT}}
-  GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION}}
-  DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY}}
-
 on:
   push:
     branches: [ main ]
@@ -88,6 +77,35 @@ jobs:
           version: 1.8.3
           virtualenvs-create: true
           virtualenvs-in-project: true
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Inject env vars into environment
+        working-directory: apps/core
+        run: |
+          # Install required package
+          poetry run pip install google-cloud-secret-manager
+
+          # Get secrets and mask them before adding to environment
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            # Check if line is not empty
+            if [[ -n "$line" ]]; then
+              # Extract the value after the equals sign
+              value=$(echo "$line" | cut -d= -f2-)
+              # Mask the value so it doesn't appear in logs
+              echo "::add-mask::$value"
+              # Add to GitHub environment
+              echo "$line" >> $GITHUB_ENV
+            fi
+          done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py -e dev -s ci)
+
       - name: Install Fern
         if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
         run: npm install -g fern-api
@@ -140,9 +158,19 @@ jobs:
         working-directory: apps/core
         run: poetry run pip install -e ../fern/.preview/fern-python-sdk/.
 
+
       - name: Run integration tests for ${{ matrix.config_file }}
         working-directory: apps/core
         env:
+          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
+          AZURE_API_KEY: ${{ env.AZURE_API_KEY }}
+          AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
+          GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
+          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
+          GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT}}
+          GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION}}
+          DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY}}
           LLM_CONFIG_FILE: ${{ matrix.config_file }}
           LETTA_PG_PORT: 5432
           LETTA_PG_USER: postgres
