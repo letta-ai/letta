@@ -3659,6 +3659,7 @@ export type ToolType =
   | 'letta_multi_agent_core'
   | 'letta_sleeptime_core'
   | 'letta_voice_sleeptime_core'
+  | 'letta_builtin'
   | 'external_composio'
   | 'external_langchain'
   | 'external_mcp';

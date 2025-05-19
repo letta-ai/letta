@@ -442,6 +442,7 @@ class LettaAgent(BaseAgent):
                 ToolType.LETTA_MULTI_AGENT_CORE,
                 ToolType.LETTA_SLEEPTIME_CORE,
                 ToolType.LETTA_VOICE_SLEEPTIME_CORE,
+                ToolType.LETTA_BUILTIN,
             }
             or (t.tool_type == ToolType.LETTA_MULTI_AGENT_CORE and t.name == "send_message_to_agents_matching_tags")
             or (t.tool_type == ToolType.EXTERNAL_COMPOSIO)

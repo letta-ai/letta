@@ -189,7 +189,7 @@ async def upsert_base_tools(
     Upsert base tools
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    return await server.tool_manager.upsert_base_tools_async(actor=actor)
+    return server.tool_manager.upsert_base_tools(actor=actor)
 
 
 @router.post("/run", response_model=ToolReturnMessage, operation_id="run_tool_from_source")

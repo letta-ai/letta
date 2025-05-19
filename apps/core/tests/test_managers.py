@@ -24,7 +24,9 @@ from letta.constants import (
     BASE_TOOLS,
     BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
     BASE_VOICE_SLEEPTIME_TOOLS,
+    BUILTIN_TOOLS,
     LETTA_TOOL_EXECUTION_DIR,
+    LETTA_TOOL_SET,
     MCP_TOOL_TAG_NAME_PREFIX,
     MULTI_AGENT_TOOLS,
 )
@@ -2401,16 +2403,8 @@ async def test_delete_tool_by_id(server: SyncServer, print_tool, default_user, e
 
 def test_upsert_base_tools(server: SyncServer, default_user):
     tools = server.tool_manager.upsert_base_tools(actor=default_user)
-    expected_tool_names = sorted(
-        set(
-            BASE_TOOLS
-            + BASE_MEMORY_TOOLS
-            + MULTI_AGENT_TOOLS
-            + BASE_SLEEPTIME_TOOLS
-            + BASE_VOICE_SLEEPTIME_TOOLS
-            + BASE_VOICE_SLEEPTIME_CHAT_TOOLS
-        )
-    )
+    expected_tool_names = sorted(LETTA_TOOL_SET)
+
     assert sorted([t.name for t in tools]) == expected_tool_names
 
     # Call it again to make sure it doesn't create duplicates
@@ -2431,6 +2425,8 @@ def test_upsert_base_tools(server: SyncServer, default_user):
             assert t.tool_type == ToolType.LETTA_VOICE_SLEEPTIME_CORE
         elif t.name in BASE_VOICE_SLEEPTIME_CHAT_TOOLS:
             assert t.tool_type == ToolType.LETTA_VOICE_SLEEPTIME_CORE
+        elif t.name in BUILTIN_TOOLS:
+            assert t.tool_type == ToolType.LETTA_BUILTIN
         else:
             pytest.fail(f"The tool name is unrecognized as a base tool: {t.name}")
         assert t.source_code is None
