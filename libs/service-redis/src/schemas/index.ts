@@ -82,6 +82,18 @@ const organizationRateLimitsPerModelDefinition = generateDefinitionSatisfies({
   }),
 });
 
+const forgotPasswordDefinition = generateDefinitionSatisfies({
+  baseKey: 'forgotPassword',
+  input: z.object({ email: z.string() }),
+  getKey: (args) => `forgotPassword:${args.email}`,
+  output: z.object({
+    email: z.string(),
+    code: z.string(),
+    canRetryAt: z.number(),
+    expiresAt: z.number(),
+  }),
+});
+
 const defaultModelRequestPerMinuteDefinition = generateDefinitionSatisfies({
   baseKey: 'defaultModelRequestPerMinute',
   input: z.object({ modelId: z.string() }),
@@ -333,6 +345,7 @@ export const redisDefinitions = {
   defaultModelTokensPerMinute: defaultModelTokenPerMinuteDefinition,
   coreOrganizationIdToOrganizationId:
     coreOrganizationIdToOrganizationIdDefinition,
+  forgotPassword: forgotPasswordDefinition,
   rpmWindow: rpmWindowDefinition,
   tpmWindow: tpmWindowDefinition,
   organizationToCoreOrganization: organizationToCoreOrganizationDefinition,

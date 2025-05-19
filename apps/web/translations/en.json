@@ -2095,6 +2095,47 @@
       "invalidPassword": "Invalid password"
     }
   },
+  "reset-password": {
+    "title": "Reset your password",
+    "description": "Enter your new password below",
+    "errors": {
+      "passwordMismatch": "Passwords do not match",
+      "minLength": "Password must be at least 6 characters",
+      "codeRequired": "A code is required to reset your password",
+      "invalidCode": "The code you are using is invalid, please try again or contact support.",
+      "codeExpired": "The code you are using has expired, please try again or contact support.",
+      "default": "There was an error resetting your password, please try again or contact support"
+    },
+    "confirm": "Reset password",
+    "password": {
+      "label": "New password",
+      "placeholder": "···················"
+    },
+    "email": {
+      "label": "Email"
+    },
+    "confirmPassword": {
+      "label": "Confirm password",
+      "placeholder": "···················"
+    },
+    "code": {
+      "label": "Code",
+      "placeholder": "Enter the code you received in your email"
+    }
+  },
+  "forgot-password": {
+    "title": "Forgot your password?",
+    "description": "Enter your email address and we will send you a link to reset your password.",
+    "email": {
+      "label": "Email",
+      "placeholder": "email@email.com"
+    },
+    "confirm": "Send reset link",
+    "errors": {
+      "default": "There was an error sending the reset link, please try again or contact support"
+    },
+    "success": "We have sent you an email with a link to reset your password. Please check your inbox and follow the instructions in the email."
+  },
   "signup-via-invite": {
     "emailSignup": "Sign up with email",
     "oauthSignup": "Go back",

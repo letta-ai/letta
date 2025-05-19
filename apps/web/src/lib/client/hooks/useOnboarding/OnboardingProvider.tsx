@@ -13,14 +13,12 @@ export function OnboardingProvider(props: OnboardingProviderProps) {
   const showOnboardingFromInit = useShowOnboarding('init');
   const showOnboardingFromRestart = useShowOnboarding('restarted');
 
-  if (showOnboardingFromInit || showOnboardingFromRestart) {
-    return (
-      <>
+  return (
+    <>
+      {(showOnboardingFromInit || showOnboardingFromRestart) && (
         <StartOnboardingDialog />
-        {children}
-      </>
-    );
-  }
-
-  return <>{children}</>;
+      )}
+      {children}
+    </>
+  );
 }

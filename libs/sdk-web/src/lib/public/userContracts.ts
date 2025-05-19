@@ -131,6 +131,37 @@ export const setUserAsOnboardedContract = c.mutation({
   },
 });
 
+const startForgotPasswordContract = c.mutation({
+  path: '/user/forgot-password/start',
+  method: 'POST',
+  body: z.object({
+    email: z.string(),
+  }),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
+const updatePasswordFromForgotPasswordContract = c.mutation({
+  path: '/user/forgot-password/update',
+  method: 'POST',
+  body: z.object({
+    email: z.string(),
+    password: z.string(),
+    code: z.string(),
+  }),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+    400: z.object({
+      errorCode: z.enum(['invalidCode', 'codeExpired']),
+    }),
+  },
+});
+
 const CreateUserWithPasswordSchema = z.object({
   name: z.string(),
   email: z.string(),
@@ -210,6 +241,8 @@ const UnpauseOnboardingContract = c.mutation({
 export const userContract = c.router({
   getCurrentUser: getUserContract,
   updateCurrentUser: updateCurrentUserContract,
+  startForgotPassword: startForgotPasswordContract,
+  updatePasswordFromForgotPassword: updatePasswordFromForgotPasswordContract,
   listUserOrganizations: listUserOrganizationsContract,
   updateActiveOrganization: updateActiveOrganizationContract,
   deleteCurrentUser: deleteCurrentUserCurrent,

@@ -34,6 +34,7 @@ import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { goToNextOnboardingStep } from '@letta-cloud/utils-server';
 import { getRedisData, setRedisData } from '@letta-cloud/service-redis';
 import { getCookie } from '$web/server/cookies';
+import { sendEmail } from '@letta-cloud/service-email';
 
 type ResponseShapes = ServerInferResponses<typeof userContract>;
 
@@ -557,6 +558,150 @@ async function updateUserOnboardingStep(
   };
 }
 
+type StartForgetPasswordRequest = ServerInferRequest<
+  typeof contracts.user.startForgotPassword
+>;
+type StartForgetPasswordResponse = ServerInferResponses<
+  typeof contracts.user.startForgotPassword
+>;
+
+async function startForgotPassword(
+  req: StartForgetPasswordRequest,
+): Promise<StartForgetPasswordResponse> {
+  const { email } = req.body;
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, email),
+  });
+
+  if (!user) {
+    return {
+      status: 200,
+      body: {
+        success: true,
+      },
+    };
+  }
+
+  const existing = await getRedisData('forgotPassword', {
+    email,
+  });
+
+  const currentTime = Date.now();
+  if (existing && existing.canRetryAt > currentTime) {
+    return {
+      status: 200,
+      body: {
+        success: true,
+      },
+    };
+  }
+
+  // expires in 1 hour
+  const expiresAt = Date.now() + 1000 * 60 * 60;
+  const code = Math.floor(Math.random() * 1000000)
+    .toString()
+    .padStart(6, '0');
+  const canRetryAt = Date.now() + 1000 * 60 * 1;
+
+  await setRedisData(
+    'forgotPassword',
+    {
+      email,
+    },
+    {
+      data: {
+        email,
+        expiresAt,
+        canRetryAt,
+        code,
+      },
+    },
+  );
+
+  await sendEmail({
+    to: email,
+    type: 'forgotPassword',
+    options: {
+      locale: 'en',
+      forgotPasswordUrl: `${process.env.NEXT_PUBLIC_CURRENT_HOST || ''}/reset-password?code=${code}&email=${encodeURIComponent(email)}`,
+    },
+  });
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
+type UpdatePasswordFromForgotPasswordResponse = ServerInferResponses<
+  typeof contracts.user.updatePasswordFromForgotPassword
+>;
+
+type UpdatePasswordFromForgotPasswordRequest = ServerInferRequest<
+  typeof contracts.user.updatePasswordFromForgotPassword
+>;
+
+async function updatePasswordFromForgotPassword(
+  req: UpdatePasswordFromForgotPasswordRequest,
+): Promise<UpdatePasswordFromForgotPasswordResponse> {
+  const { email, code, password } = req.body;
+
+  const existing = await getRedisData('forgotPassword', {
+    email,
+  });
+
+  if (!existing || existing.code !== code) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'invalidCode',
+      },
+    };
+  }
+
+  if (existing.expiresAt < Date.now()) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'codeExpired',
+      },
+    };
+  }
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, email),
+  });
+
+  if (!user) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'codeExpired',
+      },
+    };
+  }
+
+  const { hash, salt } = hashPassword(password);
+
+  await db
+    .update(userPassword)
+    .set({
+      password: hash,
+      salt,
+    })
+    .where(eq(userPassword.userId, user.id));
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 type PauseUserOnboardingResponse = ServerInferResponses<
   typeof contracts.user.pauseUserOnboarding
 >;
@@ -628,6 +773,8 @@ export const userRouter = {
   updateCurrentUser,
   listUserOrganizations,
   updateActiveOrganization,
+  startForgotPassword,
+  updatePasswordFromForgotPassword,
   setUserAsOnboarded,
   deleteCurrentUser,
   createAccountWithPassword,

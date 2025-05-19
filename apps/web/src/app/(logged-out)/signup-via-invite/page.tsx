@@ -24,6 +24,7 @@ import { LoginErrorsEnum } from '$web/errors';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useErrorTranslationMessage } from '@letta-cloud/utils-client';
+import { LoggedOutWrapper } from '../_components/LoggedOutWrapper/LoggedOutWrapper';
 
 function RedirectToLogin() {
   const { push } = useRouter();
@@ -238,79 +239,60 @@ export default function SignupViaInvite() {
   }
 
   return (
-    // eslint-disable-next-line react/forbid-component-props
-    <HStack gap={false} className="login-container h-[100dvh]" fullHeight>
-      <VStack
-        zIndex="rightAboveZero"
-        align="center"
-        justify="center"
-        fullHeight
-        fullWidth
-        color="background"
-      >
-        <VStack
-          /* eslint-disable-next-line react/forbid-component-props */
-          className="w-full  max-w-[350px]"
-          align="center"
-          justify="center"
-          padding
-          color="background-grey"
-        >
-          {!data ? (
-            <LoadingEmptyStatusComponent
-              isError={!!errorMessage}
-              isLoading={!errorMessage}
-              errorMessage={errorMessage}
-              loadingMessage={t('loading')}
-            />
-          ) : (
-            <VStack>
-              {signupErrorMessage && (
-                <Alert title={signupErrorMessage} variant="destructive" />
-              )}
-              <VStack align="center" paddingY>
-                <HStack>
-                  <Logo size="large" />
-                </HStack>
-                <Typography variant="heading5" as="h1">
-                  {t('title')}
-                </Typography>
-                <Typography variant="body">
-                  {t('description', {
-                    organizationName: data.body.organizationName,
-                  })}
-                </Typography>
-                <VStack gap="large" fullWidth paddingY="small">
-                  <HR />
-                  <Typography variant="body">{t('more')}</Typography>
-                </VStack>
-
-                {mode === 'oauth' ? (
-                  <>
-                    <OAuthButtons type="signup" searchParams={searchCode} />
-                    <Button
-                      onClick={() => setMode('email')}
-                      fullWidth
-                      color="secondary"
-                      label={t('emailSignup')}
-                    />
-                  </>
-                ) : (
-                  <>
-                    <EmailRegistration email={data.body.email} code={code} />
-                    <Button
-                      onClick={() => setMode('oauth')}
-                      fullWidth
-                      color="tertiary"
-                      label={t('oauthSignup')}
-                    />
-                  </>
-                )}
-              </VStack>
-            </VStack>
+    <LoggedOutWrapper>
+      {!data ? (
+        <LoadingEmptyStatusComponent
+          isError={!!errorMessage}
+          isLoading={!errorMessage}
+          errorMessage={errorMessage}
+          loadingMessage={t('loading')}
+        />
+      ) : (
+        <VStack>
+          {signupErrorMessage && (
+            <Alert title={signupErrorMessage} variant="destructive" />
           )}
+          <VStack align="center" paddingY>
+            <HStack>
+              <Logo size="large" />
+            </HStack>
+            <Typography variant="heading5" as="h1">
+              {t('title')}
+            </Typography>
+            <Typography variant="body">
+              {t('description', {
+                organizationName: data.body.organizationName,
+              })}
+            </Typography>
+            <VStack gap="large" fullWidth paddingY="small">
+              <HR />
+              <Typography variant="body">{t('more')}</Typography>
+            </VStack>
+
+            {mode === 'oauth' ? (
+              <>
+                <OAuthButtons type="signup" searchParams={searchCode} />
+                <Button
+                  onClick={() => setMode('email')}
+                  fullWidth
+                  color="secondary"
+                  label={t('emailSignup')}
+                />
+              </>
+            ) : (
+              <>
+                <EmailRegistration email={data.body.email} code={code} />
+                <Button
+                  onClick={() => setMode('oauth')}
+                  fullWidth
+                  color="tertiary"
+                  label={t('oauthSignup')}
+                />
+              </>
+            )}
+          </VStack>
         </VStack>
-      </VStack>
-    </HStack>
+      )}
+    </LoggedOutWrapper>
   );
 }

@@ -1,22 +1,12 @@
 'use client';
-import { HStack, VStack } from '@letta-cloud/ui-component-library';
 import { LoginComponent } from './LoginComponent';
+import { LoggedOutWrapper } from '../_components/LoggedOutWrapper/LoggedOutWrapper';
 
 function LoginPage() {
   return (
-    // eslint-disable-next-line react/forbid-component-props
-    <HStack gap={false} className="h-[100dvh]" fullHeight>
-      <VStack
-        zIndex="rightAboveZero"
-        align="center"
-        justify="center"
-        fullHeight
-        fullWidth
-        color="background"
-      >
-        <LoginComponent />
-      </VStack>
-    </HStack>
+    <LoggedOutWrapper>
+      <LoginComponent />
+    </LoggedOutWrapper>
   );
 }
 

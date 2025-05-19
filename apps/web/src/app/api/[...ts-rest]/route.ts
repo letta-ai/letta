@@ -31,6 +31,7 @@ const publicApis = [
   new RegExp('/api/tool-group-metadata(.+)?'),
   new RegExp('/api/invites/(.+)?'),
   new RegExp('/api/user/new(.+)?'),
+  new RegExp('/api/user/forgot-password(.+)?'),
   new RegExp('/api/verify-sso-email(.+)?'),
   new RegExp('/api/user/login(.+)?'),
 ];
