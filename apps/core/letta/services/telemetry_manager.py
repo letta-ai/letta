@@ -1,5 +1,3 @@
-from sqlalchemy import select
-
 from letta.orm.provider_trace import ProviderTrace as ProviderTraceModel
 from letta.schemas.provider_trace import ProviderTrace as PydanticProviderTrace
 from letta.schemas.provider_trace import ProviderTraceCreate

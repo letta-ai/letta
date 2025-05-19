@@ -86,7 +86,7 @@ BASE_VOICE_SLEEPTIME_TOOLS = [
 MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_tags", "send_message_to_agent_async"]
 
 # Built in tools
-BUILTIN_TOOLS = ["run_code"]
+BUILTIN_TOOLS = ["run_code", "web_search"]
 
 # Set of all built-in Letta tools
 LETTA_TOOL_SET = set(
@@ -241,3 +241,7 @@ RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE = 5
 
 MAX_FILENAME_LENGTH = 255
 RESERVED_FILENAMES = {"CON", "PRN", "AUX", "NUL", "COM1", "COM2", "LPT1", "LPT2"}
+
+WEB_SEARCH_CLIP_CONTENT = False
+WEB_SEARCH_INCLUDE_SCORE = False
+WEB_SEARCH_SEPARATOR = "\n" + "-" * 40 + "\n"

@@ -15,6 +15,9 @@ class ToolSettings(BaseSettings):
     e2b_api_key: Optional[str] = None
     e2b_sandbox_template_id: Optional[str] = None  # Updated manually
 
+    # Tavily search
+    tavily_api_key: Optional[str] = None
+
     # Local Sandbox configurations
     tool_exec_dir: Optional[str] = None
     tool_sandbox_timeout: float = 180

@@ -9,7 +9,6 @@ from marshmallow import ValidationError
 from orjson import orjson
 from pydantic import Field
 from sqlalchemy.exc import IntegrityError, OperationalError
-from starlette.background import BackgroundTask
 from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent

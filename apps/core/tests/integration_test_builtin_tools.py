@@ -88,10 +88,11 @@ def agent_state(client: Letta) -> AgentState:
 
     send_message_tool = client.tools.list(name="send_message")[0]
     run_code_tool = client.tools.list(name="run_code")[0]
+    web_search_tool = client.tools.list(name="web_search")[0]
     agent_state_instance = client.agents.create(
         name="supervisor",
         include_base_tools=False,
-        tool_ids=[send_message_tool.id, run_code_tool.id],
+        tool_ids=[send_message_tool.id, run_code_tool.id, web_search_tool.id],
         model="openai/gpt-4o",
         embedding="letta/letta-free",
         tags=["supervisor"],
@@ -187,3 +188,28 @@ def test_run_code(
     assert any(expected in ret for ret in returns), (
         f"For language={language!r}, expected to find '{expected}' in tool_return, " f"but got {returns!r}"
     )
+
+
+@pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS, ids=[c.model for c in TESTED_LLM_CONFIGS])
+def test_web_search(
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    user_message = MessageCreate(
+        role="user",
+        content=("Use the web search tool to find the latest news about San Francisco."),
+        otid=USER_MESSAGE_OTID,
+    )
+
+    response = client.agents.messages.create(
+        agent_id=agent_state.id,
+        messages=[user_message],
+    )
+
+    tool_returns = [m for m in response.messages if isinstance(m, ToolReturnMessage)]
+    assert tool_returns, "No ToolReturnMessage found"
+
+    returns = [m.tool_return for m in tool_returns]
+    expected = "RESULT 1:"
+    assert any(expected in ret for ret in returns), f"Expected to find '{expected}' in tool_return, " f"but got {returns!r}"
