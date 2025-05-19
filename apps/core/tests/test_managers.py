@@ -3495,7 +3495,8 @@ def test_redo_concurrency_stale(server: SyncServer, default_user):
 # ======================================================================================================================
 
 
-def test_create_and_upsert_identity(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_create_and_upsert_identity(server: SyncServer, default_user, event_loop):
     identity_create = IdentityCreate(
         identifier_key="1234",
         name="caren",
@@ -3526,7 +3527,7 @@ def test_create_and_upsert_identity(server: SyncServer, default_user):
 
     identity = server.identity_manager.upsert_identity(identity=IdentityUpsert(**identity_create.model_dump()), actor=default_user)
 
-    identity = server.identity_manager.get_identity(identity_id=identity.id, actor=default_user)
+    identity = await server.identity_manager.get_identity_async(identity_id=identity.id, actor=default_user)
     assert len(identity.properties) == 1
     assert identity.properties[0].key == "age"
     assert identity.properties[0].value == 29
@@ -3534,7 +3535,8 @@ def test_create_and_upsert_identity(server: SyncServer, default_user):
     server.identity_manager.delete_identity(identity_id=identity.id, actor=default_user)
 
 
-def test_get_identities(server, default_user):
+@pytest.mark.asyncio
+async def test_get_identities(server, default_user):
     # Create identities to retrieve later
     user = server.identity_manager.create_identity(
         IdentityCreate(name="caren", identifier_key="1234", identity_type=IdentityType.user), actor=default_user
@@ -3544,14 +3546,14 @@ def test_get_identities(server, default_user):
     )
 
     # Retrieve identities by different filters
-    all_identities = server.identity_manager.list_identities(actor=default_user)
+    all_identities = await server.identity_manager.list_identities_async(actor=default_user)
     assert len(all_identities) == 2
 
-    user_identities = server.identity_manager.list_identities(actor=default_user, identity_type=IdentityType.user)
+    user_identities = await server.identity_manager.list_identities_async(actor=default_user, identity_type=IdentityType.user)
     assert len(user_identities) == 1
     assert user_identities[0].name == user.name
 
-    org_identities = server.identity_manager.list_identities(actor=default_user, identity_type=IdentityType.org)
+    org_identities = await server.identity_manager.list_identities_async(actor=default_user, identity_type=IdentityType.org)
     assert len(org_identities) == 1
     assert org_identities[0].name == org.name
 
@@ -3573,7 +3575,7 @@ async def test_update_identity(server: SyncServer, sarah_agent, charles_agent, d
     server.identity_manager.update_identity(identity_id=identity.id, identity=update_data, actor=default_user)
 
     # Retrieve the updated identity
-    updated_identity = server.identity_manager.get_identity(identity_id=identity.id, actor=default_user)
+    updated_identity = await server.identity_manager.get_identity_async(identity_id=identity.id, actor=default_user)
 
     # Assertions to verify the update
     assert updated_identity.agent_ids.sort() == update_data.agent_ids.sort()
@@ -3604,7 +3606,7 @@ async def test_attach_detach_identity_from_agent(server: SyncServer, sarah_agent
     server.identity_manager.delete_identity(identity_id=identity.id, actor=default_user)
 
     # Verify that the identity was deleted
-    identities = server.identity_manager.list_identities(actor=default_user)
+    identities = await server.identity_manager.list_identities_async(actor=default_user)
     assert len(identities) == 0
 
     # Check that block has been detached too
@@ -3692,7 +3694,7 @@ async def test_attach_detach_identity_from_block(server: SyncServer, default_blo
     server.identity_manager.delete_identity(identity_id=identity.id, actor=default_user)
 
     # Verify that the identity was deleted
-    identities = server.identity_manager.list_identities(actor=default_user)
+    identities = await server.identity_manager.list_identities_async(actor=default_user)
     assert len(identities) == 0
 
     # Check that block has been detached too
