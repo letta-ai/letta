@@ -17,7 +17,7 @@ from letta.utils import enforce_types
 class IdentityManager:
 
     @enforce_types
-    def list_identities(
+    async def list_identities_async(
         self,
         name: Optional[str] = None,
         project_id: Optional[str] = None,
@@ -28,7 +28,7 @@ class IdentityManager:
         limit: Optional[int] = 50,
         actor: PydanticUser = None,
     ) -> list[PydanticIdentity]:
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             filters = {"organization_id": actor.organization_id}
             if project_id:
                 filters["project_id"] = project_id
@@ -36,7 +36,7 @@ class IdentityManager:
                 filters["identifier_key"] = identifier_key
             if identity_type:
                 filters["identity_type"] = identity_type
-            identities = IdentityModel.list(
+            identities = await IdentityModel.list_async(
                 db_session=session,
                 query_text=name,
                 before=before,
@@ -47,9 +47,9 @@ class IdentityManager:
             return [identity.to_pydantic() for identity in identities]
 
     @enforce_types
-    def get_identity(self, identity_id: str, actor: PydanticUser) -> PydanticIdentity:
-        with db_registry.session() as session:
-            identity = IdentityModel.read(db_session=session, identifier=identity_id, actor=actor)
+    async def get_identity_async(self, identity_id: str, actor: PydanticUser) -> PydanticIdentity:
+        async with db_registry.async_session() as session:
+            identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
             return identity.to_pydantic()
 
     @enforce_types
@@ -187,15 +187,15 @@ class IdentityManager:
             session.commit()
 
     @enforce_types
-    def size(
+    async def size_async(
         self,
         actor: PydanticUser,
     ) -> int:
         """
         Get the total count of identities for the given user.
         """
-        with db_registry.session() as session:
-            return IdentityModel.size(db_session=session, actor=actor)
+        async with db_registry.async_session() as session:
+            return await IdentityModel.size_async(db_session=session, actor=actor)
 
     def _process_relationship(
         self,

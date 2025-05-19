@@ -13,7 +13,7 @@ router = APIRouter(prefix="/identities", tags=["identities"])
 
 
 @router.get("/", tags=["identities"], response_model=List[Identity], operation_id="list_identities")
-def list_identities(
+async def list_identities(
     name: Optional[str] = Query(None),
     project_id: Optional[str] = Query(None),
     identifier_key: Optional[str] = Query(None),
@@ -28,9 +28,9 @@ def list_identities(
     Get a list of all identities in the database
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-        identities = server.identity_manager.list_identities(
+        identities = await server.identity_manager.list_identities_async(
             name=name,
             project_id=project_id,
             identifier_key=identifier_key,
@@ -50,7 +50,7 @@ def list_identities(
 
 
 @router.get("/count", tags=["identities"], response_model=int, operation_id="count_identities")
-def count_identities(
+async def count_identities(
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
@@ -58,7 +58,8 @@ def count_identities(
     Get count of all identities for a user
     """
     try:
-        return server.identity_manager.size(actor=server.user_manager.get_user_or_default(user_id=actor_id))
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        return await server.identity_manager.size_async(actor=actor)
     except NoResultFound:
         return 0
     except HTTPException:
@@ -68,14 +69,14 @@ def count_identities(
 
 
 @router.get("/{identity_id}", tags=["identities"], response_model=Identity, operation_id="retrieve_identity")
-def retrieve_identity(
+async def retrieve_identity(
     identity_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
-        return server.identity_manager.get_identity(identity_id=identity_id, actor=actor)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        return await server.identity_manager.get_identity_async(identity_id=identity_id, actor=actor)
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
 
