@@ -81,7 +81,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                     }
                 )
 
-        except Exception as exc:
+        except Exception:
             logger.exception("unhandled_streaming_error")
             more_body = False
             error_resp = {"error": {"message": "Internal Server Error"}}

@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import JSON, ForeignKeyConstraint, Index, String
+from sqlalchemy import JSON, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import OrganizationMixin

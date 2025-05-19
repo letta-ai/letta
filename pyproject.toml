@@ -91,6 +91,7 @@ apscheduler = "^3.11.0"
 aiomultiprocess = "^0.9.1"
 matplotlib = "^3.10.1"
 asyncpg = "^0.30.0"
+tavily-python = "^0.7.2"
 
 
 [tool.poetry.extras]
