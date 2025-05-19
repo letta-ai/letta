@@ -19,6 +19,7 @@ MCP_TOOL_TAG_NAME_PREFIX = "mcp"  # full format, mcp:server_name
 LETTA_CORE_TOOL_MODULE_NAME = "letta.functions.function_sets.base"
 LETTA_MULTI_AGENT_TOOL_MODULE_NAME = "letta.functions.function_sets.multi_agent"
 LETTA_VOICE_TOOL_MODULE_NAME = "letta.functions.function_sets.voice"
+LETTA_BUILTIN_TOOL_MODULE_NAME = "letta.functions.function_sets.builtin"
 
 
 # String in the error message for when the context window is too large
@@ -83,9 +84,19 @@ BASE_VOICE_SLEEPTIME_TOOLS = [
 ]
 # Multi agent tools
 MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_tags", "send_message_to_agent_async"]
+
+# Built in tools
+BUILTIN_TOOLS = ["run_code"]
+
 # Set of all built-in Letta tools
 LETTA_TOOL_SET = set(
-    BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS + BASE_SLEEPTIME_TOOLS + BASE_VOICE_SLEEPTIME_TOOLS + BASE_VOICE_SLEEPTIME_CHAT_TOOLS
+    BASE_TOOLS
+    + BASE_MEMORY_TOOLS
+    + MULTI_AGENT_TOOLS
+    + BASE_SLEEPTIME_TOOLS
+    + BASE_VOICE_SLEEPTIME_TOOLS
+    + BASE_VOICE_SLEEPTIME_CHAT_TOOLS
+    + BUILTIN_TOOLS
 )
 
 # The name of the tool used to send message to the user

@@ -11,6 +11,7 @@ from letta.schemas.user import User
 from letta.services.tool_executor.tool_executor import (
     ExternalComposioToolExecutor,
     ExternalMCPToolExecutor,
+    LettaBuiltinToolExecutor,
     LettaCoreToolExecutor,
     LettaMultiAgentToolExecutor,
     SandboxToolExecutor,
@@ -28,6 +29,7 @@ class ToolExecutorFactory:
         ToolType.LETTA_MEMORY_CORE: LettaCoreToolExecutor,
         ToolType.LETTA_SLEEPTIME_CORE: LettaCoreToolExecutor,
         ToolType.LETTA_MULTI_AGENT_CORE: LettaMultiAgentToolExecutor,
+        ToolType.LETTA_BUILTIN: LettaBuiltinToolExecutor,
         ToolType.EXTERNAL_COMPOSIO: ExternalComposioToolExecutor,
         ToolType.EXTERNAL_MCP: ExternalMCPToolExecutor,
     }
@@ -100,7 +102,7 @@ class ToolExecutionManager:
         try:
             executor = ToolExecutorFactory.get_executor(tool.tool_type)
             # TODO: Extend this async model to composio
-            if isinstance(executor, (SandboxToolExecutor, ExternalComposioToolExecutor)):
+            if isinstance(executor, (SandboxToolExecutor, ExternalComposioToolExecutor, LettaBuiltinToolExecutor)):
                 result = await executor.execute(function_name, function_args, self.agent_state, tool, self.actor)
             else:
                 result = executor.execute(function_name, function_args, self.agent_state, tool, self.actor)

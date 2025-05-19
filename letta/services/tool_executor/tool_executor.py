@@ -1,7 +1,7 @@
 import math
 import traceback
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 from letta.constants import (
     COMPOSIO_ENTITY_ENV_VAR_KEY,
@@ -674,3 +674,48 @@ class SandboxToolExecutor(ToolExecutor):
             func_return=error_message,
             stderr=[stderr],
         )
+
+
+class LettaBuiltinToolExecutor(ToolExecutor):
+    """Executor for built in Letta tools."""
+
+    async def execute(
+        self,
+        function_name: str,
+        function_args: dict,
+        agent_state: AgentState,
+        tool: Tool,
+        actor: User,
+        sandbox_config: Optional[SandboxConfig] = None,
+        sandbox_env_vars: Optional[Dict[str, Any]] = None,
+    ) -> ToolExecutionResult:
+        function_map = {
+            "run_code": self.run_code,
+        }
+
+        if function_name not in function_map:
+            raise ValueError(f"Unknown function: {function_name}")
+
+        # Execute the appropriate function
+        function_args_copy = function_args.copy()  # Make a copy to avoid modifying the original
+        function_response = await function_map[function_name](**function_args_copy)
+
+        return ToolExecutionResult(
+            status="success",
+            func_return=function_response,
+        )
+
+    async def run_code(self, code: str, language: Literal["python", "js", "ts", "r", "java"]) -> str:
+        from e2b_code_interpreter import AsyncSandbox
+
+        if tool_settings.e2b_api_key is None:
+            raise ValueError("E2B_API_KEY is not set")
+
+        sbx = await AsyncSandbox.create(api_key=tool_settings.e2b_api_key)
+        params = {"code": code}
+        if language != "python":
+            # Leave empty for python
+            params["language"] = language
+
+        res = await sbx.run_code(**params)
+        return str(res)

@@ -9,6 +9,7 @@ from letta.constants import (
     BASE_TOOLS,
     BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
     BASE_VOICE_SLEEPTIME_TOOLS,
+    BUILTIN_TOOLS,
     LETTA_TOOL_SET,
     MCP_TOOL_TAG_NAME_PREFIX,
     MULTI_AGENT_TOOLS,
@@ -307,7 +308,7 @@ class ToolManager:
     def upsert_base_tools(self, actor: PydanticUser) -> List[PydanticTool]:
         """Add default tools in base.py and multi_agent.py"""
         functions_to_schema = {}
-        module_names = ["base", "multi_agent", "voice"]
+        module_names = ["base", "multi_agent", "voice", "builtin"]
 
         for module_name in module_names:
             full_module_name = f"letta.functions.function_sets.{module_name}"
@@ -343,67 +344,8 @@ class ToolManager:
                 elif name in BASE_VOICE_SLEEPTIME_TOOLS or name in BASE_VOICE_SLEEPTIME_CHAT_TOOLS:
                     tool_type = ToolType.LETTA_VOICE_SLEEPTIME_CORE
                     tags = [tool_type.value]
-                else:
-                    raise ValueError(
-                        f"Tool name {name} is not in the list of base tool names: {BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS + BASE_SLEEPTIME_TOOLS + BASE_VOICE_SLEEPTIME_TOOLS + BASE_VOICE_SLEEPTIME_CHAT_TOOLS}"
-                    )
-
-                # create to tool
-                tools.append(
-                    self.create_or_update_tool(
-                        PydanticTool(
-                            name=name,
-                            tags=tags,
-                            source_type="python",
-                            tool_type=tool_type,
-                            return_char_limit=BASE_FUNCTION_RETURN_CHAR_LIMIT,
-                        ),
-                        actor=actor,
-                    )
-                )
-
-        # TODO: Delete any base tools that are stale
-        return tools
-
-    @enforce_types
-    async def upsert_base_tools_async(self, actor: PydanticUser) -> List[PydanticTool]:
-        """Add default tools in base.py and multi_agent.py"""
-        functions_to_schema = {}
-        module_names = ["base", "multi_agent", "voice"]
-
-        for module_name in module_names:
-            full_module_name = f"letta.functions.function_sets.{module_name}"
-            try:
-                module = importlib.import_module(full_module_name)
-            except Exception as e:
-                # Handle other general exceptions
-                raise e
-
-            try:
-                # Load the function set
-                functions_to_schema.update(load_function_set(module))
-            except ValueError as e:
-                err = f"Error loading function set '{module_name}': {e}"
-                warnings.warn(err)
-
-        # create tool in db
-        tools = []
-        for name, schema in functions_to_schema.items():
-            if name in LETTA_TOOL_SET:
-                if name in BASE_TOOLS:
-                    tool_type = ToolType.LETTA_CORE
-                    tags = [tool_type.value]
-                elif name in BASE_MEMORY_TOOLS:
-                    tool_type = ToolType.LETTA_MEMORY_CORE
-                    tags = [tool_type.value]
-                elif name in MULTI_AGENT_TOOLS:
-                    tool_type = ToolType.LETTA_MULTI_AGENT_CORE
-                    tags = [tool_type.value]
-                elif name in BASE_SLEEPTIME_TOOLS:
-                    tool_type = ToolType.LETTA_SLEEPTIME_CORE
-                    tags = [tool_type.value]
-                elif name in BASE_VOICE_SLEEPTIME_TOOLS or name in BASE_VOICE_SLEEPTIME_CHAT_TOOLS:
-                    tool_type = ToolType.LETTA_VOICE_SLEEPTIME_CORE
+                elif name in BUILTIN_TOOLS:
+                    tool_type = ToolType.LETTA_BUILTIN
                     tags = [tool_type.value]
                 else:
                     raise ValueError(
