@@ -21,6 +21,7 @@ import { eq } from 'drizzle-orm';
 import { generateServerSideAPIKey } from '../generateServerSideAPIKey/generateServerSideAPIKey';
 import { createOrganization } from '../createOrganization/createOrganization';
 import { getDefaultProject } from '@letta-cloud/utils-server';
+import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 
 export const ERRORS = {
   EMAIL_ALREADY_EXISTS: 'email-already-exists',
@@ -136,10 +137,12 @@ async function createUserAndOrganization(
     isNewOrganization = true;
     const organizationName = `${userData.name}'s organization`;
 
+    const shouldEnableCloud = await getSingleFlag('GENERAL_ACCESS', 'default');
+
     const createdOrg = await createOrganization({
       name: organizationName,
       email: userData.email,
-      enableCloud: options.enableCloud,
+      enableCloud: options.enableCloud || shouldEnableCloud,
     });
 
     lettaOrganizationId = createdOrg.lettaOrganizationId;

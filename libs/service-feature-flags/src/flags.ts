@@ -71,6 +71,11 @@ export const featureFlags = {
     expiryDate: '2025-07-01',
     flagValue: z.boolean(),
   },
+  GENERAL_ACCESS: {
+    description: 'General access',
+    expiryDate: '2025-07-01',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;
