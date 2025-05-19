@@ -186,6 +186,16 @@ class ToolManager:
             return None
 
     @enforce_types
+    async def get_tool_id_by_name_async(self, tool_name: str, actor: PydanticUser) -> Optional[str]:
+        """Retrieve a tool by its name and a user. We derive the organization from the user, and retrieve that tool."""
+        try:
+            async with db_registry.async_session() as session:
+                tool = await ToolModel.read_async(db_session=session, name=tool_name, actor=actor)
+                return tool.id
+        except NoResultFound:
+            return None
+
+    @enforce_types
     async def list_tools_async(self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticTool]:
         """List all tools with optional pagination."""
         async with db_registry.async_session() as session:
@@ -280,7 +290,8 @@ class ToolManager:
                 tool.tool_type = updated_tool_type
 
             # Save the updated tool to the database
-            return await tool.update_async(db_session=session, actor=actor).to_pydantic()
+            tool = await tool.update_async(db_session=session, actor=actor)
+            return tool.to_pydantic()
 
     @enforce_types
     def delete_tool_by_id(self, tool_id: str, actor: PydanticUser) -> None:
