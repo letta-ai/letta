@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from fastapi import HTTPException
+from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Session
 
@@ -53,11 +54,11 @@ class IdentityManager:
             return identity.to_pydantic()
 
     @enforce_types
-    def create_identity(self, identity: IdentityCreate, actor: PydanticUser) -> PydanticIdentity:
-        with db_registry.session() as session:
+    async def create_identity_async(self, identity: IdentityCreate, actor: PydanticUser) -> PydanticIdentity:
+        async with db_registry.async_session() as session:
             new_identity = IdentityModel(**identity.model_dump(exclude={"agent_ids", "block_ids"}, exclude_unset=True))
             new_identity.organization_id = actor.organization_id
-            self._process_relationship(
+            await self._process_relationship_async(
                 session=session,
                 identity=new_identity,
                 relationship_name="agents",
@@ -65,7 +66,7 @@ class IdentityManager:
                 item_ids=identity.agent_ids,
                 allow_partial=False,
             )
-            self._process_relationship(
+            await self._process_relationship_async(
                 session=session,
                 identity=new_identity,
                 relationship_name="blocks",
@@ -73,13 +74,13 @@ class IdentityManager:
                 item_ids=identity.block_ids,
                 allow_partial=False,
             )
-            new_identity.create(session, actor=actor)
+            await new_identity.create_async(session, actor=actor)
             return new_identity.to_pydantic()
 
     @enforce_types
-    def upsert_identity(self, identity: IdentityUpsert, actor: PydanticUser) -> PydanticIdentity:
-        with db_registry.session() as session:
-            existing_identity = IdentityModel.read(
+    async def upsert_identity_async(self, identity: IdentityUpsert, actor: PydanticUser) -> PydanticIdentity:
+        async with db_registry.async_session() as session:
+            existing_identity = await IdentityModel.read_async(
                 db_session=session,
                 identifier_key=identity.identifier_key,
                 project_id=identity.project_id,
@@ -88,7 +89,7 @@ class IdentityManager:
             )
 
         if existing_identity is None:
-            return self.create_identity(identity=IdentityCreate(**identity.model_dump()), actor=actor)
+            return await self.create_identity_async(identity=IdentityCreate(**identity.model_dump()), actor=actor)
         else:
             identity_update = IdentityUpdate(
                 name=identity.name,
@@ -97,25 +98,27 @@ class IdentityManager:
                 agent_ids=identity.agent_ids,
                 properties=identity.properties,
             )
-            return self._update_identity(
+            return await self._update_identity_async(
                 session=session, existing_identity=existing_identity, identity=identity_update, actor=actor, replace=True
             )
 
     @enforce_types
-    def update_identity(self, identity_id: str, identity: IdentityUpdate, actor: PydanticUser, replace: bool = False) -> PydanticIdentity:
-        with db_registry.session() as session:
+    async def update_identity_async(
+        self, identity_id: str, identity: IdentityUpdate, actor: PydanticUser, replace: bool = False
+    ) -> PydanticIdentity:
+        async with db_registry.async_session() as session:
             try:
-                existing_identity = IdentityModel.read(db_session=session, identifier=identity_id, actor=actor)
+                existing_identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
             except NoResultFound:
                 raise HTTPException(status_code=404, detail="Identity not found")
             if existing_identity.organization_id != actor.organization_id:
                 raise HTTPException(status_code=403, detail="Forbidden")
 
-            return self._update_identity(
+            return await self._update_identity_async(
                 session=session, existing_identity=existing_identity, identity=identity, actor=actor, replace=replace
             )
 
-    def _update_identity(
+    async def _update_identity_async(
         self,
         session: Session,
         existing_identity: IdentityModel,
@@ -139,7 +142,7 @@ class IdentityManager:
                 existing_identity.properties = list(new_properties.values())
 
         if identity.agent_ids is not None:
-            self._process_relationship(
+            await self._process_relationship_async(
                 session=session,
                 identity=existing_identity,
                 relationship_name="agents",
@@ -149,7 +152,7 @@ class IdentityManager:
                 replace=replace,
             )
         if identity.block_ids is not None:
-            self._process_relationship(
+            await self._process_relationship_async(
                 session=session,
                 identity=existing_identity,
                 relationship_name="blocks",
@@ -158,16 +161,18 @@ class IdentityManager:
                 allow_partial=False,
                 replace=replace,
             )
-        existing_identity.update(session, actor=actor)
+        await existing_identity.update_async(session, actor=actor)
         return existing_identity.to_pydantic()
 
     @enforce_types
-    def upsert_identity_properties(self, identity_id: str, properties: List[IdentityProperty], actor: PydanticUser) -> PydanticIdentity:
-        with db_registry.session() as session:
-            existing_identity = IdentityModel.read(db_session=session, identifier=identity_id, actor=actor)
+    async def upsert_identity_properties_async(
+        self, identity_id: str, properties: List[IdentityProperty], actor: PydanticUser
+    ) -> PydanticIdentity:
+        async with db_registry.async_session() as session:
+            existing_identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
             if existing_identity is None:
                 raise HTTPException(status_code=404, detail="Identity not found")
-            return self._update_identity(
+            return await self._update_identity_async(
                 session=session,
                 existing_identity=existing_identity,
                 identity=IdentityUpdate(properties=properties),
@@ -176,15 +181,15 @@ class IdentityManager:
             )
 
     @enforce_types
-    def delete_identity(self, identity_id: str, actor: PydanticUser) -> None:
-        with db_registry.session() as session:
-            identity = IdentityModel.read(db_session=session, identifier=identity_id)
+    async def delete_identity_async(self, identity_id: str, actor: PydanticUser) -> None:
+        async with db_registry.async_session() as session:
+            identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
             if identity is None:
                 raise HTTPException(status_code=404, detail="Identity not found")
             if identity.organization_id != actor.organization_id:
                 raise HTTPException(status_code=403, detail="Forbidden")
-            session.delete(identity)
-            session.commit()
+            await session.delete(identity)
+            await session.commit()
 
     @enforce_types
     async def size_async(
@@ -197,7 +202,7 @@ class IdentityManager:
         async with db_registry.async_session() as session:
             return await IdentityModel.size_async(db_session=session, actor=actor)
 
-    def _process_relationship(
+    async def _process_relationship_async(
         self,
         session: Session,
         identity: PydanticIdentity,
@@ -214,7 +219,7 @@ class IdentityManager:
             return
 
         # Retrieve models for the provided IDs
-        found_items = session.query(model_class).filter(model_class.id.in_(item_ids)).all()
+        found_items = (await session.execute(select(model_class).where(model_class.id.in_(item_ids)))).scalars().all()
 
         # Validate all items are found if allow_partial is False
         if not allow_partial and len(found_items) != len(item_ids):
