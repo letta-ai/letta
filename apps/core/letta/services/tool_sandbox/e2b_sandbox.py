@@ -86,7 +86,7 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
 
         log_event(
             "e2b_execution_started",
-            {"tool": self.tool_name, "sandbox_id": e2b_sandbox.sandbox_id, "code": code[:200], "env_vars": env_vars},
+            {"tool": self.tool_name, "sandbox_id": e2b_sandbox.sandbox_id, "code": code, "env_vars": env_vars},
         )
         execution = await e2b_sandbox.run_code(code, envs=env_vars)
         if execution.results:
@@ -153,7 +153,7 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
             "e2b_sandbox_create_started",
             {
                 "sandbox_fingerprint": state_hash,
-                "has_template": bool(e2b_config.template),
+                "e2b_config": e2b_config.model_dump(),
             },
         )
 
