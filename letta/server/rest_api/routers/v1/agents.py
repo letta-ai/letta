@@ -484,7 +484,7 @@ def detach_block(
 
 
 @router.get("/{agent_id}/archival-memory", response_model=List[Passage], operation_id="list_passages")
-def list_passages(
+async def list_passages(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     after: Optional[str] = Query(None, description="Unique ID of the memory to start the query range at."),
@@ -499,11 +499,11 @@ def list_passages(
     """
     Retrieve the memories in an agent's archival memory store (paginated query).
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    return server.get_agent_archival(
-        user_id=actor.id,
+    return await server.get_agent_archival_async(
         agent_id=agent_id,
+        actor=actor,
         after=after,
         before=before,
         query_text=search,
