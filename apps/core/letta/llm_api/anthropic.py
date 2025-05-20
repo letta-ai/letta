@@ -134,13 +134,13 @@ def anthropic_check_valid_api_key(api_key: Union[str, None]) -> None:
 
 
 def antropic_get_model_context_window(url: str, api_key: Union[str, None], model: str) -> int:
-    for model_dict in anthropic_get_model_list(url=url, api_key=api_key):
+    for model_dict in anthropic_get_model_list(api_key=api_key):
         if model_dict["name"] == model:
             return model_dict["context_window"]
     raise ValueError(f"Can't find model '{model}' in Anthropic model list")
 
 
-def anthropic_get_model_list(url: str, api_key: Union[str, None]) -> dict:
+def anthropic_get_model_list(api_key: Optional[str]) -> dict:
     """https://docs.anthropic.com/claude/docs/models-overview"""
 
     # NOTE: currently there is no GET /models, so we need to hardcode
@@ -154,6 +154,25 @@ def anthropic_get_model_list(url: str, api_key: Union[str, None]) -> dict:
         raise ValueError("No API key provided")
 
     models = anthropic_client.models.list()
+    models_json = models.model_dump()
+    assert "data" in models_json, f"Anthropic model query response missing 'data' field: {models_json}"
+    return models_json["data"]
+
+
+async def anthropic_get_model_list_async(api_key: Optional[str]) -> dict:
+    """https://docs.anthropic.com/claude/docs/models-overview"""
+
+    # NOTE: currently there is no GET /models, so we need to hardcode
+    # return MODEL_LIST
+
+    if api_key:
+        anthropic_client = anthropic.AsyncAnthropic(api_key=api_key)
+    elif model_settings.anthropic_api_key:
+        anthropic_client = anthropic.AsyncAnthropic()
+    else:
+        raise ValueError("No API key provided")
+
+    models = await anthropic_client.models.list()
     models_json = models.model_dump()
     assert "data" in models_json, f"Anthropic model query response missing 'data' field: {models_json}"
     return models_json["data"]

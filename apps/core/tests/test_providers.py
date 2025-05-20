@@ -61,6 +61,17 @@ def test_anthropic():
     assert models[0].handle == f"{provider.name}/{models[0].model}"
 
 
+@pytest.mark.asyncio
+async def test_anthropic_async():
+    provider = AnthropicProvider(
+        name="anthropic",
+        api_key=model_settings.anthropic_api_key,
+    )
+    models = await provider.list_llm_models_async()
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
+
+
 def test_groq():
     provider = GroqProvider(
         name="groq",

@@ -733,26 +733,19 @@ class AnthropicProvider(Provider):
         anthropic_check_valid_api_key(self.api_key)
 
     def list_llm_models(self) -> List[LLMConfig]:
-        from letta.llm_api.anthropic import MODEL_LIST, anthropic_get_model_list
+        from letta.llm_api.anthropic import anthropic_get_model_list
 
-        models = anthropic_get_model_list(self.base_url, api_key=self.api_key)
+        models = anthropic_get_model_list(api_key=self.api_key)
+        return self._list_llm_models(models)
 
-        """
-        Example response:
-        {
-          "data": [
-            {
-              "type": "model",
-              "id": "claude-3-5-sonnet-20241022",
-              "display_name": "Claude 3.5 Sonnet (New)",
-              "created_at": "2024-10-22T00:00:00Z"
-            }
-          ],
-          "has_more": true,
-          "first_id": "<string>",
-          "last_id": "<string>"
-        }
-        """
+    async def list_llm_models_async(self) -> List[LLMConfig]:
+        from letta.llm_api.anthropic import anthropic_get_model_list_async
+
+        models = await anthropic_get_model_list_async(api_key=self.api_key)
+        return self._list_llm_models(models)
+
+    def _list_llm_models(self, models) -> List[LLMConfig]:
+        from letta.llm_api.anthropic import MODEL_LIST
 
         configs = []
         for model in models:
@@ -809,9 +802,6 @@ class AnthropicProvider(Provider):
                 )
             )
         return configs
-
-    def list_embedding_models(self) -> List[EmbeddingConfig]:
-        return []
 
 
 class MistralProvider(Provider):
