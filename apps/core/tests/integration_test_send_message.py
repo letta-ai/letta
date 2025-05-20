@@ -171,6 +171,10 @@ def assert_greeting_with_assistant_message_response(
 
     if streaming:
         assert isinstance(messages[index], LettaUsageStatistics)
+        assert messages[index].prompt_tokens > 0
+        assert messages[index].completion_tokens > 0
+        assert messages[index].total_tokens > 0
+        assert messages[index].step_count > 0
 
 
 def assert_greeting_without_assistant_message_response(
