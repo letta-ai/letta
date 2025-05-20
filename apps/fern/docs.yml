@@ -45,6 +45,10 @@ tabs:
   showcase:
     display-name: Examples
     skip-slug: true
+  leaderboard:
+    display-name: Leaderboards
+    skip-slug: true
+
 
 landing-page:
   page: home
@@ -394,6 +398,28 @@ navigation:
         contents:
           - page: Overview
             path: pages/cookbooks.mdx
+
+  - tab: leaderboard
+    layout:
+      - link: Chat on Discord
+        icon: fa-brands fa-discord
+        href: https://discord.gg/letta
+      # - link: Developer Forum
+        # icon: fa-sharp fa-light fa-comments
+        # href: https://forum.letta.com
+      - link: DeepLearning.AI Course
+        icon: fa-sharp fa-light fa-building-columns
+        href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
+      - section: Letta Leaderboards
+        contents:
+          - page: Memory Leaderboard
+            path: pages/leaderboard/overview.mdx
+          - page: Benchmark Information
+            path: pages/leaderboard/benchmarks.mdx
+          - page: Contributing Results
+            path: pages/leaderboard/contributing.mdx
+
+
   # - tab: cookbooks
   #   layout:
   #     - section: Cookbooks

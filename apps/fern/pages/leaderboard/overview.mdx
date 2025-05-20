@@ -1,0 +1,35 @@
+---
+title: Letta Leaderboards
+subtitle: Understand which models to use when building your agents
+# layout: page
+# hide-feedback: true
+# no-image-zoom: true
+slug: leaderboard
+---
+
+<Note>
+The Letta Leaderboards are [open source](https://github.com/letta-ai/letta-leaderboard) and we actively encourage contributions! To learn how to add additional results or benchmarking tasks, read our [contributor guide](/leaderboard/contributing).
+</Note>
+
+The Letta Leaderboards help developers select which language models to use in the Letta framework by reporting the performance of popular models on a series of tasks.
+
+Letta is designed for building [stateful agents](/guides/agents/overview) - agents that are long-running and can automatically manage long-term memory to learn and adapt over time.
+To implement intelligent memory management, agents in Letta rely heavily on **tool (function) calling**, so models that excel at tool use tend to do well in Letta. Conversely, models that struggle to call tools properly often perform poorly when used to drive Letta agents.
+
+
+## Letta Memory Leaderboard
+
+The memory benchmark tests the ability of a model to understand a memory hierarchy and manage its own memory. Models that are strong at function calling and aware of their limitations (understanding in-context vs out-of-context data) typically excel here.
+
+**Overall Score** refers to the combined core memory + archival memory score. **Cost** refers to (approximate) cost in USD to run the benchmark. Open weights models prefixed with `together` were run on [Together's API](/guides/server/providers/together).
+You can read more about how the memory benchmark is constructed [here](/leaderboard/benchmarks).
+
+<iframe
+  id="leaderboard-frame"
+  src="./leaderboard_overall_cost_cap.html"
+  width="100%"
+  height="1500"
+  scrolling="no"
+  style="border:0;border-radius:8px;overflow:hidden"
+  onload="this.style.height=this.contentWindow.document.documentElement.scrollHeight + 'px';"
+/>
