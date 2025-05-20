@@ -12,7 +12,6 @@ import {
   HStack,
   PersonIcon,
   RawToggleGroup,
-  RawSwitch,
   SystemIcon,
   toast,
   Typography,
@@ -716,26 +715,6 @@ function AgentSimulatorOptionsMenu() {
   );
 }
 
-interface BetaToggleProps {
-  experimental: boolean;
-  setExperimental: Dispatch<SetStateAction<boolean>>;
-}
-
-function BetaToggle({ experimental, setExperimental }: BetaToggleProps) {
-  return (
-    <HStack paddingTop="xxsmall" justify="spaceBetween">
-      <RawSwitch
-        checked={experimental}
-        onCheckedChange={setExperimental}
-        aria-label="Toggle experimental async loop"
-        label=""
-        hideLabel
-      />
-      <Typography variant="body2">Beta</Typography>
-    </HStack>
-  );
-}
-
 interface AgentSimulatorOnboardingProps {
   children: React.ReactNode;
 }
@@ -839,7 +818,6 @@ export function AgentSimulator() {
   const { data: experimentalAsyncLoopEnabled } = useFeatureFlag(
     'EXPERIMENTAL_ASYNC_LOOP',
   );
-  const [experimental, setExperimental] = useState(true);
 
   const billingTier = useBillingTier();
 
@@ -939,7 +917,7 @@ export function AgentSimulator() {
     onFailedToSendMessage: (message) => {
       ref.current?.setChatMessage(message);
     },
-    experimental: experimentalAsyncLoopEnabled && experimental,
+    experimental: experimentalAsyncLoopEnabled,
   });
 
   const hasVariableIssue = useMemo(() => {
@@ -1104,12 +1082,6 @@ export function AgentSimulator() {
                     />
                   }
                 />
-                {experimentalAsyncLoopEnabled && (
-                  <BetaToggle
-                    experimental={experimental}
-                    setExperimental={setExperimental}
-                  />
-                )}
               </HStack>
             </VStack>
           </PanelBar>
