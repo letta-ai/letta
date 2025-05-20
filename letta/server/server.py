@@ -1615,6 +1615,7 @@ class SyncServer(Server):
                                     server_name=server_name,
                                     command=server_params_raw["command"],
                                     args=server_params_raw.get("args", []),
+                                    env=server_params_raw.get("env", {})
                                 )
                                 mcp_server_list[server_name] = server_params
                             except Exception as e:
