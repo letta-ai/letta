@@ -936,7 +936,7 @@ def test_composio_client_simple(server):
     assert len(actions) > 0
 
 
-def test_memory_rebuild_count(server, user, disable_e2b_api_key, base_tools, base_memory_tools):
+async def test_memory_rebuild_count(server, user, disable_e2b_api_key, base_tools, base_memory_tools):
     """Test that the memory rebuild is generating the correct number of role=system messages"""
     actor = user
     # create agent

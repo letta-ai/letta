@@ -457,7 +457,7 @@ class VoiceAgent(BaseAgent):
         keyword_results = {}
         if convo_keyword_queries:
             for keyword in convo_keyword_queries:
-                messages = self.message_manager.list_messages_for_agent(
+                messages = await self.message_manager.list_messages_for_agent_async(
                     agent_id=self.agent_id,
                     actor=self.actor,
                     query_text=keyword,
