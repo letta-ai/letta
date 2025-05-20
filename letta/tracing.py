@@ -9,7 +9,8 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter as GRPCOTLPSpanExporter
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter as HTTPOTLPSpanExporter
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
@@ -123,7 +124,10 @@ def setup_tracing(
         )
     )
     if endpoint:
-        provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint)))
+        if endpoint.startswith("http"):
+            provider.add_span_processor(BatchSpanProcessor(HTTPOTLPSpanExporter(endpoint=endpoint)))
+        else:
+            provider.add_span_processor(BatchSpanProcessor(GRPCOTLPSpanExporter(endpoint=endpoint)))
         _is_tracing_initialized = True
         trace.set_tracer_provider(provider)
 
