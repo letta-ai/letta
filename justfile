@@ -170,7 +170,8 @@ describe-web:
         --set secrets.CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT} \
         --set secrets.CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
         --set secrets.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
-        --set secrets.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
+        --set secrets.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} \
+        --set secrets.LETTA_USE_EXPERIMENTAL=${LETTA_USE_EXPERIMENTAL}
 
 # Deploy Grafana
 deploy-grafana:
