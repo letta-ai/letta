@@ -650,6 +650,7 @@ class LettaAgent(BaseAgent):
         results = await asyncio.gather(*tasks)
         return results
 
+    @trace_method
     async def _load_last_function_response_async(self):
         """Load the last function response from message history"""
         in_context_messages = await self.agent_manager.get_in_context_messages_async(agent_id=self.agent_id, actor=self.actor)

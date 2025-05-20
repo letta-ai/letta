@@ -28,6 +28,7 @@ from letta.services.passage_manager import PassageManager
 from letta.services.tool_sandbox.e2b_sandbox import AsyncToolSandboxE2B
 from letta.services.tool_sandbox.local_sandbox import AsyncToolSandboxLocal
 from letta.settings import tool_settings
+from letta.tracing import trace_method
 from letta.utils import get_friendly_error_msg
 
 
@@ -508,6 +509,7 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
 class ExternalComposioToolExecutor(ToolExecutor):
     """Executor for external Composio tools."""
 
+    @trace_method
     async def execute(
         self,
         function_name: str,
@@ -599,6 +601,7 @@ class ExternalMCPToolExecutor(ToolExecutor):
 class SandboxToolExecutor(ToolExecutor):
     """Executor for sandboxed tools."""
 
+    @trace_method
     async def execute(
         self,
         function_name: str,
@@ -683,6 +686,7 @@ class SandboxToolExecutor(ToolExecutor):
 class LettaBuiltinToolExecutor(ToolExecutor):
     """Executor for built in Letta tools."""
 
+    @trace_method
     async def execute(
         self,
         function_name: str,
