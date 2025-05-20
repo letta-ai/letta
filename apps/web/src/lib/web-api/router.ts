@@ -27,6 +27,7 @@ import { cloudAccessCodeRouter } from '$web/web-api/cloud-access-code/cloudAcces
 import { composioRouter } from '$web/web-api/composio/composioRouter';
 import { transactionsRoutes } from '$web/web-api/transactions/transactionsRoutes';
 import { tracesRoutes } from '$web/web-api/traces/tracesRouter';
+import { adminContentViolationsRouter } from '$web/web-api/admin/contentViolations/adminContentViolationsRouter';
 
 export const router = {
   user: userRouter,
@@ -59,6 +60,7 @@ export const router = {
     flushLayouts: flushLayoutsRouter,
     whitelistedEmails: adminWhitelistedEmailsRouter,
     organizations: adminOrganizationsRouter,
+    contentViolations: adminContentViolationsRouter,
   },
 };
 

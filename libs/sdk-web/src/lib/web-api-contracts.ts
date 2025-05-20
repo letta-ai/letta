@@ -81,6 +81,10 @@ import {
   transactionsQueryKeys,
 } from './public/transactionsContracts';
 import { tracesContracts, tracesQueryKeys } from './public/tracesContracts';
+import {
+  adminContentViolationQueryKeys,
+  adminContentViolationsContracts,
+} from './admin/adminContentViolationsContracts';
 
 export const contracts = {
   user: userContract,
@@ -113,6 +117,7 @@ export const contracts = {
     flushLayouts: flushLayoutsContract,
     whitelistedEmails: adminWhitelistedEmailsContract,
     organizations: adminOrganizationsContracts,
+    contentViolations: adminContentViolationsContracts,
   },
 };
 
@@ -142,6 +147,7 @@ export const queryClientKeys = {
     models: adminModelsQueryClientKeys,
     whitelistedEmails: adminWhitelistedEmailsQueryKeys,
     organizations: adminOrganizationsQueryClientKeys,
+    contentViolations: adminContentViolationQueryKeys,
   },
 };
 
@@ -170,3 +176,4 @@ export * from './public/launchLinkContracts';
 export * from './public/modelsContracts';
 export * from './public/composioContracts';
 export * from './public/transactionsContracts';
+export * from './admin/adminContentViolationsContracts';

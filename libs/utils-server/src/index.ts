@@ -25,3 +25,4 @@ export * from './lib/shouldItemRateLimit/shouldItemRateLimit';
 export * from './lib/verifyUpdateAgent/verifyUpdateAgent';
 export * from './lib/getTemporalConnectionConfig/getTemporalConnectionConfig';
 export * from './lib/checkIfUserIsAllVerified/checkIfUserIsAllVerified';
+export * from './lib/contentModerationCheck/contentModerationCheck';

@@ -21,6 +21,7 @@ import type {
 } from '@letta-cloud/types';
 import type { ApplicationServices } from '@letta-cloud/service-rbac';
 import type { UserPresetRolesType } from '@letta-cloud/service-rbac';
+import { ContentModerationResponse } from '@letta-cloud/utils-types';
 
 export const emailWhitelist = pgTable('email_whitelist', {
   id: text('id')
@@ -1267,6 +1268,32 @@ export const clientSideAccessTokensRelations = relations(
   ({ one }) => ({
     organization: one(organizations, {
       fields: [clientSideAccessTokens.organizationId],
+      references: [organizations.id],
+    }),
+  }),
+);
+
+export const contentModerationViolations = pgTable(
+  'content_moderation_violations',
+  {
+    id: text('id')
+      .notNull()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    reasons: json('violation_reasons').$type<{ data: string[] }>(),
+    content: text('content').notNull(),
+  },
+);
+
+export const contentModerationViolationsRelations = relations(
+  contentModerationViolations,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [contentModerationViolations.organizationId],
       references: [organizations.id],
     }),
   }),

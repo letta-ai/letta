@@ -21,6 +21,7 @@ import { Readable } from 'node:stream';
 import { itemRateLimitMiddleware } from './libs/itemRateLimitMiddleware/itemRateLimitMiddleware';
 import { fileSizeRateLimitMiddleware } from './libs/fileSizeRateLimitMiddlware/fileSizeRateLimitMiddleware';
 import { updateAgentMiddleware } from './libs/updateAgentMiddleware/updateAgentMiddleware';
+import { contentModerationMiddleware } from './libs/contentModerationMiddleware/contentModerationMiddleware';
 
 interface ExpressMeta {
   req: {
@@ -135,6 +136,7 @@ export function startServer() {
 
   app.use(bodyParser.json());
   app.use(rateLimitMiddleware);
+  app.use(contentModerationMiddleware);
   app.use(itemRateLimitMiddleware);
   app.use(fileSizeRateLimitMiddleware);
   app.use(requireProjectMiddleware);

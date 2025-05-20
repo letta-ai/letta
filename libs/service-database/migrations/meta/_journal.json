@@ -526,6 +526,13 @@
       "when": 1747418257615,
       "tag": "0074_sticky_absorbing_man",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1747689946357,
+      "tag": "0075_omniscient_chameleon",
+      "breakpoints": true
     }
   ]
 }

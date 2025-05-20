@@ -55,11 +55,11 @@ export const NavigationItems: AdminNavigationItemProps[] = [
     description: 'Manage embedding models',
   },
   {
-    id: 'tools-metadata',
-    label: 'Tool Metadata',
+    id: 'content-violations',
+    label: 'Content Violations',
     icon: <ToolsIcon />,
-    href: '/admin/tools',
-    description: 'Manage tools',
+    href: '/admin/content-violations',
+    description: 'CONTENT WARNING: Sussy content ahead',
   },
   {
     id: 'leaderboard',
