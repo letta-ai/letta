@@ -178,6 +178,23 @@ def test_together():
     # assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
 
 
+@pytest.mark.asyncio
+async def test_together_async():
+    provider = TogetherProvider(
+        name="together",
+        api_key=model_settings.together_api_key,
+        default_prompt_formatter=model_settings.default_prompt_formatter,
+    )
+    models = await provider.list_llm_models_async()
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
+
+    # TODO: We don't have embedding models on together for CI
+    # embedding_models = provider.list_embedding_models()
+    # assert len(embedding_models) > 0
+    # assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
+
+
 # TODO: Add back in, difficulty adding this to CI properly, need boto credentials
 # def test_anthropic_bedrock():
 #     from letta.settings import model_settings

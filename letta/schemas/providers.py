@@ -1027,14 +1027,24 @@ class TogetherProvider(OpenAIProvider):
     def list_llm_models(self) -> List[LLMConfig]:
         from letta.llm_api.openai import openai_get_model_list
 
-        response = openai_get_model_list(self.base_url, api_key=self.api_key)
+        models = openai_get_model_list(self.base_url, api_key=self.api_key)
+        return self._list_llm_models(models)
+
+    async def list_llm_models_async(self) -> List[LLMConfig]:
+        from letta.llm_api.openai import openai_get_model_list_async
+
+        models = await openai_get_model_list_async(self.base_url, api_key=self.api_key)
+        return self._list_llm_models(models)
+
+    def _list_llm_models(self, models) -> List[LLMConfig]:
+        pass
 
         # TogetherAI's response is missing the 'data' field
         # assert "data" in response, f"OpenAI model query response missing 'data' field: {response}"
-        if "data" in response:
-            data = response["data"]
+        if "data" in models:
+            data = models["data"]
         else:
-            data = response
+            data = models
 
         configs = []
         for model in data:
