@@ -148,5 +148,5 @@ jobs:
       - name: Run tests with existing published package
         working-directory: apps/core
         run: |
-          poetry install
+          poetry install --no-interaction --no-root -E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox
           poetry run pytest -rP tests/test_client.py
