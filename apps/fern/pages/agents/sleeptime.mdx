@@ -19,7 +19,7 @@ To learn more about our research on sleep-time compute, check out our [blog post
 </Tip>
 
 ## Background: Memory Blocks
-Sleep-time agents specialize in generating *learned context*. Given some original context (e.g. the conversation history, a set of files) the sleep-time agent will reflect on the original context to iteratively derive a learned context. The learned context is should reflect the most important pieces of information or insights from the original context.
+Sleep-time agents specialize in generating *learned context*. Given some original context (e.g. the conversation history, a set of files) the sleep-time agent will reflect on the original context to iteratively derive a learned context. The learned context will reflect the most important pieces of information or insights from the original context.
 
 In Letta, the learned context is saved in a memory block. A memory block represents a labeled section of the context window with an associated character limit. Memory blocks can be shared between multiple agents. A sleep-time agent will write the learned context to a memory block, which can also be shared with other agents that could benefit from those learnings.
 
@@ -32,14 +32,14 @@ block = client.agents.blocks.retrieve(agent_id=agent_id, block_label="persona")
 block = client.blocks.retrieve(block_id=block_id)
 ```
 
-When sleep-time is enabled for an agent, there will be one or more sleep-time agents create to manage the memory blocks of the primary agent. These sleep-time agents will run in the background and can modify the memory blocks of the primary agent asynchronously. One sleep-time agent (created when the primary agent is created) will generate learned context from the conversation history to update the memory blocks of the primary agent. Additional ephemeral sleep-time agents will be created when you add data into data sources of the primary agent to process the data sources in the background. These ephemeral agents will create and write to a block specific to the data source, and be deleted once they are finished processing the data sources.
+When sleep-time is enabled for an agent, there will be one or more sleep-time agents created to manage the memory blocks of the primary agent. These sleep-time agents will run in the background and can modify the memory blocks of the primary agent asynchronously. One sleep-time agent (created when the primary agent is created) will generate learned context from the conversation history to update the memory blocks of the primary agent. Additional ephemeral sleep-time agents will be created when you add data into data sources of the primary agent to process the data sources in the background. These ephemeral agents will create and write to a block specific to the data source, and be deleted once they are finished processing the data sources.
 
 ## Sleep-time agent for conversation
 
 <img className="light" src="/images/sleeptime_chat.png" />
 <img className="dark" src="/images/sleeptime_chat_dark.png" />
 
-When a sleep-time-enabled agent is created, an additional sleep-time agent is created to generate learned context from the conversation history to update the memory blocks of the primary agent. Under the hood, the primary agent and sleep-time agent are part of a multi-agent group. The group ensures that for every `N` steps by the primary agent, the sleep-time agent is invoked with data containing new messges in the primary agent's message history.
+When a `sleeptime_agent` is created, a primary agent and a sleep-time agent are created as part of a multi-agent group under the hood. The sleep-time agent is responsible for generating learned context from the conversation history to update the memory blocks of the primary agent. The group ensures that for every `N` steps taken by the primary agent, the sleep-time agent is invoked with data containing new messages in the primary agent's message history.
 
 <img src="/images/sleeptime_chat_only.gif" />
 
@@ -85,12 +85,12 @@ We recommend keeping the frequency relatively high (e.g. 5 or 10) as triggering 
 
 Sleep-time-enabled agents will spawn additional ephemeral sleep-time agents when you add data into data sources of the primary agent to process the data sources in the background. These ephemeral agents will create and write to a block specific to the data source, and be deleted once they are finished processing the data sources.
 
-When a file is uploaded to a data source, it is parsed into passages (chunks of text) which are embedded and saved into the main agent's archival memory. If sleeptime is enabled, the sleep-time agent will also process each passage's text to update the memory block corresponding to the data source. The sleep-time agent will contrain an `instructions` block that contains the data source description, to help guide the learned context generation.
+When a file is uploaded to a data source, it is parsed into passages (chunks of text) which are embedded and saved into the main agent's archival memory. If sleeptime is enabled, the sleep-time agent will also process each passage's text to update the memory block corresponding to the data source. The sleep-time agent will create an `instructions` block that contains the data source description, to help guide the learned context generation.
 
 <img src="/images/sleeptime_data_source.gif" />
 
 <Tip>
-Give your data sources an informative `name` and `description` when creating them to help the sleep-time agent generate better learned context, and to help the primary agent understand what the associated memory block is for. 
+Give your data sources an informative `name` and `description` when creating them to help the sleep-time agent generate better learned context, and to help the primary agent understand what the associated memory block is for.
 </Tip>
 
 Below is an example of using the SDK to attach a data source to a sleep-time-enabled agent:
