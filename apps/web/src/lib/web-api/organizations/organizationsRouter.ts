@@ -982,6 +982,17 @@ export async function updateOrganizationUserRole(
   const { activeOrganizationId, permissions } =
     await getUserWithActiveOrganizationIdOrThrow();
 
+  const subscription = await getCustomerSubscription(activeOrganizationId);
+
+  if (subscription.tier !== 'enterprise') {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
+
   if (!permissions.has(ApplicationServices.UPDATE_USERS_IN_ORGANIZATION)) {
     return {
       status: 403,

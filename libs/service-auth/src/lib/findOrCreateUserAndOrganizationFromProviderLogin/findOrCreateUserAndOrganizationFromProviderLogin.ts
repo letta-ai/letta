@@ -22,6 +22,7 @@ import { generateServerSideAPIKey } from '../generateServerSideAPIKey/generateSe
 import { createOrganization } from '../createOrganization/createOrganization';
 import { getDefaultProject } from '@letta-cloud/utils-server';
 import { getSingleFlag } from '@letta-cloud/service-feature-flags';
+import { getCustomerSubscription } from '@letta-cloud/service-payments';
 
 export const ERRORS = {
   EMAIL_ALREADY_EXISTS: 'email-already-exists',
@@ -150,7 +151,13 @@ async function createUserAndOrganization(
 
     role = 'admin';
   } else {
-    role = role || 'editor';
+    const subscription = await getCustomerSubscription(organizationId);
+
+    if (subscription.tier === 'enterprise') {
+      role = role || 'editor';
+    }
+
+    role = 'admin';
   }
 
   const lettaAgentsUser = await AdminService.createUser({

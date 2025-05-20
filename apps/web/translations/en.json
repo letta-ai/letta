@@ -439,7 +439,8 @@
       "settings": "Settings",
       "signOut": "Sign out",
       "organization": "Organization",
-      "switchOrganizations": "Switch organizations"
+      "switchOrganizations": "Switch organizations",
+      "addMembers": "Invite teammates"
     },
     "header": {
       "Documentation": "Docs"
@@ -1153,6 +1154,7 @@
     "custom": "Custom"
   },
   "organization/members": {
+    "rbac": "Role-based access control is a feature for Enterprise plans. If you are interested in this feature, please contact support.",
     "PermissionGrantView": {
       "granted": "Granted",
       "notGranted": "Not granted"

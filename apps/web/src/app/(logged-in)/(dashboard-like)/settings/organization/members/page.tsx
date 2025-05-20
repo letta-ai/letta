@@ -34,6 +34,7 @@ import {
   LettaInvaderIcon,
   ProjectsIcon,
   TemplateIcon,
+  Alert,
 } from '@letta-cloud/ui-component-library';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -58,6 +59,7 @@ import {
   RoleSelect,
   useGetLabelForRole,
 } from '$web/client/components/RoleSelect/RoleSelect';
+import { useOrganizationBillingTier } from '$web/client/hooks/useOrganizationBillingTier/useOrganizationBillingTier';
 
 const inviteMemberDialogFormSchema = z.object({
   email: z.string().email(),
@@ -482,9 +484,12 @@ function UpdateMemberRoleDialog(props: UpdateMemberRoleDialogProps) {
     [mutate, userId],
   );
 
+  const billingTier = useOrganizationBillingTier();
+
   return (
     <FormProvider {...form}>
       <Dialog
+        disableSubmit={billingTier !== 'enterprise'}
         isConfirmBusy={isPending}
         isOpen={isDialogOpen}
         onOpenChange={(open) => {
@@ -528,6 +533,9 @@ function UpdateMemberRoleDialog(props: UpdateMemberRoleDialogProps) {
             );
           }}
         />
+        {billingTier !== 'enterprise' && (
+          <Alert variant="brand" title={t('rbac')} />
+        )}
       </Dialog>
     </FormProvider>
   );

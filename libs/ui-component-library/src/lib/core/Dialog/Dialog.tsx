@@ -361,6 +361,7 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
   onConfirm?: () => void;
   onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
   disableForm?: boolean;
+  disableSubmit?: boolean;
   hideCancel?: boolean;
   hideConfirm?: boolean;
   hideFooter?: boolean;
@@ -374,6 +375,7 @@ export function Dialog(props: DialogProps) {
     isOpen,
     color = 'background-grey',
     defaultOpen,
+    disableSubmit,
     errorMessage,
     errorAdditionalMessage,
     maintainAspectRatio,
@@ -487,6 +489,7 @@ export function Dialog(props: DialogProps) {
                     color={confirmColor}
                     type="submit"
                     busy={isConfirmBusy}
+                    disabled={disableSubmit}
                     label={confirmText}
                   />
                 )}

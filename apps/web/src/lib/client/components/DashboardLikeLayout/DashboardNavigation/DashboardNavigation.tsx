@@ -16,6 +16,7 @@ import {
   ExternalLinkIcon,
   isSubNavigationOverride,
   TokenIcon,
+  GroupAddIcon,
 } from '@letta-cloud/ui-component-library';
 import { HiddenOnMobile } from '@letta-cloud/ui-component-library';
 import {
@@ -517,6 +518,12 @@ function SecondaryMenuItems(props: SecondaryMenuItemsProps) {
             />
           )}
           <AdminNav />
+          <NavButton
+            id="select-organization"
+            href="/settings/organization/members"
+            label={t('secondaryNav.addMembers')}
+            icon={<GroupAddIcon />}
+          />
           <NavButton
             id="select-organization"
             href="/select-organization"
