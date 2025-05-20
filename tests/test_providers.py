@@ -130,6 +130,23 @@ def test_googleai():
     assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
 
 
+@pytest.mark.asyncio
+async def test_googleai_async():
+    api_key = model_settings.gemini_api_key
+    assert api_key is not None
+    provider = GoogleAIProvider(
+        name="google_ai",
+        api_key=api_key,
+    )
+    models = await provider.list_llm_models_async()
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
+
+    embedding_models = await provider.list_embedding_models_async()
+    assert len(embedding_models) > 0
+    assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
+
+
 def test_google_vertex():
     provider = GoogleVertexProvider(
         name="google_vertex",
