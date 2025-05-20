@@ -1,6 +1,7 @@
 import warnings
 from typing import Generator, List, Optional, Union
 
+import httpx
 import requests
 from openai import OpenAI
 
@@ -109,6 +110,62 @@ def openai_get_model_list(url: str, api_key: Optional[str] = None, fix_url: bool
             pass
         printd(f"Got unknown Exception, exception={e}, response={response}")
         raise e
+
+
+async def openai_get_model_list_async(
+    url: str,
+    api_key: Optional[str] = None,
+    fix_url: bool = False,
+    extra_params: Optional[dict] = None,
+    client: Optional["httpx.AsyncClient"] = None,
+) -> dict:
+    """https://platform.openai.com/docs/api-reference/models/list"""
+    from letta.utils import printd
+
+    # In some cases we may want to double-check the URL and do basic correction
+    if fix_url and not url.endswith("/v1"):
+        url = smart_urljoin(url, "v1")
+
+    url = smart_urljoin(url, "models")
+
+    headers = {"Content-Type": "application/json"}
+    if api_key is not None:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    printd(f"Sending request to {url}")
+
+    # Use provided client or create a new one
+    close_client = False
+    if client is None:
+        client = httpx.AsyncClient()
+        close_client = True
+
+    try:
+        response = await client.get(url, headers=headers, params=extra_params)
+        response.raise_for_status()
+        result = response.json()
+        printd(f"response = {result}")
+        return result
+    except httpx.HTTPStatusError as http_err:
+        # Handle HTTP errors (e.g., response 4XX, 5XX)
+        error_response = None
+        try:
+            error_response = http_err.response.json()
+        except:
+            error_response = {"status_code": http_err.response.status_code, "text": http_err.response.text}
+        printd(f"Got HTTPError, exception={http_err}, response={error_response}")
+        raise http_err
+    except httpx.RequestError as req_err:
+        # Handle other httpx-related errors (e.g., connection error)
+        printd(f"Got RequestException, exception={req_err}")
+        raise req_err
+    except Exception as e:
+        # Handle other potential errors
+        printd(f"Got unknown Exception, exception={e}")
+        raise e
+    finally:
+        if close_client:
+            await client.aclose()
 
 
 def build_openai_chat_completions_request(
