@@ -369,7 +369,7 @@ def delete_agent(
 
 
 @router.get("/{agent_id}/sources", response_model=List[Source], operation_id="list_agent_sources")
-def list_agent_sources(
+async def list_agent_sources(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -377,8 +377,8 @@ def list_agent_sources(
     """
     Get the sources associated with an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.agent_manager.list_attached_sources(agent_id=agent_id, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.agent_manager.list_attached_sources_async(agent_id=agent_id, actor=actor)
 
 
 # TODO: remove? can also get with agent blocks

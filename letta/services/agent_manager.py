@@ -1569,6 +1569,25 @@ class AgentManager:
             return [source.to_pydantic() for source in agent.sources]
 
     @enforce_types
+    async def list_attached_sources_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticSource]:
+        """
+        Lists all sources attached to an agent.
+
+        Args:
+            agent_id: ID of the agent to list sources for
+            actor: User performing the action
+
+        Returns:
+            List[str]: List of source IDs attached to the agent
+        """
+        async with db_registry.async_session() as session:
+            # Verify agent exists and user has permission to access it
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+            # Use the lazy-loaded relationship to get sources
+            return [source.to_pydantic() for source in agent.sources]
+
+    @enforce_types
     def detach_source(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Detaches a source from an agent.
