@@ -1,3 +1,4 @@
+import json
 import math
 import traceback
 from abc import ABC, abstractmethod
@@ -723,8 +724,21 @@ class LettaBuiltinToolExecutor(ToolExecutor):
             # Leave empty for python
             params["language"] = language
 
-        res = await sbx.run_code(**params)
-        return str(res)
+        res = self._llm_friendly_result(await sbx.run_code(**params))
+        return json.dumps(res, ensure_ascii=False)
+
+    def _llm_friendly_result(self, res):
+        out = {
+            "results": [r.text if hasattr(r, "text") else str(r) for r in res.results],
+            "logs": {
+                "stdout": getattr(res.logs, "stdout", []),
+                "stderr": getattr(res.logs, "stderr", []),
+            },
+        }
+        err = getattr(res, "error", None)
+        if err is not None:
+            out["error"] = err
+        return out
 
     async def web_search(agent_state: "AgentState", query: str) -> str:
         """

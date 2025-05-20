@@ -188,6 +188,7 @@ jobs:
           AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
           E2B_API_KEY: ${{ env.E2B_API_KEY }}
           E2B_SANDBOX_TEMPLATE_ID: ${{ secrets.E2B_SANDBOX_TEMPLATE_ID }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
         run: |
           set -o xtrace
           poetry run pip show letta
