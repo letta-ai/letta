@@ -18,8 +18,8 @@ class WebSocketServer:
     def __init__(self, host="localhost", port=WS_DEFAULT_PORT, webhook_url: Optional[str] = None, webhook_token: Optional[str] = None):
         self.host = host
         self.port = port
-        self.webhook_url = webhook_url or os.getenv("LETTA_WEBHOOK_URL")
-        self.webhook_token = webhook_token or os.getenv("LETTA_WEBHOOK_TOKEN", "")
+        self.webhook_url = webhook_url
+        self.webhook_token = webhook_token
         
         # Create base interface
         base_interface = SyncWebSocketInterface()
