@@ -160,12 +160,14 @@ export async function removeCreditsFromOrganization(
       credits: organizationCredits.credits,
     });
 
-  void checkLowBalance({
-    organizationId,
-  }).catch((e) => {
-    console.error(e);
-    Sentry.captureException(e);
-  });
+  if (modelTier === 'per-inference') {
+    void checkLowBalance({
+      organizationId,
+    }).catch((e) => {
+      console.error(e);
+      Sentry.captureException(e);
+    });
+  }
 
   return {
     newCredits: res.credits,

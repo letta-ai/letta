@@ -313,7 +313,7 @@ export async function handleMessageRateLimiting(
 
   // if you have no credits, you are rate limited by the free/premium limits
   if (
-    !organizationCredits &&
+    organizationCredits <= 0 &&
     ['free', 'premium'].includes(modelTierInformation)
   ) {
     if (modelTierInformation === 'free') {
