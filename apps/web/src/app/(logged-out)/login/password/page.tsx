@@ -10,6 +10,7 @@ import {
   FormProvider,
   HStack,
   Input,
+  Link,
   Logo,
   Typography,
   useForm,
@@ -132,6 +133,13 @@ export default function PasswordLogin() {
                       label={t('submit')}
                     />
                   </VStack>
+                  <HStack>
+                    <Link href="/forgot-password">
+                      <Typography variant="body2">
+                        {t('forgotPassword')}
+                      </Typography>
+                    </Link>
+                  </HStack>
                 </VStack>
               </Form>
             </FormProvider>

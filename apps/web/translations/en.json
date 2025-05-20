@@ -2173,6 +2173,7 @@
     "info": "You will be asked to provide a valid phone number after signing up to verify your account. If you do not want to provide a phone number, please sign in through our <link>other options</link>."
   },
   "password-login": {
+    "forgotPassword": "Forgot your password?",
     "title": "Sign in to Letta Cloud",
     "password": {
       "label": "Password",
