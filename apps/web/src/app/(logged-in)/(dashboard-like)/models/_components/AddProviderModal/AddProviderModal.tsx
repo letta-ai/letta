@@ -33,6 +33,9 @@ import { useCallback, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getUseProvidersServiceModelsStandardArgs } from '../utils/getUseProvidersServiceModelsStandardArgs/getUseProvidersServiceModelsStandardArgs';
 import { useFormContext } from 'react-hook-form';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { useCurrentUser } from '$web/client/hooks';
 
 function TestConnectionButton() {
   const [isTesting, setIsTesting] = useState(false);
@@ -152,6 +155,7 @@ export function AddProviderModal(props: CreateProviderModalProps) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
+  const user = useCurrentUser();
   const { mutate, isPending, error } = useProvidersServiceCreateProvider();
 
   const form = useForm<AddModelProviderSchema>({
@@ -185,7 +189,9 @@ export function AddProviderModal(props: CreateProviderModalProps) {
         },
         {
           onSuccess: (response) => {
-            handleOpenChange(false);
+            trackClientSideEvent(AnalyticsEvent.ADDED_OWN_EXTERNAL_KEY, {
+              userId: user?.id || '',
+            });
             queryClient.setQueriesData<ListProvidersResponse | undefined>(
               {
                 queryKey: UseProvidersServiceListProvidersKeyFn(
@@ -200,11 +206,13 @@ export function AddProviderModal(props: CreateProviderModalProps) {
                 return [response];
               },
             );
+
+            handleOpenChange(false);
           },
         },
       );
     },
-    [handleOpenChange, mutate, queryClient],
+    [handleOpenChange, mutate, queryClient, user?.id],
   );
 
   const errorMessage = useMemo(() => {

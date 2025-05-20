@@ -12,6 +12,8 @@ import type { contracts, projectsContract } from '$web/web-api/contracts';
 import { generateSlug } from '$web/server';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { getCurrentOrganizationUsageLimits } from '@letta-cloud/utils-server';
+import { trackServerSideEvent } from '@letta-cloud/service-analytics/server';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 type ResponseShapes = ServerInferResponses<typeof projectsContract>;
 type GetProjectsRequest = ServerInferRequest<
@@ -155,6 +157,10 @@ export async function createProject(
       },
     };
   }
+
+  trackServerSideEvent(AnalyticsEvent.CREATED_PROJECT, {
+    userId: user.id,
+  });
 
   let projectSlug = generateSlug(name);
 

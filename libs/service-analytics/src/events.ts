@@ -21,9 +21,15 @@ export enum AnalyticsEvent {
   AGENT_STAGED = 'Agent Staged',
   AGENT_DEPLOYED = 'Agent Deployed',
   APP_ERROR = 'App Error',
+  CREATED_PROJECT = 'Created Project',
+  CREATED_TEMPLATE = 'Created Template',
   ANSWERED_ONBOARDING_SURVEY = 'Answered Onboarding Survey',
   MOVED_ONBOARDING_STEP = 'Moved Onboarding Step',
   PAUSED_ONBOARDING = 'Paused Onboarding',
+  ATTEMPTED_UPGRADE = 'Upgrade Attempted',
+  UPGRADE_SELECTED_PLAN = 'Selected Plan to Upgrade',
+  ADDED_OWN_EXTERNAL_KEY = 'Added Own External Key',
+  CREATED_API_KEY = 'Created API Key',
 }
 
 export interface BaseProperty {
@@ -46,6 +52,10 @@ interface AnsweredOnboardingSurveyProperty extends BaseProperty {
 
 interface MovedOnboardingStepProperty extends BaseProperty {
   step: OnboardingStepsType;
+}
+
+interface UpgradePlanProperty extends BaseProperty {
+  plan: string;
 }
 
 export interface AnalyticsEventProperties {
@@ -72,4 +82,10 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.ANSWERED_ONBOARDING_SURVEY]: AnsweredOnboardingSurveyProperty;
   [AnalyticsEvent.MOVED_ONBOARDING_STEP]: MovedOnboardingStepProperty;
   [AnalyticsEvent.PAUSED_ONBOARDING]: BaseProperty;
+  [AnalyticsEvent.ATTEMPTED_UPGRADE]: BaseProperty;
+  [AnalyticsEvent.UPGRADE_SELECTED_PLAN]: UpgradePlanProperty;
+  [AnalyticsEvent.CREATED_PROJECT]: BaseProperty;
+  [AnalyticsEvent.CREATED_TEMPLATE]: BaseProperty;
+  [AnalyticsEvent.ADDED_OWN_EXTERNAL_KEY]: BaseProperty;
+  [AnalyticsEvent.CREATED_API_KEY]: BaseProperty;
 }

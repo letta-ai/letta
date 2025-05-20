@@ -104,9 +104,18 @@ export function OrganizationUsageBlock() {
           used: usedStandardModelRequests,
         })}
       />
-      {billingTier === 'free' && (
+      {(billingTier === 'free' || billingTier === 'pro') && (
         <UpgradePlanDialog
-          trigger={<Button fullWidth size="small" bold label={t('upgrade')} />}
+          trigger={
+            <Button
+              fullWidth
+              size="small"
+              bold
+              label={
+                billingTier === 'pro' ? t('upgradeToScale') : t('upgradeToPro')
+              }
+            />
+          }
         />
       )}
     </VStack>

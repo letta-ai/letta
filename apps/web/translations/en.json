@@ -1037,7 +1037,8 @@
   "components/OrganizationUsageBlock": {
     "title": "Usage",
     "tooltip": "Go to billing and usage page",
-    "upgrade": "Upgrade to Pro",
+    "upgradeToPro": "Upgrade to Pro",
+    "upgradeToScale": "Upgrade to Scale",
     "premiumModels": {
       "label": "Premium models",
       "usage": "{used} left of {total}"

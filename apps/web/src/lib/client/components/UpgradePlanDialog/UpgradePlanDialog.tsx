@@ -19,6 +19,10 @@ import { Blox } from '$web/client/components/UpgradePlanDialog/Blox';
 import { CreditCardSlot } from '$web/client/components';
 import { useGetDefaultOrFirstCard } from '$web/client/hooks/useGetDefaultOrFirstCard/useGetDefaultOrFirstCard';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { useOrganizationBillingTier } from '$web/client/hooks/useOrganizationBillingTier/useOrganizationBillingTier';
+import { useCurrentUser } from '$web/client/hooks';
 
 interface SelectedPlanProps {
   plan: BillingTiersType;
@@ -114,7 +118,19 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
   const { onSelectPlan } = props;
   const t = useTranslations('components/UpgradeToProPlanDialog');
 
-  const [plan, setPlan] = useState<BillingTiersType>('pro');
+  const billingTier = useOrganizationBillingTier();
+
+  const [plan, setPlan] = useState<BillingTiersType>(() => {
+    if (billingTier === 'free') {
+      return 'pro';
+    }
+
+    if (billingTier === 'pro') {
+      return 'scale';
+    }
+
+    return 'pro';
+  });
 
   const items = useMemo(() => {
     return [
@@ -328,6 +344,7 @@ export function UpgradePlanDialog(props: UpgradeToProPlanProps) {
       },
     });
 
+  const user = useCurrentUser();
   const defaultCard = useGetDefaultOrFirstCard();
 
   const handleSelectPlan = useCallback(
@@ -368,6 +385,12 @@ export function UpgradePlanDialog(props: UpgradeToProPlanProps) {
       onOpenChange={(open) => {
         if (!open) {
           setSelectedPlan(null);
+        } else {
+          if (user) {
+            trackClientSideEvent(AnalyticsEvent.ATTEMPTED_UPGRADE, {
+              userId: user.id,
+            });
+          }
         }
         setIsOpen(open);
       }}
@@ -395,6 +418,13 @@ export function UpgradePlanDialog(props: UpgradeToProPlanProps) {
             <PlanComparisonView
               onSelectPlan={(plan) => {
                 handleSelectPlan(plan);
+
+                if (user) {
+                  trackClientSideEvent(AnalyticsEvent.UPGRADE_SELECTED_PLAN, {
+                    plan,
+                    userId: user.id,
+                  });
+                }
               }}
             />
           )}

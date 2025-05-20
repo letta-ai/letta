@@ -7,6 +7,8 @@ import {
 } from '@letta-cloud/utils-server';
 import { and, eq, isNull } from 'drizzle-orm';
 import { cloudApiRouter } from '../router';
+import { trackServerSideEvent } from '@letta-cloud/service-analytics/server';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 interface CreateTemplateOptions {
   projectId: string;
@@ -34,6 +36,10 @@ export async function createTemplate(props: CreateTemplateOptions) {
     userId,
     createAgentState,
   } = props;
+
+  trackServerSideEvent(AnalyticsEvent.CREATED_TEMPLATE, {
+    userId: userId,
+  });
 
   if (preName) {
     if (!/^[a-zA-Z0-9_-]+$/.test(preName)) {

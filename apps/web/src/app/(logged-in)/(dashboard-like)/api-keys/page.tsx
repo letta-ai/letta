@@ -30,7 +30,9 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
-import { useUserHasPermission } from '$web/client/hooks';
+import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 const CreateAPIKeySchema = z.object({
   name: z.string(),
@@ -39,9 +41,13 @@ const CreateAPIKeySchema = z.object({
 function CreateAPIKeyDialog() {
   const [generatedKey, setGeneratedKey] = React.useState<string | null>(null);
   const queryClient = useQueryClient();
+  const user = useCurrentUser();
   const t = useTranslations('api-keys/page');
   const { mutate, isPending } = webApi.apiKeys.createAPIKey.useMutation({
     onSuccess: (response) => {
+      trackClientSideEvent(AnalyticsEvent.CREATED_API_KEY, {
+        userId: user?.id || '',
+      });
       setGeneratedKey(response.body.apiKey);
 
       void queryClient.invalidateQueries({
