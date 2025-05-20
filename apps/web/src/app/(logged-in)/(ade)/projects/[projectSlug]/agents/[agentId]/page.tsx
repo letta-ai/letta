@@ -1,4 +1,7 @@
-import { UseAgentsServiceRetrieveAgentKeyFn } from '@letta-cloud/sdk-core';
+import {
+  isAPIError,
+  UseAgentsServiceRetrieveAgentKeyFn,
+} from '@letta-cloud/sdk-core';
 import {
   dehydrate,
   HydrationBoundary,
@@ -12,6 +15,9 @@ import { getUserOrRedirect } from '$web/server/auth';
 import { CloudAgentEditor } from '$web/client/components/CloudAgentEditor/CloudAgentEditor';
 import { cloudApiRouter } from 'tmp-cloud-api-router';
 import { cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
+import { ADEError } from '$web/client/components/ADEError/ADEError';
+import { db, projects } from '@letta-cloud/service-database';
+import { eq } from 'drizzle-orm';
 
 interface AgentsAgentPageProps {
   params: Promise<{
@@ -47,29 +53,48 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     return;
   }
 
-  const deployedAgent = await cloudApiRouter.agents.getAgentById(
-    {
-      params: {
-        agent_id: agentId,
+  const deployedAgent = await cloudApiRouter.agents
+    .getAgentById(
+      {
+        params: {
+          agent_id: agentId,
+        },
       },
-    },
-    {
-      request: {
-        organizationId: user.activeOrganizationId,
-        userId: user.id,
-        lettaAgentsUserId: user.lettaAgentsId,
-        source: 'web',
+      {
+        request: {
+          organizationId: user.activeOrganizationId,
+          userId: user.id,
+          lettaAgentsUserId: user.lettaAgentsId,
+          source: 'web',
+        },
       },
-    },
-  );
+    )
+    .catch((e) => {
+      if (isAPIError(e) && e.status === 404) {
+        return null;
+      }
+
+      throw e;
+    });
 
   if (!deployedAgent || deployedAgent.status !== 200) {
-    redirect(`/projects/${projectSlug}/agents`);
-    return;
+    return <ADEError errorCode="agentNotFound" />;
+  }
+
+  if (!deployedAgent.body.project_id) {
+    return <ADEError errorCode="agentNotFound" />;
   }
 
   if (project.body.id !== deployedAgent.body.project_id) {
-    redirect(`/projects/${projectSlug}/agents`);
+    const nextProject = await db.query.projects.findFirst({
+      where: eq(projects.id, deployedAgent.body.project_id),
+    });
+
+    if (!nextProject) {
+      return <ADEError errorCode="agentNotFound" />;
+    }
+
+    redirect(`/projects/${nextProject.slug}/agents/${agentId}`);
     return;
   }
 

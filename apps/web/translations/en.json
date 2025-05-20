@@ -421,6 +421,10 @@
     },
     "infinite": "Infinite"
   },
+  "components/ADEError": {
+    "goBack": "Go home ",
+    "agentNotFound": "This agent does not exist or is not owned by your organization"
+  },
   "components/DashboardLikeLayout/DashboardNavigation": {
     "back": "Back",
     "nav": {
