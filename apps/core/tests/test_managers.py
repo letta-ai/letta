@@ -1110,10 +1110,11 @@ async def test_attach_source(server: SyncServer, sarah_agent, default_source, de
     assert len([s for s in agent.sources if s.id == default_source.id]) == 1
 
 
-def test_list_attached_source_ids(server: SyncServer, sarah_agent, default_source, other_source, default_user):
+@pytest.mark.asyncio
+async def test_list_attached_source_ids(server: SyncServer, sarah_agent, default_source, other_source, default_user, event_loop):
     """Test listing source IDs attached to an agent."""
     # Initially should have no sources
-    sources = server.agent_manager.list_attached_sources(sarah_agent.id, actor=default_user)
+    sources = await server.agent_manager.list_attached_sources_async(sarah_agent.id, actor=default_user)
     assert len(sources) == 0
 
     # Attach sources
@@ -1121,7 +1122,7 @@ def test_list_attached_source_ids(server: SyncServer, sarah_agent, default_sourc
     server.agent_manager.attach_source(sarah_agent.id, other_source.id, actor=default_user)
 
     # List sources and verify
-    sources = server.agent_manager.list_attached_sources(sarah_agent.id, actor=default_user)
+    sources = await server.agent_manager.list_attached_sources_async(sarah_agent.id, actor=default_user)
     assert len(sources) == 2
     source_ids = [s.id for s in sources]
     assert default_source.id in source_ids
@@ -1167,10 +1168,11 @@ def test_detach_source_nonexistent_agent(server: SyncServer, default_source, def
         server.agent_manager.detach_source(agent_id="nonexistent-agent-id", source_id=default_source.id, actor=default_user)
 
 
-def test_list_attached_source_ids_nonexistent_agent(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_list_attached_source_ids_nonexistent_agent(server: SyncServer, default_user, event_loop):
     """Test listing sources for a nonexistent agent."""
     with pytest.raises(NoResultFound):
-        server.agent_manager.list_attached_sources(agent_id="nonexistent-agent-id", actor=default_user)
+        await server.agent_manager.list_attached_sources_async(agent_id="nonexistent-agent-id", actor=default_user)
 
 
 def test_list_attached_agents(server: SyncServer, sarah_agent, charles_agent, default_source, default_user):
