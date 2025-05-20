@@ -8,6 +8,10 @@ from typing import Any, Dict, Optional
 import aiohttp
 
 from .config import get_webhook_config
+from .constants import (
+    CONTENT_TYPE_JSON, DEFAULT_WEBHOOK_TIMEOUT, DEFAULT_WEBHOOK_USER_AGENT,
+    ENV_WEBHOOK_URL, HEADER_AUTHORIZATION, HEADER_CONTENT_TYPE, HEADER_USER_AGENT
+)
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +51,7 @@ class WebhookClient:
         event_type: str,
         data: Dict[str, Any],
         timestamp: Optional[str] = None,
-        timeout: float = 10.0
+        timeout: float = DEFAULT_WEBHOOK_TIMEOUT
     ) -> bool:
         """Send a webhook event.
         
@@ -74,12 +78,12 @@ class WebhookClient:
         }
         
         headers = {
-            "Content-Type": "application/json",
-            "User-Agent": "LettaWebhookClient/1.0"
+            HEADER_CONTENT_TYPE: CONTENT_TYPE_JSON,
+            HEADER_USER_AGENT: DEFAULT_WEBHOOK_USER_AGENT
         }
         
         if self.webhook_token:
-            headers["Authorization"] = f"Bearer {self.webhook_token}"
+            headers[HEADER_AUTHORIZATION] = f"Bearer {self.webhook_token}"
         
         try:
             session = await self._get_session()

@@ -7,6 +7,11 @@ from datetime import datetime
 from letta.streaming_interface import AgentChunkStreamingInterface
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionChunkResponse
+from .constants import (
+    EVENT_ASSISTANT_MESSAGE, EVENT_FUNCTION_CALL, EVENT_INTERNAL_MONOLOGUE,
+    EVENT_STREAM_END, EVENT_STREAM_INITIALIZED, EVENT_STREAM_START, EVENT_USER_MESSAGE
+)
+from .client import WebhookClient, send_agent_event, send_message_event
 
 class WebhookStreamingInterface(AgentChunkStreamingInterface):
     """Streaming interface that sends webhook events for agent activities.
@@ -70,44 +75,22 @@ class WebhookStreamingInterface(AgentChunkStreamingInterface):
     async def user_message(self, msg: str, msg_obj: Optional[Message] = None) -> None:
         """Handle user message event."""
         if msg_obj:
-            await self._send_webhook("user_message", {
-                "message_id": str(msg_obj.id),
-                "content": msg,
-                "agent_id": getattr(msg_obj, "agent_id", self.agent_id),
-                "timestamp": msg_obj.created_at.isoformat() if msg_obj.created_at else None
-            })
+            await send_message_event(EVENT_USER_MESSAGE, msg_obj.id, self.agent_id, msg)
 
     async def assistant_message(self, msg: str, msg_obj: Optional[Message] = None) -> None:
         """Handle assistant message event."""
         if msg_obj:
-            await self._send_webhook("assistant_message", {
-                "message_id": str(msg_obj.id),
-                "content": msg,
-                "agent_id": getattr(msg_obj, "agent_id", self.agent_id),
-                "timestamp": msg_obj.created_at.isoformat() if msg_obj.created_at else None
-            })
+            await send_message_event(EVENT_ASSISTANT_MESSAGE, msg_obj.id, self.agent_id, msg)
 
     async def internal_monologue(self, msg: str, msg_obj: Optional[Message] = None, chunk_index: Optional[int] = None) -> None:
         """Handle internal monologue event."""
         if msg_obj:
-            await self._send_webhook("internal_monologue", {
-                "message_id": str(msg_obj.id) if msg_obj else None,
-                "content": msg,
-                "agent_id": getattr(msg_obj, "agent_id", self.agent_id) if msg_obj else self.agent_id,
-                "chunk_index": chunk_index,
-                "timestamp": datetime.utcnow().isoformat()
-            })
+            await send_agent_event(EVENT_INTERNAL_MONOLOGUE, self.agent_id, msg, {"message_id": msg_obj.id, "chunk_index": chunk_index})
 
     async def function_message(self, msg: str, msg_obj: Optional[Message] = None, chunk_index: Optional[int] = None) -> None:
         """Handle function call event."""
         if msg_obj:
-            await self._send_webhook("function_call", {
-                "message_id": str(msg_obj.id) if msg_obj else None,
-                "content": msg,
-                "agent_id": getattr(msg_obj, "agent_id", self.agent_id) if msg_obj else self.agent_id,
-                "chunk_index": chunk_index,
-                "timestamp": datetime.utcnow().isoformat()
-            })
+            await send_agent_event(EVENT_FUNCTION_CALL, self.agent_id, msg, {"message_id": msg_obj.id, "chunk_index": chunk_index})
 
     async def process_chunk(
         self,
@@ -123,31 +106,17 @@ class WebhookStreamingInterface(AgentChunkStreamingInterface):
             self.current_message_id = message_id
             self.current_message_start = datetime.utcnow()
             
-            await self._send_webhook("stream_start", {
-                "message_id": message_id,
-                "agent_id": self.agent_id,
-                "timestamp": self.current_message_start.isoformat(),
-                "expect_reasoning_content": expect_reasoning_content,
-                "message_index": message_index
-            })
+            await send_agent_event(EVENT_STREAM_START, self.agent_id, message_id, {"expect_reasoning_content": expect_reasoning_content, "message_index": message_index})
 
     async def stream_start(self) -> None:
         """Handle stream start event."""
-        await self._send_webhook("stream_initialized", {
-            "timestamp": datetime.utcnow().isoformat(),
-            "agent_id": self.agent_id
-        })
+        await send_agent_event(EVENT_STREAM_INITIALIZED, self.agent_id)
 
     async def stream_end(self) -> None:
         """Handle stream end event."""
         if self.current_message_id and self.current_message_start:
             duration = (datetime.utcnow() - self.current_message_start).total_seconds()
-            await self._send_webhook("stream_end", {
-                "message_id": self.current_message_id,
-                "agent_id": self.agent_id,
-                "duration_seconds": duration,
-                "timestamp": datetime.utcnow().isoformat()
-            })
+            await send_agent_event(EVENT_STREAM_END, self.agent_id, self.current_message_id, {"duration_seconds": duration})
             
         self.current_message_id = None
         self.current_message_start = None

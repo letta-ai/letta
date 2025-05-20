@@ -5,6 +5,8 @@ import re
 from typing import Optional, Tuple
 from urllib.parse import urlparse
 
+from .constants import ENV_WEBHOOK_URL, ENV_WEBHOOK_TOKEN
+
 def validate_webhook_url(url: str) -> Tuple[bool, Optional[str]]:
     """Validate a webhook URL.
     
@@ -35,8 +37,8 @@ def get_webhook_config() -> Tuple[Optional[str], Optional[str]]:
     Returns:
         Tuple of (webhook_url, webhook_token)
     """
-    webhook_url = os.getenv("LETTA_WEBHOOK_URL")
-    webhook_token = os.getenv("LETTA_WEBHOOK_TOKEN", "")
+    webhook_url = os.getenv(ENV_WEBHOOK_URL)
+    webhook_token = os.getenv(ENV_WEBHOOK_TOKEN, "")
     
     if not webhook_url:
         return None, None
@@ -50,4 +52,4 @@ def get_webhook_config() -> Tuple[Optional[str], Optional[str]]:
 
 def is_webhook_enabled() -> bool:
     """Check if webhook functionality is enabled."""
-    return bool(os.getenv("LETTA_WEBHOOK_URL"))
+    return bool(os.getenv(ENV_WEBHOOK_URL))
