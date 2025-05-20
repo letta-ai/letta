@@ -567,7 +567,7 @@ AgentMessagesResponse = Annotated[
 
 
 @router.get("/{agent_id}/messages", response_model=AgentMessagesResponse, operation_id="list_messages")
-def list_messages(
+async def list_messages(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     after: Optional[str] = Query(None, description="Message after which to retrieve the returned messages."),
@@ -582,10 +582,9 @@ def list_messages(
     """
     Retrieve message history for an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    return server.get_agent_recall(
-        user_id=actor.id,
+    return await server.get_agent_recall_async(
         agent_id=agent_id,
         after=after,
         before=before,
@@ -596,6 +595,7 @@ def list_messages(
         use_assistant_message=use_assistant_message,
         assistant_message_tool_name=assistant_message_tool_name,
         assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+        actor=actor,
     )
 
 

@@ -1096,6 +1096,44 @@ class SyncServer(Server):
 
         return records
 
+    async def get_agent_recall_async(
+        self,
+        agent_id: str,
+        actor: User,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
+        limit: Optional[int] = 100,
+        group_id: Optional[str] = None,
+        reverse: Optional[bool] = False,
+        return_message_object: bool = True,
+        use_assistant_message: bool = True,
+        assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
+        assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
+    ) -> Union[List[Message], List[LettaMessage]]:
+        records = await self.message_manager.list_messages_for_agent_async(
+            agent_id=agent_id,
+            actor=actor,
+            after=after,
+            before=before,
+            limit=limit,
+            ascending=not reverse,
+            group_id=group_id,
+        )
+
+        if not return_message_object:
+            records = Message.to_letta_messages_from_list(
+                messages=records,
+                use_assistant_message=use_assistant_message,
+                assistant_message_tool_name=assistant_message_tool_name,
+                assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+                reverse=reverse,
+            )
+
+        if reverse:
+            records = records[::-1]
+
+        return records
+
     def get_server_config(self, include_defaults: bool = False) -> dict:
         """Return the base config"""
 
