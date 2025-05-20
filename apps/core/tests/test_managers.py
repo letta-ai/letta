@@ -2418,14 +2418,15 @@ async def test_delete_tool_by_id(server: SyncServer, print_tool, default_user, e
     assert len(tools) == 0
 
 
-def test_upsert_base_tools(server: SyncServer, default_user):
-    tools = server.tool_manager.upsert_base_tools(actor=default_user)
+@pytest.mark.asyncio
+async def test_upsert_base_tools(server: SyncServer, default_user, event_loop):
+    tools = await server.tool_manager.upsert_base_tools_async(actor=default_user)
     expected_tool_names = sorted(LETTA_TOOL_SET)
 
     assert sorted([t.name for t in tools]) == expected_tool_names
 
     # Call it again to make sure it doesn't create duplicates
-    tools = server.tool_manager.upsert_base_tools(actor=default_user)
+    tools = await server.tool_manager.upsert_base_tools_async(actor=default_user)
     assert sorted([t.name for t in tools]) == expected_tool_names
 
     # Confirm that the return tools have no source_code, but a json_schema
