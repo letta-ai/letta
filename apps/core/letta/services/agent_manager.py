@@ -1962,6 +1962,65 @@ class AgentManager:
             return [p.to_pydantic() for p in passages]
 
     @enforce_types
+    async def list_passages_async(
+        self,
+        actor: PydanticUser,
+        agent_id: Optional[str] = None,
+        file_id: Optional[str] = None,
+        limit: Optional[int] = 50,
+        query_text: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        source_id: Optional[str] = None,
+        embed_query: bool = False,
+        ascending: bool = True,
+        embedding_config: Optional[EmbeddingConfig] = None,
+        agent_only: bool = False,
+    ) -> List[PydanticPassage]:
+        """Lists all passages attached to an agent."""
+        async with db_registry.async_session() as session:
+            main_query = self._build_passage_query(
+                actor=actor,
+                agent_id=agent_id,
+                file_id=file_id,
+                query_text=query_text,
+                start_date=start_date,
+                end_date=end_date,
+                before=before,
+                after=after,
+                source_id=source_id,
+                embed_query=embed_query,
+                ascending=ascending,
+                embedding_config=embedding_config,
+                agent_only=agent_only,
+            )
+
+            # Add limit
+            if limit:
+                main_query = main_query.limit(limit)
+
+            # Execute query
+            result = await session.execute(main_query)
+
+            passages = []
+            for row in result:
+                data = dict(row._mapping)
+                if data["agent_id"] is not None:
+                    # This is an AgentPassage - remove source fields
+                    data.pop("source_id", None)
+                    data.pop("file_id", None)
+                    passage = AgentPassage(**data)
+                else:
+                    # This is a SourcePassage - remove agent field
+                    data.pop("agent_id", None)
+                    passage = SourcePassage(**data)
+                passages.append(passage)
+
+            return [p.to_pydantic() for p in passages]
+
+    @enforce_types
     def passage_size(
         self,
         actor: PydanticUser,
