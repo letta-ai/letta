@@ -64,7 +64,7 @@ navigation:
         href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
       - section: Get Started
         contents:
-          - page: Welcome to Letta
+          - page: Letta Overview
             path: pages/getting-started/letta_platform.mdx
           - page: Quickstart
             path: pages/getting-started/quickstart.mdx
@@ -346,8 +346,8 @@ navigation:
         contents:
           - page: Overview
             path: pages/cloud/overview.mdx
-          - page: Quickstart
-            path: pages/getting-started/quickstart_cloud.mdx
+          #- page: Quickstart
+          #  path: pages/getting-started/quickstart_cloud.mdx
           - page: Get a Letta Cloud API key
             path: pages/cloud/api_key.mdx
       - section: Account
