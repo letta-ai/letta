@@ -47,7 +47,13 @@ class Provider(ProviderBase):
     def list_llm_models(self) -> List[LLMConfig]:
         return []
 
+    async def list_llm_models_async(self) -> List[LLMConfig]:
+        return []
+
     def list_embedding_models(self) -> List[EmbeddingConfig]:
+        return []
+
+    async def list_embedding_models_async(self) -> List[EmbeddingConfig]:
         return []
 
     def get_model_context_window(self, model_name: str) -> Optional[int]:
@@ -140,6 +146,19 @@ class LettaProvider(Provider):
             )
         ]
 
+    async def list_llm_models_async(self) -> List[LLMConfig]:
+        return [
+            LLMConfig(
+                model="letta-free",  # NOTE: renamed
+                model_endpoint_type="openai",
+                model_endpoint=LETTA_MODEL_ENDPOINT,
+                context_window=8192,
+                handle=self.get_handle("letta-free"),
+                provider_name=self.name,
+                provider_category=self.provider_category,
+            )
+        ]
+
     def list_embedding_models(self):
         return [
             EmbeddingConfig(
@@ -189,9 +208,40 @@ class OpenAIProvider(Provider):
 
         return data
 
+    async def _get_models_async(self) -> List[dict]:
+        from letta.llm_api.openai import openai_get_model_list_async
+
+        # Some hardcoded support for OpenRouter (so that we only get models with tool calling support)...
+        # See: https://openrouter.ai/docs/requests
+        extra_params = {"supported_parameters": "tools"} if "openrouter.ai" in self.base_url else None
+
+        # Similar to Nebius
+        extra_params = {"verbose": True} if "nebius.com" in self.base_url else None
+
+        response = await openai_get_model_list_async(
+            self.base_url,
+            api_key=self.api_key,
+            extra_params=extra_params,
+            # fix_url=True,  # NOTE: make sure together ends with /v1
+        )
+
+        if "data" in response:
+            data = response["data"]
+        else:
+            # TogetherAI's response is missing the 'data' field
+            data = response
+
+        return data
+
     def list_llm_models(self) -> List[LLMConfig]:
         data = self._get_models()
+        return self._list_llm_models(data)
 
+    async def list_llm_models_async(self) -> List[LLMConfig]:
+        data = await self._get_models_async()
+        return self._list_llm_models(data)
+
+    def _list_llm_models(self, data) -> List[LLMConfig]:
         configs = []
         for model in data:
             assert "id" in model, f"OpenAI model missing 'id' field: {model}"
@@ -279,7 +329,6 @@ class OpenAIProvider(Provider):
         return configs
 
     def list_embedding_models(self) -> List[EmbeddingConfig]:
-
         if self.base_url == "https://api.openai.com/v1":
             # TODO: actually automatically list models for OpenAI
             return [
@@ -312,55 +361,92 @@ class OpenAIProvider(Provider):
         else:
             # Actually attempt to list
             data = self._get_models()
+            return self._list_embedding_models(data)
 
-            configs = []
-            for model in data:
-                assert "id" in model, f"Model missing 'id' field: {model}"
-                model_name = model["id"]
+    async def list_embedding_models_async(self) -> List[EmbeddingConfig]:
+        if self.base_url == "https://api.openai.com/v1":
+            # TODO: actually automatically list models for OpenAI
+            return [
+                EmbeddingConfig(
+                    embedding_model="text-embedding-ada-002",
+                    embedding_endpoint_type="openai",
+                    embedding_endpoint=self.base_url,
+                    embedding_dim=1536,
+                    embedding_chunk_size=300,
+                    handle=self.get_handle("text-embedding-ada-002", is_embedding=True),
+                ),
+                EmbeddingConfig(
+                    embedding_model="text-embedding-3-small",
+                    embedding_endpoint_type="openai",
+                    embedding_endpoint=self.base_url,
+                    embedding_dim=2000,
+                    embedding_chunk_size=300,
+                    handle=self.get_handle("text-embedding-3-small", is_embedding=True),
+                ),
+                EmbeddingConfig(
+                    embedding_model="text-embedding-3-large",
+                    embedding_endpoint_type="openai",
+                    embedding_endpoint=self.base_url,
+                    embedding_dim=2000,
+                    embedding_chunk_size=300,
+                    handle=self.get_handle("text-embedding-3-large", is_embedding=True),
+                ),
+            ]
 
-                if "context_length" in model:
-                    # Context length is returned in Nebius as "context_length"
-                    context_window_size = model["context_length"]
-                else:
-                    context_window_size = self.get_model_context_window_size(model_name)
+        else:
+            # Actually attempt to list
+            data = await self._get_models_async()
+            return self._list_embedding_models(data)
 
-                # We need the context length for embeddings too
-                if not context_window_size:
-                    continue
+    def _list_embedding_models(self, data) -> List[EmbeddingConfig]:
+        configs = []
+        for model in data:
+            assert "id" in model, f"Model missing 'id' field: {model}"
+            model_name = model["id"]
 
-                if "nebius.com" in self.base_url:
-                    # Nebius includes the type, which we can use to filter for embedidng models
-                    try:
-                        model_type = model["architecture"]["modality"]
-                        if model_type not in ["text->embedding"]:
-                            # print(f"Skipping model w/ modality {model_type}:\n{model}")
-                            continue
-                    except KeyError:
-                        print(f"Couldn't access architecture type field, skipping model:\n{model}")
-                        continue
+            if "context_length" in model:
+                # Context length is returned in Nebius as "context_length"
+                context_window_size = model["context_length"]
+            else:
+                context_window_size = self.get_model_context_window_size(model_name)
 
-                elif "together.ai" in self.base_url or "together.xyz" in self.base_url:
-                    # TogetherAI includes the type, which we can use to filter for embedding models
-                    if "type" in model and model["type"] not in ["embedding"]:
+            # We need the context length for embeddings too
+            if not context_window_size:
+                continue
+
+            if "nebius.com" in self.base_url:
+                # Nebius includes the type, which we can use to filter for embedidng models
+                try:
+                    model_type = model["architecture"]["modality"]
+                    if model_type not in ["text->embedding"]:
                         # print(f"Skipping model w/ modality {model_type}:\n{model}")
                         continue
-
-                else:
-                    # For other providers we should skip by default, since we don't want to assume embeddings are supported
+                except KeyError:
+                    print(f"Couldn't access architecture type field, skipping model:\n{model}")
                     continue
 
-                configs.append(
-                    EmbeddingConfig(
-                        embedding_model=model_name,
-                        embedding_endpoint_type=self.provider_type,
-                        embedding_endpoint=self.base_url,
-                        embedding_dim=context_window_size,
-                        embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
-                        handle=self.get_handle(model, is_embedding=True),
-                    )
-                )
+            elif "together.ai" in self.base_url or "together.xyz" in self.base_url:
+                # TogetherAI includes the type, which we can use to filter for embedding models
+                if "type" in model and model["type"] not in ["embedding"]:
+                    # print(f"Skipping model w/ modality {model_type}:\n{model}")
+                    continue
 
-            return configs
+            else:
+                # For other providers we should skip by default, since we don't want to assume embeddings are supported
+                continue
+
+            configs.append(
+                EmbeddingConfig(
+                    embedding_model=model_name,
+                    embedding_endpoint_type=self.provider_type,
+                    embedding_endpoint=self.base_url,
+                    embedding_dim=context_window_size,
+                    embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
+                    handle=self.get_handle(model, is_embedding=True),
+                )
+            )
+
+        return configs
 
     def get_model_context_window_size(self, model_name: str):
         if model_name in LLM_MAX_TOKENS:
