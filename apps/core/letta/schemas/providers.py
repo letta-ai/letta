@@ -59,6 +59,9 @@ class Provider(ProviderBase):
     def get_model_context_window(self, model_name: str) -> Optional[int]:
         raise NotImplementedError
 
+    async def get_model_context_window_async(self, model_name: str) -> Optional[int]:
+        raise NotImplementedError
+
     def provider_tag(self) -> str:
         """String representation of the provider for display purposes"""
         raise NotImplementedError
@@ -1133,7 +1136,6 @@ class GoogleAIProvider(Provider):
         from letta.llm_api.google_ai_client import google_ai_get_model_list
 
         model_options = google_ai_get_model_list(base_url=self.base_url, api_key=self.api_key)
-        # filter by 'generateContent' models
         model_options = [mo for mo in model_options if "generateContent" in mo["supportedGenerationMethods"]]
         model_options = [str(m["name"]) for m in model_options]
 
@@ -1159,11 +1161,56 @@ class GoogleAIProvider(Provider):
             )
         return configs
 
+    async def list_llm_models_async(self):
+        import asyncio
+
+        from letta.llm_api.google_ai_client import google_ai_get_model_list_async
+
+        # Get and filter the model list
+        model_options = await google_ai_get_model_list_async(base_url=self.base_url, api_key=self.api_key)
+        model_options = [mo for mo in model_options if "generateContent" in mo["supportedGenerationMethods"]]
+        model_options = [str(m["name"]) for m in model_options]
+
+        # filter by model names
+        model_options = [mo[len("models/") :] if mo.startswith("models/") else mo for mo in model_options]
+
+        # Add support for all gemini models
+        model_options = [mo for mo in model_options if str(mo).startswith("gemini-")]
+
+        # Prepare tasks for context window lookups in parallel
+        async def create_config(model):
+            context_window = await self.get_model_context_window_async(model)
+            return LLMConfig(
+                model=model,
+                model_endpoint_type="google_ai",
+                model_endpoint=self.base_url,
+                context_window=context_window,
+                handle=self.get_handle(model),
+                max_tokens=8192,
+                provider_name=self.name,
+                provider_category=self.provider_category,
+            )
+
+        # Execute all config creation tasks concurrently
+        configs = await asyncio.gather(*[create_config(model) for model in model_options])
+
+        return configs
+
     def list_embedding_models(self):
         from letta.llm_api.google_ai_client import google_ai_get_model_list
 
         # TODO: use base_url instead
         model_options = google_ai_get_model_list(base_url=self.base_url, api_key=self.api_key)
+        return self._list_embedding_models(model_options)
+
+    async def list_embedding_models_async(self):
+        from letta.llm_api.google_ai_client import google_ai_get_model_list_async
+
+        # TODO: use base_url instead
+        model_options = await google_ai_get_model_list_async(base_url=self.base_url, api_key=self.api_key)
+        return self._list_embedding_models(model_options)
+
+    def _list_embedding_models(self, model_options):
         # filter by 'generateContent' models
         model_options = [mo for mo in model_options if "embedContent" in mo["supportedGenerationMethods"]]
         model_options = [str(m["name"]) for m in model_options]
@@ -1187,6 +1234,11 @@ class GoogleAIProvider(Provider):
         from letta.llm_api.google_ai_client import google_ai_get_model_context_window
 
         return google_ai_get_model_context_window(self.base_url, self.api_key, model_name)
+
+    async def get_model_context_window_async(self, model_name: str) -> Optional[int]:
+        from letta.llm_api.google_ai_client import google_ai_get_model_context_window_async
+
+        return await google_ai_get_model_context_window_async(self.base_url, self.api_key, model_name)
 
 
 class GoogleVertexProvider(Provider):

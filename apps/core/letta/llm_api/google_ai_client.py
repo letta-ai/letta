@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 
-import requests
+import httpx
 from google import genai
 
 from letta.errors import ErrorCode, LLMAuthenticationError, LLMError
@@ -63,20 +63,24 @@ def google_ai_check_valid_api_key(api_key: str):
 
 
 def google_ai_get_model_list(base_url: str, api_key: str, key_in_header: bool = True) -> List[dict]:
+    """Synchronous version to get model list from Google AI API using httpx."""
+    import httpx
+
     from letta.utils import printd
 
     url, headers = get_gemini_endpoint_and_headers(base_url, None, api_key, key_in_header)
 
     try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()  # Raises HTTPError for 4XX/5XX status
-        response = response.json()  # convert to dict from string
+        with httpx.Client() as client:
+            response = client.get(url, headers=headers)
+            response.raise_for_status()  # Raises HTTPStatusError for 4XX/5XX status
+            response_data = response.json()  # convert to dict from string
 
-        # Grab the models out
-        model_list = response["models"]
-        return model_list
+            # Grab the models out
+            model_list = response_data["models"]
+            return model_list
 
-    except requests.exceptions.HTTPError as http_err:
+    except httpx.HTTPStatusError as http_err:
         # Handle HTTP errors (e.g., response 4XX, 5XX)
         printd(f"Got HTTPError, exception={http_err}")
         # Print the HTTP status code
@@ -85,8 +89,8 @@ def google_ai_get_model_list(base_url: str, api_key: str, key_in_header: bool = 
         print(f"Message: {http_err.response.text}")
         raise http_err
 
-    except requests.exceptions.RequestException as req_err:
-        # Handle other requests-related errors (e.g., connection error)
+    except httpx.RequestError as req_err:
+        # Handle other httpx-related errors (e.g., connection error)
         printd(f"Got RequestException, exception={req_err}")
         raise req_err
 
@@ -96,22 +100,74 @@ def google_ai_get_model_list(base_url: str, api_key: str, key_in_header: bool = 
         raise e
 
 
-def google_ai_get_model_details(base_url: str, api_key: str, model: str, key_in_header: bool = True) -> List[dict]:
+async def google_ai_get_model_list_async(
+    base_url: str, api_key: str, key_in_header: bool = True, client: Optional[httpx.AsyncClient] = None
+) -> List[dict]:
+    """Asynchronous version to get model list from Google AI API using httpx."""
+    from letta.utils import printd
+
+    url, headers = get_gemini_endpoint_and_headers(base_url, None, api_key, key_in_header)
+
+    # Determine if we need to close the client at the end
+    close_client = False
+    if client is None:
+        client = httpx.AsyncClient()
+        close_client = True
+
+    try:
+        response = await client.get(url, headers=headers)
+        response.raise_for_status()  # Raises HTTPStatusError for 4XX/5XX status
+        response_data = response.json()  # convert to dict from string
+
+        # Grab the models out
+        model_list = response_data["models"]
+        return model_list
+
+    except httpx.HTTPStatusError as http_err:
+        # Handle HTTP errors (e.g., response 4XX, 5XX)
+        printd(f"Got HTTPError, exception={http_err}")
+        # Print the HTTP status code
+        print(f"HTTP Error: {http_err.response.status_code}")
+        # Print the response content (error message from server)
+        print(f"Message: {http_err.response.text}")
+        raise http_err
+
+    except httpx.RequestError as req_err:
+        # Handle other httpx-related errors (e.g., connection error)
+        printd(f"Got RequestException, exception={req_err}")
+        raise req_err
+
+    except Exception as e:
+        # Handle other potential errors
+        printd(f"Got unknown Exception, exception={e}")
+        raise e
+
+    finally:
+        # Close the client if we created it
+        if close_client:
+            await client.aclose()
+
+
+def google_ai_get_model_details(base_url: str, api_key: str, model: str, key_in_header: bool = True) -> dict:
+    """Synchronous version to get model details from Google AI API using httpx."""
+    import httpx
+
     from letta.utils import printd
 
     url, headers = get_gemini_endpoint_and_headers(base_url, model, api_key, key_in_header)
 
     try:
-        response = requests.get(url, headers=headers)
-        printd(f"response = {response}")
-        response.raise_for_status()  # Raises HTTPError for 4XX/5XX status
-        response = response.json()  # convert to dict from string
-        printd(f"response.json = {response}")
+        with httpx.Client() as client:
+            response = client.get(url, headers=headers)
+            printd(f"response = {response}")
+            response.raise_for_status()  # Raises HTTPStatusError for 4XX/5XX status
+            response_data = response.json()  # convert to dict from string
+            printd(f"response.json = {response_data}")
 
-        # Grab the models out
-        return response
+            # Return the model details
+            return response_data
 
-    except requests.exceptions.HTTPError as http_err:
+    except httpx.HTTPStatusError as http_err:
         # Handle HTTP errors (e.g., response 4XX, 5XX)
         printd(f"Got HTTPError, exception={http_err}")
         # Print the HTTP status code
@@ -120,8 +176,8 @@ def google_ai_get_model_details(base_url: str, api_key: str, model: str, key_in_
         print(f"Message: {http_err.response.text}")
         raise http_err
 
-    except requests.exceptions.RequestException as req_err:
-        # Handle other requests-related errors (e.g., connection error)
+    except httpx.RequestError as req_err:
+        # Handle other httpx-related errors (e.g., connection error)
         printd(f"Got RequestException, exception={req_err}")
         raise req_err
 
@@ -131,8 +187,66 @@ def google_ai_get_model_details(base_url: str, api_key: str, model: str, key_in_
         raise e
 
 
+async def google_ai_get_model_details_async(
+    base_url: str, api_key: str, model: str, key_in_header: bool = True, client: Optional[httpx.AsyncClient] = None
+) -> dict:
+    """Asynchronous version to get model details from Google AI API using httpx."""
+    import httpx
+
+    from letta.utils import printd
+
+    url, headers = get_gemini_endpoint_and_headers(base_url, model, api_key, key_in_header)
+
+    # Determine if we need to close the client at the end
+    close_client = False
+    if client is None:
+        client = httpx.AsyncClient()
+        close_client = True
+
+    try:
+        response = await client.get(url, headers=headers)
+        printd(f"response = {response}")
+        response.raise_for_status()  # Raises HTTPStatusError for 4XX/5XX status
+        response_data = response.json()  # convert to dict from string
+        printd(f"response.json = {response_data}")
+
+        # Return the model details
+        return response_data
+
+    except httpx.HTTPStatusError as http_err:
+        # Handle HTTP errors (e.g., response 4XX, 5XX)
+        printd(f"Got HTTPError, exception={http_err}")
+        # Print the HTTP status code
+        print(f"HTTP Error: {http_err.response.status_code}")
+        # Print the response content (error message from server)
+        print(f"Message: {http_err.response.text}")
+        raise http_err
+
+    except httpx.RequestError as req_err:
+        # Handle other httpx-related errors (e.g., connection error)
+        printd(f"Got RequestException, exception={req_err}")
+        raise req_err
+
+    except Exception as e:
+        # Handle other potential errors
+        printd(f"Got unknown Exception, exception={e}")
+        raise e
+
+    finally:
+        # Close the client if we created it
+        if close_client:
+            await client.aclose()
+
+
 def google_ai_get_model_context_window(base_url: str, api_key: str, model: str, key_in_header: bool = True) -> int:
     model_details = google_ai_get_model_details(base_url=base_url, api_key=api_key, model=model, key_in_header=key_in_header)
+    # TODO should this be:
+    # return model_details["inputTokenLimit"] + model_details["outputTokenLimit"]
+    return int(model_details["inputTokenLimit"])
+
+
+async def google_ai_get_model_context_window_async(base_url: str, api_key: str, model: str, key_in_header: bool = True) -> int:
+    model_details = await google_ai_get_model_details_async(base_url=base_url, api_key=api_key, model=model, key_in_header=key_in_header)
     # TODO should this be:
     # return model_details["inputTokenLimit"] + model_details["outputTokenLimit"]
     return int(model_details["inputTokenLimit"])
