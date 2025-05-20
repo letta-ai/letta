@@ -1,6 +1,7 @@
 'use client';
 import { z } from 'zod';
 import type { DialogTableItem } from '@letta-cloud/ui-component-library';
+import { ArrowMenuOpenIcon } from '@letta-cloud/ui-component-library';
 import { TextArea } from '@letta-cloud/ui-component-library';
 import { Form, FormActions, Input } from '@letta-cloud/ui-component-library';
 import {
@@ -1258,6 +1259,13 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
                     ],
                   };
                 }),
+                {
+                  name: t('EditDataSourcesContent.viewJobs'),
+                  onClick: () => {
+                    window.open(`/data-sources/${source.id}/jobs`, '_blank');
+                  },
+                  icon: <ArrowMenuOpenIcon />,
+                },
                 {
                   name: t('EditDataSourcesContent.uploadFile'),
                   onClick: () => {

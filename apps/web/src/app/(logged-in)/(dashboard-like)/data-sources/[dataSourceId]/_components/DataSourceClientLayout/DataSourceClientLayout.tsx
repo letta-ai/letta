@@ -31,6 +31,11 @@ export function DataSourceClientLayout(props: DataSourceClientLayoutProps) {
           label: t('navigation.files'),
           href: `/data-sources/${source?.id || ''}/files`,
         },
+        {
+          id: 'jobs',
+          label: t('navigation.jobs'),
+          href: `/data-sources/${source?.id || ''}/jobs`,
+        },
       ]}
     >
       {children}

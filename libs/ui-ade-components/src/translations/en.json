@@ -300,6 +300,7 @@
       "delete": "Delete file",
       "addFile": "Add file",
       "uploadFile": "Upload file",
+      "viewJobs": "View ingestion jobs",
       "detachSource": "Detach source",
       "fileProcessing": "File is being processed"
     },

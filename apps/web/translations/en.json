@@ -2172,6 +2172,16 @@
     "submit": "Sign up",
     "info": "You will be asked to provide a valid phone number after signing up to verify your account. If you do not want to provide a phone number, please sign in through our <link>other options</link>."
   },
+  "datasources/jobs": {
+    "title": "Ingestion jobs",
+    "subtitle": "View and manage your data ingestion jobs",
+    "table": {
+      "startedAt": "Started at",
+      "status": "Status",
+      "completedAt": "Completed at",
+      "id": "ID"
+    }
+  },
   "password-login": {
     "forgotPassword": "Forgot your password?",
     "title": "Sign in to Letta Cloud",
@@ -2273,7 +2283,8 @@
   "data-sources/layout": {
     "navigation": {
       "sourceInfo": "Source Info",
-      "files": "Files"
+      "files": "Files",
+      "jobs": "Ingestion jobs"
     }
   },
   "components/CodeWithAPIKeyInjection": {
