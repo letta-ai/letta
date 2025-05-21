@@ -265,67 +265,37 @@ class ToolExecutionSandbox:
 
         try:
             with self.temporary_env_vars(env):
-
                 # Read and compile the Python script
                 with open(temp_file_path, "r", encoding="utf-8") as f:
                     source = f.read()
                 code_obj = compile(source, temp_file_path, "exec")
-
-                # Safe modules that are needed for basic functionality
-                safe_modules = {
-                    'pickle': pickle,
-                    'base64': base64,
-                    'sys': sys,
-                    'letta': __import__('letta'),
-                    'json': __import__('json'),
-                    'typing': __import__('typing'),
-                    'datetime': __import__('datetime'),
-                    'collections': __import__('collections'),
-                    'math': __import__('math'),
-                    're': __import__('re'),
-                    'time': __import__('time'),
-                    'random': __import__('random')
-                }
+                restricted_builtins = dict(__builtins__ if isinstance(__builtins__, dict) else __builtins__.__dict__)
                 
-                # Safe import
-                def safe_import(name, *args, **kwargs):
-                    if name in safe_modules:
-                        return safe_modules[name]
+                for dangerous_func in ['exec', 'eval', 'compile', 'open']:
+                    if dangerous_func in restricted_builtins:
+                        restricted_builtins.pop(dangerous_func)
+                
+                original_import = restricted_builtins['__import__']
+                def secure_import(name, *args, **kwargs):
+                    module = original_import(name, *args, **kwargs)
                     
-                    if name.startswith('letta.'):
-                        base_module = 'letta'
-                        if base_module in safe_modules:
-                            submodule = name[len(base_module)+1:]
-                            try:
-                                return __import__(name, fromlist=[submodule])
-                            except ImportError:
-                                pass
+                    if name == 'os':
+                        for dangerous_func in ['system', 'popen', 'spawn', 'exec', 'posix_spawn']:
+                            if hasattr(module, dangerous_func):
+                                setattr(module, dangerous_func, None)
+                    elif name == 'subprocess':
+                        for dangerous_func in ['run', 'call', 'check_call', 'check_output', 'Popen']:
+                            if hasattr(module, dangerous_func):
+                                setattr(module, dangerous_func, None)
                     
-                    raise ImportError(f"Import of module '{name}' is not allowed for security reasons")
+                    return module
                 
-                restricted_builtins = dict(__builtins__)
-                restricted_builtins['__import__'] = safe_import
+                restricted_builtins['__import__'] = secure_import
                 
-                # Remove dangerous built-ins
-                dangerous_builtins = ['open', 'eval', 'exec', 'compile', 'globals', 'locals', 
-                                     'getattr', 'setattr', 'delattr', 'classmethod', 
-                                     'staticmethod', 'memoryview', 'breakpoint']
-                for name in dangerous_builtins:
-                    if name in restricted_builtins:
-                        restricted_builtins.pop(name)
-                
-                # Prepare globals with environment variables and safe modules
-                globals_dict = {
-                    '__builtins__': restricted_builtins,
-                    '__name__': "__restricted__",
-                    '__file__': temp_file_path,
-                }
-                
-                globals_dict.update(safe_modules)
-                
-                # Add environment variables
-                for key, value in env.items():
-                    globals_dict[key] = value
+                globals_dict = dict(env)
+                globals_dict['__builtins__'] = restricted_builtins
+                globals_dict['__name__'] = "__main__"
+                globals_dict['__file__'] = temp_file_path
 
                 # Execute the compiled code
                 log_event(name="start exec", attributes={"temp_file_path": temp_file_path})
