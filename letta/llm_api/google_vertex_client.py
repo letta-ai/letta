@@ -206,6 +206,7 @@ class GoogleVertexClient(LLMClientBase):
             # Convert to the exact payload style Google expects
             formatted_tools = self.convert_tools_to_google_ai_format(tool_objs, llm_config)
         else:
+            formatted_tools = []
             tool_names = []
 
         contents = self.add_dummy_model_messages(
@@ -214,29 +215,13 @@ class GoogleVertexClient(LLMClientBase):
 
         request_data = {
             "contents": contents,
-            "tools": formatted_tools,
-            "generation_config": {
+            "config": {
                 "temperature": llm_config.temperature,
                 "max_output_tokens": llm_config.max_tokens,
+                "tools": formatted_tools,
             },
         }
 
-        # write tool config
-        tool_config = ToolConfig(
-            function_calling_config=FunctionCallingConfig(
-                # ANY mode forces the model to predict only function calls
-                mode=FunctionCallingConfigMode.ANY,
-                # Provide the list of tools (though empty should also work, it seems not to)
-                allowed_function_names=tool_names,
-            )
-        )
-        request_data["tool_config"] = tool_config.model_dump()
-
-        # request_data = super().build_request_data(messages, llm_config, tools, force_tool_call)
-        request_data["config"] = request_data.pop("generation_config")
-        request_data["config"]["tools"] = request_data.pop("tools")
-
-        tool_names = [t["name"] for t in tools] if tools else []
         if len(tool_names) == 1 and settings.use_vertex_structured_outputs_experimental:
             request_data["config"]["response_mime_type"] = "application/json"
             request_data["config"]["response_schema"] = self.get_function_call_response_schema(tools[0])
