@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from letta.orm.agents_tags import AgentsTags
     from letta.orm.identity import Identity
     from letta.orm.organization import Organization
+    from letta.orm.parallel_execution import ParallelExecutionConfig
     from letta.orm.source import Source
     from letta.orm.tool import Tool
 
@@ -95,6 +96,14 @@ class Agent(SqlalchemyBase, OrganizationMixin):
         passive_deletes=True,  # Ensures SQLAlchemy doesn't fetch blocks_agents rows before deleting
         back_populates="agents",
         doc="Blocks forming the core memory of the agent.",
+    )
+    parallel_execution_config: Mapped["ParallelExecutionConfig"] = relationship(
+        "ParallelExecutionConfig",
+        back_populates="agent",
+        uselist=False,
+        lazy="selectin",
+        cascade="all, delete-orphan",
+        doc="Parallel execution configuration for the agent.",
     )
     tags: Mapped[List["AgentsTags"]] = relationship(
         "AgentsTags",
@@ -175,6 +184,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
             "tool_exec_environment_variables": [],
             "enable_sleeptime": None,
             "response_format": self.response_format,
+            "parallel_execution_config": None,
         }
 
         # Optional fields: only included if requested
@@ -190,6 +200,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
             "multi_agent_group": lambda: self.multi_agent_group,
             "tool_exec_environment_variables": lambda: self.tool_exec_environment_variables,
             "enable_sleeptime": lambda: self.enable_sleeptime,
+            "parallel_execution_config": lambda: self.parallel_execution_config.to_pydantic() if hasattr(self, 'parallel_execution_config') and self.parallel_execution_config else None,
         }
 
         include_relationships = set(optional_fields.keys() if include_relationships is None else include_relationships)
