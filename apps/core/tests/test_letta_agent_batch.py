@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import List, Optional, Tuple
+from typing import Tuple
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -15,7 +15,6 @@ from anthropic.types.beta.messages import (
 
 from letta.agents.letta_agent_batch import LettaAgentBatch
 from letta.config import LettaConfig
-from letta.functions.functions import parse_source_code
 from letta.helpers import ToolRulesSolver
 from letta.jobs.llm_batch_job_polling import poll_running_llm_batches
 from letta.orm import Base
@@ -25,10 +24,10 @@ from letta.schemas.job import BatchJob
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_request import LettaBatchRequest
 from letta.schemas.message import MessageCreate
-from letta.schemas.tool import Tool
 from letta.schemas.tool_rule import InitToolRule
 from letta.server.db import db_context
 from letta.server.server import SyncServer
+from tests.utils import create_tool_from_func
 
 # --------------------------------------------------------------------------- #
 # Test Constants / Helpers
@@ -43,24 +42,6 @@ MODELS = {
 
 # Expected message roles in batch requests
 EXPECTED_ROLES = ["system", "assistant", "tool", "user", "user"]
-
-
-def create_tool_from_func(
-    func,
-    tags: Optional[List[str]] = None,
-    description: Optional[str] = None,
-):
-    source_code = parse_source_code(func)
-    source_type = "python"
-    if not tags:
-        tags = []
-
-    return Tool(
-        source_type=source_type,
-        source_code=source_code,
-        tags=tags,
-        description=description,
-    )
 
 
 # --------------------------------------------------------------------------- #

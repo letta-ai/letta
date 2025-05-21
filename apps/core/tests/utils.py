@@ -4,15 +4,17 @@ import string
 import time
 from datetime import datetime, timezone
 from importlib import util
-from typing import Dict, Iterator, List, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 
 import requests
 
 from letta.config import LettaConfig
 from letta.data_sources.connectors import DataConnector
+from letta.functions.functions import parse_source_code
 from letta.schemas.enums import MessageRole
 from letta.schemas.file import FileMetadata
 from letta.schemas.message import Message
+from letta.schemas.tool import Tool
 from letta.settings import TestSettings
 
 from .constants import TIMEOUT
@@ -199,3 +201,21 @@ def wait_for_server(url, timeout=30, interval=0.5):
 
 def random_string(length: int) -> str:
     return "".join(random.choices(string.ascii_letters + string.digits, k=length))
+
+
+def create_tool_from_func(
+    func,
+    tags: Optional[List[str]] = None,
+    description: Optional[str] = None,
+):
+    source_code = parse_source_code(func)
+    source_type = "python"
+    if not tags:
+        tags = []
+
+    return Tool(
+        source_type=source_type,
+        source_code=source_code,
+        tags=tags,
+        description=description,
+    )
