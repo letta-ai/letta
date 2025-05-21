@@ -88,7 +88,7 @@ jobs:
           LETTA_PG_DB: ${{ secrets.LETTA_PG_DB }}
           LETTA_PG_HOST: ${{ secrets.LETTA_PG_HOST }}
           LETTA_PG_PORT: ${{ secrets.LETTA_PG_PORT }}
-          LETTA_USE_EXPERIMENTAL: ${{ secrets.LETTA_USE_EXPERIMENTAL }}
+          LETTA_DISABLE_SQLALCHEMY_POOLING: ${{ secrets.LETTA_DISABLE_SQLALCHEMY_POOLING }}
           E2B_API_KEY: ${{ secrets.E2B_API_KEY }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           E2B_SANDBOX_TEMPLATE_ID: ${{ secrets.E2B_SANDBOX_TEMPLATE_ID }}
