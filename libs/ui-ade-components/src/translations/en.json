@@ -548,14 +548,9 @@
     }
   },
   "ADE/EditCoreMemoriesPanel": {
-    "CollapseComponent": {
-      "collapse": "Collapse",
-      "expand": "Expand"
-    },
-    "ManageMemoryLock": {
-      "locked": "Unlock editing core memory",
-      "unlocked": "Lock editing core memory",
-      "simulated": "Simulated memory is not editable"
+    "MemoryWrapper": {
+      "addMemory": "Create memory",
+      "emptyMemoryBlock": "No memory blocks yet"
     },
     "advancedEditor": "Advanced",
     "advancedEditorDisabledDueToSimulated": "The advanced editor is not available for simulated memoires, switch back to template to edit",
@@ -1537,10 +1532,6 @@
       "error": "There was an error removing this tool, please try again or contact support.",
       "confirmation": "Are you sure you want to detach this tool from your agent?"
     }
-  },
-  "ADE/SharedMemoryIndicator": {
-    "trigger": "Multiple agents are using this memory block, click to view all agents",
-    "thisAgent": "Current"
   },
   "ADE/ContextEditorPanel": {
     "infoTooltip": "Current status of the LLM context window (Letta will automatically compress on overflow)",

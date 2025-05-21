@@ -1452,10 +1452,6 @@
       "confirmation": "您确定要从您的智能体分离此工具吗？"
     }
   },
-  "ADE/SharedMemoryIndicator": {
-    "trigger": "多个智能体正在使用此记忆块，点击查看所有智能体",
-    "thisAgent": "当前"
-  },
   "ADE/ContextEditorPanel": {
     "infoTooltip": "LLM上下文窗口的当前状态（Letta将在溢出时自动压缩）",
     "title": "上下文窗口",

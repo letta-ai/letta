@@ -2,6 +2,44 @@
   "components/QuotaBlock": {
     "usage": "<value></value> of <max></max>"
   },
+  "components/SharedMemoryIndicator": {
+    "thisAgent": "Current"
+  },
+  "components/CoreMemoryEditor": {
+    "CoreMemoryEditorContent": {
+      "placeholder": "Enter your memories",
+      "unlock": "Double click to edit",
+      "reset": "Reset",
+      "save": "Save",
+      "lock": "Lock"
+    },
+    "DescriptionView": {
+      "clickToExpand": "Click to expand",
+      "clickToCollapse": "Click to collapse"
+    },
+    "CollapseController": {
+      "tooltip": {
+        "collapse": "Expand memory block",
+        "expanded": "Collapse memory block"
+      }
+    },
+    "CoreMemoryEditorHeader": {
+      "limit": {
+        "label": "{value} Chars",
+        "tooltip": {
+          "normal": "This memory block has a limit of {limit} characters, you can edit this in advanced settings",
+          "overage": "You have exceeded the limit of {limit} characters, you can adjust this in advanced settings"
+        }
+      },
+      "sharedAgents": "Shared with {count} agents",
+      "isLocked": {
+        "locked": "Locked",
+        "unlocked": "Unlocked"
+      },
+      "readOnly": "This memory block cannot be edited by tools, it is read-only",
+      "migrationLock": "This memory block will not be overwritten by the migration process"
+    }
+  },
   "components/AgentStateViewer": {
     "changed": "Changed",
     "StateViewer": {

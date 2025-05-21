@@ -40,24 +40,34 @@ export function useUpdateMemory(payload: UseUpdateMemoryPayload) {
   const debouncedSave = useDebouncedCallback(mutate, 500);
 
   const handleChange = useCallback(
-    (nextValue: string) => {
+    (nextValue: string, noDebounce = false) => {
       setLocalValue(nextValue);
       originalMemory.current = nextValue;
 
-      debouncedSave(
-        {
+      if (noDebounce) {
+        mutate({
           agentId: id,
           blockLabel: label,
           requestBody: {
             value: nextValue,
           },
-        },
-        {
-          onSuccess: () => {
-            setLastUpdatedAt(new Date().toISOString());
+        });
+      } else {
+        debouncedSave(
+          {
+            agentId: id,
+            blockLabel: label,
+            requestBody: {
+              value: nextValue,
+            },
           },
-        },
-      );
+          {
+            onSuccess: () => {
+              setLastUpdatedAt(new Date().toISOString());
+            },
+          },
+        );
+      }
 
       queryClient.setQueriesData<AgentState | undefined>(
         {
@@ -91,7 +101,7 @@ export function useUpdateMemory(payload: UseUpdateMemoryPayload) {
         },
       );
     },
-    [debouncedSave, id, label, queryClient],
+    [debouncedSave, mutate, id, label, queryClient],
   );
 
   useEffect(() => {

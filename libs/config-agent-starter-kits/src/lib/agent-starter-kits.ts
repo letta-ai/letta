@@ -55,16 +55,7 @@ export const STARTER_KITS = {
     agentState: {
       description:
         'A blank slate for you to create your own agent from scratch.',
-      memory_blocks: [
-        {
-          label: 'persona',
-          value: '',
-        },
-        {
-          label: 'human',
-          value: '',
-        },
-      ],
+      memory_blocks: [],
     },
     architecture: 'memgpt',
   },

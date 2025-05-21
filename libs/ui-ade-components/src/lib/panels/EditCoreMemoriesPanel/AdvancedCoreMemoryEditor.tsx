@@ -356,7 +356,7 @@ interface CreateNewMemoryBlockFormProps {
   trigger: React.ReactNode;
 }
 
-function CreateNewMemoryBlockForm(props: CreateNewMemoryBlockFormProps) {
+export function CreateNewMemoryBlockForm(props: CreateNewMemoryBlockFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   const t = useTranslations('ADE/AdvancedCoreMemoryEditor');
 

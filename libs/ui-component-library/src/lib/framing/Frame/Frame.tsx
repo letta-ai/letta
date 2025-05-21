@@ -79,6 +79,7 @@ const frameVariants = cva('', {
     },
     border: {
       true: 'border',
+      dashed: 'border-dashed border',
     },
     borderY: {
       true: 'border-t border-b',

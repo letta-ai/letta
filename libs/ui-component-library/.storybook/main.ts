@@ -30,8 +30,8 @@ const config: StorybookConfig = {
     nextConfig.resolve.alias = {
       ...nextConfig.resolve.alias,
       path: () => require.resolve('path-browserify'),
-      'next/image': () => React.createElement('div'),
-      'next/link': () => React.createElement('div'),
+      // 'next/image': () => React.createElement('div'),
+      // 'next/link': () => React.createElement('div'),
     };
 
     return nextConfig;

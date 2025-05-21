@@ -1,0 +1,451 @@
+'use client';
+import * as React from 'react';
+import type { Block } from '@letta-cloud/sdk-core';
+import { HStack } from '../../framing/HStack/HStack';
+import { Typography } from '../../core/Typography/Typography';
+import { InfoChip } from '../../core/InfoChip/InfoChip';
+import { useTranslations } from '@letta-cloud/translations';
+import {
+  CaretDownIcon,
+  CaretUpIcon,
+  InvaderSharedAgentIcon,
+  LockClosedIcon,
+  LockOpenRightIcon,
+  VisibilityLockIcon,
+} from '../../icons';
+import { VStack } from '../../framing/VStack/VStack';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Tooltip } from '../../core/Tooltip/Tooltip';
+import { InlineTextDiff } from '../../core/InlineTextDiff/InlineTextDiff';
+import { HR } from '../../core/HR/HR';
+import { cn } from '@letta-cloud/ui-styles';
+import { Button } from '../../core/Button/Button';
+import type { SharedAgent } from './SharedAgentsPopover/SharedAgentsPopover';
+import { SharedAgentsPopover } from './SharedAgentsPopover/SharedAgentsPopover';
+
+interface LimitProps {
+  limit: number;
+  value: string;
+}
+
+function Limit(props: LimitProps) {
+  const { limit, value } = props;
+
+  const t = useTranslations('components/CoreMemoryEditor');
+
+  const tooltip = useMemo(() => {
+    if (limit > value.length) {
+      return t('CoreMemoryEditorHeader.limit.tooltip.normal', {
+        limit,
+        value,
+      });
+    }
+
+    return t('CoreMemoryEditorHeader.limit.tooltip.overage', {
+      limit,
+      value,
+    });
+  }, [limit, value, t]);
+
+  return (
+    <Tooltip content={tooltip}>
+      <Typography
+        color={limit > value.length ? 'lighter' : 'destructive'}
+        variant="body3"
+      >
+        {t('CoreMemoryEditorHeader.limit.label', {
+          value: value.length,
+        })}
+      </Typography>
+    </Tooltip>
+  );
+}
+
+interface DescriptionViewProps {
+  description: string;
+}
+
+function DescriptionView(props: DescriptionViewProps) {
+  const { description } = props;
+  const [expanded, setExpanded] = useState(false);
+  const t = useTranslations('components/CoreMemoryEditor');
+
+  return (
+    <HStack padding="xsmall" gap="small" color="background-grey2">
+      <Tooltip
+        content={
+          expanded
+            ? t('DescriptionView.clickToCollapse')
+            : t('DescriptionView.clickToExpand')
+        }
+      >
+        <Typography
+          color="lighter"
+          onClick={() => {
+            setExpanded((v) => !v);
+          }}
+          variant="body3"
+          className={expanded ? '' : 'line-clamp-2'}
+        >
+          {description}
+        </Typography>
+      </Tooltip>
+    </HStack>
+  );
+}
+
+interface CollapseControllerProps {
+  isCollapsed: boolean;
+  onCollapseChange: (collapsed: boolean) => void;
+}
+
+function CollapseController(props: CollapseControllerProps) {
+  const { isCollapsed, onCollapseChange } = props;
+
+  const t = useTranslations('components/CoreMemoryEditor');
+
+  const tooltip = useMemo(() => {
+    return isCollapsed
+      ? t('CollapseController.tooltip.expanded')
+      : t('CollapseController.tooltip.collapse');
+  }, [isCollapsed, t]);
+
+  return (
+    <Tooltip asChild content={tooltip}>
+      <button
+        onClick={() => {
+          onCollapseChange(!isCollapsed);
+        }}
+        aria-label={tooltip}
+      >
+        {isCollapsed ? <CaretDownIcon /> : <CaretUpIcon />}
+      </button>
+    </Tooltip>
+  );
+}
+
+interface CoreMemoryEditorHeaderProps {
+  memoryBlock: Block;
+  sharedAgents: SharedAgent[];
+  isLocked: boolean;
+  editedValue: string;
+  isCollapsed: boolean;
+  onCollapseChange: (collapsed: boolean) => void;
+  onLockChange: (locked: boolean) => void;
+}
+
+function CoreMemoryEditorHeader(props: CoreMemoryEditorHeaderProps) {
+  const {
+    memoryBlock,
+    editedValue,
+    isLocked,
+    isCollapsed,
+    onCollapseChange,
+    onLockChange,
+    sharedAgents,
+  } = props;
+  const { label, limit, read_only } = memoryBlock;
+
+  const t = useTranslations('components/CoreMemoryEditor');
+
+  return (
+    <HStack align="center" justify="spaceBetween" fullWidth>
+      <HStack align="center" gap="small">
+        <Typography semibold color="lighter" variant="body3">
+          {label}
+        </Typography>
+        <HStack gap="small">
+          <InfoChip
+            onClick={() => {
+              onLockChange(!isLocked);
+            }}
+            label={
+              isLocked
+                ? t('CoreMemoryEditorHeader.isLocked.locked')
+                : t('CoreMemoryEditorHeader.isLocked.unlocked')
+            }
+            icon={isLocked ? <LockClosedIcon /> : <LockOpenRightIcon />}
+          />
+          {sharedAgents.length > 0 && (
+            <SharedAgentsPopover
+              agents={sharedAgents}
+              trigger={
+                <InfoChip
+                  variant="brand"
+                  value={`${sharedAgents.length}`}
+                  label={t('CoreMemoryEditorHeader.sharedAgents', {
+                    count: `${sharedAgents.length}`,
+                  })}
+                  icon={<InvaderSharedAgentIcon />}
+                />
+              }
+            ></SharedAgentsPopover>
+          )}
+          {read_only && (
+            <InfoChip
+              label={t('CoreMemoryEditorHeader.readOnly')}
+              icon={<VisibilityLockIcon />}
+            />
+          )}
+        </HStack>
+      </HStack>
+      <HStack>
+        <Limit limit={limit || 0} value={editedValue} />
+        <CollapseController
+          isCollapsed={isCollapsed}
+          onCollapseChange={onCollapseChange}
+        />
+      </HStack>
+    </HStack>
+  );
+}
+
+const TEXTAREA_CLASSNAME =
+  'w-full h-full resize-none overflow-y-auto bg-panel-input-background whitespace-pre-line inline-block border border-border text-base p-2 text-lighter-text outline-none';
+
+interface InlineMemoryDiffProps {
+  value: string;
+}
+
+function InlineMemoryDiff(props: InlineMemoryDiffProps) {
+  const { value } = props;
+  const initialState = useRef<string>(value);
+
+  useEffect(() => {
+    const state = setTimeout(() => {
+      initialState.current = value;
+    }, 5000);
+
+    return () => {
+      clearTimeout(state);
+    };
+  }, [value]);
+
+  return <InlineTextDiff text={initialState.current} comparedText={value} />;
+}
+
+interface CoreMemoryContentProps {
+  value: string;
+  onLockChange: (locked: boolean) => void;
+  testId?: string;
+  onValueChange: (value: string) => void;
+  onSave: () => void;
+  isSaving: boolean;
+  onReset: () => void;
+  isLocked: boolean;
+  isDifferent?: boolean;
+  showDiff?: boolean;
+  disabled?: boolean;
+}
+
+function CoreMemoryContent(props: CoreMemoryContentProps) {
+  const {
+    disabled,
+    value,
+    isDifferent,
+    onValueChange,
+    onReset,
+    isSaving,
+    onSave,
+    onLockChange,
+    showDiff,
+    testId,
+    isLocked,
+  } = props;
+
+  const t = useTranslations('components/CoreMemoryEditor');
+  const [scrollTop, setScrollTop] = useState(0);
+
+  if (disabled) {
+    return (
+      <div className={cn(TEXTAREA_CLASSNAME, 'relative')} data-testid={testId}>
+        {showDiff ? <InlineMemoryDiff value={value} /> : value}
+      </div>
+    );
+  }
+
+  if (isLocked) {
+    return (
+      <Tooltip asChild content={t('CoreMemoryEditorContent.unlock')}>
+        <div className="w-full h-full">
+          <div
+            onScroll={(e) => {
+              setScrollTop(e.currentTarget.scrollTop);
+            }}
+            ref={(ref) => {
+              if (ref) {
+                ref.scrollTop = scrollTop;
+              }
+            }}
+            onDoubleClick={() => {
+              onLockChange(false);
+            }}
+            className={cn(TEXTAREA_CLASSNAME, 'relative')}
+            data-testid={testId}
+          >
+            {showDiff ? <InlineMemoryDiff value={value} /> : value}
+          </div>
+        </div>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <>
+      <div className="absolute right-0 bottom-0 pb-3 pr-2 z-[1]">
+        <HStack gap="small">
+          <Button
+            color="secondary"
+            size="small"
+            data-testid={isDifferent ? `${testId}-reset` : `${testId}-lock`}
+            type="button"
+            _use_rarely_className="bg-background-grey"
+            label={
+              isDifferent
+                ? t('CoreMemoryEditorContent.reset')
+                : t('CoreMemoryEditorContent.lock')
+            }
+            onClick={onReset}
+          />
+          <Button
+            size="small"
+            data-testid={`${testId}-save`}
+            type="button"
+            busy={isSaving}
+            label={t('CoreMemoryEditorContent.save')}
+            onClick={onSave}
+          />
+        </HStack>
+      </div>
+      <textarea
+        ref={(ref) => {
+          if (ref) {
+            ref.scrollTop = scrollTop;
+          }
+        }}
+        onScroll={(e) => {
+          setScrollTop(e.currentTarget.scrollTop);
+        }}
+        className={cn(TEXTAREA_CLASSNAME, 'absolute top-0')}
+        data-testid={testId}
+        value={value}
+        onChange={(e) => {
+          onValueChange(e.target.value);
+        }}
+        placeholder={t('CoreMemoryEditorContent.placeholder')}
+      />
+      <div
+        className={cn(
+          TEXTAREA_CLASSNAME,
+          'relative pointer-events-none z-[-1]',
+        )}
+      >
+        {showDiff ? <InlineMemoryDiff value={value} /> : value}
+      </div>
+    </>
+  );
+}
+
+interface ErrorViewProps {
+  message: string;
+}
+
+function ErrorView(props: ErrorViewProps) {
+  const { message } = props;
+
+  return (
+    <HStack padding="xsmall" color="destructive">
+      <Typography variant="body3">{message}</Typography>
+    </HStack>
+  );
+}
+
+interface CoreMemoryEditorProps {
+  memoryBlock: Block;
+  disabled?: boolean;
+  testId?: string;
+  onSave: (value: string) => void;
+  sharedAgents?: SharedAgent[];
+  showDiff?: boolean;
+  isSaving: boolean;
+  errorMessage?: string;
+}
+
+export function CoreMemoryEditor(props: CoreMemoryEditorProps) {
+  const [isLocked, setIsLocked] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const {
+    memoryBlock,
+    sharedAgents = [],
+    showDiff,
+    isSaving,
+    disabled,
+    testId,
+    onSave,
+    errorMessage,
+  } = props;
+
+  const [editedValue, setEditedValue] = useState<string>(memoryBlock.value);
+
+  useEffect(() => {
+    if (isLocked) {
+      // we should always default to the memory block value if we're in a locked state
+      setEditedValue(memoryBlock.value);
+      return;
+    }
+  }, [isLocked, memoryBlock.value]);
+
+  const handleSave = useCallback(() => {
+    onSave(editedValue);
+  }, [editedValue, onSave]);
+
+  const handleReset = useCallback(() => {
+    setEditedValue(memoryBlock.value);
+    setIsLocked(true);
+  }, [memoryBlock.value]);
+
+  const isDifferent = useMemo(() => {
+    return editedValue !== memoryBlock.value;
+  }, [editedValue, memoryBlock.value]);
+
+  return (
+    <VStack gap="small" fullWidth overflow="hidden" fullHeight>
+      <CoreMemoryEditorHeader
+        onLockChange={setIsLocked}
+        onCollapseChange={setIsCollapsed}
+        isCollapsed={isCollapsed}
+        sharedAgents={sharedAgents}
+        memoryBlock={memoryBlock}
+        editedValue={editedValue}
+        isLocked={isLocked}
+      />
+
+      {!isCollapsed ? (
+        <div className="relative w-full overflow-hidden flex-col h-0 flex-1 flex">
+          {memoryBlock.description && (
+            <DescriptionView description={memoryBlock.description || ''} />
+          )}
+          <VStack collapseHeight flex>
+            <CoreMemoryContent
+              showDiff={showDiff}
+              disabled={disabled}
+              onReset={handleReset}
+              isDifferent={isDifferent}
+              isSaving={isSaving}
+              onSave={handleSave}
+              value={editedValue}
+              onValueChange={setEditedValue}
+              testId={testId}
+              isLocked={isLocked}
+              onLockChange={setIsLocked}
+            />
+          </VStack>
+          {errorMessage && <ErrorView message={errorMessage} />}
+        </div>
+      ) : (
+        <HR />
+      )}
+    </VStack>
+  );
+}

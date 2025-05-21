@@ -229,4 +229,8 @@ export * from './lib/reusable/BillingLink/BillingLink';
 
 export * from './lib/core/PhoneInput/PhoneInput';
 
+export * from './lib/core/InfoChip/InfoChip';
+
+export * from './lib/reusable/CoreMemoryEditor/CoreMemoryEditor';
+
 export * from './lib/reusable/JobStatusBadge/JobStatusBadge';

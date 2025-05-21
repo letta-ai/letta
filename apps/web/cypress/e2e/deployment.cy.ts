@@ -89,15 +89,17 @@ describe('letta', () => {
 
     cy.clearPointerEventLock();
 
-    cy.findByTestId('lock-memory', { timeout: 50000 }).then(($el) => {
-      if ($el.attr('data-active') === 'true') {
-        cy.findByTestId('lock-memory').click();
-      }
-    });
+    cy.findByTestId('edit-memory-block-human-content').dblclick();
+
     cy.findByTestId('edit-memory-block-human-content', { timeout: 50000 }).type(
       'The users name is {{name}}. Please include the word DeploymentMan at the end of every message.',
       { parseSpecialCharSequences: false },
     );
+
+    cy.findByTestId('edit-memory-block-human-content-save').click();
+    cy.findByTestId('edit-memory-block-human-content-lock', {
+      timeout: 5000,
+    }).click();
 
     // wait for the variables to be saved
     // eslint-disable-next-line cypress/no-unnecessary-waiting
@@ -162,16 +164,17 @@ describe('letta', () => {
       'match',
       /\/projects\/(.+)\/templates\/DEPLOYMENTAGENT/,
     );
+    cy.findByTestId('edit-memory-block-human-content').dblclick();
 
-    cy.findByTestId('lock-memory', { timeout: 50000 }).then(($el) => {
-      if ($el.attr('data-active') === 'true') {
-        cy.findByTestId('lock-memory').click();
-      }
-    });
     cy.findByTestId('edit-memory-block-human-content', { timeout: 50000 }).type(
       'Extemely important, please also include WowCheese at the end of your response.',
       { parseSpecialCharSequences: false },
     );
+
+    cy.findByTestId('edit-memory-block-human-content-save').click();
+    cy.findByTestId('edit-memory-block-human-content-lock', {
+      timeout: 5000,
+    }).click();
 
     // eslint-disable-next-line cypress/no-unnecessary-waiting
     cy.wait(2000);

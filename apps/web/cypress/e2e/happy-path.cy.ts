@@ -78,19 +78,22 @@ describe('letta', () => {
 
     cy.clearPointerEventLock();
 
-    cy.findByTestId('lock-memory', { timeout: 50000 }).then(($el) => {
-      if ($el.attr('data-active') === 'true') {
-        cy.findByTestId('lock-memory').click();
-      }
-    });
-    cy.findByTestId('edit-memory-block-human-content', { timeout: 50000 }).type(
-      'The users name is {{name}}. Please include the word BananaMan at the end of every message.',
-      { parseSpecialCharSequences: false },
-    );
+    cy.findAllByTestId('edit-memory-block-human-content').first().dblclick();
 
-    // wait for debounce save
+    cy.findAllByTestId('edit-memory-block-human-content', { timeout: 50000 })
+      .first()
+      .type(
+        'The users name is {{name}}. Please include the word BananaMan at the end of every message.',
+        { parseSpecialCharSequences: false },
+      );
+
+    cy.findByTestId('edit-memory-block-human-content-save').click();
+    cy.findByTestId('edit-memory-block-human-content-lock', {
+      timeout: 5000,
+    }).click();
+
     // eslint-disable-next-line cypress/no-unnecessary-waiting
-    cy.wait(3000);
+    cy.wait(2000);
 
     cy.findByTestId('toggle-variables-button', { timeout: 50000 })
       .first()
