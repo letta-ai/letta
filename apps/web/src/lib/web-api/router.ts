@@ -13,8 +13,6 @@ import { adminModelsRouter } from '$web/web-api/admin/models/adminModelsRouter';
 import { environmentVariablesRouter } from '$web/web-api/environment-variables/environmentVariablesRouter';
 import { adminUsersRouter } from '$web/web-api/admin/users/adminUsersRouter';
 import { usageRouter } from '$web/web-api/usage/usageRouter';
-import { adminToolMetadataRouter } from '$web/web-api/admin/tool-metadata/adminToolMetadataRouter';
-import { toolMetadataRouter } from '$web/web-api/tool-metadata/toolMetadataRouter';
 import { adminUsageRouter } from '$web/web-api/admin/usage/adminUsageRouter';
 import { starterKitsRouter } from '$web/web-api/starter-kits/starterKitsRoutes';
 import { rateLimitsRoutes } from '$web/web-api/rate-limits/rateLimitsRoutes';
@@ -41,7 +39,6 @@ export const router = {
   developmentServers: developmentServersRouter,
   environmentVariables: environmentVariablesRouter,
   usage: usageRouter,
-  toolMetadata: toolMetadataRouter,
   starterKits: starterKitsRouter,
   rateLimits: rateLimitsRoutes,
   sharedAgentChats: sharedAgentChatsRoutes,
@@ -54,7 +51,6 @@ export const router = {
   traces: tracesRoutes,
   admin: {
     usage: adminUsageRouter,
-    toolMetadata: adminToolMetadataRouter,
     users: adminUsersRouter,
     models: adminModelsRouter,
     flushLayouts: flushLayoutsRouter,

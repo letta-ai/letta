@@ -773,46 +773,6 @@ export const embeddingModelsMetadata = pgTable(
   }),
 );
 
-export const toolMetadataProviderEnum = pgEnum('provider_enum', [
-  'composio',
-  'generic',
-]);
-
-export const toolMetadata = pgTable(
-  'tool_metadata',
-  {
-    id: text('id')
-      .notNull()
-      .unique()
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
-    name: text('name').notNull(),
-    description: text('description').notNull(),
-    brand: text('brand').notNull(),
-    provider: toolMetadataProviderEnum('provider').notNull(),
-    providerId: text('provider_id').notNull(),
-    configuration: json('configuration').$type<ProviderConfiguration>(),
-    tags: text('tags').notNull(),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
-    disabledAt: timestamp('disabled_at'),
-    updatedAt: timestamp('updated_at')
-      .notNull()
-      .$onUpdate(() => new Date()),
-  },
-  (self) => ({
-    uniqueProviderId: uniqueIndex('unique_provider_id').on(
-      self.provider,
-      self.providerId,
-    ),
-  }),
-);
-
-export const toolGroupMetadata = pgTable('tool_group_metadata', {
-  brand: text('brand').notNull().unique().primaryKey(),
-  imageUrl: text('image_url'),
-  description: text('description').notNull(),
-});
-
 export const organizationCredits = pgTable('organization_credits', {
   organizationId: text('organization_id')
     .notNull()

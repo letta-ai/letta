@@ -46,11 +46,6 @@ import {
   adminUsersQueryClientKeys,
 } from './admin/adminUsersContracts';
 import { usageContracts, usageQueryKeys } from './public/usageContract';
-import { adminToolMetadataContracts } from './admin/adminToolMetadataContracts';
-import {
-  toolMetadataContracts,
-  toolMetadataQueryClientKeys,
-} from './public/toolMetadataContract';
 import {
   adminUsageContracts,
   adminUsageQueryKeys,
@@ -97,7 +92,6 @@ export const contracts = {
   developmentServers: developmentServersContracts,
   environmentVariables: environmentVariablesContracts,
   usage: usageContracts,
-  toolMetadata: toolMetadataContracts,
   starterKits: starterKitsContracts,
   composio: composioContracts,
   costs: costsContract,
@@ -111,7 +105,6 @@ export const contracts = {
   traces: tracesContracts,
   admin: {
     usage: adminUsageContracts,
-    toolMetadata: adminToolMetadataContracts,
     users: adminUsersContracts,
     models: adminModelsContracts,
     flushLayouts: flushLayoutsContract,
@@ -133,7 +126,6 @@ export const queryClientKeys = {
   developmentServers: developmentServerQueryClientKeys,
   environmentVariables: environmentVariablesQueryKeys,
   usage: usageQueryKeys,
-  toolMetadata: toolMetadataQueryClientKeys,
   rateLimits: rateLimitQueryClientKeys,
   sharedAgentChats: sharedAgentChatQueryClientKeys,
   launchLinks: launchLinkQueryKeys,
@@ -163,9 +155,7 @@ export type * from './public/adePreferencesContracts';
 export type * from './public/developmentServersContracts';
 export * from './public/environmentVariablesContracts';
 export type * from './public/usageContract';
-export type * from './public/toolMetadataContract';
 export type * from './admin/adminUsageContracts';
-export type * from './admin/adminToolMetadataContracts';
 export type * from './admin/adminOrganizationsContracts';
 export type * from './admin/adminModelsContracts';
 export type * from './admin/flushLayoutsContracts';

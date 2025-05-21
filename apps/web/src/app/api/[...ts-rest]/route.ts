@@ -25,10 +25,7 @@ const nonCloudWhitelist = [
 ];
 
 const publicApis = [
-  new RegExp('/api/tool-metadata-summary(.+)?'),
-  new RegExp('/api/tool-metadata(.+)?'),
   new RegExp('/api/composio(.+)?'),
-  new RegExp('/api/tool-group-metadata(.+)?'),
   new RegExp('/api/invites/(.+)?'),
   new RegExp('/api/user/new(.+)?'),
   new RegExp('/api/user/forgot-password(.+)?'),
