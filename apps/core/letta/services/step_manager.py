@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List, Literal, Optional
 
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from letta.orm.errors import NoResultFound
@@ -58,6 +59,7 @@ class StepManager:
         actor: PydanticUser,
         agent_id: str,
         provider_name: str,
+        provider_category: str,
         model: str,
         model_endpoint: Optional[str],
         context_window_limit: int,
@@ -72,6 +74,7 @@ class StepManager:
             "agent_id": agent_id,
             "provider_id": provider_id,
             "provider_name": provider_name,
+            "provider_category": provider_category,
             "model": model,
             "model_endpoint": model_endpoint,
             "context_window_limit": context_window_limit,
@@ -98,6 +101,7 @@ class StepManager:
         actor: PydanticUser,
         agent_id: str,
         provider_name: str,
+        provider_category: str,
         model: str,
         model_endpoint: Optional[str],
         context_window_limit: int,
@@ -112,6 +116,7 @@ class StepManager:
             "agent_id": agent_id,
             "provider_id": provider_id,
             "provider_name": provider_name,
+            "provider_category": provider_category,
             "model": model,
             "model_endpoint": model_endpoint,
             "context_window_limit": context_window_limit,
@@ -127,7 +132,7 @@ class StepManager:
             step_data["id"] = step_id
         async with db_registry.async_session() as session:
             if job_id:
-                self._verify_job_access(session, job_id, actor, access=["write"])
+                await self._verify_job_access_async(session, job_id, actor, access=["write"])
             new_step = StepModel(**step_data)
             await new_step.create_async(session)
             return new_step.to_pydantic()
@@ -192,6 +197,35 @@ class StepManager:
             raise NoResultFound(f"Job with id {job_id} does not exist or user does not have access")
         return job
 
+    async def _verify_job_access_async(
+        self,
+        session: AsyncSession,
+        job_id: str,
+        actor: PydanticUser,
+        access: List[Literal["read", "write", "delete"]] = ["read"],
+    ) -> JobModel:
+        """
+        Verify that a job exists and the user has the required access asynchronously.
+
+        Args:
+            session: The async database session
+            job_id: The ID of the job to verify
+            actor: The user making the request
+
+        Returns:
+            The job if it exists and the user has access
+
+        Raises:
+            NoResultFound: If the job does not exist or user does not have access
+        """
+        job_query = select(JobModel).where(JobModel.id == job_id)
+        job_query = JobModel.apply_access_predicate(job_query, actor, access, AccessType.USER)
+        result = await session.execute(job_query)
+        job = result.scalar_one_or_none()
+        if not job:
+            raise NoResultFound(f"Job with id {job_id} does not exist or user does not have access")
+        return job
+
 
 @singleton
 class NoopStepManager(StepManager):
@@ -207,6 +241,7 @@ class NoopStepManager(StepManager):
         actor: PydanticUser,
         agent_id: str,
         provider_name: str,
+        provider_category: str,
         model: str,
         model_endpoint: Optional[str],
         context_window_limit: int,
@@ -223,6 +258,7 @@ class NoopStepManager(StepManager):
         actor: PydanticUser,
         agent_id: str,
         provider_name: str,
+        provider_category: str,
         model: str,
         model_endpoint: Optional[str],
         context_window_limit: int,
@@ -231,4 +267,29 @@ class NoopStepManager(StepManager):
         job_id: Optional[str] = None,
         step_id: Optional[str] = None,
     ) -> PydanticStep:
-        return
+        step_data = {
+            "origin": None,
+            "organization_id": actor.organization_id,
+            "agent_id": agent_id,
+            "provider_id": provider_id,
+            "provider_name": provider_name,
+            "provider_category": provider_category,
+            "model": model,
+            "model_endpoint": model_endpoint,
+            "context_window_limit": context_window_limit,
+            "completion_tokens": usage.completion_tokens,
+            "prompt_tokens": usage.prompt_tokens,
+            "total_tokens": usage.total_tokens,
+            "job_id": job_id,
+            "tags": [],
+            "tid": None,
+            "trace_id": get_trace_id(),  # Get the current trace ID
+        }
+        if step_id:
+            step_data["id"] = step_id
+        async with db_registry.async_session() as session:
+            if job_id:
+                await self._verify_job_access_async(session, job_id, actor, access=["write"])
+            new_step = StepModel(**step_data)
+            await new_step.create_async(session)
+            return new_step.to_pydantic()

@@ -8822,6 +8822,18 @@ export const $Step = {
       title: 'Provider Name',
       description: 'The name of the provider used for this step.',
     },
+    provider_category: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Provider Category',
+      description: 'The category of the provider used for this step.',
+    },
     model: {
       anyOf: [
         {

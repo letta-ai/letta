@@ -3225,6 +3225,10 @@ export type Step = {
    */
   provider_name?: string | null;
   /**
+   * The category of the provider used for this step.
+   */
+  provider_category?: string | null;
+  /**
    * The name of the model used for this step.
    */
   model?: string | null;

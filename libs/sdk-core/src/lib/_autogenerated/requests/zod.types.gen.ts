@@ -4855,6 +4855,14 @@ export const Step = z.object({
       z.undefined(),
     ])
     .optional(),
+  provider_category: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   model: z
     .union([
       z.string(),

@@ -4859,15 +4859,17 @@ def test_get_run_messages(server: SyncServer, default_user: PydanticUser, sarah_
 # ======================================================================================================================
 
 
-def test_job_usage_stats_add_and_get(server: SyncServer, sarah_agent, default_job, default_user):
+@pytest.mark.asyncio
+async def test_job_usage_stats_add_and_get(server: SyncServer, sarah_agent, default_job, default_user, event_loop):
     """Test adding and retrieving job usage statistics."""
     job_manager = server.job_manager
     step_manager = server.step_manager
 
     # Add usage statistics
-    step_manager.log_step(
+    await step_manager.log_step_async(
         agent_id=sarah_agent.id,
         provider_name="openai",
+        provider_category="base",
         model="gpt-4o-mini",
         model_endpoint="https://api.openai.com/v1",
         context_window_limit=8192,
@@ -4910,15 +4912,17 @@ def test_job_usage_stats_get_no_stats(server: SyncServer, default_job, default_u
     assert len(steps) == 0
 
 
-def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, default_job, default_user):
+@pytest.mark.asyncio
+async def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, default_job, default_user, event_loop):
     """Test adding multiple usage statistics entries for a job."""
     job_manager = server.job_manager
     step_manager = server.step_manager
 
     # Add first usage statistics entry
-    step_manager.log_step(
+    await step_manager.log_step_async(
         agent_id=sarah_agent.id,
         provider_name="openai",
+        provider_category="base",
         model="gpt-4o-mini",
         model_endpoint="https://api.openai.com/v1",
         context_window_limit=8192,
@@ -4932,9 +4936,10 @@ def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, default_j
     )
 
     # Add second usage statistics entry
-    step_manager.log_step(
+    await step_manager.log_step_async(
         agent_id=sarah_agent.id,
         provider_name="openai",
+        provider_category="base",
         model="gpt-4o-mini",
         model_endpoint="https://api.openai.com/v1",
         context_window_limit=8192,
@@ -4973,14 +4978,16 @@ def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):
         job_manager.get_job_usage(job_id="nonexistent_job", actor=default_user)
 
 
-def test_job_usage_stats_add_nonexistent_job(server: SyncServer, sarah_agent, default_user):
+@pytest.mark.asyncio
+async def test_job_usage_stats_add_nonexistent_job(server: SyncServer, sarah_agent, default_user, event_loop):
     """Test adding usage statistics for a nonexistent job."""
     step_manager = server.step_manager
 
     with pytest.raises(NoResultFound):
-        step_manager.log_step(
+        await step_manager.log_step_async(
             agent_id=sarah_agent.id,
             provider_name="openai",
+            provider_category="base",
             model="gpt-4o-mini",
             model_endpoint="https://api.openai.com/v1",
             context_window_limit=8192,
