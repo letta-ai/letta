@@ -186,6 +186,7 @@ class Settings(BaseSettings):
     pg_echo: bool = False  # Logging
     pool_pre_ping: bool = True  # Pre ping to check for dead connections
     pool_use_lifo: bool = True
+    disable_sqlalchemy_pooling: bool = False
 
     # multi agent settings
     multi_agent_send_message_max_retries: int = 3
