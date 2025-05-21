@@ -60,9 +60,9 @@ navigation:
       - link: Chat on Discord
         icon: fa-brands fa-discord
         href: https://discord.gg/letta
-      # - link: Developer Forum
-        # icon: fa-sharp fa-light fa-comments
-        # href: https://forum.letta.com
+      - link: Developer Forum
+        icon: fa-sharp fa-light fa-comments
+        href: https://forum.letta.com
       - link: DeepLearning.AI Course
         icon: fa-sharp fa-light fa-building-columns
         href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
@@ -209,9 +209,9 @@ navigation:
       - link: Chat on Discord
         icon: fa-brands fa-discord
         href: https://discord.gg/letta
-      # - link: Developer Forum
-        # icon: fa-sharp fa-light fa-comments
-        # href: https://forum.letta.com
+      - link: Developer Forum
+        icon: fa-sharp fa-light fa-comments
+        href: https://forum.letta.com
       - link: DeepLearning.AI Course
         icon: fa-sharp fa-light fa-building-columns
         href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
@@ -256,9 +256,9 @@ navigation:
       - link: Chat on Discord
         icon: fa-brands fa-discord
         href: https://discord.gg/letta
-      # - link: Developer Forum
-        # icon: fa-sharp fa-light fa-comments
-        # href: https://forum.letta.com
+      - link: Developer Forum
+        icon: fa-sharp fa-light fa-comments
+        href: https://forum.letta.com
       - link: DeepLearning.AI Course
         icon: fa-sharp fa-light fa-building-columns
         href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
@@ -340,9 +340,9 @@ navigation:
       - link: Chat on Discord
         icon: fa-brands fa-discord
         href: https://discord.gg/letta
-      # - link: Developer Forum
-        # icon: fa-sharp fa-light fa-comments
-        # href: https://forum.letta.com
+      - link: Developer Forum
+        icon: fa-sharp fa-light fa-comments
+        href: https://forum.letta.com
       - link: DeepLearning.AI Course
         icon: fa-sharp fa-light fa-building-columns
         href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
@@ -376,6 +376,15 @@ navigation:
             # path: pages/cloud/versions.mdx
   - tab: ref
     layout:
+      - link: Chat on Discord
+        icon: fa-brands fa-discord
+        href: https://discord.gg/letta
+      - link: Developer Forum
+        icon: fa-sharp fa-light fa-comments
+        href: https://forum.letta.com
+      - link: DeepLearning.AI Course
+        icon: fa-sharp fa-light fa-building-columns
+        href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
       - section: API Reference
         contents:
           - page: API and SDK Overview
@@ -398,9 +407,9 @@ navigation:
       - link: Chat on Discord
         icon: fa-brands fa-discord
         href: https://discord.gg/letta
-      # - link: Developer Forum
-        # icon: fa-sharp fa-light fa-comments
-        # href: https://forum.letta.com
+      - link: Developer Forum
+        icon: fa-sharp fa-light fa-comments
+        href: https://forum.letta.com
       - link: DeepLearning.AI Course
         icon: fa-sharp fa-light fa-building-columns
         href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
@@ -418,9 +427,9 @@ navigation:
       - link: Chat on Discord
         icon: fa-brands fa-discord
         href: https://discord.gg/letta
-      # - link: Developer Forum
-        # icon: fa-sharp fa-light fa-comments
-        # href: https://forum.letta.com
+      - link: Developer Forum
+        icon: fa-sharp fa-light fa-comments
+        href: https://forum.letta.com
       - link: DeepLearning.AI Course
         icon: fa-sharp fa-light fa-building-columns
         href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
