@@ -1100,6 +1100,7 @@ export const prefetchUseIdentitiesServiceRetrieveIdentity = (
   });
 /**
  * List Llm Models
+ * List available LLM models using the asynchronous implementation for improved performance
  * @param data The data for the request.
  * @param data.providerCategory
  * @param data.providerName
@@ -1139,6 +1140,7 @@ export const prefetchUseModelsServiceListModels = (
   });
 /**
  * List Embedding Models
+ * List available embedding models using the asynchronous implementation for improved performance
  * @param data The data for the request.
  * @param data.userId
  * @returns EmbeddingConfig Successful Response
@@ -1158,6 +1160,7 @@ export const prefetchUseModelsServiceListEmbeddingModels = (
   });
 /**
  * List Llm Models
+ * List available LLM models using the asynchronous implementation for improved performance
  * @param data The data for the request.
  * @param data.providerCategory
  * @param data.providerName
@@ -1197,6 +1200,7 @@ export const prefetchUseLlmsServiceListModels = (
   });
 /**
  * List Embedding Models
+ * List available embedding models using the asynchronous implementation for improved performance
  * @param data The data for the request.
  * @param data.userId
  * @returns EmbeddingConfig Successful Response

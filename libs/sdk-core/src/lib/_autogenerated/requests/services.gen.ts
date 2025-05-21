@@ -2515,6 +2515,7 @@ export class IdentitiesService {
 export class ModelsService {
   /**
    * List Llm Models
+   * List available LLM models using the asynchronous implementation for improved performance
    * @param data The data for the request.
    * @param data.providerCategory
    * @param data.providerName
@@ -2544,6 +2545,7 @@ export class ModelsService {
 
   /**
    * List Embedding Models
+   * List available embedding models using the asynchronous implementation for improved performance
    * @param data The data for the request.
    * @param data.userId
    * @returns EmbeddingConfig Successful Response
@@ -2567,6 +2569,7 @@ export class ModelsService {
 export class LlmsService {
   /**
    * List Llm Models
+   * List available LLM models using the asynchronous implementation for improved performance
    * @param data The data for the request.
    * @param data.providerCategory
    * @param data.providerName
@@ -2596,6 +2599,7 @@ export class LlmsService {
 
   /**
    * List Embedding Models
+   * List available embedding models using the asynchronous implementation for improved performance
    * @param data The data for the request.
    * @param data.userId
    * @returns EmbeddingConfig Successful Response

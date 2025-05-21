@@ -1388,6 +1388,7 @@ export const useIdentitiesServiceRetrieveIdentity = <
   });
 /**
  * List Llm Models
+ * List available LLM models using the asynchronous implementation for improved performance
  * @param data The data for the request.
  * @param data.providerCategory
  * @param data.providerName
@@ -1431,6 +1432,7 @@ export const useModelsServiceListModels = <
   });
 /**
  * List Embedding Models
+ * List available embedding models using the asynchronous implementation for improved performance
  * @param data The data for the request.
  * @param data.userId
  * @returns EmbeddingConfig Successful Response
@@ -1459,6 +1461,7 @@ export const useModelsServiceListEmbeddingModels = <
   });
 /**
  * List Llm Models
+ * List available LLM models using the asynchronous implementation for improved performance
  * @param data The data for the request.
  * @param data.providerCategory
  * @param data.providerName
@@ -1502,6 +1505,7 @@ export const useLlmsServiceListModels = <
   });
 /**
  * List Embedding Models
+ * List available embedding models using the asynchronous implementation for improved performance
  * @param data The data for the request.
  * @param data.userId
  * @returns EmbeddingConfig Successful Response
