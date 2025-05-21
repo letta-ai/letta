@@ -132,7 +132,16 @@ class LettaAgent(BaseAgent):
                 # TODO: make into a real error
                 raise ValueError("No tool calls found in response, model must make a tool call")
             tool_call = response.choices[0].message.tool_calls[0]
-            reasoning = [TextContent(text=response.choices[0].message.content)]  # reasoning placed into content for legacy reasons
+            if response.choices[0].message.reasoning_content:
+                reasoning = [
+                    ReasoningContent(
+                        reasoning=response.choices[0].message.reasoning_content,
+                        is_native=True,
+                        signature=response.choices[0].message.reasoning_content_signature,
+                    )
+                ]
+            else:
+                reasoning = [TextContent(text=response.choices[0].message.content)]  # reasoning placed into content for legacy reasons
 
             persisted_messages, should_continue = await self._handle_ai_response(
                 tool_call, agent_state, tool_rules_solver, response.usage, reasoning_content=reasoning
@@ -230,7 +239,16 @@ class LettaAgent(BaseAgent):
                 # TODO: make into a real error
                 raise ValueError("No tool calls found in response, model must make a tool call")
             tool_call = response.choices[0].message.tool_calls[0]
-            reasoning = [TextContent(text=response.choices[0].message.content)]  # reasoning placed into content for legacy reasons
+            if response.choices[0].message.reasoning_content:
+                reasoning = [
+                    ReasoningContent(
+                        reasoning=response.choices[0].message.reasoning_content,
+                        is_native=True,
+                        signature=response.choices[0].message.reasoning_content_signature,
+                    )
+                ]
+            else:
+                reasoning = [TextContent(text=response.choices[0].message.content)]  # reasoning placed into content for legacy reasons
 
             persisted_messages, should_continue = await self._handle_ai_response(
                 tool_call, agent_state, tool_rules_solver, response.usage, reasoning_content=reasoning, step_id=step_id

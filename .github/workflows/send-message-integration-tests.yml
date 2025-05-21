@@ -37,7 +37,9 @@ jobs:
           - "azure-gpt-4o-mini.json"
           - "claude-3-5-sonnet.json"
           - "claude-3-7-sonnet.json"
+          - "claude-3-7-sonnet-extended.json"
           - "gemini-1.5-pro.json"
+          - "together-qwen-2.5-72b-instruct.json"
     services:
       qdrant:
         image: qdrant/qdrant
@@ -178,6 +180,7 @@ jobs:
           LETTA_PG_DB: postgres
           LETTA_PG_HOST: localhost
           LETTA_SERVER_PASS: test_server_token
+          LETTA_USE_EXPERIMENTAL: 1
         run: |
           poetry run pytest \
             -s -vv \

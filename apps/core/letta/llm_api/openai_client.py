@@ -261,7 +261,9 @@ class OpenAIClient(LLMClientBase):
         Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.
         """
         client = AsyncOpenAI(**self._prepare_client_kwargs(llm_config))
-        response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(**request_data, stream=True)
+        response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
+            **request_data, stream=True, stream_options={"include_usage": True}
+        )
         return response_stream
 
     def handle_llm_error(self, e: Exception) -> Exception:
