@@ -1365,6 +1365,48 @@ class SyncServer(Server):
 
         return llm_models
 
+    @trace_method
+    async def list_llm_models_async(
+        self,
+        actor: User,
+        provider_category: Optional[List[ProviderCategory]] = None,
+        provider_name: Optional[str] = None,
+        provider_type: Optional[ProviderType] = None,
+    ) -> List[LLMConfig]:
+        """Asynchronously list available models with maximum concurrency"""
+        import asyncio
+
+        providers = self.get_enabled_providers(
+            provider_category=provider_category,
+            provider_name=provider_name,
+            provider_type=provider_type,
+            actor=actor,
+        )
+
+        async def get_provider_models(provider):
+            try:
+                return await provider.list_llm_models_async()
+            except Exception as e:
+                import traceback
+
+                traceback.print_exc()
+                warnings.warn(f"An error occurred while listing LLM models for provider {provider}: {e}")
+                return []
+
+        # Execute all provider model listing tasks concurrently
+        provider_results = await asyncio.gather(*[get_provider_models(provider) for provider in providers])
+
+        # Flatten the results
+        llm_models = []
+        for models in provider_results:
+            llm_models.extend(models)
+
+        # Get local configs - if this is potentially slow, consider making it async too
+        local_configs = self.get_local_llm_configs()
+        llm_models.extend(local_configs)
+
+        return llm_models
+
     def list_embedding_models(self, actor: User) -> List[EmbeddingConfig]:
         """List available embedding models"""
         embedding_models = []
@@ -1373,6 +1415,35 @@ class SyncServer(Server):
                 embedding_models.extend(provider.list_embedding_models())
             except Exception as e:
                 warnings.warn(f"An error occurred while listing embedding models for provider {provider}: {e}")
+        return embedding_models
+
+    async def list_embedding_models_async(self, actor: User) -> List[EmbeddingConfig]:
+        """Asynchronously list available embedding models with maximum concurrency"""
+        import asyncio
+
+        # Get all eligible providers first
+        providers = self.get_enabled_providers(actor=actor)
+
+        # Fetch embedding models from each provider concurrently
+        async def get_provider_embedding_models(provider):
+            try:
+                # All providers now have list_embedding_models_async
+                return await provider.list_embedding_models_async()
+            except Exception as e:
+                import traceback
+
+                traceback.print_exc()
+                warnings.warn(f"An error occurred while listing embedding models for provider {provider}: {e}")
+                return []
+
+        # Execute all provider model listing tasks concurrently
+        provider_results = await asyncio.gather(*[get_provider_embedding_models(provider) for provider in providers])
+
+        # Flatten the results
+        embedding_models = []
+        for models in provider_results:
+            embedding_models.extend(models)
+
         return embedding_models
 
     def get_enabled_providers(
