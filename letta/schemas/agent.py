@@ -12,6 +12,7 @@ from letta.schemas.group import Group
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
+from letta.schemas.memory_management import MemoryManagementConfig
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.response_format import ResponseFormatUnion
@@ -101,6 +102,10 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     )
 
     multi_agent_group: Optional[Group] = Field(None, description="The multi-agent group that this agent manages")
+    memory_management_config: Optional[MemoryManagementConfig] = Field(
+        None, 
+        description="Configuration for memory management including summarization, compression, and pruning"
+    )
 
     def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
         # Get environment variables for this agent specifically
@@ -265,6 +270,10 @@ class UpdateAgent(BaseModel):
     )
     enable_sleeptime: Optional[bool] = Field(None, description="If set to True, memory management will move to a background agent thread.")
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the agent.")
+    memory_management_config: Optional[MemoryManagementConfig] = Field(
+        None, 
+        description="Configuration for memory management including summarization, compression, and pruning"
+    )
 
     class Config:
         extra = "ignore"  # Ignores extra fields

@@ -17,10 +17,12 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.response_format import ResponseFormatUnion
 from letta.schemas.tool_rule import ToolRule
+from letta.schemas.memory_management import MemoryManagementConfig as PydanticMemoryManagementConfig
 
 if TYPE_CHECKING:
     from letta.orm.agents_tags import AgentsTags
     from letta.orm.identity import Identity
+    from letta.orm.memory_management import MemoryManagementConfig
     from letta.orm.organization import Organization
     from letta.orm.source import Source
     from letta.orm.tool import Tool
@@ -124,6 +126,14 @@ class Agent(SqlalchemyBase, OrganizationMixin):
         back_populates="manager_agent",
     )
     batch_items: Mapped[List["LLMBatchItem"]] = relationship("LLMBatchItem", back_populates="agent", lazy="selectin")
+    memory_management_config: Mapped["MemoryManagementConfig"] = relationship(
+        "MemoryManagementConfig",
+        back_populates="agent",
+        uselist=False,
+        lazy="selectin",
+        cascade="all, delete-orphan",
+        doc="Memory management configuration for the agent.",
+    )
 
     def to_pydantic(self, include_relationships: Optional[Set[str]] = None) -> PydanticAgentState:
         """
@@ -175,6 +185,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
             "tool_exec_environment_variables": [],
             "enable_sleeptime": None,
             "response_format": self.response_format,
+            "memory_management_config": None,
         }
 
         # Optional fields: only included if requested
@@ -190,6 +201,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
             "multi_agent_group": lambda: self.multi_agent_group,
             "tool_exec_environment_variables": lambda: self.tool_exec_environment_variables,
             "enable_sleeptime": lambda: self.enable_sleeptime,
+            "memory_management_config": lambda: self.memory_management_config.to_pydantic() if hasattr(self, 'memory_management_config') and self.memory_management_config else None,
         }
 
         include_relationships = set(optional_fields.keys() if include_relationships is None else include_relationships)
