@@ -1169,6 +1169,7 @@ class GoogleAIProvider(Provider):
                     provider_category=self.provider_category,
                 )
             )
+
         return configs
 
     async def list_llm_models_async(self):
@@ -1243,12 +1244,18 @@ class GoogleAIProvider(Provider):
     def get_model_context_window(self, model_name: str) -> Optional[int]:
         from letta.llm_api.google_ai_client import google_ai_get_model_context_window
 
-        return google_ai_get_model_context_window(self.base_url, self.api_key, model_name)
+        if model_name in LLM_MAX_TOKENS:
+            return LLM_MAX_TOKENS[model_name]
+        else:
+            return google_ai_get_model_context_window(self.base_url, self.api_key, model_name)
 
     async def get_model_context_window_async(self, model_name: str) -> Optional[int]:
         from letta.llm_api.google_ai_client import google_ai_get_model_context_window_async
 
-        return await google_ai_get_model_context_window_async(self.base_url, self.api_key, model_name)
+        if model_name in LLM_MAX_TOKENS:
+            return LLM_MAX_TOKENS[model_name]
+        else:
+            return await google_ai_get_model_context_window_async(self.base_url, self.api_key, model_name)
 
 
 class GoogleVertexProvider(Provider):
