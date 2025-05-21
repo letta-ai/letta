@@ -19,11 +19,11 @@ from opentelemetry.trace import Status, StatusCode
 tracer = trace.get_tracer(__name__)
 _is_tracing_initialized = False
 _excluded_v1_endpoints_regex: List[str] = [
-    "^GET /v1/agents/(?P<agent_id>[^/]+)/messages$",
-    "^GET /v1/agents/(?P<agent_id>[^/]+)/context$",
-    "^GET /v1/agents/(?P<agent_id>[^/]+)/archival-memory$",
-    "^GET /v1/agents/(?P<agent_id>[^/]+)/sources$",
-    r"^POST /v1/voice-beta/.*/chat/completions$",
+    # "^GET /v1/agents/(?P<agent_id>[^/]+)/messages$",
+    # "^GET /v1/agents/(?P<agent_id>[^/]+)/context$",
+    # "^GET /v1/agents/(?P<agent_id>[^/]+)/archival-memory$",
+    # "^GET /v1/agents/(?P<agent_id>[^/]+)/sources$",
+    # r"^POST /v1/voice-beta/.*/chat/completions$",
 ]
 
 
