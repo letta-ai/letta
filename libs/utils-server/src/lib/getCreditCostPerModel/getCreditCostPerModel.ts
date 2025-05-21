@@ -33,5 +33,5 @@ export async function getCreditCostPerModel(
       (v) => v.maxContextWindowSize >= options.contextWindowSize,
     ) || stepCostDefinition.data[stepCostDefinition.data.length - 1];
 
-  return costTier.cost;
+  return costTier?.cost;
 }
