@@ -20,6 +20,7 @@ class Step(StepBase):
     )
     agent_id: Optional[str] = Field(None, description="The ID of the agent that performed the step.")
     provider_name: Optional[str] = Field(None, description="The name of the provider used for this step.")
+    provider_category: Optional[str] = Field(None, description="The category of the provider used for this step.")
     model: Optional[str] = Field(None, description="The name of the model used for this step.")
     model_endpoint: Optional[str] = Field(None, description="The model endpoint url used for this step.")
     context_window_limit: Optional[int] = Field(None, description="The context window limit configured for this step.")
