@@ -1546,6 +1546,10 @@ class SyncServer(Server):
         letta_agent = self.load_agent(agent_id=agent_id, actor=actor)
         return letta_agent.get_context_window()
 
+    async def get_agent_context_window_async(self, agent_id: str, actor: User) -> ContextWindowOverview:
+        letta_agent = self.load_agent(agent_id=agent_id, actor=actor)
+        return await letta_agent.get_context_window_async()
+
     def run_tool_from_source(
         self,
         actor: User,
