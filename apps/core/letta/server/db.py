@@ -84,6 +84,8 @@ class DatabaseRegistry:
                     pool_timeout=settings.pg_pool_timeout,
                     pool_recycle=settings.pg_pool_recycle,
                     echo=settings.pg_echo,
+                    pool_pre_ping=settings.pool_pre_ping,
+                    pool_use_lifo=settings.pool_use_lifo,
                     # connect_args={"client_encoding": "utf8"},
                 )
 
@@ -132,6 +134,8 @@ class DatabaseRegistry:
                     pool_timeout=settings.pg_pool_timeout,
                     pool_recycle=settings.pg_pool_recycle,
                     echo=settings.pg_echo,
+                    pool_pre_ping=settings.pool_pre_ping,
+                    pool_use_lifo=settings.pool_use_lifo,
                 )
 
                 self._async_engines["default"] = async_engine

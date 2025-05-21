@@ -179,11 +179,13 @@ class Settings(BaseSettings):
     pg_host: Optional[str] = None
     pg_port: Optional[int] = None
     pg_uri: Optional[str] = default_pg_uri  # option to specify full uri
-    pg_pool_size: int = 80  # Concurrent connections
-    pg_max_overflow: int = 30  # Overflow limit
+    pg_pool_size: int = 25  # Concurrent connections
+    pg_max_overflow: int = 10  # Overflow limit
     pg_pool_timeout: int = 30  # Seconds to wait for a connection
     pg_pool_recycle: int = 1800  # When to recycle connections
     pg_echo: bool = False  # Logging
+    pool_pre_ping: bool = True  # Pre ping to check for dead connections
+    pool_use_lifo: bool = True
 
     # multi agent settings
     multi_agent_send_message_max_retries: int = 3
