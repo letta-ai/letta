@@ -39,12 +39,12 @@ configure-kubectl cluster-name="letta":
 @build-web-ui:
     npm run slack-bot-says "Building web Docker image with tag: {{TAG}}..."
     @echo "🚧 Building web Docker image with tag: {{TAG}}..."
-    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build --platform linux/amd64 --target web -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN --file apps/web/Dockerfile
+    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build --cache-to type=gha --cache-from type=gha --platform linux/amd64 --target web -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN --file apps/web/Dockerfile
 
 # Build the migrations Docker image
 @build-web-migrations:
     @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
-    docker buildx build --platform linux/amd64 --target migrations -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load --file apps/web/Dockerfile
+    docker buildx build --cache-to type=gha --cache-from type=gha --platform linux/amd64 --target migrations -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load --file apps/web/Dockerfile
 
 # Build all Docker images synchronously
 @build-web: build-web-ui build-web-migrations
