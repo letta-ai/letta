@@ -720,7 +720,12 @@ async def send_message_streaming(
 
         if request.stream_tokens and model_compatible_token_streaming:
             result = StreamingResponseWithStatusCode(
-                experimental_agent.step_stream(request.messages, max_steps=10, use_assistant_message=request.use_assistant_message),
+                experimental_agent.step_stream(
+                    input_messages=request.messages,
+                    max_steps=10,
+                    use_assistant_message=request.use_assistant_message,
+                    request_start_timestamp_ns=request_start_timestamp_ns,
+                ),
                 media_type="text/event-stream",
             )
         else:

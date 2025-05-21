@@ -10,6 +10,7 @@ from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from letta.agents.base_agent import BaseAgent
 from letta.agents.helpers import _create_letta_response, _prepare_in_context_messages_async, generate_step_id
 from letta.helpers import ToolRulesSolver
+from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
@@ -38,7 +39,7 @@ from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryMana
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
 from letta.settings import settings
 from letta.system import package_function_response
-from letta.tracing import log_event, trace_method
+from letta.tracing import log_event, trace_method, tracer
 
 logger = get_logger(__name__)
 
@@ -270,7 +271,11 @@ class LettaAgent(BaseAgent):
 
     @trace_method
     async def step_stream(
-        self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = True
+        self,
+        input_messages: List[MessageCreate],
+        max_steps: int = 10,
+        use_assistant_message: bool = True,
+        request_start_timestamp_ns: Optional[int] = None,
     ) -> AsyncGenerator[str, None]:
         """
         Carries out an invocation of the agent loop in a streaming fashion that yields partial tokens.
@@ -336,7 +341,20 @@ class LettaAgent(BaseAgent):
             else:
                 raise ValueError(f"Streaming not supported for {agent_state.llm_config}")
 
+            first_chunk, ttft_span = True, None
+            if request_start_timestamp_ns is not None:
+                ttft_span = tracer.start_span("time_to_first_token", start_time=request_start_timestamp_ns)
+                ttft_span.set_attributes({f"llm_config.{k}": v for k, v in agent_state.llm_config.model_dump().items() if v is not None})
+
             async for chunk in interface.process(stream):
+                # Measure time to first token
+                if first_chunk and ttft_span is not None:
+                    now = get_utc_timestamp_ns()
+                    ttft_ns = now - request_start_timestamp_ns
+                    ttft_span.add_event(name="time_to_first_token_ms", attributes={"ttft_ms": ttft_ns // 1_000_000})
+                    ttft_span.end()
+                    first_chunk = False
+
                 yield f"data: {chunk.model_dump_json()}\n\n"
 
             # update usage
