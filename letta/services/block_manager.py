@@ -1,3 +1,4 @@
+import asyncio
 from typing import Dict, List, Optional
 
 from sqlalchemy import select
@@ -82,39 +83,64 @@ class BlockManager:
             return block.to_pydantic()
 
     @enforce_types
-    def get_blocks(
+    async def get_blocks_async(
         self,
         actor: PydanticUser,
         label: Optional[str] = None,
         is_template: Optional[bool] = None,
         template_name: Optional[str] = None,
-        identifier_keys: Optional[List[str]] = None,
         identity_id: Optional[str] = None,
-        id: Optional[str] = None,
-        after: Optional[str] = None,
+        identifier_keys: Optional[List[str]] = None,
         limit: Optional[int] = 50,
     ) -> List[PydanticBlock]:
-        """Retrieve blocks based on various optional filters."""
-        with db_registry.session() as session:
-            # Prepare filters
-            filters = {"organization_id": actor.organization_id}
-            if label:
-                filters["label"] = label
-            if is_template is not None:
-                filters["is_template"] = is_template
-            if template_name:
-                filters["template_name"] = template_name
-            if id:
-                filters["id"] = id
+        """Async version of get_blocks method. Retrieve blocks based on various optional filters."""
+        from sqlalchemy import select
+        from sqlalchemy.orm import noload
 
-            blocks = BlockModel.list(
-                db_session=session,
-                after=after,
-                limit=limit,
-                identifier_keys=identifier_keys,
-                identity_id=identity_id,
-                **filters,
-            )
+        from letta.orm.sqlalchemy_base import AccessType
+
+        async with db_registry.async_session() as session:
+            # Start with a basic query
+            query = select(BlockModel)
+
+            # Explicitly avoid loading relationships
+            query = query.options(noload(BlockModel.agents), noload(BlockModel.identities), noload(BlockModel.groups))
+
+            # Apply access control
+            query = BlockModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
+
+            # Add filters
+            query = query.where(BlockModel.organization_id == actor.organization_id)
+            if label:
+                query = query.where(BlockModel.label == label)
+
+            if is_template is not None:
+                query = query.where(BlockModel.is_template == is_template)
+
+            if template_name:
+                query = query.where(BlockModel.template_name == template_name)
+
+            if identifier_keys:
+                query = (
+                    query.join(BlockModel.identities)
+                    .filter(BlockModel.identities.property.mapper.class_.identifier_key.in_(identifier_keys))
+                    .distinct(BlockModel.id)
+                )
+
+            if identity_id:
+                query = (
+                    query.join(BlockModel.identities)
+                    .filter(BlockModel.identities.property.mapper.class_.id == identity_id)
+                    .distinct(BlockModel.id)
+                )
+
+            # Add limit
+            if limit:
+                query = query.limit(limit)
+
+            # Execute the query
+            result = await session.execute(query)
+            blocks = result.scalars().all()
 
             return [block.to_pydantic() for block in blocks]
 
@@ -191,15 +217,6 @@ class BlockManager:
                 return None
 
     @enforce_types
-    def get_all_blocks_by_ids(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
-        """Retrieve blocks by their ids."""
-        with db_registry.session() as session:
-            blocks = [block.to_pydantic() for block in BlockModel.read_multiple(db_session=session, identifiers=block_ids, actor=actor)]
-            # backwards compatibility. previous implementation added None for every block not found.
-            blocks.extend([None for _ in range(len(block_ids) - len(blocks))])
-            return blocks
-
-    @enforce_types
     async def get_all_blocks_by_ids_async(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
         """Retrieve blocks by their ids without loading unnecessary relationships. Async implementation."""
         from sqlalchemy import select
@@ -247,16 +264,14 @@ class BlockManager:
             return pydantic_blocks
 
     @enforce_types
-    def get_agents_for_block(self, block_id: str, actor: PydanticUser) -> List[PydanticAgentState]:
+    async def get_agents_for_block_async(self, block_id: str, actor: PydanticUser) -> List[PydanticAgentState]:
         """
         Retrieve all agents associated with a given block.
         """
-        with db_registry.session() as session:
-            block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
+        async with db_registry.async_session() as session:
+            block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
             agents_orm = block.agents
-            agents_pydantic = [agent.to_pydantic() for agent in agents_orm]
-
-            return agents_pydantic
+            return await asyncio.gather(*[agent.to_pydantic_async() for agent in agents_orm])
 
     @enforce_types
     def size(

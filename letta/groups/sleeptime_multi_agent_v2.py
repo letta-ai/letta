@@ -190,7 +190,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
             prior_messages = []
             if self.group.sleeptime_agent_frequency:
                 try:
-                    prior_messages = self.message_manager.list_messages_for_agent(
+                    prior_messages = await self.message_manager.list_messages_for_agent_async(
                         agent_id=foreground_agent_id,
                         actor=self.actor,
                         after=last_processed_message_id,

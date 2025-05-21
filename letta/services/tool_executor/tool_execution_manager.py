@@ -8,9 +8,14 @@ from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
+from letta.services.agent_manager import AgentManager
+from letta.services.block_manager import BlockManager
+from letta.services.message_manager import MessageManager
+from letta.services.passage_manager import PassageManager
 from letta.services.tool_executor.tool_executor import (
     ExternalComposioToolExecutor,
     ExternalMCPToolExecutor,
+    LettaBuiltinToolExecutor,
     LettaCoreToolExecutor,
     LettaMultiAgentToolExecutor,
     SandboxToolExecutor,
@@ -28,15 +33,30 @@ class ToolExecutorFactory:
         ToolType.LETTA_MEMORY_CORE: LettaCoreToolExecutor,
         ToolType.LETTA_SLEEPTIME_CORE: LettaCoreToolExecutor,
         ToolType.LETTA_MULTI_AGENT_CORE: LettaMultiAgentToolExecutor,
+        ToolType.LETTA_BUILTIN: LettaBuiltinToolExecutor,
         ToolType.EXTERNAL_COMPOSIO: ExternalComposioToolExecutor,
         ToolType.EXTERNAL_MCP: ExternalMCPToolExecutor,
     }
 
     @classmethod
-    def get_executor(cls, tool_type: ToolType) -> ToolExecutor:
+    def get_executor(
+        cls,
+        tool_type: ToolType,
+        message_manager: MessageManager,
+        agent_manager: AgentManager,
+        block_manager: BlockManager,
+        passage_manager: PassageManager,
+        actor: User,
+    ) -> ToolExecutor:
         """Get the appropriate executor for the given tool type."""
         executor_class = cls._executor_map.get(tool_type, SandboxToolExecutor)
-        return executor_class()
+        return executor_class(
+            message_manager=message_manager,
+            agent_manager=agent_manager,
+            block_manager=block_manager,
+            passage_manager=passage_manager,
+            actor=actor,
+        )
 
 
 class ToolExecutionManager:
@@ -44,11 +64,19 @@ class ToolExecutionManager:
 
     def __init__(
         self,
+        message_manager: MessageManager,
+        agent_manager: AgentManager,
+        block_manager: BlockManager,
+        passage_manager: PassageManager,
         agent_state: AgentState,
         actor: User,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ):
+        self.message_manager = message_manager
+        self.agent_manager = agent_manager
+        self.block_manager = block_manager
+        self.passage_manager = passage_manager
         self.agent_state = agent_state
         self.logger = get_logger(__name__)
         self.actor = actor
@@ -68,7 +96,14 @@ class ToolExecutionManager:
             Tuple containing the function response and sandbox run result (if applicable)
         """
         try:
-            executor = ToolExecutorFactory.get_executor(tool.tool_type)
+            executor = ToolExecutorFactory.get_executor(
+                tool.tool_type,
+                message_manager=self.message_manager,
+                agent_manager=self.agent_manager,
+                block_manager=self.block_manager,
+                passage_manager=self.passage_manager,
+                actor=self.actor,
+            )
             return executor.execute(
                 function_name,
                 function_args,
@@ -98,9 +133,18 @@ class ToolExecutionManager:
         Execute a tool asynchronously and persist any state changes.
         """
         try:
-            executor = ToolExecutorFactory.get_executor(tool.tool_type)
+            executor = ToolExecutorFactory.get_executor(
+                tool.tool_type,
+                message_manager=self.message_manager,
+                agent_manager=self.agent_manager,
+                block_manager=self.block_manager,
+                passage_manager=self.passage_manager,
+                actor=self.actor,
+            )
             # TODO: Extend this async model to composio
-            if isinstance(executor, (SandboxToolExecutor, ExternalComposioToolExecutor)):
+            if isinstance(
+                executor, (SandboxToolExecutor, ExternalComposioToolExecutor, LettaBuiltinToolExecutor, LettaMultiAgentToolExecutor)
+            ):
                 result = await executor.execute(function_name, function_args, self.agent_state, tool, self.actor)
             else:
                 result = executor.execute(function_name, function_args, self.agent_state, tool, self.actor)

@@ -73,6 +73,7 @@ class ToolExecutionSandbox:
         self.force_recreate = force_recreate
         self.force_recreate_venv = force_recreate_venv
 
+    @trace_method
     def run(
         self,
         agent_state: Optional[AgentState] = None,
@@ -321,6 +322,7 @@ class ToolExecutionSandbox:
 
     # e2b sandbox specific functions
 
+    @trace_method
     def run_e2b_sandbox(
         self,
         agent_state: Optional[AgentState] = None,
@@ -352,10 +354,22 @@ class ToolExecutionSandbox:
         if additional_env_vars:
             env_vars.update(additional_env_vars)
         code = self.generate_execution_script(agent_state=agent_state)
+        log_event(
+            "e2b_execution_started",
+            {"tool": self.tool_name, "sandbox_id": sbx.sandbox_id, "code": code, "env_vars": env_vars},
+        )
         execution = sbx.run_code(code, envs=env_vars)
 
         if execution.results:
             func_return, agent_state = self.parse_best_effort(execution.results[0].text)
+            log_event(
+                "e2b_execution_succeeded",
+                {
+                    "tool": self.tool_name,
+                    "sandbox_id": sbx.sandbox_id,
+                    "func_return": func_return,
+                },
+            )
         elif execution.error:
             logger.error(f"Executing tool {self.tool_name} raised a {execution.error.name} with message: \n{execution.error.value}")
             logger.error(f"Traceback from e2b sandbox: \n{execution.error.traceback}")
@@ -363,7 +377,25 @@ class ToolExecutionSandbox:
                 function_name=self.tool_name, exception_name=execution.error.name, exception_message=execution.error.value
             )
             execution.logs.stderr.append(execution.error.traceback)
+            log_event(
+                "e2b_execution_failed",
+                {
+                    "tool": self.tool_name,
+                    "sandbox_id": sbx.sandbox_id,
+                    "error_type": execution.error.name,
+                    "error_message": execution.error.value,
+                    "func_return": func_return,
+                },
+            )
         else:
+            log_event(
+                "e2b_execution_empty",
+                {
+                    "tool": self.tool_name,
+                    "sandbox_id": sbx.sandbox_id,
+                    "status": "no_results_no_error",
+                },
+            )
             raise ValueError(f"Tool {self.tool_name} returned execution with None")
 
         return ToolExecutionResult(
@@ -395,16 +427,31 @@ class ToolExecutionSandbox:
 
         return None
 
+    @trace_method
     def create_e2b_sandbox_with_metadata_hash(self, sandbox_config: SandboxConfig) -> "Sandbox":
         from e2b_code_interpreter import Sandbox
 
         state_hash = sandbox_config.fingerprint()
         e2b_config = sandbox_config.get_e2b_config()
+        log_event(
+            "e2b_sandbox_create_started",
+            {
+                "sandbox_fingerprint": state_hash,
+                "e2b_config": e2b_config.model_dump(),
+            },
+        )
         if e2b_config.template:
             sbx = Sandbox(sandbox_config.get_e2b_config().template, metadata={self.METADATA_CONFIG_STATE_KEY: state_hash})
         else:
             # no template
             sbx = Sandbox(metadata={self.METADATA_CONFIG_STATE_KEY: state_hash}, **e2b_config.model_dump(exclude={"pip_requirements"}))
+        log_event(
+            "e2b_sandbox_create_finished",
+            {
+                "sandbox_id": sbx.sandbox_id,
+                "sandbox_fingerprint": state_hash,
+            },
+        )
 
         # install pip requirements
         if e2b_config.pip_requirements:

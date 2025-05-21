@@ -35,6 +35,7 @@ from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.openai.chat_completion_response import Message as ChoiceMessage
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
 from letta.services.provider_manager import ProviderManager
+from letta.settings import model_settings
 from letta.tracing import trace_method
 
 DUMMY_FIRST_USER_MESSAGE = "User initializing bootup sequence."
@@ -120,8 +121,16 @@ class AnthropicClient(LLMClientBase):
             override_key = ProviderManager().get_override_key(llm_config.provider_name, actor=self.actor)
 
         if async_client:
-            return anthropic.AsyncAnthropic(api_key=override_key) if override_key else anthropic.AsyncAnthropic()
-        return anthropic.Anthropic(api_key=override_key) if override_key else anthropic.Anthropic()
+            return (
+                anthropic.AsyncAnthropic(api_key=override_key, max_retries=model_settings.anthropic_max_retries)
+                if override_key
+                else anthropic.AsyncAnthropic(max_retries=model_settings.anthropic_max_retries)
+            )
+        return (
+            anthropic.Anthropic(api_key=override_key, max_retries=model_settings.anthropic_max_retries)
+            if override_key
+            else anthropic.Anthropic(max_retries=model_settings.anthropic_max_retries)
+        )
 
     @trace_method
     def build_request_data(
@@ -238,6 +247,24 @@ class AnthropicClient(LLMClientBase):
             )
 
         return data
+
+    async def count_tokens(self, messages: List[dict] = None, model: str = None, tools: List[Tool] = None) -> int:
+        client = anthropic.AsyncAnthropic()
+        if messages and len(messages) == 0:
+            messages = None
+        if tools and len(tools) > 0:
+            anthropic_tools = convert_tools_to_anthropic_format(tools)
+        else:
+            anthropic_tools = None
+        result = await client.beta.messages.count_tokens(
+            model=model or "claude-3-7-sonnet-20250219",
+            messages=messages or [{"role": "user", "content": "hi"}],
+            tools=anthropic_tools or [],
+        )
+        token_count = result.input_tokens
+        if messages is None:
+            token_count -= 8
+        return token_count
 
     def handle_llm_error(self, e: Exception) -> Exception:
         if isinstance(e, anthropic.APIConnectionError):
@@ -369,11 +396,11 @@ class AnthropicClient(LLMClientBase):
                     content = strip_xml_tags(string=content_part.text, tag="thinking")
                 if content_part.type == "tool_use":
                     # hack for tool rules
-                    input = json.loads(json.dumps(content_part.input))
-                    if "id" in input and input["id"].startswith("toolu_") and "function" in input:
-                        arguments = str(input["function"]["arguments"])
+                    tool_input = json.loads(json.dumps(content_part.input))
+                    if "id" in tool_input and tool_input["id"].startswith("toolu_") and "function" in tool_input:
+                        arguments = str(tool_input["function"]["arguments"])
                     else:
-                        arguments = json.dumps(content_part.input, indent=2)
+                        arguments = json.dumps(tool_input, indent=2)
                     tool_calls = [
                         ToolCall(
                             id=content_part.id,

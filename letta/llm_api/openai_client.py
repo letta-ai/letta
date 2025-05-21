@@ -2,7 +2,7 @@ import os
 from typing import List, Optional
 
 import openai
-from openai import AsyncOpenAI, AsyncStream, OpenAI, Stream
+from openai import AsyncOpenAI, AsyncStream, OpenAI
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
@@ -22,7 +22,7 @@ from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_st
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
 from letta.log import get_logger
-from letta.schemas.enums import ProviderCategory
+from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
@@ -113,6 +113,8 @@ class OpenAIClient(LLMClientBase):
             from letta.services.provider_manager import ProviderManager
 
             api_key = ProviderManager().get_override_key(llm_config.provider_name, actor=self.actor)
+        if llm_config.model_endpoint_type == ProviderType.together:
+            api_key = model_settings.together_api_key or os.environ.get("TOGETHER_API_KEY")
 
         if not api_key:
             api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
@@ -254,20 +256,14 @@ class OpenAIClient(LLMClientBase):
 
         return chat_completion_response
 
-    def stream(self, request_data: dict, llm_config: LLMConfig) -> Stream[ChatCompletionChunk]:
-        """
-        Performs underlying streaming request to OpenAI and returns the stream iterator.
-        """
-        client = OpenAI(**self._prepare_client_kwargs(llm_config))
-        response_stream: Stream[ChatCompletionChunk] = client.chat.completions.create(**request_data, stream=True)
-        return response_stream
-
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[ChatCompletionChunk]:
         """
         Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.
         """
         client = AsyncOpenAI(**self._prepare_client_kwargs(llm_config))
-        response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(**request_data, stream=True)
+        response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
+            **request_data, stream=True, stream_options={"include_usage": True}
+        )
         return response_stream
 
     def handle_llm_error(self, e: Exception) -> Exception:

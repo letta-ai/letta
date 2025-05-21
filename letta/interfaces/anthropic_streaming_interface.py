@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from enum import Enum
 from typing import AsyncGenerator, List, Union
@@ -74,6 +75,7 @@ class AnthropicStreamingInterface:
         # usage trackers
         self.input_tokens = 0
         self.output_tokens = 0
+        self.model = None
 
         # reasoning object trackers
         self.reasoning_messages = []
@@ -88,7 +90,13 @@ class AnthropicStreamingInterface:
 
     def get_tool_call_object(self) -> ToolCall:
         """Useful for agent loop"""
-        return ToolCall(id=self.tool_call_id, function=FunctionCall(arguments=self.accumulated_tool_call_args, name=self.tool_call_name))
+        # hack for tool rules
+        tool_input = json.loads(self.accumulated_tool_call_args)
+        if "id" in tool_input and tool_input["id"].startswith("toolu_") and "function" in tool_input:
+            arguments = str(json.dumps(tool_input["function"]["arguments"], indent=2))
+        else:
+            arguments = self.accumulated_tool_call_args
+        return ToolCall(id=self.tool_call_id, function=FunctionCall(arguments=arguments, name=self.tool_call_name))
 
     def _check_inner_thoughts_complete(self, combined_args: str) -> bool:
         """
@@ -311,6 +319,7 @@ class AnthropicStreamingInterface:
                         self.message_id = event.message.id
                         self.input_tokens += event.message.usage.input_tokens
                         self.output_tokens += event.message.usage.output_tokens
+                        self.model = event.message.model
                     elif isinstance(event, BetaRawMessageDeltaEvent):
                         self.output_tokens += event.usage.output_tokens
                     elif isinstance(event, BetaRawMessageStopEvent):

@@ -63,6 +63,7 @@ def check_composio_key_set():
     yield
 
 
+# --- Tool Fixtures ---
 @pytest.fixture
 def weather_tool_func():
     def get_weather(location: str) -> str:
@@ -108,6 +109,23 @@ def print_tool_func():
         return message
 
     yield print_tool
+
+
+@pytest.fixture
+def roll_dice_tool_func():
+    def roll_dice():
+        """
+        Rolls a 6 sided die.
+
+        Returns:
+            str: The roll result.
+        """
+        import time
+
+        time.sleep(1)
+        return "Rolled a 10!"
+
+    yield roll_dice
 
 
 @pytest.fixture

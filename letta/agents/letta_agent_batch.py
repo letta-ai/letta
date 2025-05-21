@@ -145,7 +145,7 @@ class LettaAgentBatch(BaseAgent):
         agent_mapping = {
             agent_state.id: agent_state
             for agent_state in await self.agent_manager.get_agents_by_ids_async(
-                agent_ids=[request.agent_id for request in batch_requests], actor=self.actor
+                agent_ids=[request.agent_id for request in batch_requests], include_relationships=["tools", "memory"], actor=self.actor
             )
         }
 
@@ -267,63 +267,120 @@ class LettaAgentBatch(BaseAgent):
 
     @trace_method
     async def _collect_resume_context(self, llm_batch_id: str) -> _ResumeContext:
-        # NOTE: We only continue for items with successful results
+        """
+        Collect context for resuming operations from completed batch items.
+
+        Args:
+            llm_batch_id: The ID of the batch to collect context for
+
+        Returns:
+            _ResumeContext object containing all necessary data for resumption
+        """
+        # Fetch only completed batch items
         batch_items = await self.batch_manager.list_llm_batch_items_async(llm_batch_id=llm_batch_id, request_status=JobStatus.completed)
 
-        agent_ids = []
-        provider_results = {}
-        request_status_updates: List[RequestStatusUpdateInfo] = []
+        # Exit early if no items to process
+        if not batch_items:
+            return _ResumeContext(
+                batch_items=[],
+                agent_ids=[],
+                agent_state_map={},
+                provider_results={},
+                tool_call_name_map={},
+                tool_call_args_map={},
+                should_continue_map={},
+                request_status_updates=[],
+            )
 
-        for item in batch_items:
-            aid = item.agent_id
-            agent_ids.append(aid)
-            provider_results[aid] = item.batch_request_result.result
+        # Extract agent IDs and organize items by agent ID
+        agent_ids = [item.agent_id for item in batch_items]
+        batch_item_map = {item.agent_id: item for item in batch_items}
 
-        agent_states = await self.agent_manager.get_agents_by_ids_async(agent_ids, actor=self.actor)
+        # Collect provider results
+        provider_results = {item.agent_id: item.batch_request_result.result for item in batch_items}
+
+        # Fetch agent states in a single call
+        agent_states = await self.agent_manager.get_agents_by_ids_async(
+            agent_ids=agent_ids, include_relationships=["tools", "memory"], actor=self.actor
+        )
         agent_state_map = {agent.id: agent for agent in agent_states}
 
-        name_map, args_map, cont_map = {}, {}, {}
-        for aid in agent_ids:
-            # status bookkeeping
-            pr = provider_results[aid]
-            status = (
-                JobStatus.completed
-                if isinstance(pr, BetaMessageBatchSucceededResult)
-                else (
-                    JobStatus.failed
-                    if isinstance(pr, BetaMessageBatchErroredResult)
-                    else JobStatus.cancelled if isinstance(pr, BetaMessageBatchCanceledResult) else JobStatus.expired
-                )
-            )
-            request_status_updates.append(RequestStatusUpdateInfo(llm_batch_id=llm_batch_id, agent_id=aid, request_status=status))
-
-            # translate provider‑specific response → OpenAI‑style tool call (unchanged)
-            llm_client = LLMClient.create(
-                provider_type=item.llm_config.model_endpoint_type,
-                put_inner_thoughts_first=True,
-                actor=self.actor,
-            )
-            tool_call = (
-                llm_client.convert_response_to_chat_completion(
-                    response_data=pr.message.model_dump(), input_messages=[], llm_config=item.llm_config
-                )
-                .choices[0]
-                .message.tool_calls[0]
-            )
-
-            name, args, cont = self._extract_tool_call_and_decide_continue(tool_call, item.step_state)
-            name_map[aid], args_map[aid], cont_map[aid] = name, args, cont
+        # Process each agent's results
+        tool_call_results = self._process_agent_results(
+            agent_ids=agent_ids, batch_item_map=batch_item_map, provider_results=provider_results, llm_batch_id=llm_batch_id
+        )
 
         return _ResumeContext(
             batch_items=batch_items,
             agent_ids=agent_ids,
             agent_state_map=agent_state_map,
             provider_results=provider_results,
-            tool_call_name_map=name_map,
-            tool_call_args_map=args_map,
-            should_continue_map=cont_map,
-            request_status_updates=request_status_updates,
+            tool_call_name_map=tool_call_results.name_map,
+            tool_call_args_map=tool_call_results.args_map,
+            should_continue_map=tool_call_results.cont_map,
+            request_status_updates=tool_call_results.status_updates,
         )
+
+    def _process_agent_results(self, agent_ids, batch_item_map, provider_results, llm_batch_id):
+        """
+        Process the results for each agent, extracting tool calls and determining continuation status.
+
+        Returns:
+            A namedtuple containing name_map, args_map, cont_map, and status_updates
+        """
+        from collections import namedtuple
+
+        ToolCallResults = namedtuple("ToolCallResults", ["name_map", "args_map", "cont_map", "status_updates"])
+
+        name_map, args_map, cont_map = {}, {}, {}
+        request_status_updates = []
+
+        for aid in agent_ids:
+            item = batch_item_map[aid]
+            result = provider_results[aid]
+
+            # Determine job status based on result type
+            status = self._determine_job_status(result)
+            request_status_updates.append(RequestStatusUpdateInfo(llm_batch_id=llm_batch_id, agent_id=aid, request_status=status))
+
+            # Process tool calls
+            name, args, cont = self._extract_tool_call_from_result(item, result)
+            name_map[aid], args_map[aid], cont_map[aid] = name, args, cont
+
+        return ToolCallResults(name_map, args_map, cont_map, request_status_updates)
+
+    def _determine_job_status(self, result):
+        """Determine job status based on result type"""
+        if isinstance(result, BetaMessageBatchSucceededResult):
+            return JobStatus.completed
+        elif isinstance(result, BetaMessageBatchErroredResult):
+            return JobStatus.failed
+        elif isinstance(result, BetaMessageBatchCanceledResult):
+            return JobStatus.cancelled
+        else:
+            return JobStatus.expired
+
+    def _extract_tool_call_from_result(self, item, result):
+        """Extract tool call information from a result"""
+        llm_client = LLMClient.create(
+            provider_type=item.llm_config.model_endpoint_type,
+            put_inner_thoughts_first=True,
+            actor=self.actor,
+        )
+
+        # If result isn't a successful type, we can't extract a tool call
+        if not isinstance(result, BetaMessageBatchSucceededResult):
+            return None, None, False
+
+        tool_call = (
+            llm_client.convert_response_to_chat_completion(
+                response_data=result.message.model_dump(), input_messages=[], llm_config=item.llm_config
+            )
+            .choices[0]
+            .message.tool_calls[0]
+        )
+
+        return self._extract_tool_call_and_decide_continue(tool_call, item.step_state)
 
     def _update_request_statuses(self, updates: List[RequestStatusUpdateInfo]) -> None:
         if updates:
@@ -555,16 +612,6 @@ class LettaAgentBatch(BaseAgent):
 
         in_context_messages = await self._rebuild_memory_async(current_in_context_messages + new_in_context_messages, agent_state)
         return in_context_messages
-
-    # TODO: Make this a bullk function
-    def _rebuild_memory(
-        self,
-        in_context_messages: List[Message],
-        agent_state: AgentState,
-        num_messages: int | None = None,
-        num_archival_memories: int | None = None,
-    ) -> List[Message]:
-        return super()._rebuild_memory(in_context_messages, agent_state)
 
     # Not used in batch.
     async def step(self, input_messages: List[MessageCreate], max_steps: int = 10) -> LettaResponse:

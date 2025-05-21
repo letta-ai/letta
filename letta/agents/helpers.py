@@ -1,3 +1,4 @@
+import uuid
 import xml.etree.ElementTree as ET
 from typing import List, Tuple
 
@@ -150,3 +151,7 @@ def deserialize_message_history(xml_str: str) -> Tuple[List[str], str]:
     context = sum_el.text or ""
 
     return messages, context
+
+
+def generate_step_id():
+    return f"step-{uuid.uuid4()}"

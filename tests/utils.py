@@ -4,15 +4,16 @@ import string
 import time
 from datetime import datetime, timezone
 from importlib import util
-from typing import Dict, Iterator, List, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 
 import requests
+from letta_client import Letta, SystemMessage
 
 from letta.config import LettaConfig
 from letta.data_sources.connectors import DataConnector
-from letta.schemas.enums import MessageRole
+from letta.functions.functions import parse_source_code
 from letta.schemas.file import FileMetadata
-from letta.schemas.message import Message
+from letta.schemas.tool import Tool
 from letta.settings import TestSettings
 
 from .constants import TIMEOUT
@@ -152,7 +153,7 @@ def with_qdrant_storage(storage: list[str]):
 
 
 def wait_for_incoming_message(
-    client,
+    client: Letta,
     agent_id: str,
     substring: str = "[Incoming message from agent with ID",
     max_wait_seconds: float = 10.0,
@@ -166,13 +167,13 @@ def wait_for_incoming_message(
     deadline = time.time() + max_wait_seconds
 
     while time.time() < deadline:
-        messages = client.server.message_manager.list_messages_for_agent(agent_id=agent_id, actor=client.user)
+        messages = client.agents.messages.list(agent_id)[1:]
 
         # Check for the system message containing `substring`
-        def get_message_text(message: Message) -> str:
-            return message.content[0].text if message.content and len(message.content) == 1 else ""
+        def get_message_text(message: SystemMessage) -> str:
+            return message.content if message.content else ""
 
-        if any(message.role == MessageRole.system and substring in get_message_text(message) for message in messages):
+        if any(isinstance(message, SystemMessage) and substring in get_message_text(message) for message in messages):
             return True
         time.sleep(sleep_interval)
 
@@ -199,3 +200,21 @@ def wait_for_server(url, timeout=30, interval=0.5):
 
 def random_string(length: int) -> str:
     return "".join(random.choices(string.ascii_letters + string.digits, k=length))
+
+
+def create_tool_from_func(
+    func,
+    tags: Optional[List[str]] = None,
+    description: Optional[str] = None,
+):
+    source_code = parse_source_code(func)
+    source_type = "python"
+    if not tags:
+        tags = []
+
+    return Tool(
+        source_type=source_type,
+        source_code=source_code,
+        tags=tags,
+        description=description,
+    )

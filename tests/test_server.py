@@ -11,7 +11,7 @@ from sqlalchemy import delete
 
 import letta.utils as utils
 from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, LETTA_DIR, LETTA_TOOL_EXECUTION_DIR
-from letta.orm import Provider, Step
+from letta.orm import Provider, ProviderTrace, Step
 from letta.schemas.block import CreateBlock
 from letta.schemas.enums import MessageRole, ProviderCategory, ProviderType
 from letta.schemas.letta_message import LettaMessage, ReasoningMessage, SystemMessage, ToolCallMessage, ToolReturnMessage, UserMessage
@@ -286,6 +286,7 @@ def org_id(server):
 
     # cleanup
     with db_registry.session() as session:
+        session.execute(delete(ProviderTrace))
         session.execute(delete(Step))
         session.execute(delete(Provider))
         session.commit()
@@ -565,7 +566,8 @@ def test_delete_agent_same_org(server: SyncServer, org_id: str, user: User):
     server.agent_manager.delete_agent(agent_state.id, actor=another_user)
 
 
-def test_read_local_llm_configs(server: SyncServer, user: User):
+@pytest.mark.asyncio
+async def test_read_local_llm_configs(server: SyncServer, user: User):
     configs_base_dir = os.path.join(os.path.expanduser("~"), ".letta", "llm_configs")
     clean_up_dir = False
     if not os.path.exists(configs_base_dir):
@@ -588,7 +590,7 @@ def test_read_local_llm_configs(server: SyncServer, user: User):
 
         # Call list_llm_models
         assert os.path.exists(configs_base_dir)
-        llm_models = server.list_llm_models(actor=user)
+        llm_models = await server.list_llm_models_async(actor=user)
 
         # Assert that the config is in the returned models
         assert any(
@@ -935,7 +937,7 @@ def test_composio_client_simple(server):
     assert len(actions) > 0
 
 
-def test_memory_rebuild_count(server, user, disable_e2b_api_key, base_tools, base_memory_tools):
+async def test_memory_rebuild_count(server, user, disable_e2b_api_key, base_tools, base_memory_tools):
     """Test that the memory rebuild is generating the correct number of role=system messages"""
     actor = user
     # create agent
@@ -1223,7 +1225,8 @@ def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_to
     assert len(agent_state.tools) == len(base_tools) - 2
 
 
-def test_messages_with_provider_override(server: SyncServer, user_id: str):
+@pytest.mark.asyncio
+async def test_messages_with_provider_override(server: SyncServer, user_id: str):
     actor = server.user_manager.get_user_or_default(user_id)
     provider = server.provider_manager.create_provider(
         request=ProviderCreate(
@@ -1233,10 +1236,10 @@ def test_messages_with_provider_override(server: SyncServer, user_id: str):
         ),
         actor=actor,
     )
-    models = server.list_llm_models(actor=actor, provider_category=[ProviderCategory.byok])
+    models = await server.list_llm_models_async(actor=actor, provider_category=[ProviderCategory.byok])
     assert provider.name in [model.provider_name for model in models]
 
-    models = server.list_llm_models(actor=actor, provider_category=[ProviderCategory.base])
+    models = await server.list_llm_models_async(actor=actor, provider_category=[ProviderCategory.base])
     assert provider.name not in [model.provider_name for model in models]
 
     agent = server.create_agent(
@@ -1302,11 +1305,12 @@ def test_messages_with_provider_override(server: SyncServer, user_id: str):
     assert total_tokens == usage.total_tokens
 
 
-def test_unique_handles_for_provider_configs(server: SyncServer, user: User):
-    models = server.list_llm_models(actor=user)
+@pytest.mark.asyncio
+async def test_unique_handles_for_provider_configs(server: SyncServer, user: User):
+    models = await server.list_llm_models_async(actor=user)
     model_handles = [model.handle for model in models]
     assert sorted(model_handles) == sorted(list(set(model_handles))), "All models should have unique handles"
-    embeddings = server.list_embedding_models(actor=user)
+    embeddings = await server.list_embedding_models_async(actor=user)
     embedding_handles = [embedding.handle for embedding in embeddings]
     assert sorted(embedding_handles) == sorted(list(set(embedding_handles))), "All embeddings should have unique handles"
 

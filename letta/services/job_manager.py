@@ -151,6 +151,35 @@ class JobManager:
             return [job.to_pydantic() for job in jobs]
 
     @enforce_types
+    async def list_jobs_async(
+        self,
+        actor: PydanticUser,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        statuses: Optional[List[JobStatus]] = None,
+        job_type: JobType = JobType.JOB,
+        ascending: bool = True,
+    ) -> List[PydanticJob]:
+        """List all jobs with optional pagination and status filter."""
+        async with db_registry.async_session() as session:
+            filter_kwargs = {"user_id": actor.id, "job_type": job_type}
+
+            # Add status filter if provided
+            if statuses:
+                filter_kwargs["status"] = statuses
+
+            jobs = await JobModel.list_async(
+                db_session=session,
+                before=before,
+                after=after,
+                limit=limit,
+                ascending=ascending,
+                **filter_kwargs,
+            )
+            return [job.to_pydantic() for job in jobs]
+
+    @enforce_types
     def delete_job_by_id(self, job_id: str, actor: PydanticUser) -> PydanticJob:
         """Delete a job by its ID."""
         with db_registry.session() as session:

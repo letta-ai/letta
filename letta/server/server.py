@@ -94,6 +94,7 @@ from letta.services.provider_manager import ProviderManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.source_manager import SourceManager
 from letta.services.step_manager import StepManager
+from letta.services.telemetry_manager import TelemetryManager
 from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
@@ -213,6 +214,7 @@ class SyncServer(Server):
         self.identity_manager = IdentityManager()
         self.group_manager = GroupManager()
         self.batch_manager = LLMBatchManager()
+        self.telemetry_manager = TelemetryManager()
 
         # A resusable httpx client
         timeout = httpx.Timeout(connect=10.0, read=20.0, write=10.0, pool=10.0)
@@ -1000,6 +1002,30 @@ class SyncServer(Server):
         )
         return records
 
+    async def get_agent_archival_async(
+        self,
+        agent_id: str,
+        actor: User,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
+        limit: Optional[int] = 100,
+        order_by: Optional[str] = "created_at",
+        reverse: Optional[bool] = False,
+        query_text: Optional[str] = None,
+        ascending: Optional[bool] = True,
+    ) -> List[Passage]:
+        # iterate over records
+        records = await self.agent_manager.list_passages_async(
+            actor=actor,
+            agent_id=agent_id,
+            after=after,
+            query_text=query_text,
+            before=before,
+            ascending=ascending,
+            limit=limit,
+        )
+        return records
+
     def insert_archival_memory(self, agent_id: str, memory_contents: str, actor: User) -> List[Passage]:
         # Get the agent object (loaded in memory)
         agent_state = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
@@ -1047,6 +1073,44 @@ class SyncServer(Server):
         actor = self.user_manager.get_user_or_default(user_id=user_id)
 
         records = self.message_manager.list_messages_for_agent(
+            agent_id=agent_id,
+            actor=actor,
+            after=after,
+            before=before,
+            limit=limit,
+            ascending=not reverse,
+            group_id=group_id,
+        )
+
+        if not return_message_object:
+            records = Message.to_letta_messages_from_list(
+                messages=records,
+                use_assistant_message=use_assistant_message,
+                assistant_message_tool_name=assistant_message_tool_name,
+                assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+                reverse=reverse,
+            )
+
+        if reverse:
+            records = records[::-1]
+
+        return records
+
+    async def get_agent_recall_async(
+        self,
+        agent_id: str,
+        actor: User,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
+        limit: Optional[int] = 100,
+        group_id: Optional[str] = None,
+        reverse: Optional[bool] = False,
+        return_message_object: bool = True,
+        use_assistant_message: bool = True,
+        assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
+        assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
+    ) -> Union[List[Message], List[LettaMessage]]:
+        records = await self.message_manager.list_messages_for_agent_async(
             agent_id=agent_id,
             actor=actor,
             after=after,
@@ -1301,6 +1365,48 @@ class SyncServer(Server):
 
         return llm_models
 
+    @trace_method
+    async def list_llm_models_async(
+        self,
+        actor: User,
+        provider_category: Optional[List[ProviderCategory]] = None,
+        provider_name: Optional[str] = None,
+        provider_type: Optional[ProviderType] = None,
+    ) -> List[LLMConfig]:
+        """Asynchronously list available models with maximum concurrency"""
+        import asyncio
+
+        providers = self.get_enabled_providers(
+            provider_category=provider_category,
+            provider_name=provider_name,
+            provider_type=provider_type,
+            actor=actor,
+        )
+
+        async def get_provider_models(provider):
+            try:
+                return await provider.list_llm_models_async()
+            except Exception as e:
+                import traceback
+
+                traceback.print_exc()
+                warnings.warn(f"An error occurred while listing LLM models for provider {provider}: {e}")
+                return []
+
+        # Execute all provider model listing tasks concurrently
+        provider_results = await asyncio.gather(*[get_provider_models(provider) for provider in providers])
+
+        # Flatten the results
+        llm_models = []
+        for models in provider_results:
+            llm_models.extend(models)
+
+        # Get local configs - if this is potentially slow, consider making it async too
+        local_configs = self.get_local_llm_configs()
+        llm_models.extend(local_configs)
+
+        return llm_models
+
     def list_embedding_models(self, actor: User) -> List[EmbeddingConfig]:
         """List available embedding models"""
         embedding_models = []
@@ -1309,6 +1415,35 @@ class SyncServer(Server):
                 embedding_models.extend(provider.list_embedding_models())
             except Exception as e:
                 warnings.warn(f"An error occurred while listing embedding models for provider {provider}: {e}")
+        return embedding_models
+
+    async def list_embedding_models_async(self, actor: User) -> List[EmbeddingConfig]:
+        """Asynchronously list available embedding models with maximum concurrency"""
+        import asyncio
+
+        # Get all eligible providers first
+        providers = self.get_enabled_providers(actor=actor)
+
+        # Fetch embedding models from each provider concurrently
+        async def get_provider_embedding_models(provider):
+            try:
+                # All providers now have list_embedding_models_async
+                return await provider.list_embedding_models_async()
+            except Exception as e:
+                import traceback
+
+                traceback.print_exc()
+                warnings.warn(f"An error occurred while listing embedding models for provider {provider}: {e}")
+                return []
+
+        # Execute all provider model listing tasks concurrently
+        provider_results = await asyncio.gather(*[get_provider_embedding_models(provider) for provider in providers])
+
+        # Flatten the results
+        embedding_models = []
+        for models in provider_results:
+            embedding_models.extend(models)
+
         return embedding_models
 
     def get_enabled_providers(
@@ -1482,6 +1617,10 @@ class SyncServer(Server):
         letta_agent = self.load_agent(agent_id=agent_id, actor=actor)
         return letta_agent.get_context_window()
 
+    async def get_agent_context_window_async(self, agent_id: str, actor: User) -> ContextWindowOverview:
+        letta_agent = self.load_agent(agent_id=agent_id, actor=actor)
+        return await letta_agent.get_context_window_async()
+
     def run_tool_from_source(
         self,
         actor: User,
@@ -1615,7 +1754,7 @@ class SyncServer(Server):
                                     server_name=server_name,
                                     command=server_params_raw["command"],
                                     args=server_params_raw.get("args", []),
-                                    env=server_params_raw.get("env", {})
+                                    env=server_params_raw.get("env", {}),
                                 )
                                 mcp_server_list[server_name] = server_params
                             except Exception as e:

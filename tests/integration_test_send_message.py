@@ -135,6 +135,7 @@ all_configs = [
     "gemini-1.5-pro.json",
     "gemini-2.5-flash-vertex.json",
     "gemini-2.5-pro-vertex.json",
+    "together-qwen-2.5-72b-instruct.json",
 ]
 requested = os.getenv("LLM_CONFIG_FILE")
 filenames = [requested] if requested else all_configs
@@ -170,6 +171,10 @@ def assert_greeting_with_assistant_message_response(
 
     if streaming:
         assert isinstance(messages[index], LettaUsageStatistics)
+        assert messages[index].prompt_tokens > 0
+        assert messages[index].completion_tokens > 0
+        assert messages[index].total_tokens > 0
+        assert messages[index].step_count > 0
 
 
 def assert_greeting_without_assistant_message_response(
@@ -634,6 +639,33 @@ async def test_streaming_tool_call_async_client(
     chunks = [chunk async for chunk in response]
     messages = accumulate_chunks(chunks)
     assert_tool_call_response(messages, streaming=True)
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_step_streaming_greeting_with_assistant_message(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending a streaming message with a synchronous client.
+    Checks that each chunk in the stream has the correct message types.
+    """
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    response = client.agents.messages.create_stream(
+        agent_id=agent_state.id,
+        messages=USER_MESSAGE_GREETING,
+        stream_tokens=False,
+    )
+    messages = []
+    for message in response:
+        messages.append(message)
+    assert_greeting_with_assistant_message_response(messages, streaming=True)
 
 
 @pytest.mark.parametrize(

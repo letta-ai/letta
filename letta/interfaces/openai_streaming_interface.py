@@ -40,6 +40,9 @@ class OpenAIStreamingInterface:
         self.letta_assistant_message_id = Message.generate_id()
         self.letta_tool_message_id = Message.generate_id()
 
+        self.message_id = None
+        self.model = None
+
         # token counters
         self.input_tokens = 0
         self.output_tokens = 0
@@ -69,10 +72,14 @@ class OpenAIStreamingInterface:
             prev_message_type = None
             message_index = 0
             async for chunk in stream:
+                if not self.model or not self.message_id:
+                    self.model = chunk.model
+                    self.message_id = chunk.id
+
                 # track usage
                 if chunk.usage:
-                    self.input_tokens += len(chunk.usage.prompt_tokens)
-                    self.output_tokens += len(chunk.usage.completion_tokens)
+                    self.input_tokens += chunk.usage.prompt_tokens
+                    self.output_tokens += chunk.usage.completion_tokens
 
                 if chunk.choices:
                     choice = chunk.choices[0]

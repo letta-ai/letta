@@ -19,6 +19,7 @@ MCP_TOOL_TAG_NAME_PREFIX = "mcp"  # full format, mcp:server_name
 LETTA_CORE_TOOL_MODULE_NAME = "letta.functions.function_sets.base"
 LETTA_MULTI_AGENT_TOOL_MODULE_NAME = "letta.functions.function_sets.multi_agent"
 LETTA_VOICE_TOOL_MODULE_NAME = "letta.functions.function_sets.voice"
+LETTA_BUILTIN_TOOL_MODULE_NAME = "letta.functions.function_sets.builtin"
 
 
 # String in the error message for when the context window is too large
@@ -83,9 +84,19 @@ BASE_VOICE_SLEEPTIME_TOOLS = [
 ]
 # Multi agent tools
 MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_tags", "send_message_to_agent_async"]
+
+# Built in tools
+BUILTIN_TOOLS = ["run_code", "web_search"]
+
 # Set of all built-in Letta tools
 LETTA_TOOL_SET = set(
-    BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS + BASE_SLEEPTIME_TOOLS + BASE_VOICE_SLEEPTIME_TOOLS + BASE_VOICE_SLEEPTIME_CHAT_TOOLS
+    BASE_TOOLS
+    + BASE_MEMORY_TOOLS
+    + MULTI_AGENT_TOOLS
+    + BASE_SLEEPTIME_TOOLS
+    + BASE_VOICE_SLEEPTIME_TOOLS
+    + BASE_VOICE_SLEEPTIME_CHAT_TOOLS
+    + BUILTIN_TOOLS
 )
 
 # The name of the tool used to send message to the user
@@ -179,6 +190,45 @@ LLM_MAX_TOKENS = {
     "gpt-3.5-turbo-0613": 4096,  # legacy
     "gpt-3.5-turbo-16k-0613": 16385,  # legacy
     "gpt-3.5-turbo-0301": 4096,  # legacy
+    "gemini-1.0-pro-vision-latest": 12288,
+    "gemini-pro-vision": 12288,
+    "gemini-1.5-pro-latest": 2000000,
+    "gemini-1.5-pro-001": 2000000,
+    "gemini-1.5-pro-002": 2000000,
+    "gemini-1.5-pro": 2000000,
+    "gemini-1.5-flash-latest": 1000000,
+    "gemini-1.5-flash-001": 1000000,
+    "gemini-1.5-flash-001-tuning": 16384,
+    "gemini-1.5-flash": 1000000,
+    "gemini-1.5-flash-002": 1000000,
+    "gemini-1.5-flash-8b": 1000000,
+    "gemini-1.5-flash-8b-001": 1000000,
+    "gemini-1.5-flash-8b-latest": 1000000,
+    "gemini-1.5-flash-8b-exp-0827": 1000000,
+    "gemini-1.5-flash-8b-exp-0924": 1000000,
+    "gemini-2.5-pro-exp-03-25": 1048576,
+    "gemini-2.5-pro-preview-03-25": 1048576,
+    "gemini-2.5-flash-preview-04-17": 1048576,
+    "gemini-2.5-flash-preview-05-20": 1048576,
+    "gemini-2.5-flash-preview-04-17-thinking": 1048576,
+    "gemini-2.5-pro-preview-05-06": 1048576,
+    "gemini-2.0-flash-exp": 1048576,
+    "gemini-2.0-flash": 1048576,
+    "gemini-2.0-flash-001": 1048576,
+    "gemini-2.0-flash-exp-image-generation": 1048576,
+    "gemini-2.0-flash-lite-001": 1048576,
+    "gemini-2.0-flash-lite": 1048576,
+    "gemini-2.0-flash-preview-image-generation": 32768,
+    "gemini-2.0-flash-lite-preview-02-05": 1048576,
+    "gemini-2.0-flash-lite-preview": 1048576,
+    "gemini-2.0-pro-exp": 1048576,
+    "gemini-2.0-pro-exp-02-05": 1048576,
+    "gemini-exp-1206": 1048576,
+    "gemini-2.0-flash-thinking-exp-01-21": 1048576,
+    "gemini-2.0-flash-thinking-exp": 1048576,
+    "gemini-2.0-flash-thinking-exp-1219": 1048576,
+    "gemini-2.5-flash-preview-tts": 32768,
+    "gemini-2.5-pro-preview-tts": 65536,
 }
 # The error message that Letta will receive
 # MESSAGE_SUMMARY_WARNING_STR = f"Warning: the conversation history will soon reach its maximum length and be trimmed. Make sure to save any important information from the conversation to your memory before it is removed."
@@ -230,3 +280,7 @@ RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE = 5
 
 MAX_FILENAME_LENGTH = 255
 RESERVED_FILENAMES = {"CON", "PRN", "AUX", "NUL", "COM1", "COM2", "LPT1", "LPT2"}
+
+WEB_SEARCH_CLIP_CONTENT = False
+WEB_SEARCH_INCLUDE_SCORE = False
+WEB_SEARCH_SEPARATOR = "\n" + "-" * 40 + "\n"

@@ -32,6 +32,16 @@ class MessageManager:
                 return None
 
     @enforce_types
+    async def get_message_by_id_async(self, message_id: str, actor: PydanticUser) -> Optional[PydanticMessage]:
+        """Fetch a message by ID."""
+        async with db_registry.async_session() as session:
+            try:
+                message = await MessageModel.read_async(db_session=session, identifier=message_id, actor=actor)
+                return message.to_pydantic()
+            except NoResultFound:
+                return None
+
+    @enforce_types
     def get_messages_by_ids(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
         """Fetch messages by ID and return them in the requested order."""
         with db_registry.session() as session:
@@ -424,6 +434,107 @@ class MessageManager:
 
             # Execute and convert each Message to its Pydantic representation.
             results = query.all()
+            return [msg.to_pydantic() for msg in results]
+
+    @enforce_types
+    async def list_messages_for_agent_async(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
+        query_text: Optional[str] = None,
+        roles: Optional[Sequence[MessageRole]] = None,
+        limit: Optional[int] = 50,
+        ascending: bool = True,
+        group_id: Optional[str] = None,
+    ) -> List[PydanticMessage]:
+        """
+        Most performant query to list messages for an agent by directly querying the Message table.
+
+        This function filters by the agent_id (leveraging the index on messages.agent_id)
+        and applies pagination using sequence_id as the cursor.
+        If query_text is provided, it will filter messages whose text content partially matches the query.
+        If role is provided, it will filter messages by the specified role.
+
+        Args:
+            agent_id: The ID of the agent whose messages are queried.
+            actor: The user performing the action (used for permission checks).
+            after: A message ID; if provided, only messages *after* this message (by sequence_id) are returned.
+            before: A message ID; if provided, only messages *before* this message (by sequence_id) are returned.
+            query_text: Optional string to partially match the message text content.
+            roles: Optional MessageRole to filter messages by role.
+            limit: Maximum number of messages to return.
+            ascending: If True, sort by sequence_id ascending; if False, sort descending.
+            group_id: Optional group ID to filter messages by group_id.
+
+        Returns:
+            List[PydanticMessage]: A list of messages (converted via .to_pydantic()).
+
+        Raises:
+            NoResultFound: If the provided after/before message IDs do not exist.
+        """
+
+        async with db_registry.async_session() as session:
+            # Permission check: raise if the agent doesn't exist or actor is not allowed.
+            await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+            # Build a query that directly filters the Message table by agent_id.
+            query = select(MessageModel).where(MessageModel.agent_id == agent_id)
+
+            # If group_id is provided, filter messages by group_id.
+            if group_id:
+                query = query.where(MessageModel.group_id == group_id)
+
+            # If query_text is provided, filter messages using subquery + json_array_elements.
+            if query_text:
+                content_element = func.json_array_elements(MessageModel.content).alias("content_element")
+                query = query.where(
+                    exists(
+                        select(1)
+                        .select_from(content_element)
+                        .where(text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text"))
+                        .params(query_text=f"%{query_text}%")
+                    )
+                )
+
+            # If role(s) are provided, filter messages by those roles.
+            if roles:
+                role_values = [r.value for r in roles]
+                query = query.where(MessageModel.role.in_(role_values))
+
+            # Apply 'after' pagination if specified.
+            if after:
+                after_query = select(MessageModel.sequence_id).where(MessageModel.id == after)
+                after_result = await session.execute(after_query)
+                after_ref = after_result.one_or_none()
+                if not after_ref:
+                    raise NoResultFound(f"No message found with id '{after}' for agent '{agent_id}'.")
+                # Filter out any messages with a sequence_id <= after_ref.sequence_id
+                query = query.where(MessageModel.sequence_id > after_ref.sequence_id)
+
+            # Apply 'before' pagination if specified.
+            if before:
+                before_query = select(MessageModel.sequence_id).where(MessageModel.id == before)
+                before_result = await session.execute(before_query)
+                before_ref = before_result.one_or_none()
+                if not before_ref:
+                    raise NoResultFound(f"No message found with id '{before}' for agent '{agent_id}'.")
+                # Filter out any messages with a sequence_id >= before_ref.sequence_id
+                query = query.where(MessageModel.sequence_id < before_ref.sequence_id)
+
+            # Apply ordering based on the ascending flag.
+            if ascending:
+                query = query.order_by(MessageModel.sequence_id.asc())
+            else:
+                query = query.order_by(MessageModel.sequence_id.desc())
+
+            # Limit the number of results.
+            query = query.limit(limit)
+
+            # Execute and convert each Message to its Pydantic representation.
+            result = await session.execute(query)
+            results = result.scalars().all()
             return [msg.to_pydantic() for msg in results]
 
     @enforce_types
