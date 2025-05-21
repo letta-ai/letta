@@ -78,8 +78,8 @@ class OpenAIStreamingInterface:
 
                 # track usage
                 if chunk.usage:
-                    self.input_tokens += len(chunk.usage.prompt_tokens)
-                    self.output_tokens += len(chunk.usage.completion_tokens)
+                    self.input_tokens += chunk.usage.prompt_tokens
+                    self.output_tokens += chunk.usage.completion_tokens
 
                 if chunk.choices:
                     choice = chunk.choices[0]
