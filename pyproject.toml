@@ -1,10 +1,6 @@
 [tool.poetry]
 name = "letta"
-<<<<<<< Updated upstream
-version = "0.7.20"
-=======
 version = "0.7.21"
->>>>>>> Stashed changes
 packages = [
     {include = "letta"},
 ]
