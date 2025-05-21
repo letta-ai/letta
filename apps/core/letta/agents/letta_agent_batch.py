@@ -556,16 +556,6 @@ class LettaAgentBatch(BaseAgent):
         in_context_messages = await self._rebuild_memory_async(current_in_context_messages + new_in_context_messages, agent_state)
         return in_context_messages
 
-    # TODO: Make this a bullk function
-    def _rebuild_memory(
-        self,
-        in_context_messages: List[Message],
-        agent_state: AgentState,
-        num_messages: int | None = None,
-        num_archival_memories: int | None = None,
-    ) -> List[Message]:
-        return super()._rebuild_memory(in_context_messages, agent_state)
-
     # Not used in batch.
     async def step(self, input_messages: List[MessageCreate], max_steps: int = 10) -> LettaResponse:
         raise NotImplementedError

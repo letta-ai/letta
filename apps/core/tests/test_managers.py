@@ -1750,29 +1750,6 @@ def test_get_block_with_label(server: SyncServer, sarah_agent, default_block, de
     assert block.label == default_block.label
 
 
-def test_refresh_memory(server: SyncServer, default_user):
-    block = server.block_manager.create_or_update_block(
-        PydanticBlock(
-            label="test",
-            value="test",
-            limit=1000,
-        ),
-        actor=default_user,
-    )
-    agent = server.agent_manager.create_agent(
-        CreateAgent(
-            name="test",
-            llm_config=LLMConfig.default_config("gpt-4o-mini"),
-            embedding_config=EmbeddingConfig.default_config(provider="openai"),
-            include_base_tools=False,
-        ),
-        actor=default_user,
-    )
-    assert len(agent.memory.blocks) == 0
-    agent = server.agent_manager.refresh_memory(agent_state=agent, actor=default_user)
-    assert len(agent.memory.blocks) == 0
-
-
 @pytest.mark.asyncio
 async def test_refresh_memory_async(server: SyncServer, default_user, event_loop):
     block = server.block_manager.create_or_update_block(
@@ -2826,7 +2803,8 @@ async def test_delete_block_detaches_from_agent(server: SyncServer, sarah_agent,
     assert not (block.id in [b.id for b in agent_state.memory.blocks])
 
 
-def test_get_agents_for_block(server: SyncServer, sarah_agent, charles_agent, default_user):
+@pytest.mark.asyncio
+async def test_get_agents_for_block(server: SyncServer, sarah_agent, charles_agent, default_user, event_loop):
     # Create and delete a block
     block = server.block_manager.create_or_update_block(PydanticBlock(label="alien", value="Sample content"), actor=default_user)
     sarah_agent = server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=block.id, actor=default_user)
@@ -2837,7 +2815,7 @@ def test_get_agents_for_block(server: SyncServer, sarah_agent, charles_agent, de
     assert block.id in [b.id for b in charles_agent.memory.blocks]
 
     # Get the agents for that block
-    agent_states = server.block_manager.get_agents_for_block(block_id=block.id, actor=default_user)
+    agent_states = await server.block_manager.get_agents_for_block_async(block_id=block.id, actor=default_user)
     assert len(agent_states) == 2
 
     # Check both agents are in the list

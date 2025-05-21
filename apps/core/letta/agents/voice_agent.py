@@ -154,7 +154,7 @@ class VoiceAgent(BaseAgent):
         # TODO: Define max steps here
         for _ in range(max_steps):
             # Rebuild memory each loop
-            in_context_messages = self._rebuild_memory(in_context_messages, agent_state)
+            in_context_messages = await self._rebuild_memory_async(in_context_messages, agent_state)
             openai_messages = convert_in_context_letta_messages_to_openai(in_context_messages, exclude_system_messages=True)
             openai_messages.extend(in_memory_message_history)
 
@@ -292,14 +292,14 @@ class VoiceAgent(BaseAgent):
             agent_id=self.agent_id, message_ids=[m.id for m in new_in_context_messages], actor=self.actor
         )
 
-    def _rebuild_memory(
+    async def _rebuild_memory_async(
         self,
         in_context_messages: List[Message],
         agent_state: AgentState,
         num_messages: int | None = None,
         num_archival_memories: int | None = None,
     ) -> List[Message]:
-        return super()._rebuild_memory(
+        return super()._rebuild_memory_async(
             in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
         )
 
