@@ -426,10 +426,10 @@ navigation:
         href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
       - section: Letta Leaderboards
         contents:
-          - page: Memory Leaderboard
+          - page: Overview
             path: pages/leaderboard/overview.mdx
-          - page: Benchmark Information
-            path: pages/leaderboard/benchmarks.mdx
+          # - page: Benchmark Information
+          #   path: pages/leaderboard/benchmarks.mdx
           - page: Contributing Results
             path: pages/leaderboard/contributing.mdx
 

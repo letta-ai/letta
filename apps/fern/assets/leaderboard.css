@@ -106,3 +106,40 @@
   border-radius: 0 !important;
   outline: none;
 }
+
+/* ───────────────────────────────
+   Dark-mode overrides
+   (everything else inherits)
+   ───────────────────────────────*/
+   :is(.dark) #letta-leaderboard {
+
+    /* 1. Bar-fill colours — a hair brighter & less transparent */
+    .avg       .bar-viz { background: rgba(56, 189, 98 , .55); }   /* green  */
+    .cost-ok   .bar-viz { background: rgba(255, 213, 90 , .55); }  /* amber  */
+    .cost-high .bar-viz { background: rgba(255, 99 ,132 , .55); }  /* red    */
+
+    /* 2. Ruler + right-edge -- subtle light lines instead of grey */
+    .bar-cell::before {
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(255,255,255,.12) 0 1px,
+        transparent 1px 25%
+      );
+    }
+    .bar-cell::after  { background: rgba(255,255,255,.12); }
+
+    /* 3. Value pill – dark background so it doesn’t glow */
+    .bar-cell span.value {
+      background: rgba(0,0,0,.65);
+      color: #fff;
+    }
+
+    /* 4. Header text & sort glyphs – lighten slightly */
+    thead th        { color:#e2e2e2; }
+    thead th::after { color:#e2e2e2; }
+  }
+
+  /* 5. Header row background */
+:is(.dark) #letta-leaderboard thead {
+    background:#1a1a1a !important;   /* pick any dark tone */
+  }
