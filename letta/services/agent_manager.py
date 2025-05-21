@@ -979,18 +979,32 @@ class AgentManager:
             return agent.to_pydantic()
 
     @enforce_types
-    async def get_agent_by_id_async(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
+    async def get_agent_by_id_async(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        include_relationships: Optional[List[str]] = None,
+    ) -> PydanticAgentState:
         """Fetch an agent by its ID."""
         async with db_registry.async_session() as session:
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
-            return await agent.to_pydantic_async()
+            return await agent.to_pydantic_async(include_relationships=include_relationships)
 
     @enforce_types
-    async def get_agents_by_ids_async(self, agent_ids: list[str], actor: PydanticUser) -> list[PydanticAgentState]:
+    async def get_agents_by_ids_async(
+        self,
+        agent_ids: list[str],
+        actor: PydanticUser,
+        include_relationships: Optional[List[str]] = None,
+    ) -> list[PydanticAgentState]:
         """Fetch a list of agents by their IDs."""
         async with db_registry.async_session() as session:
-            agents = await AgentModel.read_multiple_async(db_session=session, identifiers=agent_ids, actor=actor)
-            return [await agent.to_pydantic_async() for agent in agents]
+            agents = await AgentModel.read_multiple_async(
+                db_session=session,
+                identifiers=agent_ids,
+                actor=actor,
+            )
+            return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
 
     @enforce_types
     def get_agent_by_name(self, agent_name: str, actor: PydanticUser) -> PydanticAgentState:
@@ -1201,7 +1215,7 @@ class AgentManager:
 
     @enforce_types
     async def get_in_context_messages_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticMessage]:
-        agent = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        agent = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=[], actor=actor)
         return await self.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=actor)
 
     @enforce_types
@@ -1211,7 +1225,7 @@ class AgentManager:
 
     @enforce_types
     async def get_system_message_async(self, agent_id: str, actor: PydanticUser) -> PydanticMessage:
-        agent = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        agent = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=[], actor=actor)
         return await self.message_manager.get_message_by_id_async(message_id=agent.message_ids[0], actor=actor)
 
     # TODO: This is duplicated below
@@ -1292,7 +1306,7 @@ class AgentManager:
 
         Updates to the memory header should *not* trigger a rebuild, since that will simply flood recall storage with excess messages
         """
-        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory"], actor=actor)
 
         curr_system_message = await self.get_system_message_async(
             agent_id=agent_id, actor=actor

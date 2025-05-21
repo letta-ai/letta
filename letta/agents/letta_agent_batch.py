@@ -145,7 +145,7 @@ class LettaAgentBatch(BaseAgent):
         agent_mapping = {
             agent_state.id: agent_state
             for agent_state in await self.agent_manager.get_agents_by_ids_async(
-                agent_ids=[request.agent_id for request in batch_requests], actor=self.actor
+                agent_ids=[request.agent_id for request in batch_requests], include_relationships=["tools", "memory"], actor=self.actor
             )
         }
 
@@ -300,7 +300,9 @@ class LettaAgentBatch(BaseAgent):
         provider_results = {item.agent_id: item.batch_request_result.result for item in batch_items}
 
         # Fetch agent states in a single call
-        agent_states = await self.agent_manager.get_agents_by_ids_async(agent_ids, actor=self.actor)
+        agent_states = await self.agent_manager.get_agents_by_ids_async(
+            agent_ids=agent_ids, include_relationships=["tools", "memory"], actor=self.actor
+        )
         agent_state_map = {agent.id: agent for agent in agent_states}
 
         # Process each agent's results
