@@ -470,7 +470,6 @@ class LettaAgent(BaseAgent):
                 ToolType.LETTA_VOICE_SLEEPTIME_CORE,
                 ToolType.LETTA_BUILTIN,
             }
-            or (t.tool_type == ToolType.LETTA_MULTI_AGENT_CORE and t.name == "send_message_to_agents_matching_tags")
             or (t.tool_type == ToolType.EXTERNAL_COMPOSIO)
         ]
 
@@ -604,20 +603,21 @@ class LettaAgent(BaseAgent):
 
         # TODO: This temp. Move this logic and code to executors
         try:
-            if target_tool.name == "send_message_to_agents_matching_tags" and target_tool.tool_type == ToolType.LETTA_MULTI_AGENT_CORE:
-                log_event(name="start_send_message_to_agents_matching_tags", attributes=tool_args)
-                results = await self._send_message_to_agents_matching_tags(**tool_args)
-                log_event(name="finish_send_message_to_agents_matching_tags", attributes=tool_args)
-                return json.dumps(results), True
-            else:
-                tool_execution_manager = ToolExecutionManager(agent_state=agent_state, actor=self.actor)
-                # TODO: Integrate sandbox result
-                log_event(name=f"start_{tool_name}_execution", attributes=tool_args)
-                tool_execution_result = await tool_execution_manager.execute_tool_async(
-                    function_name=tool_name, function_args=tool_args, tool=target_tool
-                )
-                log_event(name=f"finish_{tool_name}_execution", attributes=tool_args)
-                return tool_execution_result.func_return, True
+            tool_execution_manager = ToolExecutionManager(
+                agent_state=agent_state,
+                message_manager=self.message_manager,
+                agent_manager=self.agent_manager,
+                block_manager=self.block_manager,
+                passage_manager=self.passage_manager,
+                actor=self.actor,
+            )
+            # TODO: Integrate sandbox result
+            log_event(name=f"start_{tool_name}_execution", attributes=tool_args)
+            tool_execution_result = await tool_execution_manager.execute_tool_async(
+                function_name=tool_name, function_args=tool_args, tool=target_tool
+            )
+            log_event(name=f"finish_{tool_name}_execution", attributes=tool_args)
+            return tool_execution_result.func_return, True
         except Exception as e:
             return f"Failed to call tool. Error: {e}", False
 

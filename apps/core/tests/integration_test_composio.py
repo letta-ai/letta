@@ -67,9 +67,14 @@ async def test_composio_tool_execution_e2e(check_composio_key_set, composio_get_
         actor=default_user,
     )
 
-    tool_execution_result = await ToolExecutionManager(agent_state, actor=default_user).execute_tool(
-        function_name=composio_get_emojis.name, function_args={}, tool=composio_get_emojis
-    )
+    tool_execution_result = await ToolExecutionManager(
+        message_manager=server.message_manager,
+        agent_manager=server.agent_manager,
+        block_manager=server.block_manager,
+        passage_manager=server.passage_manager,
+        agent_state=agent_state,
+        actor=default_user,
+    ).execute_tool(function_name=composio_get_emojis.name, function_args={}, tool=composio_get_emojis)
 
     # Small check, it should return something at least
     assert len(tool_execution_result.func_return.keys()) > 10
