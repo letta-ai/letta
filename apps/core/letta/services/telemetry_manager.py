@@ -1,3 +1,4 @@
+from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.orm.provider_trace import ProviderTrace as ProviderTraceModel
 from letta.schemas.provider_trace import ProviderTrace as PydanticProviderTrace
 from letta.schemas.provider_trace import ProviderTraceCreate
@@ -23,6 +24,13 @@ class TelemetryManager:
     async def create_provider_trace_async(self, actor: PydanticUser, provider_trace_create: ProviderTraceCreate) -> PydanticProviderTrace:
         async with db_registry.async_session() as session:
             provider_trace = ProviderTraceModel(**provider_trace_create.model_dump())
+            if provider_trace_create.request_json:
+                request_json_str = json_dumps(provider_trace_create.request_json)
+                provider_trace.request_json = json_loads(request_json_str)
+
+            if provider_trace_create.response_json:
+                response_json_str = json_dumps(provider_trace_create.response_json)
+                provider_trace.response_json = json_loads(response_json_str)
             await provider_trace.create_async(session, actor=actor)
             return provider_trace.to_pydantic()
 
