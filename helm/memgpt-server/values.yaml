@@ -61,10 +61,10 @@ ingress:
 
 resources:
   limits:
-    cpu: 250m
+    cpu: 1
     memory: 2Gi
   requests:
-    cpu: 150m
+    cpu: 1
     memory: 1Gi
 
 livenessProbe:
@@ -92,7 +92,7 @@ readinessProbe:
 autoscaling:
   enabled: true
   minReplicas: 8
-  maxReplicas: 100
+  maxReplicas: 16
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
