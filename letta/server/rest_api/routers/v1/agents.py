@@ -677,9 +677,7 @@ async def send_message(
     responses={
         200: {
             "description": "Successful response",
-            "content": {
-                "text/event-stream": {"description": "Server-Sent Events stream"},
-            },
+            "content": {"text/event-stream": {}},
         }
     },
 )
@@ -705,7 +703,7 @@ async def send_message_streaming(
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
 
-    if agent_eligible and feature_enabled and model_compatible:
+    if agent_eligible and feature_enabled and model_compatible and request.stream_tokens:
         experimental_agent = LettaAgent(
             agent_id=agent_id,
             message_manager=server.message_manager,
