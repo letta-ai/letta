@@ -24,12 +24,19 @@ The memory benchmark tests the ability of a model to understand a memory hierarc
 **Overall Score** refers to the combined core memory + archival memory score. **Cost** refers to (approximate) cost in USD to run the benchmark. Open weights models prefixed with `together` were run on [Together's API](/guides/server/providers/together).
 You can read more about how the memory benchmark is constructed [here](/leaderboard/benchmarks).
 
-<iframe
-  id="leaderboard-frame"
-  src="./leaderboard_overall_cost_cap.html"
-  width="100%"
-  height="1500"
-  scrolling="no"
-  style="border:0;border-radius:8px;overflow:hidden"
-  onload="this.style.height=this.contentWindow.document.documentElement.scrollHeight + 'px';"
-/>
+<div id="letta-leaderboard">
+  <div id="lb-controls" style="display:flex;align-items:center;max-width:800px;margin:10px auto 12px;gap:10px">
+    <input id="lb-search" placeholder="Search models…" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:0;font-size:14px" />
+  </div>
+
+  <table id="lb-table" style="width:100%;max-width:800px;margin:auto;border-collapse:collapse;font-size:14px">
+    <thead style="background:#f2f2f2">
+      <tr>
+        <th data-key="model"      style="padding:8px;text-align:left">Model</th>
+        <th data-key="average"    style="padding:8px;text-align:center">Overall Score</th>
+        <th data-key="total_cost" style="padding:8px;text-align:center">Cost</th>
+      </tr>
+    </thead>
+    <tbody id="lb-body"></tbody>
+  </table>
+</div>

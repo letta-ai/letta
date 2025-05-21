@@ -465,7 +465,14 @@ colors:
     light: '#eef0f2ff'
     dark: '#202020'
 
-css: assets/styles.css
+css:
+  - assets/styles.css
+  - assets/leaderboard.css
+
+js:
+  - path: assets/leaderboard.js
+    strategy: lazyOnload
+    # strategy: afterInteractive
 
 favicon: assets/favicon.png
 
