@@ -8,7 +8,7 @@ from typing import List
 import pytest
 import requests
 from dotenv import load_dotenv
-from letta_client import AsyncLetta, Letta, MessageCreate
+from letta_client import Letta, MessageCreate
 from letta_client.types import ToolReturnMessage
 
 from letta.schemas.agent import AgentState
@@ -67,15 +67,6 @@ def client(server_url: str) -> Letta:
     """
     client_instance = Letta(base_url=server_url)
     yield client_instance
-
-
-@pytest.fixture(scope="function")
-def async_client(server_url: str) -> AsyncLetta:
-    """
-    Creates and returns an asynchronous Letta REST client for testing.
-    """
-    async_client_instance = AsyncLetta(base_url=server_url)
-    yield async_client_instance
 
 
 @pytest.fixture(scope="module")

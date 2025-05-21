@@ -1,9 +1,10 @@
+import asyncio
 import json
 import math
 import traceback
 from abc import ABC, abstractmethod
 from textwrap import shorten
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from letta.constants import (
     COMPOSIO_ENTITY_ENV_VAR_KEY,
@@ -18,12 +19,18 @@ from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_fun
 from letta.functions.composio_helpers import execute_composio_action_async, generate_composio_action_from_func_name
 from letta.helpers.composio_helpers import get_composio_api_key
 from letta.helpers.json_helpers import json_dumps
+from letta.log import get_logger
 from letta.schemas.agent import AgentState
+from letta.schemas.enums import MessageRole
+from letta.schemas.letta_message import AssistantMessage
+from letta.schemas.letta_message_content import TextContent
+from letta.schemas.message import MessageCreate
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
+from letta.services.block_manager import BlockManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.tool_sandbox.e2b_sandbox import AsyncToolSandboxE2B
@@ -32,9 +39,25 @@ from letta.settings import tool_settings
 from letta.tracing import trace_method
 from letta.utils import get_friendly_error_msg
 
+logger = get_logger(__name__)
+
 
 class ToolExecutor(ABC):
     """Abstract base class for tool executors."""
+
+    def __init__(
+        self,
+        message_manager: MessageManager,
+        agent_manager: AgentManager,
+        block_manager: BlockManager,
+        passage_manager: PassageManager,
+        actor: User,
+    ):
+        self.message_manager = message_manager
+        self.agent_manager = agent_manager
+        self.block_manager = block_manager
+        self.passage_manager = passage_manager
+        self.actor = actor
 
     @abstractmethod
     def execute(
@@ -499,12 +522,107 @@ class LettaCoreToolExecutor(ToolExecutor):
 class LettaMultiAgentToolExecutor(ToolExecutor):
     """Executor for LETTA multi-agent core tools."""
 
-    # TODO: Implement
-    # def execute(self, function_name: str, function_args: dict, agent: "Agent", tool: Tool) -> ToolExecutionResult:
-    #     callable_func = get_function_from_module(LETTA_MULTI_AGENT_TOOL_MODULE_NAME, function_name)
-    #     function_args["self"] = agent  # need to attach self to arg since it's dynamically linked
-    #     function_response = callable_func(**function_args)
-    #     return ToolExecutionResult(func_return=function_response)
+    async def execute(
+        self,
+        function_name: str,
+        function_args: dict,
+        agent_state: AgentState,
+        tool: Tool,
+        actor: User,
+        sandbox_config: Optional[SandboxConfig] = None,
+        sandbox_env_vars: Optional[Dict[str, Any]] = None,
+    ) -> ToolExecutionResult:
+        function_map = {
+            "send_message_to_agent_and_wait_for_reply": self.send_message_to_agent_and_wait_for_reply,
+            "send_message_to_agent_async": self.send_message_to_agent_async,
+            "send_message_to_agents_matching_tags": self.send_message_to_agents_matching_tags,
+        }
+
+        if function_name not in function_map:
+            raise ValueError(f"Unknown function: {function_name}")
+
+        # Execute the appropriate function
+        function_args_copy = function_args.copy()  # Make a copy to avoid modifying the original
+        function_response = await function_map[function_name](agent_state, **function_args_copy)
+        return ToolExecutionResult(
+            status="success",
+            func_return=function_response,
+        )
+
+    async def send_message_to_agent_and_wait_for_reply(self, agent_state: AgentState, message: str, other_agent_id: str) -> str:
+        augmented_message = (
+            f"[Incoming message from agent with ID '{agent_state.id}' - to reply to this message, "
+            f"make sure to use the 'send_message' at the end, and the system will notify the sender of your response] "
+            f"{message}"
+        )
+
+        return str(await self._process_agent(agent_id=other_agent_id, message=augmented_message))
+
+    async def send_message_to_agent_async(self, agent_state: AgentState, message: str, other_agent_id: str) -> str:
+        # 1) Build the prefixed system‐message
+        prefixed = (
+            f"[Incoming message from agent with ID '{agent_state.id}' - "
+            f"to reply to this message, make sure to use the "
+            f"'send_message_to_agent_async' tool, or the agent will not receive your message] "
+            f"{message}"
+        )
+
+        task = asyncio.create_task(self._process_agent(agent_id=other_agent_id, message=prefixed))
+
+        task.add_done_callback(lambda t: (logger.error(f"Async send_message task failed: {t.exception()}") if t.exception() else None))
+
+        return "Successfully sent message"
+
+    async def send_message_to_agents_matching_tags(
+        self, agent_state: AgentState, message: str, match_all: List[str], match_some: List[str]
+    ) -> str:
+        # Find matching agents
+        matching_agents = self.agent_manager.list_agents_matching_tags(actor=self.actor, match_all=match_all, match_some=match_some)
+        if not matching_agents:
+            return str([])
+
+        augmented_message = (
+            "[Incoming message from external Letta agent - to reply to this message, "
+            "make sure to use the 'send_message' at the end, and the system will notify "
+            "the sender of your response] "
+            f"{message}"
+        )
+
+        tasks = [
+            asyncio.create_task(self._process_agent(agent_id=agent_state.id, message=augmented_message)) for agent_state in matching_agents
+        ]
+        results = await asyncio.gather(*tasks)
+        return str(results)
+
+    async def _process_agent(self, agent_id: str, message: str) -> Dict[str, Any]:
+        from letta.agents.letta_agent import LettaAgent
+
+        try:
+            letta_agent = LettaAgent(
+                agent_id=agent_id,
+                message_manager=self.message_manager,
+                agent_manager=self.agent_manager,
+                block_manager=self.block_manager,
+                passage_manager=self.passage_manager,
+                actor=self.actor,
+            )
+
+            letta_response = await letta_agent.step([MessageCreate(role=MessageRole.system, content=[TextContent(text=message)])])
+            messages = letta_response.messages
+
+            send_message_content = [message.content for message in messages if isinstance(message, AssistantMessage)]
+
+            return {
+                "agent_id": agent_id,
+                "response": send_message_content if send_message_content else ["<no response>"],
+            }
+
+        except Exception as e:
+            return {
+                "agent_id": agent_id,
+                "error": str(e),
+                "type": type(e).__name__,
+            }
 
 
 class ExternalComposioToolExecutor(ToolExecutor):
