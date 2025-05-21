@@ -392,12 +392,26 @@ navigation:
           python: letta-client
         layout:
           - agents
+
   - tab: showcase
     layout:
+      - link: Chat on Discord
+        icon: fa-brands fa-discord
+        href: https://discord.gg/letta
+      # - link: Developer Forum
+        # icon: fa-sharp fa-light fa-comments
+        # href: https://forum.letta.com
+      - link: DeepLearning.AI Course
+        icon: fa-sharp fa-light fa-building-columns
+        href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
       - section: Examples
         contents:
           - page: Overview
-            path: pages/cookbooks.mdx
+            path: pages/cookbooks_simple.mdx
+      - section: Multi-Agent
+        contents:
+          - page: Async Multi-Agent
+            path: pages/tutorials/multiagent_async.mdx
 
   - tab: leaderboard
     layout:
