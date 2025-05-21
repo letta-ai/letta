@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import type { ZodType } from 'zod';
 import {
   clientSideAccessTokens,
   db,
@@ -11,30 +10,19 @@ import {
 import { and, eq } from 'drizzle-orm';
 import {
   accessPolicyVersionOne,
+  BillingTiers,
   ModelTiers,
+  PaymentCustomerSchema,
+  PaymentCustomerSubscriptionSchema,
   stepCostVersionOne,
 } from '@letta-cloud/types';
-
-interface RedisDefinition<Type extends string, Input, Output extends ZodType> {
-  baseKey: Type;
-  input: Input;
-  getKey: (args: Input) => `${Type}:${string}`;
-  populateOnMissFn?: (
-    args: Input,
-  ) => Promise<{ expiresAt: number; data: z.infer<Output> } | null>;
-  output: Output;
-}
+import type { RedisDefinition } from './constants';
+import { generateDefinitionSatisfies } from './constants';
 
 export function hasPopulateOnMissFn(
   definition: RedisDefinition<string, any, any>,
 ): definition is RedisDefinition<string, any, any> {
   return !!definition.populateOnMissFn;
-}
-
-function generateDefinitionSatisfies<
-  Definition extends RedisDefinition<string, any, any>,
->(definition: Definition) {
-  return definition;
 }
 
 const userSessionDefinition = generateDefinitionSatisfies({
@@ -359,6 +347,20 @@ const emailTotpDefinition = generateDefinitionSatisfies({
   }),
 });
 
+export const customerSubscriptionDefinition = generateDefinitionSatisfies({
+  baseKey: 'customerSubscription',
+  input: z.object({ organizationId: z.string() }),
+  getKey: (args) => `customerSubscription:${args.organizationId}`,
+  output: PaymentCustomerSubscriptionSchema,
+});
+
+export const paymentCustomerDefinition = generateDefinitionSatisfies({
+  baseKey: 'paymentCustomer',
+  input: z.object({ organizationId: z.string() }),
+  getKey: (args) => `paymentCustomer:${args.organizationId}`,
+  output: PaymentCustomerSchema,
+});
+
 export const redisDefinitions = {
   userSession: userSessionDefinition,
   organizationRateLimitsPerModel: organizationRateLimitsPerModelDefinition,
@@ -378,6 +380,8 @@ export const redisDefinitions = {
   modelIdToModelTier: modelIdToModelTierDefinition,
   phoneTotp: phoneTotpDefinition,
   emailTotp: emailTotpDefinition,
+  customerSubscription: customerSubscriptionDefinition,
+  paymentCustomer: paymentCustomerDefinition,
 } satisfies Record<
   string,
   RedisDefinition<

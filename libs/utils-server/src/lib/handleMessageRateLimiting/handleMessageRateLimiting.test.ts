@@ -11,6 +11,10 @@ jest.mock('@letta-cloud/service-redis', () => ({
   setRedisData: jest.fn(),
 }));
 
+jest.mock('@letta-cloud/service-email', () => ({
+  sendEmail: jest.fn(),
+}));
+
 const getRedisData = getRedisDataBase as jest.Mock;
 
 describe('getAndSeedOrganizationLimits', () => {

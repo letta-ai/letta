@@ -249,8 +249,8 @@ function SubscriptionDetails() {
 
 function PaymentMethods() {
   const { data, isLoading, isError } =
-    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
-      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+    webApi.organizations.getOrganizationPaymentMethods.useQuery({
+      queryKey: webApiQueryKeys.organizations.getOrganizationPaymentMethods,
     });
 
   const t = useTranslations('organization/billing');

@@ -742,13 +742,7 @@ async function getCurrentOrganizationBillingInfo(): Promise<GetCurrentOrganizati
   }
 
   // do not run in parallel as payment customer may not exist yet
-  const [paymentCustomer, subscription, creditCards] = await Promise.all([
-    getPaymentCustomer(activeOrganizationId),
-    getCustomerSubscription(activeOrganizationId),
-    listCreditCards({
-      organizationId: activeOrganizationId,
-    }),
-  ]);
+  const subscription = await getCustomerSubscription(activeOrganizationId);
 
   return {
     status: 200,
@@ -756,6 +750,39 @@ async function getCurrentOrganizationBillingInfo(): Promise<GetCurrentOrganizati
       billingTier: subscription.tier,
       isCancelled: !!subscription.cancelled,
       billingPeriodEnd: subscription.billingPeriodEnd,
+
+      totalCredits: parseInt(credits.credits, 10),
+    },
+  };
+}
+
+type GetOrganizationPaymentMethodsResponse = ServerInferResponses<
+  typeof contracts.organizations.getOrganizationPaymentMethods
+>;
+
+async function getOrganizationPaymentMethods(): Promise<GetOrganizationPaymentMethodsResponse> {
+  const { activeOrganizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.MANAGE_BILLING)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
+
+  const [creditCards, paymentCustomer] = await Promise.all([
+    listCreditCards({
+      organizationId: activeOrganizationId,
+    }),
+    getPaymentCustomer(activeOrganizationId),
+  ]);
+
+  return {
+    status: 200,
+    body: {
       creditCards: creditCards.map((card) => ({
         id: card.id,
         brand: card.card.brand,
@@ -774,11 +801,9 @@ async function getCurrentOrganizationBillingInfo(): Promise<GetCurrentOrganizati
           postalCode: card.billing_details.address?.postal_code || '',
           country: card.billing_details.address?.country || '',
         },
-        isDefault:
-          paymentCustomer?.invoice_settings.default_payment_method === card.id,
+        isDefault: paymentCustomer?.defaultPaymentMethod === card.id,
         name: card.billing_details.name || '',
       })),
-      totalCredits: parseInt(credits.credits, 10),
     },
   };
 }
@@ -1547,6 +1572,7 @@ export const organizationsRouter = {
   startSetupIntent,
   getOrganizationCredits: getOrganizationCreditsRoute,
   updateOrganizationUserRole,
+  getOrganizationPaymentMethods,
   removeOrganizationBillingMethod,
   setDefaultOrganizationBillingMethod,
   listVerifiedDomains,

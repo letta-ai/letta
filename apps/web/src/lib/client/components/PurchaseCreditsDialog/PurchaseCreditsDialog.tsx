@@ -264,7 +264,7 @@ export function PurchaseCreditsDialog(props: PurchaseCreditsDialogProps) {
   const [isOpened, setIsOpened] = React.useState(false);
 
   const { data, isError } =
-    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
+    webApi.organizations.getOrganizationPaymentMethods.useQuery({
       queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
     });
 
@@ -303,8 +303,7 @@ export function PurchaseCreditsDialog(props: PurchaseCreditsDialogProps) {
               queryClient
                 .invalidateQueries({
                   queryKey:
-                    webApiQueryKeys.organizations
-                      .getCurrentOrganizationBillingInfo,
+                    webApiQueryKeys.organizations.getOrganizationPaymentMethods,
                 })
                 .catch(() => {
                   window.location.reload();

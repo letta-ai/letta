@@ -8,8 +8,23 @@ import {
 } from '@letta-cloud/service-database';
 import { and, eq } from 'drizzle-orm';
 import { createPaymentCustomer } from '../createPaymentCustomer/createPaymentCustomer';
+import { getRedisData, setRedisData } from '@letta-cloud/service-redis';
+import type Stripe from 'stripe';
+import type { PaymentCustomer } from '@letta-cloud/types';
 
-export async function getPaymentCustomer(organizationId: string) {
+function getDefaultPaymentMethod(
+  customer: Stripe.Customer,
+): string | undefined {
+  if (typeof customer.invoice_settings.default_payment_method === 'string') {
+    return customer.invoice_settings.default_payment_method;
+  }
+
+  return undefined;
+}
+
+async function mainLogic(
+  organizationId: string,
+): Promise<PaymentCustomer | null> {
   const stripeClient = getStripeClient();
 
   if (!stripeClient) {
@@ -30,7 +45,10 @@ export async function getPaymentCustomer(organizationId: string) {
       );
 
       if (customer && !customer.deleted) {
-        return customer;
+        return {
+          id: customer.id,
+          defaultPaymentMethod: getDefaultPaymentMethod(customer),
+        };
       }
     } catch (error) {
       //
@@ -50,7 +68,10 @@ export async function getPaymentCustomer(organizationId: string) {
       })
       .where(eq(organizationBillingDetails.organizationId, organizationId));
 
-    return customerResponse.data[0];
+    return {
+      id: customerResponse.data[0].id,
+      defaultPaymentMethod: getDefaultPaymentMethod(customerResponse.data[0]),
+    };
   }
 
   const organization = await db.query.organizations.findFirst({
@@ -99,5 +120,40 @@ export async function getPaymentCustomer(organizationId: string) {
     })
     .where(eq(organizationBillingDetails.organizationId, organizationId));
 
-  return customer;
+  return {
+    id: customer.id,
+    defaultPaymentMethod: getDefaultPaymentMethod(customer),
+  };
+}
+
+export async function getPaymentCustomer(
+  organizationId: string,
+): Promise<PaymentCustomer | null> {
+  const customerDetails = await getRedisData('paymentCustomer', {
+    organizationId,
+  });
+
+  if (customerDetails?.id) {
+    return customerDetails;
+  }
+
+  const response = await mainLogic(organizationId);
+
+  if (!response) {
+    return null;
+  }
+
+  await setRedisData(
+    'paymentCustomer',
+    {
+      organizationId,
+    },
+    {
+      data: response,
+      // 24 hours
+      expiresAt: Date.now() + 1000 * 60 * 60 * 24,
+    },
+  );
+
+  return response;
 }

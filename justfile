@@ -279,6 +279,7 @@ deploy-cloud-api: push-cloud-api
         --set env.TEMPORAL_LETTUCE_CA_KEY="${TEMPORAL_LETTUCE_CA_KEY}" \
         --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
         --set env.OPENAI_API_KEY="${OPENAI_API_KEY}" \
+        --set env.STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET}" \
         --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}"
 
 

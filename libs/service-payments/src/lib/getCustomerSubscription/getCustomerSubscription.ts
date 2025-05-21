@@ -1,18 +1,14 @@
 import { getStripeClient } from '../getStripeClient/getStripeClient';
 import { db, organizationBillingDetails } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
-import type { BillingTiersType } from '@letta-cloud/types';
+import type {
+  BillingTiersType,
+  PaymentCustomerSubscription,
+} from '@letta-cloud/types';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import type { Stripe } from 'stripe';
 import { PRO_PLAN_PRODUCT_IDS, SCALE_PLAN_PRODUCT_IDS } from '../constants';
-
-interface GetCustomerSubscriptionResponse {
-  tier: BillingTiersType;
-  billingPeriodEnd: string;
-  billingPeriodStart: string;
-  cancelled?: boolean;
-  id?: string;
-}
+import { getRedisData, setRedisData } from '@letta-cloud/service-redis';
 
 function getProductFromStripeSubscription(
   subscription: Stripe.Subscription,
@@ -34,9 +30,9 @@ function getProductFromStripeSubscription(
   return 'free';
 }
 
-export async function getCustomerSubscription(
+async function getCustomerSubscriptionMainLogic(
   organizationId: string,
-): Promise<GetCustomerSubscriptionResponse> {
+): Promise<PaymentCustomerSubscription> {
   const stripeClient = getStripeClient();
 
   // start of the month
@@ -123,4 +119,30 @@ export async function getCustomerSubscription(
       tier,
     };
   }
+}
+
+export async function getCustomerSubscription(
+  organizationId: string,
+): Promise<PaymentCustomerSubscription> {
+  const cachedSubscription = await getRedisData('customerSubscription', {
+    organizationId,
+  });
+
+  if (cachedSubscription) {
+    return cachedSubscription;
+  }
+
+  const subscription = await getCustomerSubscriptionMainLogic(organizationId);
+
+  await setRedisData(
+    'customerSubscription',
+    {
+      organizationId,
+    },
+    {
+      data: subscription,
+    },
+  );
+
+  return subscription;
 }

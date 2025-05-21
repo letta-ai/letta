@@ -193,3 +193,22 @@ export const OtelTraceSchema = z.object({
 
 // Type definition derived from the schema
 export type OtelTrace = z.infer<typeof OtelTraceSchema>;
+
+export const PaymentCustomerSchema = z.object({
+  id: z.string(),
+  defaultPaymentMethod: z.string().optional(),
+});
+
+export type PaymentCustomer = z.infer<typeof PaymentCustomerSchema>;
+
+export const PaymentCustomerSubscriptionSchema = z.object({
+  tier: BillingTiers,
+  billingPeriodEnd: z.string(),
+  billingPeriodStart: z.string(),
+  cancelled: z.boolean().optional(),
+  id: z.string().optional(),
+});
+
+export type PaymentCustomerSubscription = z.infer<
+  typeof PaymentCustomerSubscriptionSchema
+>;

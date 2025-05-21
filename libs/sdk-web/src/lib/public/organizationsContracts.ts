@@ -314,7 +314,6 @@ const CreditCardSchema = z.object({
 export type CreditCardType = z.infer<typeof CreditCardSchema>;
 
 const GetCurrentOrganizationBillingInfoResponse = z.object({
-  creditCards: CreditCardSchema.array(),
   billingTier: BillingTiers,
   totalCredits: z.number(),
   isCancelled: z.boolean(),
@@ -586,6 +585,16 @@ const getFullOrganizationQuotasContract = c.query({
   },
 });
 
+const getOrganizationPaymentMethodsContract = c.query({
+  path: '/organizations/self/billing-info/methods',
+  method: 'GET',
+  responses: {
+    200: z.object({
+      creditCards: CreditCardSchema.array(),
+    }),
+  },
+});
+
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
   getCurrentOrganizationPreferences: getCurrentOrganizationPreferencesContract,
@@ -611,6 +620,7 @@ export const organizationsContract = c.router({
   listVerifiedDomains: listVerifiedDomainsContract,
   createInviteRule: createInviteRuleContract,
   listInviteRules: listInviteRulesContract,
+  getOrganizationPaymentMethods: getOrganizationPaymentMethodsContract,
   deleteInviteRule: deleteInviteRuleContract,
   getOrganizationCredits: getOrganizationCreditsContract,
   cancelOrganizationSubscription: cancelOrganizationSubscriptionContract,
@@ -646,4 +656,5 @@ export const organizationsQueryClientKeys = {
     search: BillingHistoryQueryParamsType,
   ) => [...organizationsQueryClientKeys.getOrganizationBillingHistory, search],
   getFullOrganizationQuotas: ['organizations', 'self', 'quotas', 'full'],
+  getOrganizationPaymentMethods: ['organizations', 'self', 'billing-info'],
 };

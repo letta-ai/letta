@@ -16,3 +16,4 @@ export * from './lib/resumeSubscription/resumeSubscription';
 export * from './lib/createProPaymentLink/createProPaymentLink';
 export * from './lib/createScalePaymentLink/createScalePaymentLink';
 export * from './lib/generateManagePlanLink/generateManagePlanLink';
+export * from './lib/handleStripeEvents/handleStripeEvents';

@@ -1,5 +1,6 @@
 import { getStripeClient } from '../getStripeClient/getStripeClient';
 import { getPaymentCustomer } from '../getPaymentCustomer/getPaymentCustomer';
+import { getDefaultContactEmails } from '@letta-cloud/service-email';
 
 interface CreatePaymentPayload {
   organizationId: string;
@@ -22,7 +23,7 @@ export async function createPayment(payload: CreatePaymentPayload) {
     confirm: true,
     customer: customer.id,
     payment_method: cardId,
-    receipt_email: customer.email || undefined,
+    receipt_email: (await getDefaultContactEmails({ organizationId }))[0],
     automatic_payment_methods: {
       enabled: true,
       allow_redirects: 'never',

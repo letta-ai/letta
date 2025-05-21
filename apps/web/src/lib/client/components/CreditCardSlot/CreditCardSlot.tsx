@@ -38,13 +38,13 @@ function SetDefaultCreditCardDialog(props: SetDefaultCreditCardDialogProps) {
         setIsOpen(false);
         queryClient.setQueriesData<
           ServerInferResponses<
-            typeof contracts.organizations.getCurrentOrganizationBillingInfo,
+            typeof contracts.organizations.getOrganizationPaymentMethods,
             200
           >
         >(
           {
             queryKey:
-              webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+              webApiQueryKeys.organizations.getOrganizationPaymentMethods,
           },
           (oldData) => {
             if (!oldData) {
@@ -111,13 +111,13 @@ function RemoveCreditCardDialog(props: RemoveCreditCardDialogProps) {
         setIsOpen(false);
         queryClient.setQueriesData<
           ServerInferResponses<
-            typeof contracts.organizations.getCurrentOrganizationBillingInfo,
+            typeof contracts.organizations.getOrganizationPaymentMethods,
             200
           >
         >(
           {
             queryKey:
-              webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+              webApiQueryKeys.organizations.getOrganizationPaymentMethods,
           },
           (oldData) => {
             if (!oldData) {

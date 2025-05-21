@@ -31,11 +31,16 @@ export async function createPaymentCustomer(
     return client.data[0];
   }
 
-  return stripeClient.customers.create({
-    name,
-    email,
-    metadata: {
-      organizationId,
+  return stripeClient.customers.create(
+    {
+      name,
+      email,
+      metadata: {
+        organizationId,
+      },
     },
-  });
+    {
+      idempotencyKey: organizationId,
+    },
+  );
 }

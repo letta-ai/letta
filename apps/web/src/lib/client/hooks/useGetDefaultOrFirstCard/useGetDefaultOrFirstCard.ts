@@ -2,21 +2,19 @@ import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useMemo } from 'react';
 
 export function useGetDefaultOrFirstCard() {
-  const { data: billingInfo } =
-    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
-      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
-    });
-
+  const { data } = webApi.organizations.getOrganizationPaymentMethods.useQuery({
+    queryKey: webApiQueryKeys.organizations.getOrganizationPaymentMethods,
+  });
   const defaultCard = useMemo(() => {
-    if (!billingInfo?.body.creditCards) {
+    if (!data?.body.creditCards) {
       return undefined;
     }
 
     return (
-      billingInfo.body.creditCards.find((card) => card.isDefault) ||
-      billingInfo.body.creditCards[0]
+      data.body.creditCards.find((card) => card.isDefault) ||
+      data.body.creditCards[0]
     );
-  }, [billingInfo]);
+  }, [data]);
 
   return defaultCard;
 }

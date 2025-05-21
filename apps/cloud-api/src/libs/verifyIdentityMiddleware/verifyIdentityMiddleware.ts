@@ -6,7 +6,11 @@ import { verifyAndReturnAPIKeyDetails } from '@letta-cloud/utils-server';
 import { findOrCreateUserAndOrganizationFromProviderLogin } from '@letta-cloud/service-auth';
 import { DEFAULT_UNAUTHORIZED_MESSAGE } from '../constants';
 
-const publicRoutes = [new RegExp('/v1/heath')];
+const publicRoutes = [
+  new RegExp('/v1/heath'),
+  new RegExp('/stripe/webhook'),
+  new RegExp('favicon.ico'),
+];
 
 const cookieSessionSchema = z.object({
   sessionId: z.string(),
@@ -122,6 +126,13 @@ export async function verifyIdentityMiddleware(
   res: Response,
   next: NextFunction,
 ) {
+  console.log('fdasfdsdf', req.path, publicRoutes);
+
+  if (req.path === '/' || publicRoutes.some((route) => route.test(req.path))) {
+    next();
+    return;
+  }
+
   const fakeUserData = await handleFakeUser(req);
 
   if (fakeUserData) {
@@ -155,11 +166,6 @@ export async function verifyIdentityMiddleware(
     req.actor = cookieData;
     req.headers['user_id'] = req.actor.coreUserId;
 
-    next();
-    return;
-  }
-
-  if (req.path === '/' || publicRoutes.some((route) => route.test(req.path))) {
     next();
     return;
   }

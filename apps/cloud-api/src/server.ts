@@ -22,6 +22,7 @@ import { itemRateLimitMiddleware } from './libs/itemRateLimitMiddleware/itemRate
 import { fileSizeRateLimitMiddleware } from './libs/fileSizeRateLimitMiddlware/fileSizeRateLimitMiddleware';
 import { updateAgentMiddleware } from './libs/updateAgentMiddleware/updateAgentMiddleware';
 import { contentModerationMiddleware } from './libs/contentModerationMiddleware/contentModerationMiddleware';
+import { stripeWebhook } from './webhooks/stripeWebhook/stripeWebhook';
 
 interface ExpressMeta {
   req: {
@@ -131,6 +132,9 @@ export function startServer() {
 
   /* verifyIdentityMiddleware needs to be first */
   app.use(cookieParser());
+
+  app.use('/stripe', stripeWebhook);
+
   app.use(verifyIdentityMiddleware);
   app.use(verifyRoutePermissionsMiddleware);
 
