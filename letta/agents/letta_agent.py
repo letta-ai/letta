@@ -37,7 +37,6 @@ from letta.services.passage_manager import PassageManager
 from letta.services.step_manager import NoopStepManager, StepManager
 from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
-from letta.settings import settings
 from letta.system import package_function_response
 from letta.tracing import log_event, trace_method, tracer
 
@@ -97,16 +96,12 @@ class LettaAgent(BaseAgent):
         for _ in range(max_steps):
             step_id = generate_step_id()
 
-            in_context_messages = current_in_context_messages + new_in_context_messages
-            if settings.experimental_enable_async_db_engine:
-                in_context_messages = await self._rebuild_memory_async(
-                    in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
-                )
-            else:
-                if settings.experimental_skip_rebuild_memory and agent_state.llm_config.model_endpoint_type == "google_vertex":
-                    logger.info("Skipping memory rebuild")
-                else:
-                    in_context_messages = self._rebuild_memory(in_context_messages, agent_state)
+            in_context_messages = await self._rebuild_memory_async(
+                current_in_context_messages + new_in_context_messages,
+                agent_state,
+                num_messages=self.num_messages,
+                num_archival_memories=self.num_archival_memories,
+            )
             log_event("agent.stream_no_tokens.messages.refreshed")  # [1^]
 
             request_data = await self._create_llm_request_data_async(
@@ -200,16 +195,12 @@ class LettaAgent(BaseAgent):
         for _ in range(max_steps):
             step_id = generate_step_id()
 
-            in_context_messages = current_in_context_messages + new_in_context_messages
-            if settings.experimental_enable_async_db_engine:
-                in_context_messages = await self._rebuild_memory_async(
-                    in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
-                )
-            else:
-                if settings.experimental_skip_rebuild_memory and agent_state.llm_config.model_endpoint_type == "google_vertex":
-                    logger.info("Skipping memory rebuild")
-                else:
-                    in_context_messages = self._rebuild_memory(in_context_messages, agent_state)
+            in_context_messages = await self._rebuild_memory_async(
+                current_in_context_messages + new_in_context_messages,
+                agent_state,
+                num_messages=self.num_messages,
+                num_archival_memories=self.num_archival_memories,
+            )
             log_event("agent.step.messages.refreshed")  # [1^]
 
             request_data = await self._create_llm_request_data_async(
@@ -299,17 +290,12 @@ class LettaAgent(BaseAgent):
 
         for _ in range(max_steps):
             step_id = generate_step_id()
-
-            in_context_messages = current_in_context_messages + new_in_context_messages
-            if settings.experimental_enable_async_db_engine:
-                in_context_messages = await self._rebuild_memory_async(
-                    in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
-                )
-            else:
-                if settings.experimental_skip_rebuild_memory and agent_state.llm_config.model_endpoint_type == "google_vertex":
-                    logger.info("Skipping memory rebuild")
-                else:
-                    in_context_messages = self._rebuild_memory(in_context_messages, agent_state)
+            in_context_messages = await self._rebuild_memory_async(
+                current_in_context_messages + new_in_context_messages,
+                agent_state,
+                num_messages=self.num_messages,
+                num_archival_memories=self.num_archival_memories,
+            )
             log_event("agent.step.messages.refreshed")  # [1^]
 
             request_data = await self._create_llm_request_data_async(
@@ -439,19 +425,13 @@ class LettaAgent(BaseAgent):
         agent_state: AgentState,
         tool_rules_solver: ToolRulesSolver,
     ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:
-        if settings.experimental_enable_async_db_engine:
-            self.num_messages = self.num_messages or (await self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id))
-            self.num_archival_memories = self.num_archival_memories or (
-                await self.passage_manager.size_async(actor=self.actor, agent_id=agent_state.id)
-            )
-            in_context_messages = await self._rebuild_memory_async(
-                in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
-            )
-        else:
-            if settings.experimental_skip_rebuild_memory and agent_state.llm_config.model_endpoint_type == "google_vertex":
-                logger.info("Skipping memory rebuild")
-            else:
-                in_context_messages = self._rebuild_memory(in_context_messages, agent_state)
+        self.num_messages = self.num_messages or (await self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id))
+        self.num_archival_memories = self.num_archival_memories or (
+            await self.passage_manager.size_async(actor=self.actor, agent_id=agent_state.id)
+        )
+        in_context_messages = await self._rebuild_memory_async(
+            in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
+        )
 
         tools = [
             t

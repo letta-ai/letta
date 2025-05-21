@@ -83,43 +83,6 @@ class BlockManager:
             return block.to_pydantic()
 
     @enforce_types
-    def get_blocks(
-        self,
-        actor: PydanticUser,
-        label: Optional[str] = None,
-        is_template: Optional[bool] = None,
-        template_name: Optional[str] = None,
-        identifier_keys: Optional[List[str]] = None,
-        identity_id: Optional[str] = None,
-        id: Optional[str] = None,
-        after: Optional[str] = None,
-        limit: Optional[int] = 50,
-    ) -> List[PydanticBlock]:
-        """Retrieve blocks based on various optional filters."""
-        with db_registry.session() as session:
-            # Prepare filters
-            filters = {"organization_id": actor.organization_id}
-            if label:
-                filters["label"] = label
-            if is_template is not None:
-                filters["is_template"] = is_template
-            if template_name:
-                filters["template_name"] = template_name
-            if id:
-                filters["id"] = id
-
-            blocks = BlockModel.list(
-                db_session=session,
-                after=after,
-                limit=limit,
-                identifier_keys=identifier_keys,
-                identity_id=identity_id,
-                **filters,
-            )
-
-            return [block.to_pydantic() for block in blocks]
-
-    @enforce_types
     async def get_blocks_async(
         self,
         actor: PydanticUser,
@@ -192,15 +155,6 @@ class BlockManager:
                 return None
 
     @enforce_types
-    def get_all_blocks_by_ids(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
-        """Retrieve blocks by their ids."""
-        with db_registry.session() as session:
-            blocks = [block.to_pydantic() for block in BlockModel.read_multiple(db_session=session, identifiers=block_ids, actor=actor)]
-            # backwards compatibility. previous implementation added None for every block not found.
-            blocks.extend([None for _ in range(len(block_ids) - len(blocks))])
-            return blocks
-
-    @enforce_types
     async def get_all_blocks_by_ids_async(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
         """Retrieve blocks by their ids without loading unnecessary relationships. Async implementation."""
         from sqlalchemy import select
@@ -246,18 +200,6 @@ class BlockManager:
                 return result_blocks
 
             return pydantic_blocks
-
-    @enforce_types
-    def get_agents_for_block(self, block_id: str, actor: PydanticUser) -> List[PydanticAgentState]:
-        """
-        Retrieve all agents associated with a given block.
-        """
-        with db_registry.session() as session:
-            block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
-            agents_orm = block.agents
-            agents_pydantic = [agent.to_pydantic() for agent in agents_orm]
-
-            return agents_pydantic
 
     @enforce_types
     async def get_agents_for_block_async(self, block_id: str, actor: PydanticUser) -> List[PydanticAgentState]:

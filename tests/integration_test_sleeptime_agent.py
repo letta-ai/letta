@@ -106,7 +106,7 @@ async def test_sleeptime_group_chat(server, actor):
     # 3. Verify shared blocks
     sleeptime_agent_id = group.agent_ids[0]
     shared_block = server.agent_manager.get_block_with_label(agent_id=main_agent.id, block_label="human", actor=actor)
-    agents = server.block_manager.get_agents_for_block(block_id=shared_block.id, actor=actor)
+    agents = await server.block_manager.get_agents_for_block_async(block_id=shared_block.id, actor=actor)
     assert len(agents) == 2
     assert sleeptime_agent_id in [agent.id for agent in agents]
     assert main_agent.id in [agent.id for agent in agents]
@@ -220,7 +220,7 @@ async def test_sleeptime_group_chat_v2(server, actor):
     # 3. Verify shared blocks
     sleeptime_agent_id = group.agent_ids[0]
     shared_block = server.agent_manager.get_block_with_label(agent_id=main_agent.id, block_label="human", actor=actor)
-    agents = server.block_manager.get_agents_for_block(block_id=shared_block.id, actor=actor)
+    agents = await server.block_manager.get_agents_for_block_async(block_id=shared_block.id, actor=actor)
     assert len(agents) == 2
     assert sleeptime_agent_id in [agent.id for agent in agents]
     assert main_agent.id in [agent.id for agent in agents]

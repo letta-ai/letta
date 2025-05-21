@@ -2773,11 +2773,8 @@ class LocalClient(AbstractClient):
 
     # humans / personas
 
-    def get_block_id(self, name: str, label: str) -> str:
-        block = self.server.block_manager.get_blocks(actor=self.user, template_name=name, label=label, is_template=True)
-        if not block:
-            return None
-        return block[0].id
+    def get_block_id(self, name: str, label: str) -> str | None:
+        return None
 
     def create_human(self, name: str, text: str):
         """
@@ -2812,7 +2809,7 @@ class LocalClient(AbstractClient):
         Returns:
             humans (List[Human]): List of human blocks
         """
-        return self.server.block_manager.get_blocks(actor=self.user, label="human", is_template=True)
+        return []
 
     def list_personas(self) -> List[Persona]:
         """
@@ -2821,7 +2818,7 @@ class LocalClient(AbstractClient):
         Returns:
             personas (List[Persona]): List of persona blocks
         """
-        return self.server.block_manager.get_blocks(actor=self.user, label="persona", is_template=True)
+        return []
 
     def update_human(self, human_id: str, text: str):
         """
@@ -2879,7 +2876,7 @@ class LocalClient(AbstractClient):
         assert id, f"Human ID must be provided"
         return Human(**self.server.block_manager.get_block_by_id(id, actor=self.user).model_dump())
 
-    def get_persona_id(self, name: str) -> str:
+    def get_persona_id(self, name: str) -> str | None:
         """
         Get the ID of a persona block template
 
@@ -2889,12 +2886,9 @@ class LocalClient(AbstractClient):
         Returns:
             id (str): ID of the persona block
         """
-        persona = self.server.block_manager.get_blocks(actor=self.user, template_name=name, label="persona", is_template=True)
-        if not persona:
-            return None
-        return persona[0].id
+        return None
 
-    def get_human_id(self, name: str) -> str:
+    def get_human_id(self, name: str) -> str | None:
         """
         Get the ID of a human block template
 
@@ -2904,10 +2898,7 @@ class LocalClient(AbstractClient):
         Returns:
             id (str): ID of the human block
         """
-        human = self.server.block_manager.get_blocks(actor=self.user, template_name=name, label="human", is_template=True)
-        if not human:
-            return None
-        return human[0].id
+        return None
 
     def delete_persona(self, id: str):
         """
@@ -3381,7 +3372,7 @@ class LocalClient(AbstractClient):
         Returns:
             blocks (List[Block]): List of blocks
         """
-        return self.server.block_manager.get_blocks(actor=self.user, label=label, is_template=templates_only)
+        return []
 
     def create_block(
         self, label: str, value: str, limit: Optional[int] = None, template_name: Optional[str] = None, is_template: bool = False
