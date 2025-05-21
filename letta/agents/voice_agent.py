@@ -299,7 +299,7 @@ class VoiceAgent(BaseAgent):
         num_messages: int | None = None,
         num_archival_memories: int | None = None,
     ) -> List[Message]:
-        return super()._rebuild_memory_async(
+        return await super()._rebuild_memory_async(
             in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
         )
 
