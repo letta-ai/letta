@@ -202,7 +202,7 @@ async def import_agent_serialized(
 
 
 @router.get("/{agent_id}/context", response_model=ContextWindowOverview, operation_id="retrieve_agent_context_window")
-def retrieve_agent_context_window(
+async def retrieve_agent_context_window(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -210,9 +210,12 @@ def retrieve_agent_context_window(
     """
     Retrieve the context window of a specific agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-
-    return server.get_agent_context_window(agent_id=agent_id, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    try:
+        return await server.get_agent_context_window_async(agent_id=agent_id, actor=actor)
+    except Exception as e:
+        traceback.print_exc()
+        raise e
 
 
 class CreateAgentRequest(CreateAgent):

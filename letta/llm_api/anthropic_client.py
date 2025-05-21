@@ -248,6 +248,24 @@ class AnthropicClient(LLMClientBase):
 
         return data
 
+    async def count_tokens(self, messages: List[dict] = None, model: str = None, tools: List[Tool] = None) -> int:
+        client = anthropic.AsyncAnthropic()
+        if messages and len(messages) == 0:
+            messages = None
+        if tools and len(tools) > 0:
+            anthropic_tools = convert_tools_to_anthropic_format(tools)
+        else:
+            anthropic_tools = None
+        result = await client.beta.messages.count_tokens(
+            model=model or "claude-3-7-sonnet-20250219",
+            messages=messages or [{"role": "user", "content": "hi"}],
+            tools=anthropic_tools or [],
+        )
+        token_count = result.input_tokens
+        if messages is None:
+            token_count -= 8
+        return token_count
+
     def handle_llm_error(self, e: Exception) -> Exception:
         if isinstance(e, anthropic.APIConnectionError):
             logger.warning(f"[Anthropic] API connection error: {e.__cause__}")
