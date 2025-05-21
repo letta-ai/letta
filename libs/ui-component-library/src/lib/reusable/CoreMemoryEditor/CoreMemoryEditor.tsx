@@ -410,7 +410,14 @@ export function CoreMemoryEditor(props: CoreMemoryEditorProps) {
   }, [editedValue, memoryBlock.value]);
 
   return (
-    <VStack gap="small" fullWidth overflow="hidden" fullHeight>
+    <VStack
+      gap="small"
+      className={cn(!isCollapsed ? 'min-h-[150px]' : '')}
+      fullWidth
+      overflow="hidden"
+      fullHeight={!isCollapsed}
+      borderBottom={isCollapsed}
+    >
       <CoreMemoryEditorHeader
         onLockChange={setIsLocked}
         onCollapseChange={setIsCollapsed}
@@ -421,7 +428,7 @@ export function CoreMemoryEditor(props: CoreMemoryEditorProps) {
         isLocked={isLocked}
       />
 
-      {!isCollapsed ? (
+      {!isCollapsed && (
         <div className="relative w-full overflow-hidden flex-col h-0 flex-1 flex">
           {memoryBlock.description && (
             <DescriptionView description={memoryBlock.description || ''} />
@@ -443,8 +450,6 @@ export function CoreMemoryEditor(props: CoreMemoryEditorProps) {
           </VStack>
           {errorMessage && <ErrorView message={errorMessage} />}
         </div>
-      ) : (
-        <HR />
       )}
     </VStack>
   );

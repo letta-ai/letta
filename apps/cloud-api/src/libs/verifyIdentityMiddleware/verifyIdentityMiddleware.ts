@@ -126,8 +126,6 @@ export async function verifyIdentityMiddleware(
   res: Response,
   next: NextFunction,
 ) {
-  console.log('fdasfdsdf', req.path, publicRoutes);
-
   if (req.path === '/' || publicRoutes.some((route) => route.test(req.path))) {
     next();
     return;

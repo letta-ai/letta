@@ -125,29 +125,21 @@ function EditMemoryForm(props: EditMemoryFormProps) {
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
   return (
-    <VStack
-      className="min-h-[150px]"
-      collapseHeight
-      flex
-      fullWidth
-      overflow="hidden"
-    >
-      <CoreMemoryEditor
-        memoryBlock={{
-          ...memory,
-          value,
-        }}
-        showDiff
-        sharedAgents={sharedAgents}
-        isSaving={isUpdating}
-        testId={`edit-memory-block-${label}-content`}
-        errorMessage={error ? t('error') : ''}
-        disabled={!canUpdateAgent || disabled}
-        onSave={(value) => {
-          onChange(value, true);
-        }}
-      />
-    </VStack>
+    <CoreMemoryEditor
+      memoryBlock={{
+        ...memory,
+        value,
+      }}
+      showDiff
+      sharedAgents={sharedAgents}
+      isSaving={isUpdating}
+      testId={`edit-memory-block-${label}-content`}
+      errorMessage={error ? t('error') : ''}
+      disabled={!canUpdateAgent || disabled}
+      onSave={(value) => {
+        onChange(value, true);
+      }}
+    />
   );
 }
 
