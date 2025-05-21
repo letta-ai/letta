@@ -55,7 +55,7 @@ def actor(server, org_id):
     server.user_manager.delete_user_by_id(user.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_sleeptime_group_chat(server, actor):
     # 0. Refresh base tools
     server.tool_manager.upsert_base_tools(actor=actor)
@@ -169,7 +169,7 @@ async def test_sleeptime_group_chat(server, actor):
         server.agent_manager.get_agent_by_id(agent_id=sleeptime_agent_id, actor=actor)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_sleeptime_group_chat_v2(server, actor):
     # 0. Refresh base tools
     server.tool_manager.upsert_base_tools(actor=actor)
@@ -292,7 +292,7 @@ async def test_sleeptime_group_chat_v2(server, actor):
 
 
 @pytest.mark.skip
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_sleeptime_removes_redundant_information(server, actor):
     # 1. set up sleep-time agent as in test_sleeptime_group_chat
     server.tool_manager.upsert_base_tools(actor=actor)
@@ -360,7 +360,7 @@ async def test_sleeptime_removes_redundant_information(server, actor):
         server.agent_manager.get_agent_by_id(agent_id=sleeptime_agent_id, actor=actor)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_sleeptime_edit(server, actor):
     sleeptime_agent = server.create_agent(
         request=CreateAgent(
