@@ -74,7 +74,9 @@ class LettaAgent(BaseAgent):
 
     @trace_method
     async def step(self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = True) -> LettaResponse:
-        agent_state = await self.agent_manager.get_agent_by_id_async(self.agent_id, actor=self.actor)
+        agent_state = await self.agent_manager.get_agent_by_id_async(
+            agent_id=self.agent_id, include_relationships=["tools", "memory"], actor=self.actor
+        )
         _, new_in_context_messages, usage = await self._step(agent_state=agent_state, input_messages=input_messages, max_steps=max_steps)
         return _create_letta_response(
             new_in_context_messages=new_in_context_messages, use_assistant_message=use_assistant_message, usage=usage
@@ -82,7 +84,9 @@ class LettaAgent(BaseAgent):
 
     @trace_method
     async def step_stream_no_tokens(self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = True):
-        agent_state = await self.agent_manager.get_agent_by_id_async(self.agent_id, actor=self.actor)
+        agent_state = await self.agent_manager.get_agent_by_id_async(
+            agent_id=self.agent_id, include_relationships=["tools", "memory"], actor=self.actor
+        )
         current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_async(
             input_messages, agent_state, self.message_manager, self.actor
         )
@@ -294,7 +298,9 @@ class LettaAgent(BaseAgent):
             3. Fetches a response from the LLM
             4. Processes the response
         """
-        agent_state = await self.agent_manager.get_agent_by_id_async(self.agent_id, actor=self.actor)
+        agent_state = await self.agent_manager.get_agent_by_id_async(
+            agent_id=self.agent_id, include_relationships=["tools", "memory"], actor=self.actor
+        )
         current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_async(
             input_messages, agent_state, self.message_manager, self.actor
         )
