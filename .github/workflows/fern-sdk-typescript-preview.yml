@@ -143,6 +143,7 @@ jobs:
           LETTA_PG_HOST: localhost
           LETTA_PG_PORT: 5432
           OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
+          E2B_SANDBOX_TEMPLATE_ID: ${{ secrets.E2B_SANDBOX_TEMPLATE_ID }}
         run: |
           # Run server in background
           poetry run letta server &
