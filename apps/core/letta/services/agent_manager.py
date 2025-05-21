@@ -892,7 +892,7 @@ class AgentManager:
             List[PydanticAgentState]: The filtered list of matching agents.
         """
         async with db_registry.async_session() as session:
-            query = select(AgentModel).distinct(AgentModel.created_at, AgentModel.id)
+            query = select(AgentModel)
             query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
 
             # Apply filters
@@ -983,7 +983,7 @@ class AgentManager:
         """Fetch an agent by its ID."""
         async with db_registry.async_session() as session:
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
-            return agent.to_pydantic()
+            return await agent.to_pydantic_async()
 
     @enforce_types
     async def get_agents_by_ids_async(self, agent_ids: list[str], actor: PydanticUser) -> list[PydanticAgentState]:
