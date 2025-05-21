@@ -656,5 +656,5 @@ export const organizationsQueryClientKeys = {
     search: BillingHistoryQueryParamsType,
   ) => [...organizationsQueryClientKeys.getOrganizationBillingHistory, search],
   getFullOrganizationQuotas: ['organizations', 'self', 'quotas', 'full'],
-  getOrganizationPaymentMethods: ['organizations', 'self', 'billing-info'],
+  getOrganizationPaymentMethods: ['organizations', 'self', 'payment-methods'],
 };

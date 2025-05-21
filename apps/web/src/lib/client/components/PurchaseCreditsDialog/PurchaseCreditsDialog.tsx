@@ -265,7 +265,7 @@ export function PurchaseCreditsDialog(props: PurchaseCreditsDialogProps) {
 
   const { data, isError } =
     webApi.organizations.getOrganizationPaymentMethods.useQuery({
-      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+      queryKey: webApiQueryKeys.organizations.getOrganizationPaymentMethods,
     });
 
   const queryClient = useQueryClient();
