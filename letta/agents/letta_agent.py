@@ -174,6 +174,13 @@ class LettaAgent(BaseAgent):
             for message in letta_messages:
                 yield f"data: {message.model_dump_json()}\n\n"
 
+            # update usage
+            # TODO: add run_id
+            usage.step_count += 1
+            usage.completion_tokens += response.usage.completion_tokens
+            usage.prompt_tokens += response.usage.prompt_tokens
+            usage.total_tokens += response.usage.total_tokens
+
             if not should_continue:
                 break
 
@@ -195,6 +202,10 @@ class LettaAgent(BaseAgent):
             3. Fetches a response from the LLM
             4. Processes the response
         """
+<<<<<<< HEAD
+=======
+        agent_state = await self.agent_manager.get_agent_by_id_async(self.agent_id, actor=self.actor)
+>>>>>>> main
         current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_async(
             input_messages, agent_state, self.message_manager, self.actor
         )
@@ -205,6 +216,10 @@ class LettaAgent(BaseAgent):
             actor=self.actor,
         )
         usage = LettaUsageStatistics()
+<<<<<<< HEAD
+=======
+
+>>>>>>> main
         for _ in range(max_steps):
             step_id = generate_step_id()
 
@@ -223,6 +238,7 @@ class LettaAgent(BaseAgent):
                 tool_rules_solver=tool_rules_solver,
                 # TODO: pass in reasoning content
             )
+<<<<<<< HEAD
             log_event("agent.step.llm_request.created")  # [2^]
 
             try:
@@ -336,6 +352,8 @@ class LettaAgent(BaseAgent):
                 raise llm_client.handle_llm_error(e)
             log_event("agent.stream.llm_response.received")  # [3^]
 
+=======
+>>>>>>> main
             # TODO: THIS IS INCREDIBLY UGLY
             # TODO: THERE ARE MULTIPLE COPIES OF THE LLM_CONFIG EVERYWHERE THAT ARE GETTING MANIPULATED
             if agent_state.llm_config.model_endpoint_type == "anthropic":
@@ -348,6 +366,7 @@ class LettaAgent(BaseAgent):
                     use_assistant_message=use_assistant_message,
                     put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs,
                 )
+<<<<<<< HEAD
             else:
                 raise ValueError(f"Streaming not supported for {agent_state.llm_config}")
 
@@ -356,6 +375,8 @@ class LettaAgent(BaseAgent):
                 ttft_span = tracer.start_span("time_to_first_token", start_time=request_start_timestamp_ns)
                 ttft_span.set_attributes({f"llm_config.{k}": v for k, v in agent_state.llm_config.model_dump().items() if v is not None})
 
+=======
+>>>>>>> main
             async for chunk in interface.process(stream):
                 # Measure time to first token
                 if first_chunk and ttft_span is not None:
@@ -393,6 +414,7 @@ class LettaAgent(BaseAgent):
             self.response_messages.extend(persisted_messages)
             new_in_context_messages.extend(persisted_messages)
 
+<<<<<<< HEAD
             # TODO (cliandy): the stream POST request span has ended at this point, we should tie this to the stream
             # log_event("agent.stream.llm_response.processed") # [4^]
 
@@ -420,6 +442,8 @@ class LettaAgent(BaseAgent):
                 ),
             )
 
+=======
+>>>>>>> main
             if not use_assistant_message or should_continue:
                 tool_return = [msg for msg in persisted_messages if msg.role == "tool"][-1].to_letta_messages()[0]
                 yield f"data: {tool_return.model_dump_json()}\n\n"
@@ -449,6 +473,7 @@ class LettaAgent(BaseAgent):
         agent_state: AgentState,
         tool_rules_solver: ToolRulesSolver,
     ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:
+<<<<<<< HEAD
         self.num_messages = self.num_messages or (await self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id))
         self.num_archival_memories = self.num_archival_memories or (
             await self.passage_manager.size_async(actor=self.actor, agent_id=agent_state.id)
@@ -456,6 +481,21 @@ class LettaAgent(BaseAgent):
         in_context_messages = await self._rebuild_memory_async(
             in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
         )
+=======
+        if settings.experimental_enable_async_db_engine:
+            self.num_messages = self.num_messages or (await self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id))
+            self.num_archival_memories = self.num_archival_memories or (
+                await self.passage_manager.size_async(actor=self.actor, agent_id=agent_state.id)
+            )
+            in_context_messages = await self._rebuild_memory_async(
+                in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
+            )
+        else:
+            if settings.experimental_skip_rebuild_memory and agent_state.llm_config.model_endpoint_type == "google_vertex":
+                logger.info("Skipping memory rebuild")
+            else:
+                in_context_messages = self._rebuild_memory(in_context_messages, agent_state)
+>>>>>>> main
 
         tools = [
             t
@@ -585,7 +625,10 @@ class LettaAgent(BaseAgent):
             pre_computed_tool_message_id=pre_computed_tool_message_id,
             step_id=logged_step.id if logged_step else None,  # TODO (cliandy): eventually move over other agent loops
         )
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
         persisted_messages = await self.message_manager.create_many_messages_async(tool_call_messages, actor=self.actor)
         self.last_function_response = function_response
 
@@ -673,7 +716,10 @@ class LettaAgent(BaseAgent):
         results = await asyncio.gather(*tasks)
         return results
 
+<<<<<<< HEAD
     @trace_method
+=======
+>>>>>>> main
     async def _load_last_function_response_async(self):
         """Load the last function response from message history"""
         in_context_messages = await self.agent_manager.get_in_context_messages_async(agent_id=self.agent_id, actor=self.actor)
