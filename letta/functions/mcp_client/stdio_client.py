@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 class StdioMCPClient(BaseMCPClient):
     def _initialize_connection(self, server_config: StdioServerConfig, timeout: float) -> bool:
         try:
-            server_params = StdioServerParameters(command=server_config.command, args=server_config.args)
+            server_params = StdioServerParameters(command=server_config.command, args=server_config.args, env=server_config.env)
             stdio_cm = forked_stdio_client(server_params)
             stdio_transport = self.loop.run_until_complete(asyncio.wait_for(stdio_cm.__aenter__(), timeout=timeout))
             self.stdio, self.write = stdio_transport
