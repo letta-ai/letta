@@ -76,7 +76,8 @@ self.onmessage = async (
 
   const python = `from jinja2 import Template
 
-template = Template('${templateString.replace(/(\r\n|\n|\r)/gm, '')}')
+
+template = Template("""${templateString.replace(/\n/, '\\n')}""")
 
 # generate memories dict from context
 
