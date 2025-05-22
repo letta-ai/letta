@@ -10,6 +10,24 @@ resource "google_sql_database_instance" "postgres" {
 
   settings {
     tier = var.db_tier
+
+    # BEGIN ENTERPRISE_PLUS CONFIG
+    edition = "ENTERPRISE_PLUS"
+    connection_pool_config {
+      connection_pooling_enabled = true
+      dynamic "flags" {
+        for_each = var.connection_pool_flags
+        content {
+          name  = flags.key
+          value = flags.value
+        }
+      }
+    }
+    data_cache_config {
+      data_cache_enabled = true
+    }
+    # END ENTERPRISE_PLUS CONFIG
+
     insights_config {
       query_insights_enabled = true
       query_plans_per_minute = 5
@@ -21,6 +39,13 @@ resource "google_sql_database_instance" "postgres" {
     ip_configuration {
       ipv4_enabled    = true
       private_network = var.vpc_network_id
+    }
+    dynamic "database_flags" {
+      for_each = var.database_flags
+      content {
+        name  = database_flags.key
+        value = database_flags.value
+      }
     }
   }
   timeouts {}

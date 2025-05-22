@@ -7,7 +7,6 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 4.0"
     }
   }
 }
@@ -28,8 +27,16 @@ module database {
     env = var.env
     region = var.region
 
-    db_tier = "db-custom-8-32768"
+    db_tier = "db-perf-optimized-N-8"
     vpc_network_id = data.google_compute_network.vpc_network.id
+
+    connection_pool_flags = {
+      client_connection_idle_timeout = (25 * 60) # 25 minutes
+    }
+
+    database_flags = {
+      idle_in_transaction_session_timeout = (25 * 60 * 1000) # 25 minutes
+    }
 
     db_user = "staff"
     db_password = var.db_password

@@ -39,3 +39,13 @@ variable "redis_memory_size_gb" {
   type = number
   description = "Size of memory (in GB) of redis instance"
 }
+
+variable "connection_pool_flags" {
+  type = map(string)
+  description = "Configuration for connection pooling flags"
+}
+
+variable "database_flags" {
+  type = map(string)
+  description = "Configuration for database flags"
+}
