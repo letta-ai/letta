@@ -56,6 +56,7 @@ def openai_check_valid_api_key(base_url: str, api_key: Union[str, None]) -> None
     else:
         raise ValueError("No API key provided")
 
+
 def openai_get_model_list(url: str, api_key: Optional[str] = None, fix_url: bool = False, extra_params: Optional[dict] = None) -> dict:
     """https://platform.openai.com/docs/api-reference/models/list"""
     from letta.utils import printd

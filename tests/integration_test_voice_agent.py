@@ -586,6 +586,7 @@ def _modify(group_id, server, actor, max_val, min_val):
         actor=actor,
     )
 
+
 def test_valid_buffer_lengths_above_four(group_id, server, actor):
     # both > 4 and max > min
     updated = _modify(group_id, server, actor, max_val=10, min_val=5)

@@ -94,6 +94,7 @@ class ModelSettings(BaseSettings):
     aws_access_key: Optional[str] = None
     aws_secret_access_key: Optional[str] = None
     aws_region: Optional[str] = None
+    aws_profile: Optional[str] = None
     bedrock_anthropic_version: Optional[str] = "bedrock-2023-05-31"
 
     # anthropic
