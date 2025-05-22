@@ -23,7 +23,6 @@ import { createOrganization } from '../createOrganization/createOrganization';
 import { getDefaultProject } from '@letta-cloud/utils-server';
 import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 import { getCustomerSubscription } from '@letta-cloud/service-payments';
-import * as Sentry from '@sentry/node';
 
 export const ERRORS = {
   EMAIL_ALREADY_EXISTS: 'email-already-exists',
@@ -430,8 +429,8 @@ export async function findOrCreateUserAndOrganizationFromProviderLogin(
         user_id: user.coreUserId,
       },
     );
-  } catch (e) {
-    Sentry.captureException(e);
+  } catch (_) {
+    // ignore
   }
 
   return {
