@@ -4,6 +4,7 @@ import {
   CustomToolIcon,
   LettaToolIcon,
   McpIcon,
+  PackageIcon,
   RuleIcon,
   ToolsIcon,
   VariableIcon,
@@ -25,6 +26,10 @@ export function useToolManagerRouteCopy() {
     toolVariables: {
       title: t('ToolManagerNavigationSidebar.toolVariables'),
       icon: <VariableIcon />,
+    },
+    dependencies: {
+      title: t('ToolManagerNavigationSidebar.dependencies'),
+      icon: <PackageIcon />,
     },
     toolRules: {
       title: t('ToolManagerNavigationSidebar.toolRules'),

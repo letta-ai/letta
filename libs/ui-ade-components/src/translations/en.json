@@ -1039,6 +1039,18 @@
     "loadingMessage": "Loading local tools...",
     "errorMessage": "There was an error loading local tools, please try again or contact support."
   },
+  "ToolManager/DependenciesPage": {
+    "title": "Dependencies",
+    "DependencyItem": {
+      "source": "Source"
+    },
+    "description": "View pre-installed dependencies for your agent tool execution environment.",
+    "UsageDialog": {
+      "trigger": "How to use dependencies",
+      "title": "How to use dependencies",
+      "description": "Dependencies can be used as simply as importing them in your code, see the example below"
+    }
+  },
   "ToolManager/ComposioAppHeader": {
     "open": "View on Composio"
   },
@@ -1327,6 +1339,7 @@
       "toolVariables": "Variables",
       "customTools": "Custom tools",
       "lettaTools": "Letta tools",
+      "dependencies": "Dependencies",
       "integrationTools": "External tools",
       "composioTools": "Composio",
       "mcpServers": "MCP servers",

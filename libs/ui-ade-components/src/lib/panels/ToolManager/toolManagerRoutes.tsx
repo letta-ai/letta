@@ -7,6 +7,7 @@ import { ComposioSpecificAppTools } from './routes/ComposioSpecificAppTools/Comp
 import { MCPServers } from './routes/MCPServers/MCPServers';
 import { ToolRulesEditor } from '../ToolRules/ToolRules';
 import { ToolVariables } from './routes/ToolVariables/ToolVariables';
+import { DependenciesPage } from './routes/DependenciesPage/DependenciesPage';
 
 interface Routes {
   path: string;
@@ -55,6 +56,11 @@ export const toolManagerRoutes = [
     path: '/letta-tools',
     key: 'lettaTools',
     component: <LettaTools />,
+  },
+  {
+    path: '/dependencies',
+    key: 'dependencies',
+    component: <DependenciesPage />,
   },
 ] satisfies Routes[];
 
