@@ -1,11 +1,12 @@
 import { getRedisData, setRedisData } from '@letta-cloud/service-redis';
 import {
   db,
+  deployedAgentMetadata,
   embeddingModelsMetadata,
   inferenceModelsMetadata,
   perModelPerOrganizationRateLimitOverrides,
 } from '@letta-cloud/service-database';
-import { eq } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import { AgentsService, type MessageCreate } from '@letta-cloud/sdk-core';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
 import { getCreditCostPerModel } from '../getCreditCostPerModel/getCreditCostPerModel';
@@ -193,22 +194,19 @@ export async function handleMessageRateLimiting(
 
   const usageLimits = getUsageLimits(subscription.tier);
 
-  let count = agentCountMap.get(lettaAgentsUserId);
+  let agentCount = agentCountMap.get(lettaAgentsUserId);
 
-  if (!count) {
-    count = await AgentsService.countAgents(
-      {
-        userId: lettaAgentsUserId,
-      },
-      {
-        user_id: lettaAgentsUserId,
-      },
-    );
+  if (!agentCount) {
+    const [res] = await db
+      .select({ count: count() })
+      .from(deployedAgentMetadata)
+      .where(eq(deployedAgentMetadata.organizationId, organizationId));
 
-    agentCountMap.set(lettaAgentsUserId, count);
+    agentCount = res?.count || 0;
+    agentCountMap.set(lettaAgentsUserId, agentCount);
   }
 
-  if (usageLimits.agents <= count) {
+  if (usageLimits.agents <= agentCount) {
     return {
       isRateLimited: true,
       reasons: ['agents-limit-exceeded'],
