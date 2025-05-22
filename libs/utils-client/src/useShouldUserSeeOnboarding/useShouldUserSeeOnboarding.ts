@@ -10,7 +10,6 @@ export function useShouldUserSeeOnboarding(
   user?: PublicUserSchemaType,
   step?: OnboardingStepsType | 'init',
 ) {
-  const flags = useFeatureFlag('ONBOARDING');
   const { width } = useViewportSize();
   const [computedWidth, setComputedWidth] = useState<number | null>(null);
 
@@ -33,10 +32,6 @@ export function useShouldUserSeeOnboarding(
   }
 
   if (!computedWidth || computedWidth < 768) {
-    return false;
-  }
-
-  if (flags.isLoading || !flags.data) {
     return false;
   }
 

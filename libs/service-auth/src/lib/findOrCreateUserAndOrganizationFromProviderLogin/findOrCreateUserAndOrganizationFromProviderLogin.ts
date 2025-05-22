@@ -224,6 +224,7 @@ async function createUserAndOrganization(
     }),
     db.insert(userProductOnboarding).values({
       userId: createdUser.userId,
+      pausedAt: userData.skipOnboarding ? new Date() : null,
     }),
   ]);
 
