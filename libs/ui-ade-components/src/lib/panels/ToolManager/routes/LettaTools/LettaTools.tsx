@@ -22,6 +22,7 @@ export function LettaTools() {
           'letta_multi_agent_core',
           'letta_core',
           'letta_sleeptime_core',
+          'letta_builtin',
         ].includes(tool.tool_type || ''),
       ) || []
     );

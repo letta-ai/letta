@@ -154,6 +154,8 @@ function SelectedToolViewer(props: SelectedToolViewerProps) {
     case 'letta_memory_core':
     case 'letta_core':
     case 'letta_multi_agent_core':
+    case 'letta_sleeptime_core':
+    case 'letta_builtin':
       return <LettaToolViewer tool={selectedTool} />;
     case 'custom':
       return <LocalToolViewer tool={selectedTool} />;
@@ -249,7 +251,10 @@ export function ToolsEditor(props: ToolsEditorProps) {
             </HStack>
           </HStack>
         </VisibleOnMobile>
-        <SelectedToolViewer selectedTool={selectedTool || null} />
+        <SelectedToolViewer
+          key={selectedTool?.id}
+          selectedTool={selectedTool || null}
+        />
       </VStack>
     </HStack>
   );

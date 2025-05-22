@@ -11,7 +11,7 @@ import {
 } from '@letta-cloud/service-database';
 import type { ProviderUserPayload, UserSession } from '@letta-cloud/sdk-web';
 import type { UserPresetRolesType } from '@letta-cloud/service-rbac';
-import { AdminService } from '@letta-cloud/sdk-core';
+import { AdminService, ToolsService } from '@letta-cloud/sdk-core';
 import {
   trackServerSideEvent,
   trackUserOnServer,
@@ -23,6 +23,7 @@ import { createOrganization } from '../createOrganization/createOrganization';
 import { getDefaultProject } from '@letta-cloud/utils-server';
 import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 import { getCustomerSubscription } from '@letta-cloud/service-payments';
+import * as Sentry from '@sentry/nextjs';
 
 export const ERRORS = {
   EMAIL_ALREADY_EXISTS: 'email-already-exists',
@@ -418,6 +419,19 @@ export async function findOrCreateUserAndOrganizationFromProviderLogin(
         userId: user.id,
       });
     }
+  }
+
+  try {
+    void ToolsService.addBaseTools(
+      {
+        userId: user.coreUserId,
+      },
+      {
+        user_id: user.coreUserId,
+      },
+    );
+  } catch (e) {
+    Sentry.captureException(e);
   }
 
   return {

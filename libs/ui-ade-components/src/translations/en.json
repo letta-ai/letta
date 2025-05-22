@@ -1187,6 +1187,7 @@
     "ViewToggle": {
       "label": "View mode",
       "options": {
+        "settings": "Settings",
         "details": "Details",
         "json": "JSON Schema"
       }

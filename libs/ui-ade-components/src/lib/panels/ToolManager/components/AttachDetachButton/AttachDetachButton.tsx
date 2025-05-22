@@ -257,6 +257,8 @@ function AttachToolToAgentButton(props: AttachToolToAgentButtonProps) {
     case 'letta_multi_agent_core':
     case 'letta_core':
     case 'letta_memory_core':
+    case 'letta_builtin':
+    case 'letta_sleeptime_core':
       return <AttachLocalTool idToAttach={idToAttach} />;
 
     case 'external_mcp':
