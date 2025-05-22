@@ -588,7 +588,9 @@ export function Messages(props: MessagesProps) {
                         </div>
                       )}
                     </HStack>
-                    <Typography>{agentMessage.reasoning}</Typography>
+                    <Typography color="lighter">
+                      {agentMessage.reasoning}
+                    </Typography>
                   </VStack>
                 </BlockQuote>
               ),
