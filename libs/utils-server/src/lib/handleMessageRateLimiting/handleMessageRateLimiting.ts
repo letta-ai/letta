@@ -13,6 +13,7 @@ import { getOrganizationCredits } from '../redisOrganizationCredits/redisOrganiz
 import { getCustomerSubscription } from '@letta-cloud/service-payments';
 import { getRedisModelTransactions } from '../redisModelTransactions/redisModelTransactions';
 import type { RateLimitReason } from '@letta-cloud/types';
+import { LRUCache } from 'lru-cache';
 
 type ModelType = 'embedding' | 'inference';
 
@@ -178,11 +179,41 @@ function isANumberSafe(num: any) {
   return typeof num === 'number' && !isNaN(num) && isFinite(num);
 }
 
+const agentCountMap = new LRUCache<string, number>({
+  max: 100,
+  ttl: 1000,
+});
+
 export async function handleMessageRateLimiting(
   payload: IsRateLimitedForCreatingMessagesPayload,
 ) {
-  const { organizationId, messages, agentId, type, lettaAgentsUserId } =
-    payload;
+  const { organizationId, agentId, type, lettaAgentsUserId } = payload;
+
+  const subscription = await getCustomerSubscription(organizationId);
+
+  const usageLimits = getUsageLimits(subscription.tier);
+
+  let count = agentCountMap.get(lettaAgentsUserId);
+
+  if (!count) {
+    count = await AgentsService.countAgents(
+      {
+        userId: lettaAgentsUserId,
+      },
+      {
+        user_id: lettaAgentsUserId,
+      },
+    );
+
+    agentCountMap.set(lettaAgentsUserId, count);
+  }
+
+  if (usageLimits.agents <= count) {
+    return {
+      isRateLimited: true,
+      reasons: ['agents-limit-exceeded'],
+    };
+  }
 
   const agent = await AgentsService.retrieveAgent(
     {
@@ -289,7 +320,7 @@ export async function handleMessageRateLimiting(
     getRedisData('modelIdToModelTier', {
       modelId: modelId,
     }),
-    getCustomerSubscription(organizationId),
+
     getRedisModelTransactions('free', organizationId),
     getRedisModelTransactions('premium', organizationId),
   ]);
@@ -303,11 +334,8 @@ export async function handleMessageRateLimiting(
   const creditCost = result[3];
 
   const modelTierInformation = result[4]?.tier || 'free';
-  const subscriptionTier = result[5]?.tier || 'free';
-  const freeUsage = result[6] || 0;
-  const premiumUsage = result[7] || 0;
-
-  const usageLimits = getUsageLimits(subscriptionTier);
+  const freeUsage = result[5] || 0;
+  const premiumUsage = result[6] || 0;
 
   const rateLimitThresholds: RateLimitReason[] = [];
 

@@ -144,6 +144,7 @@ export const DatabaseBillingTiers = z.enum(['stripe_managed', 'enterprise']);
 export type DatabaseBillingTiersType = z.infer<typeof DatabaseBillingTiers>;
 
 export type RateLimitReason =
+  | 'agents-limit-exceeded'
   | 'context-window-size-not-supported'
   | 'free-usage-exceeded'
   | 'model-unknown'

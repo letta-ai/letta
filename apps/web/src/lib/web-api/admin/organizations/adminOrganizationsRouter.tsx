@@ -25,6 +25,7 @@ import {
 } from '@letta-cloud/utils-server';
 import { getUserOrThrow } from '$web/server/auth';
 import { getOrganizationLettaServiceAccountId } from '$web/server/lib/getOrganizationLettaServiceAccountId/getOrganizationLettaServiceAccountId';
+import { deleteRedisData } from '@letta-cloud/service-redis';
 
 /* Get Organizations */
 type GetOrganizationsResponse = ServerInferResponses<
@@ -922,6 +923,10 @@ async function adminUpdateOrganizationBillingSettings(
     monthlyCreditAllocation: monthlyCreditAllocation.toString(),
     pricingModel,
     updatedBy: user.id,
+  });
+
+  await deleteRedisData('customerSubscription', {
+    organizationId: organizationId,
   });
 
   return {

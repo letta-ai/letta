@@ -296,6 +296,11 @@ export function useSendMessage(
             return;
           }
 
+          if (body.reasons?.includes('agents-limit-exceeded')) {
+            handleError(message, 'AGENT_LIMIT_EXCEEDED');
+            return;
+          }
+
           if (body.reasons?.includes('premium-usage-exceeded')) {
             handleError(message, 'PREMIUM_USAGE_EXCEEDED');
             return;
@@ -934,6 +939,38 @@ export function AgentSimulator() {
         return t('hasFailedToSendMessageText.contextWindowExceeded');
       case 'RATE_LIMIT_EXCEEDED':
         return t('hasFailedToSendMessageText.rateLimitExceeded');
+      case 'AGENT_LIMIT_EXCEEDED':
+        switch (billingTier) {
+          case 'enterprise':
+            return t(
+              'hasFailedToSendMessageText.agentLimitExceeded.enterprise',
+            );
+          case 'pro':
+            return t.rich('hasFailedToSendMessageText.agentLimitExceeded.pro', {
+              link: (chunks) => {
+                return (
+                  <Link target="_blank" href="/settings/organization/billing">
+                    {chunks}
+                  </Link>
+                );
+              },
+            });
+          case 'scale':
+            return t('hasFailedToSendMessageText.agentLimitExceeded.scale');
+          default:
+            return t.rich(
+              'hasFailedToSendMessageText.agentLimitExceeded.free',
+              {
+                link: (chunks) => {
+                  return (
+                    <Link target="_blank" href="/settings/organization/billing">
+                      {chunks}
+                    </Link>
+                  );
+                },
+              },
+            );
+        }
       case 'FREE_USAGE_EXCEEDED':
         if (billingTier === 'enterprise') {
           return t('hasFailedToSendMessageText.freeUsageExceeded.enterprise');
