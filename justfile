@@ -39,12 +39,12 @@ configure-kubectl cluster-name="letta":
 @build-web-ui:
     npm run slack-bot-says "Building web Docker image with tag: {{TAG}}..."
     @echo "🚧 Building web Docker image with tag: {{TAG}}..."
-    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build --cache-to type=gha --cache-from type=gha --platform linux/amd64 --target web -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN --file apps/web/Dockerfile
+    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build --cache-to type=gha --cache-from type=gha --platform linux/{{ BUILD_ARCH }} --target web -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN --file apps/web/Dockerfile
 
 # Build the migrations Docker image
 @build-web-migrations:
     @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
-    docker buildx build --cache-to type=gha --cache-from type=gha --platform linux/amd64 --target migrations -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load --file apps/web/Dockerfile
+    docker buildx build --cache-to type=gha --cache-from type=gha --platform linux/{{ BUILD_ARCH }} --target migrations -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load --file apps/web/Dockerfile
 
 # Build all Docker images synchronously
 @build-web: build-web-ui build-web-migrations
@@ -135,7 +135,7 @@ describe-web:
 @build-core:
     echo "🚧 Building multi-architecture Docker images with tag: {{TAG}}..."
     docker buildx create --use
-    docker buildx build --platform linux/amd64 -t {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}} . --load --file libs/config-core-deploy/Dockerfile
+    docker buildx build --platform linux/{{ BUILD_ARCH }} -t {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}} . --load --file libs/config-core-deploy/Dockerfile
 
 # Push the Docker images to the registry
 @push-core:
@@ -228,7 +228,7 @@ trigger-cloud-api-deploy branch="" deploy_message="":
 
 build-cloud-api:
     @echo "🚧 Building cloud API Docker image with tag: {{TAG}}..."
-    docker buildx build --platform linux/{{BUILD_ARCH}} --target cloud-api -t {{DOCKER_REGISTRY}}/cloud-api:{{TAG}} . --load --file apps/cloud-api/Dockerfile
+    docker buildx build --platform linux/{{ BUILD_ARCH }} --target cloud-api -t {{DOCKER_REGISTRY}}/cloud-api:{{TAG}} . --load --file apps/cloud-api/Dockerfile
 
 push-cloud-api:
     @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
@@ -304,7 +304,7 @@ trigger-undertaker-deploy branch="" deploy_message="":
 build-undertaker:
   @echo "🚧 Building web Docker image with tag: {{TAG}}..."
   @mkdir -p /tmp/.buildx-cache
-  docker buildx build --platform linux/amd64 --target undertaker \
+  docker buildx build --platform linux/{{ BUILD_ARCH }} --target undertaker \
       --cache-from type=local,src=/tmp/.buildx-cache \
       --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
       -t {{DOCKER_REGISTRY}}/undertaker:{{TAG}} . --load --file apps/credit-undertaker/Dockerfile
@@ -339,13 +339,13 @@ build-web-images:
     npm run slack-bot-says "Building Docker images for GitHub Actions with tag: {{TAG}}..."
     @echo "🚧 Building web Docker image with tag: {{TAG}}..."
     @mkdir -p /tmp/.buildx-cache
-    docker buildx build --platform linux/amd64 --target web \
+    docker buildx build --platform linux/{{ BUILD_ARCH }} --target web \
         --cache-from type=local,src=/tmp/.buildx-cache \
         --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
         -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN --file apps/web/Dockerfile
 
     @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
-    docker buildx build --platform linux/amd64 --target migrations \
+    docker buildx build --platform linux/{{ BUILD_ARCH }} --target migrations \
         --cache-from type=local,src=/tmp/.buildx-cache \
         --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
         -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load --file apps/web/Dockerfile
@@ -445,7 +445,7 @@ lettuce:
 
 build-lettuce:
     @echo "🚧 Building cloud API Docker image with tag: {{TAG}}..."
-    docker buildx build --platform linux/amd64 --target lettuce -t {{DOCKER_REGISTRY}}/lettuce:{{TAG}} . --load --file apps/lettuce/Dockerfile
+    docker buildx build --platform linux/{{ BUILD_ARCH }} --target lettuce -t {{DOCKER_REGISTRY}}/lettuce:{{TAG}} . --load --file apps/lettuce/Dockerfile
 
 push-lettuce:
     @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
@@ -656,7 +656,7 @@ trigger-lettuce-deploy branch="" deploy_message="":
 
 build-model-proxy:
     @echo "🚧 Building model-proxy Docker image with tag: {{TAG}}..."
-    docker buildx build --progress=plain --platform=linux/amd64 -t {{DOCKER_REGISTRY}}/model-proxy:{{TAG}} . --load --file apps/model-proxy/Dockerfile
+    docker buildx build --progress=plain --platform=linux/{{ BUILD_ARCH }} -t {{DOCKER_REGISTRY}}/model-proxy:{{TAG}} . --load --file apps/model-proxy/Dockerfile
 
 push-model-proxy:
     @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
