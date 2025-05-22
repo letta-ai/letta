@@ -170,9 +170,27 @@ jobs:
               echo "$line" >> $GITHUB_ENV
             fi
           done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py --env dev --service ci)
+
+      # - name: Run letta server
+      #   working-directory: apps/core
+      #   env:
+      #     LETTA_PG_DB: postgres
+      #     LETTA_PG_USER: postgres
+      #     LETTA_PG_PASSWORD: postgres
+      #     LETTA_PG_HOST: localhost
+      #     LETTA_PG_PORT: 5432
+      #     OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
+      #     E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
+      #   run: |
+      #     # Run server in background
+      #     poetry run letta server &
+      #     # Wait for server to be ready
+      #     timeout 60 bash -c 'until curl -s http://localhost:8283/health; do sleep 1; done'
+
       - name: Run core integration tests
         working-directory: apps/core
         env:
+          # LETTA_SERVER_URL: http://localhost:8283
           LETTA_PG_PORT: 5432
           LETTA_PG_USER: postgres
           LETTA_PG_PASSWORD: postgres
@@ -187,7 +205,7 @@ jobs:
           AZURE_API_KEY: ${{ env.AZURE_API_KEY }}
           AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
           E2B_API_KEY: ${{ env.E2B_API_KEY }}
-          E2B_SANDBOX_TEMPLATE_ID: ${{ secrets.E2B_SANDBOX_TEMPLATE_ID }}
+          E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
         run: |
           set -o xtrace

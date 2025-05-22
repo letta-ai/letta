@@ -37,6 +37,11 @@ variable "dev_ci_DEEPSEEK_API_KEY" {
   type        = string
   sensitive   = true
 }
+variable "dev_ci_E2B_ACCESS_TOKEN" {
+  description = "E2B Access Token for dev CI"
+  type        = string
+  sensitive   = true
+}
 
 variable "dev_ci_E2B_API_KEY" {
   description = "E2B API Key for dev CI"

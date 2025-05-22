@@ -48,24 +48,30 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      # second call to letta_secrets_helper.py will overwrite variables from first call (i.e. E2B_SANDBOX_TEMPLATE_ID)
       - name: Inject env vars into environment
         working-directory: apps/core
         run: |
           # Install required package
           poetry run pip install google-cloud-secret-manager
 
-          # Get secrets and mask them before adding to environment
+          # Get 'ci' secrets and mask them before adding to environment
           while IFS= read -r line || [[ -n "$line" ]]; do
-            # Check if line is not empty
             if [[ -n "$line" ]]; then
-              # Extract the value after the equals sign
               value=$(echo "$line" | cut -d= -f2-)
-              # Mask the value so it doesn't appear in logs
               echo "::add-mask::$value"
-              # Add to GitHub environment
               echo "$line" >> $GITHUB_ENV
             fi
           done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py -e dev -s ci)
+
+          # Get 'e2b' secrets and mask them before adding to environment
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            if [[ -n "$line" ]]; then
+              value=$(echo "$line" | cut -d= -f2-)
+              echo "::add-mask::$value"
+              echo "$line" >> $GITHUB_ENV
+            fi
+          done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py -e dev -s e2b)
 
       - name: Install kubectl
         run: |
@@ -111,7 +117,7 @@ jobs:
           LETTA_PG_PORT: ${{ secrets.LETTA_PG_PORT }}
           E2B_API_KEY: ${{ env.E2B_API_KEY }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          E2B_SANDBOX_TEMPLATE_ID: ${{ secrets.E2B_SANDBOX_TEMPLATE_ID }}
+          E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
           LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS: 'True'
           LETTA_OTEL_EXPORTER_OTLP_ENDPOINT: localhost:4317
           LETTA_ENVIRONMENT: dev

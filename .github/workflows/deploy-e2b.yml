@@ -1,0 +1,30 @@
+name: Promote E2B from staging to production
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  promote-template-id:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Authenticate to Google Cloud
+      id: auth
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    # TODO: refactor this eventually to promote to prod_e2b_E2B_SANDBOX_TEMPLATE_ID.
+    # but first we have to land kian/secrets-part-2 which will deploy prod secrets
+    - name: Promote Template ID
+      run: |
+        template_id=$(gcloud secrets versions access latest --secret dev_e2b_E2B_SANDBOX_TEMPLATE_ID)
+        echo "$template_id" | gcloud secrets versions add dev_ci_E2B_SANDBOX_TEMPLATE_ID --data-file=-

@@ -27,7 +27,7 @@ env:
   GOOGLE_CLIENT_ID: 231889654562-kuff3iq6b78o7uu3n8kn0b4st5hs45de.apps.googleusercontent.com
   GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
   GOOGLE_REDIRECT_URI: https://app.letta.com/auth/google/callback
-  E2B_SANDBOX_TEMPLATE_ID: ${{ secrets.E2B_SANDBOX_TEMPLATE_ID }}
+  E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
   LETTA_AGENTS_ENDPOINT: http://memgpt-server:8083
   LETTA_ENVIRONMENT: dev
   RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}

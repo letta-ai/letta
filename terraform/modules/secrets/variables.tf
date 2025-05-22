@@ -26,3 +26,12 @@ variable "secret_names" {
     error_message = "Secret name must be in format 'env_service_secretname'"
   }
 }
+
+variable "create_only_secrets" {
+  description = "List of secret names to create but leave the value empty"
+  type        = set(string)
+  validation {
+    condition     = alltrue([for secret_name in var.create_only_secrets : can(regex("^.*_.*_.*$", secret_name))])
+    error_message = "Secret name must be in format 'env_service_secretname'"
+  }
+}

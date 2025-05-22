@@ -29,6 +29,7 @@ locals {
     "dev_ci_AZURE_API_KEY"       = var.dev_ci_AZURE_API_KEY
     "dev_ci_COMPOSIO_API_KEY"    = var.dev_ci_COMPOSIO_API_KEY
     "dev_ci_DEEPSEEK_API_KEY"    = var.dev_ci_DEEPSEEK_API_KEY
+    "dev_ci_E2B_ACCESS_TOKEN"    = var.dev_ci_E2B_ACCESS_TOKEN
     "dev_ci_E2B_API_KEY"         = var.dev_ci_E2B_API_KEY
     "dev_ci_GEMINI_API_KEY"      = var.dev_ci_GEMINI_API_KEY
     "dev_ci_GROK_API_KEY"        = var.dev_ci_GROK_API_KEY
@@ -37,6 +38,11 @@ locals {
     "dev_ci_SERPAPI_API_KEY"     = var.dev_ci_SERPAPI_API_KEY
     "dev_ci_TOGETHER_API_KEY"    = var.dev_ci_TOGETHER_API_KEY
   }
+  # create the secret but leave the value empty
+  create_only_secrets = [
+    "dev_e2b_E2B_SANDBOX_TEMPLATE_ID",
+    "dev_ci_E2B_SANDBOX_TEMPLATE_ID",
+  ]
 }
 
 # Reference to the secrets module
@@ -50,5 +56,6 @@ module "secrets" {
   # Values come from 1Password
   secrets = local.secrets
   secret_names = keys(local.secrets)
+  create_only_secrets = local.create_only_secrets
 
 }

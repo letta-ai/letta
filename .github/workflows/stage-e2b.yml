@@ -1,0 +1,50 @@
+name: Generate E2B template
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  build-e2b-template:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 24
+
+    - name: Install E2B CLI
+      run: npm install -g @e2b/cli
+
+    - name: Authenticate to Google Cloud
+      id: auth
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Get e2b access token
+      working-directory: apps/e2b
+      run: echo E2B_ACCESS_TOKEN=$(gcloud secrets versions access latest --secret dev_ci_E2B_ACCESS_TOKEN) >> $GITHUB_ENV
+
+    - name: Build e2b
+      id: build-e2b-template
+      working-directory: apps/e2b
+      env:
+        E2B_ACCESS_TOKEN: ${{ env.E2B_ACCESS_TOKEN }}
+      run: |
+        e2b template build
+        template_id=$(grep '^template_id' e2b.toml | cut -d'"' -f2)
+        echo "template_id=$template_id" >> $GITHUB_OUTPUT
+
+    - name: Update Template ID
+      id: update-template-id
+      run: |
+        template_id=${{ steps.build-e2b-template.outputs.template_id }}
+        echo "$template_id" | gcloud secrets versions add dev_e2b_E2B_SANDBOX_TEMPLATE_ID --data-file=-
