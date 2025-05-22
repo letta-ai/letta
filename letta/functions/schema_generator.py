@@ -466,9 +466,13 @@ def generate_tool_schema_for_mcp(
     name = mcp_tool.name
     description = mcp_tool.description
 
-    assert "type" in parameters_schema
-    assert "required" in parameters_schema
-    assert "properties" in parameters_schema
+    assert "type" in parameters_schema, parameters_schema
+    assert "properties" in parameters_schema, parameters_schema
+    # assert "required" in parameters_schema, parameters_schema
+
+    # Zero-arg tools often omit "required" because nothing is required.
+    # Normalise so downstream code can treat it consistently.
+    parameters_schema.setdefault("required", [])
 
     # Add the optional heartbeat parameter
     if append_heartbeat:

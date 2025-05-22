@@ -73,6 +73,7 @@ class ToolExecutionSandbox:
         self.force_recreate = force_recreate
         self.force_recreate_venv = force_recreate_venv
 
+    @trace_method
     def run(
         self,
         agent_state: Optional[AgentState] = None,
@@ -144,7 +145,7 @@ class ToolExecutionSandbox:
 
         # Write the code to a temp file in the sandbox_dir
         with tempfile.NamedTemporaryFile(mode="w", dir=local_configs.sandbox_dir, suffix=".py", delete=False) as temp_file:
-            if local_configs.force_create_venv:
+            if local_configs.use_venv:
                 # If using venv, we need to wrap with special string markers to separate out the output and the stdout (since it is all in stdout)
                 code = self.generate_execution_script(agent_state=agent_state, wrap_print_with_markers=True)
             else:
@@ -154,7 +155,7 @@ class ToolExecutionSandbox:
             temp_file.flush()
             temp_file_path = temp_file.name
         try:
-            if local_configs.force_create_venv:
+            if local_configs.use_venv:
                 return self.run_local_dir_sandbox_venv(sbx_config, env, temp_file_path)
             else:
                 return self.run_local_dir_sandbox_directly(sbx_config, env, temp_file_path)
@@ -220,7 +221,11 @@ class ToolExecutionSandbox:
             )
 
         except subprocess.CalledProcessError as e:
+            with open(temp_file_path, "r") as f:
+                code = f.read()
+
             logger.error(f"Executing tool {self.tool_name} has process error: {e}")
+            logger.error(f"Logging out tool {self.tool_name} auto-generated code for debugging: \n\n{code}")
             func_return = get_friendly_error_msg(
                 function_name=self.tool_name,
                 exception_name=type(e).__name__,
@@ -317,6 +322,7 @@ class ToolExecutionSandbox:
 
     # e2b sandbox specific functions
 
+    @trace_method
     def run_e2b_sandbox(
         self,
         agent_state: Optional[AgentState] = None,
@@ -348,10 +354,22 @@ class ToolExecutionSandbox:
         if additional_env_vars:
             env_vars.update(additional_env_vars)
         code = self.generate_execution_script(agent_state=agent_state)
+        log_event(
+            "e2b_execution_started",
+            {"tool": self.tool_name, "sandbox_id": sbx.sandbox_id, "code": code, "env_vars": env_vars},
+        )
         execution = sbx.run_code(code, envs=env_vars)
 
         if execution.results:
             func_return, agent_state = self.parse_best_effort(execution.results[0].text)
+            log_event(
+                "e2b_execution_succeeded",
+                {
+                    "tool": self.tool_name,
+                    "sandbox_id": sbx.sandbox_id,
+                    "func_return": func_return,
+                },
+            )
         elif execution.error:
             logger.error(f"Executing tool {self.tool_name} raised a {execution.error.name} with message: \n{execution.error.value}")
             logger.error(f"Traceback from e2b sandbox: \n{execution.error.traceback}")
@@ -359,7 +377,25 @@ class ToolExecutionSandbox:
                 function_name=self.tool_name, exception_name=execution.error.name, exception_message=execution.error.value
             )
             execution.logs.stderr.append(execution.error.traceback)
+            log_event(
+                "e2b_execution_failed",
+                {
+                    "tool": self.tool_name,
+                    "sandbox_id": sbx.sandbox_id,
+                    "error_type": execution.error.name,
+                    "error_message": execution.error.value,
+                    "func_return": func_return,
+                },
+            )
         else:
+            log_event(
+                "e2b_execution_empty",
+                {
+                    "tool": self.tool_name,
+                    "sandbox_id": sbx.sandbox_id,
+                    "status": "no_results_no_error",
+                },
+            )
             raise ValueError(f"Tool {self.tool_name} returned execution with None")
 
         return ToolExecutionResult(
@@ -391,16 +427,31 @@ class ToolExecutionSandbox:
 
         return None
 
+    @trace_method
     def create_e2b_sandbox_with_metadata_hash(self, sandbox_config: SandboxConfig) -> "Sandbox":
         from e2b_code_interpreter import Sandbox
 
         state_hash = sandbox_config.fingerprint()
         e2b_config = sandbox_config.get_e2b_config()
+        log_event(
+            "e2b_sandbox_create_started",
+            {
+                "sandbox_fingerprint": state_hash,
+                "e2b_config": e2b_config.model_dump(),
+            },
+        )
         if e2b_config.template:
             sbx = Sandbox(sandbox_config.get_e2b_config().template, metadata={self.METADATA_CONFIG_STATE_KEY: state_hash})
         else:
             # no template
             sbx = Sandbox(metadata={self.METADATA_CONFIG_STATE_KEY: state_hash}, **e2b_config.model_dump(exclude={"pip_requirements"}))
+        log_event(
+            "e2b_sandbox_create_finished",
+            {
+                "sandbox_id": sbx.sandbox_id,
+                "sandbox_fingerprint": state_hash,
+            },
+        )
 
         # install pip requirements
         if e2b_config.pip_requirements:
@@ -447,6 +498,11 @@ class ToolExecutionSandbox:
         Returns:
             code (str): The generated code strong
         """
+        if "agent_state" in self.parse_function_arguments(self.tool.source_code, self.tool.name):
+            inject_agent_state = True
+        else:
+            inject_agent_state = False
+
         # dump JSON representation of agent state to re-load
         code = "from typing import *\n"
         code += "import pickle\n"
@@ -454,7 +510,7 @@ class ToolExecutionSandbox:
         code += "import base64\n"
 
         # imports to support agent state
-        if agent_state:
+        if inject_agent_state:
             code += "import letta\n"
             code += "from letta import * \n"
             import pickle
@@ -467,7 +523,7 @@ class ToolExecutionSandbox:
             code += schema_code + "\n"
 
         # load the agent state
-        if agent_state:
+        if inject_agent_state:
             agent_state_pickle = pickle.dumps(agent_state)
             code += f"agent_state = pickle.loads({agent_state_pickle})\n"
         else:
@@ -482,11 +538,6 @@ class ToolExecutionSandbox:
         else:
             for param in self.args:
                 code += self.initialize_param(param, self.args[param])
-
-        if "agent_state" in self.parse_function_arguments(self.tool.source_code, self.tool.name):
-            inject_agent_state = True
-        else:
-            inject_agent_state = False
 
         code += "\n" + self.tool.source_code + "\n"
 

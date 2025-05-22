@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from typing import Optional
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from letta.local_llm.constants import DEFAULT_WRAPPER_NAME
@@ -15,9 +15,14 @@ class ToolSettings(BaseSettings):
     e2b_api_key: Optional[str] = None
     e2b_sandbox_template_id: Optional[str] = None  # Updated manually
 
+    # Tavily search
+    tavily_api_key: Optional[str] = None
+
     # Local Sandbox configurations
-    local_sandbox_dir: Optional[str] = None
-    local_sandbox_timeout: float = 180
+    tool_exec_dir: Optional[str] = None
+    tool_sandbox_timeout: float = 180
+    tool_exec_venv_name: Optional[str] = None
+    tool_exec_autoreload_venv: bool = True
 
     # MCP settings
     mcp_connect_to_server_timeout: float = 30.0
@@ -68,7 +73,13 @@ class ModelSettings(BaseSettings):
 
     # openai
     openai_api_key: Optional[str] = None
-    openai_api_base: str = "https://api.openai.com/v1"
+    openai_api_base: str = Field(
+        default="https://api.openai.com/v1",
+        # NOTE: We previously used OPENAI_API_BASE, but this was deprecated in favor of OPENAI_BASE_URL
+        # preferred first, fallback second
+        # env=["OPENAI_BASE_URL", "OPENAI_API_BASE"],  # pydantic-settings v2
+        validation_alias=AliasChoices("OPENAI_BASE_URL", "OPENAI_API_BASE"),  # pydantic-settings v1
+    )
 
     # deepseek
     deepseek_api_key: Optional[str] = None
@@ -87,6 +98,7 @@ class ModelSettings(BaseSettings):
 
     # anthropic
     anthropic_api_key: Optional[str] = None
+    anthropic_max_retries: int = 3
 
     # ollama
     ollama_base_url: Optional[str] = None
@@ -167,11 +179,14 @@ class Settings(BaseSettings):
     pg_host: Optional[str] = None
     pg_port: Optional[int] = None
     pg_uri: Optional[str] = default_pg_uri  # option to specify full uri
-    pg_pool_size: int = 80  # Concurrent connections
-    pg_max_overflow: int = 30  # Overflow limit
+    pg_pool_size: int = 25  # Concurrent connections
+    pg_max_overflow: int = 10  # Overflow limit
     pg_pool_timeout: int = 30  # Seconds to wait for a connection
     pg_pool_recycle: int = 1800  # When to recycle connections
     pg_echo: bool = False  # Logging
+    pool_pre_ping: bool = True  # Pre ping to check for dead connections
+    pool_use_lifo: bool = True
+    disable_sqlalchemy_pooling: bool = False
 
     # multi agent settings
     multi_agent_send_message_max_retries: int = 3
@@ -182,6 +197,7 @@ class Settings(BaseSettings):
     verbose_telemetry_logging: bool = False
     otel_exporter_otlp_endpoint: Optional[str] = None  # otel default: "http://localhost:4317"
     disable_tracing: bool = False
+    llm_api_logging: bool = True
 
     # uvicorn settings
     uvicorn_workers: int = 1
@@ -193,6 +209,10 @@ class Settings(BaseSettings):
 
     # experimental toggle
     use_experimental: bool = False
+    use_vertex_structured_outputs_experimental: bool = False
+    use_vertex_async_loop_experimental: bool = False
+    experimental_enable_async_db_engine: bool = False
+    experimental_skip_rebuild_memory: bool = False
 
     # LLM provider client settings
     httpx_max_retries: int = 5
@@ -207,6 +227,7 @@ class Settings(BaseSettings):
     # cron job parameters
     enable_batch_job_polling: bool = False
     poll_running_llm_batches_interval_seconds: int = 5 * 60
+    poll_lock_retry_interval_seconds: int = 5 * 60
 
     @property
     def letta_pg_uri(self) -> str:

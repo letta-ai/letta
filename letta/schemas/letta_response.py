@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from letta.helpers.json_helpers import json_dumps
 from letta.schemas.enums import JobStatus, MessageStreamStatus
 from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
+from letta.schemas.message import Message
 from letta.schemas.usage import LettaUsageStatistics
 
 # TODO: consider moving into own file
@@ -175,3 +176,7 @@ class LettaBatchResponse(BaseModel):
     agent_count: int = Field(..., description="The number of agents in the batch request.")
     last_polled_at: datetime = Field(..., description="The timestamp when the batch was last polled for updates.")
     created_at: datetime = Field(..., description="The timestamp when the batch request was created.")
+
+
+class LettaBatchMessages(BaseModel):
+    messages: List[Message]

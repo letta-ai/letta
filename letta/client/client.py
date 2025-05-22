@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import sys
 import time
@@ -1031,7 +1032,7 @@ class RESTClient(AbstractClient):
             #     messages = []
             #     for m in response.messages:
             #         assert isinstance(m, Message)
-            #         messages += m.to_letta_message()
+            #         messages += m.to_letta_messages()
             #     response.messages = messages
 
             return response
@@ -2725,14 +2726,14 @@ class LocalClient(AbstractClient):
         #    assert isinstance(m, Message), f"Expected Message object, got {type(m)}"
         # letta_messages = []
         # for m in messages:
-        #    letta_messages += m.to_letta_message()
+        #    letta_messages += m.to_letta_messages()
         # return LettaResponse(messages=letta_messages, usage=usage)
 
         # format messages
         messages = self.interface.to_list()
         letta_messages = []
         for m in messages:
-            letta_messages += m.to_letta_message()
+            letta_messages += m.to_letta_messages()
 
         return LettaResponse(messages=letta_messages, usage=usage)
 
@@ -2772,11 +2773,8 @@ class LocalClient(AbstractClient):
 
     # humans / personas
 
-    def get_block_id(self, name: str, label: str) -> str:
-        block = self.server.block_manager.get_blocks(actor=self.user, template_name=name, label=label, is_template=True)
-        if not block:
-            return None
-        return block[0].id
+    def get_block_id(self, name: str, label: str) -> str | None:
+        return None
 
     def create_human(self, name: str, text: str):
         """
@@ -2811,7 +2809,7 @@ class LocalClient(AbstractClient):
         Returns:
             humans (List[Human]): List of human blocks
         """
-        return self.server.block_manager.get_blocks(actor=self.user, label="human", is_template=True)
+        return []
 
     def list_personas(self) -> List[Persona]:
         """
@@ -2820,7 +2818,7 @@ class LocalClient(AbstractClient):
         Returns:
             personas (List[Persona]): List of persona blocks
         """
-        return self.server.block_manager.get_blocks(actor=self.user, label="persona", is_template=True)
+        return []
 
     def update_human(self, human_id: str, text: str):
         """
@@ -2878,7 +2876,7 @@ class LocalClient(AbstractClient):
         assert id, f"Human ID must be provided"
         return Human(**self.server.block_manager.get_block_by_id(id, actor=self.user).model_dump())
 
-    def get_persona_id(self, name: str) -> str:
+    def get_persona_id(self, name: str) -> str | None:
         """
         Get the ID of a persona block template
 
@@ -2888,12 +2886,9 @@ class LocalClient(AbstractClient):
         Returns:
             id (str): ID of the persona block
         """
-        persona = self.server.block_manager.get_blocks(actor=self.user, template_name=name, label="persona", is_template=True)
-        if not persona:
-            return None
-        return persona[0].id
+        return None
 
-    def get_human_id(self, name: str) -> str:
+    def get_human_id(self, name: str) -> str | None:
         """
         Get the ID of a human block template
 
@@ -2903,10 +2898,7 @@ class LocalClient(AbstractClient):
         Returns:
             id (str): ID of the human block
         """
-        human = self.server.block_manager.get_blocks(actor=self.user, template_name=name, label="human", is_template=True)
-        if not human:
-            return None
-        return human[0].id
+        return None
 
     def delete_persona(self, id: str):
         """
@@ -3055,7 +3047,21 @@ class LocalClient(AbstractClient):
         Returns:
             tools (List[Tool]): List of tools
         """
-        return self.server.tool_manager.list_tools(after=after, limit=limit, actor=self.user)
+        # Get the current event loop or create a new one if there isn't one
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # We're in an async context but can't await - use a new loop via run_coroutine_threadsafe
+                concurrent_future = asyncio.run_coroutine_threadsafe(
+                    self.server.tool_manager.list_tools_async(actor=self.user, after=after, limit=limit), loop
+                )
+                return concurrent_future.result()
+            else:
+                # We have a loop but it's not running - we can just run the coroutine
+                return loop.run_until_complete(self.server.tool_manager.list_tools_async(actor=self.user, after=after, limit=limit))
+        except RuntimeError:
+            # No running event loop - create a new one with asyncio.run
+            return asyncio.run(self.server.tool_manager.list_tools_async(actor=self.user, after=after, limit=limit))
 
     def get_tool(self, id: str) -> Optional[Tool]:
         """
@@ -3366,7 +3372,7 @@ class LocalClient(AbstractClient):
         Returns:
             blocks (List[Block]): List of blocks
         """
-        return self.server.block_manager.get_blocks(actor=self.user, label=label, is_template=templates_only)
+        return []
 
     def create_block(
         self, label: str, value: str, limit: Optional[int] = None, template_name: Optional[str] = None, is_template: bool = False
@@ -3455,7 +3461,7 @@ class LocalClient(AbstractClient):
         Returns:
             configs (List[LLMConfig]): List of LLM configurations
         """
-        return self.server.list_llm_models()
+        return self.server.list_llm_models(actor=self.user)
 
     def list_embedding_configs(self) -> List[EmbeddingConfig]:
         """
@@ -3464,7 +3470,7 @@ class LocalClient(AbstractClient):
         Returns:
             configs (List[EmbeddingConfig]): List of embedding configurations
         """
-        return self.server.list_embedding_models()
+        return self.server.list_embedding_models(actor=self.user)
 
     def create_org(self, name: Optional[str] = None) -> Organization:
         return self.server.organization_manager.create_organization(pydantic_org=Organization(name=name))

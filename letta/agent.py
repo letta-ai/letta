@@ -1,4 +1,6 @@
+import asyncio
 import json
+import os
 import time
 import traceback
 import warnings
@@ -7,6 +9,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 from openai.types.beta.function_tool import FunctionTool as OpenAITool
 
+from letta.agents.helpers import generate_step_id
 from letta.constants import (
     CLI_WARNING_PREFIX,
     COMPOSIO_ENTITY_ENV_VAR_KEY,
@@ -16,19 +19,20 @@ from letta.constants import (
     LETTA_CORE_TOOL_MODULE_NAME,
     LETTA_MULTI_AGENT_TOOL_MODULE_NAME,
     LLM_MAX_TOKENS,
+    READ_ONLY_BLOCK_EDIT_ERROR,
     REQ_HEARTBEAT_MESSAGE,
     SEND_MESSAGE_TOOL_NAME,
 )
 from letta.errors import ContextWindowExceededError
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
+from letta.functions.composio_helpers import execute_composio_action, generate_composio_action_from_func_name
 from letta.functions.functions import get_function_from_module
-from letta.functions.helpers import execute_composio_action, generate_composio_action_from_func_name
 from letta.functions.mcp_client.base_client import BaseMCPClient
 from letta.helpers import ToolRulesSolver
 from letta.helpers.composio_helpers import get_composio_api_key
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
-from letta.helpers.message_helper import prepare_input_message_create
+from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.interface import AgentInterface
 from letta.llm_api.helpers import calculate_summarizer_cutoff, get_token_counts_for_messages, is_context_overflow_error
 from letta.llm_api.llm_api_tools import create
@@ -41,7 +45,7 @@ from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent, get_prompt_template_for_agent_type
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import MessageRole
+from letta.schemas.enums import MessageRole, ProviderType
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, MessageCreate, ToolReturn
@@ -61,9 +65,10 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.provider_manager import ProviderManager
 from letta.services.step_manager import StepManager
+from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
 from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
-from letta.settings import summarizer_settings
+from letta.settings import settings, summarizer_settings
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from letta.system import get_heartbeat, get_token_limit_warning, package_function_response, package_summarize_message, package_user_message
 from letta.tracing import log_event, trace_method
@@ -133,7 +138,6 @@ class Agent(BaseAgent):
         # Different interfaces can handle events differently
         # e.g., print in CLI vs send a discord message with a discord bot
         self.interface = interface
-        self.chunk_index = 0
 
         # Create the persistence manager object based on the AgentState info
         self.message_manager = MessageManager()
@@ -142,6 +146,7 @@ class Agent(BaseAgent):
         self.agent_manager = AgentManager()
         self.job_manager = JobManager()
         self.step_manager = StepManager()
+        self.telemetry_manager = TelemetryManager() if settings.llm_api_logging else NoopTelemetryManager()
 
         # State needed for heartbeat pausing
 
@@ -179,6 +184,15 @@ class Agent(BaseAgent):
                 except (json.JSONDecodeError, KeyError):
                     raise ValueError(f"Invalid JSON format in message: {text_content}")
         return None
+
+    def ensure_read_only_block_not_modified(self, new_memory: Memory) -> None:
+        """
+        Throw an error if a read-only block has been modified
+        """
+        for label in self.agent_state.memory.list_block_labels():
+            if self.agent_state.memory.get_block(label).read_only:
+                if new_memory.get_block(label).value != self.agent_state.memory.get_block(label).value:
+                    raise ValueError(READ_ONLY_BLOCK_EDIT_ERROR)
 
     def update_memory_if_changed(self, new_memory: Memory) -> bool:
         """
@@ -248,11 +262,9 @@ class Agent(BaseAgent):
             group_id=group_id,
         )
         messages.append(new_message)
-        self.interface.function_message(f"Error: {error_msg}", msg_obj=new_message, chunk_index=self.chunk_index)
-        self.chunk_index += 1
+        self.interface.function_message(f"Error: {error_msg}", msg_obj=new_message, chunk_index=0)
         if include_function_failed_message:
-            self.interface.function_message(f"Ran {function_name}({function_args})", msg_obj=new_message, chunk_index=self.chunk_index)
-            self.chunk_index += 1
+            self.interface.function_message(f"Ran {function_name}({function_args})", msg_obj=new_message)
 
         # Return updated messages
         return messages
@@ -292,6 +304,7 @@ class Agent(BaseAgent):
         step_count: Optional[int] = None,
         last_function_failed: bool = False,
         put_inner_thoughts_first: bool = True,
+        step_id: Optional[str] = None,
     ) -> ChatCompletionResponse | None:
         """Get response from LLM API with robust retry mechanism."""
         log_telemetry(self.logger, "_get_ai_reply start")
@@ -331,8 +344,9 @@ class Agent(BaseAgent):
                 log_telemetry(self.logger, "_get_ai_reply create start")
                 # New LLM client flow
                 llm_client = LLMClient.create(
-                    provider=self.agent_state.llm_config.model_endpoint_type,
+                    provider_type=self.agent_state.llm_config.model_endpoint_type,
                     put_inner_thoughts_first=put_inner_thoughts_first,
+                    actor=self.user,
                 )
 
                 if llm_client and not stream:
@@ -340,8 +354,9 @@ class Agent(BaseAgent):
                         messages=message_sequence,
                         llm_config=self.agent_state.llm_config,
                         tools=allowed_functions,
-                        stream=stream,
                         force_tool_call=force_tool_call,
+                        telemetry_manager=self.telemetry_manager,
+                        step_id=step_id,
                     )
                 else:
                     # Fallback to existing flow
@@ -358,6 +373,9 @@ class Agent(BaseAgent):
                         stream_interface=self.interface,
                         put_inner_thoughts_first=put_inner_thoughts_first,
                         name=self.agent_state.name,
+                        telemetry_manager=self.telemetry_manager,
+                        step_id=step_id,
+                        actor=self.user,
                     )
                 log_telemetry(self.logger, "_get_ai_reply create finish")
 
@@ -421,6 +439,7 @@ class Agent(BaseAgent):
         messages = []  # append these to the history when done
         function_name = None
         function_args = {}
+        chunk_index = 0
 
         # Step 2: check if LLM wanted to call a function
         if response_message.function_call or (response_message.tool_calls is not None and len(response_message.tool_calls) > 0):
@@ -464,8 +483,8 @@ class Agent(BaseAgent):
             nonnull_content = False
             if response_message.content or response_message.reasoning_content or response_message.redacted_reasoning_content:
                 # The content if then internal monologue, not chat
-                self.interface.internal_monologue(response_message.content, msg_obj=messages[-1], chunk_index=self.chunk_index)
-                self.chunk_index += 1
+                self.interface.internal_monologue(response_message.content, msg_obj=messages[-1], chunk_index=chunk_index)
+                chunk_index += 1
                 # Flag to avoid printing a duplicate if inner thoughts get popped from the function call
                 nonnull_content = True
 
@@ -514,8 +533,8 @@ class Agent(BaseAgent):
                 response_message.content = function_args.pop("inner_thoughts")
             # The content if then internal monologue, not chat
             if response_message.content and not nonnull_content:
-                self.interface.internal_monologue(response_message.content, msg_obj=messages[-1], chunk_index=self.chunk_index)
-                self.chunk_index += 1
+                self.interface.internal_monologue(response_message.content, msg_obj=messages[-1], chunk_index=chunk_index)
+                chunk_index += 1
 
             # (Still parsing function args)
             # Handle requests for immediate heartbeat
@@ -541,8 +560,8 @@ class Agent(BaseAgent):
             # handle cases where we return a json message
             if "message" in function_args:
                 function_args["message"] = str(function_args.get("message", ""))
-            self.interface.function_message(f"Running {function_name}({function_args})", msg_obj=messages[-1], chunk_index=self.chunk_index)
-            self.chunk_index += 1
+            self.interface.function_message(f"Running {function_name}({function_args})", msg_obj=messages[-1], chunk_index=chunk_index)
+            chunk_index = 0  # reset chunk index after assistant message
             try:
                 # handle tool execution (sandbox) and state updates
                 log_telemetry(
@@ -666,10 +685,9 @@ class Agent(BaseAgent):
                     group_id=group_id,
                 )
             )  # extend conversation with function response
-            self.interface.function_message(f"Ran {function_name}({function_args})", msg_obj=messages[-1], chunk_index=self.chunk_index)
-            self.chunk_index += 1
-            self.interface.function_message(f"Success: {function_response_string}", msg_obj=messages[-1], chunk_index=self.chunk_index)
-            self.chunk_index += 1
+            self.interface.function_message(f"Ran {function_name}({function_args})", msg_obj=messages[-1], chunk_index=chunk_index)
+            self.interface.function_message(f"Success: {function_response_string}", msg_obj=messages[-1], chunk_index=chunk_index)
+            chunk_index += 1
             self.last_function_response = function_response
 
         else:
@@ -684,8 +702,8 @@ class Agent(BaseAgent):
                     group_id=group_id,
                 )
             )  # extend conversation with assistant's reply
-            self.interface.internal_monologue(response_message.content, msg_obj=messages[-1], chunk_index=self.chunk_index)
-            self.chunk_index += 1
+            self.interface.internal_monologue(response_message.content, msg_obj=messages[-1], chunk_index=chunk_index)
+            chunk_index += 1
             heartbeat_request = False
             function_failed = False
 
@@ -726,8 +744,7 @@ class Agent(BaseAgent):
         self.tool_rules_solver.clear_tool_history()
 
         # Convert MessageCreate objects to Message objects
-        message_objects = [prepare_input_message_create(m, self.agent_state.id, True, True) for m in input_messages]
-        next_input_messages = message_objects
+        next_input_messages = convert_message_creates_to_messages(input_messages, self.agent_state.id)
         counter = 0
         total_usage = UsageStatistics()
         step_count = 0
@@ -834,6 +851,9 @@ class Agent(BaseAgent):
             # Extract job_id from metadata if present
             job_id = metadata.get("job_id") if metadata else None
 
+            # Declare step_id for the given step to be used as the step is processing.
+            step_id = generate_step_id()
+
             # Step 0: update core memory
             # only pulling latest block data if shared memory is being used
             current_persisted_memory = Memory(
@@ -864,6 +884,7 @@ class Agent(BaseAgent):
                 step_count=step_count,
                 last_function_failed=last_function_failed,
                 put_inner_thoughts_first=put_inner_thoughts_first,
+                step_id=step_id,
             )
             if not response:
                 # EDGE CASE: Function call failed AND there's no tools left for agent to call -> return early
@@ -938,17 +959,17 @@ class Agent(BaseAgent):
                 actor=self.user,
                 agent_id=self.agent_state.id,
                 provider_name=self.agent_state.llm_config.model_endpoint_type,
+                provider_category=self.agent_state.llm_config.provider_category or "base",
                 model=self.agent_state.llm_config.model,
                 model_endpoint=self.agent_state.llm_config.model_endpoint,
                 context_window_limit=self.agent_state.llm_config.context_window,
                 usage=response.usage,
-                # TODO(@caren): Add full provider support - this line is a workaround for v0 BYOK feature
-                provider_id=(
-                    self.provider_manager.get_anthropic_override_provider_id()
-                    if self.agent_state.llm_config.model_endpoint_type == "anthropic"
-                    else None
+                provider_id=self.provider_manager.get_provider_id_from_name(
+                    self.agent_state.llm_config.provider_name,
+                    actor=self.user,
                 ),
                 job_id=job_id,
+                step_id=step_id,
             )
             for message in all_new_messages:
                 message.step_id = step.id
@@ -1091,7 +1112,9 @@ class Agent(BaseAgent):
                 LLM_MAX_TOKENS[self.model] if (self.model is not None and self.model in LLM_MAX_TOKENS) else LLM_MAX_TOKENS["DEFAULT"]
             )
 
-        summary = summarize_messages(agent_state=self.agent_state, message_sequence_to_summarize=message_sequence_to_summarize)
+        summary = summarize_messages(
+            agent_state=self.agent_state, message_sequence_to_summarize=message_sequence_to_summarize, actor=self.user
+        )
         logger.info(f"Got summary: {summary}")
 
         # Metadata that's useful for the agent to see
@@ -1103,7 +1126,7 @@ class Agent(BaseAgent):
         logger.info(f"Packaged into message: {summary_message}")
 
         prior_len = len(in_context_messages_openai)
-        self.agent_state = self.agent_manager.trim_all_in_context_messages_except_system(agent_id=self.agent_state.id, actor=self.user)
+        self.agent_state = self.agent_manager.trim_older_in_context_messages(num=cutoff, agent_id=self.agent_state.id, actor=self.user)
         packed_summary_message = {"role": "user", "content": summary_message}
         # Prepend the summary
         self.agent_state = self.agent_manager.prepend_to_in_context_messages(
@@ -1249,6 +1272,276 @@ class Agent(BaseAgent):
             functions_definitions=available_functions_definitions,
         )
 
+    async def get_context_window_async(self) -> ContextWindowOverview:
+        if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
+            return await self.get_context_window_from_anthropic_async()
+        return await self.get_context_window_from_tiktoken_async()
+
+    async def get_context_window_from_tiktoken_async(self) -> ContextWindowOverview:
+        """Get the context window of the agent"""
+        # Grab the in-context messages
+        # conversion of messages to OpenAI dict format, which is passed to the token counter
+        (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
+            self.agent_manager.get_in_context_messages_async(agent_id=self.agent_state.id, actor=self.user),
+            self.passage_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
+            self.message_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
+        )
+        in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
+
+        # Extract system, memory and external summary
+        if (
+            len(in_context_messages) > 0
+            and in_context_messages[0].role == MessageRole.system
+            and in_context_messages[0].content
+            and len(in_context_messages[0].content) == 1
+            and isinstance(in_context_messages[0].content[0], TextContent)
+        ):
+            system_message = in_context_messages[0].content[0].text
+
+            external_memory_marker_pos = system_message.find("###")
+            core_memory_marker_pos = system_message.find("<", external_memory_marker_pos)
+            if external_memory_marker_pos != -1 and core_memory_marker_pos != -1:
+                system_prompt = system_message[:external_memory_marker_pos].strip()
+                external_memory_summary = system_message[external_memory_marker_pos:core_memory_marker_pos].strip()
+                core_memory = system_message[core_memory_marker_pos:].strip()
+            else:
+                # if no markers found, put everything in system message
+                system_prompt = system_message
+                external_memory_summary = ""
+                core_memory = ""
+        else:
+            # if no system message, fall back on agent's system prompt
+            system_prompt = self.agent_state.system
+            external_memory_summary = ""
+            core_memory = ""
+
+        num_tokens_system = count_tokens(system_prompt)
+        num_tokens_core_memory = count_tokens(core_memory)
+        num_tokens_external_memory_summary = count_tokens(external_memory_summary)
+
+        # Check if there's a summary message in the message queue
+        if (
+            len(in_context_messages) > 1
+            and in_context_messages[1].role == MessageRole.user
+            and in_context_messages[1].content
+            and len(in_context_messages[1].content) == 1
+            and isinstance(in_context_messages[1].content[0], TextContent)
+            # TODO remove hardcoding
+            and "The following is a summary of the previous " in in_context_messages[1].content[0].text
+        ):
+            # Summary message exists
+            text_content = in_context_messages[1].content[0].text
+            assert text_content is not None
+            summary_memory = text_content
+            num_tokens_summary_memory = count_tokens(text_content)
+            # with a summary message, the real messages start at index 2
+            num_tokens_messages = (
+                num_tokens_from_messages(messages=in_context_messages_openai[2:], model=self.model)
+                if len(in_context_messages_openai) > 2
+                else 0
+            )
+
+        else:
+            summary_memory = None
+            num_tokens_summary_memory = 0
+            # with no summary message, the real messages start at index 1
+            num_tokens_messages = (
+                num_tokens_from_messages(messages=in_context_messages_openai[1:], model=self.model)
+                if len(in_context_messages_openai) > 1
+                else 0
+            )
+
+        # tokens taken up by function definitions
+        agent_state_tool_jsons = [t.json_schema for t in self.agent_state.tools]
+        if agent_state_tool_jsons:
+            available_functions_definitions = [OpenAITool(type="function", function=f) for f in agent_state_tool_jsons]
+            num_tokens_available_functions_definitions = num_tokens_from_functions(functions=agent_state_tool_jsons, model=self.model)
+        else:
+            available_functions_definitions = []
+            num_tokens_available_functions_definitions = 0
+
+        num_tokens_used_total = (
+            num_tokens_system  # system prompt
+            + num_tokens_available_functions_definitions  # function definitions
+            + num_tokens_core_memory  # core memory
+            + num_tokens_external_memory_summary  # metadata (statistics) about recall/archival
+            + num_tokens_summary_memory  # summary of ongoing conversation
+            + num_tokens_messages  # tokens taken by messages
+        )
+        assert isinstance(num_tokens_used_total, int)
+
+        return ContextWindowOverview(
+            # context window breakdown (in messages)
+            num_messages=len(in_context_messages),
+            num_archival_memory=passage_manager_size,
+            num_recall_memory=message_manager_size,
+            num_tokens_external_memory_summary=num_tokens_external_memory_summary,
+            external_memory_summary=external_memory_summary,
+            # top-level information
+            context_window_size_max=self.agent_state.llm_config.context_window,
+            context_window_size_current=num_tokens_used_total,
+            # context window breakdown (in tokens)
+            num_tokens_system=num_tokens_system,
+            system_prompt=system_prompt,
+            num_tokens_core_memory=num_tokens_core_memory,
+            core_memory=core_memory,
+            num_tokens_summary_memory=num_tokens_summary_memory,
+            summary_memory=summary_memory,
+            num_tokens_messages=num_tokens_messages,
+            messages=in_context_messages,
+            # related to functions
+            num_tokens_functions_definitions=num_tokens_available_functions_definitions,
+            functions_definitions=available_functions_definitions,
+        )
+
+    async def get_context_window_from_anthropic_async(self) -> ContextWindowOverview:
+        """Get the context window of the agent"""
+        anthropic_client = LLMClient.create(provider_type=ProviderType.anthropic, actor=self.user)
+        model = self.agent_state.llm_config.model if self.agent_state.llm_config.model_endpoint_type == "anthropic" else None
+
+        # Grab the in-context messages
+        # conversion of messages to anthropic dict format, which is passed to the token counter
+        (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
+            self.agent_manager.get_in_context_messages_async(agent_id=self.agent_state.id, actor=self.user),
+            self.passage_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
+            self.message_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
+        )
+        in_context_messages_anthropic = [m.to_anthropic_dict() for m in in_context_messages]
+
+        # Extract system, memory and external summary
+        if (
+            len(in_context_messages) > 0
+            and in_context_messages[0].role == MessageRole.system
+            and in_context_messages[0].content
+            and len(in_context_messages[0].content) == 1
+            and isinstance(in_context_messages[0].content[0], TextContent)
+        ):
+            system_message = in_context_messages[0].content[0].text
+
+            external_memory_marker_pos = system_message.find("###")
+            core_memory_marker_pos = system_message.find("<", external_memory_marker_pos)
+            if external_memory_marker_pos != -1 and core_memory_marker_pos != -1:
+                system_prompt = system_message[:external_memory_marker_pos].strip()
+                external_memory_summary = system_message[external_memory_marker_pos:core_memory_marker_pos].strip()
+                core_memory = system_message[core_memory_marker_pos:].strip()
+            else:
+                # if no markers found, put everything in system message
+                system_prompt = system_message
+                external_memory_summary = None
+                core_memory = None
+        else:
+            # if no system message, fall back on agent's system prompt
+            system_prompt = self.agent_state.system
+            external_memory_summary = None
+            core_memory = None
+
+        num_tokens_system_coroutine = anthropic_client.count_tokens(model=model, messages=[{"role": "user", "content": system_prompt}])
+        num_tokens_core_memory_coroutine = (
+            anthropic_client.count_tokens(model=model, messages=[{"role": "user", "content": core_memory}])
+            if core_memory
+            else asyncio.sleep(0, result=0)
+        )
+        num_tokens_external_memory_summary_coroutine = (
+            anthropic_client.count_tokens(model=model, messages=[{"role": "user", "content": external_memory_summary}])
+            if external_memory_summary
+            else asyncio.sleep(0, result=0)
+        )
+
+        # Check if there's a summary message in the message queue
+        if (
+            len(in_context_messages) > 1
+            and in_context_messages[1].role == MessageRole.user
+            and in_context_messages[1].content
+            and len(in_context_messages[1].content) == 1
+            and isinstance(in_context_messages[1].content[0], TextContent)
+            # TODO remove hardcoding
+            and "The following is a summary of the previous " in in_context_messages[1].content[0].text
+        ):
+            # Summary message exists
+            text_content = in_context_messages[1].content[0].text
+            assert text_content is not None
+            summary_memory = text_content
+            num_tokens_summary_memory_coroutine = anthropic_client.count_tokens(
+                model=model, messages=[{"role": "user", "content": summary_memory}]
+            )
+            # with a summary message, the real messages start at index 2
+            num_tokens_messages_coroutine = (
+                anthropic_client.count_tokens(model=model, messages=in_context_messages_anthropic[2:])
+                if len(in_context_messages_anthropic) > 2
+                else asyncio.sleep(0, result=0)
+            )
+
+        else:
+            summary_memory = None
+            num_tokens_summary_memory_coroutine = asyncio.sleep(0, result=0)
+            # with no summary message, the real messages start at index 1
+            num_tokens_messages_coroutine = (
+                anthropic_client.count_tokens(model=model, messages=in_context_messages_anthropic[1:])
+                if len(in_context_messages_anthropic) > 1
+                else asyncio.sleep(0, result=0)
+            )
+
+        # tokens taken up by function definitions
+        if self.agent_state.tools and len(self.agent_state.tools) > 0:
+            available_functions_definitions = [OpenAITool(type="function", function=f.json_schema) for f in self.agent_state.tools]
+            num_tokens_available_functions_definitions_coroutine = anthropic_client.count_tokens(
+                model=model,
+                tools=available_functions_definitions,
+            )
+        else:
+            available_functions_definitions = []
+            num_tokens_available_functions_definitions_coroutine = asyncio.sleep(0, result=0)
+
+        (
+            num_tokens_system,
+            num_tokens_core_memory,
+            num_tokens_external_memory_summary,
+            num_tokens_summary_memory,
+            num_tokens_messages,
+            num_tokens_available_functions_definitions,
+        ) = await asyncio.gather(
+            num_tokens_system_coroutine,
+            num_tokens_core_memory_coroutine,
+            num_tokens_external_memory_summary_coroutine,
+            num_tokens_summary_memory_coroutine,
+            num_tokens_messages_coroutine,
+            num_tokens_available_functions_definitions_coroutine,
+        )
+
+        num_tokens_used_total = (
+            num_tokens_system  # system prompt
+            + num_tokens_available_functions_definitions  # function definitions
+            + num_tokens_core_memory  # core memory
+            + num_tokens_external_memory_summary  # metadata (statistics) about recall/archival
+            + num_tokens_summary_memory  # summary of ongoing conversation
+            + num_tokens_messages  # tokens taken by messages
+        )
+        assert isinstance(num_tokens_used_total, int)
+
+        return ContextWindowOverview(
+            # context window breakdown (in messages)
+            num_messages=len(in_context_messages),
+            num_archival_memory=passage_manager_size,
+            num_recall_memory=message_manager_size,
+            num_tokens_external_memory_summary=num_tokens_external_memory_summary,
+            external_memory_summary=external_memory_summary,
+            # top-level information
+            context_window_size_max=self.agent_state.llm_config.context_window,
+            context_window_size_current=num_tokens_used_total,
+            # context window breakdown (in tokens)
+            num_tokens_system=num_tokens_system,
+            system_prompt=system_prompt,
+            num_tokens_core_memory=num_tokens_core_memory,
+            core_memory=core_memory,
+            num_tokens_summary_memory=num_tokens_summary_memory,
+            summary_memory=summary_memory,
+            num_tokens_messages=num_tokens_messages,
+            messages=in_context_messages,
+            # related to functions
+            num_tokens_functions_definitions=num_tokens_available_functions_definitions,
+            functions_definitions=available_functions_definitions,
+        )
+
     def count_tokens(self) -> int:
         """Count the tokens in the current context window"""
         context_window_breakdown = self.get_context_window()
@@ -1280,6 +1573,9 @@ class Agent(BaseAgent):
                 agent_state_copy = self.agent_state.__deepcopy__()
                 function_args["agent_state"] = agent_state_copy  # need to attach self to arg since it's dynamically linked
                 function_response = callable_func(**function_args)
+                self.ensure_read_only_block_not_modified(
+                    new_memory=agent_state_copy.memory
+                )  # memory editing tools cannot edit read-only blocks
                 self.update_memory_if_changed(agent_state_copy.memory)
             elif target_letta_tool.tool_type == ToolType.EXTERNAL_COMPOSIO:
                 action_name = generate_composio_action_from_func_name(target_letta_tool.name)

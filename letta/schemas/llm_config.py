@@ -2,7 +2,9 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from letta.constants import LETTA_MODEL_ENDPOINT
 from letta.log import get_logger
+from letta.schemas.enums import ProviderCategory
 
 logger = get_logger(__name__)
 
@@ -22,7 +24,6 @@ class LLMConfig(BaseModel):
         max_tokens (int): The maximum number of tokens to generate.
     """
 
-    # TODO: 🤮 don't default to a vendor! bug city!
     model: str = Field(..., description="LLM model name. ")
     model_endpoint_type: Literal[
         "openai",
@@ -49,6 +50,8 @@ class LLMConfig(BaseModel):
         "xai",
     ] = Field(..., description="The endpoint type for the model.")
     model_endpoint: Optional[str] = Field(None, description="The endpoint for the model.")
+    provider_name: Optional[str] = Field(None, description="The provider name for the model.")
+    provider_category: Optional[ProviderCategory] = Field(None, description="The provider category for the model.")
     model_wrapper: Optional[str] = Field(None, description="The wrapper for the model.")
     context_window: int = Field(..., description="The context window size for the model.")
     put_inner_thoughts_in_kwargs: Optional[bool] = Field(
@@ -72,7 +75,8 @@ class LLMConfig(BaseModel):
         description="The reasoning effort to use when generating text reasoning models",
     )
     max_reasoning_tokens: int = Field(
-        0, description="Configurable thinking budget for extended thinking. Used for enable_reasoner and also for Google Vertex models like Gemini 2.5 Flash. Minimum value is 1024 when used with enable_reasoner."
+        0,
+        description="Configurable thinking budget for extended thinking. Used for enable_reasoner and also for Google Vertex models like Gemini 2.5 Flash. Minimum value is 1024 when used with enable_reasoner.",
     )
 
     # FIXME hack to silence pydantic protected namespace warning
@@ -108,6 +112,9 @@ class LLMConfig(BaseModel):
         from letta.llm_api.openai_client import is_openai_reasoning_model
 
         if is_openai_reasoning_model(model):
+            values["put_inner_thoughts_in_kwargs"] = False
+
+        if values.get("enable_reasoner") and values.get("model_endpoint_type") == "anthropic":
             values["put_inner_thoughts_in_kwargs"] = False
 
         return values
@@ -159,11 +166,20 @@ class LLMConfig(BaseModel):
                 model_wrapper=None,
                 context_window=128000,
             )
+        elif model_name == "gpt-4.1":
+            return cls(
+                model="gpt-4.1",
+                model_endpoint_type="openai",
+                model_endpoint="https://api.openai.com/v1",
+                model_wrapper=None,
+                context_window=256000,
+                max_tokens=8192,
+            )
         elif model_name == "letta":
             return cls(
                 model="memgpt-openai",
                 model_endpoint_type="openai",
-                model_endpoint="https://inference.memgpt.ai",
+                model_endpoint=LETTA_MODEL_ENDPOINT,
                 context_window=8192,
             )
         else:

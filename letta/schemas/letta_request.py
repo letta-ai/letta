@@ -35,4 +35,11 @@ class LettaBatchRequest(LettaRequest):
 
 class CreateBatch(BaseModel):
     requests: List[LettaBatchRequest] = Field(..., description="List of requests to be processed in batch.")
-    callback_url: Optional[HttpUrl] = Field(None, description="Optional URL to call via POST when the batch completes.")
+    callback_url: Optional[HttpUrl] = Field(
+        None,
+        description="Optional URL to call via POST when the batch completes. The callback payload will be a JSON object with the following fields: "
+        "{'job_id': string, 'status': string, 'completed_at': string}. "
+        "Where 'job_id' is the unique batch job identifier, "
+        "'status' is the final batch status (e.g., 'completed', 'failed'), and "
+        "'completed_at' is an ISO 8601 timestamp indicating when the batch job completed.",
+    )

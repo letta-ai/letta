@@ -12,7 +12,7 @@ router = APIRouter(prefix="/tags", tags=["tag", "admin"])
 
 
 @router.get("/", tags=["admin"], response_model=List[str], operation_id="list_tags")
-def list_tags(
+async def list_tags(
     after: Optional[str] = Query(None),
     limit: Optional[int] = Query(50),
     server: "SyncServer" = Depends(get_letta_server),
@@ -22,6 +22,6 @@ def list_tags(
     """
     Get a list of all tags in the database
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    tags = server.agent_manager.list_tags(actor=actor, after=after, limit=limit, query_text=query_text)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    tags = await server.agent_manager.list_tags_async(actor=actor, after=after, limit=limit, query_text=query_text)
     return tags

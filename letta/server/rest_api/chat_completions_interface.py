@@ -12,7 +12,7 @@ from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionChunkResponse
-from letta.server.rest_api.optimistic_json_parser import OptimisticJSONParser
+from letta.server.rest_api.json_parser import OptimisticJSONParser
 from letta.streaming_interface import AgentChunkStreamingInterface
 
 logger = get_logger(__name__)
@@ -162,6 +162,7 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
         expect_reasoning_content: bool = False,
         name: Optional[str] = None,
         message_index: int = 0,
+        prev_message_type: Optional[str] = None,
     ) -> None:
         """
         Called externally with a ChatCompletionChunkResponse. Transforms

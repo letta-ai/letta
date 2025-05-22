@@ -1,21 +1,22 @@
 import os
 import threading
-import time
 import uuid
 
 import pytest
 from dotenv import load_dotenv
+from letta_client import Letta
 from openai import AsyncOpenAI
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
-from letta import create_client
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, UserMessage
+from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
+from letta.schemas.openai.chat_completion_request import UserMessage as OpenAIUserMessage
 from letta.schemas.tool import ToolCreate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.services.tool_manager import ToolManager
+from tests.utils import wait_for_server
 
 # --- Server Management --- #
 
@@ -36,7 +37,7 @@ def server_url():
     if not os.getenv("LETTA_SERVER_URL"):
         thread = threading.Thread(target=_run_server, daemon=True)
         thread.start()
-        time.sleep(5)  # Allow server startup time
+        wait_for_server(url)  # Allow server startup time
 
     return url
 
@@ -47,9 +48,7 @@ def server_url():
 @pytest.fixture(scope="session")
 def client(server_url):
     """Creates a REST client for testing."""
-    client = create_client(base_url=server_url, token=None)
-    client.set_default_llm_config(LLMConfig.default_config("gpt-4o-mini"))
-    client.set_default_embedding_config(EmbeddingConfig.default_config(provider="openai"))
+    client = Letta(base_url=server_url)
     yield client
 
 
@@ -64,7 +63,7 @@ def roll_dice_tool(client):
         """
         return "Rolled a 10!"
 
-    tool = client.create_or_update_tool(func=roll_dice)
+    tool = client.tools.upsert_from_function(func=roll_dice)
     # Yield the created tool
     yield tool
 
@@ -95,7 +94,7 @@ def weather_tool(client):
         else:
             raise RuntimeError(f"Failed to get weather data, status code: {response.status_code}")
 
-    tool = client.create_or_update_tool(func=get_weather)
+    tool = client.tools.upsert_from_function(func=get_weather)
     # Yield the created tool
     yield tool
 
@@ -110,13 +109,19 @@ def composio_gmail_get_profile_tool(default_user):
 @pytest.fixture(scope="function")
 def agent(client, roll_dice_tool, weather_tool):
     """Creates an agent and ensures cleanup after tests."""
-    agent_state = client.create_agent(
+    agent_state = client.agents.create(
         name=f"test_compl_{str(uuid.uuid4())[5:]}",
         tool_ids=[roll_dice_tool.id, weather_tool.id],
         include_base_tools=True,
+        memory_blocks=[
+            {"label": "human", "value": "(I know nothing about the human)"},
+            {"label": "persona", "value": "Friendly agent"},
+        ],
+        llm_config=LLMConfig.default_config(model_name="gpt-4o-mini"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
     )
     yield agent_state
-    client.delete_agent(agent_state.id)
+    client.agents.delete(agent_state.id)
 
 
 # --- Helper Functions --- #
@@ -126,7 +131,7 @@ def _get_chat_request(message, stream=True):
     """Returns a chat completion request with streaming enabled."""
     return ChatCompletionRequest(
         model="gpt-4o-mini",
-        messages=[UserMessage(content=message)],
+        messages=[OpenAIUserMessage(content=message)],
         stream=stream,
     )
 
@@ -153,49 +158,14 @@ def _assert_valid_chunk(chunk, idx, chunks):
 # --- Test Cases --- #
 
 
-# @pytest.mark.asyncio
-# @pytest.mark.parametrize("message", ["Hi how are you today?"])
-# @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
-# async def test_latency(disable_e2b_api_key, client, agent, message, endpoint):
-#     """Tests chat completion streaming using the Async OpenAI client."""
-#     request = _get_chat_request(message)
-#
-#     async_client = AsyncOpenAI(base_url=f"{client.base_url}/{endpoint}/{agent.id}", max_retries=0)
-#     stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
-#     async with stream:
-#         async for chunk in stream:
-#             print(chunk)
-#
-#
-# @pytest.mark.asyncio
-# @pytest.mark.parametrize("message", ["Use recall memory tool to recall what my name is."])
-# @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
-# async def test_voice_recall_memory(disable_e2b_api_key, client, agent, message, endpoint):
-#     """Tests chat completion streaming using the Async OpenAI client."""
-#     request = _get_chat_request(message)
-#
-#     # Insert some messages about my name
-#     client.user_message(agent.id, "My name is Matt")
-#
-#     # Wipe the in context messages
-#     actor = UserManager().get_default_user()
-#     AgentManager().set_in_context_messages(agent_id=agent.id, message_ids=[agent.message_ids[0]], actor=actor)
-#
-#     async_client = AsyncOpenAI(base_url=f"{client.base_url}/{endpoint}/{agent.id}", max_retries=0)
-#     stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
-#     async with stream:
-#         async for chunk in stream:
-#             print(chunk)
-
-
 @pytest.mark.asyncio
 @pytest.mark.parametrize("message", ["Tell me something interesting about bananas.", "What's the weather in SF?"])
-@pytest.mark.parametrize("endpoint", ["openai/v1"])  # , "v1/voice-beta"])
+@pytest.mark.parametrize("endpoint", ["openai/v1"])
 async def test_chat_completions_streaming_openai_client(disable_e2b_api_key, client, agent, message, endpoint):
     """Tests chat completion streaming using the Async OpenAI client."""
     request = _get_chat_request(message)
 
-    async_client = AsyncOpenAI(base_url=f"{client.base_url}/{endpoint}/{agent.id}", max_retries=0)
+    async_client = AsyncOpenAI(base_url=f"http://localhost:8283/{endpoint}/{agent.id}", max_retries=0)
     stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
 
     received_chunks = 0

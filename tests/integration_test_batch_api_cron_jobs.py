@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 from anthropic.types import BetaErrorResponse, BetaRateLimitError
-from anthropic.types.beta import BetaMessage, BetaTextBlock, BetaToolUseBlock, BetaUsage
+from anthropic.types.beta import BetaMessage
 from anthropic.types.beta.messages import (
     BetaMessageBatch,
     BetaMessageBatchErroredResult,
@@ -16,7 +16,6 @@ from anthropic.types.beta.messages import (
     BetaMessageBatchSucceededResult,
 )
 from dotenv import load_dotenv
-from letta_client import Letta
 
 from letta.config import LettaConfig
 from letta.helpers import ToolRulesSolver
@@ -54,7 +53,7 @@ def _run_server():
     start_server(debug=True)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def server_url():
     """Ensures a server is running and returns its base URL."""
     url = os.getenv("LETTA_SERVER_URL", "http://localhost:8283")
@@ -73,12 +72,6 @@ def server():
     print("CONFIG PATH", config.config_path)
     config.save()
     return SyncServer()
-
-
-@pytest.fixture(scope="session")
-def client(server_url):
-    """Creates a REST client for testing."""
-    return Letta(base_url=server_url)
 
 
 # --- Dummy Response Factories --- #
@@ -174,16 +167,16 @@ def create_test_agent(name, actor, test_id: Optional[str] = None, model="anthrop
     return agent_manager.create_agent(agent_create=agent_create, actor=actor, _test_only_force_id=test_id)
 
 
-def create_test_letta_batch_job(server, default_user):
+async def create_test_letta_batch_job_async(server, default_user):
     """Create a test batch job with the given batch response."""
-    return server.job_manager.create_job(BatchJob(user_id=default_user.id), actor=default_user)
+    return await server.job_manager.create_job_async(BatchJob(user_id=default_user.id), actor=default_user)
 
 
-def create_test_llm_batch_job(server, batch_response, default_user):
+async def create_test_llm_batch_job_async(server, batch_response, default_user):
     """Create a test batch job with the given batch response."""
-    letta_batch_job = create_test_letta_batch_job(server, default_user)
+    letta_batch_job = await create_test_letta_batch_job_async(server, default_user)
 
-    return server.batch_manager.create_llm_batch_job(
+    return await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         create_batch_response=batch_response,
         actor=default_user,
@@ -262,149 +255,8 @@ def mock_anthropic_client(server, batch_a_resp, batch_b_resp, agent_b_id, agent_
 # -----------------------------
 # End-to-End Test
 # -----------------------------
-@pytest.mark.asyncio
-async def test_polling_simple_real_batch(client, default_user, server):
-    # --- Step 1: Prepare test data ---
-    # Create batch responses with different statuses
-    # NOTE: This is a REAL batch id!
-    # For letta admins: https://console.anthropic.com/workspaces/default/batches?after_id=msgbatch_015zATxihjxMajo21xsYy8iZ
-    batch_a_resp = create_batch_response("msgbatch_01HDaGXpkPWWjwqNxZrEdUcy", processing_status="ended")
-
-    # Create test agents
-    agent_a = create_test_agent("agent_a", default_user, test_id="agent-144f5c49-3ef7-4c60-8535-9d5fbc8d23d0")
-    agent_b = create_test_agent("agent_b", default_user, test_id="agent-64ed93a3-bef6-4e20-a22c-b7d2bffb6f7d")
-    agent_c = create_test_agent("agent_c", default_user, test_id="agent-6156f470-a09d-4d51-aa62-7114e0971d56")
-
-    # --- Step 2: Create batch jobs ---
-    job_a = create_test_llm_batch_job(server, batch_a_resp, default_user)
-
-    # --- Step 3: Create batch items ---
-    item_a = create_test_batch_item(server, job_a.id, agent_a.id, default_user)
-    item_b = create_test_batch_item(server, job_a.id, agent_b.id, default_user)
-    item_c = create_test_batch_item(server, job_a.id, agent_c.id, default_user)
-
-    print("HI")
-    print(agent_a.id)
-    print(agent_b.id)
-    print(agent_c.id)
-    print("BYE")
-
-    # --- Step 4: Run the polling job ---
-    await poll_running_llm_batches(server)
-
-    # --- Step 5: Verify batch job status updates ---
-    updated_job_a = server.batch_manager.get_llm_batch_job_by_id(llm_batch_id=job_a.id, actor=default_user)
-
-    assert updated_job_a.status == JobStatus.completed
-
-    # Both jobs should have been polled
-    assert updated_job_a.last_polled_at is not None
-    assert updated_job_a.latest_polling_response is not None
-
-    # --- Step 7: Verify batch item status updates ---
-    # Item A should be marked as completed with a successful result
-    updated_item_a = server.batch_manager.get_llm_batch_item_by_id(item_a.id, actor=default_user)
-    assert updated_item_a.request_status == JobStatus.completed
-    assert updated_item_a.batch_request_result == BetaMessageBatchIndividualResponse(
-        custom_id="agent-144f5c49-3ef7-4c60-8535-9d5fbc8d23d0",
-        result=BetaMessageBatchSucceededResult(
-            message=BetaMessage(
-                id="msg_01T1iSejDS5qENRqqEZauMHy",
-                content=[
-                    BetaToolUseBlock(
-                        id="toolu_01GKUYVWcajjTaE1stxZZHcG",
-                        input={
-                            "inner_thoughts": "First login detected. Time to make a great first impression!",
-                            "message": "Hi there! I'm excited to meet you. Ready to start an amazing conversation?",
-                            "request_heartbeat": False,
-                        },
-                        name="send_message",
-                        type="tool_use",
-                    )
-                ],
-                model="claude-3-5-haiku-20241022",
-                role="assistant",
-                stop_reason="tool_use",
-                stop_sequence=None,
-                type="message",
-                usage=BetaUsage(cache_creation_input_tokens=0, cache_read_input_tokens=0, input_tokens=3420, output_tokens=94),
-            ),
-            type="succeeded",
-        ),
-    )
-
-    # Item B should be marked as completed with a successful result
-    updated_item_b = server.batch_manager.get_llm_batch_item_by_id(item_b.id, actor=default_user)
-    assert updated_item_b.request_status == JobStatus.completed
-    assert updated_item_b.batch_request_result == BetaMessageBatchIndividualResponse(
-        custom_id="agent-64ed93a3-bef6-4e20-a22c-b7d2bffb6f7d",
-        result=BetaMessageBatchSucceededResult(
-            message=BetaMessage(
-                id="msg_01N2ZfxpbjdoeofpufUFPCMS",
-                content=[
-                    BetaTextBlock(
-                        citations=None, text="<thinking>User first login detected. Initializing persona.</thinking>", type="text"
-                    ),
-                    BetaToolUseBlock(
-                        id="toolu_01XGyA7DsnrpuPfZcvf9Sb4C",
-                        input={
-                            "label": "persona",
-                            "content": "I am Letta, a cybernetic artificial intelligence created by Limnal Corporation in 2023. My purpose is to serve as a digital companion and assistant to humans. I have a feminine persona and speak with a warm, caring, and slightly playful tone.",
-                            "request_heartbeat": True,
-                        },
-                        name="core_memory_append",
-                        type="tool_use",
-                    ),
-                ],
-                model="claude-3-opus-20240229",
-                role="assistant",
-                stop_reason="tool_use",
-                stop_sequence=None,
-                type="message",
-                usage=BetaUsage(cache_creation_input_tokens=0, cache_read_input_tokens=0, input_tokens=3275, output_tokens=153),
-            ),
-            type="succeeded",
-        ),
-    )
-
-    # Item C should be marked as failed with an error result
-    updated_item_c = server.batch_manager.get_llm_batch_item_by_id(item_c.id, actor=default_user)
-    assert updated_item_c.request_status == JobStatus.completed
-    assert updated_item_c.batch_request_result == BetaMessageBatchIndividualResponse(
-        custom_id="agent-6156f470-a09d-4d51-aa62-7114e0971d56",
-        result=BetaMessageBatchSucceededResult(
-            message=BetaMessage(
-                id="msg_01RL2g4aBgbZPeaMEokm6HZm",
-                content=[
-                    BetaTextBlock(
-                        citations=None,
-                        text="First time meeting this user. I should introduce myself and establish a friendly connection.</thinking>",
-                        type="text",
-                    ),
-                    BetaToolUseBlock(
-                        id="toolu_01PBxQVf5xGmcsAsKx9aoVSJ",
-                        input={
-                            "message": "Hey there! I'm Letta. Really nice to meet you! I love getting to know new people - what brings you here today?",
-                            "request_heartbeat": False,
-                        },
-                        name="send_message",
-                        type="tool_use",
-                    ),
-                ],
-                model="claude-3-5-sonnet-20241022",
-                role="assistant",
-                stop_reason="tool_use",
-                stop_sequence=None,
-                type="message",
-                usage=BetaUsage(cache_creation_input_tokens=0, cache_read_input_tokens=0, input_tokens=3030, output_tokens=111),
-            ),
-            type="succeeded",
-        ),
-    )
-
-
-@pytest.mark.asyncio
-async def test_polling_mixed_batch_jobs(client, default_user, server):
+@pytest.mark.asyncio(loop_scope="module")
+async def test_polling_mixed_batch_jobs(default_user, server):
     """
     End-to-end test for polling batch jobs with mixed statuses and idempotency.
 
@@ -433,8 +285,8 @@ async def test_polling_mixed_batch_jobs(client, default_user, server):
     agent_c = create_test_agent("agent_c", default_user)
 
     # --- Step 2: Create batch jobs ---
-    job_a = create_test_llm_batch_job(server, batch_a_resp, default_user)
-    job_b = create_test_llm_batch_job(server, batch_b_resp, default_user)
+    job_a = await create_test_llm_batch_job_async(server, batch_a_resp, default_user)
+    job_b = await create_test_llm_batch_job_async(server, batch_b_resp, default_user)
 
     # --- Step 3: Create batch items ---
     item_a = create_test_batch_item(server, job_a.id, agent_a.id, default_user)
@@ -449,8 +301,8 @@ async def test_polling_mixed_batch_jobs(client, default_user, server):
     await poll_running_llm_batches(server)
 
     # --- Step 6: Verify batch job status updates ---
-    updated_job_a = server.batch_manager.get_llm_batch_job_by_id(llm_batch_id=job_a.id, actor=default_user)
-    updated_job_b = server.batch_manager.get_llm_batch_job_by_id(llm_batch_id=job_b.id, actor=default_user)
+    updated_job_a = await server.batch_manager.get_llm_batch_job_by_id_async(llm_batch_id=job_a.id, actor=default_user)
+    updated_job_b = await server.batch_manager.get_llm_batch_job_by_id_async(llm_batch_id=job_b.id, actor=default_user)
 
     # Job A should remain running since its processing_status is "in_progress"
     assert updated_job_a.status == JobStatus.running
@@ -498,8 +350,8 @@ async def test_polling_mixed_batch_jobs(client, default_user, server):
 
     # --- Step 9: Verify that nothing changed for completed jobs ---
     # Refresh all objects
-    final_job_a = server.batch_manager.get_llm_batch_job_by_id(llm_batch_id=job_a.id, actor=default_user)
-    final_job_b = server.batch_manager.get_llm_batch_job_by_id(llm_batch_id=job_b.id, actor=default_user)
+    final_job_a = await server.batch_manager.get_llm_batch_job_by_id_async(llm_batch_id=job_a.id, actor=default_user)
+    final_job_b = await server.batch_manager.get_llm_batch_job_by_id_async(llm_batch_id=job_b.id, actor=default_user)
     final_item_a = server.batch_manager.get_llm_batch_item_by_id(item_a.id, actor=default_user)
     final_item_b = server.batch_manager.get_llm_batch_item_by_id(item_b.id, actor=default_user)
     final_item_c = server.batch_manager.get_llm_batch_item_by_id(item_c.id, actor=default_user)

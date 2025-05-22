@@ -1,11 +1,13 @@
 import json
 import uuid
-from typing import Any, AsyncGenerator, Dict, List, Tuple
+from datetime import datetime, timedelta, timezone
+from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
 import openai
 
 from letta.agents.base_agent import BaseAgent
-from letta.agents.ephemeral_memory_agent import EphemeralMemoryAgent
+from letta.agents.exceptions import IncompatibleAgentType
+from letta.agents.voice_sleeptime_agent import VoiceSleeptimeAgent
 from letta.constants import NON_USER_MSG_PREFIX
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.tool_execution_helper import (
@@ -17,11 +19,10 @@ from letta.helpers.tool_execution_helper import (
 from letta.interfaces.openai_chat_completions_streaming_interface import OpenAIChatCompletionsStreamingInterface
 from letta.log import get_logger
 from letta.orm.enums import ToolType
-from letta.schemas.agent import AgentState
-from letta.schemas.block import BlockUpdate
-from letta.schemas.letta_message_content import TextContent
+from letta.schemas.agent import AgentState, AgentType
+from letta.schemas.enums import MessageRole
 from letta.schemas.letta_response import LettaResponse
-from letta.schemas.message import Message, MessageCreate, MessageUpdate
+from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_request import (
     AssistantMessage,
     ChatCompletionRequest,
@@ -33,7 +34,7 @@ from letta.schemas.openai.chat_completion_request import (
 )
 from letta.schemas.user import User
 from letta.server.rest_api.utils import (
-    convert_letta_messages_to_openai,
+    convert_in_context_letta_messages_to_openai,
     create_assistant_messages_from_openai_response,
     create_input_messages,
     create_letta_messages_from_llm_response,
@@ -44,7 +45,8 @@ from letta.services.helpers.agent_manager_helper import compile_system_message
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.summarizer.enums import SummarizationMode
-from letta.utils import united_diff
+from letta.services.summarizer.summarizer import Summarizer
+from letta.settings import model_settings
 
 logger = get_logger(__name__)
 
@@ -65,53 +67,95 @@ class VoiceAgent(BaseAgent):
         message_manager: MessageManager,
         agent_manager: AgentManager,
         block_manager: BlockManager,
+        passage_manager: PassageManager,
         actor: User,
-        message_buffer_limit: int,
-        message_buffer_min: int,
-        summarization_mode: SummarizationMode = SummarizationMode.STATIC_MESSAGE_BUFFER,
     ):
         super().__init__(
             agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
         )
 
-        # TODO: Make this more general, factorable
         # Summarizer settings
         self.block_manager = block_manager
-        self.passage_manager = PassageManager()  # TODO: pass this in
+        self.passage_manager = passage_manager
         # TODO: This is not guaranteed to exist!
         self.summary_block_label = "human"
-        # self.summarizer = Summarizer(
-        #     mode=summarization_mode,
-        #     summarizer_agent=EphemeralAgent(
-        #         agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
-        #     ),
-        #     message_buffer_limit=message_buffer_limit,
-        #     message_buffer_min=message_buffer_min,
-        # )
-        self.message_buffer_limit = message_buffer_limit
-        # self.message_buffer_min = message_buffer_min
-        self.sleeptime_memory_agent = EphemeralMemoryAgent(
-            agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
+
+        # Cached archival memory/message size
+        self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_id)
+        self.num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_id)
+
+    def init_summarizer(self, agent_state: AgentState) -> Summarizer:
+        if not agent_state.multi_agent_group:
+            raise ValueError("Low latency voice agent is not part of a multiagent group, missing sleeptime agent.")
+        if len(agent_state.multi_agent_group.agent_ids) != 1:
+            raise ValueError(
+                f"None or multiple participant agents found in voice sleeptime group: {agent_state.multi_agent_group.agent_ids}"
+            )
+        voice_sleeptime_agent_id = agent_state.multi_agent_group.agent_ids[0]
+        summarizer = Summarizer(
+            mode=SummarizationMode.STATIC_MESSAGE_BUFFER,
+            summarizer_agent=VoiceSleeptimeAgent(
+                agent_id=voice_sleeptime_agent_id,
+                convo_agent_state=agent_state,
+                message_manager=self.message_manager,
+                agent_manager=self.agent_manager,
+                actor=self.actor,
+                block_manager=self.block_manager,
+                passage_manager=self.passage_manager,
+                target_block_label=self.summary_block_label,
+            ),
+            message_buffer_limit=agent_state.multi_agent_group.max_message_buffer_length,
+            message_buffer_min=agent_state.multi_agent_group.min_message_buffer_length,
         )
 
+        return summarizer
+
     async def step(self, input_messages: List[MessageCreate], max_steps: int = 10) -> LettaResponse:
-        raise NotImplementedError("LowLatencyAgent does not have a synchronous step implemented currently.")
+        raise NotImplementedError("VoiceAgent does not have a synchronous step implemented currently.")
 
     async def step_stream(self, input_messages: List[MessageCreate], max_steps: int = 10) -> AsyncGenerator[str, None]:
         """
         Main streaming loop that yields partial tokens.
         Whenever we detect a tool call, we yield from _handle_ai_response as well.
         """
+        if len(input_messages) != 1 or input_messages[0].role != MessageRole.user:
+            raise ValueError(f"Voice Agent was invoked with multiple input messages or message did not have role `user`: {input_messages}")
+
+        user_query = input_messages[0].content[0].text
+
         agent_state = self.agent_manager.get_agent_by_id(self.agent_id, actor=self.actor)
+
+        # TODO: Refactor this so it uses our in-house clients
+        # TODO: For now, piggyback off of OpenAI client for ease
+        if agent_state.llm_config.model_endpoint_type == "anthropic":
+            self.openai_client.api_key = model_settings.anthropic_api_key
+            self.openai_client.base_url = "https://api.anthropic.com/v1/"
+        elif agent_state.llm_config.model_endpoint_type != "openai":
+            raise ValueError("Letta voice agents are only compatible with OpenAI or Anthropic.")
+
+        # Safety check
+        if agent_state.agent_type != AgentType.voice_convo_agent:
+            raise IncompatibleAgentType(expected_type=AgentType.voice_convo_agent, actual_type=agent_state.agent_type)
+
+        summarizer = self.init_summarizer(agent_state=agent_state)
+
         in_context_messages = self.message_manager.get_messages_by_ids(message_ids=agent_state.message_ids, actor=self.actor)
-        letta_message_db_queue = [create_input_messages(input_messages=input_messages, agent_id=agent_state.id, actor=self.actor)]
+        memory_edit_timestamp = get_utc_time()
+        in_context_messages[0].content[0].text = compile_system_message(
+            system_prompt=agent_state.system,
+            in_context_memory=agent_state.memory,
+            in_context_memory_last_edit=memory_edit_timestamp,
+            previous_message_count=self.num_messages,
+            archival_memory_size=self.num_archival_memories,
+        )
+        letta_message_db_queue = create_input_messages(input_messages=input_messages, agent_id=agent_state.id, actor=self.actor)
         in_memory_message_history = self.pre_process_input_message(input_messages)
 
         # TODO: Define max steps here
         for _ in range(max_steps):
             # Rebuild memory each loop
-            in_context_messages = self._rebuild_memory(in_context_messages, agent_state)
-            openai_messages = convert_letta_messages_to_openai(in_context_messages)
+            in_context_messages = await self._rebuild_memory_async(in_context_messages, agent_state)
+            openai_messages = convert_in_context_letta_messages_to_openai(in_context_messages, exclude_system_messages=True)
             openai_messages.extend(in_memory_message_history)
 
             request = self._build_openai_request(openai_messages, agent_state)
@@ -125,6 +169,7 @@ class VoiceAgent(BaseAgent):
 
             # 2) Now handle the final AI response. This might yield more text (stalling, etc.)
             should_continue = await self._handle_ai_response(
+                user_query,
                 streaming_interface,
                 agent_state,
                 in_memory_message_history,
@@ -135,11 +180,17 @@ class VoiceAgent(BaseAgent):
                 break
 
         # Rebuild context window if desired
-        await self._rebuild_context_window(in_context_messages, letta_message_db_queue, agent_state)
+        await self._rebuild_context_window(summarizer, in_context_messages, letta_message_db_queue)
+
+        # TODO: This may be out of sync, if in between steps users add files
+        self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_state.id)
+        self.num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_state.id)
+
         yield "data: [DONE]\n\n"
 
     async def _handle_ai_response(
         self,
+        user_query: str,
         streaming_interface: "OpenAIChatCompletionsStreamingInterface",
         agent_state: AgentState,
         in_memory_message_history: List[Dict[str, Any]],
@@ -188,6 +239,7 @@ class VoiceAgent(BaseAgent):
             in_memory_message_history.append(assistant_tool_call_msg.model_dump())
 
             tool_result, success_flag = await self._execute_tool(
+                user_query=user_query,
                 tool_name=tool_call_name,
                 tool_args=tool_args,
                 agent_state=agent_state,
@@ -227,65 +279,29 @@ class VoiceAgent(BaseAgent):
             return not streaming_interface.finish_reason_stop
 
     async def _rebuild_context_window(
-        self, in_context_messages: List[Message], letta_message_db_queue: List[Message], agent_state: AgentState
+        self, summarizer: Summarizer, in_context_messages: List[Message], letta_message_db_queue: List[Message]
     ) -> None:
         new_letta_messages = self.message_manager.create_many_messages(letta_message_db_queue, actor=self.actor)
-        new_in_context_messages = in_context_messages + new_letta_messages
 
-        if len(new_in_context_messages) > self.message_buffer_limit:
-            cutoff = len(new_in_context_messages) - self.message_buffer_limit
-            new_in_context_messages = [new_in_context_messages[0]] + new_in_context_messages[cutoff:]
+        # TODO: Make this more general and configurable, less brittle
+        new_in_context_messages, updated = summarizer.summarize(
+            in_context_messages=in_context_messages, new_letta_messages=new_letta_messages
+        )
 
         self.agent_manager.set_in_context_messages(
             agent_id=self.agent_id, message_ids=[m.id for m in new_in_context_messages], actor=self.actor
         )
 
-    def _rebuild_memory(self, in_context_messages: List[Message], agent_state: AgentState) -> List[Message]:
-        # Refresh memory
-        # TODO: This only happens for the summary block
-        # TODO: We want to extend this refresh to be general, and stick it in agent_manager
-        for i, b in enumerate(agent_state.memory.blocks):
-            if b.label == self.summary_block_label:
-                agent_state.memory.blocks[i] = self.block_manager.get_block_by_id(block_id=b.id, actor=self.actor)
-                break
-
-        # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
-        curr_system_message = in_context_messages[0]
-        curr_memory_str = agent_state.memory.compile()
-        curr_system_message_text = curr_system_message.content[0].text
-        if curr_memory_str in curr_system_message_text:
-            # NOTE: could this cause issues if a block is removed? (substring match would still work)
-            logger.debug(
-                f"Memory hasn't changed for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name}), skipping system prompt rebuild"
-            )
-            return in_context_messages
-
-        memory_edit_timestamp = get_utc_time()
-
-        num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_state.id)
-        num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_state.id)
-
-        new_system_message_str = compile_system_message(
-            system_prompt=agent_state.system,
-            in_context_memory=agent_state.memory,
-            in_context_memory_last_edit=memory_edit_timestamp,
-            previous_message_count=num_messages,
-            archival_memory_size=num_archival_memories,
+    async def _rebuild_memory_async(
+        self,
+        in_context_messages: List[Message],
+        agent_state: AgentState,
+        num_messages: int | None = None,
+        num_archival_memories: int | None = None,
+    ) -> List[Message]:
+        return await super()._rebuild_memory_async(
+            in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
         )
-
-        diff = united_diff(curr_system_message_text, new_system_message_str)
-        if len(diff) > 0:
-            logger.debug(f"Rebuilding system with new memory...\nDiff:\n{diff}")
-
-            new_system_message = self.message_manager.update_message_by_id(
-                curr_system_message.id, message_update=MessageUpdate(content=new_system_message_str), actor=self.actor
-            )
-
-            # Skip pulling down the agent's memory again to save on a db call
-            return [new_system_message] + in_context_messages[1:]
-
-        else:
-            return in_context_messages
 
     def _build_openai_request(self, openai_messages: List[Dict], agent_state: AgentState) -> ChatCompletionRequest:
         tool_schemas = self._build_tool_schemas(agent_state)
@@ -310,49 +326,82 @@ class VoiceAgent(BaseAgent):
             tools = agent_state.tools
 
         # Special tool state
-        recall_memory_utterance_description = (
+        search_memory_utterance_description = (
             "A lengthier message to be uttered while your memories of the current conversation are being re-contextualized."
-            "You should stall naturally and show the user you're thinking hard. The main thing is to not leave the user in silence."
             "You MUST also include punctuation at the end of this message."
+            "For example: 'Let me double-check my notes—one moment, please.'"
         )
-        recall_memory_json = Tool(
+
+        search_memory_json = Tool(
             type="function",
-            function=enable_strict_mode(
-                add_pre_execution_message(
+            function=enable_strict_mode(  # strict=True   ✓
+                add_pre_execution_message(  # injects pre_exec_msg   ✓
                     {
-                        "name": "recall_memory",
-                        "description": "Retrieve relevant information from memory based on a given query. Use when you don't remember the answer to a question.",
+                        "name": "search_memory",
+                        "description": (
+                            "Look in long-term or earlier-conversation memory **only when** the "
+                            "user asks about something missing from the visible context. "
+                            "The user’s latest utterance is sent automatically as the main query.\n\n"
+                            "Optional refinements (set unused fields to *null*):\n"
+                            "• `convo_keyword_queries`   – extra names/IDs if the request is vague.\n"
+                            "• `start_minutes_ago` / `end_minutes_ago` – limit results to a recent time window."
+                        ),
                         "parameters": {
                             "type": "object",
                             "properties": {
-                                "query": {
-                                    "type": "string",
-                                    "description": "A description of what the model is trying to recall from memory.",
-                                }
+                                "convo_keyword_queries": {
+                                    "type": ["array", "null"],
+                                    "items": {"type": "string"},
+                                    "description": (
+                                        "Extra keywords (e.g., order ID, place name). " "Use *null* when the utterance is already specific."
+                                    ),
+                                },
+                                "start_minutes_ago": {
+                                    "type": ["integer", "null"],
+                                    "description": (
+                                        "Newer bound of the time window, in minutes ago. " "Use *null* if no lower bound is needed."
+                                    ),
+                                },
+                                "end_minutes_ago": {
+                                    "type": ["integer", "null"],
+                                    "description": (
+                                        "Older bound of the time window, in minutes ago. " "Use *null* if no upper bound is needed."
+                                    ),
+                                },
                             },
-                            "required": ["query"],
+                            "required": [
+                                "convo_keyword_queries",
+                                "start_minutes_ago",
+                                "end_minutes_ago",
+                            ],
+                            "additionalProperties": False,
                         },
                     },
-                    description=recall_memory_utterance_description,
+                    description=search_memory_utterance_description,
                 )
             ),
         )
 
         # TODO: Customize whether or not to have heartbeats, pre_exec_message, etc.
-        return [recall_memory_json] + [
+        return [search_memory_json] + [
             Tool(type="function", function=enable_strict_mode(add_pre_execution_message(remove_request_heartbeat(t.json_schema))))
             for t in tools
         ]
 
-    async def _execute_tool(self, tool_name: str, tool_args: dict, agent_state: AgentState) -> Tuple[str, bool]:
+    async def _execute_tool(self, user_query: str, tool_name: str, tool_args: dict, agent_state: AgentState) -> Tuple[str, bool]:
         """
         Executes a tool and returns (result, success_flag).
         """
         # Special memory case
-        if tool_name == "recall_memory":
-            # TODO: Make this safe
-            await self._recall_memory(tool_args["query"], agent_state)
-            return f"Successfully recalled memory and populated {self.summary_block_label} block.", True
+        if tool_name == "search_memory":
+            tool_result = await self._search_memory(
+                archival_query=user_query,
+                convo_keyword_queries=tool_args["convo_keyword_queries"],
+                start_minutes_ago=tool_args["start_minutes_ago"],
+                end_minutes_ago=tool_args["end_minutes_ago"],
+                agent_state=agent_state,
+            )
+            return tool_result, True
         else:
             target_tool = next((x for x in agent_state.tools if x.name == tool_name), None)
             if not target_tool:
@@ -371,9 +420,52 @@ class VoiceAgent(BaseAgent):
             except Exception as e:
                 return f"Failed to call tool. Error: {e}", False
 
-    async def _recall_memory(self, query, agent_state: AgentState) -> None:
-        results = await self.sleeptime_memory_agent.step([MessageCreate(role="user", content=[TextContent(text=query)])])
-        target_block = next(b for b in agent_state.memory.blocks if b.label == self.summary_block_label)
-        self.block_manager.update_block(
-            block_id=target_block.id, block_update=BlockUpdate(value=results[0].content[0].text), actor=self.actor
+    async def _search_memory(
+        self,
+        archival_query: str,
+        agent_state: AgentState,
+        convo_keyword_queries: Optional[List[str]] = None,
+        start_minutes_ago: Optional[int] = None,
+        end_minutes_ago: Optional[int] = None,
+    ) -> str:
+        # Retrieve from archival memory
+        now = datetime.now(timezone.utc)
+        start_date = now - timedelta(minutes=end_minutes_ago) if end_minutes_ago is not None else None
+        end_date = now - timedelta(minutes=start_minutes_ago) if start_minutes_ago is not None else None
+
+        # If both bounds exist but got reversed, swap them
+        # Shouldn't happen, but in case LLM misunderstands
+        if start_date and end_date and start_date > end_date:
+            start_date, end_date = end_date, start_date
+
+        archival_results = await self.agent_manager.list_passages_async(
+            actor=self.actor,
+            agent_id=self.agent_id,
+            query_text=archival_query,
+            limit=5,
+            embedding_config=agent_state.embedding_config,
+            embed_query=True,
+            start_date=start_date,
+            end_date=end_date,
         )
+        formatted_archival_results = [{"timestamp": str(result.created_at), "content": result.text} for result in archival_results]
+        response = {
+            "archival_search_results": formatted_archival_results,
+        }
+
+        # Retrieve from conversation
+        keyword_results = {}
+        if convo_keyword_queries:
+            for keyword in convo_keyword_queries:
+                messages = await self.message_manager.list_messages_for_agent_async(
+                    agent_id=self.agent_id,
+                    actor=self.actor,
+                    query_text=keyword,
+                    limit=3,
+                )
+                if messages:
+                    keyword_results[keyword] = [message.content[0].text for message in messages]
+
+            response["convo_keyword_search_results"] = keyword_results
+
+        return json.dumps(response, indent=2)

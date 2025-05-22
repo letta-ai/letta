@@ -68,7 +68,7 @@ def send_message_to_agent_async(self: "Agent", message: str, other_agent_id: str
         messages=messages,
         other_agent_id=other_agent_id,
         log_prefix="[send_message_to_agent_async]",
-        use_retries=False,  # or True if you want to use async_send_message_with_retries
+        use_retries=False,  # or True if you want to use _async_send_message_with_retries
     )
 
     # Immediately return to caller

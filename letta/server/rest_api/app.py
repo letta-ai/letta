@@ -14,9 +14,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
 from letta.__init__ import __version__
+from letta.agents.exceptions import IncompatibleAgentType
 from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
 from letta.errors import BedrockPermissionError, LettaAgentNotFoundError, LettaUserNotFoundError
-from letta.jobs.scheduler import shutdown_cron_scheduler, start_cron_jobs
+from letta.jobs.scheduler import shutdown_scheduler_and_release_lock, start_scheduler_with_leader_election
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.schemas.letta_message import create_letta_message_union_schema
@@ -69,6 +70,9 @@ def generate_openapi_schema(app: FastAPI):
     letta_docs["components"]["schemas"]["LettaMessageContentUnion"] = create_letta_message_content_union_schema()
     letta_docs["components"]["schemas"]["LettaAssistantMessageContentUnion"] = create_letta_assistant_message_content_union_schema()
     letta_docs["components"]["schemas"]["LettaUserMessageContentUnion"] = create_letta_user_message_content_union_schema()
+
+    # Update the app's schema with our modified version
+    app.openapi_schema = letta_docs
 
     for name, docs in [
         (
@@ -146,10 +150,10 @@ def create_application() -> "FastAPI":
         loop.set_default_executor(executor)
 
     @app.on_event("startup")
-    def on_startup():
+    async def on_startup():
         global server
 
-        start_cron_jobs(server)
+        await start_scheduler_with_leader_election(server)
 
     @app.on_event("shutdown")
     def shutdown_mcp_clients():
@@ -166,18 +170,28 @@ def create_application() -> "FastAPI":
         t.start()
         t.join()
 
-    @app.on_event("shutdown")
-    def shutdown_scheduler():
-        shutdown_cron_scheduler()
+    @app.exception_handler(IncompatibleAgentType)
+    async def handle_incompatible_agent_type(request: Request, exc: IncompatibleAgentType):
+        return JSONResponse(
+            status_code=400,
+            content={
+                "detail": str(exc),
+                "expected_type": exc.expected_type,
+                "actual_type": exc.actual_type,
+            },
+        )
 
     @app.exception_handler(Exception)
     async def generic_error_handler(request: Request, exc: Exception):
         # Log the actual error for debugging
-        log.error(f"Unhandled error: {exc}", exc_info=True)
-        print(f"Unhandled error: {exc}")
+        log.error(f"Unhandled error: {str(exc)}", exc_info=True)
+        print(f"Unhandled error: {str(exc)}")
+
+        import traceback
 
         # Print the stack trace
-        print(f"Stack trace: {exc}")
+        print(f"Stack trace: {traceback.format_exc()}")
+
         if (os.getenv("SENTRY_DSN") is not None) and (os.getenv("SENTRY_DSN") != ""):
             import sentry_sdk
 
@@ -303,10 +317,14 @@ def create_application() -> "FastAPI":
     # / static files
     mount_static_files(app)
 
+    # Generate OpenAPI schema after all routes are mounted
+    generate_openapi_schema(app)
+
     @app.on_event("shutdown")
-    def on_shutdown():
+    async def on_shutdown():
         global server
         # server = None
+        await shutdown_scheduler_and_release_lock()
 
     return app
 
@@ -318,6 +336,7 @@ def start_server(
     port: Optional[int] = None,
     host: Optional[str] = None,
     debug: bool = False,
+    reload: bool = False,
 ):
     """Convenience method to start the server from within Python"""
     if debug:
@@ -341,7 +360,7 @@ def start_server(
             host=host or "localhost",
             port=port or REST_DEFAULT_PORT,
             workers=settings.uvicorn_workers,
-            reload=settings.uvicorn_reload,
+            reload=reload or settings.uvicorn_reload,
             timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
             ssl_keyfile="certs/localhost-key.pem",
             ssl_certfile="certs/localhost.pem",
@@ -360,6 +379,6 @@ def start_server(
             host=host or "localhost",
             port=port or REST_DEFAULT_PORT,
             workers=settings.uvicorn_workers,
-            reload=settings.uvicorn_reload,
+            reload=reload or settings.uvicorn_reload,
             timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
         )

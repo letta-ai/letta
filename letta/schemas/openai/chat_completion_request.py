@@ -134,6 +134,7 @@ class ChatCompletionRequest(BaseModel):
     top_p: Optional[float] = 1
     user: Optional[str] = None  # unique ID of the end-user (for monitoring)
     parallel_tool_calls: Optional[bool] = None
+    instructions: Optional[str] = None
 
     # function-calling related
     tools: Optional[List[Tool]] = None

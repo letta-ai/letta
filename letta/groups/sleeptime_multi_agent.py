@@ -1,9 +1,10 @@
 import asyncio
 import threading
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from letta.agent import Agent, AgentState
+from letta.functions.mcp_client.base_client import BaseMCPClient
 from letta.groups.helpers import stringify_message
 from letta.interface import AgentInterface
 from letta.orm import User
@@ -26,6 +27,7 @@ class SleeptimeMultiAgent(Agent):
         interface: AgentInterface,
         agent_state: AgentState,
         user: User,
+        mcp_clients: Optional[Dict[str, BaseMCPClient]] = None,
         # custom
         group_id: str = "",
         agent_ids: List[str] = [],
@@ -40,6 +42,7 @@ class SleeptimeMultiAgent(Agent):
         self.group_manager = GroupManager()
         self.message_manager = MessageManager()
         self.job_manager = JobManager()
+        self.mcp_clients = mcp_clients
 
     def _run_async_in_new_thread(self, coro):
         """Run an async coroutine in a new thread with its own event loop"""
@@ -115,6 +118,7 @@ class SleeptimeMultiAgent(Agent):
                 agent_state=participant_agent_state,
                 interface=StreamingServerInterface(),
                 user=self.user,
+                mcp_clients=self.mcp_clients,
             )
 
             prior_messages = []
@@ -212,6 +216,7 @@ class SleeptimeMultiAgent(Agent):
                 agent_state=self.agent_state,
                 interface=self.interface,
                 user=self.user,
+                mcp_clients=self.mcp_clients,
             )
             # Perform main agent step
             usage_stats = main_agent.step(

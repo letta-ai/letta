@@ -48,6 +48,7 @@ class LettaMessage(BaseModel):
     message_type: MessageType = Field(..., description="The type of the message.")
     otid: Optional[str] = None
     sender_id: Optional[str] = None
+    step_id: Optional[str] = None
 
     @field_serializer("date")
     def serialize_datetime(self, dt: datetime, _info):

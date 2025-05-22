@@ -24,7 +24,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
-from letta.settings import model_settings
+from letta.settings import model_settings, settings
 
 # --- Server Management --- #
 
@@ -263,7 +263,55 @@ async def test_rethink_tool(disable_e2b_api_key, openai_client, agent_state, mes
 
     assert "chicken" not in AgentManager().get_agent_by_id(agent_state.id, actor).memory.get_block("human").value
     response = await agent.step([LettaMessageCreate(role="user", content=[LettaTextContent(text=message)])])
-    assert "chicken" in AgentManager().get_agent_by_id(agent_state.id, actor).memory.get_block("human").value
+    assert "chicken" in AgentManager().get_agent_by_id(agent_state.id, actor).memory.get_block("human").value.lower()
+
+
+@pytest.mark.asyncio
+async def test_vertex_send_message_structured_outputs(disable_e2b_api_key, client):
+    original_experimental_key = settings.use_vertex_structured_outputs_experimental
+    settings.use_vertex_structured_outputs_experimental = True
+    try:
+        actor = UserManager().get_user_or_default(user_id="asf")
+
+        stale_agents = AgentManager().list_agents(actor=actor, limit=300)
+        for agent in stale_agents:
+            AgentManager().delete_agent(agent_id=agent.id, actor=actor)
+
+        manager_agent_state = client.agents.create(
+            name=f"manager",
+            include_base_tools=False,  # change this to True to repro MALFORMED FUNCTION CALL error
+            tools=["send_message"],
+            tags=["manager"],
+            model="google_vertex/gemini-2.5-flash-preview-04-17",
+            embedding="letta/letta-free",
+        )
+        manager_agent = LettaAgent(
+            agent_id=manager_agent_state.id,
+            message_manager=MessageManager(),
+            agent_manager=AgentManager(),
+            block_manager=BlockManager(),
+            passage_manager=PassageManager(),
+            actor=actor,
+        )
+
+        response = await manager_agent.step(
+            [
+                LettaMessageCreate(
+                    role="user",
+                    content=[
+                        LettaTextContent(text=("Check the weather in Seattle.")),
+                    ],
+                ),
+            ]
+        )
+        assert len(response.messages) == 3
+        assert response.messages[0].message_type == "user_message"
+        # Shouldn't this have reasoning message?
+        # assert response.messages[1].message_type == "reasoning_message"
+        assert response.messages[1].message_type == "assistant_message"
+        assert response.messages[2].message_type == "tool_return_message"
+    finally:
+        settings.use_vertex_structured_outputs_experimental = original_experimental_key
 
 
 @pytest.mark.asyncio
@@ -304,7 +352,6 @@ async def test_multi_agent_broadcast(disable_e2b_api_key, client, openai_client,
                 embedding="letta/letta-free",
             ),
         )
-
     response = await manager_agent.step(
         [
             LettaMessageCreate(

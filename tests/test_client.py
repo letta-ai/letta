@@ -1,6 +1,5 @@
 import os
 import threading
-import time
 import uuid
 
 import pytest
@@ -10,6 +9,7 @@ from letta_client.core.api_error import ApiError
 from sqlalchemy import delete
 
 from letta.orm import SandboxConfig, SandboxEnvironmentVariable
+from tests.utils import wait_for_server
 
 # Constants
 SERVER_PORT = 8283
@@ -36,16 +36,19 @@ def run_server():
 )
 def client(request):
     # Get URL from environment or start server
+    api_url = os.getenv("LETTA_API_URL")
     server_url = os.getenv("LETTA_SERVER_URL", f"http://localhost:{SERVER_PORT}")
     if not os.getenv("LETTA_SERVER_URL"):
         print("Starting server thread")
         thread = threading.Thread(target=run_server, daemon=True)
         thread.start()
-        time.sleep(5)
+        wait_for_server(server_url)
     print("Running client tests with server:", server_url)
 
+    # Overide the base_url if the LETTA_API_URL is set
+    base_url = api_url if api_url else server_url
     # create the Letta client
-    yield Letta(base_url=server_url, token=None)
+    yield Letta(base_url=base_url, token=None)
 
 
 # Fixture for test agent

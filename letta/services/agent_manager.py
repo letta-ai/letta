@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -11,6 +12,8 @@ from letta.constants import (
     BASE_SLEEPTIME_CHAT_TOOLS,
     BASE_SLEEPTIME_TOOLS,
     BASE_TOOLS,
+    BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
+    BASE_VOICE_SLEEPTIME_TOOLS,
     DATA_SOURCE_ATTACH_ALERT,
     MAX_EMBEDDING_DIM,
     MULTI_AGENT_TOOLS,
@@ -54,11 +57,13 @@ from letta.serialize_schemas import MarshmallowAgentSchema
 from letta.serialize_schemas.marshmallow_message import SerializedMessageSchema
 from letta.serialize_schemas.marshmallow_tool import SerializedToolSchema
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
+from letta.server.db import db_registry
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import (
     _apply_filters,
     _apply_identity_filters,
     _apply_pagination,
+    _apply_pagination_async,
     _apply_tag_filter,
     _process_relationship,
     check_supports_structured_output,
@@ -83,9 +88,6 @@ class AgentManager:
     """Manager class to handle business logic related to Agents."""
 
     def __init__(self):
-        from letta.server.db import db_context
-
-        self.session_maker = db_context
         self.block_manager = BlockManager()
         self.tool_manager = ToolManager()
         self.source_manager = SourceManager()
@@ -122,7 +124,35 @@ class AgentManager:
         return name_to_id, id_to_name
 
     @staticmethod
-    @trace_method
+    async def _resolve_tools_async(session, names: Set[str], ids: Set[str], org_id: str) -> Tuple[Dict[str, str], Dict[str, str]]:
+        """
+        Bulk‑fetch all ToolModel rows matching either name ∈ names or id ∈ ids
+        (and scoped to this organization), and return two maps:
+          name_to_id, id_to_name.
+        Raises if any requested name or id was not found.
+        """
+        stmt = select(ToolModel.id, ToolModel.name).where(
+            ToolModel.organization_id == org_id,
+            or_(
+                ToolModel.name.in_(names),
+                ToolModel.id.in_(ids),
+            ),
+        )
+        result = await session.execute(stmt)
+        rows = result.fetchall()  # Use fetchall()
+        name_to_id = {row[1]: row[0] for row in rows}  # row[1] is name, row[0] is id
+        id_to_name = {row[0]: row[1] for row in rows}  # row[0] is id, row[1] is name
+
+        missing_names = names - set(name_to_id.keys())
+        missing_ids = ids - set(id_to_name.keys())
+        if missing_names:
+            raise ValueError(f"Tools not found by name: {missing_names}")
+        if missing_ids:
+            raise ValueError(f"Tools not found by id:   {missing_ids}")
+
+        return name_to_id, id_to_name
+
+    @staticmethod
     def _bulk_insert_pivot(session, table, rows: list[dict]):
         if not rows:
             return
@@ -146,7 +176,29 @@ class AgentManager:
         session.execute(stmt)
 
     @staticmethod
-    @trace_method
+    async def _bulk_insert_pivot_async(session, table, rows: list[dict]):
+        if not rows:
+            return
+
+        dialect = session.bind.dialect.name
+        if dialect == "postgresql":
+            stmt = pg_insert(table).values(rows).on_conflict_do_nothing()
+        elif dialect == "sqlite":
+            stmt = sa.insert(table).values(rows).prefix_with("OR IGNORE")
+        else:
+            # fallback: filter out exact-duplicate dicts in Python
+            seen = set()
+            filtered = []
+            for row in rows:
+                key = tuple(sorted(row.items()))
+                if key not in seen:
+                    seen.add(key)
+                    filtered.append(row)
+            stmt = sa.insert(table).values(filtered)
+
+        await session.execute(stmt)
+
+    @staticmethod
     def _replace_pivot_rows(session, table, agent_id: str, rows: list[dict]):
         """
         Replace all pivot rows for an agent with *exactly* the provided list.
@@ -156,6 +208,17 @@ class AgentManager:
         session.execute(delete(table).where(table.c.agent_id == agent_id))
         if rows:
             AgentManager._bulk_insert_pivot(session, table, rows)
+
+    @staticmethod
+    async def _replace_pivot_rows_async(session, table, agent_id: str, rows: list[dict]):
+        """
+        Replace all pivot rows for an agent with *exactly* the provided list.
+        Uses two bulk statements (DELETE + INSERT ... ON CONFLICT DO NOTHING).
+        """
+        # delete all existing rows for this agent
+        await session.execute(delete(table).where(table.c.agent_id == agent_id))
+        if rows:
+            await AgentManager._bulk_insert_pivot_async(session, table, rows)
 
     # ======================================================================================================================
     # Basic CRUD operations
@@ -179,7 +242,11 @@ class AgentManager:
         # tools
         tool_names = set(agent_create.tools or [])
         if agent_create.include_base_tools:
-            if agent_create.agent_type == AgentType.sleeptime_agent:
+            if agent_create.agent_type == AgentType.voice_sleeptime_agent:
+                tool_names |= set(BASE_VOICE_SLEEPTIME_TOOLS)
+            elif agent_create.agent_type == AgentType.voice_convo_agent:
+                tool_names |= set(BASE_VOICE_SLEEPTIME_CHAT_TOOLS)
+            elif agent_create.agent_type == AgentType.sleeptime_agent:
                 tool_names |= set(BASE_SLEEPTIME_TOOLS)
             elif agent_create.enable_sleeptime:
                 tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
@@ -194,7 +261,7 @@ class AgentManager:
         identity_ids = agent_create.identity_ids or []
         tag_values = agent_create.tags or []
 
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             with session.begin():
                 name_to_id, id_to_name = self._resolve_tools(
                     session,
@@ -248,6 +315,7 @@ class AgentManager:
                 session.flush()
                 aid = new_agent.id
 
+                # Note: These methods may need async versions if they perform database operations
                 self._bulk_insert_pivot(
                     session,
                     ToolsAgents.__table__,
@@ -255,10 +323,8 @@ class AgentManager:
                 )
 
                 if block_ids:
-                    rows = [
-                        {"agent_id": aid, "block_id": bid, "block_label": lbl}
-                        for bid, lbl in session.execute(select(BlockModel.id, BlockModel.label).where(BlockModel.id.in_(block_ids))).all()
-                    ]
+                    result = session.execute(select(BlockModel.id, BlockModel.label).where(BlockModel.id.in_(block_ids)))
+                    rows = [{"agent_id": aid, "block_id": bid, "block_label": lbl} for bid, lbl in result.all()]
                     self._bulk_insert_pivot(session, BlocksAgents.__table__, rows)
 
                 self._bulk_insert_pivot(
@@ -299,8 +365,161 @@ class AgentManager:
 
             session.refresh(new_agent)
 
+        # Using the synchronous version since we don't have an async version yet
+        # If you implement an async version of create_many_messages, you can switch to that
         self.message_manager.create_many_messages(pydantic_msgs=init_messages, actor=actor)
         return new_agent.to_pydantic()
+
+    @trace_method
+    async def create_agent_async(
+        self, agent_create: CreateAgent, actor: PydanticUser, _test_only_force_id: Optional[str] = None
+    ) -> PydanticAgentState:
+        # validate required configs
+        if not agent_create.llm_config or not agent_create.embedding_config:
+            raise ValueError("llm_config and embedding_config are required")
+
+        # blocks
+        block_ids = list(agent_create.block_ids or [])
+        if agent_create.memory_blocks:
+            pydantic_blocks = [PydanticBlock(**b.model_dump(to_orm=True)) for b in agent_create.memory_blocks]
+            created_blocks = self.block_manager.batch_create_blocks(
+                pydantic_blocks,
+                actor=actor,
+            )
+            block_ids.extend([blk.id for blk in created_blocks])
+
+        # tools
+        tool_names = set(agent_create.tools or [])
+        if agent_create.include_base_tools:
+            if agent_create.agent_type == AgentType.voice_sleeptime_agent:
+                tool_names |= set(BASE_VOICE_SLEEPTIME_TOOLS)
+            elif agent_create.agent_type == AgentType.voice_convo_agent:
+                tool_names |= set(BASE_VOICE_SLEEPTIME_CHAT_TOOLS)
+            elif agent_create.agent_type == AgentType.sleeptime_agent:
+                tool_names |= set(BASE_SLEEPTIME_TOOLS)
+            elif agent_create.enable_sleeptime:
+                tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
+            else:
+                tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS)
+        if agent_create.include_multi_agent_tools:
+            tool_names |= set(MULTI_AGENT_TOOLS)
+
+        supplied_ids = set(agent_create.tool_ids or [])
+
+        source_ids = agent_create.source_ids or []
+        identity_ids = agent_create.identity_ids or []
+        tag_values = agent_create.tags or []
+
+        async with db_registry.async_session() as session:
+            async with session.begin():
+                # Note: This will need to be modified if _resolve_tools needs an async version
+                name_to_id, id_to_name = await self._resolve_tools_async(
+                    session,
+                    tool_names,
+                    supplied_ids,
+                    actor.organization_id,
+                )
+
+                tool_ids = set(name_to_id.values()) | set(id_to_name.keys())
+                tool_names = set(name_to_id.keys())  # now canonical
+
+                tool_rules = list(agent_create.tool_rules or [])
+                if agent_create.include_base_tool_rules:
+                    for tn in tool_names:
+                        if tn in {"send_message", "send_message_to_agent_async", "memory_finish_edits"}:
+                            tool_rules.append(TerminalToolRule(tool_name=tn))
+                        elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_SLEEPTIME_TOOLS):
+                            tool_rules.append(ContinueToolRule(tool_name=tn))
+
+                if tool_rules:
+                    check_supports_structured_output(model=agent_create.llm_config.model, tool_rules=tool_rules)
+
+                new_agent = AgentModel(
+                    name=agent_create.name,
+                    system=derive_system_message(
+                        agent_type=agent_create.agent_type,
+                        enable_sleeptime=agent_create.enable_sleeptime,
+                        system=agent_create.system,
+                    ),
+                    agent_type=agent_create.agent_type,
+                    llm_config=agent_create.llm_config,
+                    embedding_config=agent_create.embedding_config,
+                    organization_id=actor.organization_id,
+                    description=agent_create.description,
+                    metadata_=agent_create.metadata,
+                    tool_rules=tool_rules,
+                    project_id=agent_create.project_id,
+                    template_id=agent_create.template_id,
+                    base_template_id=agent_create.base_template_id,
+                    message_buffer_autoclear=agent_create.message_buffer_autoclear,
+                    enable_sleeptime=agent_create.enable_sleeptime,
+                    response_format=agent_create.response_format,
+                    created_by_id=actor.id,
+                    last_updated_by_id=actor.id,
+                )
+
+                if _test_only_force_id:
+                    new_agent.id = _test_only_force_id
+
+                session.add(new_agent)
+                await session.flush()
+                aid = new_agent.id
+
+                # Note: These methods may need async versions if they perform database operations
+                await self._bulk_insert_pivot_async(
+                    session,
+                    ToolsAgents.__table__,
+                    [{"agent_id": aid, "tool_id": tid} for tid in tool_ids],
+                )
+
+                if block_ids:
+                    result = await session.execute(select(BlockModel.id, BlockModel.label).where(BlockModel.id.in_(block_ids)))
+                    rows = [{"agent_id": aid, "block_id": bid, "block_label": lbl} for bid, lbl in result.all()]
+                    await self._bulk_insert_pivot_async(session, BlocksAgents.__table__, rows)
+
+                await self._bulk_insert_pivot_async(
+                    session,
+                    SourcesAgents.__table__,
+                    [{"agent_id": aid, "source_id": sid} for sid in source_ids],
+                )
+                await self._bulk_insert_pivot_async(
+                    session,
+                    AgentsTags.__table__,
+                    [{"agent_id": aid, "tag": tag} for tag in tag_values],
+                )
+                await self._bulk_insert_pivot_async(
+                    session,
+                    IdentitiesAgents.__table__,
+                    [{"agent_id": aid, "identity_id": iid} for iid in identity_ids],
+                )
+
+                if agent_create.tool_exec_environment_variables:
+                    env_rows = [
+                        {
+                            "agent_id": aid,
+                            "key": key,
+                            "value": val,
+                            "organization_id": actor.organization_id,
+                        }
+                        for key, val in agent_create.tool_exec_environment_variables.items()
+                    ]
+                    await session.execute(insert(AgentEnvironmentVariable).values(env_rows))
+
+                # initial message sequence
+                agent_state = await new_agent.to_pydantic_async(include_relationships={"memory"})
+                init_messages = self._generate_initial_message_sequence(
+                    actor,
+                    agent_state=agent_state,
+                    supplied_initial_message_sequence=agent_create.initial_message_sequence,
+                )
+                new_agent.message_ids = [msg.id for msg in init_messages]
+
+            await session.refresh(new_agent)
+
+        # Using the synchronous version since we don't have an async version yet
+        # If you implement an async version of create_many_messages, you can switch to that
+        await self.message_manager.create_many_messages_async(pydantic_msgs=init_messages, actor=actor)
+        return await new_agent.to_pydantic_async()
 
     @enforce_types
     def _generate_initial_message_sequence(
@@ -350,7 +569,7 @@ class AgentManager:
         new_idents = set(agent_update.identity_ids or [])
         new_tags = set(agent_update.tags or [])
 
-        with self.session_maker() as session, session.begin():
+        with db_registry.session() as session, session.begin():
 
             agent: AgentModel = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             agent.updated_at = datetime.now(timezone.utc)
@@ -455,6 +674,123 @@ class AgentManager:
 
             return agent.to_pydantic()
 
+    @enforce_types
+    async def update_agent_async(
+        self,
+        agent_id: str,
+        agent_update: UpdateAgent,
+        actor: PydanticUser,
+    ) -> PydanticAgentState:
+
+        new_tools = set(agent_update.tool_ids or [])
+        new_sources = set(agent_update.source_ids or [])
+        new_blocks = set(agent_update.block_ids or [])
+        new_idents = set(agent_update.identity_ids or [])
+        new_tags = set(agent_update.tags or [])
+
+        async with db_registry.async_session() as session, session.begin():
+
+            agent: AgentModel = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            agent.updated_at = datetime.now(timezone.utc)
+            agent.last_updated_by_id = actor.id
+
+            scalar_updates = {
+                "name": agent_update.name,
+                "system": agent_update.system,
+                "llm_config": agent_update.llm_config,
+                "embedding_config": agent_update.embedding_config,
+                "message_ids": agent_update.message_ids,
+                "tool_rules": agent_update.tool_rules,
+                "description": agent_update.description,
+                "project_id": agent_update.project_id,
+                "template_id": agent_update.template_id,
+                "base_template_id": agent_update.base_template_id,
+                "message_buffer_autoclear": agent_update.message_buffer_autoclear,
+                "enable_sleeptime": agent_update.enable_sleeptime,
+                "response_format": agent_update.response_format,
+            }
+            for col, val in scalar_updates.items():
+                if val is not None:
+                    setattr(agent, col, val)
+
+            if agent_update.metadata is not None:
+                agent.metadata_ = agent_update.metadata
+
+            aid = agent.id
+
+            if agent_update.tool_ids is not None:
+                await self._replace_pivot_rows_async(
+                    session,
+                    ToolsAgents.__table__,
+                    aid,
+                    [{"agent_id": aid, "tool_id": tid} for tid in new_tools],
+                )
+                session.expire(agent, ["tools"])
+
+            if agent_update.source_ids is not None:
+                await self._replace_pivot_rows_async(
+                    session,
+                    SourcesAgents.__table__,
+                    aid,
+                    [{"agent_id": aid, "source_id": sid} for sid in new_sources],
+                )
+                session.expire(agent, ["sources"])
+
+            if agent_update.block_ids is not None:
+                rows = []
+                if new_blocks:
+                    result = await session.execute(select(BlockModel.id, BlockModel.label).where(BlockModel.id.in_(new_blocks)))
+                    label_map = {bid: lbl for bid, lbl in result.all()}
+                    rows = [{"agent_id": aid, "block_id": bid, "block_label": label_map[bid]} for bid in new_blocks]
+
+                await self._replace_pivot_rows_async(session, BlocksAgents.__table__, aid, rows)
+                session.expire(agent, ["core_memory"])
+
+            if agent_update.identity_ids is not None:
+                await self._replace_pivot_rows_async(
+                    session,
+                    IdentitiesAgents.__table__,
+                    aid,
+                    [{"agent_id": aid, "identity_id": iid} for iid in new_idents],
+                )
+                session.expire(agent, ["identities"])
+
+            if agent_update.tags is not None:
+                await self._replace_pivot_rows_async(
+                    session,
+                    AgentsTags.__table__,
+                    aid,
+                    [{"agent_id": aid, "tag": tag} for tag in new_tags],
+                )
+                session.expire(agent, ["tags"])
+
+            if agent_update.tool_exec_environment_variables is not None:
+                await session.execute(delete(AgentEnvironmentVariable).where(AgentEnvironmentVariable.agent_id == aid))
+                env_rows = [
+                    {
+                        "agent_id": aid,
+                        "key": k,
+                        "value": v,
+                        "organization_id": agent.organization_id,
+                    }
+                    for k, v in agent_update.tool_exec_environment_variables.items()
+                ]
+                if env_rows:
+                    await self._bulk_insert_pivot_async(session, AgentEnvironmentVariable.__table__, env_rows)
+                session.expire(agent, ["tool_exec_environment_variables"])
+
+            if agent_update.enable_sleeptime and agent_update.system is None:
+                agent.system = derive_system_message(
+                    agent_type=agent.agent_type,
+                    enable_sleeptime=agent_update.enable_sleeptime,
+                    system=agent.system,
+                )
+
+            await session.flush()
+            await session.refresh(agent)
+
+            return await agent.to_pydantic_async()
+
     # TODO: Make this general and think about how to roll this into sqlalchemybase
     def list_agents(
         self,
@@ -497,7 +833,7 @@ class AgentManager:
         Returns:
             List[PydanticAgentState]: The filtered list of matching agents.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             query = select(AgentModel).distinct(AgentModel.created_at, AgentModel.id)
             query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
 
@@ -510,8 +846,67 @@ class AgentManager:
             if limit:
                 query = query.limit(limit)
 
-            agents = session.execute(query).scalars().all()
+            result = session.execute(query)
+            agents = result.scalars().all()
             return [agent.to_pydantic(include_relationships=include_relationships) for agent in agents]
+
+    async def list_agents_async(
+        self,
+        actor: PydanticUser,
+        name: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        match_all_tags: bool = False,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        query_text: Optional[str] = None,
+        project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
+        base_template_id: Optional[str] = None,
+        identity_id: Optional[str] = None,
+        identifier_keys: Optional[List[str]] = None,
+        include_relationships: Optional[List[str]] = None,
+        ascending: bool = True,
+    ) -> List[PydanticAgentState]:
+        """
+        Retrieves agents with optimized filtering and optional field selection.
+
+        Args:
+            actor: The User requesting the list
+            name (Optional[str]): Filter by agent name.
+            tags (Optional[List[str]]): Filter agents by tags.
+            match_all_tags (bool): If True, only return agents that match ALL given tags.
+            before (Optional[str]): Cursor for pagination.
+            after (Optional[str]): Cursor for pagination.
+            limit (Optional[int]): Maximum number of agents to return.
+            query_text (Optional[str]): Search agents by name.
+            project_id (Optional[str]): Filter by project ID.
+            template_id (Optional[str]): Filter by template ID.
+            base_template_id (Optional[str]): Filter by base template ID.
+            identity_id (Optional[str]): Filter by identifier ID.
+            identifier_keys (Optional[List[str]]): Search agents by identifier keys.
+            include_relationships (Optional[List[str]]): List of fields to load for performance optimization.
+            ascending
+
+        Returns:
+            List[PydanticAgentState]: The filtered list of matching agents.
+        """
+        async with db_registry.async_session() as session:
+            query = select(AgentModel)
+            query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
+
+            # Apply filters
+            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id)
+            query = _apply_identity_filters(query, identity_id, identifier_keys)
+            query = _apply_tag_filter(query, tags, match_all_tags)
+            query = await _apply_pagination_async(query, before, after, session, ascending=ascending)
+
+            if limit:
+                query = query.limit(limit)
+
+            result = await session.execute(query)
+            agents = result.scalars().all()
+            return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
 
     @enforce_types
     def list_agents_matching_tags(
@@ -535,7 +930,7 @@ class AgentManager:
         Returns:
             List[PydanticAgentState: The filtered list of matching agents.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             query = select(AgentModel).where(AgentModel.organization_id == actor.organization_id)
 
             if match_all:
@@ -563,20 +958,58 @@ class AgentManager:
         """
         Get the total count of agents for the given user.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             return AgentModel.size(db_session=session, actor=actor)
+
+    async def size_async(
+        self,
+        actor: PydanticUser,
+    ) -> int:
+        """
+        Get the total count of agents for the given user.
+        """
+        async with db_registry.async_session() as session:
+            return await AgentModel.size_async(db_session=session, actor=actor)
 
     @enforce_types
     def get_agent_by_id(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         """Fetch an agent by its ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             return agent.to_pydantic()
 
     @enforce_types
+    async def get_agent_by_id_async(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        include_relationships: Optional[List[str]] = None,
+    ) -> PydanticAgentState:
+        """Fetch an agent by its ID."""
+        async with db_registry.async_session() as session:
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            return await agent.to_pydantic_async(include_relationships=include_relationships)
+
+    @enforce_types
+    async def get_agents_by_ids_async(
+        self,
+        agent_ids: list[str],
+        actor: PydanticUser,
+        include_relationships: Optional[List[str]] = None,
+    ) -> list[PydanticAgentState]:
+        """Fetch a list of agents by their IDs."""
+        async with db_registry.async_session() as session:
+            agents = await AgentModel.read_multiple_async(
+                db_session=session,
+                identifiers=agent_ids,
+                actor=actor,
+            )
+            return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
+
+    @enforce_types
     def get_agent_by_name(self, agent_name: str, actor: PydanticUser) -> PydanticAgentState:
         """Fetch an agent by its ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, name=agent_name, actor=actor)
             return agent.to_pydantic()
 
@@ -593,7 +1026,7 @@ class AgentManager:
         Raises:
             NoResultFound: If agent doesn't exist
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Retrieve the agent
             logger.debug(f"Hard deleting Agent with ID: {agent_id} with actor={actor}")
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
@@ -603,12 +1036,13 @@ class AgentManager:
             # Delete sleeptime agent and group (TODO this is flimsy pls fix)
             if agent.multi_agent_group:
                 participant_agent_ids = agent.multi_agent_group.agent_ids
-                if agent.multi_agent_group.manager_type == ManagerType.sleeptime and len(participant_agent_ids) == 1:
-                    try:
-                        sleeptime_agent = AgentModel.read(db_session=session, identifier=participant_agent_ids[0], actor=actor)
-                        agents_to_delete.append(sleeptime_agent)
-                    except NoResultFound:
-                        pass  # agent already deleted
+                if agent.multi_agent_group.manager_type in {ManagerType.sleeptime, ManagerType.voice_sleeptime} and participant_agent_ids:
+                    for participant_agent_id in participant_agent_ids:
+                        try:
+                            sleeptime_agent = AgentModel.read(db_session=session, identifier=participant_agent_id, actor=actor)
+                            agents_to_delete.append(sleeptime_agent)
+                        except NoResultFound:
+                            pass  # agent already deleted
                     sleeptime_agent_group = GroupModel.read(db_session=session, identifier=agent.multi_agent_group.id, actor=actor)
                     sleeptime_group_to_delete = sleeptime_agent_group
 
@@ -628,7 +1062,7 @@ class AgentManager:
 
     @enforce_types
     def serialize(self, agent_id: str, actor: PydanticUser) -> AgentSchema:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             schema = MarshmallowAgentSchema(session=session, actor=actor)
             data = schema.dump(agent)
@@ -658,7 +1092,7 @@ class AgentManager:
 
         serialized_agent_dict[MarshmallowAgentSchema.FIELD_MESSAGE_IDS] = message_ids
 
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             schema = MarshmallowAgentSchema(session=session, actor=actor)
             agent = schema.load(serialized_agent_dict, session=session)
 
@@ -721,7 +1155,7 @@ class AgentManager:
         Returns:
             PydanticAgentState: The updated agent as a Pydantic model.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Retrieve the agent
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
@@ -760,7 +1194,7 @@ class AgentManager:
 
     @enforce_types
     def list_groups(self, agent_id: str, actor: PydanticUser, manager_type: Optional[str] = None) -> List[PydanticGroup]:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             if manager_type:
                 return [group.to_pydantic() for group in agent.groups if group.manager_type == manager_type]
@@ -780,9 +1214,19 @@ class AgentManager:
         return self.message_manager.get_messages_by_ids(message_ids=message_ids, actor=actor)
 
     @enforce_types
+    async def get_in_context_messages_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticMessage]:
+        agent = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=[], actor=actor)
+        return await self.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=actor)
+
+    @enforce_types
     def get_system_message(self, agent_id: str, actor: PydanticUser) -> PydanticMessage:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         return self.message_manager.get_message_by_id(message_id=message_ids[0], actor=actor)
+
+    @enforce_types
+    async def get_system_message_async(self, agent_id: str, actor: PydanticUser) -> PydanticMessage:
+        agent = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=[], actor=actor)
+        return await self.message_manager.get_message_by_id_async(message_id=agent.message_ids[0], actor=actor)
 
     # TODO: This is duplicated below
     # TODO: This is legacy code and should be cleaned up
@@ -853,8 +1297,79 @@ class AgentManager:
             return agent_state
 
     @enforce_types
+    async def rebuild_system_prompt_async(
+        self, agent_id: str, actor: PydanticUser, force=False, update_timestamp=True
+    ) -> PydanticAgentState:
+        """Rebuilds the system message with the latest memory object and any shared memory block updates
+
+        Updates to core memory blocks should trigger a "rebuild", which itself will create a new message object
+
+        Updates to the memory header should *not* trigger a rebuild, since that will simply flood recall storage with excess messages
+        """
+        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory"], actor=actor)
+
+        curr_system_message = await self.get_system_message_async(
+            agent_id=agent_id, actor=actor
+        )  # this is the system + memory bank, not just the system prompt
+        curr_system_message_openai = curr_system_message.to_openai_dict()
+
+        # note: we only update the system prompt if the core memory is changed
+        # this means that the archival/recall memory statistics may be someout out of date
+        curr_memory_str = agent_state.memory.compile()
+        if curr_memory_str in curr_system_message_openai["content"] and not force:
+            # NOTE: could this cause issues if a block is removed? (substring match would still work)
+            logger.debug(
+                f"Memory hasn't changed for agent id={agent_id} and actor=({actor.id}, {actor.name}), skipping system prompt rebuild"
+            )
+            return agent_state
+
+        # If the memory didn't update, we probably don't want to update the timestamp inside
+        # For example, if we're doing a system prompt swap, this should probably be False
+        if update_timestamp:
+            memory_edit_timestamp = get_utc_time()
+        else:
+            # NOTE: a bit of a hack - we pull the timestamp from the message created_by
+            memory_edit_timestamp = curr_system_message.created_at
+
+        num_messages = await self.message_manager.size_async(actor=actor, agent_id=agent_id)
+        num_archival_memories = await self.passage_manager.size_async(actor=actor, agent_id=agent_id)
+
+        # update memory (TODO: potentially update recall/archival stats separately)
+        new_system_message_str = compile_system_message(
+            system_prompt=agent_state.system,
+            in_context_memory=agent_state.memory,
+            in_context_memory_last_edit=memory_edit_timestamp,
+            recent_passages=self.list_passages(actor=actor, agent_id=agent_id, ascending=False, limit=10),
+            previous_message_count=num_messages,
+            archival_memory_size=num_archival_memories,
+        )
+
+        diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
+        if len(diff) > 0:  # there was a diff
+            logger.debug(f"Rebuilding system with new memory...\nDiff:\n{diff}")
+
+            # Swap the system message out (only if there is a diff)
+            message = PydanticMessage.dict_to_message(
+                agent_id=agent_id,
+                model=agent_state.llm_config.model,
+                openai_message_dict={"role": "system", "content": new_system_message_str},
+            )
+            message = await self.message_manager.update_message_by_id_async(
+                message_id=curr_system_message.id,
+                message_update=MessageUpdate(**message.model_dump()),
+                actor=actor,
+            )
+            return await self.set_in_context_messages_async(agent_id=agent_id, message_ids=agent_state.message_ids, actor=actor)
+        else:
+            return agent_state
+
+    @enforce_types
     def set_in_context_messages(self, agent_id: str, message_ids: List[str], actor: PydanticUser) -> PydanticAgentState:
         return self.update_agent(agent_id=agent_id, agent_update=UpdateAgent(message_ids=message_ids), actor=actor)
+
+    @enforce_types
+    async def set_in_context_messages_async(self, agent_id: str, message_ids: List[str], actor: PydanticUser) -> PydanticAgentState:
+        return await self.update_agent_async(agent_id=agent_id, agent_update=UpdateAgent(message_ids=message_ids), actor=actor)
 
     @enforce_types
     def trim_older_in_context_messages(self, num: int, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
@@ -901,7 +1416,7 @@ class AgentManager:
         Returns:
             PydanticAgentState: The updated agent state with no linked messages.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Retrieve the existing agent (will raise NoResultFound if invalid)
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
@@ -968,12 +1483,12 @@ class AgentManager:
         return agent_state
 
     @enforce_types
-    def refresh_memory(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
+    async def refresh_memory_async(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
         block_ids = [b.id for b in agent_state.memory.blocks]
         if not block_ids:
             return agent_state
 
-        agent_state.memory.blocks = self.block_manager.get_all_blocks_by_ids(
+        agent_state.memory.blocks = await self.block_manager.get_all_blocks_by_ids_async(
             block_ids=[b.id for b in agent_state.memory.blocks], actor=actor
         )
         return agent_state
@@ -996,7 +1511,7 @@ class AgentManager:
             IntegrityError: If the source is already attached to the agent
         """
 
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Verify both agent and source exist and user has permission to access them
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
@@ -1049,9 +1564,28 @@ class AgentManager:
         Returns:
             List[str]: List of source IDs attached to the agent
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Verify agent exists and user has permission to access it
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+
+            # Use the lazy-loaded relationship to get sources
+            return [source.to_pydantic() for source in agent.sources]
+
+    @enforce_types
+    async def list_attached_sources_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticSource]:
+        """
+        Lists all sources attached to an agent.
+
+        Args:
+            agent_id: ID of the agent to list sources for
+            actor: User performing the action
+
+        Returns:
+            List[str]: List of source IDs attached to the agent
+        """
+        async with db_registry.async_session() as session:
+            # Verify agent exists and user has permission to access it
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
 
             # Use the lazy-loaded relationship to get sources
             return [source.to_pydantic() for source in agent.sources]
@@ -1066,7 +1600,7 @@ class AgentManager:
             source_id: ID of the source to detach
             actor: User performing the action
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Verify agent exists and user has permission to access it
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
@@ -1094,12 +1628,39 @@ class AgentManager:
         actor: PydanticUser,
     ) -> PydanticBlock:
         """Gets a block attached to an agent by its label."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             for block in agent.core_memory:
                 if block.label == block_label:
                     return block.to_pydantic()
             raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
+
+    @enforce_types
+    async def modify_block_by_label_async(
+        self,
+        agent_id: str,
+        block_label: str,
+        block_update: BlockUpdate,
+        actor: PydanticUser,
+    ) -> PydanticBlock:
+        """Gets a block attached to an agent by its label."""
+        async with db_registry.async_session() as session:
+            block = None
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            for block in agent.core_memory:
+                if block.label == block_label:
+                    block = block
+                    break
+            if not block:
+                raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
+
+            update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+
+            for key, value in update_data.items():
+                setattr(block, key, value)
+
+            await block.update_async(session, actor=actor)
+            return block.to_pydantic()
 
     @enforce_types
     def update_block_with_label(
@@ -1110,7 +1671,7 @@ class AgentManager:
         actor: PydanticUser,
     ) -> PydanticAgentState:
         """Updates which block is assigned to a specific label for an agent."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             new_block = BlockModel.read(db_session=session, identifier=new_block_id, actor=actor)
 
@@ -1128,7 +1689,7 @@ class AgentManager:
     @enforce_types
     def attach_block(self, agent_id: str, block_id: str, actor: PydanticUser) -> PydanticAgentState:
         """Attaches a block to an agent."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
 
@@ -1144,7 +1705,7 @@ class AgentManager:
         actor: PydanticUser,
     ) -> PydanticAgentState:
         """Detaches a block from an agent."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             original_length = len(agent.core_memory)
 
@@ -1164,7 +1725,7 @@ class AgentManager:
         actor: PydanticUser,
     ) -> PydanticAgentState:
         """Detaches a block with the specified label from an agent."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             original_length = len(agent.core_memory)
 
@@ -1208,7 +1769,7 @@ class AgentManager:
             embedded_text = np.array(embedded_text)
             embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
 
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Start with base query for source passages
             source_passages = None
             if not agent_only:  # Include source passages
@@ -1382,7 +1943,7 @@ class AgentManager:
         agent_only: bool = False,
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             main_query = self._build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
@@ -1423,6 +1984,65 @@ class AgentManager:
             return [p.to_pydantic() for p in passages]
 
     @enforce_types
+    async def list_passages_async(
+        self,
+        actor: PydanticUser,
+        agent_id: Optional[str] = None,
+        file_id: Optional[str] = None,
+        limit: Optional[int] = 50,
+        query_text: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        source_id: Optional[str] = None,
+        embed_query: bool = False,
+        ascending: bool = True,
+        embedding_config: Optional[EmbeddingConfig] = None,
+        agent_only: bool = False,
+    ) -> List[PydanticPassage]:
+        """Lists all passages attached to an agent."""
+        async with db_registry.async_session() as session:
+            main_query = self._build_passage_query(
+                actor=actor,
+                agent_id=agent_id,
+                file_id=file_id,
+                query_text=query_text,
+                start_date=start_date,
+                end_date=end_date,
+                before=before,
+                after=after,
+                source_id=source_id,
+                embed_query=embed_query,
+                ascending=ascending,
+                embedding_config=embedding_config,
+                agent_only=agent_only,
+            )
+
+            # Add limit
+            if limit:
+                main_query = main_query.limit(limit)
+
+            # Execute query
+            result = await session.execute(main_query)
+
+            passages = []
+            for row in result:
+                data = dict(row._mapping)
+                if data["agent_id"] is not None:
+                    # This is an AgentPassage - remove source fields
+                    data.pop("source_id", None)
+                    data.pop("file_id", None)
+                    passage = AgentPassage(**data)
+                else:
+                    # This is a SourcePassage - remove agent field
+                    data.pop("agent_id", None)
+                    passage = SourcePassage(**data)
+                passages.append(passage)
+
+            return [p.to_pydantic() for p in passages]
+
+    @enforce_types
     def passage_size(
         self,
         actor: PydanticUser,
@@ -1440,7 +2060,7 @@ class AgentManager:
         agent_only: bool = False,
     ) -> int:
         """Returns the count of passages matching the given criteria."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             main_query = self._build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
@@ -1480,7 +2100,7 @@ class AgentManager:
         Returns:
             PydanticAgentState: The updated agent state.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Verify the agent exists and user has permission to access it
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
@@ -1515,7 +2135,7 @@ class AgentManager:
         Returns:
             PydanticAgentState: The updated agent state.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Verify the agent exists and user has permission to access it
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
@@ -1544,7 +2164,7 @@ class AgentManager:
         Returns:
             List[PydanticTool]: List of tools attached to the agent.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             return [tool.to_pydantic() for tool in agent.tools]
 
@@ -1567,7 +2187,7 @@ class AgentManager:
         Returns:
             List[str]: List of all tags.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             query = (
                 session.query(AgentsTags.tag)
                 .join(AgentModel, AgentModel.id == AgentsTags.agent_id)
@@ -1584,3 +2204,42 @@ class AgentManager:
             query = query.order_by(AgentsTags.tag).limit(limit)
             results = [tag[0] for tag in query.all()]
             return results
+
+    @enforce_types
+    async def list_tags_async(
+        self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, query_text: Optional[str] = None
+    ) -> List[str]:
+        """
+        Get all tags a user has created, ordered alphabetically.
+
+        Args:
+            actor: User performing the action.
+            after: Cursor for forward pagination.
+            limit: Maximum number of tags to return.
+            query text to filter tags by.
+
+        Returns:
+            List[str]: List of all tags.
+        """
+        async with db_registry.async_session() as session:
+            # Build the query using select() for async SQLAlchemy
+            query = (
+                select(AgentsTags.tag)
+                .join(AgentModel, AgentModel.id == AgentsTags.agent_id)
+                .where(AgentModel.organization_id == actor.organization_id)
+                .distinct()
+            )
+
+            if query_text:
+                query = query.where(AgentsTags.tag.ilike(f"%{query_text}%"))
+
+            if after:
+                query = query.where(AgentsTags.tag > after)
+
+            query = query.order_by(AgentsTags.tag).limit(limit)
+
+            # Execute the query asynchronously
+            result = await session.execute(query)
+            # Extract the tag values from the result
+            results = [row[0] for row in result.all()]
+        return results

@@ -13,6 +13,9 @@ from letta.settings import tool_settings
 def pytest_configure(config):
     logging.basicConfig(level=logging.DEBUG)
 
+    # Register custom markers
+    config.addinivalue_line("markers", "async_client_test: mark test as an async client test that is skipped by default")
+
 
 @pytest.fixture
 def disable_e2b_api_key() -> Generator[None, None, None]:
@@ -60,6 +63,7 @@ def check_composio_key_set():
     yield
 
 
+# --- Tool Fixtures ---
 @pytest.fixture
 def weather_tool_func():
     def get_weather(location: str) -> str:
@@ -105,6 +109,23 @@ def print_tool_func():
         return message
 
     yield print_tool
+
+
+@pytest.fixture
+def roll_dice_tool_func():
+    def roll_dice():
+        """
+        Rolls a 6 sided die.
+
+        Returns:
+            str: The roll result.
+        """
+        import time
+
+        time.sleep(1)
+        return "Rolled a 10!"
+
+    yield roll_dice
 
 
 @pytest.fixture

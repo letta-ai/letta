@@ -1,12 +1,16 @@
+import asyncio
 import json
-from json import JSONDecodeError
-from typing import List, Tuple
+import traceback
+from typing import List, Optional, Tuple
 
-from letta.agents.base_agent import BaseAgent
+from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.log import get_logger
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message, MessageCreate
 from letta.services.summarizer.enums import SummarizationMode
+
+logger = get_logger(__name__)
 
 
 class Summarizer:
@@ -16,7 +20,13 @@ class Summarizer:
     static buffer approach but leave room for more advanced strategies.
     """
 
-    def __init__(self, mode: SummarizationMode, summarizer_agent: BaseAgent, message_buffer_limit: int = 10, message_buffer_min: int = 3):
+    def __init__(
+        self,
+        mode: SummarizationMode,
+        summarizer_agent: Optional["VoiceSleeptimeAgent"] = None,
+        message_buffer_limit: int = 10,
+        message_buffer_min: int = 3,
+    ):
         self.mode = mode
 
         # Need to do validation on this
@@ -24,11 +34,8 @@ class Summarizer:
         self.message_buffer_min = message_buffer_min
         self.summarizer_agent = summarizer_agent
         # TODO: Move this to config
-        self.summary_prefix = "Out of context message summarization:\n"
 
-    async def summarize(
-        self, in_context_messages: List[Message], new_letta_messages: List[Message], previous_summary: str
-    ) -> Tuple[List[Message], str, bool]:
+    def summarize(self, in_context_messages: List[Message], new_letta_messages: List[Message]) -> Tuple[List[Message], bool]:
         """
         Summarizes or trims in_context_messages according to the chosen mode,
         and returns the updated messages plus any optional "summary message".
@@ -36,7 +43,6 @@ class Summarizer:
         Args:
             in_context_messages: The existing messages in the conversation's context.
             new_letta_messages: The newly added Letta messages (just appended).
-            previous_summary: The previous summary string.
 
         Returns:
             (updated_messages, summary_message)
@@ -45,65 +51,133 @@ class Summarizer:
                              (could be appended to the conversation if desired)
         """
         if self.mode == SummarizationMode.STATIC_MESSAGE_BUFFER:
-            return await self._static_buffer_summarization(in_context_messages, new_letta_messages, previous_summary)
+            return self._static_buffer_summarization(in_context_messages, new_letta_messages)
         else:
             # Fallback or future logic
-            return in_context_messages, "", False
+            return in_context_messages, False
 
-    async def _static_buffer_summarization(
-        self, in_context_messages: List[Message], new_letta_messages: List[Message], previous_summary: str
-    ) -> Tuple[List[Message], str, bool]:
-        previous_summary = previous_summary[: len(self.summary_prefix)]
+    def fire_and_forget(self, coro):
+        task = asyncio.create_task(coro)
+
+        def callback(t):
+            try:
+                t.result()  # This re-raises exceptions from the task
+            except Exception:
+                logger.error("Background task failed: %s", traceback.format_exc())
+
+        task.add_done_callback(callback)
+        return task
+
+    def _static_buffer_summarization(
+        self, in_context_messages: List[Message], new_letta_messages: List[Message]
+    ) -> Tuple[List[Message], bool]:
         all_in_context_messages = in_context_messages + new_letta_messages
 
-        # Only summarize if we exceed `message_buffer_limit`
         if len(all_in_context_messages) <= self.message_buffer_limit:
-            return all_in_context_messages, previous_summary, False
+            logger.info(
+                f"Nothing to evict, returning in context messages as is. Current buffer length is {len(all_in_context_messages)}, limit is {self.message_buffer_limit}."
+            )
+            return all_in_context_messages, False
 
-        # Aim to trim down to `message_buffer_min`
-        target_trim_index = len(all_in_context_messages) - self.message_buffer_min + 1
+        logger.info("Buffer length hit, evicting messages.")
 
-        # Move the trim index forward until it's at a `MessageRole.user`
+        target_trim_index = len(all_in_context_messages) - self.message_buffer_min
+
         while target_trim_index < len(all_in_context_messages) and all_in_context_messages[target_trim_index].role != MessageRole.user:
             target_trim_index += 1
 
-        # TODO: Assuming system message is always at index 0
-        updated_in_context_messages = [all_in_context_messages[0]] + all_in_context_messages[target_trim_index:]
-        out_of_context_messages = all_in_context_messages[:target_trim_index]
+        updated_in_context_messages = all_in_context_messages[target_trim_index:]
 
-        formatted_messages = []
-        for m in out_of_context_messages:
-            if m.content:
-                try:
-                    message = json.loads(m.content[0].text).get("message")
-                except JSONDecodeError:
-                    continue
-                if message:
-                    formatted_messages.append(f"{m.role.value}: {message}")
+        # Target trim index went beyond end of all_in_context_messages
+        if not updated_in_context_messages:
+            logger.info("Nothing to evict, returning in context messages as is.")
+            return all_in_context_messages, False
 
-        # If we didn't trim any messages, return as-is
-        if not formatted_messages:
-            return all_in_context_messages, previous_summary, False
+        if self.summarizer_agent:
+            # Only invoke if summarizer agent is passed in
 
-        # Generate summarization request
-        summary_request_text = (
-            "These are messages that are soon to be removed from the context window:\n"
-            f"{formatted_messages}\n\n"
-            "This is the current memory:\n"
-            f"{previous_summary}\n\n"
-            "Your task is to integrate any relevant updates from the messages into the memory."
-            "It should be in note-taking format in natural English. You are to return the new, updated memory only."
-        )
+            evicted_messages = all_in_context_messages[1:target_trim_index]
 
-        response = await self.summarizer_agent.step(
-            input_messages=[
-                MessageCreate(
-                    role=MessageRole.user,
-                    content=[TextContent(text=summary_request_text)],
-                ),
-            ],
-        )
-        current_summary = "\n".join([m.content[0].text for m in response.messages if m.message_type == "assistant_message"])
-        current_summary = f"{self.summary_prefix}{current_summary}"
+            # Format
+            formatted_evicted_messages = format_transcript(evicted_messages)
+            formatted_in_context_messages = format_transcript(updated_in_context_messages)
 
-        return updated_in_context_messages, current_summary, True
+            # TODO: This is hyperspecific to voice, generalize!
+            # Update the message transcript of the memory agent
+            self.summarizer_agent.update_message_transcript(message_transcripts=formatted_evicted_messages + formatted_in_context_messages)
+
+            # Add line numbers to the formatted messages
+            offset = len(formatted_evicted_messages)
+            formatted_evicted_messages = [f"{i}. {msg}" for (i, msg) in enumerate(formatted_evicted_messages)]
+            formatted_in_context_messages = [f"{i + offset}. {msg}" for (i, msg) in enumerate(formatted_in_context_messages)]
+
+            evicted_messages_str = "\n".join(formatted_evicted_messages)
+            in_context_messages_str = "\n".join(formatted_in_context_messages)
+            summary_request_text = f"""You’re a memory-recall helper for an AI that can only keep the last {self.message_buffer_min} messages. Scan the conversation history, focusing on messages about to drop out of that window, and write crisp notes that capture any important facts or insights about the human so they aren’t lost.
+
+    (Older) Evicted Messages:\n
+    {evicted_messages_str}\n
+
+    (Newer) In-Context Messages:\n
+    {in_context_messages_str}
+    """
+            # Fire-and-forget the summarization task
+            self.fire_and_forget(
+                self.summarizer_agent.step([MessageCreate(role=MessageRole.user, content=[TextContent(text=summary_request_text)])])
+            )
+
+        return [all_in_context_messages[0]] + updated_in_context_messages, True
+
+
+def format_transcript(messages: List[Message], include_system: bool = False) -> List[str]:
+    """
+    Turn a list of Message objects into a human-readable transcript.
+
+    Args:
+        messages: List of Message instances, in chronological order.
+        include_system: If True, include system-role messages. Defaults to False.
+
+    Returns:
+        A single string, e.g.:
+          user: Hey, my name is Matt.
+          assistant: Hi Matt! It's great to meet you...
+          user: What's the weather like? ...
+          assistant: The weather in Las Vegas is sunny...
+    """
+    lines = []
+    for msg in messages:
+        role = msg.role.value  # e.g. 'user', 'assistant', 'system', 'tool'
+        # skip system messages by default
+        if role == "system" and not include_system:
+            continue
+
+        # 1) Try plain content
+        if msg.content:
+            # Skip tool messages where the name is "send_message"
+            if msg.role == MessageRole.tool and msg.name == DEFAULT_MESSAGE_TOOL:
+                continue
+            text = "".join(c.text for c in msg.content).strip()
+
+        # 2) Otherwise, try extracting from function calls
+        elif msg.tool_calls:
+            parts = []
+            for call in msg.tool_calls:
+                args_str = call.function.arguments
+                if call.function.name == DEFAULT_MESSAGE_TOOL:
+                    try:
+                        args = json.loads(args_str)
+                        # pull out a "message" field if present
+                        parts.append(args.get(DEFAULT_MESSAGE_TOOL_KWARG, args_str))
+                    except json.JSONDecodeError:
+                        parts.append(args_str)
+                else:
+                    parts.append(args_str)
+            text = " ".join(parts).strip()
+
+        else:
+            # nothing to show for this message
+            continue
+
+        lines.append(f"{role}: {text}")
+
+    return lines

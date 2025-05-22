@@ -86,7 +86,7 @@ class Swarm:
             # grab responses
             messages = []
             for message in response.messages:
-                messages += message.to_letta_message()
+                messages += message.to_letta_messages()
 
             # get new agent (see tool call)
             # print(messages)

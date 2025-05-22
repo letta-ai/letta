@@ -3,9 +3,26 @@ from enum import Enum
 
 class ProviderType(str, Enum):
     anthropic = "anthropic"
+    anthropic_bedrock = "bedrock"
     google_ai = "google_ai"
     google_vertex = "google_vertex"
     openai = "openai"
+    letta = "letta"
+    deepseek = "deepseek"
+    lmstudio_openai = "lmstudio_openai"
+    xai = "xai"
+    mistral = "mistral"
+    ollama = "ollama"
+    groq = "groq"
+    together = "together"
+    azure = "azure"
+    vllm = "vllm"
+    bedrock = "bedrock"
+
+
+class ProviderCategory(str, Enum):
+    base = "base"
+    byok = "byok"
 
 
 class MessageRole(str, Enum):

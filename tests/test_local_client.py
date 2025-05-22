@@ -124,7 +124,7 @@ def test_agent(client: LocalClient):
 def test_agent_add_remove_tools(client: LocalClient, agent):
     # Create and add two tools to the client
     # tool 1
-    from composio_langchain import Action
+    from composio import Action
 
     github_tool = client.load_composio_tool(action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER)
 
@@ -316,7 +316,7 @@ def test_tools(client: LocalClient):
 
 
 def test_tools_from_composio_basic(client: LocalClient):
-    from composio_langchain import Action
+    from composio import Action
 
     # Create a `LocalClient` (you can also use a `RESTClient`, see the letta_rest_client.py example)
     client = create_client()

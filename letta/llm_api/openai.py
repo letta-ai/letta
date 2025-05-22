@@ -1,12 +1,21 @@
 import warnings
 from typing import Generator, List, Optional, Union
 
+import httpx
 import requests
 from openai import OpenAI
 
+from letta.constants import LETTA_MODEL_ENDPOINT
+from letta.errors import ErrorCode, LLMAuthenticationError, LLMError
 from letta.helpers.datetime_helpers import timestamp_to_datetime
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_structured_output, make_post_request
-from letta.llm_api.openai_client import supports_parallel_tool_calling, supports_temperature_param
+from letta.llm_api.openai_client import (
+    accepts_developer_role,
+    requires_auto_tool_choice,
+    supports_parallel_tool_calling,
+    supports_structured_output,
+    supports_temperature_param,
+)
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.log import get_logger
@@ -33,9 +42,21 @@ from letta.utils import get_tool_call_id, smart_urljoin
 logger = get_logger(__name__)
 
 
-def openai_get_model_list(
-    url: str, api_key: Optional[str] = None, fix_url: Optional[bool] = False, extra_params: Optional[dict] = None
-) -> dict:
+def openai_check_valid_api_key(base_url: str, api_key: Union[str, None]) -> None:
+    if api_key:
+        try:
+            # just get model list to check if the api key is valid until we find a cheaper / quicker endpoint
+            openai_get_model_list(url=base_url, api_key=api_key)
+        except requests.HTTPError as e:
+            if e.response.status_code == 401:
+                raise LLMAuthenticationError(message=f"Failed to authenticate with OpenAI: {e}", code=ErrorCode.UNAUTHENTICATED)
+            raise e
+        except Exception as e:
+            raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
+    else:
+        raise ValueError("No API key provided")
+
+def openai_get_model_list(url: str, api_key: Optional[str] = None, fix_url: bool = False, extra_params: Optional[dict] = None) -> dict:
     """https://platform.openai.com/docs/api-reference/models/list"""
     from letta.utils import printd
 
@@ -90,6 +111,62 @@ def openai_get_model_list(
         raise e
 
 
+async def openai_get_model_list_async(
+    url: str,
+    api_key: Optional[str] = None,
+    fix_url: bool = False,
+    extra_params: Optional[dict] = None,
+    client: Optional["httpx.AsyncClient"] = None,
+) -> dict:
+    """https://platform.openai.com/docs/api-reference/models/list"""
+    from letta.utils import printd
+
+    # In some cases we may want to double-check the URL and do basic correction
+    if fix_url and not url.endswith("/v1"):
+        url = smart_urljoin(url, "v1")
+
+    url = smart_urljoin(url, "models")
+
+    headers = {"Content-Type": "application/json"}
+    if api_key is not None:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    printd(f"Sending request to {url}")
+
+    # Use provided client or create a new one
+    close_client = False
+    if client is None:
+        client = httpx.AsyncClient()
+        close_client = True
+
+    try:
+        response = await client.get(url, headers=headers, params=extra_params)
+        response.raise_for_status()
+        result = response.json()
+        printd(f"response = {result}")
+        return result
+    except httpx.HTTPStatusError as http_err:
+        # Handle HTTP errors (e.g., response 4XX, 5XX)
+        error_response = None
+        try:
+            error_response = http_err.response.json()
+        except:
+            error_response = {"status_code": http_err.response.status_code, "text": http_err.response.text}
+        printd(f"Got HTTPError, exception={http_err}, response={error_response}")
+        raise http_err
+    except httpx.RequestError as req_err:
+        # Handle other httpx-related errors (e.g., connection error)
+        printd(f"Got RequestException, exception={req_err}")
+        raise req_err
+    except Exception as e:
+        # Handle other potential errors
+        printd(f"Got unknown Exception, exception={e}")
+        raise e
+    finally:
+        if close_client:
+            await client.aclose()
+
+
 def build_openai_chat_completions_request(
     llm_config: LLMConfig,
     messages: List[_Message],
@@ -113,8 +190,16 @@ def build_openai_chat_completions_request(
             put_inner_thoughts_first=put_inner_thoughts_first,
         )
 
+    use_developer_message = accepts_developer_role(llm_config.model)
+
     openai_message_list = [
-        cast_message_to_subtype(m.to_openai_dict(put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs)) for m in messages
+        cast_message_to_subtype(
+            m.to_openai_dict(
+                put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
+                use_developer_message=use_developer_message,
+            )
+        )
+        for m in messages
     ]
 
     if llm_config.model:
@@ -129,7 +214,10 @@ def build_openai_chat_completions_request(
         elif function_call not in ["none", "auto", "required"]:
             tool_choice = ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=function_call))
         else:
-            tool_choice = function_call
+            if requires_auto_tool_choice(llm_config):
+                tool_choice = "auto"
+            else:
+                tool_choice = function_call
         data = ChatCompletionRequest(
             model=model,
             messages=openai_message_list,
@@ -156,22 +244,29 @@ def build_openai_chat_completions_request(
         # if "gpt-4o" in llm_config.model or "gpt-4-turbo" in llm_config.model or "gpt-3.5-turbo" in llm_config.model:
         # data.response_format = {"type": "json_object"}
 
-    if "inference.memgpt.ai" in llm_config.model_endpoint:
-        # override user id for inference.memgpt.ai
-        import uuid
+    # always set user id for openai requests
+    if user_id:
+        data.user = str(user_id)
 
-        data.user = str(uuid.UUID(int=0))
+    if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
+        if not user_id:
+            # override user id for inference.letta.com
+            import uuid
+
+            data.user = str(uuid.UUID(int=0))
+
         data.model = "memgpt-openai"
 
     if use_structured_output and data.tools is not None and len(data.tools) > 0:
         # Convert to structured output style (which has 'strict' and no optionals)
         for tool in data.tools:
-            try:
-                # tool["function"] = convert_to_structured_output(tool["function"])
-                structured_output_version = convert_to_structured_output(tool.function.model_dump())
-                tool.function = FunctionSchema(**structured_output_version)
-            except ValueError as e:
-                warnings.warn(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
+            if supports_structured_output(llm_config):
+                try:
+                    # tool["function"] = convert_to_structured_output(tool["function"])
+                    structured_output_version = convert_to_structured_output(tool.function.model_dump())
+                    tool.function = FunctionSchema(**structured_output_version)
+                except ValueError as e:
+                    warnings.warn(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
     return data
 
 
@@ -190,7 +285,7 @@ def openai_chat_completions_process_stream(
     expect_reasoning_content: bool = True,
     name: Optional[str] = None,
 ) -> ChatCompletionResponse:
-    """Process a streaming completion response, and return a ChatCompletionRequest at the end.
+    """Process a streaming completion response, and return a ChatCompletionResponse at the end.
 
     To "stream" the response in Letta, we want to call a streaming-compatible interface function
     on the chunks received from the OpenAI-compatible server POST SSE response.
@@ -262,6 +357,9 @@ def openai_chat_completions_process_stream(
             url=url, api_key=api_key, chat_completion_request=chat_completion_request
         ):
             assert isinstance(chat_completion_chunk, ChatCompletionChunkResponse), type(chat_completion_chunk)
+            if chat_completion_chunk.choices is None or len(chat_completion_chunk.choices) == 0:
+                warnings.warn(f"No choices in chunk: {chat_completion_chunk}")
+                continue
 
             # NOTE: this assumes that the tool call ID will only appear in one of the chunks during the stream
             if override_tool_call_id:
@@ -284,10 +382,12 @@ def openai_chat_completions_process_stream(
                         expect_reasoning_content=expect_reasoning_content,
                         name=name,
                         message_index=message_idx,
+                        prev_message_type=prev_message_type,
                     )
-                    if message_type != prev_message_type and message_type is not None:
+                    if message_type != prev_message_type and message_type is not None and prev_message_type is not None:
                         message_idx += 1
-                    prev_message_type = message_type
+                    if message_type is not None:
+                        prev_message_type = message_type
                 elif isinstance(stream_interface, AgentRefreshStreamingInterface):
                     stream_interface.process_refresh(chat_completion_response)
                 else:
@@ -350,7 +450,9 @@ def openai_chat_completions_process_stream(
                         if tool_call_delta.id is not None:
                             # TODO assert that we're not overwriting?
                             # TODO += instead of =?
-                            if tool_call_delta.index not in range(len(accum_message.tool_calls)):
+                            try:
+                                accum_message.tool_calls[tool_call_delta.index].id = tool_call_delta.id
+                            except IndexError:
                                 warnings.warn(
                                     f"Tool call index out of range ({tool_call_delta.index})\ncurrent tool calls: {accum_message.tool_calls}\ncurrent delta: {tool_call_delta}"
                                 )
@@ -360,25 +462,21 @@ def openai_chat_completions_process_stream(
                                 accum_message.tool_calls[tool_call_delta.index].id = tool_call_delta.id
                         if tool_call_delta.function is not None:
                             if tool_call_delta.function.name is not None:
-                                # TODO assert that we're not overwriting?
-                                # TODO += instead of =?
-                                if tool_call_delta.index not in range(len(accum_message.tool_calls)):
+                                try:
+                                    accum_message.tool_calls[
+                                        tool_call_delta.index
+                                    ].function.name += tool_call_delta.function.name  # TODO check for parallel tool calls
+                                except IndexError:
                                     warnings.warn(
                                         f"Tool call index out of range ({tool_call_delta.index})\ncurrent tool calls: {accum_message.tool_calls}\ncurrent delta: {tool_call_delta}"
                                     )
-                                    # force index 0
-                                    # accum_message.tool_calls[0].function.name = tool_call_delta.function.name
-                                else:
-                                    accum_message.tool_calls[tool_call_delta.index].function.name = tool_call_delta.function.name
                             if tool_call_delta.function.arguments is not None:
-                                if tool_call_delta.index not in range(len(accum_message.tool_calls)):
+                                try:
+                                    accum_message.tool_calls[tool_call_delta.index].function.arguments += tool_call_delta.function.arguments
+                                except IndexError:
                                     warnings.warn(
                                         f"Tool call index out of range ({tool_call_delta.index})\ncurrent tool calls: {accum_message.tool_calls}\ncurrent delta: {tool_call_delta}"
                                     )
-                                    # force index 0
-                                    # accum_message.tool_calls[0].function.arguments += tool_call_delta.function.arguments
-                                else:
-                                    accum_message.tool_calls[tool_call_delta.index].function.arguments += tool_call_delta.function.arguments
 
                 if message_delta.function_call is not None:
                     raise NotImplementedError(f"Old function_call style not support with stream=True")
@@ -398,6 +496,9 @@ def openai_chat_completions_process_stream(
     except Exception as e:
         if stream_interface:
             stream_interface.stream_end()
+        import traceback
+
+        traceback.print_exc()
         logger.error(f"Parsing ChatCompletion stream failed with error:\n{str(e)}")
         raise e
     finally:
@@ -432,14 +533,27 @@ def openai_chat_completions_request_stream(
     url: str,
     api_key: str,
     chat_completion_request: ChatCompletionRequest,
+    fix_url: bool = False,
 ) -> Generator[ChatCompletionChunkResponse, None, None]:
+
+    # In some cases we may want to double-check the URL and do basic correction, eg:
+    # In Letta config the address for vLLM is w/o a /v1 suffix for simplicity
+    # However if we're treating the server as an OpenAI proxy we want the /v1 suffix on our model hit
+    if fix_url:
+        if not url.endswith("/v1"):
+            url = smart_urljoin(url, "v1")
+
     data = prepare_openai_payload(chat_completion_request)
     data["stream"] = True
     client = OpenAI(api_key=api_key, base_url=url, max_retries=0)
-    stream = client.chat.completions.create(**data)
-    for chunk in stream:
-        # TODO: Use the native OpenAI objects here?
-        yield ChatCompletionChunkResponse(**chunk.model_dump(exclude_none=True))
+    try:
+        stream = client.chat.completions.create(**data)
+        for chunk in stream:
+            # TODO: Use the native OpenAI objects here?
+            yield ChatCompletionChunkResponse(**chunk.model_dump(exclude_none=True))
+    except Exception as e:
+        print(f"Error request stream from /v1/chat/completions, url={url}, data={data}:\n{e}")
+        raise e
 
 
 def openai_chat_completions_request(

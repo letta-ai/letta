@@ -1,15 +1,12 @@
-import os
+import pytest
 
 from letta.schemas.providers import (
-    AnthropicBedrockProvider,
     AnthropicProvider,
     AzureProvider,
     DeepSeekProvider,
     GoogleAIProvider,
     GoogleVertexProvider,
     GroqProvider,
-    MistralProvider,
-    OllamaProvider,
     OpenAIProvider,
     TogetherProvider,
 )
@@ -17,99 +14,209 @@ from letta.settings import model_settings
 
 
 def test_openai():
-    api_key = os.getenv("OPENAI_API_KEY")
-    assert api_key is not None
-    provider = OpenAIProvider(api_key=api_key, base_url=model_settings.openai_api_base)
+    provider = OpenAIProvider(
+        name="openai",
+        api_key=model_settings.openai_api_key,
+        base_url=model_settings.openai_api_base,
+    )
     models = provider.list_llm_models()
-    print(models)
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
+
+    embedding_models = provider.list_embedding_models()
+    assert len(embedding_models) > 0
+    assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
+
+
+@pytest.mark.asyncio
+async def test_openai_async():
+    provider = OpenAIProvider(
+        name="openai",
+        api_key=model_settings.openai_api_key,
+        base_url=model_settings.openai_api_base,
+    )
+    models = await provider.list_llm_models_async()
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
+
+    embedding_models = await provider.list_embedding_models_async()
+    assert len(embedding_models) > 0
+    assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
 
 
 def test_deepseek():
-    api_key = os.getenv("DEEPSEEK_API_KEY")
-    assert api_key is not None
-    provider = DeepSeekProvider(api_key=api_key)
+    provider = DeepSeekProvider(name="deepseek", api_key=model_settings.deepseek_api_key)
     models = provider.list_llm_models()
-    print(models)
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
 
 
 def test_anthropic():
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    assert api_key is not None
-    provider = AnthropicProvider(api_key=api_key)
+    provider = AnthropicProvider(
+        name="anthropic",
+        api_key=model_settings.anthropic_api_key,
+    )
     models = provider.list_llm_models()
-    print(models)
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
+
+
+@pytest.mark.asyncio
+async def test_anthropic_async():
+    provider = AnthropicProvider(
+        name="anthropic",
+        api_key=model_settings.anthropic_api_key,
+    )
+    models = await provider.list_llm_models_async()
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
 
 
 def test_groq():
-    provider = GroqProvider(api_key=os.getenv("GROQ_API_KEY"))
+    provider = GroqProvider(
+        name="groq",
+        api_key=model_settings.groq_api_key,
+    )
     models = provider.list_llm_models()
-    print(models)
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
 
 
 def test_azure():
-    provider = AzureProvider(api_key=os.getenv("AZURE_API_KEY"), base_url=os.getenv("AZURE_BASE_URL"))
+    provider = AzureProvider(
+        name="azure",
+        api_key=model_settings.azure_api_key,
+        base_url=model_settings.azure_base_url,
+        api_version=model_settings.azure_api_version,
+    )
     models = provider.list_llm_models()
-    print([m.model for m in models])
-
-    embed_models = provider.list_embedding_models()
-    print([m.embedding_model for m in embed_models])
-
-
-def test_ollama():
-    base_url = os.getenv("OLLAMA_BASE_URL")
-    assert base_url is not None
-    provider = OllamaProvider(base_url=base_url, default_prompt_formatter=model_settings.default_prompt_formatter, api_key=None)
-    models = provider.list_llm_models()
-    print(models)
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
 
     embedding_models = provider.list_embedding_models()
-    print(embedding_models)
+    assert len(embedding_models) > 0
+    assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
+
+
+# def test_ollama():
+#     provider = OllamaProvider(
+#         name="ollama",
+#         base_url=model_settings.ollama_base_url,
+#         api_key=None,
+#         default_prompt_formatter=model_settings.default_prompt_formatter,
+#     )
+#     models = provider.list_llm_models()
+#     assert len(models) > 0
+#     assert models[0].handle == f"{provider.name}/{models[0].model}"
+#
+#     embedding_models = provider.list_embedding_models()
+#     assert len(embedding_models) > 0
+#     assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
 
 
 def test_googleai():
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = model_settings.gemini_api_key
     assert api_key is not None
-    provider = GoogleAIProvider(api_key=api_key)
+    provider = GoogleAIProvider(
+        name="google_ai",
+        api_key=api_key,
+    )
     models = provider.list_llm_models()
-    print(models)
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
 
-    provider.list_embedding_models()
+    embedding_models = provider.list_embedding_models()
+    assert len(embedding_models) > 0
+    assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
+
+
+@pytest.mark.asyncio
+async def test_googleai_async():
+    api_key = model_settings.gemini_api_key
+    assert api_key is not None
+    provider = GoogleAIProvider(
+        name="google_ai",
+        api_key=api_key,
+    )
+    models = await provider.list_llm_models_async()
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
+
+    embedding_models = await provider.list_embedding_models_async()
+    assert len(embedding_models) > 0
+    assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
 
 
 def test_google_vertex():
-    provider = GoogleVertexProvider(google_cloud_project=os.getenv("GCP_PROJECT_ID"), google_cloud_location=os.getenv("GCP_REGION"))
+    provider = GoogleVertexProvider(
+        name="google_vertex",
+        google_cloud_project=model_settings.google_cloud_project,
+        google_cloud_location=model_settings.google_cloud_location,
+    )
     models = provider.list_llm_models()
-    print(models)
-    print([m.model for m in models])
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
 
     embedding_models = provider.list_embedding_models()
-    print([m.embedding_model for m in embedding_models])
-
-
-def test_mistral():
-    provider = MistralProvider(api_key=os.getenv("MISTRAL_API_KEY"))
-    models = provider.list_llm_models()
-    print([m.model for m in models])
+    assert len(embedding_models) > 0
+    assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
 
 
 def test_together():
-    provider = TogetherProvider(api_key=os.getenv("TOGETHER_API_KEY"), default_prompt_formatter="chatml")
+    provider = TogetherProvider(
+        name="together",
+        api_key=model_settings.together_api_key,
+        default_prompt_formatter=model_settings.default_prompt_formatter,
+    )
     models = provider.list_llm_models()
-    print([m.model for m in models])
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
 
-    embedding_models = provider.list_embedding_models()
-    print([m.embedding_model for m in embedding_models])
+    # TODO: We don't have embedding models on together for CI
+    # embedding_models = provider.list_embedding_models()
+    # assert len(embedding_models) > 0
+    # assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
 
 
-def test_anthropic_bedrock():
-    from letta.settings import model_settings
+@pytest.mark.asyncio
+async def test_together_async():
+    provider = TogetherProvider(
+        name="together",
+        api_key=model_settings.together_api_key,
+        default_prompt_formatter=model_settings.default_prompt_formatter,
+    )
+    models = await provider.list_llm_models_async()
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
 
-    provider = AnthropicBedrockProvider(aws_region=model_settings.aws_region)
+    # TODO: We don't have embedding models on together for CI
+    # embedding_models = provider.list_embedding_models()
+    # assert len(embedding_models) > 0
+    # assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
+
+
+# TODO: Add back in, difficulty adding this to CI properly, need boto credentials
+# def test_anthropic_bedrock():
+#     from letta.settings import model_settings
+#
+#     provider = AnthropicBedrockProvider(name="bedrock", aws_region=model_settings.aws_region)
+#     models = provider.list_llm_models()
+#     assert len(models) > 0
+#     assert models[0].handle == f"{provider.name}/{models[0].model}"
+#
+#     embedding_models = provider.list_embedding_models()
+#     assert len(embedding_models) > 0
+#     assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
+
+
+def test_custom_anthropic():
+    provider = AnthropicProvider(
+        name="custom_anthropic",
+        api_key=model_settings.anthropic_api_key,
+    )
     models = provider.list_llm_models()
-    print([m.model for m in models])
-
-    embedding_models = provider.list_embedding_models()
-    print([m.embedding_model for m in embedding_models])
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
 
 
 # def test_vllm():

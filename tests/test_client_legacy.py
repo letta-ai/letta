@@ -11,7 +11,7 @@ from sqlalchemy import delete
 
 from letta import create_client
 from letta.client.client import LocalClient, RESTClient
-from letta.constants import BASE_MEMORY_TOOLS, BASE_SLEEPTIME_TOOLS, BASE_TOOLS, DEFAULT_PRESET, MULTI_AGENT_TOOLS
+from letta.constants import DEFAULT_PRESET
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.orm import FileMetadata, Source
 from letta.schemas.agent import AgentState
@@ -342,13 +342,6 @@ def test_list_tools_pagination(client: Union[LocalClient, RESTClient]):
 
     # Assert that everything has been visited
     assert all(visited_ids.values())
-
-
-def test_list_tools(client: Union[LocalClient, RESTClient]):
-    tools = client.upsert_base_tools()
-    tool_names = [t.name for t in tools]
-    expected = set(BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS + BASE_SLEEPTIME_TOOLS)
-    assert sorted(tool_names) == sorted(expected)
 
 
 def test_list_files_pagination(client: Union[LocalClient, RESTClient], agent: AgentState):

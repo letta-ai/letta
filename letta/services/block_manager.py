@@ -1,27 +1,26 @@
-import os
-from typing import List, Optional
+import asyncio
+from typing import Dict, List, Optional
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from letta.log import get_logger
 from letta.orm.block import Block as BlockModel
 from letta.orm.block_history import BlockHistory
 from letta.orm.enums import ActorType
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.block import Block as PydanticBlock
-from letta.schemas.block import BlockUpdate, Human, Persona
+from letta.schemas.block import BlockUpdate
 from letta.schemas.user import User as PydanticUser
-from letta.utils import enforce_types, list_human_files, list_persona_files
+from letta.server.db import db_registry
+from letta.utils import enforce_types
+
+logger = get_logger(__name__)
 
 
 class BlockManager:
     """Manager class to handle business logic related to Blocks."""
-
-    def __init__(self):
-        # Fetching the db_context similarly as in ToolManager
-        from letta.server.db import db_context
-
-        self.session_maker = db_context
 
     @enforce_types
     def create_or_update_block(self, block: PydanticBlock, actor: PydanticUser) -> PydanticBlock:
@@ -31,7 +30,7 @@ class BlockManager:
             update_data = BlockUpdate(**block.model_dump(to_orm=True, exclude_none=True))
             self.update_block(block.id, update_data, actor)
         else:
-            with self.session_maker() as session:
+            with db_registry.session() as session:
                 data = block.model_dump(to_orm=True, exclude_none=True)
                 block = BlockModel(**data, organization_id=actor.organization_id)
                 block.create(session, actor=actor)
@@ -50,7 +49,7 @@ class BlockManager:
         if not blocks:
             return []
 
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             block_models = [
                 BlockModel(**block.model_dump(to_orm=True, exclude_none=True), organization_id=actor.organization_id) for block in blocks
             ]
@@ -65,7 +64,7 @@ class BlockManager:
         """Update a block by its ID with the given BlockUpdate object."""
         # Safety check for block
 
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
             update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
 
@@ -78,52 +77,139 @@ class BlockManager:
     @enforce_types
     def delete_block(self, block_id: str, actor: PydanticUser) -> PydanticBlock:
         """Delete a block by its ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             block = BlockModel.read(db_session=session, identifier=block_id)
             block.hard_delete(db_session=session, actor=actor)
             return block.to_pydantic()
 
     @enforce_types
-    def get_blocks(
+    async def get_blocks_async(
         self,
         actor: PydanticUser,
         label: Optional[str] = None,
         is_template: Optional[bool] = None,
         template_name: Optional[str] = None,
-        identifier_keys: Optional[List[str]] = None,
         identity_id: Optional[str] = None,
-        id: Optional[str] = None,
-        after: Optional[str] = None,
+        identifier_keys: Optional[List[str]] = None,
         limit: Optional[int] = 50,
     ) -> List[PydanticBlock]:
-        """Retrieve blocks based on various optional filters."""
-        with self.session_maker() as session:
-            # Prepare filters
-            filters = {"organization_id": actor.organization_id}
-            if label:
-                filters["label"] = label
-            if is_template is not None:
-                filters["is_template"] = is_template
-            if template_name:
-                filters["template_name"] = template_name
-            if id:
-                filters["id"] = id
+        """Async version of get_blocks method. Retrieve blocks based on various optional filters."""
+        from sqlalchemy import select
+        from sqlalchemy.orm import noload
 
-            blocks = BlockModel.list(
-                db_session=session,
-                after=after,
-                limit=limit,
-                identifier_keys=identifier_keys,
-                identity_id=identity_id,
-                **filters,
-            )
+        from letta.orm.sqlalchemy_base import AccessType
+
+        async with db_registry.async_session() as session:
+            # Start with a basic query
+            query = select(BlockModel)
+
+            # Explicitly avoid loading relationships
+            query = query.options(noload(BlockModel.agents), noload(BlockModel.identities), noload(BlockModel.groups))
+
+            # Apply access control
+            query = BlockModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
+
+            # Add filters
+            query = query.where(BlockModel.organization_id == actor.organization_id)
+            if label:
+                query = query.where(BlockModel.label == label)
+
+            if is_template is not None:
+                query = query.where(BlockModel.is_template == is_template)
+
+            if template_name:
+                query = query.where(BlockModel.template_name == template_name)
+
+            if identifier_keys:
+                query = (
+                    query.join(BlockModel.identities)
+                    .filter(BlockModel.identities.property.mapper.class_.identifier_key.in_(identifier_keys))
+                    .distinct(BlockModel.id)
+                )
+
+            if identity_id:
+                query = (
+                    query.join(BlockModel.identities)
+                    .filter(BlockModel.identities.property.mapper.class_.id == identity_id)
+                    .distinct(BlockModel.id)
+                )
+
+            # Add limit
+            if limit:
+                query = query.limit(limit)
+
+            # Execute the query
+            result = await session.execute(query)
+            blocks = result.scalars().all()
+
+            return [block.to_pydantic() for block in blocks]
+
+    @enforce_types
+    async def get_blocks_async(
+        self,
+        actor: PydanticUser,
+        label: Optional[str] = None,
+        is_template: Optional[bool] = None,
+        template_name: Optional[str] = None,
+        identity_id: Optional[str] = None,
+        identifier_keys: Optional[List[str]] = None,
+        limit: Optional[int] = 50,
+    ) -> List[PydanticBlock]:
+        """Async version of get_blocks method. Retrieve blocks based on various optional filters."""
+        from sqlalchemy import select
+        from sqlalchemy.orm import noload
+
+        from letta.orm.sqlalchemy_base import AccessType
+
+        async with db_registry.async_session() as session:
+            # Start with a basic query
+            query = select(BlockModel)
+
+            # Explicitly avoid loading relationships
+            query = query.options(noload(BlockModel.agents), noload(BlockModel.identities), noload(BlockModel.groups))
+
+            # Apply access control
+            query = BlockModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
+
+            # Add filters
+            query = query.where(BlockModel.organization_id == actor.organization_id)
+            if label:
+                query = query.where(BlockModel.label == label)
+
+            if is_template is not None:
+                query = query.where(BlockModel.is_template == is_template)
+
+            if template_name:
+                query = query.where(BlockModel.template_name == template_name)
+
+            if identifier_keys:
+                query = (
+                    query.join(BlockModel.identities)
+                    .filter(BlockModel.identities.property.mapper.class_.identifier_key.in_(identifier_keys))
+                    .distinct(BlockModel.id)
+                )
+
+            if identity_id:
+                query = (
+                    query.join(BlockModel.identities)
+                    .filter(BlockModel.identities.property.mapper.class_.id == identity_id)
+                    .distinct(BlockModel.id)
+                )
+
+            # Add limit
+            if limit:
+                query = query.limit(limit)
+
+            # Execute the query
+            result = await session.execute(query)
+            blocks = result.scalars().all()
 
             return [block.to_pydantic() for block in blocks]
 
     @enforce_types
     def get_block_by_id(self, block_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticBlock]:
         """Retrieve a block by its name."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             try:
                 block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
                 return block.to_pydantic()
@@ -131,39 +217,72 @@ class BlockManager:
                 return None
 
     @enforce_types
-    def get_all_blocks_by_ids(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
-        """Retrieve blocks by their ids."""
-        with self.session_maker() as session:
-            blocks = [block.to_pydantic() for block in BlockModel.read_multiple(db_session=session, identifiers=block_ids, actor=actor)]
-            # backwards compatibility. previous implementation added None for every block not found.
-            blocks.extend([None for _ in range(len(block_ids) - len(blocks))])
-            return blocks
+    async def get_all_blocks_by_ids_async(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
+        """Retrieve blocks by their ids without loading unnecessary relationships. Async implementation."""
+        from sqlalchemy import select
+        from sqlalchemy.orm import noload
+
+        from letta.orm.sqlalchemy_base import AccessType
+
+        if not block_ids:
+            return []
+
+        async with db_registry.async_session() as session:
+            # Start with a basic query
+            query = select(BlockModel)
+
+            # Add ID filter
+            query = query.where(BlockModel.id.in_(block_ids))
+
+            # Explicitly avoid loading relationships
+            query = query.options(noload(BlockModel.agents), noload(BlockModel.identities), noload(BlockModel.groups))
+
+            # Apply access control if actor is provided
+            if actor:
+                query = BlockModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
+
+            # Add soft delete filter if applicable
+            if hasattr(BlockModel, "is_deleted"):
+                query = query.where(BlockModel.is_deleted == False)
+
+            # Execute the query
+            result = await session.execute(query)
+            blocks = result.scalars().all()
+
+            # Convert to Pydantic models
+            pydantic_blocks = [block.to_pydantic() for block in blocks]
+
+            # For backward compatibility, add None for missing blocks
+            if len(pydantic_blocks) < len(block_ids):
+                {block.id for block in pydantic_blocks}
+                result_blocks = []
+                for block_id in block_ids:
+                    block = next((b for b in pydantic_blocks if b.id == block_id), None)
+                    result_blocks.append(block)
+                return result_blocks
+
+            return pydantic_blocks
 
     @enforce_types
-    def add_default_blocks(self, actor: PydanticUser):
-        for persona_file in list_persona_files():
-            with open(persona_file, "r", encoding="utf-8") as f:
-                text = f.read()
-            name = os.path.basename(persona_file).replace(".txt", "")
-            self.create_or_update_block(Persona(template_name=name, value=text, is_template=True), actor=actor)
-
-        for human_file in list_human_files():
-            with open(human_file, "r", encoding="utf-8") as f:
-                text = f.read()
-            name = os.path.basename(human_file).replace(".txt", "")
-            self.create_or_update_block(Human(template_name=name, value=text, is_template=True), actor=actor)
-
-    @enforce_types
-    def get_agents_for_block(self, block_id: str, actor: PydanticUser) -> List[PydanticAgentState]:
+    async def get_agents_for_block_async(self, block_id: str, actor: PydanticUser) -> List[PydanticAgentState]:
         """
         Retrieve all agents associated with a given block.
         """
-        with self.session_maker() as session:
-            block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
+        async with db_registry.async_session() as session:
+            block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
             agents_orm = block.agents
-            agents_pydantic = [agent.to_pydantic() for agent in agents_orm]
+            return await asyncio.gather(*[agent.to_pydantic_async() for agent in agents_orm])
 
-            return agents_pydantic
+    @enforce_types
+    def size(
+        self,
+        actor: PydanticUser,
+    ) -> int:
+        """
+        Get the total count of blocks for the given user.
+        """
+        with db_registry.session() as session:
+            return BlockModel.size(db_session=session, actor=actor)
 
     # Block History Functions
 
@@ -185,7 +304,7 @@ class BlockManager:
           strictly linear history.
         - A single commit at the end ensures atomicity.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # 1) Load the Block
             if use_preloaded_block is not None:
                 block = session.merge(use_preloaded_block)
@@ -277,7 +396,7 @@ class BlockManager:
         If older sequences have been pruned, we jump to the largest sequence
         number that is still < current_seq.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # 1) Load the current block
             block = (
                 session.merge(use_preloaded_block)
@@ -319,7 +438,7 @@ class BlockManager:
         If some middle checkpoints have been pruned, we jump to the smallest
         sequence > current_seq that remains.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             block = (
                 session.merge(use_preloaded_block)
                 if use_preloaded_block
@@ -349,3 +468,47 @@ class BlockManager:
 
             session.commit()
             return block.to_pydantic()
+
+    @enforce_types
+    async def bulk_update_block_values_async(
+        self, updates: Dict[str, str], actor: PydanticUser, return_hydrated: bool = False
+    ) -> Optional[List[PydanticBlock]]:
+        """
+        Bulk-update the `value` field for multiple blocks in one transaction.
+
+        Args:
+            updates: mapping of block_id -> new value
+            actor:   the user performing the update (for org scoping, permissions, audit)
+            return_hydrated: whether to return the pydantic Block objects that were updated
+
+        Returns:
+            the updated Block objects as Pydantic schemas
+
+        Raises:
+            NoResultFound if any block_id doesn't exist or isn't visible to this actor
+            ValueError     if any new value exceeds its block's limit
+        """
+        async with db_registry.async_session() as session:
+            query = select(BlockModel).where(BlockModel.id.in_(updates.keys()), BlockModel.organization_id == actor.organization_id)
+            result = await session.execute(query)
+            blocks = result.scalars().all()
+
+            found_ids = {b.id for b in blocks}
+            missing = set(updates.keys()) - found_ids
+            if missing:
+                logger.warning(f"Block IDs not found or inaccessible, skipping during bulk update: {missing!r}")
+
+            for block in blocks:
+                new_val = updates[block.id]
+                if len(new_val) > block.limit:
+                    logger.warning(f"Value length ({len(new_val)}) exceeds limit " f"({block.limit}) for block {block.id!r}, truncating...")
+                    new_val = new_val[: block.limit]
+                block.value = new_val
+
+            await session.commit()
+
+            if return_hydrated:
+                # TODO: implement for async
+                pass
+
+            return None

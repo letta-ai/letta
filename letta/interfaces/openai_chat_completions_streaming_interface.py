@@ -5,7 +5,7 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk, Choice,
 
 from letta.constants import PRE_EXECUTION_MESSAGE_ARG
 from letta.interfaces.utils import _format_sse_chunk
-from letta.server.rest_api.optimistic_json_parser import OptimisticJSONParser
+from letta.server.rest_api.json_parser import OptimisticJSONParser
 
 
 class OpenAIChatCompletionsStreamingInterface:
@@ -35,18 +35,19 @@ class OpenAIChatCompletionsStreamingInterface:
         """
         async with stream:
             async for chunk in stream:
-                choice = chunk.choices[0]
-                delta = choice.delta
-                finish_reason = choice.finish_reason
+                if chunk.choices:
+                    choice = chunk.choices[0]
+                    delta = choice.delta
+                    finish_reason = choice.finish_reason
 
-                async for sse_chunk in self._process_content(delta, chunk):
-                    yield sse_chunk
+                    async for sse_chunk in self._process_content(delta, chunk):
+                        yield sse_chunk
 
-                async for sse_chunk in self._process_tool_calls(delta, chunk):
-                    yield sse_chunk
+                    async for sse_chunk in self._process_tool_calls(delta, chunk):
+                        yield sse_chunk
 
-                if self._handle_finish_reason(finish_reason):
-                    break
+                    if self._handle_finish_reason(finish_reason):
+                        break
 
     async def _process_content(self, delta: ChoiceDelta, chunk: ChatCompletionChunk) -> AsyncGenerator[str, None]:
         """Processes regular content tokens and streams them."""
@@ -78,25 +79,29 @@ class OpenAIChatCompletionsStreamingInterface:
         """Parses and streams pre-execution messages if they have changed."""
         parsed_args = self.optimistic_json_parser.parse(self.tool_call_args_str)
 
-        if parsed_args.get(PRE_EXECUTION_MESSAGE_ARG) and self.current_parsed_json_result.get(PRE_EXECUTION_MESSAGE_ARG) != parsed_args.get(
+        if parsed_args.get(PRE_EXECUTION_MESSAGE_ARG) and parsed_args[PRE_EXECUTION_MESSAGE_ARG] != self.current_parsed_json_result.get(
             PRE_EXECUTION_MESSAGE_ARG
         ):
-            if parsed_args != self.current_parsed_json_result:
-                self.current_parsed_json_result = parsed_args
-                synthetic_chunk = ChatCompletionChunk(
+            # Extract old and new message content
+            old = self.current_parsed_json_result.get(PRE_EXECUTION_MESSAGE_ARG, "")
+            new = parsed_args[PRE_EXECUTION_MESSAGE_ARG]
+
+            # Compute the new content by slicing off the old prefix
+            content = new[len(old) :] if old else new
+
+            # Update current state
+            self.current_parsed_json_result = parsed_args
+
+            # Yield the formatted SSE chunk
+            yield _format_sse_chunk(
+                ChatCompletionChunk(
                     id=chunk.id,
                     object=chunk.object,
                     created=chunk.created,
                     model=chunk.model,
-                    choices=[
-                        Choice(
-                            index=0,
-                            delta=ChoiceDelta(content=tool_call.function.arguments, role="assistant"),
-                            finish_reason=None,
-                        )
-                    ],
+                    choices=[Choice(index=0, delta=ChoiceDelta(content=content, role="assistant"), finish_reason=None)],
                 )
-                yield _format_sse_chunk(synthetic_chunk)
+            )
 
     def _handle_finish_reason(self, finish_reason: Optional[str]) -> bool:
         """Handles the finish reason and determines if streaming should stop."""

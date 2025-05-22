@@ -10,16 +10,18 @@ from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.llm_config import LLMConfig
 
 
-class LLMBatchItem(OrmMetadataBase, validate_assignment=True):
+class LLMBatchItemBase(OrmMetadataBase, validate_assignment=True):
+    __id_prefix__ = "batch_item"
+
+
+class LLMBatchItem(LLMBatchItemBase, validate_assignment=True):
     """
     Represents a single agent's LLM request within a batch.
 
     This object captures the configuration, execution status, and eventual result of one agent's request within a larger LLM batch job.
     """
 
-    __id_prefix__ = "batch_item"
-
-    id: Optional[str] = Field(None, description="The id of the batch item. Assigned by the database.")
+    id: str = LLMBatchItemBase.generate_id_field()
     llm_batch_id: str = Field(..., description="The id of the parent LLM batch job this item belongs to.")
     agent_id: str = Field(..., description="The id of the agent associated with this LLM request.")
 

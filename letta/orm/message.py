@@ -44,6 +44,10 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     sender_id: Mapped[Optional[str]] = mapped_column(
         nullable=True, doc="The id of the sender of the message, can be an identity id or agent id"
     )
+    batch_item_id: Mapped[Optional[str]] = mapped_column(
+        nullable=True,
+        doc="The id of the LLMBatchItem that this message is associated with",
+    )
 
     # Monotonically increasing sequence for efficient/correct listing
     sequence_id: Mapped[int] = mapped_column(

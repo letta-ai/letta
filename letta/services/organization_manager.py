@@ -4,6 +4,7 @@ from letta.orm.errors import NoResultFound
 from letta.orm.organization import Organization as OrganizationModel
 from letta.schemas.organization import Organization as PydanticOrganization
 from letta.schemas.organization import OrganizationUpdate
+from letta.server.db import db_registry
 from letta.utils import enforce_types
 
 
@@ -13,14 +14,6 @@ class OrganizationManager:
     DEFAULT_ORG_ID = "org-00000000-0000-4000-8000-000000000000"
     DEFAULT_ORG_NAME = "default_org"
 
-    def __init__(self):
-        # TODO: Please refactor this out
-        # I am currently working on a ORM refactor and would like to make a more minimal set of changes
-        # - Matt
-        from letta.server.db import db_context
-
-        self.session_maker = db_context
-
     @enforce_types
     def get_default_organization(self) -> PydanticOrganization:
         """Fetch the default organization."""
@@ -29,7 +22,7 @@ class OrganizationManager:
     @enforce_types
     def get_organization_by_id(self, org_id: str) -> Optional[PydanticOrganization]:
         """Fetch an organization by ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             organization = OrganizationModel.read(db_session=session, identifier=org_id)
             return organization.to_pydantic()
 
@@ -44,7 +37,7 @@ class OrganizationManager:
 
     @enforce_types
     def _create_organization(self, pydantic_org: PydanticOrganization) -> PydanticOrganization:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             org = OrganizationModel(**pydantic_org.model_dump(to_orm=True))
             org.create(session)
             return org.to_pydantic()
@@ -57,7 +50,7 @@ class OrganizationManager:
     @enforce_types
     def update_organization_name_using_id(self, org_id: str, name: Optional[str] = None) -> PydanticOrganization:
         """Update an organization."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             org = OrganizationModel.read(db_session=session, identifier=org_id)
             if name:
                 org.name = name
@@ -67,7 +60,7 @@ class OrganizationManager:
     @enforce_types
     def update_organization(self, org_id: str, org_update: OrganizationUpdate) -> PydanticOrganization:
         """Update an organization."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             org = OrganizationModel.read(db_session=session, identifier=org_id)
             if org_update.name:
                 org.name = org_update.name
@@ -79,14 +72,14 @@ class OrganizationManager:
     @enforce_types
     def delete_organization_by_id(self, org_id: str):
         """Delete an organization by marking it as deleted."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             organization = OrganizationModel.read(db_session=session, identifier=org_id)
             organization.hard_delete(session)
 
     @enforce_types
     def list_organizations(self, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticOrganization]:
         """List all organizations with optional pagination."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             organizations = OrganizationModel.list(
                 db_session=session,
                 after=after,

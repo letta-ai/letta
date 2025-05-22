@@ -2,6 +2,7 @@ import uuid
 from typing import TYPE_CHECKING, List, Optional, Set
 
 from sqlalchemy import JSON, Boolean, Index, String
+from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.block import Block
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
     from letta.orm.tool import Tool
 
 
-class Agent(SqlalchemyBase, OrganizationMixin):
+class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
     __tablename__ = "agents"
     __pydantic_model__ = PydanticAgentState
     __table_args__ = (Index("ix_agents_created_at", "created_at", "id"),)
@@ -198,5 +199,105 @@ class Agent(SqlalchemyBase, OrganizationMixin):
             resolver = optional_fields.get(field_name)
             if resolver:
                 state[field_name] = resolver()
+
+        return self.__pydantic_model__(**state)
+
+    async def to_pydantic_async(self, include_relationships: Optional[Set[str]] = None) -> PydanticAgentState:
+        """
+        Converts the SQLAlchemy Agent model into its Pydantic counterpart.
+
+        The following base fields are always included:
+          - id, agent_type, name, description, system, message_ids, metadata_,
+            llm_config, embedding_config, project_id, template_id, base_template_id,
+            tool_rules, message_buffer_autoclear, tags
+
+        Everything else (e.g., tools, sources, memory, etc.) is optional and only
+        included if specified in `include_fields`.
+
+        Args:
+            include_relationships (Optional[Set[str]]):
+                A set of additional field names to include in the output. If None or empty,
+                no extra fields are loaded beyond the base fields.
+
+        Returns:
+            PydanticAgentState: The Pydantic representation of the agent.
+        """
+        # Base fields: always included
+        state = {
+            "id": self.id,
+            "agent_type": self.agent_type,
+            "name": self.name,
+            "description": self.description,
+            "system": self.system,
+            "message_ids": self.message_ids,
+            "metadata": self.metadata_,  # Exposed as 'metadata' to Pydantic
+            "llm_config": self.llm_config,
+            "embedding_config": self.embedding_config,
+            "project_id": self.project_id,
+            "template_id": self.template_id,
+            "base_template_id": self.base_template_id,
+            "tool_rules": self.tool_rules,
+            "message_buffer_autoclear": self.message_buffer_autoclear,
+            "created_by_id": self.created_by_id,
+            "last_updated_by_id": self.last_updated_by_id,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            # optional field defaults
+            "tags": [],
+            "tools": [],
+            "sources": [],
+            "memory": Memory(blocks=[]),
+            "identity_ids": [],
+            "multi_agent_group": None,
+            "tool_exec_environment_variables": [],
+            "enable_sleeptime": None,
+            "response_format": self.response_format,
+        }
+        optional_fields = {
+            "tags": [],
+            "tools": [],
+            "sources": [],
+            "memory": Memory(blocks=[]),
+            "identity_ids": [],
+            "multi_agent_group": None,
+            "tool_exec_environment_variables": [],
+            "enable_sleeptime": None,
+            "response_format": self.response_format,
+        }
+
+        # Initialize include_relationships to an empty set if it's None
+        include_relationships = set(optional_fields.keys() if include_relationships is None else include_relationships)
+
+        # Only load requested relationships
+        if "tags" in include_relationships:
+            tags = await self.awaitable_attrs.tags
+            state["tags"] = [t.tag for t in tags]
+
+        if "tools" in include_relationships:
+            state["tools"] = await self.awaitable_attrs.tools
+
+        if "sources" in include_relationships:
+            sources = await self.awaitable_attrs.sources
+            state["sources"] = [s.to_pydantic() for s in sources]
+
+        if "memory" in include_relationships:
+            memory_blocks = await self.awaitable_attrs.core_memory
+            state["memory"] = Memory(
+                blocks=[b.to_pydantic() for b in memory_blocks],
+                prompt_template=get_prompt_template_for_agent_type(self.agent_type),
+            )
+
+        if "identity_ids" in include_relationships:
+            identities = await self.awaitable_attrs.identities
+            state["identity_ids"] = [i.id for i in identities]
+
+        if "multi_agent_group" in include_relationships:
+            state["multi_agent_group"] = await self.awaitable_attrs.multi_agent_group
+
+        if "tool_exec_environment_variables" in include_relationships:
+            state["tool_exec_environment_variables"] = await self.awaitable_attrs.tool_exec_environment_variables
+
+        if "enable_sleeptime" in include_relationships:
+            state["enable_sleeptime"] = await self.awaitable_attrs.enable_sleeptime
 
         return self.__pydantic_model__(**state)

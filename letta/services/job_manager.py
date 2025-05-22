@@ -24,24 +24,19 @@ from letta.schemas.run import Run as PydanticRun
 from letta.schemas.step import Step as PydanticStep
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
+from letta.server.db import db_registry
 from letta.utils import enforce_types
 
 
 class JobManager:
     """Manager class to handle business logic related to Jobs."""
 
-    def __init__(self):
-        # Fetching the db_context similarly as in OrganizationManager
-        from letta.server.db import db_context
-
-        self.session_maker = db_context
-
     @enforce_types
     def create_job(
         self, pydantic_job: Union[PydanticJob, PydanticRun, PydanticBatchJob], actor: PydanticUser
     ) -> Union[PydanticJob, PydanticRun, PydanticBatchJob]:
         """Create a new job based on the JobCreate schema."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Associate the job with the user
             pydantic_job.user_id = actor.id
             job_data = pydantic_job.model_dump(to_orm=True)
@@ -50,9 +45,22 @@ class JobManager:
         return job.to_pydantic()
 
     @enforce_types
+    async def create_job_async(
+        self, pydantic_job: Union[PydanticJob, PydanticRun, PydanticBatchJob], actor: PydanticUser
+    ) -> Union[PydanticJob, PydanticRun, PydanticBatchJob]:
+        """Create a new job based on the JobCreate schema."""
+        async with db_registry.async_session() as session:
+            # Associate the job with the user
+            pydantic_job.user_id = actor.id
+            job_data = pydantic_job.model_dump(to_orm=True)
+            job = JobModel(**job_data)
+            await job.create_async(session, actor=actor)  # Save job in the database
+            return job.to_pydantic()
+
+    @enforce_types
     def update_job_by_id(self, job_id: str, job_update: JobUpdate, actor: PydanticUser) -> PydanticJob:
         """Update a job by its ID with the given JobUpdate object."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Fetch the job by ID
             job = self._verify_job_access(session=session, job_id=job_id, actor=actor, access=["write"])
 
@@ -64,7 +72,7 @@ class JobManager:
                 setattr(job, key, value)
 
             if update_data.get("status") == JobStatus.completed and not job.completed_at:
-                job.completed_at = get_utc_time()
+                job.completed_at = get_utc_time().replace(tzinfo=None)
                 if job.callback_url:
                     self._dispatch_callback(session, job)
 
@@ -74,11 +82,43 @@ class JobManager:
             return job.to_pydantic()
 
     @enforce_types
+    async def update_job_by_id_async(self, job_id: str, job_update: JobUpdate, actor: PydanticUser) -> PydanticJob:
+        """Update a job by its ID with the given JobUpdate object asynchronously."""
+        async with db_registry.async_session() as session:
+            # Fetch the job by ID
+            job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor, access=["write"])
+
+            # Update job attributes with only the fields that were explicitly set
+            update_data = job_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+
+            # Automatically update the completion timestamp if status is set to 'completed'
+            for key, value in update_data.items():
+                setattr(job, key, value)
+
+            if update_data.get("status") == JobStatus.completed and not job.completed_at:
+                job.completed_at = get_utc_time().replace(tzinfo=None)
+                if job.callback_url:
+                    await self._dispatch_callback_async(session, job)
+
+            # Save the updated job to the database
+            await job.update_async(db_session=session, actor=actor)
+
+            return job.to_pydantic()
+
+    @enforce_types
     def get_job_by_id(self, job_id: str, actor: PydanticUser) -> PydanticJob:
         """Fetch a job by its ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Retrieve job by ID using the Job model's read method
             job = JobModel.read(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.USER)
+            return job.to_pydantic()
+
+    @enforce_types
+    async def get_job_by_id_async(self, job_id: str, actor: PydanticUser) -> PydanticJob:
+        """Fetch a job by its ID asynchronously."""
+        async with db_registry.async_session() as session:
+            # Retrieve job by ID using the Job model's read method
+            job = await JobModel.read_async(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.USER)
             return job.to_pydantic()
 
     @enforce_types
@@ -93,7 +133,7 @@ class JobManager:
         ascending: bool = True,
     ) -> List[PydanticJob]:
         """List all jobs with optional pagination and status filter."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             filter_kwargs = {"user_id": actor.id, "job_type": job_type}
 
             # Add status filter if provided
@@ -111,9 +151,38 @@ class JobManager:
             return [job.to_pydantic() for job in jobs]
 
     @enforce_types
+    async def list_jobs_async(
+        self,
+        actor: PydanticUser,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        statuses: Optional[List[JobStatus]] = None,
+        job_type: JobType = JobType.JOB,
+        ascending: bool = True,
+    ) -> List[PydanticJob]:
+        """List all jobs with optional pagination and status filter."""
+        async with db_registry.async_session() as session:
+            filter_kwargs = {"user_id": actor.id, "job_type": job_type}
+
+            # Add status filter if provided
+            if statuses:
+                filter_kwargs["status"] = statuses
+
+            jobs = await JobModel.list_async(
+                db_session=session,
+                before=before,
+                after=after,
+                limit=limit,
+                ascending=ascending,
+                **filter_kwargs,
+            )
+            return [job.to_pydantic() for job in jobs]
+
+    @enforce_types
     def delete_job_by_id(self, job_id: str, actor: PydanticUser) -> PydanticJob:
         """Delete a job by its ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             job = self._verify_job_access(session=session, job_id=job_id, actor=actor)
             job.hard_delete(db_session=session, actor=actor)
             return job.to_pydantic()
@@ -147,7 +216,7 @@ class JobManager:
         Raises:
             NoResultFound: If the job does not exist or user does not have access
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Build filters
             filters = {}
             if role is not None:
@@ -195,7 +264,7 @@ class JobManager:
         Raises:
             NoResultFound: If the job does not exist or user does not have access
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Build filters
             filters = {}
             filters["job_id"] = job_id
@@ -227,7 +296,7 @@ class JobManager:
         Raises:
             NoResultFound: If the job does not exist or user does not have access
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # First verify job exists and user has access
             self._verify_job_access(session, job_id, actor, access=["write"])
 
@@ -251,7 +320,7 @@ class JobManager:
         Raises:
             NoResultFound: If the job does not exist or user does not have access
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # First verify job exists and user has access
             self._verify_job_access(session, job_id, actor)
 
@@ -293,7 +362,7 @@ class JobManager:
         Raises:
             NoResultFound: If the job does not exist or user does not have access
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # First verify job exists and user has access
             self._verify_job_access(session, job_id, actor, access=["write"])
 
@@ -443,6 +512,35 @@ class JobManager:
             raise NoResultFound(f"Job with id {job_id} does not exist or user does not have access")
         return job
 
+    async def _verify_job_access_async(
+        self,
+        session: Session,
+        job_id: str,
+        actor: PydanticUser,
+        access: List[Literal["read", "write", "delete"]] = ["read"],
+    ) -> JobModel:
+        """
+        Verify that a job exists and the user has the required access.
+
+        Args:
+            session: The database session
+            job_id: The ID of the job to verify
+            actor: The user making the request
+
+        Returns:
+            The job if it exists and the user has access
+
+        Raises:
+            NoResultFound: If the job does not exist or user does not have access
+        """
+        job_query = select(JobModel).where(JobModel.id == job_id)
+        job_query = JobModel.apply_access_predicate(job_query, actor, access, AccessType.USER)
+        result = await session.execute(job_query)
+        job = result.scalar_one_or_none()
+        if not job:
+            raise NoResultFound(f"Job with id {job_id} does not exist or user does not have access")
+        return job
+
     def _get_run_request_config(self, run_id: str) -> LettaRequestConfig:
         """
         Get the request config for a job.
@@ -453,7 +551,7 @@ class JobManager:
         Returns:
             The request config for the job
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             job = session.query(JobModel).filter(JobModel.id == run_id).first()
             request_config = job.request_config or LettaRequestConfig()
         return request_config
@@ -481,3 +579,28 @@ class JobManager:
 
         session.add(job)
         session.commit()
+
+    async def _dispatch_callback_async(self, session, job: JobModel) -> None:
+        """
+        POST a standard JSON payload to job.callback_url
+        and record timestamp + HTTP status asynchronously.
+        """
+
+        payload = {
+            "job_id": job.id,
+            "status": job.status,
+            "completed_at": job.completed_at.isoformat(),
+        }
+        try:
+            import httpx
+
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(job.callback_url, json=payload, timeout=5.0)
+                job.callback_sent_at = get_utc_time()
+                job.callback_status_code = resp.status_code
+
+        except Exception:
+            return
+
+        session.add(job)
+        await session.commit()

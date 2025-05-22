@@ -69,7 +69,7 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
         else:
             sbx_config = self.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=self.user)
         local_configs = sbx_config.get_local_config()
-        force_create_venv = local_configs.force_create_venv
+        use_venv = local_configs.use_venv
 
         # Prepare environment variables
         env = os.environ.copy()
@@ -92,7 +92,7 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
 
         # If using a virtual environment, ensure it's prepared in parallel
         venv_preparation_task = None
-        if force_create_venv:
+        if use_venv:
             venv_path = str(os.path.join(sandbox_dir, local_configs.venv_name))
             venv_preparation_task = asyncio.create_task(self._prepare_venv(local_configs, venv_path, env))
 
@@ -110,7 +110,7 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
 
             # Determine the python executable and environment for the subprocess
             exec_env = env.copy()
-            if force_create_venv:
+            if use_venv:
                 venv_path = str(os.path.join(sandbox_dir, local_configs.venv_name))
                 python_executable = find_python_executable(local_configs)
                 exec_env["VIRTUAL_ENV"] = venv_path
@@ -174,7 +174,7 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
             )
 
             try:
-                stdout_bytes, stderr_bytes = await asyncio.wait_for(process.communicate(), timeout=tool_settings.local_sandbox_timeout)
+                stdout_bytes, stderr_bytes = await asyncio.wait_for(process.communicate(), timeout=tool_settings.tool_sandbox_timeout)
             except asyncio.TimeoutError:
                 # Terminate the process on timeout
                 if process.returncode is None:

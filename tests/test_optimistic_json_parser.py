@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from letta.server.rest_api.optimistic_json_parser import OptimisticJSONParser
+from letta.server.rest_api.json_parser import OptimisticJSONParser
 
 
 @pytest.fixture

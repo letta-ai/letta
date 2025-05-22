@@ -27,6 +27,7 @@ from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_in
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.log import get_logger
+from letta.schemas.enums import ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool
@@ -34,6 +35,7 @@ from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.openai.chat_completion_response import Message as ChoiceMessage
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
 from letta.services.provider_manager import ProviderManager
+from letta.settings import model_settings
 from letta.tracing import trace_method
 
 DUMMY_FIRST_USER_MESSAGE = "User initializing bootup sequence."
@@ -44,18 +46,18 @@ logger = get_logger(__name__)
 class AnthropicClient(LLMClientBase):
 
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
-        client = self._get_anthropic_client(async_client=False)
+        client = self._get_anthropic_client(llm_config, async_client=False)
         response = client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
         return response.model_dump()
 
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
-        client = self._get_anthropic_client(async_client=True)
+        client = self._get_anthropic_client(llm_config, async_client=True)
         response = await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
         return response.model_dump()
 
     @trace_method
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[BetaRawMessageStreamEvent]:
-        client = self._get_anthropic_client(async_client=True)
+        client = self._get_anthropic_client(llm_config, async_client=True)
         request_data["stream"] = True
         return await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
 
@@ -95,7 +97,7 @@ class AnthropicClient(LLMClientBase):
                 for agent_id in agent_messages_mapping
             }
 
-            client = self._get_anthropic_client(async_client=True)
+            client = self._get_anthropic_client(list(agent_llm_config_mapping.values())[0], async_client=True)
 
             anthropic_requests = [
                 Request(custom_id=agent_id, params=MessageCreateParamsNonStreaming(**params)) for agent_id, params in requests.items()
@@ -111,11 +113,24 @@ class AnthropicClient(LLMClientBase):
             raise self.handle_llm_error(e)
 
     @trace_method
-    def _get_anthropic_client(self, async_client: bool = False) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
-        override_key = ProviderManager().get_anthropic_override_key()
+    def _get_anthropic_client(
+        self, llm_config: LLMConfig, async_client: bool = False
+    ) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
+        override_key = None
+        if llm_config.provider_category == ProviderCategory.byok:
+            override_key = ProviderManager().get_override_key(llm_config.provider_name, actor=self.actor)
+
         if async_client:
-            return anthropic.AsyncAnthropic(api_key=override_key) if override_key else anthropic.AsyncAnthropic()
-        return anthropic.Anthropic(api_key=override_key) if override_key else anthropic.Anthropic()
+            return (
+                anthropic.AsyncAnthropic(api_key=override_key, max_retries=model_settings.anthropic_max_retries)
+                if override_key
+                else anthropic.AsyncAnthropic(max_retries=model_settings.anthropic_max_retries)
+            )
+        return (
+            anthropic.Anthropic(api_key=override_key, max_retries=model_settings.anthropic_max_retries)
+            if override_key
+            else anthropic.Anthropic(max_retries=model_settings.anthropic_max_retries)
+        )
 
     @trace_method
     def build_request_data(
@@ -232,6 +247,24 @@ class AnthropicClient(LLMClientBase):
             )
 
         return data
+
+    async def count_tokens(self, messages: List[dict] = None, model: str = None, tools: List[Tool] = None) -> int:
+        client = anthropic.AsyncAnthropic()
+        if messages and len(messages) == 0:
+            messages = None
+        if tools and len(tools) > 0:
+            anthropic_tools = convert_tools_to_anthropic_format(tools)
+        else:
+            anthropic_tools = None
+        result = await client.beta.messages.count_tokens(
+            model=model or "claude-3-7-sonnet-20250219",
+            messages=messages or [{"role": "user", "content": "hi"}],
+            tools=anthropic_tools or [],
+        )
+        token_count = result.input_tokens
+        if messages is None:
+            token_count -= 8
+        return token_count
 
     def handle_llm_error(self, e: Exception) -> Exception:
         if isinstance(e, anthropic.APIConnectionError):
@@ -363,11 +396,11 @@ class AnthropicClient(LLMClientBase):
                     content = strip_xml_tags(string=content_part.text, tag="thinking")
                 if content_part.type == "tool_use":
                     # hack for tool rules
-                    input = json.loads(json.dumps(content_part.input))
-                    if "id" in input and input["id"].startswith("toolu_") and "function" in input:
-                        arguments = str(input["function"]["arguments"])
+                    tool_input = json.loads(json.dumps(content_part.input))
+                    if "id" in tool_input and tool_input["id"].startswith("toolu_") and "function" in tool_input:
+                        arguments = str(tool_input["function"]["arguments"])
                     else:
-                        arguments = json.dumps(content_part.input, indent=2)
+                        arguments = json.dumps(tool_input, indent=2)
                     tool_calls = [
                         ToolCall(
                             id=content_part.id,

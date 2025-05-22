@@ -6,7 +6,7 @@ from sqlalchemy import and_, asc, desc, func, literal, or_, select
 from letta import system
 from letta.constants import IN_CONTEXT_MEMORY_KEYWORD, STRUCTURED_OUTPUT_MODELS
 from letta.helpers import ToolRulesSolver
-from letta.helpers.datetime_helpers import get_local_time
+from letta.helpers.datetime_helpers import get_local_time, get_local_time_fast
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.agents_tags import AgentsTags
 from letta.orm.errors import NoResultFound
@@ -20,7 +20,7 @@ from letta.schemas.message import Message, MessageCreate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.tool_rule import ToolRule
 from letta.schemas.user import User
-from letta.system import get_initial_boot_messages, get_login_event
+from letta.system import get_initial_boot_messages, get_login_event, package_function_response
 from letta.tracing import trace_method
 
 
@@ -94,7 +94,11 @@ def _process_tags(agent: AgentModel, tags: List[str], replace=True):
 def derive_system_message(agent_type: AgentType, enable_sleeptime: Optional[bool] = None, system: Optional[str] = None):
     if system is None:
         # TODO: don't hardcode
-        if agent_type == AgentType.memgpt_agent and not enable_sleeptime:
+        if agent_type == AgentType.voice_convo_agent:
+            system = gpt_system.get_system_text("voice_chat")
+        elif agent_type == AgentType.voice_sleeptime_agent:
+            system = gpt_system.get_system_text("voice_sleeptime")
+        elif agent_type == AgentType.memgpt_agent and not enable_sleeptime:
             system = gpt_system.get_system_text("memgpt_chat")
         elif agent_type == AgentType.memgpt_agent and enable_sleeptime:
             system = gpt_system.get_system_text("memgpt_sleeptime_chat")
@@ -119,7 +123,7 @@ def compile_memory_metadata_block(
     # Create a metadata block of info so the agent knows about the metadata of out-of-context memories
     memory_metadata_block = "\n".join(
         [
-            f"### Memory [last modified: {timestamp_str}]",
+            f"### Current Time: {get_local_time_fast()}" f"### Memory [last modified: {timestamp_str}]",
             f"{previous_message_count} previous messages between you and the user are stored in recall memory (use functions to access them)",
             f"{archival_memory_size} total memories you created are stored in archival memory (use functions to access them)",
             (
@@ -278,23 +282,76 @@ def package_initial_message_sequence(
             packed_message = system.package_user_message(
                 user_message=message_create.content,
             )
+            init_messages.append(
+                Message(
+                    role=message_create.role,
+                    content=[TextContent(text=packed_message)],
+                    name=message_create.name,
+                    organization_id=actor.organization_id,
+                    agent_id=agent_id,
+                    model=model,
+                )
+            )
         elif message_create.role == MessageRole.system:
             packed_message = system.package_system_message(
                 system_message=message_create.content,
             )
+            init_messages.append(
+                Message(
+                    role=message_create.role,
+                    content=[TextContent(text=packed_message)],
+                    name=message_create.name,
+                    organization_id=actor.organization_id,
+                    agent_id=agent_id,
+                    model=model,
+                )
+            )
+        elif message_create.role == MessageRole.assistant:
+            # append tool call to send_message
+            import json
+            import uuid
+
+            from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
+            from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
+
+            from letta.constants import DEFAULT_MESSAGE_TOOL
+
+            tool_call_id = str(uuid.uuid4())
+            init_messages.append(
+                Message(
+                    role=MessageRole.assistant,
+                    content=None,
+                    name=message_create.name,
+                    organization_id=actor.organization_id,
+                    agent_id=agent_id,
+                    model=model,
+                    tool_calls=[
+                        OpenAIToolCall(
+                            id=tool_call_id,
+                            type="function",
+                            function=OpenAIFunction(name=DEFAULT_MESSAGE_TOOL, arguments=json.dumps({"message": message_create.content})),
+                        )
+                    ],
+                )
+            )
+
+            # add tool return
+            function_response = package_function_response(True, "None")
+            init_messages.append(
+                Message(
+                    role=MessageRole.tool,
+                    content=[TextContent(text=function_response)],
+                    name=message_create.name,
+                    organization_id=actor.organization_id,
+                    agent_id=agent_id,
+                    model=model,
+                    tool_call_id=tool_call_id,
+                )
+            )
         else:
+            # TODO: add tool call and tool return
             raise ValueError(f"Invalid message role: {message_create.role}")
 
-        init_messages.append(
-            Message(
-                role=message_create.role,
-                content=[TextContent(text=packed_message)],
-                name=message_create.name,
-                organization_id=actor.organization_id,
-                agent_id=agent_id,
-                model=model,
-            )
-        )
     return init_messages
 
 
@@ -335,6 +392,25 @@ def _apply_pagination(query, before: Optional[str], after: Optional[str], sessio
 
     if before:
         result = session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == before)).first()
+        if result:
+            before_created_at, before_id = result
+            query = query.where(_cursor_filter(AgentModel.created_at, AgentModel.id, before_created_at, before_id, forward=not ascending))
+
+    # Apply ordering
+    order_fn = asc if ascending else desc
+    query = query.order_by(order_fn(AgentModel.created_at), order_fn(AgentModel.id))
+    return query
+
+
+async def _apply_pagination_async(query, before: Optional[str], after: Optional[str], session, ascending: bool = True) -> any:
+    if after:
+        result = (await session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == after))).first()
+        if result:
+            after_created_at, after_id = result
+            query = query.where(_cursor_filter(AgentModel.created_at, AgentModel.id, after_created_at, after_id, forward=ascending))
+
+    if before:
+        result = (await session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == before))).first()
         if result:
             before_created_at, before_id = result
             query = query.where(_cursor_filter(AgentModel.created_at, AgentModel.id, before_created_at, before_id, forward=not ascending))

@@ -190,7 +190,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
             prior_messages = []
             if self.group.sleeptime_agent_frequency:
                 try:
-                    prior_messages = self.message_manager.list_messages_for_agent(
+                    prior_messages = await self.message_manager.list_messages_for_agent_async(
                         agent_id=foreground_agent_id,
                         actor=self.actor,
                         after=last_processed_message_id,
@@ -231,7 +231,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
             # Update job status
             job_update = JobUpdate(
                 status=JobStatus.completed,
-                completed_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(timezone.utc).replace(tzinfo=None),
                 metadata={
                     "result": result.model_dump(mode="json"),
                     "agent_id": sleeptime_agent_id,
@@ -242,7 +242,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
         except Exception as e:
             job_update = JobUpdate(
                 status=JobStatus.failed,
-                completed_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(timezone.utc).replace(tzinfo=None),
                 metadata={"error": str(e)},
             )
             self.job_manager.update_job_by_id(job_id=run_id, job_update=job_update, actor=self.actor)

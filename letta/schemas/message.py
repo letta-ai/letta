@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import uuid
 import warnings
 from collections import OrderedDict
@@ -15,7 +16,7 @@ from pydantic import BaseModel, Field, field_validator
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, TOOL_CALL_ID_MAX_LEN
 from letta.helpers.datetime_helpers import get_utc_time, is_utc_datetime
 from letta.helpers.json_helpers import json_dumps
-from letta.local_llm.constants import INNER_THOUGHTS_KWARG
+from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_VERTEX
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.letta_message import (
@@ -74,6 +75,7 @@ class MessageCreate(BaseModel):
     role: Literal[
         MessageRole.user,
         MessageRole.system,
+        MessageRole.assistant,
     ] = Field(..., description="The role of the participant.")
     content: Union[str, List[LettaMessageContentUnion]] = Field(
         ...,
@@ -83,6 +85,7 @@ class MessageCreate(BaseModel):
     name: Optional[str] = Field(None, description="The name of the participant.")
     otid: Optional[str] = Field(None, description="The offline threading id associated with this message")
     sender_id: Optional[str] = Field(None, description="The id of the sender of the message, can be an identity id or agent id")
+    batch_item_id: Optional[str] = Field(None, description="The id of the LLMBatchItem that this message is associated with")
     group_id: Optional[str] = Field(None, description="The multi-agent group that the message was sent in")
 
     def model_dump(self, to_orm: bool = False, **kwargs) -> Dict[str, Any]:
@@ -136,6 +139,11 @@ class Message(BaseMessage):
         created_at (datetime): The time the message was created.
         tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.
         tool_call_id (str): The id of the tool call.
+        step_id (str): The id of the step that this message was created in.
+        otid (str): The offline threading id associated with this message.
+        tool_returns (List[ToolReturn]): The list of tool returns requested.
+        group_id (str): The multi-agent group that the message was sent in.
+        sender_id (str): The id of the sender of the message, can be an identity id or agent id.
 
     """
 
@@ -161,6 +169,7 @@ class Message(BaseMessage):
     tool_returns: Optional[List[ToolReturn]] = Field(None, description="Tool execution return information for prior tool calls")
     group_id: Optional[str] = Field(None, description="The multi-agent group that the message was sent in")
     sender_id: Optional[str] = Field(None, description="The id of the sender of the message, can be an identity id or agent id")
+    batch_item_id: Optional[str] = Field(None, description="The id of the LLMBatchItem that this message is associated with")
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
 
@@ -218,7 +227,7 @@ class Message(BaseMessage):
         return [
             msg
             for m in messages
-            for msg in m.to_letta_message(
+            for msg in m.to_letta_messages(
                 use_assistant_message=use_assistant_message,
                 assistant_message_tool_name=assistant_message_tool_name,
                 assistant_message_tool_kwarg=assistant_message_tool_kwarg,
@@ -226,7 +235,7 @@ class Message(BaseMessage):
             )
         ]
 
-    def to_letta_message(
+    def to_letta_messages(
         self,
         use_assistant_message: bool = False,
         assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
@@ -251,6 +260,7 @@ class Message(BaseMessage):
                             name=self.name,
                             otid=otid,
                             sender_id=self.sender_id,
+                            step_id=self.step_id,
                         )
                     )
                 # Otherwise, we may have a list of multiple types
@@ -268,6 +278,7 @@ class Message(BaseMessage):
                                     name=self.name,
                                     otid=otid,
                                     sender_id=self.sender_id,
+                                    step_id=self.step_id,
                                 )
                             )
                         elif isinstance(content_part, ReasoningContent):
@@ -281,6 +292,7 @@ class Message(BaseMessage):
                                     signature=content_part.signature,
                                     name=self.name,
                                     otid=otid,
+                                    step_id=self.step_id,
                                 )
                             )
                         elif isinstance(content_part, RedactedReasoningContent):
@@ -294,6 +306,7 @@ class Message(BaseMessage):
                                     name=self.name,
                                     otid=otid,
                                     sender_id=self.sender_id,
+                                    step_id=self.step_id,
                                 )
                             )
                         elif isinstance(content_part, OmittedReasoningContent):
@@ -306,6 +319,7 @@ class Message(BaseMessage):
                                     state="omitted",
                                     name=self.name,
                                     otid=otid,
+                                    step_id=self.step_id,
                                 )
                             )
                         else:
@@ -332,6 +346,7 @@ class Message(BaseMessage):
                                 name=self.name,
                                 otid=otid,
                                 sender_id=self.sender_id,
+                                step_id=self.step_id,
                             )
                         )
                     else:
@@ -347,6 +362,7 @@ class Message(BaseMessage):
                                 name=self.name,
                                 otid=otid,
                                 sender_id=self.sender_id,
+                                step_id=self.step_id,
                             )
                         )
         elif self.role == MessageRole.tool:
@@ -388,8 +404,9 @@ class Message(BaseMessage):
                     stdout=self.tool_returns[0].stdout if self.tool_returns else None,
                     stderr=self.tool_returns[0].stderr if self.tool_returns else None,
                     name=self.name,
-                    otid=self.id.replace("message-", ""),
+                    otid=Message.generate_otid_from_id(self.id, len(messages)),
                     sender_id=self.sender_id,
+                    step_id=self.step_id,
                 )
             )
         elif self.role == MessageRole.user:
@@ -408,6 +425,7 @@ class Message(BaseMessage):
                     name=self.name,
                     otid=self.otid,
                     sender_id=self.sender_id,
+                    step_id=self.step_id,
                 )
             )
         elif self.role == MessageRole.system:
@@ -425,6 +443,7 @@ class Message(BaseMessage):
                     name=self.name,
                     otid=self.otid,
                     sender_id=self.sender_id,
+                    step_id=self.step_id,
                 )
             )
         else:
@@ -446,7 +465,7 @@ class Message(BaseMessage):
         name: Optional[str] = None,
         group_id: Optional[str] = None,
         tool_returns: Optional[List[ToolReturn]] = None,
-    ):
+    ) -> Message:
         """Convert a ChatCompletion message object into a Message object (synced to DB)"""
         if not created_at:
             # timestamp for creation
@@ -699,9 +718,12 @@ class Message(BaseMessage):
         else:
             raise ValueError(self.role)
 
-        # Optional field, do not include if null
+        # Optional field, do not include if null or invalid
         if self.name is not None:
-            openai_message["name"] = self.name
+            if bool(re.match(r"^[^\s<|\\/>]+$", self.name)):
+                openai_message["name"] = self.name
+            else:
+                warnings.warn(f"Using OpenAI with invalid 'name' field (name={self.name} role={self.role}).")
 
         if parse_content_parts:
             for content in self.content:
@@ -892,9 +914,9 @@ class Message(BaseMessage):
                         function_args = {"args": function_args}
 
                     if put_inner_thoughts_in_kwargs and text_content is not None:
-                        assert "inner_thoughts" not in function_args, function_args
+                        assert INNER_THOUGHTS_KWARG not in function_args, function_args
                         assert len(self.tool_calls) == 1
-                        function_args[INNER_THOUGHTS_KWARG] = text_content
+                        function_args[INNER_THOUGHTS_KWARG_VERTEX] = text_content
 
                     parts.append(
                         {

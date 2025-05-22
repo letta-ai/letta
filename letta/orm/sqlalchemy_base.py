@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, List, Literal, Optional, Tuple, Union
 
 from sqlalchemy import String, and_, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError, TimeoutError
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from letta.log import get_logger
@@ -113,154 +114,323 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             if before_obj and after_obj and before_obj.created_at < after_obj.created_at:
                 raise ValueError("'before' reference must be later than 'after' reference")
 
-            query = select(cls)
+            query = cls._list_preprocess(
+                before_obj=before_obj,
+                after_obj=after_obj,
+                start_date=start_date,
+                end_date=end_date,
+                limit=limit,
+                query_text=query_text,
+                query_embedding=query_embedding,
+                ascending=ascending,
+                tags=tags,
+                match_all_tags=match_all_tags,
+                actor=actor,
+                access=access,
+                access_type=access_type,
+                join_model=join_model,
+                join_conditions=join_conditions,
+                identifier_keys=identifier_keys,
+                identity_id=identity_id,
+                **kwargs,
+            )
 
-            if join_model and join_conditions:
-                query = query.join(join_model, and_(*join_conditions))
+            # Execute the query
+            results = session.execute(query)
 
-            # Apply access predicate if actor is provided
-            if actor:
-                query = cls.apply_access_predicate(query, actor, access, access_type)
-
-            # Handle tag filtering if the model has tags
-            if tags and hasattr(cls, "tags"):
-                query = select(cls)
-
-                if match_all_tags:
-                    # Match ALL tags - use subqueries
-                    subquery = (
-                        select(cls.tags.property.mapper.class_.agent_id)
-                        .where(cls.tags.property.mapper.class_.tag.in_(tags))
-                        .group_by(cls.tags.property.mapper.class_.agent_id)
-                        .having(func.count() == len(tags))
-                    )
-                    query = query.filter(cls.id.in_(subquery))
-                else:
-                    # Match ANY tag - use join and filter
-                    query = (
-                        query.join(cls.tags).filter(cls.tags.property.mapper.class_.tag.in_(tags)).distinct(cls.id).order_by(cls.id)
-                    )  # Deduplicate results
-
-                # select distinct primary key
-                query = query.distinct(cls.id).order_by(cls.id)
-
-            if identifier_keys and hasattr(cls, "identities"):
-                query = query.join(cls.identities).filter(cls.identities.property.mapper.class_.identifier_key.in_(identifier_keys))
-
-            # given the identity_id, we can find within the agents table any agents that have the identity_id in their identity_ids
-            if identity_id and hasattr(cls, "identities"):
-                query = query.join(cls.identities).filter(cls.identities.property.mapper.class_.id == identity_id)
-
-            # Apply filtering logic from kwargs
-            for key, value in kwargs.items():
-                if "." in key:
-                    # Handle joined table columns
-                    table_name, column_name = key.split(".")
-                    joined_table = locals().get(table_name) or globals().get(table_name)
-                    column = getattr(joined_table, column_name)
-                else:
-                    # Handle columns from main table
-                    column = getattr(cls, key)
-
-                if isinstance(value, (list, tuple, set)):
-                    query = query.where(column.in_(value))
-                else:
-                    query = query.where(column == value)
-
-            # Date range filtering
-            if start_date:
-                query = query.filter(cls.created_at > start_date)
-            if end_date:
-                query = query.filter(cls.created_at < end_date)
-
-            # Handle pagination based on before/after
-            if before or after:
-                conditions = []
-
-                if before and after:
-                    # Window-based query - get records between before and after
-                    conditions = [
-                        or_(cls.created_at < before_obj.created_at, and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id)),
-                        or_(cls.created_at > after_obj.created_at, and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id)),
-                    ]
-                else:
-                    # Pure pagination query
-                    if before:
-                        conditions.append(
-                            or_(
-                                cls.created_at < before_obj.created_at,
-                                and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id),
-                            )
-                        )
-                    if after:
-                        conditions.append(
-                            or_(
-                                cls.created_at > after_obj.created_at,
-                                and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id),
-                            )
-                        )
-
-                if conditions:
-                    query = query.where(and_(*conditions))
-
-            # Text search
-            if query_text:
-                if hasattr(cls, "text"):
-                    query = query.filter(func.lower(cls.text).contains(func.lower(query_text)))
-                elif hasattr(cls, "name"):
-                    # Special case for Agent model - search across name
-                    query = query.filter(func.lower(cls.name).contains(func.lower(query_text)))
-
-            # Embedding search (for Passages)
-            is_ordered = False
-            if query_embedding:
-                if not hasattr(cls, "embedding"):
-                    raise ValueError(f"Class {cls.__name__} does not have an embedding column")
-
-                from letta.settings import settings
-
-                if settings.letta_pg_uri_no_default:
-                    # PostgreSQL with pgvector
-                    query = query.order_by(cls.embedding.cosine_distance(query_embedding).asc())
-                else:
-                    # SQLite with custom vector type
-                    query_embedding_binary = adapt_array(query_embedding)
-                    query = query.order_by(
-                        func.cosine_distance(cls.embedding, query_embedding_binary).asc(),
-                        cls.created_at.asc() if ascending else cls.created_at.desc(),
-                        cls.id.asc(),
-                    )
-                    is_ordered = True
-
-            # Handle soft deletes
-            if hasattr(cls, "is_deleted"):
-                query = query.where(cls.is_deleted == False)
-
-            # Apply ordering
-            if not is_ordered:
-                if ascending:
-                    query = query.order_by(cls.created_at.asc(), cls.id.asc())
-                else:
-                    query = query.order_by(cls.created_at.desc(), cls.id.desc())
-
-            # Apply limit, adjusting for both bounds if necessary
-            if before and after:
-                # When both bounds are provided, we need to fetch enough records to satisfy
-                # the limit while respecting both bounds. We'll fetch more and then trim.
-                query = query.limit(limit * 2)
-            else:
-                query = query.limit(limit)
-
-            results = list(session.execute(query).scalars())
-
-            # If we have both bounds, take the middle portion
-            if before and after and len(results) > limit:
-                middle = len(results) // 2
-                start = max(0, middle - limit // 2)
-                end = min(len(results), start + limit)
-                results = results[start:end]
+            results = list(results.scalars())
+            results = cls._list_postprocess(
+                before=before,
+                after=after,
+                limit=limit,
+                results=results,
+            )
 
             return results
+
+    @classmethod
+    @handle_db_timeout
+    async def list_async(
+        cls,
+        *,
+        db_session: "AsyncSession",
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        limit: Optional[int] = 50,
+        query_text: Optional[str] = None,
+        query_embedding: Optional[List[float]] = None,
+        ascending: bool = True,
+        tags: Optional[List[str]] = None,
+        match_all_tags: bool = False,
+        actor: Optional["User"] = None,
+        access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
+        access_type: AccessType = AccessType.ORGANIZATION,
+        join_model: Optional[Base] = None,
+        join_conditions: Optional[Union[Tuple, List]] = None,
+        identifier_keys: Optional[List[str]] = None,
+        identity_id: Optional[str] = None,
+        **kwargs,
+    ) -> List["SqlalchemyBase"]:
+        """
+        Async version of list method above.
+        NOTE: Keep in sync.
+        List records with before/after pagination, ordering by created_at.
+        Can use both before and after to fetch a window of records.
+
+        Args:
+            db_session: SQLAlchemy session
+            before: ID of item to paginate before (upper bound)
+            after: ID of item to paginate after (lower bound)
+            start_date: Filter items after this date
+            end_date: Filter items before this date
+            limit: Maximum number of items to return
+            query_text: Text to search for
+            query_embedding: Vector to search for similar embeddings
+            ascending: Sort direction
+            tags: List of tags to filter by
+            match_all_tags: If True, return items matching all tags. If False, match any tag.
+            **kwargs: Additional filters to apply
+        """
+        if start_date and end_date and start_date > end_date:
+            raise ValueError("start_date must be earlier than or equal to end_date")
+
+        logger.debug(f"Listing {cls.__name__} with kwarg filters {kwargs}")
+
+        async with db_session as session:
+            # Get the reference objects for pagination
+            before_obj = None
+            after_obj = None
+
+            if before:
+                before_obj = await session.get(cls, before)
+                if not before_obj:
+                    raise NoResultFound(f"No {cls.__name__} found with id {before}")
+
+            if after:
+                after_obj = await session.get(cls, after)
+                if not after_obj:
+                    raise NoResultFound(f"No {cls.__name__} found with id {after}")
+
+            # Validate that before comes after the after object if both are provided
+            if before_obj and after_obj and before_obj.created_at < after_obj.created_at:
+                raise ValueError("'before' reference must be later than 'after' reference")
+
+            query = cls._list_preprocess(
+                before_obj=before_obj,
+                after_obj=after_obj,
+                start_date=start_date,
+                end_date=end_date,
+                limit=limit,
+                query_text=query_text,
+                query_embedding=query_embedding,
+                ascending=ascending,
+                tags=tags,
+                match_all_tags=match_all_tags,
+                actor=actor,
+                access=access,
+                access_type=access_type,
+                join_model=join_model,
+                join_conditions=join_conditions,
+                identifier_keys=identifier_keys,
+                identity_id=identity_id,
+                **kwargs,
+            )
+
+            # Execute the query
+            results = await session.execute(query)
+
+            results = list(results.scalars())
+            results = cls._list_postprocess(
+                before=before,
+                after=after,
+                limit=limit,
+                results=results,
+            )
+
+            return results
+
+    @classmethod
+    def _list_preprocess(
+        cls,
+        *,
+        before_obj,
+        after_obj,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        limit: Optional[int] = 50,
+        query_text: Optional[str] = None,
+        query_embedding: Optional[List[float]] = None,
+        ascending: bool = True,
+        tags: Optional[List[str]] = None,
+        match_all_tags: bool = False,
+        actor: Optional["User"] = None,
+        access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
+        access_type: AccessType = AccessType.ORGANIZATION,
+        join_model: Optional[Base] = None,
+        join_conditions: Optional[Union[Tuple, List]] = None,
+        identifier_keys: Optional[List[str]] = None,
+        identity_id: Optional[str] = None,
+        **kwargs,
+    ):
+        """
+        Constructs the query for listing records.
+        """
+        query = select(cls)
+
+        if join_model and join_conditions:
+            query = query.join(join_model, and_(*join_conditions))
+
+        # Apply access predicate if actor is provided
+        if actor:
+            query = cls.apply_access_predicate(query, actor, access, access_type)
+
+        # Handle tag filtering if the model has tags
+        if tags and hasattr(cls, "tags"):
+            query = select(cls)
+
+            if match_all_tags:
+                # Match ALL tags - use subqueries
+                subquery = (
+                    select(cls.tags.property.mapper.class_.agent_id)
+                    .where(cls.tags.property.mapper.class_.tag.in_(tags))
+                    .group_by(cls.tags.property.mapper.class_.agent_id)
+                    .having(func.count() == len(tags))
+                )
+                query = query.filter(cls.id.in_(subquery))
+            else:
+                # Match ANY tag - use join and filter
+                query = (
+                    query.join(cls.tags).filter(cls.tags.property.mapper.class_.tag.in_(tags)).distinct(cls.id).order_by(cls.id)
+                )  # Deduplicate results
+
+            # select distinct primary key
+            query = query.distinct(cls.id).order_by(cls.id)
+
+        if identifier_keys and hasattr(cls, "identities"):
+            query = query.join(cls.identities).filter(cls.identities.property.mapper.class_.identifier_key.in_(identifier_keys))
+
+        # given the identity_id, we can find within the agents table any agents that have the identity_id in their identity_ids
+        if identity_id and hasattr(cls, "identities"):
+            query = query.join(cls.identities).filter(cls.identities.property.mapper.class_.id == identity_id)
+
+        # Apply filtering logic from kwargs
+        for key, value in kwargs.items():
+            if "." in key:
+                # Handle joined table columns
+                table_name, column_name = key.split(".")
+                joined_table = locals().get(table_name) or globals().get(table_name)
+                column = getattr(joined_table, column_name)
+            else:
+                # Handle columns from main table
+                column = getattr(cls, key)
+
+            if isinstance(value, (list, tuple, set)):
+                query = query.where(column.in_(value))
+            else:
+                query = query.where(column == value)
+
+        # Date range filtering
+        if start_date:
+            query = query.filter(cls.created_at > start_date)
+        if end_date:
+            query = query.filter(cls.created_at < end_date)
+
+        # Handle pagination based on before/after
+        if before_obj or after_obj:
+            conditions = []
+
+            if before_obj and after_obj:
+                # Window-based query - get records between before and after
+                conditions = [
+                    or_(cls.created_at < before_obj.created_at, and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id)),
+                    or_(cls.created_at > after_obj.created_at, and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id)),
+                ]
+            else:
+                # Pure pagination query
+                if before_obj:
+                    conditions.append(
+                        or_(
+                            cls.created_at < before_obj.created_at,
+                            and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id),
+                        )
+                    )
+                if after_obj:
+                    conditions.append(
+                        or_(
+                            cls.created_at > after_obj.created_at,
+                            and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id),
+                        )
+                    )
+
+            if conditions:
+                query = query.where(and_(*conditions))
+
+        # Text search
+        if query_text:
+            if hasattr(cls, "text"):
+                query = query.filter(func.lower(cls.text).contains(func.lower(query_text)))
+            elif hasattr(cls, "name"):
+                # Special case for Agent model - search across name
+                query = query.filter(func.lower(cls.name).contains(func.lower(query_text)))
+
+        # Embedding search (for Passages)
+        is_ordered = False
+        if query_embedding:
+            if not hasattr(cls, "embedding"):
+                raise ValueError(f"Class {cls.__name__} does not have an embedding column")
+
+            from letta.settings import settings
+
+            if settings.letta_pg_uri_no_default:
+                # PostgreSQL with pgvector
+                query = query.order_by(cls.embedding.cosine_distance(query_embedding).asc())
+            else:
+                # SQLite with custom vector type
+                query_embedding_binary = adapt_array(query_embedding)
+                query = query.order_by(
+                    func.cosine_distance(cls.embedding, query_embedding_binary).asc(),
+                    cls.created_at.asc() if ascending else cls.created_at.desc(),
+                    cls.id.asc(),
+                )
+                is_ordered = True
+
+        # Handle soft deletes
+        if hasattr(cls, "is_deleted"):
+            query = query.where(cls.is_deleted == False)
+
+        # Apply ordering
+        if not is_ordered:
+            if ascending:
+                query = query.order_by(cls.created_at.asc(), cls.id.asc())
+            else:
+                query = query.order_by(cls.created_at.desc(), cls.id.desc())
+
+        # Apply limit, adjusting for both bounds if necessary
+        if before_obj and after_obj:
+            # When both bounds are provided, we need to fetch enough records to satisfy
+            # the limit while respecting both bounds. We'll fetch more and then trim.
+            query = query.limit(limit * 2)
+        else:
+            query = query.limit(limit)
+        return query
+
+    @classmethod
+    def _list_postprocess(
+        cls,
+        before: str | None,
+        after: str | None,
+        limit: int | None,
+        results: list,
+    ):
+        # If we have both bounds, take the middle portion
+        if before and after and len(results) > limit:
+            middle = len(results) // 2
+            start = max(0, middle - limit // 2)
+            end = min(len(results), start + limit)
+            results = results[start:end]
+        return results
 
     @classmethod
     @handle_db_timeout
@@ -302,6 +472,44 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
     @classmethod
     @handle_db_timeout
+    async def read_async(
+        cls,
+        db_session: "AsyncSession",
+        identifier: Optional[str] = None,
+        actor: Optional["User"] = None,
+        access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
+        access_type: AccessType = AccessType.ORGANIZATION,
+        **kwargs,
+    ) -> "SqlalchemyBase":
+        """The primary accessor for an ORM record. Async version of read method.
+        Args:
+            db_session: the database session to use when retrieving the record
+            identifier: the identifier of the record to read, can be the id string or the UUID object for backwards compatibility
+            actor: if specified, results will be scoped only to records the user is able to access
+            access: if actor is specified, records will be filtered to the minimum permission level for the actor
+            kwargs: additional arguments to pass to the read, used for more complex objects
+        Returns:
+            The matching object
+        Raises:
+            NoResultFound: if the object is not found
+        """
+        # this is ok because read_multiple will check if the
+        identifiers = [] if identifier is None else [identifier]
+        found = await cls.read_multiple_async(db_session, identifiers, actor, access, access_type, **kwargs)
+        if len(found) == 0:
+            # for backwards compatibility.
+            conditions = []
+            if identifier:
+                conditions.append(f"id={identifier}")
+            if actor:
+                conditions.append(f"access level in {access} for {actor}")
+            if hasattr(cls, "is_deleted"):
+                conditions.append("is_deleted=False")
+            raise NoResultFound(f"{cls.__name__} not found with {', '.join(conditions if conditions else ['no conditions'])}")
+        return found[0]
+
+    @classmethod
+    @handle_db_timeout
     def read_multiple(
         cls,
         db_session: "Session",
@@ -323,6 +531,38 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         Raises:
             NoResultFound: if the object is not found
         """
+        query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, **kwargs)
+        results = db_session.execute(query).scalars().all()
+        return cls._read_multiple_postprocess(results, identifiers, query_conditions)
+
+    @classmethod
+    @handle_db_timeout
+    async def read_multiple_async(
+        cls,
+        db_session: "AsyncSession",
+        identifiers: List[str] = [],
+        actor: Optional["User"] = None,
+        access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
+        access_type: AccessType = AccessType.ORGANIZATION,
+        **kwargs,
+    ) -> List["SqlalchemyBase"]:
+        """
+        Async version of read_multiple(...)
+        The primary accessor for ORM record(s)
+        """
+        query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, **kwargs)
+        results = await db_session.execute(query)
+        return cls._read_multiple_postprocess(results.scalars().all(), identifiers, query_conditions)
+
+    @classmethod
+    def _read_multiple_preprocess(
+        cls,
+        identifiers: List[str],
+        actor: Optional["User"],
+        access: Optional[List[Literal["read", "write", "admin"]]],
+        access_type: AccessType,
+        **kwargs,
+    ):
         logger.debug(f"Reading {cls.__name__} with ID(s): {identifiers} with actor={actor}")
 
         # Start the query
@@ -350,7 +590,10 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             query = query.where(cls.is_deleted == False)
             query_conditions.append("is_deleted=False")
 
-        results = db_session.execute(query).scalars().all()
+        return query, query_conditions
+
+    @classmethod
+    def _read_multiple_postprocess(cls, results, identifiers: List[str], query_conditions) -> List["SqlalchemyBase"]:
         if results:  # if empty list a.k.a. no results
             if len(identifiers) > 0:
                 # find which identifiers were not found
@@ -384,6 +627,24 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             else:
                 db_session.commit()
             db_session.refresh(self)
+            return self
+        except (DBAPIError, IntegrityError) as e:
+            self._handle_dbapi_error(e)
+
+    @handle_db_timeout
+    async def create_async(self, db_session: "AsyncSession", actor: Optional["User"] = None, no_commit: bool = False) -> "SqlalchemyBase":
+        """Async version of create function"""
+        logger.debug(f"Creating {self.__class__.__name__} with ID: {self.id} with actor={actor}")
+
+        if actor:
+            self._set_created_and_updated_by_fields(actor.id)
+        try:
+            db_session.add(self)
+            if no_commit:
+                await db_session.flush()  # no commit, just flush to get PK
+            else:
+                await db_session.commit()
+            await db_session.refresh(self)
             return self
         except (DBAPIError, IntegrityError) as e:
             self._handle_dbapi_error(e)
@@ -429,6 +690,51 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         except (DBAPIError, IntegrityError) as e:
             cls._handle_dbapi_error(e)
 
+    @classmethod
+    @handle_db_timeout
+    async def batch_create_async(
+        cls, items: List["SqlalchemyBase"], db_session: "AsyncSession", actor: Optional["User"] = None
+    ) -> List["SqlalchemyBase"]:
+        """
+        Async version of batch_create method.
+        Create multiple records in a single transaction for better performance.
+        Args:
+            items: List of model instances to create
+            db_session: AsyncSession session
+            actor: Optional user performing the action
+        Returns:
+            List of created model instances
+        """
+        logger.debug(f"Async batch creating {len(items)} {cls.__name__} items with actor={actor}")
+        if not items:
+            return []
+
+        # Set created/updated by fields if actor is provided
+        if actor:
+            for item in items:
+                item._set_created_and_updated_by_fields(actor.id)
+
+        try:
+            async with db_session as session:
+                session.add_all(items)
+                await session.flush()  # Flush to generate IDs but don't commit yet
+
+                # Collect IDs to fetch the complete objects after commit
+                item_ids = [item.id for item in items]
+
+                await session.commit()
+
+                # Re-query the objects to get them with relationships loaded
+                query = select(cls).where(cls.id.in_(item_ids))
+                if hasattr(cls, "created_at"):
+                    query = query.order_by(cls.created_at)
+
+                result = await session.execute(query)
+                return list(result.scalars())
+
+        except (DBAPIError, IntegrityError) as e:
+            cls._handle_dbapi_error(e)
+
     @handle_db_timeout
     def delete(self, db_session: "Session", actor: Optional["User"] = None) -> "SqlalchemyBase":
         logger.debug(f"Soft deleting {self.__class__.__name__} with ID: {self.id} with actor={actor}")
@@ -438,6 +744,17 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
         self.is_deleted = True
         return self.update(db_session)
+
+    @handle_db_timeout
+    async def delete_async(self, db_session: "AsyncSession", actor: Optional["User"] = None) -> "SqlalchemyBase":
+        """Soft delete a record asynchronously (mark as deleted)."""
+        logger.debug(f"Soft deleting {self.__class__.__name__} with ID: {self.id} with actor={actor} (async)")
+
+        if actor:
+            self._set_created_and_updated_by_fields(actor.id)
+
+        self.is_deleted = True
+        return await self.update_async(db_session)
 
     @handle_db_timeout
     def hard_delete(self, db_session: "Session", actor: Optional["User"] = None) -> None:
@@ -456,6 +773,20 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 logger.debug(f"{self.__class__.__name__} with ID {self.id} successfully hard deleted")
 
     @handle_db_timeout
+    async def hard_delete_async(self, db_session: "AsyncSession", actor: Optional["User"] = None) -> None:
+        """Permanently removes the record from the database asynchronously."""
+        logger.debug(f"Hard deleting {self.__class__.__name__} with ID: {self.id} with actor={actor} (async)")
+
+        async with db_session as session:
+            try:
+                await session.delete(self)
+                await session.commit()
+            except Exception as e:
+                await session.rollback()
+                logger.exception(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}")
+                raise ValueError(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}: {e}")
+
+    @handle_db_timeout
     def update(self, db_session: Session, actor: Optional["User"] = None, no_commit: bool = False) -> "SqlalchemyBase":
         logger.debug(...)
         if actor:
@@ -470,6 +801,55 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             db_session.commit()
         db_session.refresh(self)
         return self
+
+    @handle_db_timeout
+    async def update_async(self, db_session: AsyncSession, actor: "User | None" = None, no_commit: bool = False) -> "SqlalchemyBase":
+        """Async version of update function"""
+        logger.debug(...)
+        if actor:
+            self._set_created_and_updated_by_fields(actor.id)
+        self.set_updated_at()
+
+        db_session.add(self)
+        if no_commit:
+            await db_session.flush()
+        else:
+            await db_session.commit()
+        await db_session.refresh(self)
+        return self
+
+    @classmethod
+    def _size_preprocess(
+        cls,
+        *,
+        db_session: "Session",
+        actor: Optional["User"] = None,
+        access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
+        access_type: AccessType = AccessType.ORGANIZATION,
+        **kwargs,
+    ):
+        logger.debug(f"Calculating size for {cls.__name__} with filters {kwargs}")
+        query = select(func.count()).select_from(cls)
+
+        if actor:
+            query = cls.apply_access_predicate(query, actor, access, access_type)
+
+        # Apply filtering logic based on kwargs
+        for key, value in kwargs.items():
+            if value:
+                column = getattr(cls, key, None)
+                if not column:
+                    raise AttributeError(f"{cls.__name__} has no attribute '{key}'")
+                if isinstance(value, (list, tuple, set)):  # Check for iterables
+                    query = query.where(column.in_(value))
+                else:  # Single value for equality filtering
+                    query = query.where(column == value)
+
+        # Handle soft deletes if the class has the 'is_deleted' attribute
+        if hasattr(cls, "is_deleted"):
+            query = query.where(cls.is_deleted == False)
+
+        return query
 
     @classmethod
     @handle_db_timeout
@@ -495,31 +875,43 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         Raises:
             DBAPIError: If a database error occurs
         """
-        logger.debug(f"Calculating size for {cls.__name__} with filters {kwargs}")
-
         with db_session as session:
-            query = select(func.count()).select_from(cls)
-
-            if actor:
-                query = cls.apply_access_predicate(query, actor, access, access_type)
-
-            # Apply filtering logic based on kwargs
-            for key, value in kwargs.items():
-                if value:
-                    column = getattr(cls, key, None)
-                    if not column:
-                        raise AttributeError(f"{cls.__name__} has no attribute '{key}'")
-                    if isinstance(value, (list, tuple, set)):  # Check for iterables
-                        query = query.where(column.in_(value))
-                    else:  # Single value for equality filtering
-                        query = query.where(column == value)
-
-            # Handle soft deletes if the class has the 'is_deleted' attribute
-            if hasattr(cls, "is_deleted"):
-                query = query.where(cls.is_deleted == False)
+            query = cls._size_preprocess(db_session=session, actor=actor, access=access, access_type=access_type, **kwargs)
 
             try:
                 count = session.execute(query).scalar()
+                return count if count else 0
+            except DBAPIError as e:
+                logger.exception(f"Failed to calculate size for {cls.__name__}")
+                raise e
+
+    @classmethod
+    @handle_db_timeout
+    async def size_async(
+        cls,
+        *,
+        db_session: "AsyncSession",
+        actor: Optional["User"] = None,
+        access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
+        access_type: AccessType = AccessType.ORGANIZATION,
+        **kwargs,
+    ) -> int:
+        """
+        Get the count of rows that match the provided filters.
+        Args:
+            db_session: SQLAlchemy session
+            **kwargs: Filters to apply to the query (e.g., column_name=value)
+        Returns:
+            int: The count of rows that match the filters
+        Raises:
+            DBAPIError: If a database error occurs
+        """
+        async with db_session as session:
+            query = cls._size_preprocess(db_session=session, actor=actor, access=access, access_type=access_type, **kwargs)
+
+            try:
+                result = await session.execute(query)
+                count = result.scalar()
                 return count if count else 0
             except DBAPIError as e:
                 logger.exception(f"Failed to calculate size for {cls.__name__}")

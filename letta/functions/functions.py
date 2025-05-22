@@ -1,8 +1,9 @@
 import importlib
 import inspect
+from collections.abc import Callable
 from textwrap import dedent  # remove indentation
 from types import ModuleType
-from typing import Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from letta.errors import LettaToolCreateError
 from letta.functions.schema_generator import generate_schema
@@ -66,7 +67,8 @@ def parse_source_code(func) -> str:
     return source_code
 
 
-def get_function_from_module(module_name: str, function_name: str):
+# TODO (cliandy) refactor below two funcs
+def get_function_from_module(module_name: str, function_name: str) -> Callable[..., Any]:
     """
     Dynamically imports a function from a specified module.
 
