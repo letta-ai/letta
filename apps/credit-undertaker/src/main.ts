@@ -53,7 +53,7 @@ END;$$;
     console.log('[Undertaker] Backfilling steps');
     // check the last 24 hours of steps that have no tid
     const { rows } = await client.query(
-      "SELECT * FROM steps WHERE tid IS NULL AND created_at > NOW() - INTERVAL '24 hours'",
+      "SELECT * FROM steps WHERE tid IS NULL AND provider_category = 'byok' AND created_at > NOW() - INTERVAL '24 hours'",
     );
 
     const steps = rows as Step[];

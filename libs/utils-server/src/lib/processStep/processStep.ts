@@ -22,6 +22,10 @@ export async function processStep(step: Step) {
     return;
   }
 
+  if (step.provider_category === 'byok') {
+    return;
+  }
+
   const [creditCost, modelData, webOrgId] = await Promise.all([
     getCreditCostPerModel({
       modelName: step.model,
