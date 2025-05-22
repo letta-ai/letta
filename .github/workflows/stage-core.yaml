@@ -39,6 +39,18 @@ jobs:
           ref: ${{ github.event.inputs.git_hash || github.event.inputs.branch || github.sha }}
           submodules: recursive
 
+      - name: Set up python 3.12
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.3
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
       - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v2
