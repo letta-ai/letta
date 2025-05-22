@@ -32,6 +32,7 @@ from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
 from letta.schemas.openai.chat_completion_request import ToolFunctionChoice, cast_message_to_subtype
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.settings import model_settings
+from letta.tracing import trace_method
 
 logger = get_logger(__name__)
 
@@ -124,6 +125,7 @@ class OpenAIClient(LLMClientBase):
 
         return kwargs
 
+    @trace_method
     def build_request_data(
         self,
         messages: List[PydanticMessage],
@@ -213,6 +215,7 @@ class OpenAIClient(LLMClientBase):
 
         return data.model_dump(exclude_unset=True)
 
+    @trace_method
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
         Performs underlying synchronous request to OpenAI API and returns raw response dict.
@@ -222,6 +225,7 @@ class OpenAIClient(LLMClientBase):
         response: ChatCompletion = client.chat.completions.create(**request_data)
         return response.model_dump()
 
+    @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
         Performs underlying asynchronous request to OpenAI API and returns raw response dict.
@@ -230,6 +234,7 @@ class OpenAIClient(LLMClientBase):
         response: ChatCompletion = await client.chat.completions.create(**request_data)
         return response.model_dump()
 
+    @trace_method
     def convert_response_to_chat_completion(
         self,
         response_data: dict,

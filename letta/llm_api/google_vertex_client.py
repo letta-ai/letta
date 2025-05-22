@@ -17,6 +17,7 @@ from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall, Message, ToolCall, UsageStatistics
 from letta.settings import model_settings, settings
+from letta.tracing import trace_method
 from letta.utils import get_tool_call_id
 
 logger = get_logger(__name__)
@@ -32,6 +33,7 @@ class GoogleVertexClient(LLMClientBase):
             http_options={"api_version": "v1"},
         )
 
+    @trace_method
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
         Performs underlying request to llm and returns raw response.
@@ -44,6 +46,7 @@ class GoogleVertexClient(LLMClientBase):
         )
         return response.model_dump()
 
+    @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
         Performs underlying request to llm and returns raw response.
@@ -189,6 +192,7 @@ class GoogleVertexClient(LLMClientBase):
 
         return [{"functionDeclarations": function_list}]
 
+    @trace_method
     def build_request_data(
         self,
         messages: List[PydanticMessage],
@@ -248,6 +252,7 @@ class GoogleVertexClient(LLMClientBase):
 
         return request_data
 
+    @trace_method
     def convert_response_to_chat_completion(
         self,
         response_data: dict,
