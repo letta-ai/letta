@@ -9,6 +9,7 @@ from letta.schemas.source import Source as PydanticSource
 from letta.schemas.source import SourceUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.tracing import trace_method
 from letta.utils import enforce_types, printd
 
 
@@ -16,6 +17,7 @@ class SourceManager:
     """Manager class to handle business logic related to Sources."""
 
     @enforce_types
+    @trace_method
     def create_source(self, source: PydanticSource, actor: PydanticUser) -> PydanticSource:
         """Create a new source based on the PydanticSource schema."""
         # Try getting the source first by id
@@ -31,6 +33,7 @@ class SourceManager:
             return source.to_pydantic()
 
     @enforce_types
+    @trace_method
     def update_source(self, source_id: str, source_update: SourceUpdate, actor: PydanticUser) -> PydanticSource:
         """Update a source by its ID with the given SourceUpdate object."""
         with db_registry.session() as session:
@@ -53,6 +56,7 @@ class SourceManager:
             return source.to_pydantic()
 
     @enforce_types
+    @trace_method
     def delete_source(self, source_id: str, actor: PydanticUser) -> PydanticSource:
         """Delete a source by its ID."""
         with db_registry.session() as session:
@@ -61,6 +65,7 @@ class SourceManager:
             return source.to_pydantic()
 
     @enforce_types
+    @trace_method
     def list_sources(self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, **kwargs) -> List[PydanticSource]:
         """List all sources with optional pagination."""
         with db_registry.session() as session:
@@ -74,6 +79,7 @@ class SourceManager:
             return [source.to_pydantic() for source in sources]
 
     @enforce_types
+    @trace_method
     def size(
         self,
         actor: PydanticUser,
@@ -85,6 +91,7 @@ class SourceManager:
             return SourceModel.size(db_session=session, actor=actor)
 
     @enforce_types
+    @trace_method
     def list_attached_agents(self, source_id: str, actor: Optional[PydanticUser] = None) -> List[PydanticAgentState]:
         """
         Lists all agents that have the specified source attached.
@@ -106,6 +113,7 @@ class SourceManager:
 
     # TODO: We make actor optional for now, but should most likely be enforced due to security reasons
     @enforce_types
+    @trace_method
     def get_source_by_id(self, source_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticSource]:
         """Retrieve a source by its ID."""
         with db_registry.session() as session:
@@ -116,6 +124,7 @@ class SourceManager:
                 return None
 
     @enforce_types
+    @trace_method
     def get_source_by_name(self, source_name: str, actor: PydanticUser) -> Optional[PydanticSource]:
         """Retrieve a source by its name."""
         with db_registry.session() as session:
@@ -131,6 +140,7 @@ class SourceManager:
                 return sources[0].to_pydantic()
 
     @enforce_types
+    @trace_method
     def create_file(self, file_metadata: PydanticFileMetadata, actor: PydanticUser) -> PydanticFileMetadata:
         """Create a new file based on the PydanticFileMetadata schema."""
         db_file = self.get_file_by_id(file_metadata.id, actor=actor)
@@ -145,6 +155,7 @@ class SourceManager:
 
     # TODO: We make actor optional for now, but should most likely be enforced due to security reasons
     @enforce_types
+    @trace_method
     def get_file_by_id(self, file_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticFileMetadata]:
         """Retrieve a file by its ID."""
         with db_registry.session() as session:
@@ -155,6 +166,7 @@ class SourceManager:
                 return None
 
     @enforce_types
+    @trace_method
     def list_files(
         self, source_id: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50
     ) -> List[PydanticFileMetadata]:
@@ -166,6 +178,7 @@ class SourceManager:
             return [file.to_pydantic() for file in files]
 
     @enforce_types
+    @trace_method
     def delete_file(self, file_id: str, actor: PydanticUser) -> PydanticFileMetadata:
         """Delete a file by its ID."""
         with db_registry.session() as session:

@@ -12,6 +12,7 @@ from letta.schemas.sandbox_config import SandboxConfig as PydanticSandboxConfig
 from letta.schemas.sandbox_config import SandboxConfigCreate, SandboxConfigUpdate, SandboxType
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.tracing import trace_method
 from letta.utils import enforce_types, printd
 
 logger = get_logger(__name__)
@@ -21,6 +22,7 @@ class SandboxConfigManager:
     """Manager class to handle business logic related to SandboxConfig and SandboxEnvironmentVariable."""
 
     @enforce_types
+    @trace_method
     def get_or_create_default_sandbox_config(self, sandbox_type: SandboxType, actor: PydanticUser) -> PydanticSandboxConfig:
         sandbox_config = self.get_sandbox_config_by_type(sandbox_type, actor=actor)
         if not sandbox_config:
@@ -38,6 +40,7 @@ class SandboxConfigManager:
         return sandbox_config
 
     @enforce_types
+    @trace_method
     def create_or_update_sandbox_config(self, sandbox_config_create: SandboxConfigCreate, actor: PydanticUser) -> PydanticSandboxConfig:
         """Create or update a sandbox configuration based on the PydanticSandboxConfig schema."""
         config = sandbox_config_create.config
@@ -71,6 +74,7 @@ class SandboxConfigManager:
                 return db_sandbox.to_pydantic()
 
     @enforce_types
+    @trace_method
     def update_sandbox_config(
         self, sandbox_config_id: str, sandbox_update: SandboxConfigUpdate, actor: PydanticUser
     ) -> PydanticSandboxConfig:
@@ -98,6 +102,7 @@ class SandboxConfigManager:
             return sandbox.to_pydantic()
 
     @enforce_types
+    @trace_method
     def delete_sandbox_config(self, sandbox_config_id: str, actor: PydanticUser) -> PydanticSandboxConfig:
         """Delete a sandbox configuration by its ID."""
         with db_registry.session() as session:
@@ -106,6 +111,7 @@ class SandboxConfigManager:
             return sandbox.to_pydantic()
 
     @enforce_types
+    @trace_method
     def list_sandbox_configs(
         self,
         actor: PydanticUser,
@@ -123,6 +129,7 @@ class SandboxConfigManager:
             return [sandbox.to_pydantic() for sandbox in sandboxes]
 
     @enforce_types
+    @trace_method
     async def list_sandbox_configs_async(
         self,
         actor: PydanticUser,
@@ -140,6 +147,7 @@ class SandboxConfigManager:
             return [sandbox.to_pydantic() for sandbox in sandboxes]
 
     @enforce_types
+    @trace_method
     def get_sandbox_config_by_id(self, sandbox_config_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticSandboxConfig]:
         """Retrieve a sandbox configuration by its ID."""
         with db_registry.session() as session:
@@ -150,6 +158,7 @@ class SandboxConfigManager:
                 return None
 
     @enforce_types
+    @trace_method
     def get_sandbox_config_by_type(self, type: SandboxType, actor: Optional[PydanticUser] = None) -> Optional[PydanticSandboxConfig]:
         """Retrieve a sandbox config by its type."""
         with db_registry.session() as session:
@@ -167,6 +176,7 @@ class SandboxConfigManager:
                 return None
 
     @enforce_types
+    @trace_method
     def create_sandbox_env_var(
         self, env_var_create: SandboxEnvironmentVariableCreate, sandbox_config_id: str, actor: PydanticUser
     ) -> PydanticEnvVar:
@@ -194,6 +204,7 @@ class SandboxConfigManager:
             return env_var.to_pydantic()
 
     @enforce_types
+    @trace_method
     def update_sandbox_env_var(
         self, env_var_id: str, env_var_update: SandboxEnvironmentVariableUpdate, actor: PydanticUser
     ) -> PydanticEnvVar:
@@ -215,6 +226,7 @@ class SandboxConfigManager:
             return env_var.to_pydantic()
 
     @enforce_types
+    @trace_method
     def delete_sandbox_env_var(self, env_var_id: str, actor: PydanticUser) -> PydanticEnvVar:
         """Delete a sandbox environment variable by its ID."""
         with db_registry.session() as session:
@@ -223,6 +235,7 @@ class SandboxConfigManager:
             return env_var.to_pydantic()
 
     @enforce_types
+    @trace_method
     def list_sandbox_env_vars(
         self,
         sandbox_config_id: str,
@@ -242,6 +255,7 @@ class SandboxConfigManager:
             return [env_var.to_pydantic() for env_var in env_vars]
 
     @enforce_types
+    @trace_method
     async def list_sandbox_env_vars_async(
         self,
         sandbox_config_id: str,
@@ -261,6 +275,7 @@ class SandboxConfigManager:
             return [env_var.to_pydantic() for env_var in env_vars]
 
     @enforce_types
+    @trace_method
     def list_sandbox_env_vars_by_key(
         self, key: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50
     ) -> List[PydanticEnvVar]:
@@ -276,6 +291,7 @@ class SandboxConfigManager:
             return [env_var.to_pydantic() for env_var in env_vars]
 
     @enforce_types
+    @trace_method
     def get_sandbox_env_vars_as_dict(
         self, sandbox_config_id: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50
     ) -> Dict[str, str]:
@@ -286,6 +302,7 @@ class SandboxConfigManager:
         return result
 
     @enforce_types
+    @trace_method
     def get_sandbox_env_var_by_key_and_sandbox_config_id(
         self, key: str, sandbox_config_id: str, actor: Optional[PydanticUser] = None
     ) -> Optional[PydanticEnvVar]:

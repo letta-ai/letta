@@ -12,12 +12,14 @@ from letta.schemas.identity import Identity as PydanticIdentity
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate, IdentityUpsert
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.tracing import trace_method
 from letta.utils import enforce_types
 
 
 class IdentityManager:
 
     @enforce_types
+    @trace_method
     async def list_identities_async(
         self,
         name: Optional[str] = None,
@@ -48,12 +50,14 @@ class IdentityManager:
             return [identity.to_pydantic() for identity in identities]
 
     @enforce_types
+    @trace_method
     async def get_identity_async(self, identity_id: str, actor: PydanticUser) -> PydanticIdentity:
         async with db_registry.async_session() as session:
             identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
             return identity.to_pydantic()
 
     @enforce_types
+    @trace_method
     async def create_identity_async(self, identity: IdentityCreate, actor: PydanticUser) -> PydanticIdentity:
         async with db_registry.async_session() as session:
             new_identity = IdentityModel(**identity.model_dump(exclude={"agent_ids", "block_ids"}, exclude_unset=True))
@@ -78,6 +82,7 @@ class IdentityManager:
             return new_identity.to_pydantic()
 
     @enforce_types
+    @trace_method
     async def upsert_identity_async(self, identity: IdentityUpsert, actor: PydanticUser) -> PydanticIdentity:
         async with db_registry.async_session() as session:
             existing_identity = await IdentityModel.read_async(
@@ -103,6 +108,7 @@ class IdentityManager:
             )
 
     @enforce_types
+    @trace_method
     async def update_identity_async(
         self, identity_id: str, identity: IdentityUpdate, actor: PydanticUser, replace: bool = False
     ) -> PydanticIdentity:
@@ -165,6 +171,7 @@ class IdentityManager:
         return existing_identity.to_pydantic()
 
     @enforce_types
+    @trace_method
     async def upsert_identity_properties_async(
         self, identity_id: str, properties: List[IdentityProperty], actor: PydanticUser
     ) -> PydanticIdentity:
@@ -181,6 +188,7 @@ class IdentityManager:
             )
 
     @enforce_types
+    @trace_method
     async def delete_identity_async(self, identity_id: str, actor: PydanticUser) -> None:
         async with db_registry.async_session() as session:
             identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
@@ -192,6 +200,7 @@ class IdentityManager:
             await session.commit()
 
     @enforce_types
+    @trace_method
     async def size_async(
         self,
         actor: PydanticUser,

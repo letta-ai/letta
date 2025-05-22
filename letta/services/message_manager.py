@@ -13,6 +13,7 @@ from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.tracing import trace_method
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -22,6 +23,7 @@ class MessageManager:
     """Manager class to handle business logic related to Messages."""
 
     @enforce_types
+    @trace_method
     def get_message_by_id(self, message_id: str, actor: PydanticUser) -> Optional[PydanticMessage]:
         """Fetch a message by ID."""
         with db_registry.session() as session:
@@ -32,6 +34,7 @@ class MessageManager:
                 return None
 
     @enforce_types
+    @trace_method
     async def get_message_by_id_async(self, message_id: str, actor: PydanticUser) -> Optional[PydanticMessage]:
         """Fetch a message by ID."""
         async with db_registry.async_session() as session:
@@ -42,6 +45,7 @@ class MessageManager:
                 return None
 
     @enforce_types
+    @trace_method
     def get_messages_by_ids(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
         """Fetch messages by ID and return them in the requested order."""
         with db_registry.session() as session:
@@ -49,6 +53,7 @@ class MessageManager:
         return self._get_messages_by_id_postprocess(results, message_ids)
 
     @enforce_types
+    @trace_method
     async def get_messages_by_ids_async(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
         """Fetch messages by ID and return them in the requested order. Async version of above function."""
         async with db_registry.async_session() as session:
@@ -71,6 +76,7 @@ class MessageManager:
         return list(filter(lambda x: x is not None, [result_dict.get(msg_id, None) for msg_id in message_ids]))
 
     @enforce_types
+    @trace_method
     def create_message(self, pydantic_msg: PydanticMessage, actor: PydanticUser) -> PydanticMessage:
         """Create a new message."""
         with db_registry.session() as session:
@@ -92,6 +98,7 @@ class MessageManager:
         return orm_messages
 
     @enforce_types
+    @trace_method
     def create_many_messages(self, pydantic_msgs: List[PydanticMessage], actor: PydanticUser) -> List[PydanticMessage]:
         """
         Create multiple messages in a single database transaction.
@@ -111,6 +118,7 @@ class MessageManager:
             return [msg.to_pydantic() for msg in created_messages]
 
     @enforce_types
+    @trace_method
     async def create_many_messages_async(self, pydantic_msgs: List[PydanticMessage], actor: PydanticUser) -> List[PydanticMessage]:
         """
         Create multiple messages in a single database transaction asynchronously.
@@ -131,6 +139,7 @@ class MessageManager:
             return [msg.to_pydantic() for msg in created_messages]
 
     @enforce_types
+    @trace_method
     def update_message_by_letta_message(
         self, message_id: str, letta_message_update: LettaMessageUpdateUnion, actor: PydanticUser
     ) -> PydanticMessage:
@@ -169,6 +178,7 @@ class MessageManager:
         raise ValueError(f"Message type got modified: {letta_message_update.message_type}")
 
     @enforce_types
+    @trace_method
     def update_message_by_letta_message(
         self, message_id: str, letta_message_update: LettaMessageUpdateUnion, actor: PydanticUser
     ) -> PydanticMessage:
@@ -207,6 +217,7 @@ class MessageManager:
         raise ValueError(f"Message type got modified: {letta_message_update.message_type}")
 
     @enforce_types
+    @trace_method
     def update_message_by_id(self, message_id: str, message_update: MessageUpdate, actor: PydanticUser) -> PydanticMessage:
         """
         Updates an existing record in the database with values from the provided record object.
@@ -224,6 +235,7 @@ class MessageManager:
             return message.to_pydantic()
 
     @enforce_types
+    @trace_method
     async def update_message_by_id_async(self, message_id: str, message_update: MessageUpdate, actor: PydanticUser) -> PydanticMessage:
         """
         Updates an existing record in the database with values from the provided record object.
@@ -267,6 +279,7 @@ class MessageManager:
         return message
 
     @enforce_types
+    @trace_method
     def delete_message_by_id(self, message_id: str, actor: PydanticUser) -> bool:
         """Delete a message."""
         with db_registry.session() as session:
@@ -281,6 +294,7 @@ class MessageManager:
                 raise ValueError(f"Message with id {message_id} not found.")
 
     @enforce_types
+    @trace_method
     def size(
         self,
         actor: PydanticUser,
@@ -297,6 +311,7 @@ class MessageManager:
             return MessageModel.size(db_session=session, actor=actor, role=role, agent_id=agent_id)
 
     @enforce_types
+    @trace_method
     async def size_async(
         self,
         actor: PydanticUser,
@@ -312,6 +327,7 @@ class MessageManager:
             return await MessageModel.size_async(db_session=session, actor=actor, role=role, agent_id=agent_id)
 
     @enforce_types
+    @trace_method
     def list_user_messages_for_agent(
         self,
         agent_id: str,
@@ -334,6 +350,7 @@ class MessageManager:
         )
 
     @enforce_types
+    @trace_method
     def list_messages_for_agent(
         self,
         agent_id: str,
@@ -430,6 +447,7 @@ class MessageManager:
             return [msg.to_pydantic() for msg in results]
 
     @enforce_types
+    @trace_method
     async def list_messages_for_agent_async(
         self,
         agent_id: str,
@@ -531,6 +549,7 @@ class MessageManager:
             return [msg.to_pydantic() for msg in results]
 
     @enforce_types
+    @trace_method
     def delete_all_messages_for_agent(self, agent_id: str, actor: PydanticUser) -> int:
         """
         Efficiently deletes all messages associated with a given agent_id,

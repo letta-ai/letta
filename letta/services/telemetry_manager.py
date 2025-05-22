@@ -6,11 +6,13 @@ from letta.schemas.step import Step as PydanticStep
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.helpers.noop_helper import singleton
+from letta.tracing import trace_method
 from letta.utils import enforce_types
 
 
 class TelemetryManager:
     @enforce_types
+    @trace_method
     async def get_provider_trace_by_step_id_async(
         self,
         step_id: str,
@@ -21,6 +23,7 @@ class TelemetryManager:
             return provider_trace.to_pydantic()
 
     @enforce_types
+    @trace_method
     async def create_provider_trace_async(self, actor: PydanticUser, provider_trace_create: ProviderTraceCreate) -> PydanticProviderTrace:
         async with db_registry.async_session() as session:
             provider_trace = ProviderTraceModel(**provider_trace_create.model_dump())
@@ -35,6 +38,7 @@ class TelemetryManager:
             return provider_trace.to_pydantic()
 
     @enforce_types
+    @trace_method
     def create_provider_trace(self, actor: PydanticUser, provider_trace_create: ProviderTraceCreate) -> PydanticProviderTrace:
         with db_registry.session() as session:
             provider_trace = ProviderTraceModel(**provider_trace_create.model_dump())
@@ -48,11 +52,14 @@ class NoopTelemetryManager(TelemetryManager):
     Noop implementation of TelemetryManager.
     """
 
+    @trace_method
     async def create_provider_trace_async(self, actor: PydanticUser, provider_trace_create: ProviderTraceCreate) -> PydanticProviderTrace:
         return
 
+    @trace_method
     async def get_provider_trace_by_step_id_async(self, step_id: str, actor: PydanticUser) -> PydanticStep:
         return
 
+    @trace_method
     def create_provider_trace(self, actor: PydanticUser, provider_trace_create: ProviderTraceCreate) -> PydanticProviderTrace:
         return
