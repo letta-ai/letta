@@ -77,6 +77,7 @@ class GoogleVertexClient(GoogleAIClient):
         input_messages: List[PydanticMessage],
         llm_config: LLMConfig,
     ) -> ChatCompletionResponse:
+        from opentelemetry import trace
         """
         Converts custom response format from llm client into an OpenAI
         ChatCompletionsResponse object.
@@ -213,22 +214,28 @@ class GoogleVertexClient(GoogleAIClient):
             #     "totalTokenCount": 36
             #   }
             if response.usage_metadata:
-                usage = UsageStatistics(
-                    prompt_tokens=response.usage_metadata.prompt_token_count,
-                    completion_tokens=response.usage_metadata.candidates_token_count,
-                    total_tokens=response.usage_metadata.total_token_count,
-                )
+                prompt_tokens = response.usage_metadata.prompt_token_count
+                completion_tokens = response.usage_metadata.candidates_token_count
+                total_tokens = response.usage_metadata.total_token_count
             else:
                 # Count it ourselves
                 assert input_messages is not None, f"Didn't get UsageMetadata from the API response, so input_messages is required"
                 prompt_tokens = count_tokens(json_dumps(input_messages))  # NOTE: this is a very rough approximation
                 completion_tokens = count_tokens(json_dumps(openai_response_message.model_dump()))  # NOTE: this is also approximate
                 total_tokens = prompt_tokens + completion_tokens
-                usage = UsageStatistics(
-                    prompt_tokens=prompt_tokens,
-                    completion_tokens=completion_tokens,
-                    total_tokens=total_tokens,
-                )
+            
+            # Add token usage to current OpenTelemetry span
+            span = trace.get_current_span()
+            if span.is_recording():
+                span.set_attribute("llm.prompt_tokens", prompt_tokens)
+                span.set_attribute("llm.completion_tokens", completion_tokens)
+                span.set_attribute("llm.total_tokens", total_tokens)
+            
+            usage = UsageStatistics(
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+            )
 
             response_id = str(uuid.uuid4())
             return ChatCompletionResponse(
