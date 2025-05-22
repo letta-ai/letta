@@ -45,11 +45,13 @@ logger = get_logger(__name__)
 
 class AnthropicClient(LLMClientBase):
 
+    @trace_method
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         client = self._get_anthropic_client(llm_config, async_client=False)
         response = client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
         return response.model_dump()
 
+    @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         client = self._get_anthropic_client(llm_config, async_client=True)
         response = await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
@@ -339,6 +341,7 @@ class AnthropicClient(LLMClientBase):
 
     # TODO: Input messages doesn't get used here
     # TODO: Clean up this interface
+    @trace_method
     def convert_response_to_chat_completion(
         self,
         response_data: dict,
