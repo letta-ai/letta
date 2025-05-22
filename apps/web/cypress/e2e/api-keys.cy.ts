@@ -36,7 +36,7 @@ describe('Allow users to create and manage API keys', () => {
       apiKey = `${$input.val()}`;
 
       cy.request({
-        url: '/v1/health',
+        url: '/v1/tools',
         headers: {
           Authorization: `Bearer ${apiKey}`,
         },
@@ -46,23 +46,23 @@ describe('Allow users to create and manage API keys', () => {
     });
 
     cy.findByTestId(
-      `view-api-key-dialog:${API_KEY_NAME}-cancel-button`
+      `view-api-key-dialog:${API_KEY_NAME}-cancel-button`,
     ).click();
 
     cy.findByTestId(`delete-api-key-button:${API_KEY_NAME}`).click();
 
     cy.findByTestId(
-      `delete-api-key-dialog:${API_KEY_NAME}-confirm-button`
+      `delete-api-key-dialog:${API_KEY_NAME}-confirm-button`,
     ).click();
 
     cy.findByTestId(`api-key-actions-button:${API_KEY_NAME}`).should(
-      'not.exist'
+      'not.exist',
     );
 
     // send a request with the deleted api key
 
     cy.request({
-      url: '/v1/health',
+      url: '/v1/tools',
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
