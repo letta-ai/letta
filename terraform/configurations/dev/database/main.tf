@@ -33,6 +33,7 @@ module database {
 
     connection_pool_flags = {
       client_connection_idle_timeout = (25 * 60) # 25 minutes
+      max_pool_size = 650
     }
 
     database_flags = {
