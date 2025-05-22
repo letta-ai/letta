@@ -100,8 +100,10 @@ class BaseAgent(ABC):
 
             # [DB Call] size of messages and archival memories
             # todo: blocking for now
-            num_messages = num_messages or self.message_manager.size(actor=self.actor, agent_id=agent_state.id)
-            num_archival_memories = num_archival_memories or self.passage_manager.size(actor=self.actor, agent_id=agent_state.id)
+            if num_messages is None:
+                num_messages = await self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id)
+            if num_archival_memories is None:
+                num_archival_memories = await self.passage_manager.size_async(actor=self.actor, agent_id=agent_state.id)
 
             new_system_message_str = compile_system_message(
                 system_prompt=agent_state.system,
