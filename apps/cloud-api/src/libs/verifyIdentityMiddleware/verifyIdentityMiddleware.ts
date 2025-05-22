@@ -7,7 +7,7 @@ import { findOrCreateUserAndOrganizationFromProviderLogin } from '@letta-cloud/s
 import { DEFAULT_UNAUTHORIZED_MESSAGE } from '../constants';
 
 const publicRoutes = [
-  new RegExp('/v1/heath'),
+  new RegExp('/v1/health'),
   new RegExp('/stripe/webhook'),
   new RegExp('favicon.ico'),
 ];
