@@ -11,6 +11,7 @@ from letta.schemas.agent import AgentState
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.tracing import trace_method
 from letta.utils import enforce_types
 
 
@@ -18,6 +19,7 @@ class PassageManager:
     """Manager class to handle business logic related to Passages."""
 
     @enforce_types
+    @trace_method
     def get_passage_by_id(self, passage_id: str, actor: PydanticUser) -> Optional[PydanticPassage]:
         """Fetch a passage by ID."""
         with db_registry.session() as session:
@@ -34,6 +36,7 @@ class PassageManager:
                     raise NoResultFound(f"Passage with id {passage_id} not found in database.")
 
     @enforce_types
+    @trace_method
     def create_passage(self, pydantic_passage: PydanticPassage, actor: PydanticUser) -> PydanticPassage:
         """Create a new passage in the appropriate table based on whether it has agent_id or source_id."""
         # Common fields for both passage types
@@ -70,11 +73,13 @@ class PassageManager:
             return passage.to_pydantic()
 
     @enforce_types
+    @trace_method
     def create_many_passages(self, passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
         """Create multiple passages."""
         return [self.create_passage(p, actor) for p in passages]
 
     @enforce_types
+    @trace_method
     def insert_passage(
         self,
         agent_state: AgentState,
@@ -136,6 +141,7 @@ class PassageManager:
             raise e
 
     @enforce_types
+    @trace_method
     def update_passage_by_id(self, passage_id: str, passage: PydanticPassage, actor: PydanticUser, **kwargs) -> Optional[PydanticPassage]:
         """Update a passage."""
         if not passage_id:
@@ -170,6 +176,7 @@ class PassageManager:
             return curr_passage.to_pydantic()
 
     @enforce_types
+    @trace_method
     def delete_passage_by_id(self, passage_id: str, actor: PydanticUser) -> bool:
         """Delete a passage from either source or archival passages."""
         if not passage_id:
@@ -190,6 +197,8 @@ class PassageManager:
                 except NoResultFound:
                     raise NoResultFound(f"Passage with id {passage_id} not found.")
 
+    @enforce_types
+    @trace_method
     def delete_passages(
         self,
         actor: PydanticUser,
@@ -202,6 +211,7 @@ class PassageManager:
         return True
 
     @enforce_types
+    @trace_method
     def size(
         self,
         actor: PydanticUser,
@@ -217,6 +227,7 @@ class PassageManager:
             return AgentPassage.size(db_session=session, actor=actor, agent_id=agent_id)
 
     @enforce_types
+    @trace_method
     async def size_async(
         self,
         actor: PydanticUser,
@@ -230,6 +241,8 @@ class PassageManager:
         async with db_registry.async_session() as session:
             return await AgentPassage.size_async(db_session=session, actor=actor, agent_id=agent_id)
 
+    @enforce_types
+    @trace_method
     def estimate_embeddings_size(
         self,
         actor: PydanticUser,

@@ -25,6 +25,7 @@ from letta.schemas.step import Step as PydanticStep
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.tracing import trace_method
 from letta.utils import enforce_types
 
 
@@ -32,6 +33,7 @@ class JobManager:
     """Manager class to handle business logic related to Jobs."""
 
     @enforce_types
+    @trace_method
     def create_job(
         self, pydantic_job: Union[PydanticJob, PydanticRun, PydanticBatchJob], actor: PydanticUser
     ) -> Union[PydanticJob, PydanticRun, PydanticBatchJob]:
@@ -45,6 +47,7 @@ class JobManager:
         return job.to_pydantic()
 
     @enforce_types
+    @trace_method
     async def create_job_async(
         self, pydantic_job: Union[PydanticJob, PydanticRun, PydanticBatchJob], actor: PydanticUser
     ) -> Union[PydanticJob, PydanticRun, PydanticBatchJob]:
@@ -58,6 +61,7 @@ class JobManager:
             return job.to_pydantic()
 
     @enforce_types
+    @trace_method
     def update_job_by_id(self, job_id: str, job_update: JobUpdate, actor: PydanticUser) -> PydanticJob:
         """Update a job by its ID with the given JobUpdate object."""
         with db_registry.session() as session:
@@ -82,6 +86,7 @@ class JobManager:
             return job.to_pydantic()
 
     @enforce_types
+    @trace_method
     async def update_job_by_id_async(self, job_id: str, job_update: JobUpdate, actor: PydanticUser) -> PydanticJob:
         """Update a job by its ID with the given JobUpdate object asynchronously."""
         async with db_registry.async_session() as session:
@@ -106,6 +111,7 @@ class JobManager:
             return job.to_pydantic()
 
     @enforce_types
+    @trace_method
     def get_job_by_id(self, job_id: str, actor: PydanticUser) -> PydanticJob:
         """Fetch a job by its ID."""
         with db_registry.session() as session:
@@ -114,6 +120,7 @@ class JobManager:
             return job.to_pydantic()
 
     @enforce_types
+    @trace_method
     async def get_job_by_id_async(self, job_id: str, actor: PydanticUser) -> PydanticJob:
         """Fetch a job by its ID asynchronously."""
         async with db_registry.async_session() as session:
@@ -122,6 +129,7 @@ class JobManager:
             return job.to_pydantic()
 
     @enforce_types
+    @trace_method
     def list_jobs(
         self,
         actor: PydanticUser,
@@ -151,6 +159,7 @@ class JobManager:
             return [job.to_pydantic() for job in jobs]
 
     @enforce_types
+    @trace_method
     async def list_jobs_async(
         self,
         actor: PydanticUser,
@@ -180,6 +189,7 @@ class JobManager:
             return [job.to_pydantic() for job in jobs]
 
     @enforce_types
+    @trace_method
     def delete_job_by_id(self, job_id: str, actor: PydanticUser) -> PydanticJob:
         """Delete a job by its ID."""
         with db_registry.session() as session:
@@ -188,6 +198,7 @@ class JobManager:
             return job.to_pydantic()
 
     @enforce_types
+    @trace_method
     def get_job_messages(
         self,
         job_id: str,
@@ -238,6 +249,7 @@ class JobManager:
         return [message.to_pydantic() for message in messages]
 
     @enforce_types
+    @trace_method
     def get_job_steps(
         self,
         job_id: str,
@@ -283,6 +295,7 @@ class JobManager:
         return [step.to_pydantic() for step in steps]
 
     @enforce_types
+    @trace_method
     def add_message_to_job(self, job_id: str, message_id: str, actor: PydanticUser) -> None:
         """
         Associate a message with a job by creating a JobMessage record.
@@ -306,6 +319,7 @@ class JobManager:
             session.commit()
 
     @enforce_types
+    @trace_method
     def get_job_usage(self, job_id: str, actor: PydanticUser) -> LettaUsageStatistics:
         """
         Get usage statistics for a job.
@@ -343,6 +357,7 @@ class JobManager:
             )
 
     @enforce_types
+    @trace_method
     def add_job_usage(
         self,
         job_id: str,
@@ -383,6 +398,7 @@ class JobManager:
             session.commit()
 
     @enforce_types
+    @trace_method
     def get_run_messages(
         self,
         run_id: str,
@@ -434,6 +450,7 @@ class JobManager:
         return messages
 
     @enforce_types
+    @trace_method
     def get_step_messages(
         self,
         run_id: str,

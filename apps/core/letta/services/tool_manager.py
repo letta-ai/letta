@@ -26,6 +26,7 @@ from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.tracing import trace_method
 from letta.utils import enforce_types, printd
 
 logger = get_logger(__name__)
@@ -36,6 +37,7 @@ class ToolManager:
 
     # TODO: Refactor this across the codebase to use CreateTool instead of passing in a Tool object
     @enforce_types
+    @trace_method
     def create_or_update_tool(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:
         """Create a new tool based on the ToolCreate schema."""
         tool_id = self.get_tool_id_by_name(tool_name=pydantic_tool.name, actor=actor)
@@ -62,6 +64,7 @@ class ToolManager:
         return tool
 
     @enforce_types
+    @trace_method
     async def create_or_update_tool_async(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:
         """Create a new tool based on the ToolCreate schema."""
         tool_id = await self.get_tool_id_by_name_async(tool_name=pydantic_tool.name, actor=actor)
@@ -88,6 +91,7 @@ class ToolManager:
         return tool
 
     @enforce_types
+    @trace_method
     def create_or_update_mcp_tool(self, tool_create: ToolCreate, mcp_server_name: str, actor: PydanticUser) -> PydanticTool:
         metadata = {MCP_TOOL_TAG_NAME_PREFIX: {"server_name": mcp_server_name}}
         return self.create_or_update_tool(
@@ -98,18 +102,21 @@ class ToolManager:
         )
 
     @enforce_types
+    @trace_method
     def create_or_update_composio_tool(self, tool_create: ToolCreate, actor: PydanticUser) -> PydanticTool:
         return self.create_or_update_tool(
             PydanticTool(tool_type=ToolType.EXTERNAL_COMPOSIO, name=tool_create.json_schema["name"], **tool_create.model_dump()), actor
         )
 
     @enforce_types
+    @trace_method
     def create_or_update_langchain_tool(self, tool_create: ToolCreate, actor: PydanticUser) -> PydanticTool:
         return self.create_or_update_tool(
             PydanticTool(tool_type=ToolType.EXTERNAL_LANGCHAIN, name=tool_create.json_schema["name"], **tool_create.model_dump()), actor
         )
 
     @enforce_types
+    @trace_method
     def create_tool(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:
         """Create a new tool based on the ToolCreate schema."""
         with db_registry.session() as session:
@@ -125,6 +132,7 @@ class ToolManager:
         return tool.to_pydantic()
 
     @enforce_types
+    @trace_method
     async def create_tool_async(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:
         """Create a new tool based on the ToolCreate schema."""
         async with db_registry.async_session() as session:
@@ -140,6 +148,7 @@ class ToolManager:
         return tool.to_pydantic()
 
     @enforce_types
+    @trace_method
     def get_tool_by_id(self, tool_id: str, actor: PydanticUser) -> PydanticTool:
         """Fetch a tool by its ID."""
         with db_registry.session() as session:
@@ -149,6 +158,7 @@ class ToolManager:
             return tool.to_pydantic()
 
     @enforce_types
+    @trace_method
     async def get_tool_by_id_async(self, tool_id: str, actor: PydanticUser) -> PydanticTool:
         """Fetch a tool by its ID."""
         async with db_registry.async_session() as session:
@@ -158,6 +168,7 @@ class ToolManager:
             return tool.to_pydantic()
 
     @enforce_types
+    @trace_method
     def get_tool_by_name(self, tool_name: str, actor: PydanticUser) -> Optional[PydanticTool]:
         """Retrieve a tool by its name and a user. We derive the organization from the user, and retrieve that tool."""
         try:
@@ -168,6 +179,7 @@ class ToolManager:
             return None
 
     @enforce_types
+    @trace_method
     async def get_tool_by_name_async(self, tool_name: str, actor: PydanticUser) -> Optional[PydanticTool]:
         """Retrieve a tool by its name and a user. We derive the organization from the user, and retrieve that tool."""
         try:
@@ -178,6 +190,7 @@ class ToolManager:
             return None
 
     @enforce_types
+    @trace_method
     def get_tool_id_by_name(self, tool_name: str, actor: PydanticUser) -> Optional[str]:
         """Retrieve a tool by its name and a user. We derive the organization from the user, and retrieve that tool."""
         try:
@@ -188,6 +201,7 @@ class ToolManager:
             return None
 
     @enforce_types
+    @trace_method
     async def get_tool_id_by_name_async(self, tool_name: str, actor: PydanticUser) -> Optional[str]:
         """Retrieve a tool by its name and a user. We derive the organization from the user, and retrieve that tool."""
         try:
@@ -198,6 +212,7 @@ class ToolManager:
             return None
 
     @enforce_types
+    @trace_method
     async def list_tools_async(self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticTool]:
         """List all tools with optional pagination."""
         async with db_registry.async_session() as session:
@@ -223,6 +238,7 @@ class ToolManager:
         return results
 
     @enforce_types
+    @trace_method
     def size(
         self,
         actor: PydanticUser,
@@ -239,6 +255,7 @@ class ToolManager:
             return ToolModel.size(db_session=session, actor=actor, name=LETTA_TOOL_SET)
 
     @enforce_types
+    @trace_method
     def update_tool_by_id(
         self, tool_id: str, tool_update: ToolUpdate, actor: PydanticUser, updated_tool_type: Optional[ToolType] = None
     ) -> PydanticTool:
@@ -267,6 +284,7 @@ class ToolManager:
             return tool.update(db_session=session, actor=actor).to_pydantic()
 
     @enforce_types
+    @trace_method
     async def update_tool_by_id_async(
         self, tool_id: str, tool_update: ToolUpdate, actor: PydanticUser, updated_tool_type: Optional[ToolType] = None
     ) -> PydanticTool:
@@ -296,6 +314,7 @@ class ToolManager:
             return tool.to_pydantic()
 
     @enforce_types
+    @trace_method
     def delete_tool_by_id(self, tool_id: str, actor: PydanticUser) -> None:
         """Delete a tool by its ID."""
         with db_registry.session() as session:
@@ -306,6 +325,7 @@ class ToolManager:
                 raise ValueError(f"Tool with id {tool_id} not found.")
 
     @enforce_types
+    @trace_method
     def upsert_base_tools(self, actor: PydanticUser) -> List[PydanticTool]:
         """Add default tools in base.py and multi_agent.py"""
         functions_to_schema = {}
@@ -371,6 +391,7 @@ class ToolManager:
         return tools
 
     @enforce_types
+    @trace_method
     async def upsert_base_tools_async(self, actor: PydanticUser) -> List[PydanticTool]:
         """Add default tools in base.py and multi_agent.py"""
         functions_to_schema = {}

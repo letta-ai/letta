@@ -14,6 +14,7 @@ from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.tracing import trace_method
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -22,6 +23,7 @@ logger = get_logger(__name__)
 class BlockManager:
     """Manager class to handle business logic related to Blocks."""
 
+    @trace_method
     @enforce_types
     def create_or_update_block(self, block: PydanticBlock, actor: PydanticUser) -> PydanticBlock:
         """Create a new block based on the Block schema."""
@@ -36,6 +38,7 @@ class BlockManager:
                 block.create(session, actor=actor)
             return block.to_pydantic()
 
+    @trace_method
     @enforce_types
     def batch_create_blocks(self, blocks: List[PydanticBlock], actor: PydanticUser) -> List[PydanticBlock]:
         """
@@ -59,6 +62,7 @@ class BlockManager:
             # Convert back to Pydantic
             return [m.to_pydantic() for m in created_models]
 
+    @trace_method
     @enforce_types
     def update_block(self, block_id: str, block_update: BlockUpdate, actor: PydanticUser) -> PydanticBlock:
         """Update a block by its ID with the given BlockUpdate object."""
@@ -74,6 +78,7 @@ class BlockManager:
             block.update(db_session=session, actor=actor)
             return block.to_pydantic()
 
+    @trace_method
     @enforce_types
     def delete_block(self, block_id: str, actor: PydanticUser) -> PydanticBlock:
         """Delete a block by its ID."""
@@ -82,6 +87,7 @@ class BlockManager:
             block.hard_delete(db_session=session, actor=actor)
             return block.to_pydantic()
 
+    @trace_method
     @enforce_types
     async def get_blocks_async(
         self,
@@ -144,6 +150,7 @@ class BlockManager:
 
             return [block.to_pydantic() for block in blocks]
 
+    @trace_method
     @enforce_types
     def get_block_by_id(self, block_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticBlock]:
         """Retrieve a block by its name."""
@@ -154,6 +161,7 @@ class BlockManager:
             except NoResultFound:
                 return None
 
+    @trace_method
     @enforce_types
     async def get_all_blocks_by_ids_async(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
         """Retrieve blocks by their ids without loading unnecessary relationships. Async implementation."""
@@ -201,6 +209,7 @@ class BlockManager:
 
             return pydantic_blocks
 
+    @trace_method
     @enforce_types
     async def get_agents_for_block_async(self, block_id: str, actor: PydanticUser) -> List[PydanticAgentState]:
         """
@@ -211,6 +220,7 @@ class BlockManager:
             agents_orm = block.agents
             return await asyncio.gather(*[agent.to_pydantic_async() for agent in agents_orm])
 
+    @trace_method
     @enforce_types
     def size(
         self,
@@ -224,6 +234,7 @@ class BlockManager:
 
     # Block History Functions
 
+    @trace_method
     @enforce_types
     def checkpoint_block(
         self,
@@ -327,6 +338,7 @@ class BlockManager:
         updated_block = block.update(db_session=session, actor=actor, no_commit=True)
         return updated_block
 
+    @trace_method
     @enforce_types
     def undo_checkpoint_block(self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None) -> PydanticBlock:
         """
@@ -369,6 +381,7 @@ class BlockManager:
             session.commit()
             return block.to_pydantic()
 
+    @trace_method
     @enforce_types
     def redo_checkpoint_block(self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None) -> PydanticBlock:
         """
@@ -407,6 +420,7 @@ class BlockManager:
             session.commit()
             return block.to_pydantic()
 
+    @trace_method
     @enforce_types
     async def bulk_update_block_values_async(
         self, updates: Dict[str, str], actor: PydanticUser, return_hydrated: bool = False

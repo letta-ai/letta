@@ -14,13 +14,14 @@ from letta.schemas.step import Step as PydanticStep
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.helpers.noop_helper import singleton
-from letta.tracing import get_trace_id
+from letta.tracing import get_trace_id, trace_method
 from letta.utils import enforce_types
 
 
 class StepManager:
 
     @enforce_types
+    @trace_method
     def list_steps(
         self,
         actor: PydanticUser,
@@ -54,6 +55,7 @@ class StepManager:
             return [step.to_pydantic() for step in steps]
 
     @enforce_types
+    @trace_method
     def log_step(
         self,
         actor: PydanticUser,
@@ -96,6 +98,7 @@ class StepManager:
             return new_step.to_pydantic()
 
     @enforce_types
+    @trace_method
     async def log_step_async(
         self,
         actor: PydanticUser,
@@ -138,12 +141,14 @@ class StepManager:
             return new_step.to_pydantic()
 
     @enforce_types
+    @trace_method
     def get_step(self, step_id: str, actor: PydanticUser) -> PydanticStep:
         with db_registry.session() as session:
             step = StepModel.read(db_session=session, identifier=step_id, actor=actor)
             return step.to_pydantic()
 
     @enforce_types
+    @trace_method
     def update_step_transaction_id(self, actor: PydanticUser, step_id: str, transaction_id: str) -> PydanticStep:
         """Update the transaction ID for a step.
 
@@ -236,6 +241,7 @@ class NoopStepManager(StepManager):
     """
 
     @enforce_types
+    @trace_method
     def log_step(
         self,
         actor: PydanticUser,
@@ -253,6 +259,7 @@ class NoopStepManager(StepManager):
         return
 
     @enforce_types
+    @trace_method
     async def log_step_async(
         self,
         actor: PydanticUser,
