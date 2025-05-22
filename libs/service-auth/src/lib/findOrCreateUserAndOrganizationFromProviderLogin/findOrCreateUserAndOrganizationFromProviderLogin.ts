@@ -23,7 +23,7 @@ import { createOrganization } from '../createOrganization/createOrganization';
 import { getDefaultProject } from '@letta-cloud/utils-server';
 import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 import { getCustomerSubscription } from '@letta-cloud/service-payments';
-import * as Sentry from '@sentry/nextjs';
+import * as Sentry from '@sentry/node';
 
 export const ERRORS = {
   EMAIL_ALREADY_EXISTS: 'email-already-exists',
