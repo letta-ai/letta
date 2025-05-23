@@ -212,7 +212,7 @@ async def retrieve_agent_context_window(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     try:
-        return await server.get_agent_context_window_async(agent_id=agent_id, actor=actor)
+        return await server.agent_manager.get_context_window(agent_id=agent_id, actor=actor)
     except Exception as e:
         traceback.print_exc()
         raise e

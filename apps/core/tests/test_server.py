@@ -467,9 +467,10 @@ def test_get_recall_memory(server, org_id, user, agent_id):
 #    assert len(passage_none) == 0
 
 
-def test_get_context_window_overview(server: SyncServer, user, agent_id):
+@pytest.mark.asyncio
+async def test_get_context_window_overview(server: SyncServer, user, agent_id):
     """Test that the context window overview fetch works"""
-    overview = server.get_agent_context_window(agent_id=agent_id, actor=user)
+    overview = await server.agent_manager.get_context_window(agent_id=agent_id, actor=user)
     assert overview is not None
 
     # Run some basic checks
