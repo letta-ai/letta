@@ -16,7 +16,7 @@ router = APIRouter(prefix="/providers", tags=["providers"])
 
 
 @router.get("/", response_model=List[Provider], operation_id="list_providers")
-def list_providers(
+async def list_providers(
     name: Optional[str] = Query(None),
     provider_type: Optional[ProviderType] = Query(None),
     after: Optional[str] = Query(None),
@@ -28,8 +28,10 @@ def list_providers(
     Get a list of all custom providers in the database
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
-        providers = server.provider_manager.list_providers(after=after, limit=limit, actor=actor, name=name, provider_type=provider_type)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        providers = await server.provider_manager.list_providers_async(
+            after=after, limit=limit, actor=actor, name=name, provider_type=provider_type
+        )
     except HTTPException:
         raise
     except Exception as e:
