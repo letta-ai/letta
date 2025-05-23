@@ -152,16 +152,17 @@ class DatabaseRegistry:
         if pool_cls:
             base_args["poolclass"] = pool_cls
 
-        if not use_null_pool and not is_async:
+        if not use_null_pool:
             base_args.update(
                 {
                     "pool_size": settings.pg_pool_size,
                     "max_overflow": settings.pg_max_overflow,
                     "pool_timeout": settings.pg_pool_timeout,
                     "pool_recycle": settings.pg_pool_recycle,
-                    "pool_use_lifo": settings.pool_use_lifo,
                 }
             )
+            if not is_async:
+                base_args["pool_use_lifo"] = settings.pool_use_lifo
 
         return base_args
 
