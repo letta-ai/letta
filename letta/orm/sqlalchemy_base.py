@@ -13,7 +13,6 @@ from letta.log import get_logger
 from letta.orm.base import Base, CommonSqlalchemyMetaMixins
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.orm.sqlite_functions import adapt_array
-from letta.tracing import trace_method
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
@@ -49,7 +48,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
 
     @classmethod
-    @trace_method
     @handle_db_timeout
     def list(
         cls,
@@ -151,7 +149,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             return results
 
     @classmethod
-    @trace_method
     @handle_db_timeout
     async def list_async(
         cls,
@@ -436,7 +433,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         return results
 
     @classmethod
-    @trace_method
     @handle_db_timeout
     def read(
         cls,
@@ -475,7 +471,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         return found[0]
 
     @classmethod
-    @trace_method
     @handle_db_timeout
     async def read_async(
         cls,
@@ -514,7 +509,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         return found[0]
 
     @classmethod
-    @trace_method
     @handle_db_timeout
     def read_multiple(
         cls,
@@ -542,7 +536,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         return cls._read_multiple_postprocess(results, identifiers, query_conditions)
 
     @classmethod
-    @trace_method
     @handle_db_timeout
     async def read_multiple_async(
         cls,
@@ -621,7 +614,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         logger.debug(f"{cls.__name__} not found with {conditions_str}")
         return []
 
-    @trace_method
     @handle_db_timeout
     def create(self, db_session: "Session", actor: Optional["User"] = None, no_commit: bool = False) -> "SqlalchemyBase":
         logger.debug(f"Creating {self.__class__.__name__} with ID: {self.id} with actor={actor}")
@@ -639,7 +631,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         except (DBAPIError, IntegrityError) as e:
             self._handle_dbapi_error(e)
 
-    @trace_method
     @handle_db_timeout
     async def create_async(self, db_session: "AsyncSession", actor: Optional["User"] = None, no_commit: bool = False) -> "SqlalchemyBase":
         """Async version of create function"""
@@ -659,7 +650,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             self._handle_dbapi_error(e)
 
     @classmethod
-    @trace_method
     @handle_db_timeout
     def batch_create(cls, items: List["SqlalchemyBase"], db_session: "Session", actor: Optional["User"] = None) -> List["SqlalchemyBase"]:
         """
@@ -701,7 +691,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             cls._handle_dbapi_error(e)
 
     @classmethod
-    @trace_method
     @handle_db_timeout
     async def batch_create_async(
         cls, items: List["SqlalchemyBase"], db_session: "AsyncSession", actor: Optional["User"] = None
@@ -746,7 +735,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         except (DBAPIError, IntegrityError) as e:
             cls._handle_dbapi_error(e)
 
-    @trace_method
     @handle_db_timeout
     def delete(self, db_session: "Session", actor: Optional["User"] = None) -> "SqlalchemyBase":
         logger.debug(f"Soft deleting {self.__class__.__name__} with ID: {self.id} with actor={actor}")
@@ -757,7 +745,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         self.is_deleted = True
         return self.update(db_session)
 
-    @trace_method
     @handle_db_timeout
     async def delete_async(self, db_session: "AsyncSession", actor: Optional["User"] = None) -> "SqlalchemyBase":
         """Soft delete a record asynchronously (mark as deleted)."""
@@ -769,7 +756,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         self.is_deleted = True
         return await self.update_async(db_session)
 
-    @trace_method
     @handle_db_timeout
     def hard_delete(self, db_session: "Session", actor: Optional["User"] = None) -> None:
         """Permanently removes the record from the database."""
@@ -786,7 +772,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             else:
                 logger.debug(f"{self.__class__.__name__} with ID {self.id} successfully hard deleted")
 
-    @trace_method
     @handle_db_timeout
     async def hard_delete_async(self, db_session: "AsyncSession", actor: Optional["User"] = None) -> None:
         """Permanently removes the record from the database asynchronously."""
@@ -801,7 +786,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 logger.exception(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}")
                 raise ValueError(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}: {e}")
 
-    @trace_method
     @handle_db_timeout
     def update(self, db_session: Session, actor: Optional["User"] = None, no_commit: bool = False) -> "SqlalchemyBase":
         logger.debug(...)
@@ -818,7 +802,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         db_session.refresh(self)
         return self
 
-    @trace_method
     @handle_db_timeout
     async def update_async(self, db_session: AsyncSession, actor: "User | None" = None, no_commit: bool = False) -> "SqlalchemyBase":
         """Async version of update function"""
@@ -869,7 +852,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         return query
 
     @classmethod
-    @trace_method
     @handle_db_timeout
     def size(
         cls,
@@ -904,7 +886,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 raise e
 
     @classmethod
-    @trace_method
     @handle_db_timeout
     async def size_async(
         cls,
