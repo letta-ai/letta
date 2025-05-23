@@ -17,7 +17,6 @@ import {
   users,
 } from '@letta-cloud/service-database';
 import { and, count, desc, eq, ilike, inArray } from 'drizzle-orm';
-import { AdminService } from '@letta-cloud/sdk-core';
 import { getUsageByModelSummaryAndOrganizationId } from '$web/web-api/usage/usageRouter';
 import {
   addCreditsToOrganization,
@@ -26,6 +25,7 @@ import {
 import { getUserOrThrow } from '$web/server/auth';
 import { getOrganizationLettaServiceAccountId } from '$web/server/lib/getOrganizationLettaServiceAccountId/getOrganizationLettaServiceAccountId';
 import { deleteRedisData } from '@letta-cloud/service-redis';
+import { deleteOrganization } from '$web/server/auth/lib/deleteOrganization/deleteOrganization';
 
 /* Get Organizations */
 type GetOrganizationsResponse = ServerInferResponses<
@@ -568,11 +568,7 @@ async function adminDeleteOrganization(
     };
   }
 
-  await db.delete(organizations).where(eq(organizations.id, organizationId));
-
-  await AdminService.deleteOrganizationById({
-    orgId: organization.lettaAgentsId,
-  });
+  await deleteOrganization(organizationId);
 
   return {
     status: 200,

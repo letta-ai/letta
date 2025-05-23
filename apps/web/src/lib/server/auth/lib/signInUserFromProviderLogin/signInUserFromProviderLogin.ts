@@ -40,6 +40,19 @@ export async function signInUserFromProviderLogin(
   (await cookies()).set(CookieNames.THEME, user.theme);
 
   await setRedisData(
+    'userIdToUserSession',
+    {
+      userId: user.id,
+    },
+    {
+      expiresAt: expires,
+      data: {
+        sessionId,
+      },
+    },
+  );
+
+  await setRedisData(
     'userSession',
     { sessionId },
     {

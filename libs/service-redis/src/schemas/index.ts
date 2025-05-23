@@ -10,7 +10,6 @@ import {
 import { and, eq } from 'drizzle-orm';
 import {
   accessPolicyVersionOne,
-  BillingTiers,
   ModelTiers,
   PaymentCustomerSchema,
   PaymentCustomerSubscriptionSchema,
@@ -37,6 +36,15 @@ const userSessionDefinition = generateDefinitionSatisfies({
     activeOrganizationId: z.string(),
     id: z.string(),
     coreUserId: z.string(),
+  }),
+});
+
+const userIdToUserSessionDefinition = generateDefinitionSatisfies({
+  baseKey: 'userIdToUserSession',
+  input: z.object({ userId: z.string() }),
+  getKey: (args) => `userIdToUserSession:${args.userId}`,
+  output: z.object({
+    sessionId: z.string(),
   }),
 });
 
@@ -379,6 +387,7 @@ export const redisDefinitions = {
   clientSideApiKeys: clientSideApiKeysDefinition,
   modelIdToModelTier: modelIdToModelTierDefinition,
   phoneTotp: phoneTotpDefinition,
+  userIdToUserSession: userIdToUserSessionDefinition,
   emailTotp: emailTotpDefinition,
   customerSubscription: customerSubscriptionDefinition,
   paymentCustomer: paymentCustomerDefinition,

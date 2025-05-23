@@ -27,7 +27,6 @@ import {
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { CookieNames } from '$web/server/cookies/types';
-import { AdminService } from '@letta-cloud/sdk-core';
 import { createOrUpdateCRMContact } from '@@letta-cloud/service-crm';
 import * as Sentry from '@sentry/node';
 import { environment } from '@letta-cloud/config-environment-variables';
@@ -46,6 +45,7 @@ import {
   sendSMSVerificationMessage,
   verifySMSVerificationMessage,
 } from 'service-sms';
+import { swapUserOrganization } from '$web/server/auth/lib/swapUserOrganization/swapUserOrganization';
 
 type ResponseShapes = ServerInferResponses<typeof userContract>;
 
@@ -235,15 +235,12 @@ async function updateActiveOrganization(
     };
   }
 
-  await Promise.all([
-    db.update(users).set({ activeOrganizationId }).where(eq(users.id, user.id)),
-    AdminService.updateUser({
-      requestBody: {
-        id: user.lettaAgentsId,
-        organization_id: organization.lettaAgentsId,
-      },
-    }),
-  ]);
+  await swapUserOrganization({
+    userId: user.id,
+    coreUserId: user.lettaAgentsId,
+    organizationId: activeOrganizationId,
+    coreOrganizationId: organization.lettaAgentsId,
+  });
 
   await setRedisData(
     'userSession',
