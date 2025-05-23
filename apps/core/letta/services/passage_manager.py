@@ -243,7 +243,7 @@ class PassageManager:
 
     @enforce_types
     @trace_method
-    def estimate_embeddings_size(
+    async def estimate_embeddings_size_async(
         self,
         actor: PydanticUser,
         agent_id: Optional[str] = None,
@@ -263,4 +263,4 @@ class PassageManager:
             raise ValueError(f"Invalid storage unit: {storage_unit}. Must be one of {list(BYTES_PER_STORAGE_UNIT.keys())}.")
         BYTES_PER_EMBEDDING_DIM = 4
         GB_PER_EMBEDDING = BYTES_PER_EMBEDDING_DIM / BYTES_PER_STORAGE_UNIT[storage_unit] * MAX_EMBEDDING_DIM
-        return self.size(actor=actor, agent_id=agent_id) * GB_PER_EMBEDDING
+        return await self.size_async(actor=actor, agent_id=agent_id) * GB_PER_EMBEDDING
