@@ -40,6 +40,21 @@ class BlockManager:
 
     @trace_method
     @enforce_types
+    async def create_or_update_block_async(self, block: PydanticBlock, actor: PydanticUser) -> PydanticBlock:
+        """Create a new block based on the Block schema."""
+        db_block = await self.get_block_by_id_async(block.id, actor)
+        if db_block:
+            update_data = BlockUpdate(**block.model_dump(to_orm=True, exclude_none=True))
+            return await self.update_block_async(block.id, update_data, actor)
+        else:
+            async with db_registry.async_session() as session:
+                data = block.model_dump(to_orm=True, exclude_none=True)
+                block = BlockModel(**data, organization_id=actor.organization_id)
+                await block.create_async(session, actor=actor)
+                return block.to_pydantic()
+
+    @trace_method
+    @enforce_types
     def batch_create_blocks(self, blocks: List[PydanticBlock], actor: PydanticUser) -> List[PydanticBlock]:
         """
         Batch-create multiple Blocks in one transaction for better performance.
@@ -80,11 +95,36 @@ class BlockManager:
 
     @trace_method
     @enforce_types
+    async def update_block_async(self, block_id: str, block_update: BlockUpdate, actor: PydanticUser) -> PydanticBlock:
+        """Update a block by its ID with the given BlockUpdate object."""
+        # Safety check for block
+
+        async with db_registry.async_session() as session:
+            block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
+            update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+
+            for key, value in update_data.items():
+                setattr(block, key, value)
+
+            await block.update_async(db_session=session, actor=actor)
+            return block.to_pydantic()
+
+    @trace_method
+    @enforce_types
     def delete_block(self, block_id: str, actor: PydanticUser) -> PydanticBlock:
         """Delete a block by its ID."""
         with db_registry.session() as session:
             block = BlockModel.read(db_session=session, identifier=block_id)
             block.hard_delete(db_session=session, actor=actor)
+            return block.to_pydantic()
+
+    @trace_method
+    @enforce_types
+    async def delete_block_async(self, block_id: str, actor: PydanticUser) -> PydanticBlock:
+        """Delete a block by its ID."""
+        async with db_registry.async_session() as session:
+            block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
+            await block.hard_delete_async(db_session=session, actor=actor)
             return block.to_pydantic()
 
     @trace_method
@@ -157,6 +197,17 @@ class BlockManager:
         with db_registry.session() as session:
             try:
                 block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
+                return block.to_pydantic()
+            except NoResultFound:
+                return None
+
+    @trace_method
+    @enforce_types
+    async def get_block_by_id_async(self, block_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticBlock]:
+        """Retrieve a block by its name."""
+        async with db_registry.async_session() as session:
+            try:
+                block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
                 return block.to_pydantic()
             except NoResultFound:
                 return None
