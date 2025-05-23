@@ -1080,6 +1080,56 @@ class AgentManager:
 
     @trace_method
     @enforce_types
+    async def delete_agent_async(self, agent_id: str, actor: PydanticUser) -> None:
+        """
+        Deletes an agent and its associated relationships.
+        Ensures proper permission checks and cascades where applicable.
+
+        Args:
+            agent_id: ID of the agent to be deleted.
+            actor: User performing the action.
+
+        Raises:
+            NoResultFound: If agent doesn't exist
+        """
+        async with db_registry.async_session() as session:
+            # Retrieve the agent
+            logger.debug(f"Hard deleting Agent with ID: {agent_id} with actor={actor}")
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            agents_to_delete = [agent]
+            sleeptime_group_to_delete = None
+
+            # Delete sleeptime agent and group (TODO this is flimsy pls fix)
+            if agent.multi_agent_group:
+                participant_agent_ids = agent.multi_agent_group.agent_ids
+                if agent.multi_agent_group.manager_type in {ManagerType.sleeptime, ManagerType.voice_sleeptime} and participant_agent_ids:
+                    for participant_agent_id in participant_agent_ids:
+                        try:
+                            sleeptime_agent = await AgentModel.read_async(db_session=session, identifier=participant_agent_id, actor=actor)
+                            agents_to_delete.append(sleeptime_agent)
+                        except NoResultFound:
+                            pass  # agent already deleted
+                    sleeptime_agent_group = await GroupModel.read_async(
+                        db_session=session, identifier=agent.multi_agent_group.id, actor=actor
+                    )
+                    sleeptime_group_to_delete = sleeptime_agent_group
+
+            try:
+                if sleeptime_group_to_delete is not None:
+                    await session.delete(sleeptime_group_to_delete)
+                    await session.commit()
+                for agent in agents_to_delete:
+                    await session.delete(agent)
+                    await session.commit()
+            except Exception as e:
+                await session.rollback()
+                logger.exception(f"Failed to hard delete Agent with ID {agent_id}")
+                raise ValueError(f"Failed to hard delete Agent with ID {agent_id}: {e}")
+            else:
+                logger.debug(f"Agent with ID {agent_id} successfully hard deleted")
+
+    @trace_method
+    @enforce_types
     def serialize(self, agent_id: str, actor: PydanticUser) -> AgentSchema:
         with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
@@ -1680,6 +1730,22 @@ class AgentManager:
 
     @trace_method
     @enforce_types
+    async def get_block_with_label_async(
+        self,
+        agent_id: str,
+        block_label: str,
+        actor: PydanticUser,
+    ) -> PydanticBlock:
+        """Gets a block attached to an agent by its label."""
+        async with db_registry.async_session() as session:
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            for block in agent.core_memory:
+                if block.label == block_label:
+                    return block.to_pydantic()
+            raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
+
+    @trace_method
+    @enforce_types
     async def modify_block_by_label_async(
         self,
         agent_id: str,
@@ -1745,6 +1811,18 @@ class AgentManager:
 
     @trace_method
     @enforce_types
+    async def attach_block_async(self, agent_id: str, block_id: str, actor: PydanticUser) -> PydanticAgentState:
+        """Attaches a block to an agent."""
+        async with db_registry.async_session() as session:
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
+
+            agent.core_memory.append(block)
+            await agent.update_async(session, actor=actor)
+            return await agent.to_pydantic_async()
+
+    @trace_method
+    @enforce_types
     def detach_block(
         self,
         agent_id: str,
@@ -1763,6 +1841,27 @@ class AgentManager:
 
             agent.update(session, actor=actor)
             return agent.to_pydantic()
+
+    @trace_method
+    @enforce_types
+    async def detach_block_async(
+        self,
+        agent_id: str,
+        block_id: str,
+        actor: PydanticUser,
+    ) -> PydanticAgentState:
+        """Detaches a block from an agent."""
+        async with db_registry.async_session() as session:
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            original_length = len(agent.core_memory)
+
+            agent.core_memory = [b for b in agent.core_memory if b.id != block_id]
+
+            if len(agent.core_memory) == original_length:
+                raise NoResultFound(f"No block with id '{block_id}' found for agent '{agent_id}' with actor id: '{actor.id}'")
+
+            await agent.update_async(session, actor=actor)
+            return await agent.to_pydantic_async()
 
     @trace_method
     @enforce_types

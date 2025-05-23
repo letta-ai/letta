@@ -356,7 +356,7 @@ async def retrieve_agent(
 
 
 @router.delete("/{agent_id}", response_model=None, operation_id="delete_agent")
-def delete_agent(
+async def delete_agent(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -364,9 +364,9 @@ def delete_agent(
     """
     Delete an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     try:
-        server.agent_manager.delete_agent(agent_id=agent_id, actor=actor)
+        await server.agent_manager.delete_agent_async(agent_id=agent_id, actor=actor)
         return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Agent id={agent_id} successfully deleted"})
     except NoResultFound:
         raise HTTPException(status_code=404, detail=f"Agent agent_id={agent_id} not found for user_id={actor.id}.")
@@ -387,7 +387,7 @@ async def list_agent_sources(
 
 # TODO: remove? can also get with agent blocks
 @router.get("/{agent_id}/core-memory", response_model=Memory, operation_id="retrieve_agent_memory")
-def retrieve_agent_memory(
+async def retrieve_agent_memory(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -396,13 +396,13 @@ def retrieve_agent_memory(
     Retrieve the memory state of a specific agent.
     This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    return server.get_agent_memory(agent_id=agent_id, actor=actor)
+    return await server.get_agent_memory_async(agent_id=agent_id, actor=actor)
 
 
 @router.get("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="retrieve_core_memory_block")
-def retrieve_block(
+async def retrieve_block(
     agent_id: str,
     block_label: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -411,10 +411,10 @@ def retrieve_block(
     """
     Retrieve a core memory block from an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
-        return server.agent_manager.get_block_with_label(agent_id=agent_id, block_label=block_label, actor=actor)
+        return await server.agent_manager.get_block_with_label_async(agent_id=agent_id, block_label=block_label, actor=actor)
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -454,13 +454,13 @@ async def modify_block(
     )
 
     # This should also trigger a system prompt change in the agent
-    server.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True, update_timestamp=False)
+    await server.agent_manager.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True, update_timestamp=False)
 
     return block
 
 
 @router.patch("/{agent_id}/core-memory/blocks/attach/{block_id}", response_model=AgentState, operation_id="attach_core_memory_block")
-def attach_block(
+async def attach_block(
     agent_id: str,
     block_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -469,12 +469,12 @@ def attach_block(
     """
     Attach a core memoryblock to an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.agent_manager.attach_block(agent_id=agent_id, block_id=block_id, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.agent_manager.attach_block_async(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
 @router.patch("/{agent_id}/core-memory/blocks/detach/{block_id}", response_model=AgentState, operation_id="detach_core_memory_block")
-def detach_block(
+async def detach_block(
     agent_id: str,
     block_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -483,8 +483,8 @@ def detach_block(
     """
     Detach a core memory block from an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.agent_manager.detach_block(agent_id=agent_id, block_id=block_id, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.agent_manager.detach_block_async(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
 @router.get("/{agent_id}/archival-memory", response_model=List[Passage], operation_id="list_passages")

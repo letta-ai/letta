@@ -969,6 +969,11 @@ class SyncServer(Server):
         """Return the memory of an agent (core memory)"""
         return self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor).memory
 
+    async def get_agent_memory_async(self, agent_id: str, actor: User) -> Memory:
+        """Return the memory of an agent (core memory)"""
+        agent = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        return agent.memory
+
     def get_archival_memory_summary(self, agent_id: str, actor: User) -> ArchivalMemorySummary:
         return ArchivalMemorySummary(size=self.agent_manager.passage_size(actor=actor, agent_id=agent_id))
 
