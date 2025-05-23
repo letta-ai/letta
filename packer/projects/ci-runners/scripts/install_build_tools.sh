@@ -37,6 +37,7 @@ echo "Installing Node"
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -
 sudo apt-get install -y nodejs
 sudo npm install -g fern-api
+sudo npm install -g yarn
 sudo npm install -g @e2b/cli
 # sudo chown -R ci-runner:ci-runner /usr/lib/node_modules
 

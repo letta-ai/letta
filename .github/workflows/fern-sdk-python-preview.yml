@@ -13,7 +13,7 @@ on:
 
 jobs:
   changed-files:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     name: changed-files
     outputs:
       all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
@@ -33,7 +33,7 @@ jobs:
   preview-python-sdk:
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     needs: [changed-files]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     services:
       postgres:
         image: pgvector/pgvector:pg17
@@ -54,68 +54,21 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set up python 3.12
-        id: setup-python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.12
-
-      - name: Load cached Poetry Binary
-        id: cached-poetry-binary
-        uses: actions/cache@v4
-        with:
-          path: ~/.local
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-1.8.3
-
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 1.8.3
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-
-      - name: Load cached venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
-          # Restore cache with this prefix if not exact match with key
-          # Note cache-hit returns false in this case, so the below step will run
-          restore-keys: |
-            venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
-
-      - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        shell: bash
-        working-directory: apps/core
-        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
-      - name: Authenticate to Google Cloud
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
       - name: Inject env vars into environment
         working-directory: apps/core
         run: |
-          # Install required package
-          poetry run pip install google-cloud-secret-manager
-
-          # Get secrets and mask them before adding to environment
           while IFS= read -r line || [[ -n "$line" ]]; do
-            # Check if line is not empty
             if [[ -n "$line" ]]; then
-              # Extract the value after the equals sign
               value=$(echo "$line" | cut -d= -f2-)
-              # Mask the value so it doesn't appear in logs
               echo "::add-mask::$value"
-              # Add to GitHub environment
               echo "$line" >> $GITHUB_ENV
             fi
-          done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py --env dev --service ci)
+          done < <(letta_secrets_helper --env dev --service ci)
+
+      - name: Install dependencies
+        shell: bash
+        working-directory: apps/core
+        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
 
       - name: Migrate database
         working-directory: apps/core
@@ -138,15 +91,12 @@ jobs:
           LETTA_PG_HOST: localhost
           LETTA_PG_PORT: 5432
           OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
-          E2B_SANDBOX_TEMPLATE_ID: ${{ secrets.E2B_SANDBOX_TEMPLATE_ID }}
+          E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
         run: |
           # Run server in background
           poetry run letta server &
           # Wait for server to be ready
           timeout 60 bash -c 'until curl -s http://localhost:8283/health; do sleep 1; done'
-
-      - name: Install Fern
-        run: npm install -g fern-api
 
       - name: Generate Python SDK Preview
         working-directory: apps

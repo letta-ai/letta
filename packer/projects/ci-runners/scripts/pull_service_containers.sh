@@ -4,4 +4,5 @@
 sudo -u ci-runner docker pull redis
 sudo -u ci-runner docker pull postgres
 sudo -u ci-runner docker pull pgvector/pgvector:pg17
-sudo -u ci-runner docker pull e2bdev/code-interpreter:latest
+# TODO: Deal with arm architecture or wtv
+# sudo -u ci-runner docker pull e2bdev/code-interpreter:latest
