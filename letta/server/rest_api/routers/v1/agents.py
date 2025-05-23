@@ -297,7 +297,7 @@ def detach_tool(
 
 
 @router.patch("/{agent_id}/sources/attach/{source_id}", response_model=AgentState, operation_id="attach_source_to_agent")
-def attach_source(
+async def attach_source(
     agent_id: str,
     source_id: str,
     background_tasks: BackgroundTasks,
@@ -310,7 +310,7 @@ def attach_source(
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     agent = server.agent_manager.attach_source(agent_id=agent_id, source_id=source_id, actor=actor)
     if agent.enable_sleeptime:
-        source = server.source_manager.get_source_by_id(source_id=source_id)
+        source = await server.source_manager.get_source_by_id_async(source_id=source_id)
         background_tasks.add_task(server.sleeptime_document_ingest, agent, source, actor)
     return agent
 

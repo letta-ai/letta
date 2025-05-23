@@ -2127,6 +2127,44 @@ class AgentManager:
             count_query = select(func.count()).select_from(main_query.subquery())
             return session.scalar(count_query) or 0
 
+    @enforce_types
+    async def passage_size_async(
+        self,
+        actor: PydanticUser,
+        agent_id: Optional[str] = None,
+        file_id: Optional[str] = None,
+        query_text: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        source_id: Optional[str] = None,
+        embed_query: bool = False,
+        ascending: bool = True,
+        embedding_config: Optional[EmbeddingConfig] = None,
+        agent_only: bool = False,
+    ) -> int:
+        async with db_registry.async_session() as session:
+            main_query = self._build_passage_query(
+                actor=actor,
+                agent_id=agent_id,
+                file_id=file_id,
+                query_text=query_text,
+                start_date=start_date,
+                end_date=end_date,
+                before=before,
+                after=after,
+                source_id=source_id,
+                embed_query=embed_query,
+                ascending=ascending,
+                embedding_config=embedding_config,
+                agent_only=agent_only,
+            )
+
+            # Convert to count query
+            count_query = select(func.count()).select_from(main_query.subquery())
+            return (await session.execute(count_query)).scalar() or 0
+
     # ======================================================================================================================
     # Tool Management
     # ======================================================================================================================
