@@ -233,6 +233,17 @@ class GroupManager:
 
     @trace_method
     @enforce_types
+    async def bump_turns_counter_async(self, group_id: str, actor: PydanticUser) -> int:
+        async with db_registry.async_session() as session:
+            # Ensure group is loadable by user
+            group = await GroupModel.read_async(session, identifier=group_id, actor=actor)
+
+            # Update turns counter
+            group.turns_counter = (group.turns_counter + 1) % group.sleeptime_agent_frequency
+            await group.update_async(session, actor=actor)
+            return group.turns_counter
+
+    @enforce_types
     def get_last_processed_message_id_and_update(self, group_id: str, last_processed_message_id: str, actor: PydanticUser) -> str:
         with db_registry.session() as session:
             # Ensure group is loadable by user
@@ -246,6 +257,21 @@ class GroupManager:
             return prev_last_processed_message_id
 
     @trace_method
+    @enforce_types
+    async def get_last_processed_message_id_and_update_async(
+        self, group_id: str, last_processed_message_id: str, actor: PydanticUser
+    ) -> str:
+        async with db_registry.async_session() as session:
+            # Ensure group is loadable by user
+            group = await GroupModel.read_async(session, identifier=group_id, actor=actor)
+
+            # Update last processed message id
+            prev_last_processed_message_id = group.last_processed_message_id
+            group.last_processed_message_id = last_processed_message_id
+            await group.update_async(session, actor=actor)
+
+            return prev_last_processed_message_id
+
     @enforce_types
     def size(
         self,

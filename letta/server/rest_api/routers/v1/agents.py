@@ -13,10 +13,11 @@ from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
-from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
+from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.group import Group
 from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
@@ -637,22 +638,35 @@ async def send_message(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor)
-    agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
+    agent_eligible = agent.enable_sleeptime or not agent.multi_agent_group
     experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
 
     if agent_eligible and feature_enabled and model_compatible:
-        experimental_agent = LettaAgent(
-            agent_id=agent_id,
-            message_manager=server.message_manager,
-            agent_manager=server.agent_manager,
-            block_manager=server.block_manager,
-            passage_manager=server.passage_manager,
-            actor=actor,
-            step_manager=server.step_manager,
-            telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-        )
+        if agent.enable_sleeptime:
+            experimental_agent = SleeptimeMultiAgentV2(
+                agent_id=agent_id,
+                message_manager=server.message_manager,
+                agent_manager=server.agent_manager,
+                block_manager=server.block_manager,
+                passage_manager=server.passage_manager,
+                group_manager=server.group_manager,
+                job_manager=server.job_manager,
+                actor=actor,
+                group=agent.multi_agent_group,
+            )
+        else:
+            experimental_agent = LettaAgent(
+                agent_id=agent_id,
+                message_manager=server.message_manager,
+                agent_manager=server.agent_manager,
+                block_manager=server.block_manager,
+                passage_manager=server.passage_manager,
+                actor=actor,
+                step_manager=server.step_manager,
+                telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
+            )
 
         result = await experimental_agent.step(request.messages, max_steps=10, use_assistant_message=request.use_assistant_message)
     else:
@@ -699,23 +713,38 @@ async def send_message_streaming(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor)
-    agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
+    agent_eligible = agent.enable_sleeptime or not agent.multi_agent_group
     experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
 
     if agent_eligible and feature_enabled and model_compatible:
-        experimental_agent = LettaAgent(
-            agent_id=agent_id,
-            message_manager=server.message_manager,
-            agent_manager=server.agent_manager,
-            block_manager=server.block_manager,
-            passage_manager=server.passage_manager,
-            actor=actor,
-            step_manager=server.step_manager,
-            telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-        )
+        if agent.enable_sleeptime:
+            experimental_agent = SleeptimeMultiAgentV2(
+                agent_id=agent_id,
+                message_manager=server.message_manager,
+                agent_manager=server.agent_manager,
+                block_manager=server.block_manager,
+                passage_manager=server.passage_manager,
+                group_manager=server.group_manager,
+                job_manager=server.job_manager,
+                actor=actor,
+                step_manager=server.step_manager,
+                telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
+                group=agent.multi_agent_group,
+            )
+        else:
+            experimental_agent = LettaAgent(
+                agent_id=agent_id,
+                message_manager=server.message_manager,
+                agent_manager=server.agent_manager,
+                block_manager=server.block_manager,
+                passage_manager=server.passage_manager,
+                actor=actor,
+                step_manager=server.step_manager,
+                telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
+            )
         from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
 
         if request.stream_tokens and model_compatible_token_streaming:

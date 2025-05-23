@@ -19,6 +19,8 @@ from letta.services.group_manager import GroupManager
 from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
+from letta.services.step_manager import NoopStepManager, StepManager
+from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
 
 
 class SleeptimeMultiAgentV2(BaseAgent):
@@ -32,6 +34,8 @@ class SleeptimeMultiAgentV2(BaseAgent):
         group_manager: GroupManager,
         job_manager: JobManager,
         actor: User,
+        step_manager: StepManager = NoopStepManager(),
+        telemetry_manager: TelemetryManager = NoopTelemetryManager(),
         group: Optional[Group] = None,
     ):
         super().__init__(
@@ -45,11 +49,18 @@ class SleeptimeMultiAgentV2(BaseAgent):
         self.passage_manager = passage_manager
         self.group_manager = group_manager
         self.job_manager = job_manager
+        self.step_manager = step_manager
+        self.telemetry_manager = telemetry_manager
         # Group settings
         assert group.manager_type == ManagerType.sleeptime, f"Expected group manager type to be 'sleeptime', got {group.manager_type}"
         self.group = group
 
-    async def step(self, input_messages: List[MessageCreate], max_steps: int = 10) -> LettaResponse:
+    async def step(
+        self,
+        input_messages: List[MessageCreate],
+        max_steps: int = 10,
+        use_assistant_message: bool = True,
+    ) -> LettaResponse:
         run_ids = []
 
         # Prepare new messages
@@ -68,22 +79,26 @@ class SleeptimeMultiAgentV2(BaseAgent):
             block_manager=self.block_manager,
             passage_manager=self.passage_manager,
             actor=self.actor,
+            step_manager=self.step_manager,
+            telemetry_manager=self.telemetry_manager,
         )
         # Perform foreground agent step
-        response = await foreground_agent.step(input_messages=new_messages, max_steps=max_steps)
+        response = await foreground_agent.step(
+            input_messages=new_messages, max_steps=max_steps, use_assistant_message=use_assistant_message
+        )
 
         # Get last response messages
         last_response_messages = foreground_agent.response_messages
 
         # Update turns counter
         if self.group.sleeptime_agent_frequency is not None and self.group.sleeptime_agent_frequency > 0:
-            turns_counter = self.group_manager.bump_turns_counter(group_id=self.group.id, actor=self.actor)
+            turns_counter = await self.group_manager.bump_turns_counter_async(group_id=self.group.id, actor=self.actor)
 
         # Perform participant steps
         if self.group.sleeptime_agent_frequency is None or (
             turns_counter is not None and turns_counter % self.group.sleeptime_agent_frequency == 0
         ):
-            last_processed_message_id = self.group_manager.get_last_processed_message_id_and_update(
+            last_processed_message_id = await self.group_manager.get_last_processed_message_id_and_update_async(
                 group_id=self.group.id, last_processed_message_id=last_response_messages[-1].id, actor=self.actor
             )
             for participant_agent_id in self.group.agent_ids:
@@ -92,6 +107,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
                         participant_agent_id,
                         last_response_messages,
                         last_processed_message_id,
+                        use_assistant_message,
                     )
                     run_ids.append(run_id)
 
@@ -103,7 +119,13 @@ class SleeptimeMultiAgentV2(BaseAgent):
         response.usage.run_ids = run_ids
         return response
 
-    async def step_stream(self, input_messages: List[MessageCreate], max_steps: int = 10) -> AsyncGenerator[str, None]:
+    async def step_stream(
+        self,
+        input_messages: List[MessageCreate],
+        max_steps: int = 10,
+        use_assistant_message: bool = True,
+        request_start_timestamp_ns: Optional[int] = None,
+    ) -> AsyncGenerator[str, None]:
         # Prepare new messages
         new_messages = []
         for message in input_messages:
@@ -120,9 +142,16 @@ class SleeptimeMultiAgentV2(BaseAgent):
             block_manager=self.block_manager,
             passage_manager=self.passage_manager,
             actor=self.actor,
+            step_manager=self.step_manager,
+            telemetry_manager=self.telemetry_manager,
         )
         # Perform foreground agent step
-        async for chunk in foreground_agent.step_stream(input_messages=new_messages, max_steps=max_steps):
+        async for chunk in foreground_agent.step_stream(
+            input_messages=new_messages,
+            max_steps=max_steps,
+            use_assistant_message=use_assistant_message,
+            request_start_timestamp_ns=request_start_timestamp_ns,
+        ):
             yield chunk
 
         # Get response messages
@@ -130,20 +159,21 @@ class SleeptimeMultiAgentV2(BaseAgent):
 
         # Update turns counter
         if self.group.sleeptime_agent_frequency is not None and self.group.sleeptime_agent_frequency > 0:
-            turns_counter = self.group_manager.bump_turns_counter(group_id=self.group.id, actor=self.actor)
+            turns_counter = await self.group_manager.bump_turns_counter_async(group_id=self.group.id, actor=self.actor)
 
         # Perform participant steps
         if self.group.sleeptime_agent_frequency is None or (
             turns_counter is not None and turns_counter % self.group.sleeptime_agent_frequency == 0
         ):
-            last_processed_message_id = self.group_manager.get_last_processed_message_id_and_update(
+            last_processed_message_id = await self.group_manager.get_last_processed_message_id_and_update_async(
                 group_id=self.group.id, last_processed_message_id=last_response_messages[-1].id, actor=self.actor
             )
             for sleeptime_agent_id in self.group.agent_ids:
-                self._issue_background_task(
+                run_id = await self._issue_background_task(
                     sleeptime_agent_id,
                     last_response_messages,
                     last_processed_message_id,
+                    use_assistant_message,
                 )
 
     async def _issue_background_task(
@@ -151,6 +181,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
         sleeptime_agent_id: str,
         response_messages: List[Message],
         last_processed_message_id: str,
+        use_assistant_message: bool = True,
     ) -> str:
         run = Run(
             user_id=self.actor.id,
@@ -160,7 +191,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
                 "agent_id": sleeptime_agent_id,
             },
         )
-        run = self.job_manager.create_job(pydantic_job=run, actor=self.actor)
+        run = await self.job_manager.create_job_async(pydantic_job=run, actor=self.actor)
 
         asyncio.create_task(
             self._participant_agent_step(
@@ -169,6 +200,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
                 response_messages=response_messages,
                 last_processed_message_id=last_processed_message_id,
                 run_id=run.id,
+                use_assistant_message=True,
             )
         )
         return run.id
@@ -180,11 +212,12 @@ class SleeptimeMultiAgentV2(BaseAgent):
         response_messages: List[Message],
         last_processed_message_id: str,
         run_id: str,
+        use_assistant_message: bool = True,
     ) -> str:
         try:
             # Update job status
             job_update = JobUpdate(status=JobStatus.running)
-            self.job_manager.update_job_by_id(job_id=run_id, job_update=job_update, actor=self.actor)
+            await self.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=self.actor)
 
             # Create conversation transcript
             prior_messages = []
@@ -221,11 +254,14 @@ class SleeptimeMultiAgentV2(BaseAgent):
                 block_manager=self.block_manager,
                 passage_manager=self.passage_manager,
                 actor=self.actor,
+                step_manager=self.step_manager,
+                telemetry_manager=self.telemetry_manager,
             )
 
             # Perform sleeptime agent step
             result = await sleeptime_agent.step(
                 input_messages=sleeptime_agent_messages,
+                use_assistant_message=use_assistant_message,
             )
 
             # Update job status
@@ -237,7 +273,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
                     "agent_id": sleeptime_agent_id,
                 },
             )
-            self.job_manager.update_job_by_id(job_id=run_id, job_update=job_update, actor=self.actor)
+            await self.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=self.actor)
             return result
         except Exception as e:
             job_update = JobUpdate(
@@ -245,5 +281,5 @@ class SleeptimeMultiAgentV2(BaseAgent):
                 completed_at=datetime.now(timezone.utc).replace(tzinfo=None),
                 metadata={"error": str(e)},
             )
-            self.job_manager.update_job_by_id(job_id=run_id, job_update=job_update, actor=self.actor)
+            await self.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=self.actor)
             raise
