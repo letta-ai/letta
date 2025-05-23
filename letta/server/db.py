@@ -17,6 +17,8 @@ from letta.tracing import trace_method
 
 logger = get_logger(__name__)
 
+logger = get_logger(__name__)
+
 
 def print_sqlite_schema_error():
     """Print a formatted error message for SQLite schema issues"""
