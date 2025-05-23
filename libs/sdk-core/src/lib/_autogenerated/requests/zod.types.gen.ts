@@ -5770,6 +5770,15 @@ export const get_List_source_passages = {
   path: z.literal('/v1/sources/{source_id}/passages'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    query: z.object({
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z.number().optional(),
+    }),
     path: z.object({
       source_id: z.string(),
     }),

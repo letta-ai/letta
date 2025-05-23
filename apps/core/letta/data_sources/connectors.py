@@ -37,7 +37,9 @@ class DataConnector:
         """
 
 
-def load_data(connector: DataConnector, source: Source, passage_manager: PassageManager, source_manager: SourceManager, actor: "User"):
+async def load_data(
+    connector: DataConnector, source: Source, passage_manager: PassageManager, source_manager: SourceManager, actor: "User"
+):
     """Load data from a connector (generates file and passages) into a specified source_id, associated with a user_id."""
     embedding_config = source.embedding_config
 
@@ -51,7 +53,7 @@ def load_data(connector: DataConnector, source: Source, passage_manager: Passage
     file_count = 0
     for file_metadata in connector.find_files(source):
         file_count += 1
-        source_manager.create_file(file_metadata, actor)
+        await source_manager.create_file(file_metadata, actor)
 
         # generate passages
         for passage_text, passage_metadata in connector.generate_passages(file_metadata, chunk_size=embedding_config.embedding_chunk_size):

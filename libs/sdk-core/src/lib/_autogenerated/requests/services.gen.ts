@@ -929,6 +929,9 @@ export class SourcesService {
    * List all passages associated with a data source.
    * @param data The data for the request.
    * @param data.sourceId
+   * @param data.after Message after which to retrieve the returned messages.
+   * @param data.before Message before which to retrieve the returned messages.
+   * @param data.limit Maximum number of messages to retrieve.
    * @param data.userId
    * @returns Passage Successful Response
    * @throws ApiError
@@ -942,6 +945,11 @@ export class SourcesService {
       url: '/v1/sources/{source_id}/passages',
       path: {
         source_id: data.sourceId,
+      },
+      query: {
+        after: data.after,
+        before: data.before,
+        limit: data.limit,
       },
       errors: {
         422: 'Validation Error',

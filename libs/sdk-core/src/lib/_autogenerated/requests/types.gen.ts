@@ -4217,6 +4217,18 @@ export type UploadFileToSourceData = {
 export type UploadFileToSourceResponse = Job;
 
 export type ListSourcePassagesData = {
+  /**
+   * Message after which to retrieve the returned messages.
+   */
+  after?: string | null;
+  /**
+   * Message before which to retrieve the returned messages.
+   */
+  before?: string | null;
+  /**
+   * Maximum number of messages to retrieve.
+   */
+  limit?: number;
   sourceId: string;
   userId?: string | null;
 };

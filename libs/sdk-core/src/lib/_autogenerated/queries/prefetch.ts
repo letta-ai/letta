@@ -304,6 +304,9 @@ export const prefetchUseSourcesServiceListSources = (
  * List all passages associated with a data source.
  * @param data The data for the request.
  * @param data.sourceId
+ * @param data.after Message after which to retrieve the returned messages.
+ * @param data.before Message before which to retrieve the returned messages.
+ * @param data.limit Maximum number of messages to retrieve.
  * @param data.userId
  * @returns Passage Successful Response
  * @throws ApiError
@@ -311,19 +314,35 @@ export const prefetchUseSourcesServiceListSources = (
 export const prefetchUseSourcesServiceListSourcePassages = (
   queryClient: QueryClient,
   {
+    after,
+    before,
+    limit,
     sourceId,
     userId,
   }: {
+    after?: string;
+    before?: string;
+    limit?: number;
     sourceId: string;
     userId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseSourcesServiceListSourcePassagesKeyFn({
+      after,
+      before,
+      limit,
       sourceId,
       userId,
     }),
-    queryFn: () => SourcesService.listSourcePassages({ sourceId, userId }),
+    queryFn: () =>
+      SourcesService.listSourcePassages({
+        after,
+        before,
+        limit,
+        sourceId,
+        userId,
+      }),
   });
 /**
  * List Source Files

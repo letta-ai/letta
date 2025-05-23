@@ -1181,6 +1181,54 @@
               "type": "string",
               "title": "Source Id"
             }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message after which to retrieve the returned messages.",
+              "title": "After"
+            },
+            "description": "Message after which to retrieve the returned messages."
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message before which to retrieve the returned messages.",
+              "title": "Before"
+            },
+            "description": "Message before which to retrieve the returned messages."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Maximum number of messages to retrieve.",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of messages to retrieve."
           }
         ],
         "responses": {

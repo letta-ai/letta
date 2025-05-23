@@ -13,7 +13,6 @@ from sqlalchemy.orm import sessionmaker
 from letta.config import LettaConfig
 from letta.log import get_logger
 from letta.settings import settings
-from letta.tracing import trace_method
 
 logger = get_logger(__name__)
 
@@ -203,7 +202,6 @@ class DatabaseRegistry:
         self.initialize_async()
         return self._async_session_factories.get(name)
 
-    @trace_method
     @contextmanager
     def session(self, name: str = "default") -> Generator[Any, None, None]:
         """Context manager for database sessions."""
@@ -217,7 +215,6 @@ class DatabaseRegistry:
         finally:
             session.close()
 
-    @trace_method
     @asynccontextmanager
     async def async_session(self, name: str = "default") -> AsyncGenerator[AsyncSession, None]:
         """Async context manager for database sessions."""

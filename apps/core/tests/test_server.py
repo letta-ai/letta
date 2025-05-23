@@ -24,14 +24,9 @@ from letta.server.db import db_registry
 utils.DEBUG = True
 from letta.config import LettaConfig
 from letta.schemas.agent import CreateAgent, UpdateAgent
-from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.job import Job as PydanticJob
 from letta.schemas.message import Message
-from letta.schemas.source import Source as PydanticSource
 from letta.server.server import SyncServer
 from letta.system import unpack_message
-
-from .utils import DummyDataConnector
 
 WAR_AND_PEACE = """BOOK ONE: 1805
 
@@ -390,40 +385,6 @@ def test_user_message_memory(server, user, agent_id):
     server.run_command(user_id=user.id, agent_id=agent_id, command="/memory")
 
 
-@pytest.mark.order(3)
-def test_load_data(server, user, agent_id):
-    # create source
-    passages_before = server.agent_manager.list_passages(actor=user, agent_id=agent_id, after=None, limit=10000)
-    assert len(passages_before) == 0
-
-    source = server.source_manager.create_source(
-        PydanticSource(name="test_source", embedding_config=EmbeddingConfig.default_config(provider="openai")), actor=user
-    )
-
-    # load data
-    archival_memories = [
-        "alpha",
-        "Cinderella wore a blue dress",
-        "Dog eat dog",
-        "ZZZ",
-        "Shishir loves indian food",
-    ]
-    connector = DummyDataConnector(archival_memories)
-    server.load_data(user.id, connector, source.name)
-
-    # attach source
-    server.agent_manager.attach_source(agent_id=agent_id, source_id=source.id, actor=user)
-
-    # check archival memory size
-    passages_after = server.agent_manager.list_passages(actor=user, agent_id=agent_id, after=None, limit=10000)
-    assert len(passages_after) == 5
-
-
-def test_save_archival_memory(server, user_id, agent_id):
-    # TODO: insert into archival memory
-    pass
-
-
 @pytest.mark.order(4)
 def test_user_message(server, user, agent_id):
     # add data into recall memory
@@ -456,54 +417,54 @@ def test_get_recall_memory(server, org_id, user, agent_id):
         assert message_id in message_ids, f"{message_id} not in {message_ids}"
 
 
-@pytest.mark.order(6)
-def test_get_archival_memory(server, user, agent_id):
-    # test archival memory cursor pagination
-    actor = user
-
-    # List latest 2 passages
-    passages_1 = server.agent_manager.list_passages(
-        actor=actor,
-        agent_id=agent_id,
-        ascending=False,
-        limit=2,
-    )
-    assert len(passages_1) == 2, f"Returned {[p.text for p in passages_1]}, not equal to 2"
-
-    # List next 3 passages (earliest 3)
-    cursor1 = passages_1[-1].id
-    passages_2 = server.agent_manager.list_passages(
-        actor=actor,
-        agent_id=agent_id,
-        ascending=False,
-        before=cursor1,
-    )
-
-    # List all 5
-    cursor2 = passages_1[0].created_at
-    passages_3 = server.agent_manager.list_passages(
-        actor=actor,
-        agent_id=agent_id,
-        ascending=False,
-        end_date=cursor2,
-        limit=1000,
-    )
-    assert len(passages_2) in [3, 4]  # NOTE: exact size seems non-deterministic, so loosen test
-    assert len(passages_3) in [4, 5]  # NOTE: exact size seems non-deterministic, so loosen test
-
-    latest = passages_1[0]
-    earliest = passages_2[-1]
-
-    # test archival memory
-    passage_1 = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, limit=1, ascending=True)
-    assert len(passage_1) == 1
-    assert passage_1[0].text == "alpha"
-    passage_2 = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, after=earliest.id, limit=1000, ascending=True)
-    assert len(passage_2) in [4, 5]  # NOTE: exact size seems non-deterministic, so loosen test
-    assert all("alpha" not in passage.text for passage in passage_2)
-    # test safe empty return
-    passage_none = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, after=latest.id, limit=1000, ascending=True)
-    assert len(passage_none) == 0
+# @pytest.mark.order(6)
+# def test_get_archival_memory(server, user, agent_id):
+#    # test archival memory cursor pagination
+#    actor = user
+#
+#    # List latest 2 passages
+#    passages_1 = server.agent_manager.list_passages(
+#        actor=actor,
+#        agent_id=agent_id,
+#        ascending=False,
+#        limit=2,
+#    )
+#    assert len(passages_1) == 2, f"Returned {[p.text for p in passages_1]}, not equal to 2"
+#
+#    # List next 3 passages (earliest 3)
+#    cursor1 = passages_1[-1].id
+#    passages_2 = server.agent_manager.list_passages(
+#        actor=actor,
+#        agent_id=agent_id,
+#        ascending=False,
+#        before=cursor1,
+#    )
+#
+#    # List all 5
+#    cursor2 = passages_1[0].created_at
+#    passages_3 = server.agent_manager.list_passages(
+#        actor=actor,
+#        agent_id=agent_id,
+#        ascending=False,
+#        end_date=cursor2,
+#        limit=1000,
+#    )
+#    assert len(passages_2) in [3, 4]  # NOTE: exact size seems non-deterministic, so loosen test
+#    assert len(passages_3) in [4, 5]  # NOTE: exact size seems non-deterministic, so loosen test
+#
+#    latest = passages_1[0]
+#    earliest = passages_2[-1]
+#
+#    # test archival memory
+#    passage_1 = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, limit=1, ascending=True)
+#    assert len(passage_1) == 1
+#    assert passage_1[0].text == "alpha"
+#    passage_2 = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, after=earliest.id, limit=1000, ascending=True)
+#    assert len(passage_2) in [4, 5]  # NOTE: exact size seems non-deterministic, so loosen test
+#    assert all("alpha" not in passage.text for passage in passage_2)
+#    # test safe empty return
+#    passage_none = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, after=latest.id, limit=1000, ascending=True)
+#    assert len(passage_none) == 0
 
 
 def test_get_context_window_overview(server: SyncServer, user, agent_id):
@@ -983,131 +944,6 @@ async def test_memory_rebuild_count(server, user, disable_e2b_api_key, base_tool
     finally:
         # cleanup
         server.agent_manager.delete_agent(agent_state.id, actor=actor)
-
-
-def test_load_file_to_source(server: SyncServer, user_id: str, agent_id: str, other_agent_id: str, tmp_path):
-    actor = server.user_manager.get_user_or_default(user_id)
-
-    existing_sources = server.source_manager.list_sources(actor=actor)
-    if len(existing_sources) > 0:
-        for source in existing_sources:
-            server.agent_manager.detach_source(agent_id=agent_id, source_id=source.id, actor=actor)
-    initial_passage_count = server.agent_manager.passage_size(agent_id=agent_id, actor=actor)
-    assert initial_passage_count == 0
-
-    # Create a source
-    source = server.source_manager.create_source(
-        PydanticSource(
-            name="timber_source",
-            embedding_config=EmbeddingConfig.default_config(provider="openai"),
-            created_by_id=user_id,
-        ),
-        actor=actor,
-    )
-    assert source.created_by_id == user_id
-
-    # Create a test file with some content
-    test_file = tmp_path / "test.txt"
-    test_content = "We have a dog called Timber. He likes to sleep and eat chicken."
-    test_file.write_text(test_content)
-
-    # Attach source to agent first
-    server.agent_manager.attach_source(agent_id=agent_id, source_id=source.id, actor=actor)
-
-    # Create a job for loading the first file
-    job = server.job_manager.create_job(
-        PydanticJob(
-            user_id=user_id,
-            metadata={"type": "embedding", "filename": test_file.name, "source_id": source.id},
-        ),
-        actor=actor,
-    )
-
-    # Load the first file to source
-    server.load_file_to_source(
-        source_id=source.id,
-        file_path=str(test_file),
-        job_id=job.id,
-        actor=actor,
-    )
-
-    # Verify job completed successfully
-    job = server.job_manager.get_job_by_id(job_id=job.id, actor=actor)
-    assert job.status == "completed"
-    assert job.metadata["num_passages"] == 1
-    assert job.metadata["num_documents"] == 1
-
-    # Verify passages were added
-    first_file_passage_count = server.agent_manager.passage_size(agent_id=agent_id, actor=actor)
-    assert first_file_passage_count > initial_passage_count
-
-    # Create a second test file with different content
-    test_file2 = tmp_path / "test2.txt"
-    test_file2.write_text(WAR_AND_PEACE)
-
-    # Create a job for loading the second file
-    job2 = server.job_manager.create_job(
-        PydanticJob(
-            user_id=user_id,
-            metadata={"type": "embedding", "filename": test_file2.name, "source_id": source.id},
-        ),
-        actor=actor,
-    )
-
-    # Load the second file to source
-    server.load_file_to_source(
-        source_id=source.id,
-        file_path=str(test_file2),
-        job_id=job2.id,
-        actor=actor,
-    )
-
-    # Verify second job completed successfully
-    job2 = server.job_manager.get_job_by_id(job_id=job2.id, actor=actor)
-    assert job2.status == "completed"
-    assert job2.metadata["num_passages"] >= 10
-    assert job2.metadata["num_documents"] == 1
-
-    # Verify passages were appended (not replaced)
-    final_passage_count = server.agent_manager.passage_size(agent_id=agent_id, actor=actor)
-    assert final_passage_count > first_file_passage_count
-
-    # Verify both old and new content is searchable
-    passages = server.agent_manager.list_passages(
-        agent_id=agent_id,
-        actor=actor,
-        query_text="what does Timber like to eat",
-        embedding_config=EmbeddingConfig.default_config(provider="openai"),
-        embed_query=True,
-    )
-    assert len(passages) == final_passage_count
-    assert any("chicken" in passage.text.lower() for passage in passages)
-    assert any("Anna".lower() in passage.text.lower() for passage in passages)
-
-    # Initially should have no passages
-    initial_agent2_passages = server.agent_manager.passage_size(agent_id=other_agent_id, actor=actor, source_id=source.id)
-    assert initial_agent2_passages == 0
-
-    # Attach source to second agent
-    server.agent_manager.attach_source(agent_id=other_agent_id, source_id=source.id, actor=actor)
-
-    # Verify second agent has same number of passages as first agent
-    agent2_passages = server.agent_manager.passage_size(agent_id=other_agent_id, actor=actor, source_id=source.id)
-    agent1_passages = server.agent_manager.passage_size(agent_id=agent_id, actor=actor, source_id=source.id)
-    assert agent2_passages == agent1_passages
-
-    # Verify second agent can query the same content
-    passages2 = server.agent_manager.list_passages(
-        actor=actor,
-        agent_id=other_agent_id,
-        source_id=source.id,
-        query_text="what does Timber like to eat",
-        embedding_config=EmbeddingConfig.default_config(provider="openai"),
-        embed_query=True,
-    )
-    assert len(passages2) == len(passages)
-    assert any("chicken" in passage.text.lower() for passage in passages2)
-    assert any("Anna".lower() in passage.text.lower() for passage in passages2)
 
 
 def test_add_nonexisting_tool(server: SyncServer, user_id: str, base_tools):

@@ -381,6 +381,9 @@ export const useSourcesServiceListSourcesSuspense = <
  * List all passages associated with a data source.
  * @param data The data for the request.
  * @param data.sourceId
+ * @param data.after Message after which to retrieve the returned messages.
+ * @param data.before Message before which to retrieve the returned messages.
+ * @param data.limit Maximum number of messages to retrieve.
  * @param data.userId
  * @returns Passage Successful Response
  * @throws ApiError
@@ -391,9 +394,15 @@ export const useSourcesServiceListSourcePassagesSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
+    before,
+    limit,
     sourceId,
     userId,
   }: {
+    after?: string;
+    before?: string;
+    limit?: number;
     sourceId: string;
     userId?: string;
   },
@@ -402,11 +411,17 @@ export const useSourcesServiceListSourcePassagesSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceListSourcePassagesKeyFn(
-      { sourceId, userId },
+      { after, before, limit, sourceId, userId },
       queryKey,
     ),
     queryFn: () =>
-      SourcesService.listSourcePassages({ sourceId, userId }) as TData,
+      SourcesService.listSourcePassages({
+        after,
+        before,
+        limit,
+        sourceId,
+        userId,
+      }) as TData,
     ...options,
   });
 /**

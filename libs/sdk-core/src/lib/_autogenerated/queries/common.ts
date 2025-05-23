@@ -263,16 +263,22 @@ export const useSourcesServiceListSourcePassagesKey =
   'SourcesServiceListSourcePassages';
 export const UseSourcesServiceListSourcePassagesKeyFn = (
   {
+    after,
+    before,
+    limit,
     sourceId,
     userId,
   }: {
+    after?: string;
+    before?: string;
+    limit?: number;
     sourceId: string;
     userId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useSourcesServiceListSourcePassagesKey,
-  ...(queryKey ?? [{ sourceId, userId }]),
+  ...(queryKey ?? [{ after, before, limit, sourceId, userId }]),
 ];
 export type SourcesServiceListSourceFilesDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.listSourceFiles>
