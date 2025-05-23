@@ -7,17 +7,16 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy import delete
 
-from letta import create_client
+from letta.config import LettaConfig
 from letta.functions.function_sets.base import core_memory_append, core_memory_replace
 from letta.orm.sandbox_config import SandboxConfig, SandboxEnvironmentVariable
-from letta.schemas.agent import AgentState
-from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.agent import AgentState, CreateAgent
+from letta.schemas.block import CreateBlock
 from letta.schemas.environment_variables import AgentEnvironmentVariable, SandboxEnvironmentVariableCreate
-from letta.schemas.llm_config import LLMConfig
-from letta.schemas.memory import ChatMemory
 from letta.schemas.organization import Organization
 from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, PipRequirement, SandboxConfigCreate
 from letta.schemas.user import User
+from letta.server.server import SyncServer
 from letta.services.organization_manager import OrganizationManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_manager import ToolManager
@@ -33,6 +32,21 @@ user_name = str(uuid.uuid5(namespace, "test-tool-execution-sandbox-user"))
 
 
 # Fixtures
+@pytest.fixture(scope="module")
+def server():
+    """
+    Creates a SyncServer instance for testing.
+
+    Loads and saves config to ensure proper initialization.
+    """
+    config = LettaConfig.load()
+
+    config.save()
+
+    server = SyncServer(init_with_default_org_and_user=True)
+    yield server
+
+
 @pytest.fixture(autouse=True)
 def clear_tables():
     """Fixture to clear the organization table before each test."""
@@ -192,12 +206,26 @@ def external_codebase_tool(test_user):
 
 
 @pytest.fixture
-def agent_state():
-    client = create_client()
-    agent_state = client.create_agent(
-        memory=ChatMemory(persona="This is the persona", human="My name is Chad"),
-        embedding_config=EmbeddingConfig.default_config(provider="openai"),
-        llm_config=LLMConfig.default_config(model_name="gpt-4o-mini"),
+def agent_state(server):
+    actor = server.user_manager.get_user_or_default()
+    agent_state = server.create_agent(
+        CreateAgent(
+            memory_blocks=[
+                CreateBlock(
+                    label="human",
+                    value="username: sarah",
+                ),
+                CreateBlock(
+                    label="persona",
+                    value="This is the persona",
+                ),
+            ],
+            include_base_tools=True,
+            model="openai/gpt-4o-mini",
+            tags=["test_agents"],
+            embedding="letta/letta-free",
+        ),
+        actor=actor,
     )
     agent_state.tool_rules = []
     yield agent_state

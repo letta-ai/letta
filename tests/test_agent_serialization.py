@@ -13,7 +13,6 @@ from dotenv import load_dotenv
 from rich.console import Console
 from rich.syntax import Syntax
 
-from letta import create_client
 from letta.config import LettaConfig
 from letta.orm import Base
 from letta.orm.enums import ToolType
@@ -27,6 +26,7 @@ from letta.schemas.organization import Organization
 from letta.schemas.user import User
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.server import SyncServer
+from tests.utils import create_tool_from_func
 
 console = Console()
 
@@ -86,14 +86,6 @@ def clear_tables():
     _clear_tables()
 
 
-@pytest.fixture(scope="module")
-def local_client():
-    client = create_client()
-    client.set_default_llm_config(LLMConfig.default_config("gpt-4o-mini"))
-    client.set_default_embedding_config(EmbeddingConfig.default_config(provider="openai"))
-    yield client
-
-
 @pytest.fixture
 def server():
     config = LettaConfig.load()
@@ -133,14 +125,14 @@ def other_user(server: SyncServer, other_organization):
 
 
 @pytest.fixture
-def weather_tool(local_client, weather_tool_func):
-    weather_tool = local_client.create_or_update_tool(func=weather_tool_func)
+def weather_tool(server, weather_tool_func, default_user):
+    weather_tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=weather_tool_func), actor=default_user)
     yield weather_tool
 
 
 @pytest.fixture
-def print_tool(local_client, print_tool_func):
-    print_tool = local_client.create_or_update_tool(func=print_tool_func)
+def print_tool(server, print_tool_func, default_user):
+    print_tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=print_tool_func), actor=default_user)
     yield print_tool
 
 
@@ -438,7 +430,7 @@ def test_sanity_datetime_mismatch():
 # Agent serialize/deserialize tests
 
 
-def test_deserialize_simple(local_client, server, serialize_test_agent, default_user, other_user):
+def test_deserialize_simple(server, serialize_test_agent, default_user, other_user):
     """Test deserializing JSON into an Agent instance."""
     append_copy_suffix = False
     result = server.agent_manager.serialize(agent_id=serialize_test_agent.id, actor=default_user)
@@ -452,9 +444,7 @@ def test_deserialize_simple(local_client, server, serialize_test_agent, default_
 
 
 @pytest.mark.parametrize("override_existing_tools", [True, False])
-def test_deserialize_override_existing_tools(
-    local_client, server, serialize_test_agent, default_user, weather_tool, print_tool, override_existing_tools
-):
+def test_deserialize_override_existing_tools(server, serialize_test_agent, default_user, weather_tool, print_tool, override_existing_tools):
     """
     Test deserializing an agent with tools and ensure correct behavior for overriding existing tools.
     """
@@ -487,7 +477,7 @@ def test_deserialize_override_existing_tools(
                 assert existing_tool.source_code == weather_tool.source_code, f"Tool {tool_name} should NOT be overridden"
 
 
-def test_agent_serialize_with_user_messages(local_client, server, serialize_test_agent, default_user, other_user):
+def test_agent_serialize_with_user_messages(server, serialize_test_agent, default_user, other_user):
     """Test deserializing JSON into an Agent instance."""
     append_copy_suffix = False
     server.send_messages(
@@ -516,7 +506,7 @@ def test_agent_serialize_with_user_messages(local_client, server, serialize_test
     )
 
 
-def test_agent_serialize_tool_calls(disable_e2b_api_key, local_client, server, serialize_test_agent, default_user, other_user):
+def test_agent_serialize_tool_calls(disable_e2b_api_key, server, serialize_test_agent, default_user, other_user):
     """Test deserializing JSON into an Agent instance."""
     append_copy_suffix = False
     server.send_messages(
@@ -552,7 +542,7 @@ def test_agent_serialize_tool_calls(disable_e2b_api_key, local_client, server, s
     assert copy_agent_response.completion_tokens > 0 and copy_agent_response.step_count > 0
 
 
-def test_agent_serialize_update_blocks(disable_e2b_api_key, local_client, server, serialize_test_agent, default_user, other_user):
+def test_agent_serialize_update_blocks(disable_e2b_api_key, server, serialize_test_agent, default_user, other_user):
     """Test deserializing JSON into an Agent instance."""
     append_copy_suffix = False
     server.send_messages(

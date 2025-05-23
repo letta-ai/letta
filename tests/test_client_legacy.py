@@ -9,8 +9,7 @@ import pytest
 from dotenv import load_dotenv
 from sqlalchemy import delete
 
-from letta import create_client
-from letta.client.client import LocalClient, RESTClient
+from letta.client.client import RESTClient
 from letta.constants import DEFAULT_PRESET
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.orm import FileMetadata, Source
@@ -33,7 +32,6 @@ from letta.schemas.usage import LettaUsageStatistics
 from letta.services.helpers.agent_manager_helper import initialize_message_sequence
 from letta.services.organization_manager import OrganizationManager
 from letta.services.user_manager import UserManager
-from letta.settings import model_settings
 from tests.helpers.client_helper import upload_file_using_client
 
 # from tests.utils import create_config
@@ -58,30 +56,22 @@ def run_server():
     start_server(debug=True)
 
 
-# Fixture to create clients with different configurations
 @pytest.fixture(
-    # params=[{"server": True}, {"server": False}],  # whether to use REST API server
-    params=[{"server": True}],  # whether to use REST API server
     scope="module",
 )
-def client(request):
-    if request.param["server"]:
-        # get URL from enviornment
-        server_url = os.getenv("LETTA_SERVER_URL")
-        if server_url is None:
-            # run server in thread
-            server_url = "http://localhost:8283"
-            print("Starting server thread")
-            thread = threading.Thread(target=run_server, daemon=True)
-            thread.start()
-            time.sleep(5)
-        print("Running client tests with server:", server_url)
-        # create user via admin client
-        client = create_client(base_url=server_url, token=None)  # This yields control back to the test function
-    else:
-        # use local client (no server)
-        client = create_client()
-
+def client():
+    # get URL from enviornment
+    server_url = os.getenv("LETTA_SERVER_URL")
+    if server_url is None:
+        # run server in thread
+        server_url = "http://localhost:8283"
+        print("Starting server thread")
+        thread = threading.Thread(target=run_server, daemon=True)
+        thread.start()
+        time.sleep(5)
+    print("Running client tests with server:", server_url)
+    # create user via admin client
+    client = RESTClient(server_url)
     client.set_default_llm_config(LLMConfig.default_config("gpt-4o-mini"))
     client.set_default_embedding_config(EmbeddingConfig.default_config(provider="openai"))
     yield client
@@ -100,7 +90,7 @@ def clear_tables():
 
 # Fixture for test agent
 @pytest.fixture(scope="module")
-def agent(client: Union[LocalClient, RESTClient]):
+def agent(client: Union[RESTClient]):
     agent_state = client.create_agent(name=test_agent_name)
     yield agent_state
 
@@ -124,7 +114,7 @@ def default_user(default_organization):
     yield user
 
 
-def test_agent(disable_e2b_api_key, client: Union[LocalClient, RESTClient], agent: AgentState):
+def test_agent(disable_e2b_api_key, client: RESTClient, agent: AgentState):
 
     # test client.rename_agent
     new_name = "RenamedTestAgent"
@@ -143,7 +133,7 @@ def test_agent(disable_e2b_api_key, client: Union[LocalClient, RESTClient], agen
     assert client.agent_exists(agent_id=delete_agent.id) == False, "Agent deletion failed"
 
 
-def test_memory(disable_e2b_api_key, client: Union[LocalClient, RESTClient], agent: AgentState):
+def test_memory(disable_e2b_api_key, client: RESTClient, agent: AgentState):
     # _reset_config()
 
     memory_response = client.get_in_context_memory(agent_id=agent.id)
@@ -159,7 +149,7 @@ def test_memory(disable_e2b_api_key, client: Union[LocalClient, RESTClient], age
     ), "Memory update failed"
 
 
-def test_agent_interactions(disable_e2b_api_key, client: Union[LocalClient, RESTClient], agent: AgentState):
+def test_agent_interactions(disable_e2b_api_key, client: RESTClient, agent: AgentState):
     # test that it is a LettaMessage
     message = "Hello again, agent!"
     print("Sending message", message)
@@ -182,7 +172,7 @@ def test_agent_interactions(disable_e2b_api_key, client: Union[LocalClient, REST
     # TODO: add streaming tests
 
 
-def test_archival_memory(disable_e2b_api_key, client: Union[LocalClient, RESTClient], agent: AgentState):
+def test_archival_memory(disable_e2b_api_key, client: RESTClient, agent: AgentState):
     # _reset_config()
 
     memory_content = "Archival memory content"
@@ -216,7 +206,7 @@ def test_archival_memory(disable_e2b_api_key, client: Union[LocalClient, RESTCli
     client.get_archival_memory(agent.id)
 
 
-def test_core_memory(disable_e2b_api_key, client: Union[LocalClient, RESTClient], agent: AgentState):
+def test_core_memory(disable_e2b_api_key, client: RESTClient, agent: AgentState):
     response = client.send_message(agent_id=agent.id, message="Update your core memory to remember that my name is Timber!", role="user")
     print("Response", response)
 
@@ -240,10 +230,6 @@ def test_streaming_send_message(
     stream_tokens: bool,
     model: str,
 ):
-    if isinstance(client, LocalClient):
-        pytest.skip("Skipping test_streaming_send_message because LocalClient does not support streaming")
-    assert isinstance(client, RESTClient), client
-
     # Update agent's model
     agent.llm_config.model = model
 
@@ -296,7 +282,7 @@ def test_streaming_send_message(
     assert done, "Message stream not done"
 
 
-def test_humans_personas(client: Union[LocalClient, RESTClient], agent: AgentState):
+def test_humans_personas(client: RESTClient, agent: AgentState):
     # _reset_config()
 
     humans_response = client.list_humans()
@@ -322,7 +308,7 @@ def test_humans_personas(client: Union[LocalClient, RESTClient], agent: AgentSta
     assert human.value == "Human text", "Creating human failed"
 
 
-def test_list_tools_pagination(client: Union[LocalClient, RESTClient]):
+def test_list_tools_pagination(client: RESTClient):
     tools = client.list_tools()
     visited_ids = {t.id: False for t in tools}
 
@@ -344,7 +330,7 @@ def test_list_tools_pagination(client: Union[LocalClient, RESTClient]):
     assert all(visited_ids.values())
 
 
-def test_list_files_pagination(client: Union[LocalClient, RESTClient], agent: AgentState):
+def test_list_files_pagination(client: RESTClient, agent: AgentState):
     # clear sources
     for source in client.list_sources():
         client.delete_source(source.id)
@@ -380,7 +366,7 @@ def test_list_files_pagination(client: Union[LocalClient, RESTClient], agent: Ag
     assert len(files) == 0  # Should be empty
 
 
-def test_delete_file_from_source(client: Union[LocalClient, RESTClient], agent: AgentState):
+def test_delete_file_from_source(client: RESTClient, agent: AgentState):
     # clear sources
     for source in client.list_sources():
         client.delete_source(source.id)
@@ -409,7 +395,7 @@ def test_delete_file_from_source(client: Union[LocalClient, RESTClient], agent: 
     assert len(empty_files) == 0
 
 
-def test_load_file(client: Union[LocalClient, RESTClient], agent: AgentState):
+def test_load_file(client: RESTClient, agent: AgentState):
     # _reset_config()
 
     # clear sources
@@ -440,7 +426,7 @@ def test_load_file(client: Union[LocalClient, RESTClient], agent: AgentState):
     assert file.source_id == source.id
 
 
-def test_sources(client: Union[LocalClient, RESTClient], agent: AgentState):
+def test_sources(client: RESTClient, agent: AgentState):
     # _reset_config()
 
     # clear sources
@@ -530,9 +516,6 @@ def test_sources(client: Union[LocalClient, RESTClient], agent: AgentState):
 
 
 def test_organization(client: RESTClient):
-    if isinstance(client, LocalClient):
-        pytest.skip("Skipping test_organization because LocalClient does not support organizations")
-
     # create an organization
     org_name = "test-org"
     org = client.create_org(org_name)
@@ -549,25 +532,6 @@ def test_organization(client: RESTClient):
     assert not (org.id in [o.id for o in orgs])
 
 
-def test_list_llm_models(client: RESTClient):
-    """Test that if the user's env has the right api keys set, at least one model appears in the model list"""
-
-    def has_model_endpoint_type(models: List["LLMConfig"], target_type: str) -> bool:
-        return any(model.model_endpoint_type == target_type for model in models)
-
-    models = client.list_llm_configs()
-    if model_settings.groq_api_key:
-        assert has_model_endpoint_type(models, "groq")
-    if model_settings.azure_api_key:
-        assert has_model_endpoint_type(models, "azure")
-    if model_settings.openai_api_key:
-        assert has_model_endpoint_type(models, "openai")
-    if model_settings.gemini_api_key:
-        assert has_model_endpoint_type(models, "google_ai")
-    if model_settings.anthropic_api_key:
-        assert has_model_endpoint_type(models, "anthropic")
-
-
 @pytest.fixture
 def cleanup_agents(client):
     created_agents = []
@@ -581,7 +545,7 @@ def cleanup_agents(client):
 
 
 # NOTE: we need to add this back once agents can also create blocks during agent creation
-def test_initial_message_sequence(client: Union[LocalClient, RESTClient], agent: AgentState, cleanup_agents: List[str], default_user):
+def test_initial_message_sequence(client: RESTClient, agent: AgentState, cleanup_agents: List[str], default_user):
     """Test that we can set an initial message sequence
 
     If we pass in None, we should get a "default" message sequence
@@ -624,7 +588,7 @@ def test_initial_message_sequence(client: Union[LocalClient, RESTClient], agent:
     assert custom_sequence[0].content in client.get_in_context_messages(custom_agent_state.id)[1].content[0].text
 
 
-def test_add_and_manage_tags_for_agent(client: Union[LocalClient, RESTClient], agent: AgentState):
+def test_add_and_manage_tags_for_agent(client: RESTClient, agent: AgentState):
     """
     Comprehensive happy path test for adding, retrieving, and managing tags on an agent.
     """

@@ -270,8 +270,6 @@ start my apprenticeship as old maid."""
 @pytest.fixture(scope="module")
 def server():
     config = LettaConfig.load()
-    print("CONFIG PATH", config.config_path)
-
     config.save()
 
     server = SyncServer()

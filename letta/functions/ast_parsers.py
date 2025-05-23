@@ -1,5 +1,7 @@
 import ast
+import builtins
 import json
+import typing
 from typing import Dict, Optional, Tuple
 
 from letta.errors import LettaToolCreateError
@@ -22,7 +24,7 @@ def resolve_type(annotation: str):
     Resolve a type annotation string into a Python type.
 
     Args:
-        annotation (str): The annotation string (e.g., 'int', 'list', etc.).
+        annotation (str): The annotation string (e.g., 'int', 'list[int]', 'dict[str, int]').
 
     Returns:
         type: The corresponding Python type.
@@ -34,11 +36,17 @@ def resolve_type(annotation: str):
         return BUILTIN_TYPES[annotation]
 
     try:
-        parsed = ast.literal_eval(annotation)
-        if isinstance(parsed, type):
-            return parsed
-        raise ValueError(f"Annotation '{annotation}' is not a recognized type.")
-    except (ValueError, SyntaxError):
+        # Allow use of typing and builtins in a safe eval context
+        namespace = {
+            **vars(typing),
+            **vars(builtins),
+            "list": list,
+            "dict": dict,
+            "tuple": tuple,
+            "set": set,
+        }
+        return eval(annotation, namespace)
+    except Exception:
         raise ValueError(f"Unsupported annotation: {annotation}")
 
 
@@ -69,41 +77,36 @@ def get_function_annotations_from_source(source_code: str, function_name: str) -
 
 
 def coerce_dict_args_by_annotations(function_args: dict, annotations: Dict[str, str]) -> dict:
-    """
-    Coerce arguments in a dictionary to their annotated types.
-
-    Args:
-        function_args (dict): The original function arguments.
-        annotations (Dict[str, str]): Argument annotations as strings.
-
-    Returns:
-        dict: The updated dictionary with coerced argument types.
-
-    Raises:
-        ValueError: If type coercion fails for an argument.
-    """
-    coerced_args = dict(function_args)  # Shallow copy for mutation safety
+    coerced_args = dict(function_args)  # Shallow copy
 
     for arg_name, value in coerced_args.items():
         if arg_name in annotations:
             annotation_str = annotations[arg_name]
             try:
-                # Resolve the type from the annotation
                 arg_type = resolve_type(annotation_str)
 
-                # Handle JSON-like inputs for dict and list types
-                if arg_type in {dict, list} and isinstance(value, str):
+                # Always parse strings using literal_eval or json if possible
+                if isinstance(value, str):
                     try:
-                        # First, try JSON parsing
                         value = json.loads(value)
                     except json.JSONDecodeError:
-                        # Fall back to literal_eval for Python-specific literals
-                        value = ast.literal_eval(value)
+                        try:
+                            value = ast.literal_eval(value)
+                        except (SyntaxError, ValueError) as e:
+                            if arg_type is not str:
+                                raise ValueError(f"Failed to coerce argument '{arg_name}' to {annotation_str}: {e}")
 
-                # Coerce the value to the resolved type
-                coerced_args[arg_name] = arg_type(value)
-            except (TypeError, ValueError, json.JSONDecodeError, SyntaxError) as e:
+                origin = typing.get_origin(arg_type)
+                if origin in (list, dict, tuple, set):
+                    # Let the origin (e.g., list) handle coercion
+                    coerced_args[arg_name] = origin(value)
+                else:
+                    # Coerce simple types (e.g., int, float)
+                    coerced_args[arg_name] = arg_type(value)
+
+            except Exception as e:
                 raise ValueError(f"Failed to coerce argument '{arg_name}' to {annotation_str}: {e}")
+
     return coerced_args
 
 

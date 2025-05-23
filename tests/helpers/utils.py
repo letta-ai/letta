@@ -2,12 +2,13 @@ import functools
 import time
 from typing import Union
 
-from letta import LocalClient, RESTClient
 from letta.functions.functions import parse_source_code
 from letta.functions.schema_generator import generate_schema
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.tool import Tool
+from letta.schemas.user import User
 from letta.schemas.user import User as PydanticUser
+from letta.server.server import SyncServer
 
 
 def retry_until_threshold(threshold=0.5, max_attempts=10, sleep_time_seconds=4):
@@ -75,12 +76,12 @@ def retry_until_success(max_attempts=10, sleep_time_seconds=4):
     return decorator_retry
 
 
-def cleanup(client: Union[LocalClient, RESTClient], agent_uuid: str):
+def cleanup(server: SyncServer, agent_uuid: str, actor: User):
     # Clear all agents
-    for agent_state in client.list_agents():
-        if agent_state.name == agent_uuid:
-            client.delete_agent(agent_id=agent_state.id)
-            print(f"Deleted agent: {agent_state.name} with ID {str(agent_state.id)}")
+    agent_states = server.agent_manager.list_agents(name=agent_uuid, actor=actor)
+
+    for agent_state in agent_states:
+        server.agent_manager.delete_agent(agent_id=agent_state.id, actor=actor)
 
 
 # Utility functions
