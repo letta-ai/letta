@@ -54,7 +54,7 @@ class Provider(ProviderBase):
         return []
 
     async def list_embedding_models_async(self) -> List[EmbeddingConfig]:
-        return []
+        return self.list_embedding_models()
 
     def get_model_context_window(self, model_name: str) -> Optional[int]:
         raise NotImplementedError
