@@ -585,7 +585,6 @@ class LettaAgent(BaseAgent):
             pre_computed_tool_message_id=pre_computed_tool_message_id,
             step_id=logged_step.id if logged_step else None,  # TODO (cliandy): eventually move over other agent loops
         )
-
         persisted_messages = await self.message_manager.create_many_messages_async(tool_call_messages, actor=self.actor)
         self.last_function_response = function_response
 
