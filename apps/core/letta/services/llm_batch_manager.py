@@ -58,7 +58,7 @@ class LLMBatchManager:
 
     @enforce_types
     @trace_method
-    def update_llm_batch_status(
+    async def update_llm_batch_status_async(
         self,
         llm_batch_id: str,
         status: JobStatus,
@@ -66,15 +66,15 @@ class LLMBatchManager:
         latest_polling_response: Optional[BetaMessageBatch] = None,
     ) -> PydanticLLMBatchJob:
         """Update a batch job’s status and optionally its polling response."""
-        with db_registry.session() as session:
-            batch = LLMBatchJob.read(db_session=session, identifier=llm_batch_id, actor=actor)
+        async with db_registry.async_session() as session:
+            batch = await LLMBatchJob.read_async(db_session=session, identifier=llm_batch_id, actor=actor)
             batch.status = status
             batch.latest_polling_response = latest_polling_response
             batch.last_polled_at = datetime.datetime.now(datetime.timezone.utc)
-            batch = batch.update(db_session=session, actor=actor)
+            batch = await batch.update_async(db_session=session, actor=actor)
             return batch.to_pydantic()
 
-    def bulk_update_llm_batch_statuses(
+    async def bulk_update_llm_batch_statuses_async(
         self,
         updates: List[BatchPollingResult],
     ) -> None:
@@ -85,7 +85,7 @@ class LLMBatchManager:
         """
         now = datetime.datetime.now(datetime.timezone.utc)
 
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             mappings = []
             for llm_batch_id, status, response in updates:
                 mappings.append(
@@ -97,18 +97,18 @@ class LLMBatchManager:
                     }
                 )
 
-            session.bulk_update_mappings(LLMBatchJob, mappings)
-            session.commit()
+            await session.run_sync(lambda ses: ses.bulk_update_mappings(LLMBatchJob, mappings))
+            await session.commit()
 
     @enforce_types
     @trace_method
-    def list_llm_batch_jobs(
+    async def list_llm_batch_jobs_async(
         self,
         letta_batch_id: str,
         limit: Optional[int] = None,
         actor: Optional[PydanticUser] = None,
         after: Optional[str] = None,
-    ) -> List[PydanticLLMBatchItem]:
+    ) -> List[PydanticLLMBatchJob]:
         """
         List all batch items for a given llm_batch_id, optionally filtered by additional criteria and limited in count.
 
@@ -120,35 +120,35 @@ class LLMBatchManager:
 
         The results are ordered by their id in ascending order.
         """
-        with db_registry.session() as session:
-            query = session.query(LLMBatchJob).filter(LLMBatchJob.letta_batch_job_id == letta_batch_id)
+        async with db_registry.async_session() as session:
+            query = select(LLMBatchJob).where(LLMBatchJob.letta_batch_job_id == letta_batch_id)
 
             if actor is not None:
-                query = query.filter(LLMBatchJob.organization_id == actor.organization_id)
+                query = query.where(LLMBatchJob.organization_id == actor.organization_id)
 
             # Additional optional filters
             if after is not None:
-                query = query.filter(LLMBatchJob.id > after)
+                query = query.where(LLMBatchJob.id > after)
 
             query = query.order_by(LLMBatchJob.id.asc())
 
             if limit is not None:
                 query = query.limit(limit)
 
-            results = query.all()
-            return [item.to_pydantic() for item in results]
+            results = await session.execute(query)
+            return [item.to_pydantic() for item in results.scalars().all()]
 
     @enforce_types
     @trace_method
-    def delete_llm_batch_request(self, llm_batch_id: str, actor: PydanticUser) -> None:
+    async def delete_llm_batch_request_async(self, llm_batch_id: str, actor: PydanticUser) -> None:
         """Hard delete a batch job by ID."""
-        with db_registry.session() as session:
-            batch = LLMBatchJob.read(db_session=session, identifier=llm_batch_id, actor=actor)
-            batch.hard_delete(db_session=session, actor=actor)
+        async with db_registry.async_session() as session:
+            batch = await LLMBatchJob.read_async(db_session=session, identifier=llm_batch_id, actor=actor)
+            await batch.hard_delete_async(db_session=session, actor=actor)
 
     @enforce_types
     @trace_method
-    def get_messages_for_letta_batch(
+    async def get_messages_for_letta_batch_async(
         self,
         letta_batch_job_id: str,
         limit: int = 100,
@@ -161,12 +161,12 @@ class LLMBatchManager:
         Retrieve messages across all LLM batch jobs associated with a Letta batch job.
         Optimized for PostgreSQL performance using ID-based keyset pagination.
         """
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             # If cursor is provided, get sequence_id for that message
             cursor_sequence_id = None
             if cursor:
-                cursor_query = session.query(MessageModel.sequence_id).filter(MessageModel.id == cursor).limit(1)
-                cursor_result = cursor_query.first()
+                cursor_query = select(MessageModel.sequence_id).where(MessageModel.id == cursor).limit(1)
+                cursor_result = await session.execute(cursor_query)
                 if cursor_result:
                     cursor_sequence_id = cursor_result[0]
                 else:
@@ -174,24 +174,24 @@ class LLMBatchManager:
                     pass
 
             query = (
-                session.query(MessageModel)
+                select(MessageModel)
                 .join(LLMBatchItem, MessageModel.batch_item_id == LLMBatchItem.id)
                 .join(LLMBatchJob, LLMBatchItem.llm_batch_id == LLMBatchJob.id)
-                .filter(LLMBatchJob.letta_batch_job_id == letta_batch_job_id)
+                .where(LLMBatchJob.letta_batch_job_id == letta_batch_job_id)
             )
 
             if actor is not None:
-                query = query.filter(MessageModel.organization_id == actor.organization_id)
+                query = query.where(MessageModel.organization_id == actor.organization_id)
 
             if agent_id is not None:
-                query = query.filter(MessageModel.agent_id == agent_id)
+                query = query.where(MessageModel.agent_id == agent_id)
 
             # Apply cursor-based pagination if cursor exists
             if cursor_sequence_id is not None:
                 if sort_descending:
-                    query = query.filter(MessageModel.sequence_id < cursor_sequence_id)
+                    query = query.where(MessageModel.sequence_id < cursor_sequence_id)
                 else:
-                    query = query.filter(MessageModel.sequence_id > cursor_sequence_id)
+                    query = query.where(MessageModel.sequence_id > cursor_sequence_id)
 
             if sort_descending:
                 query = query.order_by(desc(MessageModel.sequence_id))
@@ -200,8 +200,8 @@ class LLMBatchManager:
 
             query = query.limit(limit)
 
-            results = query.all()
-            return [message.to_pydantic() for message in results]
+            results = await session.execute(query)
+            return [message.to_pydantic() for message in results.scalars().all()]
 
     @enforce_types
     @trace_method
@@ -218,7 +218,7 @@ class LLMBatchManager:
 
     @enforce_types
     @trace_method
-    def create_llm_batch_item(
+    async def create_llm_batch_item_async(
         self,
         llm_batch_id: str,
         agent_id: str,
@@ -229,7 +229,7 @@ class LLMBatchManager:
         step_state: Optional[AgentStepState] = None,
     ) -> PydanticLLMBatchItem:
         """Create a new batch item."""
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             item = LLMBatchItem(
                 llm_batch_id=llm_batch_id,
                 agent_id=agent_id,
@@ -239,7 +239,7 @@ class LLMBatchManager:
                 step_state=step_state,
                 organization_id=actor.organization_id,
             )
-            item.create(session, actor=actor)
+            await item.create_async(session, actor=actor)
             return item.to_pydantic()
 
     @enforce_types
@@ -280,15 +280,15 @@ class LLMBatchManager:
 
     @enforce_types
     @trace_method
-    def get_llm_batch_item_by_id(self, item_id: str, actor: PydanticUser) -> PydanticLLMBatchItem:
+    async def get_llm_batch_item_by_id_async(self, item_id: str, actor: PydanticUser) -> PydanticLLMBatchItem:
         """Retrieve a single batch item by ID."""
-        with db_registry.session() as session:
-            item = LLMBatchItem.read(db_session=session, identifier=item_id, actor=actor)
+        async with db_registry.async_session() as session:
+            item = await LLMBatchItem.read_async(db_session=session, identifier=item_id, actor=actor)
             return item.to_pydantic()
 
     @enforce_types
     @trace_method
-    def update_llm_batch_item(
+    async def update_llm_batch_item_async(
         self,
         item_id: str,
         actor: PydanticUser,
@@ -298,8 +298,8 @@ class LLMBatchManager:
         step_state: Optional[AgentStepState] = None,
     ) -> PydanticLLMBatchItem:
         """Update fields on a batch item."""
-        with db_registry.session() as session:
-            item = LLMBatchItem.read(db_session=session, identifier=item_id, actor=actor)
+        async with db_registry.async_session() as session:
+            item = await LLMBatchItem.read_async(db_session=session, identifier=item_id, actor=actor)
 
             if request_status:
                 item.request_status = request_status
@@ -310,7 +310,8 @@ class LLMBatchManager:
             if step_state:
                 item.step_state = step_state
 
-            return item.update(db_session=session, actor=actor).to_pydantic()
+            result = await item.update_async(db_session=session, actor=actor)
+            return result.to_pydantic()
 
     @enforce_types
     @trace_method
@@ -360,7 +361,7 @@ class LLMBatchManager:
             return [item.to_pydantic() for item in results.scalars()]
 
     @trace_method
-    def bulk_update_llm_batch_items(
+    async def bulk_update_llm_batch_items_async(
         self, llm_batch_id_agent_id_pairs: List[Tuple[str, str]], field_updates: List[Dict[str, Any]], strict: bool = True
     ) -> None:
         """
@@ -378,13 +379,13 @@ class LLMBatchManager:
         if len(llm_batch_id_agent_id_pairs) != len(field_updates):
             raise ValueError("llm_batch_id_agent_id_pairs and field_updates must have the same length")
 
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             # Lookup primary keys for all requested (batch_id, agent_id) pairs
-            items = (
-                session.query(LLMBatchItem.id, LLMBatchItem.llm_batch_id, LLMBatchItem.agent_id)
-                .filter(tuple_(LLMBatchItem.llm_batch_id, LLMBatchItem.agent_id).in_(llm_batch_id_agent_id_pairs))
-                .all()
+            query = select(LLMBatchItem.id, LLMBatchItem.llm_batch_id, LLMBatchItem.agent_id).filter(
+                tuple_(LLMBatchItem.llm_batch_id, LLMBatchItem.agent_id).in_(llm_batch_id_agent_id_pairs)
             )
+            result = await session.execute(query)
+            items = result.all()
             pair_to_pk = {(batch_id, agent_id): pk for pk, batch_id, agent_id in items}
 
             if strict:
@@ -409,12 +410,12 @@ class LLMBatchManager:
                 mappings.append(update_fields)
 
             if mappings:
-                session.bulk_update_mappings(LLMBatchItem, mappings)
-                session.commit()
+                await session.run_sync(lambda ses: ses.bulk_update_mappings(LLMBatchItem, mappings))
+                await session.commit()
 
     @enforce_types
     @trace_method
-    def bulk_update_batch_llm_items_results_by_agent(self, updates: List[ItemUpdateInfo], strict: bool = True) -> None:
+    async def bulk_update_batch_llm_items_results_by_agent_async(self, updates: List[ItemUpdateInfo], strict: bool = True) -> None:
         """Update request status and batch results for multiple batch items."""
         batch_id_agent_id_pairs = [(update.llm_batch_id, update.agent_id) for update in updates]
         field_updates = [
@@ -425,37 +426,41 @@ class LLMBatchManager:
             for update in updates
         ]
 
-        self.bulk_update_llm_batch_items(batch_id_agent_id_pairs, field_updates, strict=strict)
+        await self.bulk_update_llm_batch_items_async(batch_id_agent_id_pairs, field_updates, strict=strict)
 
     @enforce_types
     @trace_method
-    def bulk_update_llm_batch_items_step_status_by_agent(self, updates: List[StepStatusUpdateInfo], strict: bool = True) -> None:
+    async def bulk_update_llm_batch_items_step_status_by_agent_async(
+        self, updates: List[StepStatusUpdateInfo], strict: bool = True
+    ) -> None:
         """Update step status for multiple batch items."""
         batch_id_agent_id_pairs = [(update.llm_batch_id, update.agent_id) for update in updates]
         field_updates = [{"step_status": update.step_status} for update in updates]
 
-        self.bulk_update_llm_batch_items(batch_id_agent_id_pairs, field_updates, strict=strict)
+        await self.bulk_update_llm_batch_items_async(batch_id_agent_id_pairs, field_updates, strict=strict)
 
     @enforce_types
     @trace_method
-    def bulk_update_llm_batch_items_request_status_by_agent(self, updates: List[RequestStatusUpdateInfo], strict: bool = True) -> None:
+    async def bulk_update_llm_batch_items_request_status_by_agent_async(
+        self, updates: List[RequestStatusUpdateInfo], strict: bool = True
+    ) -> None:
         """Update request status for multiple batch items."""
         batch_id_agent_id_pairs = [(update.llm_batch_id, update.agent_id) for update in updates]
         field_updates = [{"request_status": update.request_status} for update in updates]
 
-        self.bulk_update_llm_batch_items(batch_id_agent_id_pairs, field_updates, strict=strict)
+        await self.bulk_update_llm_batch_items_async(batch_id_agent_id_pairs, field_updates, strict=strict)
 
     @enforce_types
     @trace_method
-    def delete_llm_batch_item(self, item_id: str, actor: PydanticUser) -> None:
+    async def delete_llm_batch_item_async(self, item_id: str, actor: PydanticUser) -> None:
         """Hard delete a batch item by ID."""
-        with db_registry.session() as session:
-            item = LLMBatchItem.read(db_session=session, identifier=item_id, actor=actor)
-            item.hard_delete(db_session=session, actor=actor)
+        async with db_registry.async_session() as session:
+            item = await LLMBatchItem.read_async(db_session=session, identifier=item_id, actor=actor)
+            await item.hard_delete_async(db_session=session, actor=actor)
 
     @enforce_types
     @trace_method
-    def count_llm_batch_items(self, llm_batch_id: str) -> int:
+    async def count_llm_batch_items_async(self, llm_batch_id: str) -> int:
         """
         Efficiently count the number of batch items for a given llm_batch_id.
 
@@ -465,6 +470,6 @@ class LLMBatchManager:
         Returns:
             int: The total number of batch items associated with the given llm_batch_id.
         """
-        with db_registry.session() as session:
-            count = session.query(func.count(LLMBatchItem.id)).filter(LLMBatchItem.llm_batch_id == llm_batch_id).scalar()
-            return count or 0
+        async with db_registry.async_session() as session:
+            count = await session.execute(select(func.count(LLMBatchItem.id)).where(LLMBatchItem.llm_batch_id == llm_batch_id))
+            return count.scalar() or 0

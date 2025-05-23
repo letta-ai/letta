@@ -233,7 +233,7 @@ class LettaAgentBatch(BaseAgent):
         ctx = await self._collect_resume_context(llm_batch_id)
 
         log_event(name="update_statuses")
-        self._update_request_statuses(ctx.request_status_updates)
+        await self._update_request_statuses_async(ctx.request_status_updates)
 
         log_event(name="exec_tools")
         exec_results = await self._execute_tools(ctx)
@@ -242,7 +242,7 @@ class LettaAgentBatch(BaseAgent):
         msg_map = await self._persist_tool_messages(exec_results, ctx)
 
         log_event(name="mark_steps_done")
-        self._mark_steps_complete(llm_batch_id, ctx.agent_ids)
+        await self._mark_steps_complete_async(llm_batch_id, ctx.agent_ids)
 
         log_event(name="prepare_next")
         next_reqs, next_step_state = self._prepare_next_iteration(exec_results, ctx, msg_map)
@@ -382,9 +382,9 @@ class LettaAgentBatch(BaseAgent):
 
         return self._extract_tool_call_and_decide_continue(tool_call, item.step_state)
 
-    def _update_request_statuses(self, updates: List[RequestStatusUpdateInfo]) -> None:
+    async def _update_request_statuses_async(self, updates: List[RequestStatusUpdateInfo]) -> None:
         if updates:
-            self.batch_manager.bulk_update_llm_batch_items_request_status_by_agent(updates=updates)
+            await self.batch_manager.bulk_update_llm_batch_items_request_status_by_agent_async(updates=updates)
 
     def _build_sandbox(self) -> Tuple[SandboxConfig, Dict[str, Any]]:
         sbx_type = SandboxType.E2B if tool_settings.e2b_api_key else SandboxType.LOCAL
@@ -474,11 +474,11 @@ class LettaAgentBatch(BaseAgent):
         await self.message_manager.create_many_messages_async([m for msgs in msg_map.values() for m in msgs], actor=self.actor)
         return msg_map
 
-    def _mark_steps_complete(self, llm_batch_id: str, agent_ids: List[str]) -> None:
+    async def _mark_steps_complete_async(self, llm_batch_id: str, agent_ids: List[str]) -> None:
         updates = [
             StepStatusUpdateInfo(llm_batch_id=llm_batch_id, agent_id=aid, step_status=AgentStepStatus.completed) for aid in agent_ids
         ]
-        self.batch_manager.bulk_update_llm_batch_items_step_status_by_agent(updates)
+        await self.batch_manager.bulk_update_llm_batch_items_step_status_by_agent_async(updates)
 
     def _prepare_next_iteration(
         self,
