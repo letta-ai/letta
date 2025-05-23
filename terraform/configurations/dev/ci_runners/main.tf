@@ -41,6 +41,6 @@ module "ci_runners" {
 
   # auto scaling config
   min_runners = 1
-  max_runners = 16
+  max_runners = 32
 
 }
