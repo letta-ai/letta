@@ -458,7 +458,9 @@ async def test_partial_error_from_anthropic_batch(
             letta_batch_job_id=batch_job.id,
         )
 
-        llm_batch_jobs = server.batch_manager.list_llm_batch_jobs(letta_batch_id=pre_resume_response.letta_batch_id, actor=default_user)
+        llm_batch_jobs = await server.batch_manager.list_llm_batch_jobs_async(
+            letta_batch_id=pre_resume_response.letta_batch_id, actor=default_user
+        )
         llm_batch_job = llm_batch_jobs[0]
 
     # 2. Invoke the polling job and mock responses from Anthropic
@@ -571,7 +573,7 @@ async def test_partial_error_from_anthropic_batch(
                         ), f"Agent's in-context messages have been extended, are length: {len(refreshed_agent.message_ids)}"
 
                 # Check the total list of messages
-                messages = server.batch_manager.get_messages_for_letta_batch(
+                messages = await server.batch_manager.get_messages_for_letta_batch_async(
                     letta_batch_job_id=pre_resume_response.letta_batch_id, limit=200, actor=default_user
                 )
                 assert len(messages) == (len(agents) - 1) * 4 + 1
@@ -621,7 +623,9 @@ async def test_resume_step_some_stop(
             letta_batch_job_id=batch_job.id,
         )
 
-        llm_batch_jobs = server.batch_manager.list_llm_batch_jobs(letta_batch_id=pre_resume_response.letta_batch_id, actor=default_user)
+        llm_batch_jobs = await server.batch_manager.list_llm_batch_jobs_async(
+            letta_batch_id=pre_resume_response.letta_batch_id, actor=default_user
+        )
         llm_batch_job = llm_batch_jobs[0]
 
     # 2. Invoke the polling job and mock responses from Anthropic
@@ -723,7 +727,7 @@ async def test_resume_step_some_stop(
                     ), f"Agent's in-context messages have been extended, are length: {len(refreshed_agent.message_ids)}"
 
                 # Check the total list of messages
-                messages = server.batch_manager.get_messages_for_letta_batch(
+                messages = await server.batch_manager.get_messages_for_letta_batch_async(
                     letta_batch_job_id=pre_resume_response.letta_batch_id, limit=200, actor=default_user
                 )
                 assert len(messages) == len(agents) * 3 + 1
@@ -789,7 +793,9 @@ async def test_resume_step_after_request_all_continue(
 
         # Basic sanity checks (This is tested more thoroughly in `test_step_until_request_prepares_and_submits_batch_correctly`
         # Verify batch items
-        llm_batch_jobs = server.batch_manager.list_llm_batch_jobs(letta_batch_id=pre_resume_response.letta_batch_id, actor=default_user)
+        llm_batch_jobs = await server.batch_manager.list_llm_batch_jobs_async(
+            letta_batch_id=pre_resume_response.letta_batch_id, actor=default_user
+        )
         assert len(llm_batch_jobs) == 1, f"Expected 1 llm_batch_jobs, got {len(llm_batch_jobs)}"
 
         llm_batch_job = llm_batch_jobs[0]
@@ -883,7 +889,7 @@ async def test_resume_step_after_request_all_continue(
                     ), f"Agent's in-context messages have been extended, are length: {len(refreshed_agent.message_ids)}"
 
                 # Check the total list of messages
-                messages = server.batch_manager.get_messages_for_letta_batch(
+                messages = await server.batch_manager.get_messages_for_letta_batch_async(
                     letta_batch_job_id=pre_resume_response.letta_batch_id, limit=200, actor=default_user
                 )
                 assert len(messages) == len(agents) * 4
@@ -987,7 +993,7 @@ async def test_step_until_request_prepares_and_submits_batch_correctly(
         mock_send.assert_called_once()
 
         # Verify database records were created correctly
-        llm_batch_jobs = server.batch_manager.list_llm_batch_jobs(letta_batch_id=response.letta_batch_id, actor=default_user)
+        llm_batch_jobs = await server.batch_manager.list_llm_batch_jobs_async(letta_batch_id=response.letta_batch_id, actor=default_user)
         assert len(llm_batch_jobs) == 1, f"Expected 1 llm_batch_jobs, got {len(llm_batch_jobs)}"
 
         llm_batch_job = llm_batch_jobs[0]

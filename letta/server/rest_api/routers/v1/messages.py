@@ -161,7 +161,7 @@ async def list_batch_messages(
 
     # Get messages directly using our efficient method
     # We'll need to update the underlying implementation to use message_id as cursor
-    messages = server.batch_manager.get_messages_for_letta_batch(
+    messages = await server.batch_manager.get_messages_for_letta_batch_async(
         letta_batch_job_id=batch_id, limit=limit, actor=actor, agent_id=agent_id, sort_descending=sort_descending, cursor=cursor
     )
 
@@ -184,7 +184,7 @@ async def cancel_batch_run(
         job = await server.job_manager.update_job_by_id_async(job_id=job.id, job_update=JobUpdate(status=JobStatus.cancelled), actor=actor)
 
         # Get related llm batch jobs
-        llm_batch_jobs = server.batch_manager.list_llm_batch_jobs(letta_batch_id=job.id, actor=actor)
+        llm_batch_jobs = await server.batch_manager.list_llm_batch_jobs_async(letta_batch_id=job.id, actor=actor)
         for llm_batch_job in llm_batch_jobs:
             if llm_batch_job.status in {JobStatus.running, JobStatus.created}:
                 # TODO: Extend to providers beyond anthropic
@@ -194,6 +194,8 @@ async def cancel_batch_run(
                 await server.anthropic_async_client.messages.batches.cancel(anthropic_batch_id)
 
                 # Update all the batch_job statuses
-                server.batch_manager.update_llm_batch_status(llm_batch_id=llm_batch_job.id, status=JobStatus.cancelled, actor=actor)
+                await server.batch_manager.update_llm_batch_status_async(
+                    llm_batch_id=llm_batch_job.id, status=JobStatus.cancelled, actor=actor
+                )
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Run not found")

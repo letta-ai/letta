@@ -5107,7 +5107,7 @@ async def test_update_batch_status(server, default_user, dummy_beta_message_batc
     )
     before = datetime.now(timezone.utc)
 
-    server.batch_manager.update_llm_batch_status(
+    await server.batch_manager.update_llm_batch_status_async(
         llm_batch_id=batch.id,
         status=JobStatus.completed,
         latest_polling_response=dummy_beta_message_batch,
@@ -5132,7 +5132,7 @@ async def test_create_and_get_batch_item(
         letta_batch_job_id=letta_batch_job.id,
     )
 
-    item = server.batch_manager.create_llm_batch_item(
+    item = await server.batch_manager.create_llm_batch_item_async(
         llm_batch_id=batch.id,
         agent_id=sarah_agent.id,
         llm_config=dummy_llm_config,
@@ -5144,7 +5144,7 @@ async def test_create_and_get_batch_item(
     assert item.agent_id == sarah_agent.id
     assert item.step_state == dummy_step_state
 
-    fetched = server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
+    fetched = await server.batch_manager.get_llm_batch_item_by_id_async(item.id, actor=default_user)
     assert fetched.id == item.id
 
 
@@ -5168,7 +5168,7 @@ async def test_update_batch_item(
         letta_batch_job_id=letta_batch_job.id,
     )
 
-    item = server.batch_manager.create_llm_batch_item(
+    item = await server.batch_manager.create_llm_batch_item_async(
         llm_batch_id=batch.id,
         agent_id=sarah_agent.id,
         llm_config=dummy_llm_config,
@@ -5178,7 +5178,7 @@ async def test_update_batch_item(
 
     updated_step_state = AgentStepState(step_number=2, tool_rules_solver=dummy_step_state.tool_rules_solver)
 
-    server.batch_manager.update_llm_batch_item(
+    await server.batch_manager.update_llm_batch_item_async(
         item_id=item.id,
         request_status=JobStatus.completed,
         step_status=AgentStepStatus.resumed,
@@ -5187,7 +5187,7 @@ async def test_update_batch_item(
         actor=default_user,
     )
 
-    updated = server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
+    updated = await server.batch_manager.get_llm_batch_item_by_id_async(item.id, actor=default_user)
     assert updated.request_status == JobStatus.completed
     assert updated.batch_request_result == dummy_successful_response
 
@@ -5204,7 +5204,7 @@ async def test_delete_batch_item(
         letta_batch_job_id=letta_batch_job.id,
     )
 
-    item = server.batch_manager.create_llm_batch_item(
+    item = await server.batch_manager.create_llm_batch_item_async(
         llm_batch_id=batch.id,
         agent_id=sarah_agent.id,
         llm_config=dummy_llm_config,
@@ -5212,10 +5212,10 @@ async def test_delete_batch_item(
         actor=default_user,
     )
 
-    server.batch_manager.delete_llm_batch_item(item_id=item.id, actor=default_user)
+    await server.batch_manager.delete_llm_batch_item_async(item_id=item.id, actor=default_user)
 
     with pytest.raises(NoResultFound):
-        server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
+        await server.batch_manager.get_llm_batch_item_by_id_async(item.id, actor=default_user)
 
 
 @pytest.mark.asyncio
@@ -5243,7 +5243,7 @@ async def test_bulk_update_batch_statuses(server, default_user, dummy_beta_messa
         letta_batch_job_id=letta_batch_job.id,
     )
 
-    server.batch_manager.bulk_update_llm_batch_statuses([(batch.id, JobStatus.completed, dummy_beta_message_batch)])
+    await server.batch_manager.bulk_update_llm_batch_statuses_async([(batch.id, JobStatus.completed, dummy_beta_message_batch)])
 
     updated = await server.batch_manager.get_llm_batch_job_by_id_async(batch.id, actor=default_user)
     assert updated.status == JobStatus.completed
@@ -5268,7 +5268,7 @@ async def test_bulk_update_batch_items_results_by_agent(
         actor=default_user,
         letta_batch_job_id=letta_batch_job.id,
     )
-    item = server.batch_manager.create_llm_batch_item(
+    item = await server.batch_manager.create_llm_batch_item_async(
         llm_batch_id=batch.id,
         agent_id=sarah_agent.id,
         llm_config=dummy_llm_config,
@@ -5276,11 +5276,11 @@ async def test_bulk_update_batch_items_results_by_agent(
         actor=default_user,
     )
 
-    server.batch_manager.bulk_update_batch_llm_items_results_by_agent(
+    await server.batch_manager.bulk_update_batch_llm_items_results_by_agent_async(
         [ItemUpdateInfo(batch.id, sarah_agent.id, JobStatus.completed, dummy_successful_response)]
     )
 
-    updated = server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
+    updated = await server.batch_manager.get_llm_batch_item_by_id_async(item.id, actor=default_user)
     assert updated.request_status == JobStatus.completed
     assert updated.batch_request_result == dummy_successful_response
 
@@ -5295,7 +5295,7 @@ async def test_bulk_update_batch_items_step_status_by_agent(
         actor=default_user,
         letta_batch_job_id=letta_batch_job.id,
     )
-    item = server.batch_manager.create_llm_batch_item(
+    item = await server.batch_manager.create_llm_batch_item_async(
         llm_batch_id=batch.id,
         agent_id=sarah_agent.id,
         llm_config=dummy_llm_config,
@@ -5303,11 +5303,11 @@ async def test_bulk_update_batch_items_step_status_by_agent(
         actor=default_user,
     )
 
-    server.batch_manager.bulk_update_llm_batch_items_step_status_by_agent(
+    await server.batch_manager.bulk_update_llm_batch_items_step_status_by_agent_async(
         [StepStatusUpdateInfo(batch.id, sarah_agent.id, AgentStepStatus.resumed)]
     )
 
-    updated = server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
+    updated = await server.batch_manager.get_llm_batch_item_by_id_async(item.id, actor=default_user)
     assert updated.step_status == AgentStepStatus.resumed
 
 
@@ -5323,7 +5323,7 @@ async def test_list_batch_items_limit_and_filter(
     )
 
     for _ in range(3):
-        server.batch_manager.create_llm_batch_item(
+        await server.batch_manager.create_llm_batch_item_async(
             llm_batch_id=batch.id,
             agent_id=sarah_agent.id,
             llm_config=dummy_llm_config,
@@ -5353,7 +5353,7 @@ async def test_list_batch_items_pagination(
     # Create 10 batch items.
     created_items = []
     for i in range(10):
-        item = server.batch_manager.create_llm_batch_item(
+        item = await server.batch_manager.create_llm_batch_item_async(
             llm_batch_id=batch.id,
             agent_id=sarah_agent.id,
             llm_config=dummy_llm_config,
@@ -5416,7 +5416,7 @@ async def test_bulk_update_batch_items_request_status_by_agent(
     )
 
     # Create a batch item
-    item = server.batch_manager.create_llm_batch_item(
+    item = await server.batch_manager.create_llm_batch_item_async(
         llm_batch_id=batch.id,
         agent_id=sarah_agent.id,
         llm_config=dummy_llm_config,
@@ -5425,12 +5425,12 @@ async def test_bulk_update_batch_items_request_status_by_agent(
     )
 
     # Update the request status using the bulk update method
-    server.batch_manager.bulk_update_llm_batch_items_request_status_by_agent(
+    await server.batch_manager.bulk_update_llm_batch_items_request_status_by_agent_async(
         [RequestStatusUpdateInfo(batch.id, sarah_agent.id, JobStatus.expired)]
     )
 
     # Verify the update was applied
-    updated = server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
+    updated = await server.batch_manager.get_llm_batch_item_by_id_async(item.id, actor=default_user)
     assert updated.request_status == JobStatus.expired
 
 
@@ -5459,20 +5459,20 @@ async def test_bulk_update_nonexistent_items_should_error(
     )
 
     with pytest.raises(ValueError, match=re.escape(expected_err_msg)):
-        server.batch_manager.bulk_update_llm_batch_items(nonexistent_pairs, nonexistent_updates)
+        await server.batch_manager.bulk_update_llm_batch_items_async(nonexistent_pairs, nonexistent_updates)
 
     with pytest.raises(ValueError, match=re.escape(expected_err_msg)):
-        server.batch_manager.bulk_update_batch_llm_items_results_by_agent(
+        await server.batch_manager.bulk_update_batch_llm_items_results_by_agent_async(
             [ItemUpdateInfo(batch.id, "nonexistent-agent-id", JobStatus.expired, dummy_successful_response)]
         )
 
     with pytest.raises(ValueError, match=re.escape(expected_err_msg)):
-        server.batch_manager.bulk_update_llm_batch_items_step_status_by_agent(
+        await server.batch_manager.bulk_update_llm_batch_items_step_status_by_agent_async(
             [StepStatusUpdateInfo(batch.id, "nonexistent-agent-id", AgentStepStatus.resumed)]
         )
 
     with pytest.raises(ValueError, match=re.escape(expected_err_msg)):
-        server.batch_manager.bulk_update_llm_batch_items_request_status_by_agent(
+        await server.batch_manager.bulk_update_llm_batch_items_request_status_by_agent_async(
             [RequestStatusUpdateInfo(batch.id, "nonexistent-agent-id", JobStatus.expired)]
         )
 
@@ -5496,21 +5496,21 @@ async def test_bulk_update_nonexistent_items(
     nonexistent_updates = [{"request_status": JobStatus.expired}]
 
     # This should not raise an error, just silently skip non-existent items
-    server.batch_manager.bulk_update_llm_batch_items(nonexistent_pairs, nonexistent_updates, strict=False)
+    await server.batch_manager.bulk_update_llm_batch_items_async(nonexistent_pairs, nonexistent_updates, strict=False)
 
     # Test with higher-level methods
     # Results by agent
-    server.batch_manager.bulk_update_batch_llm_items_results_by_agent(
+    await server.batch_manager.bulk_update_batch_llm_items_results_by_agent_async(
         [ItemUpdateInfo(batch.id, "nonexistent-agent-id", JobStatus.expired, dummy_successful_response)], strict=False
     )
 
     # Step status by agent
-    server.batch_manager.bulk_update_llm_batch_items_step_status_by_agent(
+    await server.batch_manager.bulk_update_llm_batch_items_step_status_by_agent_async(
         [StepStatusUpdateInfo(batch.id, "nonexistent-agent-id", AgentStepStatus.resumed)], strict=False
     )
 
     # Request status by agent
-    server.batch_manager.bulk_update_llm_batch_items_request_status_by_agent(
+    await server.batch_manager.bulk_update_llm_batch_items_request_status_by_agent_async(
         [RequestStatusUpdateInfo(batch.id, "nonexistent-agent-id", JobStatus.expired)], strict=False
     )
 
@@ -5565,7 +5565,7 @@ async def test_create_batch_items_bulk(
     # Verify the IDs of created items match what's in the database
     created_ids = [item.id for item in created_items]
     for item_id in created_ids:
-        fetched = server.batch_manager.get_llm_batch_item_by_id(item_id, actor=default_user)
+        fetched = await server.batch_manager.get_llm_batch_item_by_id_async(item_id, actor=default_user)
         assert fetched.id in created_ids
 
 
@@ -5585,7 +5585,7 @@ async def test_count_batch_items(
     # Create a specific number of batch items for this batch.
     num_items = 5
     for _ in range(num_items):
-        server.batch_manager.create_llm_batch_item(
+        await server.batch_manager.create_llm_batch_item_async(
             llm_batch_id=batch.id,
             agent_id=sarah_agent.id,
             llm_config=dummy_llm_config,
@@ -5594,7 +5594,7 @@ async def test_count_batch_items(
         )
 
     # Use the count_llm_batch_items method to count the items.
-    count = server.batch_manager.count_llm_batch_items(llm_batch_id=batch.id)
+    count = await server.batch_manager.count_llm_batch_items_async(llm_batch_id=batch.id)
 
     # Assert that the count matches the expected number.
     assert count == num_items, f"Expected {num_items} items, got {count}"

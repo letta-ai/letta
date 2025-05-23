@@ -7,7 +7,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 from letta.jobs.llm_batch_job_polling import poll_running_llm_batches
 from letta.log import get_logger
-from letta.server.db import db_context
+from letta.server.db import db_registry
 from letta.server.server import SyncServer
 from letta.settings import settings
 
@@ -34,18 +34,15 @@ async def _try_acquire_lock_and_start_scheduler(server: SyncServer) -> bool:
     acquired_lock = False
     try:
         # Use a temporary connection context for the attempt initially
-        with db_context() as session:
-            engine = session.get_bind()
-            # Get raw connection - MUST be kept open if lock is acquired
-            raw_conn = engine.raw_connection()
-            cur = raw_conn.cursor()
+        async with db_registry.async_session() as session:
+            raw_conn = await session.connection()
 
-        cur.execute("SELECT pg_try_advisory_lock(CAST(%s AS bigint))", (ADVISORY_LOCK_KEY,))
-        acquired_lock = cur.fetchone()[0]
+            # Try to acquire the advisory lock
+            result = await session.execute(f"SELECT pg_try_advisory_lock(CAST({ADVISORY_LOCK_KEY} AS bigint))")
+            acquired_lock = result.scalar_one()
 
         if not acquired_lock:
-            cur.close()
-            raw_conn.close()
+            await raw_conn.close()
             logger.info("Scheduler lock held by another instance.")
             return False
 
