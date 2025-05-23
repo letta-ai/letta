@@ -22,36 +22,36 @@ logger = get_logger(__name__)
 
 
 @router.post("/", response_model=PydanticSandboxConfig)
-def create_sandbox_config(
+async def create_sandbox_config(
     config_create: SandboxConfigCreate,
     server: SyncServer = Depends(get_letta_server),
     actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    return server.sandbox_config_manager.create_or_update_sandbox_config(config_create, actor)
+    return await server.sandbox_config_manager.create_or_update_sandbox_config_async(config_create, actor)
 
 
 @router.post("/e2b/default", response_model=PydanticSandboxConfig)
-def create_default_e2b_sandbox_config(
+async def create_default_e2b_sandbox_config(
     server: SyncServer = Depends(get_letta_server),
     actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.E2B, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.sandbox_config_manager.get_or_create_default_sandbox_config_async(sandbox_type=SandboxType.E2B, actor=actor)
 
 
 @router.post("/local/default", response_model=PydanticSandboxConfig)
-def create_default_local_sandbox_config(
+async def create_default_local_sandbox_config(
     server: SyncServer = Depends(get_letta_server),
     actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.sandbox_config_manager.get_or_create_default_sandbox_config_async(sandbox_type=SandboxType.LOCAL, actor=actor)
 
 
 @router.post("/local", response_model=PydanticSandboxConfig)
-def create_custom_local_sandbox_config(
+async def create_custom_local_sandbox_config(
     local_sandbox_config: LocalSandboxConfig,
     server: SyncServer = Depends(get_letta_server),
     actor_id: str = Depends(get_user_id),
@@ -67,26 +67,26 @@ def create_custom_local_sandbox_config(
         )
 
     # Retrieve the user (actor)
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     # Wrap the LocalSandboxConfig into a SandboxConfigCreate
     sandbox_config_create = SandboxConfigCreate(config=local_sandbox_config)
 
     # Use the manager to create or update the sandbox config
-    sandbox_config = server.sandbox_config_manager.create_or_update_sandbox_config(sandbox_config_create, actor=actor)
+    sandbox_config = await server.sandbox_config_manager.create_or_update_sandbox_config_async(sandbox_config_create, actor=actor)
 
     return sandbox_config
 
 
 @router.patch("/{sandbox_config_id}", response_model=PydanticSandboxConfig)
-def update_sandbox_config(
+async def update_sandbox_config(
     sandbox_config_id: str,
     config_update: SandboxConfigUpdate,
     server: SyncServer = Depends(get_letta_server),
     actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.sandbox_config_manager.update_sandbox_config(sandbox_config_id, config_update, actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.sandbox_config_manager.update_sandbox_config_async(sandbox_config_id, config_update, actor)
 
 
 @router.delete("/{sandbox_config_id}", status_code=204)
@@ -112,7 +112,7 @@ async def list_sandbox_configs(
 
 
 @router.post("/local/recreate-venv", response_model=PydanticSandboxConfig)
-def force_recreate_local_sandbox_venv(
+async def force_recreate_local_sandbox_venv(
     server: SyncServer = Depends(get_letta_server),
     actor_id: str = Depends(get_user_id),
 ):
@@ -120,10 +120,10 @@ def force_recreate_local_sandbox_venv(
     Forcefully recreate the virtual environment for the local sandbox.
     Deletes and recreates the venv, then reinstalls required dependencies.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     # Retrieve the local sandbox config
-    sbx_config = server.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=actor)
+    sbx_config = await server.sandbox_config_manager.get_or_create_default_sandbox_config_async(sandbox_type=SandboxType.LOCAL, actor=actor)
 
     local_configs = sbx_config.get_local_config()
     sandbox_dir = os.path.expanduser(local_configs.sandbox_dir)  # Expand tilde
