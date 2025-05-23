@@ -110,58 +110,6 @@ def clear_tables():
         session.commit()
 
 
-# TODO: add back
-# def test_sandbox_config_and_env_var_basic(client: Union[LocalClient, RESTClient]):
-#    """
-#    Test sandbox config and environment variable functions for both LocalClient and RESTClient.
-#    """
-#
-#    # 1. Create a sandbox config
-#    local_config = LocalSandboxConfig(sandbox_dir=SANDBOX_DIR)
-#    sandbox_config = client.create_sandbox_config(config=local_config)
-#
-#    # Assert the created sandbox config
-#    assert sandbox_config.id is not None
-#    assert sandbox_config.type == SandboxType.LOCAL
-#
-#    # 2. Update the sandbox config
-#    updated_config = LocalSandboxConfig(sandbox_dir=UPDATED_SANDBOX_DIR)
-#    sandbox_config = client.update_sandbox_config(sandbox_config_id=sandbox_config.id, config=updated_config)
-#    assert sandbox_config.config["sandbox_dir"] == UPDATED_SANDBOX_DIR
-#
-#    # 3. List all sandbox configs
-#    sandbox_configs = client.list_sandbox_configs(limit=10)
-#    assert isinstance(sandbox_configs, List)
-#    assert len(sandbox_configs) == 1
-#    assert sandbox_configs[0].id == sandbox_config.id
-#
-#    # 4. Create an environment variable
-#    env_var = client.create_sandbox_env_var(
-#        sandbox_config_id=sandbox_config.id, key=ENV_VAR_KEY, value=ENV_VAR_VALUE, description=ENV_VAR_DESCRIPTION
-#    )
-#    assert env_var.id is not None
-#    assert env_var.key == ENV_VAR_KEY
-#    assert env_var.value == ENV_VAR_VALUE
-#    assert env_var.description == ENV_VAR_DESCRIPTION
-#
-#    # 5. Update the environment variable
-#    updated_env_var = client.update_sandbox_env_var(env_var_id=env_var.id, key=UPDATED_ENV_VAR_KEY, value=UPDATED_ENV_VAR_VALUE)
-#    assert updated_env_var.key == UPDATED_ENV_VAR_KEY
-#    assert updated_env_var.value == UPDATED_ENV_VAR_VALUE
-#
-#    # 6. List environment variables
-#    env_vars = client.list_sandbox_env_vars(sandbox_config_id=sandbox_config.id)
-#    assert isinstance(env_vars, List)
-#    assert len(env_vars) == 1
-#    assert env_vars[0].key == UPDATED_ENV_VAR_KEY
-#
-#    # 7. Delete the environment variable
-#    client.delete_sandbox_env_var(env_var_id=env_var.id)
-#
-#    # 8. Delete the sandbox config
-#    client.delete_sandbox_config(sandbox_config_id=sandbox_config.id)
-
-
 # --------------------------------------------------------------------------------------------------------------------
 # Agent tags
 # --------------------------------------------------------------------------------------------------------------------
@@ -347,30 +295,6 @@ def test_attach_detach_agent_memory_block(client: Letta, agent: AgentState):
         block_id=block.id,
     )
     assert example_new_label not in [block.label for block in client.agents.blocks.list(agent_id=updated_agent.id)]
-
-
-# def test_core_memory_token_limits(client: Union[LocalClient, RESTClient], agent: AgentState):
-#     """Test that the token limit is enforced for the core memory blocks"""
-
-#     # Create an agent
-#     new_agent = client.create_agent(
-#         name="test-core-memory-token-limits",
-#         tools=BASE_TOOLS,
-#         memory=ChatMemory(human="The humans name is Joe.", persona="My name is Sam.", limit=2000),
-#     )
-
-#     try:
-#         # Then intentionally set the limit to be extremely low
-#         client.update_agent(
-#             agent_id=new_agent.id,
-#             memory=ChatMemory(human="The humans name is Joe.", persona="My name is Sam.", limit=100),
-#         )
-
-#         # TODO we should probably not allow updating the core memory limit if
-
-#         # TODO in which case we should modify this test to actually to a proper token counter check
-#     finally:
-#         client.delete_agent(new_agent.id)
 
 
 def test_update_agent_memory_limit(client: Letta):
@@ -744,3 +668,38 @@ def test_attach_detach_agent_source(client: Letta, agent: AgentState):
     assert source.id not in [s.id for s in final_sources]
 
     client.sources.delete(source.id)
+
+
+# --------------------------------------------------------------------------------------------------------------------
+# Agent Initial Message Sequence
+# --------------------------------------------------------------------------------------------------------------------
+def test_initial_sequence(client: Letta):
+    # create an agent
+    agent = client.agents.create(
+        memory_blocks=[{"label": "human", "value": ""}, {"label": "persona", "value": ""}],
+        model="letta/letta-free",
+        embedding="letta/letta-free",
+        initial_message_sequence=[
+            MessageCreate(
+                role="assistant",
+                content="Hello, how are you?",
+            ),
+            MessageCreate(role="user", content="I'm good, and you?"),
+        ],
+    )
+
+    # list messages
+    messages = client.agents.messages.list(agent_id=agent.id)
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=[
+            MessageCreate(
+                role="user",
+                content="hello assistant!",
+            )
+        ],
+    )
+    assert len(messages) == 3
+    assert messages[0].message_type == "system_message"
+    assert messages[1].message_type == "assistant_message"
+    assert messages[2].message_type == "user_message"

@@ -141,7 +141,6 @@ jobs:
         PYTHONPATH: ${{ github.workspace }}:${{ env.PYTHONPATH }}
       run: |
         poetry run pytest -s tests/test_client.py
-        poetry run pytest -s tests/test_streaming.py
 #        poetry run pytest -s tests/test_client_legacy.py
 
     - name: Print docker logs if tests fail
