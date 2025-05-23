@@ -386,15 +386,15 @@ class LettaAgentBatch(BaseAgent):
         if updates:
             await self.batch_manager.bulk_update_llm_batch_items_request_status_by_agent_async(updates=updates)
 
-    def _build_sandbox(self) -> Tuple[SandboxConfig, Dict[str, Any]]:
+    async def _build_sandbox(self) -> Tuple[SandboxConfig, Dict[str, Any]]:
         sbx_type = SandboxType.E2B if tool_settings.e2b_api_key else SandboxType.LOCAL
-        cfg = self.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=sbx_type, actor=self.actor)
-        env = self.sandbox_config_manager.get_sandbox_env_vars_as_dict(cfg.id, actor=self.actor, limit=100)
+        cfg = await self.sandbox_config_manager.get_or_create_default_sandbox_config_async(sandbox_type=sbx_type, actor=self.actor)
+        env = await self.sandbox_config_manager.get_sandbox_env_vars_as_dict_async(cfg.id, actor=self.actor, limit=100)
         return cfg, env
 
     @trace_method
     async def _execute_tools(self, ctx: _ResumeContext) -> Sequence[Tuple[str, Tuple[str, bool]]]:
-        sbx_cfg, sbx_env = self._build_sandbox()
+        sbx_cfg, sbx_env = await self._build_sandbox()
         rethink_memory_tool_name = "rethink_memory"
         tool_params = []
         # TODO: This is a special case - we need to think about how to generalize this
