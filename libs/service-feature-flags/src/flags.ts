@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 interface FlagProperties {
   description: string;
-  expiryDate: `${number}-${number}-${number}`;
+  expiryDate?: `${number}-${number}-${number}`;
   flagValue: ZodType;
 }
 
@@ -75,6 +75,12 @@ export const featureFlags = {
     description: 'General access',
     expiryDate: '2025-07-01',
     flagValue: z.boolean(),
+  },
+  SYSTEM_WARNING: {
+    flagValue: z.object({
+      title: z.string(),
+    }),
+    description: 'System warning',
   },
 } satisfies Record<string, FlagProperties>;
 

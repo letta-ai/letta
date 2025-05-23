@@ -3,6 +3,7 @@
 import type { Flag, FlagValue } from '@letta-cloud/service-feature-flags';
 import { webApi, webApiQueryKeys } from '../../../index';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
+import { useMemo } from 'react';
 
 interface UseFeatureFlagPayload<SingleFlag extends Flag> {
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
@@ -18,8 +19,16 @@ export function useFeatureFlag<SingleFlag extends Flag>(
     enabled: CURRENT_RUNTIME !== 'letta-desktop',
   });
 
+  const flagData = useMemo(() => {
+    try {
+      return data?.body?.[flag];
+    } catch (e) {
+      return undefined;
+    }
+  }, [data, flag]);
+
   return {
-    data: data?.body[flag],
+    data: flagData,
     isLoading: data === undefined,
   };
 }
