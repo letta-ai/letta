@@ -118,20 +118,21 @@ class DatabaseRegistry:
                 else:
                     async_pg_uri = f"postgresql+asyncpg://{pg_uri.split('://', 1)[1]}" if "://" in pg_uri else pg_uri
                 async_pg_uri = async_pg_uri.replace("sslmode=", "ssl=")
-
                 async_engine = create_async_engine(async_pg_uri, **self._build_sqlalchemy_engine_args(is_async=True))
-
-                self._async_engines["default"] = async_engine
-
-                # Create async session factory
-                self._async_session_factories["default"] = async_sessionmaker(
-                    autocommit=False, autoflush=False, bind=self._async_engines["default"], class_=AsyncSession
-                )
-                self._initialized["async"] = True
             else:
-                self.logger.warning("Async SQLite is currently not supported. Please use PostgreSQL for async database operations.")
-                # TODO (cliandy): unclear around async sqlite support in sqlalchemy, we will not currently support this
+                # create sqlite async engine
                 self._initialized["async"] = False
+                # TODO: remove self.config
+                engine_path = "sqlite+aiosqlite:///" + os.path.join(self.config.recall_storage_path, "sqlite.db")
+                self.logger.info("Creating sqlite engine " + engine_path)
+                async_engine = create_async_engine(engine_path, **self._build_sqlalchemy_engine_args(is_async=True))
+
+            # Create async session factory
+            self._async_engines["default"] = async_engine
+            self._async_session_factories["default"] = async_sessionmaker(
+                autocommit=False, autoflush=False, bind=self._async_engines["default"], class_=AsyncSession
+            )
+            self._initialized["async"] = True
 
     def _build_sqlalchemy_engine_args(self, *, is_async: bool) -> dict:
         """Prepare keyword arguments for create_engine / create_async_engine."""
