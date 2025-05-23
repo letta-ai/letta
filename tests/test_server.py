@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import shutil
@@ -359,6 +360,14 @@ def other_agent_id(server, user_id, base_tools):
     server.agent_manager.delete_agent(agent_state.id, actor=actor)
 
 
+@pytest.fixture(scope="session")
+def event_loop(request):
+    """Create an instance of the default event loop for each test case."""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
+
+
 def test_error_on_nonexistent_agent(server, user, agent_id):
     try:
         fake_agent_id = str(uuid.uuid4())
@@ -527,7 +536,7 @@ def test_delete_agent_same_org(server: SyncServer, org_id: str, user: User):
 
 
 @pytest.mark.asyncio
-async def test_read_local_llm_configs(server: SyncServer, user: User):
+async def test_read_local_llm_configs(server: SyncServer, user: User, event_loop):
     configs_base_dir = os.path.join(os.path.expanduser("~"), ".letta", "llm_configs")
     clean_up_dir = False
     if not os.path.exists(configs_base_dir):
@@ -564,7 +573,7 @@ async def test_read_local_llm_configs(server: SyncServer, user: User):
 
         # Try to use in agent creation
         context_window_override = 4000
-        agent = server.create_agent(
+        agent = await server.create_agent_async(
             request=CreateAgent(
                 model="caren/my-custom-model",
                 context_window_limit=context_window_override,
@@ -1061,8 +1070,8 @@ def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_to
 
 
 @pytest.mark.asyncio
-async def test_messages_with_provider_override(server: SyncServer, user_id: str):
-    actor = server.user_manager.get_user_or_default(user_id)
+async def test_messages_with_provider_override(server: SyncServer, user_id: str, event_loop):
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=user_id)
     provider = server.provider_manager.create_provider(
         request=ProviderCreate(
             name="caren-anthropic",
@@ -1077,7 +1086,7 @@ async def test_messages_with_provider_override(server: SyncServer, user_id: str)
     models = await server.list_llm_models_async(actor=actor, provider_category=[ProviderCategory.base])
     assert provider.name not in [model.provider_name for model in models]
 
-    agent = server.create_agent(
+    agent = await server.create_agent_async(
         request=CreateAgent(
             memory_blocks=[],
             model="caren-anthropic/claude-3-5-sonnet-20240620",
@@ -1141,7 +1150,7 @@ async def test_messages_with_provider_override(server: SyncServer, user_id: str)
 
 
 @pytest.mark.asyncio
-async def test_unique_handles_for_provider_configs(server: SyncServer, user: User):
+async def test_unique_handles_for_provider_configs(server: SyncServer, user: User, event_loop):
     models = await server.list_llm_models_async(actor=user)
     model_handles = [model.handle for model in models]
     assert sorted(model_handles) == sorted(list(set(model_handles))), "All models should have unique handles"
