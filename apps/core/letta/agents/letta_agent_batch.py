@@ -27,6 +27,7 @@ from letta.schemas.llm_batch_job import LLMBatchItem
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import ToolCall as OpenAIToolCall
 from letta.schemas.sandbox_config import SandboxConfig, SandboxType
+from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.server.rest_api.utils import create_heartbeat_system_message, create_letta_messages_from_llm_response
 from letta.services.agent_manager import AgentManager
@@ -66,15 +67,17 @@ class _ResumeContext:
     request_status_updates: List[RequestStatusUpdateInfo]
 
 
-async def execute_tool_wrapper(params: ToolExecutionParams) -> Tuple[str, Tuple[str, bool]]:
+async def execute_tool_wrapper(params: ToolExecutionParams) -> tuple[str, ToolExecutionResult]:
     """
     Executes the tool in an out‑of‑process worker and returns:
         (agent_id, (tool_result:str, success_flag:bool))
     """
+    from letta.schemas.tool_execution_result import ToolExecutionResult
+
     # locate the tool on the agent
     target_tool = next((t for t in params.agent_state.tools if t.name == params.tool_call_name), None)
     if not target_tool:
-        return params.agent_id, (f"Tool not found: {params.tool_call_name}", False)
+        return params.agent_id, ToolExecutionResult(func_return=f"Tool not found: {params.tool_call_name}", status="error")
 
     try:
         mgr = ToolExecutionManager(
@@ -88,9 +91,9 @@ async def execute_tool_wrapper(params: ToolExecutionParams) -> Tuple[str, Tuple[
             function_args=params.tool_args,
             tool=target_tool,
         )
-        return params.agent_id, (tool_execution_result.func_return, True)
+        return params.agent_id, tool_execution_result
     except Exception as e:
-        return params.agent_id, (f"Failed to call tool. Error: {e}", False)
+        return params.agent_id, ToolExecutionResult(func_return=f"Failed to call tool. Error: {e}", status="error")
 
 
 # TODO: Limitations ->
@@ -393,7 +396,7 @@ class LettaAgentBatch(BaseAgent):
         return cfg, env
 
     @trace_method
-    async def _execute_tools(self, ctx: _ResumeContext) -> Sequence[Tuple[str, Tuple[str, bool]]]:
+    async def _execute_tools(self, ctx: _ResumeContext) -> Sequence[tuple[str, ToolExecutionResult]]:
         sbx_cfg, sbx_env = self._build_sandbox()
         rethink_memory_tool_name = "rethink_memory"
         tool_params = []
@@ -424,7 +427,7 @@ class LettaAgentBatch(BaseAgent):
                 return await pool.map(execute_tool_wrapper, tool_params)
 
     @trace_method
-    async def _bulk_rethink_memory_async(self, params: List[ToolExecutionParams]) -> Sequence[Tuple[str, Tuple[str, bool]]]:
+    async def _bulk_rethink_memory_async(self, params: List[ToolExecutionParams]) -> Sequence[tuple[str, ToolExecutionResult]]:
         updates = {}
         result = []
         for param in params:
@@ -443,7 +446,7 @@ class LettaAgentBatch(BaseAgent):
             updates[block_id] = new_value
 
             # TODO: This is quite ugly and confusing - this is mostly to align with the returns of other tools
-            result.append((param.agent_id, ("", True)))
+            result.append((param.agent_id, ToolExecutionResult(status="success")))
 
         await self.block_manager.bulk_update_block_values_async(updates=updates, actor=self.actor)
 
@@ -451,7 +454,7 @@ class LettaAgentBatch(BaseAgent):
 
     async def _persist_tool_messages(
         self,
-        exec_results: Sequence[Tuple[str, Tuple[str, bool]]],
+        exec_results: Sequence[Tuple[str, "ToolExecutionResult"]],
         ctx: _ResumeContext,
     ) -> Dict[str, List[Message]]:
         # TODO: This is redundant, we should have this ready on the ctx
@@ -459,14 +462,15 @@ class LettaAgentBatch(BaseAgent):
         agent_item_map: Dict[str, LLMBatchItem] = {item.agent_id: item for item in ctx.batch_items}
 
         msg_map: Dict[str, List[Message]] = {}
-        for aid, (tool_res, success) in exec_results:
+        for aid, tool_exec_result in exec_results:
             msgs = self._create_tool_call_messages(
                 llm_batch_item_id=agent_item_map[aid].id,
                 agent_state=ctx.agent_state_map[aid],
                 tool_call_name=ctx.tool_call_name_map[aid],
                 tool_call_args=ctx.tool_call_args_map[aid],
-                tool_exec_result=tool_res,
-                success_flag=success,
+                tool_exec_result=tool_exec_result.func_return,
+                success_flag=tool_exec_result.success_flag,
+                tool_exec_result_obj=tool_exec_result,
                 reasoning_content=None,
             )
             msg_map[aid] = msgs
@@ -482,14 +486,14 @@ class LettaAgentBatch(BaseAgent):
 
     def _prepare_next_iteration(
         self,
-        exec_results: Sequence[Tuple[str, Tuple[str, bool]]],
+        exec_results: Sequence[Tuple[str, "ToolExecutionResult"]],
         ctx: _ResumeContext,
         msg_map: Dict[str, List[Message]],
     ) -> Tuple[List[LettaBatchRequest], Dict[str, AgentStepState]]:
         # who continues?
         continues = [aid for aid, cont in ctx.should_continue_map.items() if cont]
 
-        success_flag_map = {aid: flag for aid, (_res, flag) in exec_results}
+        success_flag_map = {aid: result.success_flag for aid, result in exec_results}
 
         batch_reqs: List[LettaBatchRequest] = []
         for aid in continues:
@@ -528,6 +532,7 @@ class LettaAgentBatch(BaseAgent):
         tool_call_name: str,
         tool_call_args: Dict[str, Any],
         tool_exec_result: str,
+        tool_exec_result_obj: "ToolExecutionResult",
         success_flag: bool,
         reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
     ) -> List[Message]:
@@ -541,6 +546,7 @@ class LettaAgentBatch(BaseAgent):
             tool_call_id=tool_call_id,
             function_call_success=success_flag,
             function_response=tool_exec_result,
+            tool_execution_result=tool_exec_result_obj,
             actor=self.actor,
             add_heartbeat_request_system_message=False,
             reasoning_content=reasoning_content,

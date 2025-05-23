@@ -1,7 +1,7 @@
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 import openai
 
@@ -118,6 +118,7 @@ class VoiceAgent(BaseAgent):
         Main streaming loop that yields partial tokens.
         Whenever we detect a tool call, we yield from _handle_ai_response as well.
         """
+        print("CALL STREAM")
         if len(input_messages) != 1 or input_messages[0].role != MessageRole.user:
             raise ValueError(f"Voice Agent was invoked with multiple input messages or message did not have role `user`: {input_messages}")
 
@@ -238,14 +239,17 @@ class VoiceAgent(BaseAgent):
             )
             in_memory_message_history.append(assistant_tool_call_msg.model_dump())
 
-            tool_result, success_flag = await self._execute_tool(
+            tool_execution_result = await self._execute_tool(
                 user_query=user_query,
                 tool_name=tool_call_name,
                 tool_args=tool_args,
                 agent_state=agent_state,
             )
+            tool_result = tool_execution_result.func_return
+            success_flag = tool_execution_result.success_flag
 
             # 3. Provide function_call response back into the conversation
+            # TODO: fix this tool format
             tool_message = ToolMessage(
                 content=json.dumps({"result": tool_result}),
                 tool_call_id=tool_call_id,
@@ -267,6 +271,7 @@ class VoiceAgent(BaseAgent):
                 tool_call_id=tool_call_id,
                 function_call_success=success_flag,
                 function_response=tool_result,
+                tool_execution_result=tool_execution_result,
                 actor=self.actor,
                 add_heartbeat_request_system_message=True,
             )
@@ -388,10 +393,14 @@ class VoiceAgent(BaseAgent):
             for t in tools
         ]
 
-    async def _execute_tool(self, user_query: str, tool_name: str, tool_args: dict, agent_state: AgentState) -> Tuple[str, bool]:
+    async def _execute_tool(self, user_query: str, tool_name: str, tool_args: dict, agent_state: AgentState) -> "ToolExecutionResult":
         """
         Executes a tool and returns (result, success_flag).
         """
+        from letta.schemas.tool_execution_result import ToolExecutionResult
+
+        print("EXECUTING TOOL")
+
         # Special memory case
         if tool_name == "search_memory":
             tool_result = await self._search_memory(
@@ -401,11 +410,17 @@ class VoiceAgent(BaseAgent):
                 end_minutes_ago=tool_args["end_minutes_ago"],
                 agent_state=agent_state,
             )
-            return tool_result, True
+            return ToolExecutionResult(
+                func_return=tool_result,
+                status="success",
+            )
         else:
             target_tool = next((x for x in agent_state.tools if x.name == tool_name), None)
             if not target_tool:
-                return f"Tool not found: {tool_name}", False
+                return ToolExecutionResult(
+                    func_return=f"Tool not found: {tool_name}",
+                    status="error",
+                )
 
             try:
                 tool_result, _ = execute_external_tool(
@@ -416,9 +431,9 @@ class VoiceAgent(BaseAgent):
                     actor=self.actor,
                     allow_agent_state_modifications=False,
                 )
-                return tool_result, True
+                return ToolExecutionResult(func_return=tool_result, status="success")
             except Exception as e:
-                return f"Failed to call tool. Error: {e}", False
+                return ToolExecutionResult(func_return=f"Failed to call tool. Error: {e}", status="error")
 
     async def _search_memory(
         self,

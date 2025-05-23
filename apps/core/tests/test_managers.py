@@ -5598,3 +5598,61 @@ async def test_count_batch_items(
 
     # Assert that the count matches the expected number.
     assert count == num_items, f"Expected {num_items} items, got {count}"
+
+
+# ======================================================================================================================
+# MCPManager Tests
+# ======================================================================================================================
+
+
+@pytest.mark.asyncio
+async def test_create_mcp_server(server, default_user, event_loop):
+    from letta.schemas.mcp import MCPServer, MCPServerType, SSEServerConfig, StdioServerConfig
+    from letta.settings import tool_settings
+
+    if tool_settings.mcp_read_from_config:
+        return
+
+    # Test with a valid StdioServerConfig
+    server_config = StdioServerConfig(
+        server_name="test_server", type=MCPServerType.STDIO, command="echo 'test'", args=["arg1", "arg2"], env={"ENV1": "value1"}
+    )
+    mcp_server = MCPServer(server_name="test_server", server_type=MCPServerType.STDIO, stdio_config=server_config)
+    created_server = await server.mcp_manager.create_or_update_mcp_server(mcp_server, actor=default_user)
+    print(created_server)
+    assert created_server.server_name == server_config.server_name
+    assert created_server.server_type == server_config.type
+
+    # Test with a valid SSEServerConfig
+    mcp_server_name = "github_composio"
+    server_url = "https://mcp.composio.dev/composio/server/3c44733b-75ae-4ba8-9a68-7153265fadd8"
+    sse_mcp_config = SSEServerConfig(server_name=mcp_server_name, server_url=server_url)
+    mcp_sse_server = MCPServer(server_name=mcp_server_name, server_type=MCPServerType.SSE, server_url=server_url)
+    created_server = await server.mcp_manager.create_or_update_mcp_server(mcp_sse_server, actor=default_user)
+    print(created_server)
+    assert created_server.server_name == mcp_server_name
+    assert created_server.server_type == MCPServerType.SSE
+
+    # list mcp servers
+    servers = await server.mcp_manager.list_mcp_servers(actor=default_user)
+    print(servers)
+    assert len(servers) > 0, "No MCP servers found"
+
+    # list tools from sse server
+    tools = await server.mcp_manager.list_mcp_server_tools(created_server.server_name, actor=default_user)
+    print(tools)
+
+    # call a tool from the sse server
+    tool_name = "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"
+    tool_args = {"owner": "letta-ai", "repo": "letta"}
+    result = await server.mcp_manager.execute_mcp_server_tool(
+        created_server.server_name, tool_name=tool_name, tool_args=tool_args, actor=default_user
+    )
+    print(result)
+
+    # add a tool
+    tool = await server.mcp_manager.add_tool_from_mcp_server(created_server.server_name, tool_name, actor=default_user)
+    print(tool)
+    assert tool.name == tool_name
+    assert f"mcp:{created_server.server_name}" in tool.tags, f"Expected tag {f'mcp:{created_server.server_name}'}, got {tool.tags}"
+    print("TAGS", tool.tags)

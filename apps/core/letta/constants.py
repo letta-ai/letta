@@ -99,6 +99,13 @@ LETTA_TOOL_SET = set(
     + BUILTIN_TOOLS
 )
 
+
+def FUNCTION_RETURN_VALUE_TRUNCATED(return_str, return_char: int, return_char_limit: int):
+    return (
+        f"{return_str}... [NOTE: function output was truncated since it exceeded the character limit: {return_char} > {return_char_limit}]"
+    )
+
+
 # The name of the tool used to send message to the user
 # May not be relevant in cases where the agent has multiple ways to message to user (send_imessage, send_discord_mesasge, ...)
 # or in cases where the agent has no concept of messaging a user (e.g. a workflow agent)

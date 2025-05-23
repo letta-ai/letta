@@ -1,7 +1,7 @@
 import asyncio
 import importlib
 import warnings
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from letta.constants import (
     BASE_FUNCTION_RETURN_CHAR_LIMIT,
@@ -26,6 +26,7 @@ from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.services.mcp.types import SSEServerConfig, StdioServerConfig
 from letta.tracing import trace_method
 from letta.utils import enforce_types, printd
 
@@ -91,10 +92,26 @@ class ToolManager:
         return tool
 
     @enforce_types
+    async def create_mcp_server(
+        self, server_config: Union[StdioServerConfig, SSEServerConfig], actor: PydanticUser
+    ) -> List[Union[StdioServerConfig, SSEServerConfig]]:
+        pass
+
+    @enforce_types
     @trace_method
     def create_or_update_mcp_tool(self, tool_create: ToolCreate, mcp_server_name: str, actor: PydanticUser) -> PydanticTool:
         metadata = {MCP_TOOL_TAG_NAME_PREFIX: {"server_name": mcp_server_name}}
         return self.create_or_update_tool(
+            PydanticTool(
+                tool_type=ToolType.EXTERNAL_MCP, name=tool_create.json_schema["name"], metadata_=metadata, **tool_create.model_dump()
+            ),
+            actor,
+        )
+
+    @enforce_types
+    async def create_mcp_tool_async(self, tool_create: ToolCreate, mcp_server_name: str, actor: PydanticUser) -> PydanticTool:
+        metadata = {MCP_TOOL_TAG_NAME_PREFIX: {"server_name": mcp_server_name}}
+        return await self.create_or_update_tool_async(
             PydanticTool(
                 tool_type=ToolType.EXTERNAL_MCP, name=tool_create.json_schema["name"], metadata_=metadata, **tool_create.model_dump()
             ),

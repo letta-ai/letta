@@ -14,7 +14,6 @@ from letta.constants import (
 from letta.functions.ast_parsers import get_function_name_and_description
 from letta.functions.composio_helpers import generate_composio_tool_wrapper
 from letta.functions.functions import derive_openai_json_schema, get_json_schema_from_module
-from letta.functions.helpers import generate_langchain_tool_wrapper, generate_mcp_tool_wrapper, generate_model_from_args_json_schema
 from letta.functions.mcp_client.types import MCPTool
 from letta.functions.schema_generator import (
     generate_schema_from_args_schema_v2,
@@ -71,6 +70,8 @@ class Tool(BaseTool):
         """
         Refresh name, description, source_code, and json_schema.
         """
+        from letta.functions.helpers import generate_model_from_args_json_schema
+
         if self.tool_type == ToolType.CUSTOM:
             # If it's a custom tool, we need to ensure source_code is present
             if not self.source_code:
@@ -146,6 +147,8 @@ class ToolCreate(LettaBase):
 
     @classmethod
     def from_mcp(cls, mcp_server_name: str, mcp_tool: MCPTool) -> "ToolCreate":
+        from letta.functions.helpers import generate_mcp_tool_wrapper
+
         # Pass the MCP tool to the schema generator
         json_schema = generate_tool_schema_for_mcp(mcp_tool=mcp_tool)
 
@@ -218,6 +221,8 @@ class ToolCreate(LettaBase):
         Returns:
             Tool: A Letta Tool initialized with attributes derived from the provided LangChain BaseTool object.
         """
+        from letta.functions.helpers import generate_langchain_tool_wrapper
+
         description = langchain_tool.description
         source_type = "python"
         tags = ["langchain"]

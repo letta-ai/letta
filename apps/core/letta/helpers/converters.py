@@ -7,6 +7,7 @@ from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMe
 from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
 from sqlalchemy import Dialect
 
+from letta.functions.mcp_client.types import StdioServerConfig
 from letta.schemas.agent import AgentStepState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderType, ToolRuleType
@@ -400,3 +401,22 @@ def deserialize_response_format(data: Optional[Dict]) -> Optional[ResponseFormat
         return JsonSchemaResponseFormat(**data)
     if data["type"] == ResponseFormatType.json_object:
         return JsonObjectResponseFormat(**data)
+
+
+# --------------------------
+# MCP Stdio Server Config Serialization
+# --------------------------
+
+
+def serialize_mcp_stdio_config(config: Union[Optional[StdioServerConfig], Dict]) -> Optional[Dict]:
+    """Convert an StdioServerConfig object into a JSON-serializable dictionary."""
+    if config and isinstance(config, StdioServerConfig):
+        return config.to_dict()
+    return config
+
+
+def deserialize_mcp_stdio_config(data: Optional[Dict]) -> Optional[StdioServerConfig]:
+    """Convert a dictionary back into an StdioServerConfig object."""
+    if not data:
+        return None
+    return StdioServerConfig(**data)

@@ -51,7 +51,7 @@ jobs:
           - "test_letta_agent_batch.py"
           - "test_providers.py"
           - "sdk/"
-          - "mcp/"
+          #- "mcp/"
     services:
       qdrant:
         image: qdrant/qdrant
@@ -151,7 +151,9 @@ jobs:
           E2B_API_KEY: ${{ env.E2B_API_KEY }}
           E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
           LETTA_ENABLE_BATCH_JOB_POLLING: true
+          #LETTA_USE_EXPERIMENTAL: 1 # enable new agent loop
         run: |
           set -o xtrace
           poetry run pip show letta-client
           poetry run pytest -svv tests/${{ matrix.test_suite }}
+          LETTA_USE_EXPERIMENTAL=1 poetry run pytest -svv tests/mcp/

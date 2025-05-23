@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Literal, Optional
 from letta.constants import (
     COMPOSIO_ENTITY_ENV_VAR_KEY,
     CORE_MEMORY_LINE_NUMBER_WARNING,
+    MCP_TOOL_TAG_NAME_PREFIX,
     READ_ONLY_BLOCK_EDIT_ERROR,
     RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE,
     WEB_SEARCH_CLIP_CONTENT,
@@ -31,6 +32,7 @@ from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
+from letta.services.mcp_manager import MCPManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.tool_sandbox.e2b_sandbox import AsyncToolSandboxE2B
@@ -668,53 +670,35 @@ class ExternalComposioToolExecutor(ToolExecutor):
 class ExternalMCPToolExecutor(ToolExecutor):
     """Executor for external MCP tools."""
 
-    # TODO: Implement
-    #
-    # def execute(self, function_name: str, function_args: dict, agent_state: AgentState, tool: Tool, actor: User) -> ToolExecutionResult:
-    #     # Get the server name from the tool tag
-    #     server_name = self._extract_server_name(tool)
-    #
-    #     # Get the MCPClient
-    #     mcp_client = self._get_mcp_client(agent, server_name)
-    #
-    #     # Validate tool exists
-    #     self._validate_tool_exists(mcp_client, function_name, server_name)
-    #
-    #     # Execute the tool
-    #     function_response, is_error = mcp_client.execute_tool(tool_name=function_name, tool_args=function_args)
-    #
-    #     return ToolExecutionResult(
-    #         status="error" if is_error else "success",
-    #         func_return=function_response,
-    #     )
-    #
-    # def _extract_server_name(self, tool: Tool) -> str:
-    #     """Extract server name from tool tags."""
-    #     return tool.tags[0].split(":")[1]
-    #
-    # def _get_mcp_client(self, agent: "Agent", server_name: str):
-    #     """Get the MCP client for the given server name."""
-    #     if not agent.mcp_clients:
-    #         raise ValueError("No MCP client available to use")
-    #
-    #     if server_name not in agent.mcp_clients:
-    #         raise ValueError(f"Unknown MCP server name: {server_name}")
-    #
-    #     mcp_client = agent.mcp_clients[server_name]
-    #     if not isinstance(mcp_client, BaseMCPClient):
-    #         raise RuntimeError(f"Expected an MCPClient, but got: {type(mcp_client)}")
-    #
-    #     return mcp_client
-    #
-    # def _validate_tool_exists(self, mcp_client, function_name: str, server_name: str):
-    #     """Validate that the tool exists in the MCP server."""
-    #     available_tools = mcp_client.list_tools()
-    #     available_tool_names = [t.name for t in available_tools]
-    #
-    #     if function_name not in available_tool_names:
-    #         raise ValueError(
-    #             f"{function_name} is not available in MCP server {server_name}. " f"Please check your `~/.letta/mcp_config.json` file."
-    #         )
+    @trace_method
+    async def execute(
+        self,
+        function_name: str,
+        function_args: dict,
+        agent_state: AgentState,
+        tool: Tool,
+        actor: User,
+        sandbox_config: Optional[SandboxConfig] = None,
+        sandbox_env_vars: Optional[Dict[str, Any]] = None,
+    ) -> ToolExecutionResult:
+
+        pass
+
+        mcp_server_tag = [tag for tag in tool.tags if tag.startswith(f"{MCP_TOOL_TAG_NAME_PREFIX}:")]
+        if not mcp_server_tag:
+            raise ValueError(f"Tool {tool.name} does not have a valid MCP server tag")
+        mcp_server_name = mcp_server_tag[0].split(":")[1]
+
+        mcp_manager = MCPManager()
+        # TODO: may need to have better client connection management
+        function_response = await mcp_manager.execute_mcp_server_tool(
+            mcp_server_name=mcp_server_name, tool_name=function_name, tool_args=function_args, actor=actor
+        )
+
+        return ToolExecutionResult(
+            status="success",
+            func_return=function_response,
+        )
 
 
 class SandboxToolExecutor(ToolExecutor):
