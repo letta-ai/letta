@@ -20,10 +20,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback } from 'react';
-import {
-  type GetCurrentOrganizationSuccessResponse,
-  useFeatureFlag,
-} from '$web/web-api/contracts';
+import type { GetCurrentOrganizationSuccessResponse } from '$web/web-api/contracts';
 import { useCurrentOrganization } from '$web/client/hooks';
 import { CurrentPlan } from './CurrentPlan/CurrentPlan';
 
@@ -161,7 +158,6 @@ function DeleteOrganizationSettings() {
 function OrganizationSettingsPage() {
   const t = useTranslations('organization/settings');
   const organization = useCurrentOrganization();
-  const { data: isProPlanEnabled } = useFeatureFlag('PRO_PLAN');
 
   return (
     <DashboardPageLayout cappedWidth title={t('title')}>
@@ -173,7 +169,7 @@ function OrganizationSettingsPage() {
             <VStack gap="xlarge">
               <EditOrganizationSettings name={organization.name} />
               <HR />
-              {isProPlanEnabled && <CurrentPlan />}
+              <CurrentPlan />
 
               <MembershipRules />
 

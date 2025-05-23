@@ -57,8 +57,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as Sentry from '@sentry/browser';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { CloudAccessCodeDialog } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/CloudAccessCodeDialog/CloudAccessCodeDialog';
-import { CreditsViewer } from '$web/client/components/CreditsViewer/CreditsViewer';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import './DashboardNavigation.scss';
 import { OrganizationUsageBlock } from '$web/client/components/OrganizationUsageBlock/OrganizationUsageBlock';
 import { useGlobalSystemWarning } from '$web/client/hooks/useGlobalSystemWarning/useGlobalSystemWarning';
@@ -184,8 +182,6 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
     ApplicationServices.READ_API_KEYS,
   );
 
-  const { data: isModelsPageEnabled } = useFeatureFlag('MODELS_ROOT_PAGE');
-
   const baseNavItems = useMemo(() => {
     return [
       {
@@ -194,16 +190,12 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         id: 'projects',
         icon: <ProjectsIcon />,
       },
-      ...(isModelsPageEnabled
-        ? [
-            {
-              label: t('nav.models'),
-              href: '/models',
-              id: 'models',
-              icon: <TokenIcon />,
-            },
-          ]
-        : []),
+      {
+        label: t('nav.models'),
+        href: '/models',
+        id: 'models',
+        icon: <TokenIcon />,
+      },
       {
         label: t('nav.dataSources'),
         href: '/data-sources',
@@ -236,7 +228,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
 
       return hasCloudAccess;
     });
-  }, [t, isModelsPageEnabled, hasCloudAccess, canReadAPIKeys]);
+  }, [t, hasCloudAccess, canReadAPIKeys]);
 
   const baseNavBottomItems = [
     {
@@ -853,7 +845,6 @@ export function DashboardHeaderNavigation(
 
 export function DashboardHeader() {
   const currentProject = useCurrentProject();
-  const { data: isProPlanEnabled } = useFeatureFlag('PRO_PLAN');
 
   return (
     <>
@@ -917,7 +908,6 @@ export function DashboardHeader() {
           </HStack>
           <HStack align="center">
             <DashboardHeaderNavigation />
-            {!isProPlanEnabled && <CreditsViewer />}
             <ProfilePopover />
           </HStack>
         </HStack>

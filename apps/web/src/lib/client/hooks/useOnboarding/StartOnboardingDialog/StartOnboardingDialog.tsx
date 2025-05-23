@@ -11,7 +11,7 @@ import {
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser } from '$web/client/hooks';
 import { useCallback, useState } from 'react';
-import { useFeatureFlag, useSetOnboardingStep } from '@letta-cloud/sdk-web';
+import { useSetOnboardingStep } from '@letta-cloud/sdk-web';
 import { MainOnboardingSteps } from '$web/client/hooks/useOnboarding/components/MainOnboardingSteps/MainOnboardingSteps';
 import { useRouter } from 'next/navigation';
 
@@ -19,14 +19,11 @@ export function StartOnboardingDialog() {
   const t = useTranslations('onboarding/StartOnboardingDialog');
 
   const { setOnboardingStep, isPending, isSuccess } = useSetOnboardingStep();
-  const { data: isModelsPageEnabled } = useFeatureFlag('MODELS_ROOT_PAGE');
   const [redirecting, setRedirecting] = useState(false);
 
   const { push } = useRouter();
   const handleStart = useCallback(() => {
-    if (isModelsPageEnabled) {
-      setRedirecting(true);
-    }
+    setRedirecting(true);
 
     setOnboardingStep({
       onboardingStep: 'about_credits',
@@ -34,7 +31,7 @@ export function StartOnboardingDialog() {
         push('/models');
       },
     });
-  }, [isModelsPageEnabled, setOnboardingStep, push]);
+  }, [setOnboardingStep, push]);
 
   const user = useCurrentUser();
 
@@ -57,7 +54,7 @@ export function StartOnboardingDialog() {
           busy={isPending || isSuccess || redirecting}
           onClick={handleStart}
           size="large"
-          label={isModelsPageEnabled ? t('startModels') : t('start')}
+          label={t('startModels')}
         />
       }
     >

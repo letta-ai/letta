@@ -7,7 +7,7 @@ import {
   ExternalLinkIcon,
   Tooltip,
 } from '@letta-cloud/ui-component-library';
-import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useMemo } from 'react';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
 import { UpgradePlanDialog } from '$web/client/components/UpgradePlanDialog/UpgradePlanDialog';
@@ -40,7 +40,6 @@ export function OrganizationUsageBlock() {
     webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
       queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
     });
-  const { data: isProPlanEnabled } = useFeatureFlag('PRO_PLAN');
 
   const billingTier = useMemo(() => {
     return billingData?.body.billingTier || 'free';
@@ -49,10 +48,6 @@ export function OrganizationUsageBlock() {
   const limits = useMemo(() => {
     return getUsageLimits(billingTier);
   }, [billingTier]);
-
-  if (!isProPlanEnabled) {
-    return;
-  }
 
   if (!quotaData || !billingTier) {
     return null;

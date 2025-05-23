@@ -3,7 +3,6 @@ import { getCustomerSubscription } from '@letta-cloud/service-payments';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
 import { shouldItemRateLimit } from '@letta-cloud/utils-server';
 import * as Sentry from '@sentry/node';
-import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 
 export async function itemRateLimitMiddleware(
   req: Request,
@@ -21,15 +20,9 @@ export async function itemRateLimitMiddleware(
       return;
     }
 
-    const [subscription, shouldRateLimitUser] = await Promise.all([
-      getCustomerSubscription(req.actor.cloudOrganizationId),
-      getSingleFlag('PRO_PLAN', req.actor.cloudOrganizationId),
-    ]);
-
-    if (!shouldRateLimitUser) {
-      next();
-      return;
-    }
+    const subscription = await getCustomerSubscription(
+      req.actor.cloudOrganizationId,
+    );
 
     const limits = await getUsageLimits(subscription.tier);
 

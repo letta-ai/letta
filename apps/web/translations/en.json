@@ -39,7 +39,6 @@
   },
   "onboarding/StartOnboardingDialog": {
     "skip": "Skip onboarding",
-    "start": "Learn about credits",
     "startModels": "Explore models",
     "title": "Welcome to Letta Cloud",
     "description": "Start your onboarding to learn how to use the platform and get your agents ready for deployment.",
@@ -47,7 +46,6 @@
     "time": "Approx. 15 minutes",
     "steps": {
       "models": "Explore models",
-      "creditsAndCloud": "Understand credits",
       "createATemplate": "Create an agent template",
       "exploreTheADE": "Explore the ADE",
       "saveATemplate": "Save an agent template",
@@ -246,22 +244,6 @@
       "user": "User"
     },
     "hasFailedToSendMessage": "Failed to send message, please try again or contact the person that has shared this chat with you."
-  },
-  "components/CreditsViewer": {
-    "label": "View balance",
-    "PricingOverlay": {
-      "simulator": "Cost simulator",
-      "pricingTable": "Pricing table",
-      "title": "Our pricing",
-      "description": "See how many credits a step will cost based on the model and max context window you choose. Use the slider to adjust the context window size, and browse models to compare step pricing.",
-      "reference": "You can always view your costs later in our <link>cost explorer</link>."
-    },
-    "Onboarding": {
-      "nextStep": "Create your first template!",
-      "title": "What are credits?",
-      "seeCostsExplorer": "See our costs explorer",
-      "description": "Credits power agents on Letta Cloud. Agents use credits each time they run a step. The number of credits per step depends on the model — larger models cost more, smaller models cost less.\n\nLet's start building agents with an agent template!"
-    }
   },
   "pages/models": {
     "Onboarding": {

@@ -5,14 +5,11 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser } from '$web/client/hooks';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 export function MainOnboardingSteps() {
   const t = useTranslations('onboarding/StartOnboardingDialog');
 
   const user = useCurrentUser();
-
-  const { data: isModelsPageEnabled } = useFeatureFlag('MODELS_ROOT_PAGE');
 
   if (!user) {
     return null;
@@ -25,9 +22,7 @@ export function MainOnboardingSteps() {
           checked={user.onboardingStatus?.completedSteps.includes(
             'about_credits',
           )}
-          label={
-            isModelsPageEnabled ? t('steps.models') : t('steps.creditsAndCloud')
-          }
+          label={t('steps.models')}
         />
       </HStack>
       <HStack>

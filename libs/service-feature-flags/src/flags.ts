@@ -26,11 +26,6 @@ export const featureFlags = {
     expiryDate: '2024-04-01',
     flagValue: z.boolean(),
   },
-  SLEEP_TIME_AGENTS: {
-    description: 'Sleep time agents',
-    expiryDate: '2024-04-01',
-    flagValue: z.boolean(),
-  },
   PRO_PLAN: {
     description: 'Pro plan',
     expiryDate: '2024-04-01',
@@ -38,11 +33,6 @@ export const featureFlags = {
   },
   DETAILED_MESSAGE_VIEW: {
     description: 'See detailed message view from the agent chat page',
-    expiryDate: '2024-06-01',
-    flagValue: z.boolean(),
-  },
-  MODELS_ROOT_PAGE: {
-    description: 'Models root page',
     expiryDate: '2024-06-01',
     flagValue: z.boolean(),
   },
