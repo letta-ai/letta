@@ -1413,11 +1413,12 @@ class AgentManager:
         num_archival_memories = await self.passage_manager.size_async(actor=actor, agent_id=agent_id)
 
         # update memory (TODO: potentially update recall/archival stats separately)
+        recent_passages = await self.list_passages_async(actor=actor, agent_id=agent_id, ascending=False, limit=10)
         new_system_message_str = compile_system_message(
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
-            recent_passages=self.list_passages(actor=actor, agent_id=agent_id, ascending=False, limit=10),
+            recent_passages=recent_passages,
             previous_message_count=num_messages,
             archival_memory_size=num_archival_memories,
         )
