@@ -19,6 +19,7 @@ import {
   ExternalLinkIcon,
   WarningIcon,
   Tooltip,
+  BetaTag,
 } from '@letta-cloud/ui-component-library';
 import type { QueryBuilderQuery } from '@letta-cloud/ui-component-library';
 import { ProjectSelector } from '$web/client/components';
@@ -251,7 +252,7 @@ function LogoContainer() {
       justify="center"
       color="brand"
       /* eslint-disable-next-line react/forbid-component-props */
-      className="min-h-biHeight min-w-[40px]"
+      className="min-h-biHeight min-w-[36px]"
       fullHeight
     >
       <Logo size="medium" color="background" />
@@ -292,16 +293,17 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
       justify="spaceBetween"
       align="center"
       /* eslint-disable-next-line react/forbid-component-props */
-      className="h-[40px] min-h-[40px] largerThanMobile:pr-0 pr-3 relative"
+      className="h-[36px] min-h-[36px] largerThanMobile:pr-0 pr-3 relative"
       fullWidth
       gap="small"
       color="background"
     >
-      <HStack overflowX="hidden" align="center" fullHeight gap="small">
+      <HStack overflowX="hidden" align="center" fullHeight gap={false}>
         <ProjectSelector
           trigger={
-            <button className="h-full flex items-center justify-center">
+            <button className="h-full gap-2 flex items-center justify-center">
               <LogoContainer />
+              <BetaTag />
             </button>
           }
         />
@@ -347,6 +349,7 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
                   ]
                 : []),
               {
+                bold: true,
                 label: agentName,
               },
             ]}

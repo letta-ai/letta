@@ -3,16 +3,17 @@ import Link from 'next/link';
 
 interface MaybeLinkProps {
   href?: string | undefined;
+  testId?: string;
   children: React.ReactNode;
 }
 
 export const MaybeLink = forwardRef<HTMLAnchorElement, MaybeLinkProps>(
   function MaybeLink(props, ref) {
-    const { href, children } = props;
+    const { href, children, testId } = props;
 
     if (href) {
       return (
-        <Link ref={ref} href={href}>
+        <Link data-testid={testId} ref={ref} href={href}>
           {children}
         </Link>
       );

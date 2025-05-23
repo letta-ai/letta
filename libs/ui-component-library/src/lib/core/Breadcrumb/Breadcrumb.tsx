@@ -2,8 +2,9 @@ import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { DotsHorizontalIcon } from '../../icons';
 import { cn } from '@letta-cloud/ui-styles';
-import { Button } from '../Button/Button';
 import { Fragment } from 'react';
+import { MaybeLink } from '../../reusable/MaybeLink/MaybeLink';
+import { Typography } from '../Typography/Typography';
 
 const BreadcrumbPrimitive = React.forwardRef<
   HTMLElement,
@@ -82,7 +83,7 @@ function BreadcrumbSeparator({
     <li
       role="presentation"
       aria-hidden="true"
-      className={cn('text-base text-text-lighter', className)}
+      className={cn('text-sm text-text-lighter', className)}
       {...props}
     >
       {children ?? '/'}
@@ -137,21 +138,23 @@ function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
   }
 
   return (
-    <BreadcrumbItem>
-      <Button
-        data-testid={`breadcrumb-item:${label}`}
-        onClick={onClick}
-        {...(href ? { href } : {})}
-        color="tertiary"
-        preIcon={preIcon}
-        label={label}
-        bold={bold}
-        size={size}
-        _use_rarely_className={cn(
-          !isLast ? 'text-text-lighter' : '',
-          !onClick && !href ? 'cursor-default hover:bg-transparent' : '',
-        )}
-      />
+    <BreadcrumbItem className="mx-2">
+      <MaybeLink testId={`breadcrumb-item:${label}`} href={href}>
+        <Typography
+          variant={size === 'small' ? 'body2' : 'body'}
+          onClick={onClick}
+          className={cn(
+            !isLast ? 'text-text-lighter' : 'font-light',
+            !onClick && !href
+              ? 'cursor-default hover:bg-transparent'
+              : 'hover:bg-background-grey2 hover:text-background-grey2',
+            bold ? 'font-medium' : '',
+          )}
+        >
+          {preIcon}
+          {label}
+        </Typography>
+      </MaybeLink>
     </BreadcrumbItem>
   );
 }

@@ -234,3 +234,5 @@ export * from './lib/core/InfoChip/InfoChip';
 export * from './lib/reusable/CoreMemoryEditor/CoreMemoryEditor';
 
 export * from './lib/reusable/JobStatusBadge/JobStatusBadge';
+
+export * from './lib/reusable/BetaTag/BetaTag';

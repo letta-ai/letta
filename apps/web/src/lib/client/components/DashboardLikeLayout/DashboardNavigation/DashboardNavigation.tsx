@@ -17,6 +17,7 @@ import {
   isSubNavigationOverride,
   TokenIcon,
   GroupAddIcon,
+  BetaTag,
 } from '@letta-cloud/ui-component-library';
 import { HiddenOnMobile } from '@letta-cloud/ui-component-library';
 import {
@@ -889,8 +890,9 @@ export function DashboardHeader() {
                           {/* eslint-disable-next-line react/forbid-component-props */}
                           <Frame className="hidden visibleSidebar:contents">
                             <Link href="/">
-                              <HStack paddingRight="large">
+                              <HStack align="center" paddingRight="small">
                                 <Logo withText size="medium" />
+                                <BetaTag />
                               </HStack>
                             </Link>
                           </Frame>
