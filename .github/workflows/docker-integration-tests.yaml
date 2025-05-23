@@ -28,50 +28,31 @@ jobs:
   test:
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     needs: [changed-files]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 15
     steps:
     - run: echo "${{ needs.changed-files.outputs.all_changed_files }}"
     - run: echo "${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}"
     - name: Checkout
       uses: actions/checkout@v4
-    - name: Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-
-    - name: Authenticate to Google Cloud
-      id: auth
-      uses: google-github-actions/auth@v2
-      with:
-        credentials_json: ${{ secrets.GCP_SA_KEY }}
-    - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v2
 
     - name: Inject env vars into environment
       working-directory: apps/core
       run: |
-        # Install required package
-        pip install google-cloud-secret-manager
-
         # Get secrets and mask them before adding to environment
         while IFS= read -r line || [[ -n "$line" ]]; do
-          # Check if line is not empty
           if [[ -n "$line" ]]; then
-            # Extract the value after the equals sign
             value=$(echo "$line" | cut -d= -f2-)
-            # Mask the value so it doesn't appear in logs
             echo "::add-mask::$value"
-            # Add to GitHub environment
             echo "$line" >> $GITHUB_ENV
           fi
-        done < <(python3 ../../packer/base/files/letta_secrets_helper.py --env dev --service ci)
+        done < <(letta_secrets_helper --env dev --service ci)
 
     - name: Set permissions for log directory
       run: |
-        mkdir -p /home/runner/.letta/logs
-        sudo chown -R $USER:$USER /home/runner/.letta/logs
-        chmod -R 755 /home/runner/.letta/logs
+        mkdir -p /home/ci-runner/.letta/logs
+        sudo chown -R $USER:$USER /home/ci-runner/.letta/logs
+        chmod -R 755 /home/ci-runner/.letta/logs
 
     - name: Build and run docker dev server
       env:
@@ -84,24 +65,12 @@ jobs:
       run: |
         cd apps/core
         docker compose -f dev-compose.yaml up --build -d
-    #- name: "Setup Python, Poetry and Dependencies"
-    #  uses: packetcoders/action-setup-cache-python-poetry@v1.2.0
-    #  with:
-    #    python-version: "3.12"
-    #    poetry-version: "1.8.2"
-    #    install-args: "--all-extras"
 
     - name: Wait for service
       run: |
         cd apps/core
         bash scripts/wait_for_service.sh http://localhost:8283 -- echo "Service is ready"
 
-    - name: Install Poetry
-      run: pipx install poetry==2.1.3
-
-    - name: Install Fern
-      if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
-      run: npm install -g fern-api
 
     - name: Generate SDK with Fern
       uses: nick-fields/retry@v3
@@ -141,11 +110,18 @@ jobs:
         PYTHONPATH: ${{ github.workspace }}:${{ env.PYTHONPATH }}
       run: |
         poetry run pytest -s tests/test_client.py
-#        poetry run pytest -s tests/test_client_legacy.py
+
 
     - name: Print docker logs if tests fail
-      if: failure()
+      if: ${{ failure() }}
       working-directory: apps/core
       run: |
         echo "Printing Docker Logs..."
         docker compose -f dev-compose.yaml logs
+
+    - name: Stop docker
+      if: ${{ always() }}
+      working-directory: apps/core
+      run: |
+        docker compose -f dev-compose.yaml down --volumes
+        sudo rm -r .persist
