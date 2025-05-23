@@ -1817,105 +1817,121 @@ class AgentManager:
             embedded_text = np.array(embedded_text)
             embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
 
-        with db_registry.session() as session:
-            # Start with base query for source passages
-            source_passages = None
-            if not agent_only:  # Include source passages
-                if agent_id is not None:
-                    source_passages = (
-                        select(SourcePassage, literal(None).label("agent_id"))
-                        .join(SourcesAgents, SourcesAgents.source_id == SourcePassage.source_id)
-                        .where(SourcesAgents.agent_id == agent_id)
-                        .where(SourcePassage.organization_id == actor.organization_id)
-                    )
-                else:
-                    source_passages = select(SourcePassage, literal(None).label("agent_id")).where(
-                        SourcePassage.organization_id == actor.organization_id
-                    )
-
-                if source_id:
-                    source_passages = source_passages.where(SourcePassage.source_id == source_id)
-                if file_id:
-                    source_passages = source_passages.where(SourcePassage.file_id == file_id)
-
-            # Add agent passages query
-            agent_passages = None
+        # Start with base query for source passages
+        source_passages = None
+        if not agent_only:  # Include source passages
             if agent_id is not None:
-                agent_passages = (
-                    select(
-                        AgentPassage.id,
-                        AgentPassage.text,
-                        AgentPassage.embedding_config,
-                        AgentPassage.metadata_,
-                        AgentPassage.embedding,
-                        AgentPassage.created_at,
-                        AgentPassage.updated_at,
-                        AgentPassage.is_deleted,
-                        AgentPassage._created_by_id,
-                        AgentPassage._last_updated_by_id,
-                        AgentPassage.organization_id,
-                        literal(None).label("file_id"),
-                        literal(None).label("source_id"),
-                        AgentPassage.agent_id,
-                    )
-                    .where(AgentPassage.agent_id == agent_id)
-                    .where(AgentPassage.organization_id == actor.organization_id)
+                source_passages = (
+                    select(SourcePassage, literal(None).label("agent_id"))
+                    .join(SourcesAgents, SourcesAgents.source_id == SourcePassage.source_id)
+                    .where(SourcesAgents.agent_id == agent_id)
+                    .where(SourcePassage.organization_id == actor.organization_id)
+                )
+            else:
+                source_passages = select(SourcePassage, literal(None).label("agent_id")).where(
+                    SourcePassage.organization_id == actor.organization_id
                 )
 
-            # Combine queries
-            if source_passages is not None and agent_passages is not None:
-                combined_query = union_all(source_passages, agent_passages).cte("combined_passages")
-            elif agent_passages is not None:
-                combined_query = agent_passages.cte("combined_passages")
-            elif source_passages is not None:
-                combined_query = source_passages.cte("combined_passages")
-            else:
-                raise ValueError("No passages found")
-
-            # Build main query from combined CTE
-            main_query = select(combined_query)
-
-            # Apply filters
-            if start_date:
-                main_query = main_query.where(combined_query.c.created_at >= start_date)
-            if end_date:
-                main_query = main_query.where(combined_query.c.created_at <= end_date)
             if source_id:
-                main_query = main_query.where(combined_query.c.source_id == source_id)
+                source_passages = source_passages.where(SourcePassage.source_id == source_id)
             if file_id:
-                main_query = main_query.where(combined_query.c.file_id == file_id)
+                source_passages = source_passages.where(SourcePassage.file_id == file_id)
 
-            # Vector search
-            if embedded_text:
-                if settings.letta_pg_uri_no_default:
-                    # PostgreSQL with pgvector
-                    main_query = main_query.order_by(combined_query.c.embedding.cosine_distance(embedded_text).asc())
-                else:
-                    # SQLite with custom vector type
-                    query_embedding_binary = adapt_array(embedded_text)
-                    main_query = main_query.order_by(
-                        func.cosine_distance(combined_query.c.embedding, query_embedding_binary).asc(),
-                        combined_query.c.created_at.asc() if ascending else combined_query.c.created_at.desc(),
-                        combined_query.c.id.asc(),
-                    )
+        # Add agent passages query
+        agent_passages = None
+        if agent_id is not None:
+            agent_passages = (
+                select(
+                    AgentPassage.id,
+                    AgentPassage.text,
+                    AgentPassage.embedding_config,
+                    AgentPassage.metadata_,
+                    AgentPassage.embedding,
+                    AgentPassage.created_at,
+                    AgentPassage.updated_at,
+                    AgentPassage.is_deleted,
+                    AgentPassage._created_by_id,
+                    AgentPassage._last_updated_by_id,
+                    AgentPassage.organization_id,
+                    literal(None).label("file_id"),
+                    literal(None).label("source_id"),
+                    AgentPassage.agent_id,
+                )
+                .where(AgentPassage.agent_id == agent_id)
+                .where(AgentPassage.organization_id == actor.organization_id)
+            )
+
+        # Combine queries
+        if source_passages is not None and agent_passages is not None:
+            combined_query = union_all(source_passages, agent_passages).cte("combined_passages")
+        elif agent_passages is not None:
+            combined_query = agent_passages.cte("combined_passages")
+        elif source_passages is not None:
+            combined_query = source_passages.cte("combined_passages")
+        else:
+            raise ValueError("No passages found")
+
+        # Build main query from combined CTE
+        main_query = select(combined_query)
+
+        # Apply filters
+        if start_date:
+            main_query = main_query.where(combined_query.c.created_at >= start_date)
+        if end_date:
+            main_query = main_query.where(combined_query.c.created_at <= end_date)
+        if source_id:
+            main_query = main_query.where(combined_query.c.source_id == source_id)
+        if file_id:
+            main_query = main_query.where(combined_query.c.file_id == file_id)
+
+        # Vector search
+        if embedded_text:
+            if settings.letta_pg_uri_no_default:
+                # PostgreSQL with pgvector
+                main_query = main_query.order_by(combined_query.c.embedding.cosine_distance(embedded_text).asc())
             else:
-                if query_text:
-                    main_query = main_query.where(func.lower(combined_query.c.text).contains(func.lower(query_text)))
+                # SQLite with custom vector type
+                query_embedding_binary = adapt_array(embedded_text)
+                main_query = main_query.order_by(
+                    func.cosine_distance(combined_query.c.embedding, query_embedding_binary).asc(),
+                    combined_query.c.created_at.asc() if ascending else combined_query.c.created_at.desc(),
+                    combined_query.c.id.asc(),
+                )
+        else:
+            if query_text:
+                main_query = main_query.where(func.lower(combined_query.c.text).contains(func.lower(query_text)))
 
-            # Handle pagination
-            if before or after:
-                # Create reference CTEs
+        # Handle pagination
+        if before or after:
+            # Create reference CTEs
+            if before:
+                before_ref = select(combined_query.c.created_at, combined_query.c.id).where(combined_query.c.id == before).cte("before_ref")
+            if after:
+                after_ref = select(combined_query.c.created_at, combined_query.c.id).where(combined_query.c.id == after).cte("after_ref")
+
+            if before and after:
+                # Window-based query (get records between before and after)
+                main_query = main_query.where(
+                    or_(
+                        combined_query.c.created_at < select(before_ref.c.created_at).scalar_subquery(),
+                        and_(
+                            combined_query.c.created_at == select(before_ref.c.created_at).scalar_subquery(),
+                            combined_query.c.id < select(before_ref.c.id).scalar_subquery(),
+                        ),
+                    )
+                )
+                main_query = main_query.where(
+                    or_(
+                        combined_query.c.created_at > select(after_ref.c.created_at).scalar_subquery(),
+                        and_(
+                            combined_query.c.created_at == select(after_ref.c.created_at).scalar_subquery(),
+                            combined_query.c.id > select(after_ref.c.id).scalar_subquery(),
+                        ),
+                    )
+                )
+            else:
+                # Pure pagination (only before or only after)
                 if before:
-                    before_ref = (
-                        select(combined_query.c.created_at, combined_query.c.id).where(combined_query.c.id == before).cte("before_ref")
-                    )
-                if after:
-                    after_ref = (
-                        select(combined_query.c.created_at, combined_query.c.id).where(combined_query.c.id == after).cte("after_ref")
-                    )
-
-                if before and after:
-                    # Window-based query (get records between before and after)
                     main_query = main_query.where(
                         or_(
                             combined_query.c.created_at < select(before_ref.c.created_at).scalar_subquery(),
@@ -1925,6 +1941,7 @@ class AgentManager:
                             ),
                         )
                     )
+                if after:
                     main_query = main_query.where(
                         or_(
                             combined_query.c.created_at > select(after_ref.c.created_at).scalar_subquery(),
@@ -1934,41 +1951,19 @@ class AgentManager:
                             ),
                         )
                     )
-                else:
-                    # Pure pagination (only before or only after)
-                    if before:
-                        main_query = main_query.where(
-                            or_(
-                                combined_query.c.created_at < select(before_ref.c.created_at).scalar_subquery(),
-                                and_(
-                                    combined_query.c.created_at == select(before_ref.c.created_at).scalar_subquery(),
-                                    combined_query.c.id < select(before_ref.c.id).scalar_subquery(),
-                                ),
-                            )
-                        )
-                    if after:
-                        main_query = main_query.where(
-                            or_(
-                                combined_query.c.created_at > select(after_ref.c.created_at).scalar_subquery(),
-                                and_(
-                                    combined_query.c.created_at == select(after_ref.c.created_at).scalar_subquery(),
-                                    combined_query.c.id > select(after_ref.c.id).scalar_subquery(),
-                                ),
-                            )
-                        )
 
-            # Add ordering if not already ordered by similarity
-            if not embed_query:
-                if ascending:
-                    main_query = main_query.order_by(
-                        combined_query.c.created_at.asc(),
-                        combined_query.c.id.asc(),
-                    )
-                else:
-                    main_query = main_query.order_by(
-                        combined_query.c.created_at.desc(),
-                        combined_query.c.id.asc(),
-                    )
+        # Add ordering if not already ordered by similarity
+        if not embed_query:
+            if ascending:
+                main_query = main_query.order_by(
+                    combined_query.c.created_at.asc(),
+                    combined_query.c.id.asc(),
+                )
+            else:
+                main_query = main_query.order_by(
+                    combined_query.c.created_at.desc(),
+                    combined_query.c.id.asc(),
+                )
 
         return main_query
 
