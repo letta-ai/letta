@@ -10,7 +10,6 @@ import { cn } from '@letta-cloud/ui-styles';
 import 'array.prototype.tosorted';
 import { cookies } from 'next/headers';
 import { CookieNames } from '$web/server/cookies/types';
-import { QueryClientProviders } from './_components/ClientSideProviders/QueryClientProviders/QueryClientProviders';
 
 export const metadata = {
   title: 'Letta',
@@ -58,14 +57,12 @@ export default async function RootLayout({
         <meta name="theme-color" content="#ffffff" />
         <title>Letta</title>
       </head>
-      <QueryClientProviders>
-        <Body>
-          <LoadMixpanelAnalytics />
-          <NextIntlClientProvider messages={messages}>
-            <ClientSideProviders>{children}</ClientSideProviders>
-          </NextIntlClientProvider>
-        </Body>
-      </QueryClientProviders>
+      <Body>
+        <LoadMixpanelAnalytics />
+        <NextIntlClientProvider messages={messages}>
+          <ClientSideProviders>{children}</ClientSideProviders>
+        </NextIntlClientProvider>
+      </Body>
     </html>
   );
 }
