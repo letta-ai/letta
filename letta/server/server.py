@@ -50,7 +50,7 @@ from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, ToolRe
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, Memory, RecallMemorySummary
+from letta.schemas.memory import ArchivalMemorySummary, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage, PassageUpdate
@@ -969,6 +969,11 @@ class SyncServer(Server):
         """Return the memory of an agent (core memory)"""
         return self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor).memory
 
+    async def get_agent_memory_async(self, agent_id: str, actor: User) -> Memory:
+        """Return the memory of an agent (core memory)"""
+        agent = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        return agent.memory
+
     def get_archival_memory_summary(self, agent_id: str, actor: User) -> ArchivalMemorySummary:
         return ArchivalMemorySummary(size=self.agent_manager.passage_size(actor=actor, agent_id=agent_id))
 
@@ -1169,17 +1174,20 @@ class SyncServer(Server):
         # rebuild system prompt for agent, potentially changed
         return self.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor).memory
 
-    def delete_source(self, source_id: str, actor: User):
+    async def delete_source(self, source_id: str, actor: User):
         """Delete a data source"""
-        self.source_manager.delete_source(source_id=source_id, actor=actor)
+        await self.source_manager.delete_source(source_id=source_id, actor=actor)
 
         # delete data from passage store
+        # TODO: make async
         passages_to_be_deleted = self.agent_manager.list_passages(actor=actor, source_id=source_id, limit=None)
+
+        # TODO: make this async
         self.passage_manager.delete_passages(actor=actor, passages=passages_to_be_deleted)
 
         # TODO: delete data from agent passage stores (?)
 
-    def load_file_to_source(self, source_id: str, file_path: str, job_id: str, actor: User) -> Job:
+    async def load_file_to_source(self, source_id: str, file_path: str, job_id: str, actor: User) -> Job:
 
         # update job
         job = self.job_manager.get_job_by_id(job_id, actor=actor)
@@ -1189,21 +1197,22 @@ class SyncServer(Server):
         # try:
         from letta.data_sources.connectors import DirectoryConnector
 
-        source = self.source_manager.get_source_by_id(source_id=source_id)
+        # TODO: move this into a thread
+        source = await self.source_manager.get_source_by_id(source_id=source_id)
         if source is None:
             raise ValueError(f"Source {source_id} does not exist")
         connector = DirectoryConnector(input_files=[file_path])
-        num_passages, num_documents = self.load_data(user_id=source.created_by_id, source_name=source.name, connector=connector)
+        num_passages, num_documents = await self.load_data(user_id=source.created_by_id, source_name=source.name, connector=connector)
 
         # update all agents who have this source attached
-        agent_states = self.source_manager.list_attached_agents(source_id=source_id, actor=actor)
+        agent_states = await self.source_manager.list_attached_agents(source_id=source_id, actor=actor)
         for agent_state in agent_states:
             agent_id = agent_state.id
 
             # Attach source to agent
-            curr_passage_size = self.agent_manager.passage_size(actor=actor, agent_id=agent_id)
+            curr_passage_size = await self.agent_manager.passage_size_async(actor=actor, agent_id=agent_id)
             agent_state = self.agent_manager.attach_source(agent_id=agent_state.id, source_id=source_id, actor=actor)
-            new_passage_size = self.agent_manager.passage_size(actor=actor, agent_id=agent_id)
+            new_passage_size = await self.agent_manager.passage_size_async(actor=actor, agent_id=agent_id)
             assert new_passage_size >= curr_passage_size  # in case empty files are added
 
             # rebuild system prompt and force
@@ -1266,7 +1275,7 @@ class SyncServer(Server):
             actor=actor,
         )
 
-    def load_data(
+    async def load_data(
         self,
         user_id: str,
         connector: DataConnector,
@@ -1277,12 +1286,12 @@ class SyncServer(Server):
 
         # load data from a data source into the document store
         user = self.user_manager.get_user_by_id(user_id=user_id)
-        source = self.source_manager.get_source_by_name(source_name=source_name, actor=user)
+        source = await self.source_manager.get_source_by_name(source_name=source_name, actor=user)
         if source is None:
             raise ValueError(f"Data source {source_name} does not exist for user {user_id}")
 
         # load data into the document store
-        passage_count, document_count = load_data(connector, source, self.passage_manager, self.source_manager, actor=user)
+        passage_count, document_count = await load_data(connector, source, self.passage_manager, self.source_manager, actor=user)
         return passage_count, document_count
 
     def list_data_source_passages(self, user_id: str, source_id: str) -> List[Passage]:
@@ -1290,6 +1299,7 @@ class SyncServer(Server):
         return self.agent_manager.list_passages(actor=self.user_manager.get_user_or_default(user_id=user_id), source_id=source_id)
 
     def list_all_sources(self, actor: User) -> List[Source]:
+        # TODO: legacy: remove
         """List all sources (w/ extra metadata) belonging to a user"""
 
         sources = self.source_manager.list_sources(actor=actor)
@@ -1376,7 +1386,7 @@ class SyncServer(Server):
         """Asynchronously list available models with maximum concurrency"""
         import asyncio
 
-        providers = self.get_enabled_providers(
+        providers = await self.get_enabled_providers_async(
             provider_category=provider_category,
             provider_name=provider_name,
             provider_type=provider_type,
@@ -1422,7 +1432,7 @@ class SyncServer(Server):
         import asyncio
 
         # Get all eligible providers first
-        providers = self.get_enabled_providers(actor=actor)
+        providers = await self.get_enabled_providers_async(actor=actor)
 
         # Fetch embedding models from each provider concurrently
         async def get_provider_embedding_models(provider):
@@ -1460,6 +1470,35 @@ class SyncServer(Server):
 
         if not provider_category or ProviderCategory.byok in provider_category:
             providers_from_db = self.provider_manager.list_providers(
+                name=provider_name,
+                provider_type=provider_type,
+                actor=actor,
+            )
+            providers_from_db = [p.cast_to_subtype() for p in providers_from_db]
+            providers.extend(providers_from_db)
+
+        if provider_name is not None:
+            providers = [p for p in providers if p.name == provider_name]
+
+        if provider_type is not None:
+            providers = [p for p in providers if p.provider_type == provider_type]
+
+        return providers
+
+    async def get_enabled_providers_async(
+        self,
+        actor: User,
+        provider_category: Optional[List[ProviderCategory]] = None,
+        provider_name: Optional[str] = None,
+        provider_type: Optional[ProviderType] = None,
+    ) -> List[Provider]:
+        providers = []
+        if not provider_category or ProviderCategory.base in provider_category:
+            providers_from_env = [p for p in self._enabled_providers]
+            providers.extend(providers_from_env)
+
+        if not provider_category or ProviderCategory.byok in provider_category:
+            providers_from_db = await self.provider_manager.list_providers_async(
                 name=provider_name,
                 provider_type=provider_type,
                 actor=actor,
@@ -1612,14 +1651,6 @@ class SyncServer(Server):
 
     def add_embedding_model(self, request: EmbeddingConfig) -> EmbeddingConfig:
         """Add a new embedding model"""
-
-    def get_agent_context_window(self, agent_id: str, actor: User) -> ContextWindowOverview:
-        letta_agent = self.load_agent(agent_id=agent_id, actor=actor)
-        return letta_agent.get_context_window()
-
-    async def get_agent_context_window_async(self, agent_id: str, actor: User) -> ContextWindowOverview:
-        letta_agent = self.load_agent(agent_id=agent_id, actor=actor)
-        return await letta_agent.get_context_window_async()
 
     def run_tool_from_source(
         self,

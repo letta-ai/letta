@@ -53,7 +53,9 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
         if self.provided_sandbox_config:
             sbx_config = self.provided_sandbox_config
         else:
-            sbx_config = self.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.E2B, actor=self.user)
+            sbx_config = await self.sandbox_config_manager.get_or_create_default_sandbox_config_async(
+                sandbox_type=SandboxType.E2B, actor=self.user
+            )
         # TODO: So this defaults to force recreating always
         # TODO: Eventually, provision one sandbox PER agent, and that agent re-uses that one specifically
         e2b_sandbox = await self.create_e2b_sandbox_with_metadata_hash(sandbox_config=sbx_config)
@@ -71,7 +73,7 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
         if self.provided_sandbox_env_vars:
             env_vars.update(self.provided_sandbox_env_vars)
         else:
-            db_env_vars = self.sandbox_config_manager.get_sandbox_env_vars_as_dict(
+            db_env_vars = await self.sandbox_config_manager.get_sandbox_env_vars_as_dict_async(
                 sandbox_config_id=sbx_config.id, actor=self.user, limit=100
             )
             env_vars.update(db_env_vars)

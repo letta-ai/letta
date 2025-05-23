@@ -1,3 +1,4 @@
+import asyncio
 import os
 import tempfile
 from typing import List, Optional
@@ -21,18 +22,18 @@ router = APIRouter(prefix="/sources", tags=["sources"])
 
 
 @router.get("/count", response_model=int, operation_id="count_sources")
-def count_sources(
+async def count_sources(
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Count all data sources created by a user.
     """
-    return server.source_manager.size(actor=server.user_manager.get_user_or_default(user_id=actor_id))
+    return await server.source_manager.size(actor=server.user_manager.get_user_or_default(user_id=actor_id))
 
 
 @router.get("/{source_id}", response_model=Source, operation_id="retrieve_source")
-def retrieve_source(
+async def retrieve_source(
     source_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -42,14 +43,14 @@ def retrieve_source(
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
-    source = server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
+    source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     if not source:
         raise HTTPException(status_code=404, detail=f"Source with id={source_id} not found.")
     return source
 
 
 @router.get("/name/{source_name}", response_model=str, operation_id="get_source_id_by_name")
-def get_source_id_by_name(
+async def get_source_id_by_name(
     source_name: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -59,14 +60,14 @@ def get_source_id_by_name(
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
-    source = server.source_manager.get_source_by_name(source_name=source_name, actor=actor)
+    source = await server.source_manager.get_source_by_name(source_name=source_name, actor=actor)
     if not source:
         raise HTTPException(status_code=404, detail=f"Source with name={source_name} not found.")
     return source.id
 
 
 @router.get("/", response_model=List[Source], operation_id="list_sources")
-def list_sources(
+async def list_sources(
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -74,8 +75,7 @@ def list_sources(
     List all data sources created by a user.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-
-    return server.list_all_sources(actor=actor)
+    return await server.source_manager.list_sources(actor=actor)
 
 
 @router.get("/count", response_model=int, operation_id="count_sources")
@@ -90,7 +90,7 @@ def count_sources(
 
 
 @router.post("/", response_model=Source, operation_id="create_source")
-def create_source(
+async def create_source(
     source_create: SourceCreate,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -99,6 +99,8 @@ def create_source(
     Create a new data source.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
+
+    # TODO: need to asyncify this
     if not source_create.embedding_config:
         if not source_create.embedding:
             # TODO: modify error type
@@ -115,11 +117,11 @@ def create_source(
         instructions=source_create.instructions,
         metadata=source_create.metadata,
     )
-    return server.source_manager.create_source(source=source, actor=actor)
+    return await server.source_manager.create_source(source=source, actor=actor)
 
 
 @router.patch("/{source_id}", response_model=Source, operation_id="modify_source")
-def modify_source(
+async def modify_source(
     source_id: str,
     source: SourceUpdate,
     server: "SyncServer" = Depends(get_letta_server),
@@ -130,13 +132,13 @@ def modify_source(
     """
     # TODO: allow updating the handle/embedding config
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    if not server.source_manager.get_source_by_id(source_id=source_id, actor=actor):
+    if not await server.source_manager.get_source_by_id(source_id=source_id, actor=actor):
         raise HTTPException(status_code=404, detail=f"Source with id={source_id} does not exist.")
-    return server.source_manager.update_source(source_id=source_id, source_update=source, actor=actor)
+    return await server.source_manager.update_source(source_id=source_id, source_update=source, actor=actor)
 
 
 @router.delete("/{source_id}", response_model=None, operation_id="delete_source")
-def delete_source(
+async def delete_source(
     source_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -145,20 +147,21 @@ def delete_source(
     Delete a data source.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    source = server.source_manager.get_source_by_id(source_id=source_id)
-    agents = server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
+    source = await server.source_manager.get_source_by_id(source_id=source_id)
+    agents = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
     for agent in agents:
         if agent.enable_sleeptime:
             try:
+                # TODO: make async
                 block = server.agent_manager.get_block_with_label(agent_id=agent.id, block_label=source.name, actor=actor)
                 server.block_manager.delete_block(block.id, actor)
             except:
                 pass
-    server.delete_source(source_id=source_id, actor=actor)
+    await server.delete_source(source_id=source_id, actor=actor)
 
 
 @router.post("/{source_id}/upload", response_model=Job, operation_id="upload_file_to_source")
-def upload_file_to_source(
+async def upload_file_to_source(
     file: UploadFile,
     source_id: str,
     background_tasks: BackgroundTasks,
@@ -170,7 +173,7 @@ def upload_file_to_source(
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
-    source = server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
+    source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     assert source is not None, f"Source with id={source_id} not found."
     bytes = file.file.read()
 
@@ -184,8 +187,8 @@ def upload_file_to_source(
     server.job_manager.create_job(job, actor=actor)
 
     # create background tasks
-    background_tasks.add_task(load_file_to_source_async, server, source_id=source.id, file=file, job_id=job.id, bytes=bytes, actor=actor)
-    background_tasks.add_task(sleeptime_document_ingest_async, server, source_id, actor)
+    asyncio.create_task(load_file_to_source_async(server, source_id=source.id, file=file, job_id=job.id, bytes=bytes, actor=actor))
+    asyncio.create_task(sleeptime_document_ingest_async(server, source_id, actor))
 
     # return job information
     # Is this necessary? Can we just return the job from create_job?
@@ -195,8 +198,11 @@ def upload_file_to_source(
 
 
 @router.get("/{source_id}/passages", response_model=List[Passage], operation_id="list_source_passages")
-def list_source_passages(
+async def list_source_passages(
     source_id: str,
+    after: Optional[str] = Query(None, description="Message after which to retrieve the returned messages."),
+    before: Optional[str] = Query(None, description="Message before which to retrieve the returned messages."),
+    limit: int = Query(100, description="Maximum number of messages to retrieve."),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -204,12 +210,17 @@ def list_source_passages(
     List all passages associated with a data source.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    passages = server.list_data_source_passages(user_id=actor.id, source_id=source_id)
-    return passages
+    return await server.agent_manager.list_passages_async(
+        actor=actor,
+        source_id=source_id,
+        after=after,
+        before=before,
+        limit=limit,
+    )
 
 
 @router.get("/{source_id}/files", response_model=List[FileMetadata], operation_id="list_source_files")
-def list_source_files(
+async def list_source_files(
     source_id: str,
     limit: int = Query(1000, description="Number of files to return"),
     after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
@@ -220,13 +231,13 @@ def list_source_files(
     List paginated files associated with a data source.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.source_manager.list_files(source_id=source_id, limit=limit, after=after, actor=actor)
+    return await server.source_manager.list_files(source_id=source_id, limit=limit, after=after, actor=actor)
 
 
 # it's redundant to include /delete in the URL path. The HTTP verb DELETE already implies that action.
 # it's still good practice to return a status indicating the success or failure of the deletion
 @router.delete("/{source_id}/{file_id}", status_code=204, operation_id="delete_file_from_source")
-def delete_file_from_source(
+async def delete_file_from_source(
     source_id: str,
     file_id: str,
     background_tasks: BackgroundTasks,
@@ -238,13 +249,15 @@ def delete_file_from_source(
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
-    deleted_file = server.source_manager.delete_file(file_id=file_id, actor=actor)
-    background_tasks.add_task(sleeptime_document_ingest_async, server, source_id, actor, clear_history=True)
+    deleted_file = await server.source_manager.delete_file(file_id=file_id, actor=actor)
+
+    # TODO: make async
+    asyncio.create_task(sleeptime_document_ingest_async(server, source_id, actor, clear_history=True))
     if deleted_file is None:
         raise HTTPException(status_code=404, detail=f"File with id={file_id} not found.")
 
 
-def load_file_to_source_async(server: SyncServer, source_id: str, job_id: str, file: UploadFile, bytes: bytes, actor: User):
+async def load_file_to_source_async(server: SyncServer, source_id: str, job_id: str, file: UploadFile, bytes: bytes, actor: User):
     # Create a temporary directory (deleted after the context manager exits)
     with tempfile.TemporaryDirectory() as tmpdirname:
         # Sanitize the filename
@@ -256,12 +269,12 @@ def load_file_to_source_async(server: SyncServer, source_id: str, job_id: str, f
             buffer.write(bytes)
 
         # Pass the file to load_file_to_source
-        server.load_file_to_source(source_id, file_path, job_id, actor)
+        await server.load_file_to_source(source_id, file_path, job_id, actor)
 
 
-def sleeptime_document_ingest_async(server: SyncServer, source_id: str, actor: User, clear_history: bool = False):
-    source = server.source_manager.get_source_by_id(source_id=source_id)
-    agents = server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
+async def sleeptime_document_ingest_async(server: SyncServer, source_id: str, actor: User, clear_history: bool = False):
+    source = await server.source_manager.get_source_by_id(source_id=source_id)
+    agents = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
     for agent in agents:
         if agent.enable_sleeptime:
-            server.sleeptime_document_ingest(agent, source, actor, clear_history)
+            server.sleeptime_document_ingest(agent, source, actor, clear_history)  # TODO: make async

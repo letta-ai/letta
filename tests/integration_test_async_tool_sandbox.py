@@ -1,3 +1,4 @@
+import asyncio
 import secrets
 import string
 import uuid
@@ -7,17 +8,16 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy import delete
 
-from letta import create_client
+from letta.config import LettaConfig
 from letta.functions.function_sets.base import core_memory_append, core_memory_replace
 from letta.orm.sandbox_config import SandboxConfig, SandboxEnvironmentVariable
-from letta.schemas.agent import AgentState
-from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.agent import AgentState, CreateAgent
+from letta.schemas.block import CreateBlock
 from letta.schemas.environment_variables import AgentEnvironmentVariable, SandboxEnvironmentVariableCreate
-from letta.schemas.llm_config import LLMConfig
-from letta.schemas.memory import ChatMemory
 from letta.schemas.organization import Organization
 from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, PipRequirement, SandboxConfigCreate
 from letta.schemas.user import User
+from letta.server.server import SyncServer
 from letta.services.organization_manager import OrganizationManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_manager import ToolManager
@@ -33,6 +33,21 @@ user_name = str(uuid.uuid5(namespace, "test-tool-execution-sandbox-user"))
 
 
 # Fixtures
+@pytest.fixture(scope="module")
+def server():
+    """
+    Creates a SyncServer instance for testing.
+
+    Loads and saves config to ensure proper initialization.
+    """
+    config = LettaConfig.load()
+
+    config.save()
+
+    server = SyncServer(init_with_default_org_and_user=True)
+    yield server
+
+
 @pytest.fixture(autouse=True)
 def clear_tables():
     """Fixture to clear the organization table before each test."""
@@ -192,12 +207,26 @@ def external_codebase_tool(test_user):
 
 
 @pytest.fixture
-def agent_state():
-    client = create_client()
-    agent_state = client.create_agent(
-        memory=ChatMemory(persona="This is the persona", human="My name is Chad"),
-        embedding_config=EmbeddingConfig.default_config(provider="openai"),
-        llm_config=LLMConfig.default_config(model_name="gpt-4o-mini"),
+def agent_state(server):
+    actor = server.user_manager.get_user_or_default()
+    agent_state = server.create_agent(
+        CreateAgent(
+            memory_blocks=[
+                CreateBlock(
+                    label="human",
+                    value="username: sarah",
+                ),
+                CreateBlock(
+                    label="persona",
+                    value="This is the persona",
+                ),
+            ],
+            include_base_tools=True,
+            model="openai/gpt-4o-mini",
+            tags=["test_agents"],
+            embedding="letta/letta-free",
+        ),
+        actor=actor,
     )
     agent_state.tool_rules = []
     yield agent_state
@@ -248,12 +277,20 @@ def core_memory_tools(test_user):
     yield tools
 
 
+@pytest.fixture(scope="session")
+def event_loop(request):
+    """Create an instance of the default event loop for each test case."""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
+
+
 # Local sandbox tests
 
 
 @pytest.mark.asyncio
 @pytest.mark.local_sandbox
-async def test_local_sandbox_default(disable_e2b_api_key, add_integers_tool, test_user):
+async def test_local_sandbox_default(disable_e2b_api_key, add_integers_tool, test_user, event_loop):
     args = {"x": 10, "y": 5}
 
     # Mock and assert correct pathway was invoked
@@ -270,7 +307,7 @@ async def test_local_sandbox_default(disable_e2b_api_key, add_integers_tool, tes
 
 @pytest.mark.asyncio
 @pytest.mark.local_sandbox
-async def test_local_sandbox_stateful_tool(disable_e2b_api_key, clear_core_memory_tool, test_user, agent_state):
+async def test_local_sandbox_stateful_tool(disable_e2b_api_key, clear_core_memory_tool, test_user, agent_state, event_loop):
     args = {}
     sandbox = AsyncToolSandboxLocal(clear_core_memory_tool.name, args, user=test_user)
     result = await sandbox.run(agent_state=agent_state)
@@ -282,7 +319,7 @@ async def test_local_sandbox_stateful_tool(disable_e2b_api_key, clear_core_memor
 
 @pytest.mark.asyncio
 @pytest.mark.local_sandbox
-async def test_local_sandbox_with_list_rv(disable_e2b_api_key, list_tool, test_user):
+async def test_local_sandbox_with_list_rv(disable_e2b_api_key, list_tool, test_user, event_loop):
     sandbox = AsyncToolSandboxLocal(list_tool.name, {}, user=test_user)
     result = await sandbox.run()
     assert len(result.func_return) == 5
@@ -290,7 +327,7 @@ async def test_local_sandbox_with_list_rv(disable_e2b_api_key, list_tool, test_u
 
 @pytest.mark.asyncio
 @pytest.mark.local_sandbox
-async def test_local_sandbox_env(disable_e2b_api_key, get_env_tool, test_user):
+async def test_local_sandbox_env(disable_e2b_api_key, get_env_tool, test_user, event_loop):
     manager = SandboxConfigManager()
     sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
     config_create = SandboxConfigCreate(config=LocalSandboxConfig(sandbox_dir=sandbox_dir).model_dump())
@@ -309,7 +346,7 @@ async def test_local_sandbox_env(disable_e2b_api_key, get_env_tool, test_user):
 
 @pytest.mark.asyncio
 @pytest.mark.local_sandbox
-async def test_local_sandbox_per_agent_env(disable_e2b_api_key, get_env_tool, agent_state, test_user):
+async def test_local_sandbox_per_agent_env(disable_e2b_api_key, get_env_tool, agent_state, test_user, event_loop):
     manager = SandboxConfigManager()
     key = "secret_word"
     sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
@@ -331,7 +368,7 @@ async def test_local_sandbox_per_agent_env(disable_e2b_api_key, get_env_tool, ag
 @pytest.mark.asyncio
 @pytest.mark.local_sandbox
 async def test_local_sandbox_external_codebase_with_venv(
-    disable_e2b_api_key, custom_test_sandbox_config, external_codebase_tool, test_user
+    disable_e2b_api_key, custom_test_sandbox_config, external_codebase_tool, test_user, event_loop
 ):
     args = {"percentage": 10}
     sandbox = AsyncToolSandboxLocal(external_codebase_tool.name, args, user=test_user)
@@ -343,7 +380,7 @@ async def test_local_sandbox_external_codebase_with_venv(
 @pytest.mark.asyncio
 @pytest.mark.local_sandbox
 async def test_local_sandbox_with_venv_and_warnings_does_not_error(
-    disable_e2b_api_key, custom_test_sandbox_config, get_warning_tool, test_user
+    disable_e2b_api_key, custom_test_sandbox_config, get_warning_tool, test_user, event_loop
 ):
     sandbox = AsyncToolSandboxLocal(get_warning_tool.name, {}, user=test_user)
     result = await sandbox.run()
@@ -352,7 +389,7 @@ async def test_local_sandbox_with_venv_and_warnings_does_not_error(
 
 @pytest.mark.asyncio
 @pytest.mark.e2b_sandbox
-async def test_local_sandbox_with_venv_errors(disable_e2b_api_key, custom_test_sandbox_config, always_err_tool, test_user):
+async def test_local_sandbox_with_venv_errors(disable_e2b_api_key, custom_test_sandbox_config, always_err_tool, test_user, event_loop):
     sandbox = AsyncToolSandboxLocal(always_err_tool.name, {}, user=test_user)
     result = await sandbox.run()
     assert len(result.stdout) != 0
@@ -363,7 +400,7 @@ async def test_local_sandbox_with_venv_errors(disable_e2b_api_key, custom_test_s
 
 @pytest.mark.asyncio
 @pytest.mark.e2b_sandbox
-async def test_local_sandbox_with_venv_pip_installs_basic(disable_e2b_api_key, cowsay_tool, test_user):
+async def test_local_sandbox_with_venv_pip_installs_basic(disable_e2b_api_key, cowsay_tool, test_user, event_loop):
     manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(
         config=LocalSandboxConfig(use_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
@@ -383,7 +420,7 @@ async def test_local_sandbox_with_venv_pip_installs_basic(disable_e2b_api_key, c
 
 @pytest.mark.asyncio
 @pytest.mark.e2b_sandbox
-async def test_local_sandbox_with_venv_pip_installs_with_update(disable_e2b_api_key, cowsay_tool, test_user):
+async def test_local_sandbox_with_venv_pip_installs_with_update(disable_e2b_api_key, cowsay_tool, test_user, event_loop):
     manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(config=LocalSandboxConfig(use_venv=True).model_dump())
     config = manager.create_or_update_sandbox_config(config_create, test_user)
@@ -414,7 +451,7 @@ async def test_local_sandbox_with_venv_pip_installs_with_update(disable_e2b_api_
 
 @pytest.mark.asyncio
 @pytest.mark.e2b_sandbox
-async def test_e2b_sandbox_default(check_e2b_key_is_set, add_integers_tool, test_user):
+async def test_e2b_sandbox_default(check_e2b_key_is_set, add_integers_tool, test_user, event_loop):
     args = {"x": 10, "y": 5}
 
     # Mock and assert correct pathway was invoked
@@ -431,7 +468,7 @@ async def test_e2b_sandbox_default(check_e2b_key_is_set, add_integers_tool, test
 
 @pytest.mark.asyncio
 @pytest.mark.e2b_sandbox
-async def test_e2b_sandbox_pip_installs(check_e2b_key_is_set, cowsay_tool, test_user):
+async def test_e2b_sandbox_pip_installs(check_e2b_key_is_set, cowsay_tool, test_user, event_loop):
     manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(config=E2BSandboxConfig(pip_requirements=["cowsay"]).model_dump())
     config = manager.create_or_update_sandbox_config(config_create, test_user)
@@ -451,7 +488,7 @@ async def test_e2b_sandbox_pip_installs(check_e2b_key_is_set, cowsay_tool, test_
 
 @pytest.mark.asyncio
 @pytest.mark.e2b_sandbox
-async def test_e2b_sandbox_stateful_tool(check_e2b_key_is_set, clear_core_memory_tool, test_user, agent_state):
+async def test_e2b_sandbox_stateful_tool(check_e2b_key_is_set, clear_core_memory_tool, test_user, agent_state, event_loop):
     sandbox = AsyncToolSandboxE2B(clear_core_memory_tool.name, {}, user=test_user)
     result = await sandbox.run(agent_state=agent_state)
     assert result.agent_state.memory.get_block("human").value == ""
@@ -461,7 +498,7 @@ async def test_e2b_sandbox_stateful_tool(check_e2b_key_is_set, clear_core_memory
 
 @pytest.mark.asyncio
 @pytest.mark.e2b_sandbox
-async def test_e2b_sandbox_inject_env_var_existing_sandbox(check_e2b_key_is_set, get_env_tool, test_user):
+async def test_e2b_sandbox_inject_env_var_existing_sandbox(check_e2b_key_is_set, get_env_tool, test_user, event_loop):
     manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(config=E2BSandboxConfig().model_dump())
     config = manager.create_or_update_sandbox_config(config_create, test_user)
@@ -485,7 +522,7 @@ async def test_e2b_sandbox_inject_env_var_existing_sandbox(check_e2b_key_is_set,
 
 @pytest.mark.asyncio
 @pytest.mark.e2b_sandbox
-async def test_e2b_sandbox_per_agent_env(check_e2b_key_is_set, get_env_tool, agent_state, test_user):
+async def test_e2b_sandbox_per_agent_env(check_e2b_key_is_set, get_env_tool, agent_state, test_user, event_loop):
     manager = SandboxConfigManager()
     key = "secret_word"
     wrong_val = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
@@ -509,7 +546,7 @@ async def test_e2b_sandbox_per_agent_env(check_e2b_key_is_set, get_env_tool, age
 
 @pytest.mark.asyncio
 @pytest.mark.e2b_sandbox
-async def test_e2b_sandbox_with_list_rv(check_e2b_key_is_set, list_tool, test_user):
+async def test_e2b_sandbox_with_list_rv(check_e2b_key_is_set, list_tool, test_user, event_loop):
     sandbox = AsyncToolSandboxE2B(list_tool.name, {}, user=test_user)
     result = await sandbox.run()
     assert len(result.func_return) == 5

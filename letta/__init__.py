@@ -1,7 +1,7 @@
-__version__ = "0.7.21"
+__version__ = "0.7.22"
 
 # import clients
-from letta.client.client import LocalClient, RESTClient, create_client
+from letta.client.client import RESTClient
 
 # imports for easier access
 from letta.schemas.agent import AgentState

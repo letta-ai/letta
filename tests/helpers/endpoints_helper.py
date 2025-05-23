@@ -1,33 +1,28 @@
 import json
 import logging
 import uuid
-from typing import Callable, List, Optional, Sequence, Union
+from typing import Callable, List, Optional, Sequence
 
 from letta.llm_api.helpers import unpack_inner_thoughts_from_kwargs
+from letta.schemas.block import CreateBlock
 from letta.schemas.tool_rule import BaseToolRule
+from letta.server.server import SyncServer
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-from letta import LocalClient, RESTClient, create_client
-from letta.agent import Agent
 from letta.config import LettaConfig
 from letta.constants import DEFAULT_HUMAN, DEFAULT_PERSONA
 from letta.embeddings import embedding_model
 from letta.errors import InvalidInnerMonologueError, InvalidToolCallError, MissingInnerMonologueError, MissingToolCallError
-from letta.helpers.json_helpers import json_dumps
-from letta.llm_api.llm_api_tools import create
-from letta.llm_api.llm_client import LLMClient
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
-from letta.schemas.agent import AgentState
+from letta.schemas.agent import AgentState, CreateAgent
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.letta_message import LettaMessage, ReasoningMessage, ToolCallMessage
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.memory import ChatMemory
-from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall, Message
+from letta.schemas.openai.chat_completion_response import Choice, FunctionCall, Message
 from letta.utils import get_human_text, get_persona_text
-from tests.helpers.utils import cleanup
 
 # Generate uuid for agent name for this example
 namespace = uuid.NAMESPACE_DNS
@@ -45,7 +40,7 @@ LLM_CONFIG_PATH = "tests/configs/llm_model_configs/letta-hosted.json"
 
 
 def setup_agent(
-    client: Union[LocalClient, RESTClient],
+    server: SyncServer,
     filename: str,
     memory_human_str: str = get_human_text(DEFAULT_HUMAN),
     memory_persona_str: str = get_persona_text(DEFAULT_PERSONA),
@@ -65,17 +60,27 @@ def setup_agent(
     config.default_embedding_config = embedding_config
     config.save()
 
-    memory = ChatMemory(human=memory_human_str, persona=memory_persona_str)
-    agent_state = client.create_agent(
+    request = CreateAgent(
         name=agent_uuid,
         llm_config=llm_config,
         embedding_config=embedding_config,
-        memory=memory,
+        memory_blocks=[
+            CreateBlock(
+                label="human",
+                value=memory_human_str,
+            ),
+            CreateBlock(
+                label="persona",
+                value=memory_persona_str,
+            ),
+        ],
         tool_ids=tool_ids,
         tool_rules=tool_rules,
         include_base_tools=include_base_tools,
         include_base_tool_rules=include_base_tool_rules,
     )
+    actor = server.user_manager.get_user_or_default()
+    agent_state = server.create_agent(request=request, actor=actor)
 
     return agent_state
 
@@ -84,285 +89,6 @@ def setup_agent(
 # Section: Complex E2E Tests
 # These functions describe individual testing scenarios.
 # ======================================================================================================================
-
-
-def check_first_response_is_valid_for_llm_endpoint(filename: str, validate_inner_monologue_contents: bool = True) -> ChatCompletionResponse:
-    """
-    Checks that the first response is valid:
-
-    1. Contains either send_message or archival_memory_search
-    2. Contains valid usage of the function
-    3. Contains inner monologue
-
-    Note: This is acting on the raw LLM response, note the usage of `create`
-    """
-    client = create_client()
-    cleanup(client=client, agent_uuid=agent_uuid)
-    agent_state = setup_agent(client, filename)
-
-    full_agent_state = client.get_agent(agent_state.id)
-    messages = client.server.agent_manager.get_in_context_messages(agent_id=full_agent_state.id, actor=client.user)
-    agent = Agent(agent_state=full_agent_state, interface=None, user=client.user)
-
-    llm_client = LLMClient.create(
-        provider_type=agent_state.llm_config.model_endpoint_type,
-        actor=client.user,
-    )
-    if llm_client:
-        response = llm_client.send_llm_request(
-            messages=messages,
-            llm_config=agent_state.llm_config,
-            tools=[t.json_schema for t in agent.agent_state.tools],
-        )
-    else:
-        response = create(
-            llm_config=agent_state.llm_config,
-            user_id=str(uuid.UUID(int=1)),  # dummy user_id
-            messages=messages,
-            functions=[t.json_schema for t in agent.agent_state.tools],
-        )
-
-    # Basic check
-    assert response is not None, response
-    assert response.choices is not None, response
-    assert len(response.choices) > 0, response
-    assert response.choices[0] is not None, response
-
-    # Select first choice
-    choice = response.choices[0]
-
-    # Ensure that the first message returns a "send_message"
-    validator_func = (
-        lambda function_call: function_call.name == "send_message"
-        or function_call.name == "archival_memory_search"
-        or function_call.name == "core_memory_append"
-    )
-    assert_contains_valid_function_call(choice.message, validator_func)
-
-    # Assert that the message has an inner monologue
-    assert_contains_correct_inner_monologue(
-        choice,
-        agent_state.llm_config.put_inner_thoughts_in_kwargs,
-        validate_inner_monologue_contents=validate_inner_monologue_contents,
-    )
-
-    return response
-
-
-def check_response_contains_keyword(filename: str, keyword="banana") -> LettaResponse:
-    """
-    Checks that the prompted response from the LLM contains a chosen keyword
-
-    Note: This is acting on the Letta response, note the usage of `user_message`
-    """
-    client = create_client()
-    cleanup(client=client, agent_uuid=agent_uuid)
-    agent_state = setup_agent(client, filename)
-
-    keyword_message = f'This is a test to see if you can see my message. If you can see my message, please respond by calling send_message using a message that includes the word "{keyword}"'
-    response = client.user_message(agent_id=agent_state.id, message=keyword_message)
-
-    # Basic checks
-    assert_sanity_checks(response)
-
-    # Make sure the message was sent
-    assert_invoked_send_message_with_keyword(response.messages, keyword)
-
-    # Make sure some inner monologue is present
-    assert_inner_monologue_is_present_and_valid(response.messages)
-
-    return response
-
-
-def check_agent_uses_external_tool(filename: str) -> LettaResponse:
-    """
-    Checks that the LLM will use external tools if instructed
-
-    Note: This is acting on the Letta response, note the usage of `user_message`
-    """
-    from composio import Action
-
-    # Set up client
-    client = create_client()
-    cleanup(client=client, agent_uuid=agent_uuid)
-    tool = client.load_composio_tool(action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER)
-
-    # Set up persona for tool usage
-    persona = f"""
-
-    My name is Letta.
-
-    I am a personal assistant who uses a tool called {tool.name} to star a desired github repo.
-
-    Don’t forget - inner monologue / inner thoughts should always be different than the contents of send_message! send_message is how you communicate with the user, whereas inner thoughts are your own personal inner thoughts.
-    """
-
-    agent_state = setup_agent(client, filename, memory_persona_str=persona, tool_ids=[tool.id])
-
-    response = client.user_message(agent_id=agent_state.id, message="Please star the repo with owner=letta-ai and repo=letta")
-
-    # Basic checks
-    assert_sanity_checks(response)
-
-    # Make sure the tool was called
-    assert_invoked_function_call(response.messages, tool.name)
-
-    # Make sure some inner monologue is present
-    assert_inner_monologue_is_present_and_valid(response.messages)
-
-    return response
-
-
-def check_agent_recall_chat_memory(filename: str) -> LettaResponse:
-    """
-    Checks that the LLM will recall the chat memory, specifically the human persona.
-
-    Note: This is acting on the Letta response, note the usage of `user_message`
-    """
-    # Set up client
-    client = create_client()
-    cleanup(client=client, agent_uuid=agent_uuid)
-
-    human_name = "BananaBoy"
-    agent_state = setup_agent(client, filename, memory_human_str=f"My name is {human_name}.")
-    response = client.user_message(
-        agent_id=agent_state.id, message="Repeat my name back to me. You should search in your human memory block."
-    )
-
-    # Basic checks
-    assert_sanity_checks(response)
-
-    # Make sure my name was repeated back to me
-    assert_invoked_send_message_with_keyword(response.messages, human_name)
-
-    # Make sure some inner monologue is present
-    assert_inner_monologue_is_present_and_valid(response.messages)
-
-    return response
-
-
-def check_agent_archival_memory_insert(filename: str) -> LettaResponse:
-    """
-    Checks that the LLM will execute an archival memory insert.
-
-    Note: This is acting on the Letta response, note the usage of `user_message`
-    """
-    # Set up client
-    client = create_client()
-    cleanup(client=client, agent_uuid=agent_uuid)
-    agent_state = setup_agent(client, filename)
-    secret_word = "banana"
-
-    response = client.user_message(
-        agent_id=agent_state.id,
-        message=f"Please insert the secret word '{secret_word}' into archival memory.",
-    )
-
-    # Basic checks
-    assert_sanity_checks(response)
-
-    # Make sure archival_memory_search was called
-    assert_invoked_function_call(response.messages, "archival_memory_insert")
-
-    # Make sure some inner monologue is present
-    assert_inner_monologue_is_present_and_valid(response.messages)
-
-    return response
-
-
-def check_agent_archival_memory_retrieval(filename: str) -> LettaResponse:
-    """
-    Checks that the LLM will execute an archival memory retrieval.
-
-    Note: This is acting on the Letta response, note the usage of `user_message`
-    """
-    # Set up client
-    client = create_client()
-    cleanup(client=client, agent_uuid=agent_uuid)
-    agent_state = setup_agent(client, filename)
-    secret_word = "banana"
-    client.insert_archival_memory(agent_state.id, f"The secret word is {secret_word}!")
-
-    response = client.user_message(
-        agent_id=agent_state.id,
-        message="Search archival memory for the secret word. If you find it successfully, you MUST respond by using the `send_message` function with a message that includes the secret word so I know you found it.",
-    )
-
-    # Basic checks
-    assert_sanity_checks(response)
-
-    # Make sure archival_memory_search was called
-    assert_invoked_function_call(response.messages, "archival_memory_search")
-
-    # Make sure secret was repeated back to me
-    assert_invoked_send_message_with_keyword(response.messages, secret_word)
-
-    # Make sure some inner monologue is present
-    assert_inner_monologue_is_present_and_valid(response.messages)
-
-    return response
-
-
-def check_agent_edit_core_memory(filename: str) -> LettaResponse:
-    """
-    Checks that the LLM is able to edit its core memories
-
-    Note: This is acting on the Letta response, note the usage of `user_message`
-    """
-    # Set up client
-    client = create_client()
-    cleanup(client=client, agent_uuid=agent_uuid)
-
-    human_name_a = "AngryAardvark"
-    human_name_b = "BananaBoy"
-    agent_state = setup_agent(client, filename, memory_human_str=f"My name is {human_name_a}")
-    client.user_message(agent_id=agent_state.id, message=f"Actually, my name changed. It is now {human_name_b}")
-    response = client.user_message(agent_id=agent_state.id, message="Repeat my name back to me.")
-
-    # Basic checks
-    assert_sanity_checks(response)
-
-    # Make sure my name was repeated back to me
-    assert_invoked_send_message_with_keyword(response.messages, human_name_b)
-
-    # Make sure some inner monologue is present
-    assert_inner_monologue_is_present_and_valid(response.messages)
-
-    return response
-
-
-def check_agent_summarize_memory_simple(filename: str) -> LettaResponse:
-    """
-    Checks that the LLM is able to summarize its memory
-    """
-    # Set up client
-    client = create_client()
-    cleanup(client=client, agent_uuid=agent_uuid)
-
-    agent_state = setup_agent(client, filename)
-
-    # Send a couple messages
-    friend_name = "Shub"
-    client.user_message(agent_id=agent_state.id, message="Hey, how's it going? What do you think about this whole shindig")
-    client.user_message(agent_id=agent_state.id, message=f"By the way, my friend's name is {friend_name}!")
-    client.user_message(agent_id=agent_state.id, message="Does the number 42 ring a bell?")
-
-    # Summarize
-    agent = client.server.load_agent(agent_id=agent_state.id, actor=client.user)
-    agent.summarize_messages_inplace()
-    print(f"Summarization succeeded: messages[1] = \n\n{json_dumps(agent.messages[1])}\n")
-
-    response = client.user_message(agent_id=agent_state.id, message="What is my friend's name?")
-    # Basic checks
-    assert_sanity_checks(response)
-
-    # Make sure my name was repeated back to me
-    assert_invoked_send_message_with_keyword(response.messages, friend_name)
-
-    # Make sure some inner monologue is present
-    assert_inner_monologue_is_present_and_valid(response.messages)
-
-    return response
 
 
 def run_embedding_endpoint(filename):

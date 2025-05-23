@@ -13,10 +13,11 @@ from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
-from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
+from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.group import Group
 from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
@@ -212,7 +213,7 @@ async def retrieve_agent_context_window(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     try:
-        return await server.get_agent_context_window_async(agent_id=agent_id, actor=actor)
+        return await server.agent_manager.get_context_window(agent_id=agent_id, actor=actor)
     except Exception as e:
         traceback.print_exc()
         raise e
@@ -297,7 +298,7 @@ def detach_tool(
 
 
 @router.patch("/{agent_id}/sources/attach/{source_id}", response_model=AgentState, operation_id="attach_source_to_agent")
-def attach_source(
+async def attach_source(
     agent_id: str,
     source_id: str,
     background_tasks: BackgroundTasks,
@@ -310,7 +311,7 @@ def attach_source(
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     agent = server.agent_manager.attach_source(agent_id=agent_id, source_id=source_id, actor=actor)
     if agent.enable_sleeptime:
-        source = server.source_manager.get_source_by_id(source_id=source_id)
+        source = await server.source_manager.get_source_by_id_async(source_id=source_id)
         background_tasks.add_task(server.sleeptime_document_ingest, agent, source, actor)
     return agent
 
@@ -355,7 +356,7 @@ async def retrieve_agent(
 
 
 @router.delete("/{agent_id}", response_model=None, operation_id="delete_agent")
-def delete_agent(
+async def delete_agent(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -363,9 +364,9 @@ def delete_agent(
     """
     Delete an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     try:
-        server.agent_manager.delete_agent(agent_id=agent_id, actor=actor)
+        await server.agent_manager.delete_agent_async(agent_id=agent_id, actor=actor)
         return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Agent id={agent_id} successfully deleted"})
     except NoResultFound:
         raise HTTPException(status_code=404, detail=f"Agent agent_id={agent_id} not found for user_id={actor.id}.")
@@ -386,7 +387,7 @@ async def list_agent_sources(
 
 # TODO: remove? can also get with agent blocks
 @router.get("/{agent_id}/core-memory", response_model=Memory, operation_id="retrieve_agent_memory")
-def retrieve_agent_memory(
+async def retrieve_agent_memory(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -395,13 +396,13 @@ def retrieve_agent_memory(
     Retrieve the memory state of a specific agent.
     This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    return server.get_agent_memory(agent_id=agent_id, actor=actor)
+    return await server.get_agent_memory_async(agent_id=agent_id, actor=actor)
 
 
 @router.get("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="retrieve_core_memory_block")
-def retrieve_block(
+async def retrieve_block(
     agent_id: str,
     block_label: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -410,10 +411,10 @@ def retrieve_block(
     """
     Retrieve a core memory block from an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
-        return server.agent_manager.get_block_with_label(agent_id=agent_id, block_label=block_label, actor=actor)
+        return await server.agent_manager.get_block_with_label_async(agent_id=agent_id, block_label=block_label, actor=actor)
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -453,13 +454,13 @@ async def modify_block(
     )
 
     # This should also trigger a system prompt change in the agent
-    server.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True, update_timestamp=False)
+    await server.agent_manager.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True, update_timestamp=False)
 
     return block
 
 
 @router.patch("/{agent_id}/core-memory/blocks/attach/{block_id}", response_model=AgentState, operation_id="attach_core_memory_block")
-def attach_block(
+async def attach_block(
     agent_id: str,
     block_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -468,12 +469,12 @@ def attach_block(
     """
     Attach a core memoryblock to an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.agent_manager.attach_block(agent_id=agent_id, block_id=block_id, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.agent_manager.attach_block_async(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
 @router.patch("/{agent_id}/core-memory/blocks/detach/{block_id}", response_model=AgentState, operation_id="detach_core_memory_block")
-def detach_block(
+async def detach_block(
     agent_id: str,
     block_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -482,8 +483,8 @@ def detach_block(
     """
     Detach a core memory block from an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.agent_manager.detach_block(agent_id=agent_id, block_id=block_id, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.agent_manager.detach_block_async(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
 @router.get("/{agent_id}/archival-memory", response_model=List[Passage], operation_id="list_passages")
@@ -637,22 +638,35 @@ async def send_message(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor)
-    agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
+    agent_eligible = agent.enable_sleeptime or not agent.multi_agent_group
     experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
 
     if agent_eligible and feature_enabled and model_compatible:
-        experimental_agent = LettaAgent(
-            agent_id=agent_id,
-            message_manager=server.message_manager,
-            agent_manager=server.agent_manager,
-            block_manager=server.block_manager,
-            passage_manager=server.passage_manager,
-            actor=actor,
-            step_manager=server.step_manager,
-            telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-        )
+        if agent.enable_sleeptime:
+            experimental_agent = SleeptimeMultiAgentV2(
+                agent_id=agent_id,
+                message_manager=server.message_manager,
+                agent_manager=server.agent_manager,
+                block_manager=server.block_manager,
+                passage_manager=server.passage_manager,
+                group_manager=server.group_manager,
+                job_manager=server.job_manager,
+                actor=actor,
+                group=agent.multi_agent_group,
+            )
+        else:
+            experimental_agent = LettaAgent(
+                agent_id=agent_id,
+                message_manager=server.message_manager,
+                agent_manager=server.agent_manager,
+                block_manager=server.block_manager,
+                passage_manager=server.passage_manager,
+                actor=actor,
+                step_manager=server.step_manager,
+                telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
+            )
 
         result = await experimental_agent.step(request.messages, max_steps=10, use_assistant_message=request.use_assistant_message)
     else:
@@ -697,23 +711,38 @@ async def send_message_streaming(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor)
-    agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
+    agent_eligible = agent.enable_sleeptime or not agent.multi_agent_group
     experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
 
-    if agent_eligible and feature_enabled and model_compatible and request.stream_tokens:
-        experimental_agent = LettaAgent(
-            agent_id=agent_id,
-            message_manager=server.message_manager,
-            agent_manager=server.agent_manager,
-            block_manager=server.block_manager,
-            passage_manager=server.passage_manager,
-            actor=actor,
-            step_manager=server.step_manager,
-            telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-        )
+    if agent_eligible and feature_enabled and model_compatible:
+        if agent.enable_sleeptime:
+            experimental_agent = SleeptimeMultiAgentV2(
+                agent_id=agent_id,
+                message_manager=server.message_manager,
+                agent_manager=server.agent_manager,
+                block_manager=server.block_manager,
+                passage_manager=server.passage_manager,
+                group_manager=server.group_manager,
+                job_manager=server.job_manager,
+                actor=actor,
+                step_manager=server.step_manager,
+                telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
+                group=agent.multi_agent_group,
+            )
+        else:
+            experimental_agent = LettaAgent(
+                agent_id=agent_id,
+                message_manager=server.message_manager,
+                agent_manager=server.agent_manager,
+                block_manager=server.block_manager,
+                passage_manager=server.passage_manager,
+                actor=actor,
+                step_manager=server.step_manager,
+                telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
+            )
         from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
 
         if request.stream_tokens and model_compatible_token_streaming:

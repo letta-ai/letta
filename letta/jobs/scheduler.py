@@ -4,10 +4,11 @@ from typing import Optional
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from sqlalchemy import text
 
 from letta.jobs.llm_batch_job_polling import poll_running_llm_batches
 from letta.log import get_logger
-from letta.server.db import db_context
+from letta.server.db import db_registry
 from letta.server.server import SyncServer
 from letta.settings import settings
 
@@ -34,18 +35,16 @@ async def _try_acquire_lock_and_start_scheduler(server: SyncServer) -> bool:
     acquired_lock = False
     try:
         # Use a temporary connection context for the attempt initially
-        with db_context() as session:
-            engine = session.get_bind()
-            # Get raw connection - MUST be kept open if lock is acquired
-            raw_conn = engine.raw_connection()
-            cur = raw_conn.cursor()
+        async with db_registry.async_session() as session:
+            raw_conn = await session.connection()
 
-        cur.execute("SELECT pg_try_advisory_lock(CAST(%s AS bigint))", (ADVISORY_LOCK_KEY,))
-        acquired_lock = cur.fetchone()[0]
+            # Try to acquire the advisory lock
+            sql = text("SELECT pg_try_advisory_lock(CAST(:lock_key AS bigint))")
+            result = await session.execute(sql, {"lock_key": ADVISORY_LOCK_KEY})
+            acquired_lock = result.scalar_one()
 
         if not acquired_lock:
-            cur.close()
-            raw_conn.close()
+            await raw_conn.close()
             logger.info("Scheduler lock held by another instance.")
             return False
 
@@ -106,14 +105,14 @@ async def _try_acquire_lock_and_start_scheduler(server: SyncServer) -> bool:
         # Clean up temporary resources if lock wasn't acquired or error occurred before storing
         if cur:
             try:
-                cur.close()
-            except:
-                pass
+                await cur.close()
+            except Exception as e:
+                logger.warning(f"Error closing cursor: {e}")
         if raw_conn:
             try:
-                raw_conn.close()
-            except:
-                pass
+                await raw_conn.close()
+            except Exception as e:
+                logger.warning(f"Error closing connection: {e}")
 
 
 async def _background_lock_retry_loop(server: SyncServer):
@@ -161,7 +160,9 @@ async def _release_advisory_lock():
         try:
             if not lock_conn.closed:
                 if not lock_cur.closed:
-                    lock_cur.execute("SELECT pg_advisory_unlock(CAST(%s AS bigint))", (ADVISORY_LOCK_KEY,))
+                    # Use SQLAlchemy text() for raw SQL
+                    unlock_sql = text("SELECT pg_advisory_unlock(CAST(:lock_key AS bigint))")
+                    lock_cur.execute(unlock_sql, {"lock_key": ADVISORY_LOCK_KEY})
                     lock_cur.fetchone()  # Consume result
                     lock_conn.commit()
                     logger.info(f"Executed pg_advisory_unlock for lock {ADVISORY_LOCK_KEY}")
@@ -175,12 +176,12 @@ async def _release_advisory_lock():
             # Ensure resources are closed regardless of unlock success
             try:
                 if lock_cur and not lock_cur.closed:
-                    lock_cur.close()
+                    await lock_cur.close()
             except Exception as e:
                 logger.error(f"Error closing advisory lock cursor: {e}", exc_info=True)
             try:
                 if lock_conn and not lock_conn.closed:
-                    lock_conn.close()
+                    await lock_conn.close()
                 logger.info("Closed database connection that held advisory lock.")
             except Exception as e:
                 logger.error(f"Error closing advisory lock connection: {e}", exc_info=True)

@@ -12,11 +12,13 @@ from letta.schemas.letta_message import LettaMessage
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.tracing import trace_method
 from letta.utils import enforce_types
 
 
 class GroupManager:
 
+    @trace_method
     @enforce_types
     def list_groups(
         self,
@@ -42,12 +44,14 @@ class GroupManager:
             )
             return [group.to_pydantic() for group in groups]
 
+    @trace_method
     @enforce_types
     def retrieve_group(self, group_id: str, actor: PydanticUser) -> PydanticGroup:
         with db_registry.session() as session:
             group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
             return group.to_pydantic()
 
+    @trace_method
     @enforce_types
     def create_group(self, group: GroupCreate, actor: PydanticUser) -> PydanticGroup:
         with db_registry.session() as session:
@@ -93,6 +97,7 @@ class GroupManager:
             new_group.create(session, actor=actor)
             return new_group.to_pydantic()
 
+    @trace_method
     @enforce_types
     def modify_group(self, group_id: str, group_update: GroupUpdate, actor: PydanticUser) -> PydanticGroup:
         with db_registry.session() as session:
@@ -155,6 +160,7 @@ class GroupManager:
             group.update(session, actor=actor)
             return group.to_pydantic()
 
+    @trace_method
     @enforce_types
     def delete_group(self, group_id: str, actor: PydanticUser) -> None:
         with db_registry.session() as session:
@@ -162,6 +168,7 @@ class GroupManager:
             group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
             group.hard_delete(session)
 
+    @trace_method
     @enforce_types
     def list_group_messages(
         self,
@@ -198,6 +205,7 @@ class GroupManager:
 
             return messages
 
+    @trace_method
     @enforce_types
     def reset_messages(self, group_id: str, actor: PydanticUser) -> None:
         with db_registry.session() as session:
@@ -211,6 +219,7 @@ class GroupManager:
 
             session.commit()
 
+    @trace_method
     @enforce_types
     def bump_turns_counter(self, group_id: str, actor: PydanticUser) -> int:
         with db_registry.session() as session:
@@ -220,6 +229,18 @@ class GroupManager:
             # Update turns counter
             group.turns_counter = (group.turns_counter + 1) % group.sleeptime_agent_frequency
             group.update(session, actor=actor)
+            return group.turns_counter
+
+    @trace_method
+    @enforce_types
+    async def bump_turns_counter_async(self, group_id: str, actor: PydanticUser) -> int:
+        async with db_registry.async_session() as session:
+            # Ensure group is loadable by user
+            group = await GroupModel.read_async(session, identifier=group_id, actor=actor)
+
+            # Update turns counter
+            group.turns_counter = (group.turns_counter + 1) % group.sleeptime_agent_frequency
+            await group.update_async(session, actor=actor)
             return group.turns_counter
 
     @enforce_types
@@ -232,6 +253,22 @@ class GroupManager:
             prev_last_processed_message_id = group.last_processed_message_id
             group.last_processed_message_id = last_processed_message_id
             group.update(session, actor=actor)
+
+            return prev_last_processed_message_id
+
+    @trace_method
+    @enforce_types
+    async def get_last_processed_message_id_and_update_async(
+        self, group_id: str, last_processed_message_id: str, actor: PydanticUser
+    ) -> str:
+        async with db_registry.async_session() as session:
+            # Ensure group is loadable by user
+            group = await GroupModel.read_async(session, identifier=group_id, actor=actor)
+
+            # Update last processed message id
+            prev_last_processed_message_id = group.last_processed_message_id
+            group.last_processed_message_id = last_processed_message_id
+            await group.update_async(session, actor=actor)
 
             return prev_last_processed_message_id
 

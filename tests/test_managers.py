@@ -140,32 +140,32 @@ async def other_user_different_org(server: SyncServer, other_organization):
 
 
 @pytest.fixture
-def default_source(server: SyncServer, default_user):
+async def default_source(server: SyncServer, default_user):
     source_pydantic = PydanticSource(
         name="Test Source",
         description="This is a test source.",
         metadata={"type": "test"},
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
     )
-    source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
+    source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
     yield source
 
 
 @pytest.fixture
-def other_source(server: SyncServer, default_user):
+async def other_source(server: SyncServer, default_user):
     source_pydantic = PydanticSource(
         name="Another Test Source",
         description="This is yet another test source.",
         metadata={"type": "another_test"},
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
     )
-    source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
+    source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
     yield source
 
 
 @pytest.fixture
-def default_file(server: SyncServer, default_source, default_user, default_organization):
-    file = server.source_manager.create_file(
+async def default_file(server: SyncServer, default_source, default_user, default_organization):
+    file = await server.source_manager.create_file(
         PydanticFileMetadata(file_name="test_file", organization_id=default_organization.id, source_id=default_source.id),
         actor=default_user,
     )
@@ -1175,17 +1175,18 @@ async def test_list_attached_source_ids_nonexistent_agent(server: SyncServer, de
         await server.agent_manager.list_attached_sources_async(agent_id="nonexistent-agent-id", actor=default_user)
 
 
-def test_list_attached_agents(server: SyncServer, sarah_agent, charles_agent, default_source, default_user):
+@pytest.mark.asyncio
+async def test_list_attached_agents(server: SyncServer, sarah_agent, charles_agent, default_source, default_user, event_loop):
     """Test listing agents that have a particular source attached."""
     # Initially should have no attached agents
-    attached_agents = server.source_manager.list_attached_agents(source_id=default_source.id, actor=default_user)
+    attached_agents = await server.source_manager.list_attached_agents(source_id=default_source.id, actor=default_user)
     assert len(attached_agents) == 0
 
     # Attach source to first agent
     server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
 
     # Verify one agent is now attached
-    attached_agents = server.source_manager.list_attached_agents(source_id=default_source.id, actor=default_user)
+    attached_agents = await server.source_manager.list_attached_agents(source_id=default_source.id, actor=default_user)
     assert len(attached_agents) == 1
     assert sarah_agent.id in [a.id for a in attached_agents]
 
@@ -1193,7 +1194,7 @@ def test_list_attached_agents(server: SyncServer, sarah_agent, charles_agent, de
     server.agent_manager.attach_source(agent_id=charles_agent.id, source_id=default_source.id, actor=default_user)
 
     # Verify both agents are now attached
-    attached_agents = server.source_manager.list_attached_agents(source_id=default_source.id, actor=default_user)
+    attached_agents = await server.source_manager.list_attached_agents(source_id=default_source.id, actor=default_user)
     assert len(attached_agents) == 2
     attached_agent_ids = [a.id for a in attached_agents]
     assert sarah_agent.id in attached_agent_ids
@@ -1203,15 +1204,16 @@ def test_list_attached_agents(server: SyncServer, sarah_agent, charles_agent, de
     server.agent_manager.detach_source(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
 
     # Verify only second agent remains attached
-    attached_agents = server.source_manager.list_attached_agents(source_id=default_source.id, actor=default_user)
+    attached_agents = await server.source_manager.list_attached_agents(source_id=default_source.id, actor=default_user)
     assert len(attached_agents) == 1
     assert charles_agent.id in [a.id for a in attached_agents]
 
 
-def test_list_attached_agents_nonexistent_source(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_list_attached_agents_nonexistent_source(server: SyncServer, default_user):
     """Test listing agents for a nonexistent source."""
     with pytest.raises(NoResultFound):
-        server.source_manager.list_attached_agents(source_id="nonexistent-source-id", actor=default_user)
+        await server.source_manager.list_attached_agents(source_id="nonexistent-source-id", actor=default_user)
 
 
 # ======================================================================================================================
@@ -2177,7 +2179,7 @@ async def test_passage_cascade_deletion(
     assert len(agentic_passages) == 0
 
     # Delete source and verify its passages are deleted
-    server.source_manager.delete_source(default_source.id, default_user)
+    await server.source_manager.delete_source(default_source.id, default_user)
     with pytest.raises(NoResultFound):
         server.passage_manager.get_passage_by_id(source_passage_fixture.id, default_user)
 
@@ -3847,7 +3849,10 @@ async def test_upsert_properties(server: SyncServer, default_user, event_loop):
 # ======================================================================================================================
 # SourceManager Tests - Sources
 # ======================================================================================================================
-def test_create_source(server: SyncServer, default_user):
+
+
+@pytest.mark.asyncio
+async def test_create_source(server: SyncServer, default_user, event_loop):
     """Test creating a new source."""
     source_pydantic = PydanticSource(
         name="Test Source",
@@ -3855,7 +3860,7 @@ def test_create_source(server: SyncServer, default_user):
         metadata={"type": "test"},
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
     )
-    source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
+    source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
 
     # Assertions to check the created source
     assert source.name == source_pydantic.name
@@ -3864,7 +3869,8 @@ def test_create_source(server: SyncServer, default_user):
     assert source.organization_id == default_user.organization_id
 
 
-def test_create_sources_with_same_name_does_not_error(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_create_sources_with_same_name_does_not_error(server: SyncServer, default_user):
     """Test creating a new source."""
     name = "Test Source"
     source_pydantic = PydanticSource(
@@ -3873,27 +3879,28 @@ def test_create_sources_with_same_name_does_not_error(server: SyncServer, defaul
         metadata={"type": "medical"},
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
     )
-    source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
+    source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
     source_pydantic = PydanticSource(
         name=name,
         description="This is a different test source.",
         metadata={"type": "legal"},
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
     )
-    same_source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
+    same_source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
 
     assert source.name == same_source.name
     assert source.id != same_source.id
 
 
-def test_update_source(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_update_source(server: SyncServer, default_user):
     """Test updating an existing source."""
     source_pydantic = PydanticSource(name="Original Source", description="Original description", embedding_config=DEFAULT_EMBEDDING_CONFIG)
-    source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
+    source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
 
     # Update the source
     update_data = SourceUpdate(name="Updated Source", description="Updated description", metadata={"type": "updated"})
-    updated_source = server.source_manager.update_source(source_id=source.id, source_update=update_data, actor=default_user)
+    updated_source = await server.source_manager.update_source(source_id=source.id, source_update=update_data, actor=default_user)
 
     # Assertions to verify update
     assert updated_source.name == update_data.name
@@ -3901,21 +3908,22 @@ def test_update_source(server: SyncServer, default_user):
     assert updated_source.metadata == update_data.metadata
 
 
-def test_delete_source(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_delete_source(server: SyncServer, default_user):
     """Test deleting a source."""
     source_pydantic = PydanticSource(
         name="To Delete", description="This source will be deleted.", embedding_config=DEFAULT_EMBEDDING_CONFIG
     )
-    source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
+    source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
 
     # Delete the source
-    deleted_source = server.source_manager.delete_source(source_id=source.id, actor=default_user)
+    deleted_source = await server.source_manager.delete_source(source_id=source.id, actor=default_user)
 
     # Assertions to verify deletion
     assert deleted_source.id == source.id
 
     # Verify that the source no longer appears in list_sources
-    sources = server.source_manager.list_sources(actor=default_user)
+    sources = await server.source_manager.list_sources(actor=default_user)
     assert len(sources) == 0
 
 
@@ -3925,18 +3933,18 @@ async def test_delete_attached_source(server: SyncServer, sarah_agent, default_u
     source_pydantic = PydanticSource(
         name="To Delete", description="This source will be deleted.", embedding_config=DEFAULT_EMBEDDING_CONFIG
     )
-    source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
+    source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
 
     server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id=source.id, actor=default_user)
 
     # Delete the source
-    deleted_source = server.source_manager.delete_source(source_id=source.id, actor=default_user)
+    deleted_source = await server.source_manager.delete_source(source_id=source.id, actor=default_user)
 
     # Assertions to verify deletion
     assert deleted_source.id == source.id
 
     # Verify that the source no longer appears in list_sources
-    sources = server.source_manager.list_sources(actor=default_user)
+    sources = await server.source_manager.list_sources(actor=default_user)
     assert len(sources) == 0
 
     # Verify that agent is not deleted
@@ -3944,37 +3952,43 @@ async def test_delete_attached_source(server: SyncServer, sarah_agent, default_u
     assert agent is not None
 
 
-def test_list_sources(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_list_sources(server: SyncServer, default_user):
     """Test listing sources with pagination."""
     # Create multiple sources
-    server.source_manager.create_source(PydanticSource(name="Source 1", embedding_config=DEFAULT_EMBEDDING_CONFIG), actor=default_user)
+    await server.source_manager.create_source(
+        PydanticSource(name="Source 1", embedding_config=DEFAULT_EMBEDDING_CONFIG), actor=default_user
+    )
     if USING_SQLITE:
         time.sleep(CREATE_DELAY_SQLITE)
-    server.source_manager.create_source(PydanticSource(name="Source 2", embedding_config=DEFAULT_EMBEDDING_CONFIG), actor=default_user)
+    await server.source_manager.create_source(
+        PydanticSource(name="Source 2", embedding_config=DEFAULT_EMBEDDING_CONFIG), actor=default_user
+    )
 
     # List sources without pagination
-    sources = server.source_manager.list_sources(actor=default_user)
+    sources = await server.source_manager.list_sources(actor=default_user)
     assert len(sources) == 2
 
     # List sources with pagination
-    paginated_sources = server.source_manager.list_sources(actor=default_user, limit=1)
+    paginated_sources = await server.source_manager.list_sources(actor=default_user, limit=1)
     assert len(paginated_sources) == 1
 
     # Ensure cursor-based pagination works
-    next_page = server.source_manager.list_sources(actor=default_user, after=paginated_sources[-1].id, limit=1)
+    next_page = await server.source_manager.list_sources(actor=default_user, after=paginated_sources[-1].id, limit=1)
     assert len(next_page) == 1
     assert next_page[0].name != paginated_sources[0].name
 
 
-def test_get_source_by_id(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_get_source_by_id(server: SyncServer, default_user):
     """Test retrieving a source by ID."""
     source_pydantic = PydanticSource(
         name="Retrieve by ID", description="Test source for ID retrieval", embedding_config=DEFAULT_EMBEDDING_CONFIG
     )
-    source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
+    source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
 
     # Retrieve the source by ID
-    retrieved_source = server.source_manager.get_source_by_id(source_id=source.id, actor=default_user)
+    retrieved_source = await server.source_manager.get_source_by_id(source_id=source.id, actor=default_user)
 
     # Assertions to verify the retrieved source matches the created one
     assert retrieved_source.id == source.id
@@ -3982,29 +3996,31 @@ def test_get_source_by_id(server: SyncServer, default_user):
     assert retrieved_source.description == source.description
 
 
-def test_get_source_by_name(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_get_source_by_name(server: SyncServer, default_user):
     """Test retrieving a source by name."""
     source_pydantic = PydanticSource(
         name="Unique Source", description="Test source for name retrieval", embedding_config=DEFAULT_EMBEDDING_CONFIG
     )
-    source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
+    source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
 
     # Retrieve the source by name
-    retrieved_source = server.source_manager.get_source_by_name(source_name=source.name, actor=default_user)
+    retrieved_source = await server.source_manager.get_source_by_name(source_name=source.name, actor=default_user)
 
     # Assertions to verify the retrieved source matches the created one
     assert retrieved_source.name == source.name
     assert retrieved_source.description == source.description
 
 
-def test_update_source_no_changes(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_update_source_no_changes(server: SyncServer, default_user):
     """Test update_source with no actual changes to verify logging and response."""
     source_pydantic = PydanticSource(name="No Change Source", description="No changes", embedding_config=DEFAULT_EMBEDDING_CONFIG)
-    source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
+    source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
 
     # Attempt to update the source with identical data
     update_data = SourceUpdate(name="No Change Source", description="No changes")
-    updated_source = server.source_manager.update_source(source_id=source.id, source_update=update_data, actor=default_user)
+    updated_source = await server.source_manager.update_source(source_id=source.id, source_update=update_data, actor=default_user)
 
     # Assertions to ensure the update returned the source but made no modifications
     assert updated_source.id == source.id
@@ -4017,7 +4033,8 @@ def test_update_source_no_changes(server: SyncServer, default_user):
 # ======================================================================================================================
 
 
-def test_get_file_by_id(server: SyncServer, default_user, default_source):
+@pytest.mark.asyncio
+async def test_get_file_by_id(server: SyncServer, default_user, default_source):
     """Test retrieving a file by ID."""
     file_metadata = PydanticFileMetadata(
         file_name="Retrieve File",
@@ -4026,10 +4043,10 @@ def test_get_file_by_id(server: SyncServer, default_user, default_source):
         file_size=2048,
         source_id=default_source.id,
     )
-    created_file = server.source_manager.create_file(file_metadata=file_metadata, actor=default_user)
+    created_file = await server.source_manager.create_file(file_metadata=file_metadata, actor=default_user)
 
     # Retrieve the file by ID
-    retrieved_file = server.source_manager.get_file_by_id(file_id=created_file.id, actor=default_user)
+    retrieved_file = await server.source_manager.get_file_by_id(file_id=created_file.id, actor=default_user)
 
     # Assertions to verify the retrieved file matches the created one
     assert retrieved_file.id == created_file.id
@@ -4038,49 +4055,53 @@ def test_get_file_by_id(server: SyncServer, default_user, default_source):
     assert retrieved_file.file_type == created_file.file_type
 
 
-def test_list_files(server: SyncServer, default_user, default_source):
+@pytest.mark.asyncio
+async def test_list_files(server: SyncServer, default_user, default_source):
     """Test listing files with pagination."""
     # Create multiple files
-    server.source_manager.create_file(
+    await server.source_manager.create_file(
         PydanticFileMetadata(file_name="File 1", file_path="/path/to/file1.txt", file_type="text/plain", source_id=default_source.id),
         actor=default_user,
     )
     if USING_SQLITE:
         time.sleep(CREATE_DELAY_SQLITE)
-    server.source_manager.create_file(
+    await server.source_manager.create_file(
         PydanticFileMetadata(file_name="File 2", file_path="/path/to/file2.txt", file_type="text/plain", source_id=default_source.id),
         actor=default_user,
     )
 
     # List files without pagination
-    files = server.source_manager.list_files(source_id=default_source.id, actor=default_user)
+    files = await server.source_manager.list_files(source_id=default_source.id, actor=default_user)
     assert len(files) == 2
 
     # List files with pagination
-    paginated_files = server.source_manager.list_files(source_id=default_source.id, actor=default_user, limit=1)
+    paginated_files = await server.source_manager.list_files(source_id=default_source.id, actor=default_user, limit=1)
     assert len(paginated_files) == 1
 
     # Ensure cursor-based pagination works
-    next_page = server.source_manager.list_files(source_id=default_source.id, actor=default_user, after=paginated_files[-1].id, limit=1)
+    next_page = await server.source_manager.list_files(
+        source_id=default_source.id, actor=default_user, after=paginated_files[-1].id, limit=1
+    )
     assert len(next_page) == 1
     assert next_page[0].file_name != paginated_files[0].file_name
 
 
-def test_delete_file(server: SyncServer, default_user, default_source):
+@pytest.mark.asyncio
+async def test_delete_file(server: SyncServer, default_user, default_source):
     """Test deleting a file."""
     file_metadata = PydanticFileMetadata(
         file_name="Delete File", file_path="/path/to/delete_file.txt", file_type="text/plain", source_id=default_source.id
     )
-    created_file = server.source_manager.create_file(file_metadata=file_metadata, actor=default_user)
+    created_file = await server.source_manager.create_file(file_metadata=file_metadata, actor=default_user)
 
     # Delete the file
-    deleted_file = server.source_manager.delete_file(file_id=created_file.id, actor=default_user)
+    deleted_file = await server.source_manager.delete_file(file_id=created_file.id, actor=default_user)
 
     # Assertions to verify deletion
     assert deleted_file.id == created_file.id
 
     # Verify that the file no longer appears in list_files
-    files = server.source_manager.list_files(source_id=default_source.id, actor=default_user)
+    files = await server.source_manager.list_files(source_id=default_source.id, actor=default_user)
     assert len(files) == 0
 
 
@@ -5126,7 +5147,7 @@ async def test_update_batch_status(server, default_user, dummy_beta_message_batc
     )
     before = datetime.now(timezone.utc)
 
-    server.batch_manager.update_llm_batch_status(
+    await server.batch_manager.update_llm_batch_status_async(
         llm_batch_id=batch.id,
         status=JobStatus.completed,
         latest_polling_response=dummy_beta_message_batch,
@@ -5151,7 +5172,7 @@ async def test_create_and_get_batch_item(
         letta_batch_job_id=letta_batch_job.id,
     )
 
-    item = server.batch_manager.create_llm_batch_item(
+    item = await server.batch_manager.create_llm_batch_item_async(
         llm_batch_id=batch.id,
         agent_id=sarah_agent.id,
         llm_config=dummy_llm_config,
@@ -5163,7 +5184,7 @@ async def test_create_and_get_batch_item(
     assert item.agent_id == sarah_agent.id
     assert item.step_state == dummy_step_state
 
-    fetched = server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
+    fetched = await server.batch_manager.get_llm_batch_item_by_id_async(item.id, actor=default_user)
     assert fetched.id == item.id
 
 
@@ -5187,7 +5208,7 @@ async def test_update_batch_item(
         letta_batch_job_id=letta_batch_job.id,
     )
 
-    item = server.batch_manager.create_llm_batch_item(
+    item = await server.batch_manager.create_llm_batch_item_async(
         llm_batch_id=batch.id,
         agent_id=sarah_agent.id,
         llm_config=dummy_llm_config,
@@ -5197,7 +5218,7 @@ async def test_update_batch_item(
 
     updated_step_state = AgentStepState(step_number=2, tool_rules_solver=dummy_step_state.tool_rules_solver)
 
-    server.batch_manager.update_llm_batch_item(
+    await server.batch_manager.update_llm_batch_item_async(
         item_id=item.id,
         request_status=JobStatus.completed,
         step_status=AgentStepStatus.resumed,
@@ -5206,7 +5227,7 @@ async def test_update_batch_item(
         actor=default_user,
     )
 
-    updated = server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
+    updated = await server.batch_manager.get_llm_batch_item_by_id_async(item.id, actor=default_user)
     assert updated.request_status == JobStatus.completed
     assert updated.batch_request_result == dummy_successful_response
 
@@ -5223,7 +5244,7 @@ async def test_delete_batch_item(
         letta_batch_job_id=letta_batch_job.id,
     )
 
-    item = server.batch_manager.create_llm_batch_item(
+    item = await server.batch_manager.create_llm_batch_item_async(
         llm_batch_id=batch.id,
         agent_id=sarah_agent.id,
         llm_config=dummy_llm_config,
@@ -5231,10 +5252,10 @@ async def test_delete_batch_item(
         actor=default_user,
     )
 
-    server.batch_manager.delete_llm_batch_item(item_id=item.id, actor=default_user)
+    await server.batch_manager.delete_llm_batch_item_async(item_id=item.id, actor=default_user)
 
     with pytest.raises(NoResultFound):
-        server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
+        await server.batch_manager.get_llm_batch_item_by_id_async(item.id, actor=default_user)
 
 
 @pytest.mark.asyncio
@@ -5262,7 +5283,7 @@ async def test_bulk_update_batch_statuses(server, default_user, dummy_beta_messa
         letta_batch_job_id=letta_batch_job.id,
     )
 
-    server.batch_manager.bulk_update_llm_batch_statuses([(batch.id, JobStatus.completed, dummy_beta_message_batch)])
+    await server.batch_manager.bulk_update_llm_batch_statuses_async([(batch.id, JobStatus.completed, dummy_beta_message_batch)])
 
     updated = await server.batch_manager.get_llm_batch_job_by_id_async(batch.id, actor=default_user)
     assert updated.status == JobStatus.completed
@@ -5287,7 +5308,7 @@ async def test_bulk_update_batch_items_results_by_agent(
         actor=default_user,
         letta_batch_job_id=letta_batch_job.id,
     )
-    item = server.batch_manager.create_llm_batch_item(
+    item = await server.batch_manager.create_llm_batch_item_async(
         llm_batch_id=batch.id,
         agent_id=sarah_agent.id,
         llm_config=dummy_llm_config,
@@ -5295,11 +5316,11 @@ async def test_bulk_update_batch_items_results_by_agent(
         actor=default_user,
     )
 
-    server.batch_manager.bulk_update_batch_llm_items_results_by_agent(
+    await server.batch_manager.bulk_update_batch_llm_items_results_by_agent_async(
         [ItemUpdateInfo(batch.id, sarah_agent.id, JobStatus.completed, dummy_successful_response)]
     )
 
-    updated = server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
+    updated = await server.batch_manager.get_llm_batch_item_by_id_async(item.id, actor=default_user)
     assert updated.request_status == JobStatus.completed
     assert updated.batch_request_result == dummy_successful_response
 
@@ -5314,7 +5335,7 @@ async def test_bulk_update_batch_items_step_status_by_agent(
         actor=default_user,
         letta_batch_job_id=letta_batch_job.id,
     )
-    item = server.batch_manager.create_llm_batch_item(
+    item = await server.batch_manager.create_llm_batch_item_async(
         llm_batch_id=batch.id,
         agent_id=sarah_agent.id,
         llm_config=dummy_llm_config,
@@ -5322,11 +5343,11 @@ async def test_bulk_update_batch_items_step_status_by_agent(
         actor=default_user,
     )
 
-    server.batch_manager.bulk_update_llm_batch_items_step_status_by_agent(
+    await server.batch_manager.bulk_update_llm_batch_items_step_status_by_agent_async(
         [StepStatusUpdateInfo(batch.id, sarah_agent.id, AgentStepStatus.resumed)]
     )
 
-    updated = server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
+    updated = await server.batch_manager.get_llm_batch_item_by_id_async(item.id, actor=default_user)
     assert updated.step_status == AgentStepStatus.resumed
 
 
@@ -5342,7 +5363,7 @@ async def test_list_batch_items_limit_and_filter(
     )
 
     for _ in range(3):
-        server.batch_manager.create_llm_batch_item(
+        await server.batch_manager.create_llm_batch_item_async(
             llm_batch_id=batch.id,
             agent_id=sarah_agent.id,
             llm_config=dummy_llm_config,
@@ -5372,7 +5393,7 @@ async def test_list_batch_items_pagination(
     # Create 10 batch items.
     created_items = []
     for i in range(10):
-        item = server.batch_manager.create_llm_batch_item(
+        item = await server.batch_manager.create_llm_batch_item_async(
             llm_batch_id=batch.id,
             agent_id=sarah_agent.id,
             llm_config=dummy_llm_config,
@@ -5435,7 +5456,7 @@ async def test_bulk_update_batch_items_request_status_by_agent(
     )
 
     # Create a batch item
-    item = server.batch_manager.create_llm_batch_item(
+    item = await server.batch_manager.create_llm_batch_item_async(
         llm_batch_id=batch.id,
         agent_id=sarah_agent.id,
         llm_config=dummy_llm_config,
@@ -5444,12 +5465,12 @@ async def test_bulk_update_batch_items_request_status_by_agent(
     )
 
     # Update the request status using the bulk update method
-    server.batch_manager.bulk_update_llm_batch_items_request_status_by_agent(
+    await server.batch_manager.bulk_update_llm_batch_items_request_status_by_agent_async(
         [RequestStatusUpdateInfo(batch.id, sarah_agent.id, JobStatus.expired)]
     )
 
     # Verify the update was applied
-    updated = server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
+    updated = await server.batch_manager.get_llm_batch_item_by_id_async(item.id, actor=default_user)
     assert updated.request_status == JobStatus.expired
 
 
@@ -5478,20 +5499,20 @@ async def test_bulk_update_nonexistent_items_should_error(
     )
 
     with pytest.raises(ValueError, match=re.escape(expected_err_msg)):
-        server.batch_manager.bulk_update_llm_batch_items(nonexistent_pairs, nonexistent_updates)
+        await server.batch_manager.bulk_update_llm_batch_items_async(nonexistent_pairs, nonexistent_updates)
 
     with pytest.raises(ValueError, match=re.escape(expected_err_msg)):
-        server.batch_manager.bulk_update_batch_llm_items_results_by_agent(
+        await server.batch_manager.bulk_update_batch_llm_items_results_by_agent_async(
             [ItemUpdateInfo(batch.id, "nonexistent-agent-id", JobStatus.expired, dummy_successful_response)]
         )
 
     with pytest.raises(ValueError, match=re.escape(expected_err_msg)):
-        server.batch_manager.bulk_update_llm_batch_items_step_status_by_agent(
+        await server.batch_manager.bulk_update_llm_batch_items_step_status_by_agent_async(
             [StepStatusUpdateInfo(batch.id, "nonexistent-agent-id", AgentStepStatus.resumed)]
         )
 
     with pytest.raises(ValueError, match=re.escape(expected_err_msg)):
-        server.batch_manager.bulk_update_llm_batch_items_request_status_by_agent(
+        await server.batch_manager.bulk_update_llm_batch_items_request_status_by_agent_async(
             [RequestStatusUpdateInfo(batch.id, "nonexistent-agent-id", JobStatus.expired)]
         )
 
@@ -5515,21 +5536,21 @@ async def test_bulk_update_nonexistent_items(
     nonexistent_updates = [{"request_status": JobStatus.expired}]
 
     # This should not raise an error, just silently skip non-existent items
-    server.batch_manager.bulk_update_llm_batch_items(nonexistent_pairs, nonexistent_updates, strict=False)
+    await server.batch_manager.bulk_update_llm_batch_items_async(nonexistent_pairs, nonexistent_updates, strict=False)
 
     # Test with higher-level methods
     # Results by agent
-    server.batch_manager.bulk_update_batch_llm_items_results_by_agent(
+    await server.batch_manager.bulk_update_batch_llm_items_results_by_agent_async(
         [ItemUpdateInfo(batch.id, "nonexistent-agent-id", JobStatus.expired, dummy_successful_response)], strict=False
     )
 
     # Step status by agent
-    server.batch_manager.bulk_update_llm_batch_items_step_status_by_agent(
+    await server.batch_manager.bulk_update_llm_batch_items_step_status_by_agent_async(
         [StepStatusUpdateInfo(batch.id, "nonexistent-agent-id", AgentStepStatus.resumed)], strict=False
     )
 
     # Request status by agent
-    server.batch_manager.bulk_update_llm_batch_items_request_status_by_agent(
+    await server.batch_manager.bulk_update_llm_batch_items_request_status_by_agent_async(
         [RequestStatusUpdateInfo(batch.id, "nonexistent-agent-id", JobStatus.expired)], strict=False
     )
 
@@ -5584,7 +5605,7 @@ async def test_create_batch_items_bulk(
     # Verify the IDs of created items match what's in the database
     created_ids = [item.id for item in created_items]
     for item_id in created_ids:
-        fetched = server.batch_manager.get_llm_batch_item_by_id(item_id, actor=default_user)
+        fetched = await server.batch_manager.get_llm_batch_item_by_id_async(item_id, actor=default_user)
         assert fetched.id in created_ids
 
 
@@ -5604,7 +5625,7 @@ async def test_count_batch_items(
     # Create a specific number of batch items for this batch.
     num_items = 5
     for _ in range(num_items):
-        server.batch_manager.create_llm_batch_item(
+        await server.batch_manager.create_llm_batch_item_async(
             llm_batch_id=batch.id,
             agent_id=sarah_agent.id,
             llm_config=dummy_llm_config,
@@ -5613,7 +5634,7 @@ async def test_count_batch_items(
         )
 
     # Use the count_llm_batch_items method to count the items.
-    count = server.batch_manager.count_llm_batch_items(llm_batch_id=batch.id)
+    count = await server.batch_manager.count_llm_batch_items_async(llm_batch_id=batch.id)
 
     # Assert that the count matches the expected number.
     assert count == num_items, f"Expected {num_items} items, got {count}"

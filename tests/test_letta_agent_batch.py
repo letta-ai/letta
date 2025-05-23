@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 from typing import Tuple
 from unittest.mock import AsyncMock, patch
@@ -457,7 +458,9 @@ async def test_partial_error_from_anthropic_batch(
             letta_batch_job_id=batch_job.id,
         )
 
-        llm_batch_jobs = server.batch_manager.list_llm_batch_jobs(letta_batch_id=pre_resume_response.letta_batch_id, actor=default_user)
+        llm_batch_jobs = await server.batch_manager.list_llm_batch_jobs_async(
+            letta_batch_id=pre_resume_response.letta_batch_id, actor=default_user
+        )
         llm_batch_job = llm_batch_jobs[0]
 
     # 2. Invoke the polling job and mock responses from Anthropic
@@ -481,7 +484,10 @@ async def test_partial_error_from_anthropic_batch(
 
         with patch.object(server.anthropic_async_client.beta.messages.batches, "results", mock_results):
             with patch("letta.llm_api.anthropic_client.AnthropicClient.send_llm_batch_request_async", return_value=dummy_batch_response):
-                msg_counts_before = {agent.id: server.message_manager.size(actor=default_user, agent_id=agent.id) for agent in agents}
+                sizes = await asyncio.gather(
+                    *[server.message_manager.size_async(actor=default_user, agent_id=agent.id) for agent in agents]
+                )
+                msg_counts_before = {agent.id: size for agent, size in zip(agents, sizes)}
 
                 new_batch_responses = await poll_running_llm_batches(server)
 
@@ -545,7 +551,7 @@ async def test_partial_error_from_anthropic_batch(
                 # Tool‑call side‑effects – each agent gets at least 2 extra messages
                 for agent in agents:
                     before = msg_counts_before[agent.id]  # captured just before resume
-                    after = server.message_manager.size(actor=default_user, agent_id=agent.id)
+                    after = await server.message_manager.size_async(actor=default_user, agent_id=agent.id)
 
                     if agent.id == agents_failed[0].id:
                         assert after == before, f"Agent {agent.id} should not have extra messages persisted due to Anthropic failure"
@@ -567,7 +573,7 @@ async def test_partial_error_from_anthropic_batch(
                         ), f"Agent's in-context messages have been extended, are length: {len(refreshed_agent.message_ids)}"
 
                 # Check the total list of messages
-                messages = server.batch_manager.get_messages_for_letta_batch(
+                messages = await server.batch_manager.get_messages_for_letta_batch_async(
                     letta_batch_job_id=pre_resume_response.letta_batch_id, limit=200, actor=default_user
                 )
                 assert len(messages) == (len(agents) - 1) * 4 + 1
@@ -617,7 +623,9 @@ async def test_resume_step_some_stop(
             letta_batch_job_id=batch_job.id,
         )
 
-        llm_batch_jobs = server.batch_manager.list_llm_batch_jobs(letta_batch_id=pre_resume_response.letta_batch_id, actor=default_user)
+        llm_batch_jobs = await server.batch_manager.list_llm_batch_jobs_async(
+            letta_batch_id=pre_resume_response.letta_batch_id, actor=default_user
+        )
         llm_batch_job = llm_batch_jobs[0]
 
     # 2. Invoke the polling job and mock responses from Anthropic
@@ -643,7 +651,10 @@ async def test_resume_step_some_stop(
 
         with patch.object(server.anthropic_async_client.beta.messages.batches, "results", mock_results):
             with patch("letta.llm_api.anthropic_client.AnthropicClient.send_llm_batch_request_async", return_value=dummy_batch_response):
-                msg_counts_before = {agent.id: server.message_manager.size(actor=default_user, agent_id=agent.id) for agent in agents}
+                sizes = await asyncio.gather(
+                    *[server.message_manager.size_async(actor=default_user, agent_id=agent.id) for agent in agents]
+                )
+                msg_counts_before = {agent.id: size for agent, size in zip(agents, sizes)}
 
                 new_batch_responses = await poll_running_llm_batches(server)
 
@@ -703,7 +714,7 @@ async def test_resume_step_some_stop(
                 # Tool‑call side‑effects – each agent gets at least 2 extra messages
                 for agent in agents:
                     before = msg_counts_before[agent.id]  # captured just before resume
-                    after = server.message_manager.size(actor=default_user, agent_id=agent.id)
+                    after = await server.message_manager.size_async(actor=default_user, agent_id=agent.id)
                     assert after - before >= 2, (
                         f"Agent {agent.id} should have an assistant tool‑call " f"and tool‑response message persisted."
                     )
@@ -716,7 +727,7 @@ async def test_resume_step_some_stop(
                     ), f"Agent's in-context messages have been extended, are length: {len(refreshed_agent.message_ids)}"
 
                 # Check the total list of messages
-                messages = server.batch_manager.get_messages_for_letta_batch(
+                messages = await server.batch_manager.get_messages_for_letta_batch_async(
                     letta_batch_job_id=pre_resume_response.letta_batch_id, limit=200, actor=default_user
                 )
                 assert len(messages) == len(agents) * 3 + 1
@@ -782,7 +793,9 @@ async def test_resume_step_after_request_all_continue(
 
         # Basic sanity checks (This is tested more thoroughly in `test_step_until_request_prepares_and_submits_batch_correctly`
         # Verify batch items
-        llm_batch_jobs = server.batch_manager.list_llm_batch_jobs(letta_batch_id=pre_resume_response.letta_batch_id, actor=default_user)
+        llm_batch_jobs = await server.batch_manager.list_llm_batch_jobs_async(
+            letta_batch_id=pre_resume_response.letta_batch_id, actor=default_user
+        )
         assert len(llm_batch_jobs) == 1, f"Expected 1 llm_batch_jobs, got {len(llm_batch_jobs)}"
 
         llm_batch_job = llm_batch_jobs[0]
@@ -803,7 +816,10 @@ async def test_resume_step_after_request_all_continue(
 
         with patch.object(server.anthropic_async_client.beta.messages.batches, "results", mock_results):
             with patch("letta.llm_api.anthropic_client.AnthropicClient.send_llm_batch_request_async", return_value=dummy_batch_response):
-                msg_counts_before = {agent.id: server.message_manager.size(actor=default_user, agent_id=agent.id) for agent in agents}
+                sizes = await asyncio.gather(
+                    *[server.message_manager.size_async(actor=default_user, agent_id=agent.id) for agent in agents]
+                )
+                msg_counts_before = {agent.id: size for agent, size in zip(agents, sizes)}
 
                 new_batch_responses = await poll_running_llm_batches(server)
 
@@ -860,7 +876,7 @@ async def test_resume_step_after_request_all_continue(
                 # Tool‑call side‑effects – each agent gets at least 2 extra messages
                 for agent in agents:
                     before = msg_counts_before[agent.id]  # captured just before resume
-                    after = server.message_manager.size(actor=default_user, agent_id=agent.id)
+                    after = await server.message_manager.size_async(actor=default_user, agent_id=agent.id)
                     assert after - before >= 2, (
                         f"Agent {agent.id} should have an assistant tool‑call " f"and tool‑response message persisted."
                     )
@@ -873,7 +889,7 @@ async def test_resume_step_after_request_all_continue(
                     ), f"Agent's in-context messages have been extended, are length: {len(refreshed_agent.message_ids)}"
 
                 # Check the total list of messages
-                messages = server.batch_manager.get_messages_for_letta_batch(
+                messages = await server.batch_manager.get_messages_for_letta_batch_async(
                     letta_batch_job_id=pre_resume_response.letta_batch_id, limit=200, actor=default_user
                 )
                 assert len(messages) == len(agents) * 4
@@ -977,7 +993,7 @@ async def test_step_until_request_prepares_and_submits_batch_correctly(
         mock_send.assert_called_once()
 
         # Verify database records were created correctly
-        llm_batch_jobs = server.batch_manager.list_llm_batch_jobs(letta_batch_id=response.letta_batch_id, actor=default_user)
+        llm_batch_jobs = await server.batch_manager.list_llm_batch_jobs_async(letta_batch_id=response.letta_batch_id, actor=default_user)
         assert len(llm_batch_jobs) == 1, f"Expected 1 llm_batch_jobs, got {len(llm_batch_jobs)}"
 
         llm_batch_job = llm_batch_jobs[0]

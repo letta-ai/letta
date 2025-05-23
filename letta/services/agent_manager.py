@@ -1,9 +1,11 @@
 import asyncio
+import os
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import sqlalchemy as sa
+from openai.types.beta.function_tool import FunctionTool as OpenAITool
 from sqlalchemy import Select, and_, delete, func, insert, literal, or_, select, union_all
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
@@ -20,6 +22,7 @@ from letta.constants import (
 )
 from letta.embeddings import embedding_model
 from letta.helpers.datetime_helpers import get_utc_time
+from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
 from letta.orm import Agent as AgentModel
 from letta.orm import AgentPassage, AgentsTags
@@ -42,9 +45,11 @@ from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent, get_prompt_
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.enums import MessageRole, ProviderType
 from letta.schemas.group import Group as PydanticGroup
 from letta.schemas.group import ManagerType
-from letta.schemas.memory import Memory
+from letta.schemas.letta_message_content import TextContent
+from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate
@@ -79,7 +84,7 @@ from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import settings
 from letta.tracing import trace_method
-from letta.utils import enforce_types, united_diff
+from letta.utils import count_tokens, enforce_types, united_diff
 
 logger = get_logger(__name__)
 
@@ -548,6 +553,7 @@ class AgentManager:
 
         return init_messages
 
+    @trace_method
     @enforce_types
     def append_initial_message_sequence_to_in_context_messages(
         self, actor: PydanticUser, agent_state: PydanticAgentState, initial_message_sequence: Optional[List[MessageCreate]] = None
@@ -555,6 +561,7 @@ class AgentManager:
         init_messages = self._generate_initial_message_sequence(actor, agent_state, initial_message_sequence)
         return self.append_to_in_context_messages(init_messages, agent_id=agent_state.id, actor=actor)
 
+    @trace_method
     @enforce_types
     def update_agent(
         self,
@@ -674,6 +681,7 @@ class AgentManager:
 
             return agent.to_pydantic()
 
+    @trace_method
     @enforce_types
     async def update_agent_async(
         self,
@@ -792,6 +800,7 @@ class AgentManager:
             return await agent.to_pydantic_async()
 
     # TODO: Make this general and think about how to roll this into sqlalchemybase
+    @trace_method
     def list_agents(
         self,
         actor: PydanticUser,
@@ -850,6 +859,7 @@ class AgentManager:
             agents = result.scalars().all()
             return [agent.to_pydantic(include_relationships=include_relationships) for agent in agents]
 
+    @trace_method
     async def list_agents_async(
         self,
         actor: PydanticUser,
@@ -909,6 +919,7 @@ class AgentManager:
             return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
 
     @enforce_types
+    @trace_method
     def list_agents_matching_tags(
         self,
         actor: PydanticUser,
@@ -951,6 +962,7 @@ class AgentManager:
 
             return list(session.execute(query).scalars())
 
+    @trace_method
     def size(
         self,
         actor: PydanticUser,
@@ -961,6 +973,7 @@ class AgentManager:
         with db_registry.session() as session:
             return AgentModel.size(db_session=session, actor=actor)
 
+    @trace_method
     async def size_async(
         self,
         actor: PydanticUser,
@@ -971,6 +984,7 @@ class AgentManager:
         async with db_registry.async_session() as session:
             return await AgentModel.size_async(db_session=session, actor=actor)
 
+    @trace_method
     @enforce_types
     def get_agent_by_id(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         """Fetch an agent by its ID."""
@@ -978,6 +992,37 @@ class AgentManager:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             return agent.to_pydantic()
 
+    @trace_method
+    @enforce_types
+    async def get_agent_by_id_async(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        include_relationships: Optional[List[str]] = None,
+    ) -> PydanticAgentState:
+        """Fetch an agent by its ID."""
+        async with db_registry.async_session() as session:
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            return await agent.to_pydantic_async(include_relationships=include_relationships)
+
+    @trace_method
+    @enforce_types
+    async def get_agents_by_ids_async(
+        self,
+        agent_ids: list[str],
+        actor: PydanticUser,
+        include_relationships: Optional[List[str]] = None,
+    ) -> list[PydanticAgentState]:
+        """Fetch a list of agents by their IDs."""
+        async with db_registry.async_session() as session:
+            agents = await AgentModel.read_multiple_async(
+                db_session=session,
+                identifiers=agent_ids,
+                actor=actor,
+            )
+            return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
+
+    @trace_method
     @enforce_types
     async def get_agent_by_id_async(
         self,
@@ -1013,6 +1058,7 @@ class AgentManager:
             agent = AgentModel.read(db_session=session, name=agent_name, actor=actor)
             return agent.to_pydantic()
 
+    @trace_method
     @enforce_types
     def delete_agent(self, agent_id: str, actor: PydanticUser) -> None:
         """
@@ -1060,6 +1106,57 @@ class AgentManager:
             else:
                 logger.debug(f"Agent with ID {agent_id} successfully hard deleted")
 
+    @trace_method
+    @enforce_types
+    async def delete_agent_async(self, agent_id: str, actor: PydanticUser) -> None:
+        """
+        Deletes an agent and its associated relationships.
+        Ensures proper permission checks and cascades where applicable.
+
+        Args:
+            agent_id: ID of the agent to be deleted.
+            actor: User performing the action.
+
+        Raises:
+            NoResultFound: If agent doesn't exist
+        """
+        async with db_registry.async_session() as session:
+            # Retrieve the agent
+            logger.debug(f"Hard deleting Agent with ID: {agent_id} with actor={actor}")
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            agents_to_delete = [agent]
+            sleeptime_group_to_delete = None
+
+            # Delete sleeptime agent and group (TODO this is flimsy pls fix)
+            if agent.multi_agent_group:
+                participant_agent_ids = agent.multi_agent_group.agent_ids
+                if agent.multi_agent_group.manager_type in {ManagerType.sleeptime, ManagerType.voice_sleeptime} and participant_agent_ids:
+                    for participant_agent_id in participant_agent_ids:
+                        try:
+                            sleeptime_agent = await AgentModel.read_async(db_session=session, identifier=participant_agent_id, actor=actor)
+                            agents_to_delete.append(sleeptime_agent)
+                        except NoResultFound:
+                            pass  # agent already deleted
+                    sleeptime_agent_group = await GroupModel.read_async(
+                        db_session=session, identifier=agent.multi_agent_group.id, actor=actor
+                    )
+                    sleeptime_group_to_delete = sleeptime_agent_group
+
+            try:
+                if sleeptime_group_to_delete is not None:
+                    await session.delete(sleeptime_group_to_delete)
+                    await session.commit()
+                for agent in agents_to_delete:
+                    await session.delete(agent)
+                    await session.commit()
+            except Exception as e:
+                await session.rollback()
+                logger.exception(f"Failed to hard delete Agent with ID {agent_id}")
+                raise ValueError(f"Failed to hard delete Agent with ID {agent_id}: {e}")
+            else:
+                logger.debug(f"Agent with ID {agent_id} successfully hard deleted")
+
+    @trace_method
     @enforce_types
     def serialize(self, agent_id: str, actor: PydanticUser) -> AgentSchema:
         with db_registry.session() as session:
@@ -1068,6 +1165,7 @@ class AgentManager:
             data = schema.dump(agent)
             return AgentSchema(**data)
 
+    @trace_method
     @enforce_types
     def deserialize(
         self,
@@ -1137,6 +1235,7 @@ class AgentManager:
     # ======================================================================================================================
     # Per Agent Environment Variable Management
     # ======================================================================================================================
+    @trace_method
     @enforce_types
     def _set_environment_variables(
         self,
@@ -1192,6 +1291,7 @@ class AgentManager:
             # Return the updated agent state
             return agent.to_pydantic()
 
+    @trace_method
     @enforce_types
     def list_groups(self, agent_id: str, actor: PydanticUser, manager_type: Optional[str] = None) -> List[PydanticGroup]:
         with db_registry.session() as session:
@@ -1208,11 +1308,19 @@ class AgentManager:
     # TODO: 2) These messages are ordered from oldest to newest
     # TODO: This can be fixed by having an actual relationship in the ORM for message_ids
     # TODO: This can also be made more efficient, instead of getting, setting, we can do it all in one db session for one query.
+    @trace_method
     @enforce_types
     def get_in_context_messages(self, agent_id: str, actor: PydanticUser) -> List[PydanticMessage]:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         return self.message_manager.get_messages_by_ids(message_ids=message_ids, actor=actor)
 
+    @trace_method
+    @enforce_types
+    async def get_in_context_messages_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticMessage]:
+        agent = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=[], actor=actor)
+        return await self.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=actor)
+
+    @trace_method
     @enforce_types
     async def get_in_context_messages_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticMessage]:
         agent = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=[], actor=actor)
@@ -1223,6 +1331,7 @@ class AgentManager:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         return self.message_manager.get_message_by_id(message_id=message_ids[0], actor=actor)
 
+    @trace_method
     @enforce_types
     async def get_system_message_async(self, agent_id: str, actor: PydanticUser) -> PydanticMessage:
         agent = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=[], actor=actor)
@@ -1231,6 +1340,7 @@ class AgentManager:
     # TODO: This is duplicated below
     # TODO: This is legacy code and should be cleaned up
     # TODO: A lot of the memory "compilation" should be offset to a separate class
+    @trace_method
     @enforce_types
     def rebuild_system_prompt(self, agent_id: str, actor: PydanticUser, force=False, update_timestamp=True) -> PydanticAgentState:
         """Rebuilds the system message with the latest memory object and any shared memory block updates
@@ -1296,6 +1406,75 @@ class AgentManager:
         else:
             return agent_state
 
+    @trace_method
+    @enforce_types
+    async def rebuild_system_prompt_async(
+        self, agent_id: str, actor: PydanticUser, force=False, update_timestamp=True
+    ) -> PydanticAgentState:
+        """Rebuilds the system message with the latest memory object and any shared memory block updates
+
+        Updates to core memory blocks should trigger a "rebuild", which itself will create a new message object
+
+        Updates to the memory header should *not* trigger a rebuild, since that will simply flood recall storage with excess messages
+        """
+        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory"], actor=actor)
+
+        curr_system_message = await self.get_system_message_async(
+            agent_id=agent_id, actor=actor
+        )  # this is the system + memory bank, not just the system prompt
+        curr_system_message_openai = curr_system_message.to_openai_dict()
+
+        # note: we only update the system prompt if the core memory is changed
+        # this means that the archival/recall memory statistics may be someout out of date
+        curr_memory_str = agent_state.memory.compile()
+        if curr_memory_str in curr_system_message_openai["content"] and not force:
+            # NOTE: could this cause issues if a block is removed? (substring match would still work)
+            logger.debug(
+                f"Memory hasn't changed for agent id={agent_id} and actor=({actor.id}, {actor.name}), skipping system prompt rebuild"
+            )
+            return agent_state
+
+        # If the memory didn't update, we probably don't want to update the timestamp inside
+        # For example, if we're doing a system prompt swap, this should probably be False
+        if update_timestamp:
+            memory_edit_timestamp = get_utc_time()
+        else:
+            # NOTE: a bit of a hack - we pull the timestamp from the message created_by
+            memory_edit_timestamp = curr_system_message.created_at
+
+        num_messages = await self.message_manager.size_async(actor=actor, agent_id=agent_id)
+        num_archival_memories = await self.passage_manager.size_async(actor=actor, agent_id=agent_id)
+
+        # update memory (TODO: potentially update recall/archival stats separately)
+        new_system_message_str = compile_system_message(
+            system_prompt=agent_state.system,
+            in_context_memory=agent_state.memory,
+            in_context_memory_last_edit=memory_edit_timestamp,
+            recent_passages=self.list_passages(actor=actor, agent_id=agent_id, ascending=False, limit=10),
+            previous_message_count=num_messages,
+            archival_memory_size=num_archival_memories,
+        )
+
+        diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
+        if len(diff) > 0:  # there was a diff
+            logger.debug(f"Rebuilding system with new memory...\nDiff:\n{diff}")
+
+            # Swap the system message out (only if there is a diff)
+            message = PydanticMessage.dict_to_message(
+                agent_id=agent_id,
+                model=agent_state.llm_config.model,
+                openai_message_dict={"role": "system", "content": new_system_message_str},
+            )
+            message = await self.message_manager.update_message_by_id_async(
+                message_id=curr_system_message.id,
+                message_update=MessageUpdate(**message.model_dump()),
+                actor=actor,
+            )
+            return await self.set_in_context_messages_async(agent_id=agent_id, message_ids=agent_state.message_ids, actor=actor)
+        else:
+            return agent_state
+
+    @trace_method
     @enforce_types
     async def rebuild_system_prompt_async(
         self, agent_id: str, actor: PydanticUser, force=False, update_timestamp=True
@@ -1367,6 +1546,12 @@ class AgentManager:
     def set_in_context_messages(self, agent_id: str, message_ids: List[str], actor: PydanticUser) -> PydanticAgentState:
         return self.update_agent(agent_id=agent_id, agent_update=UpdateAgent(message_ids=message_ids), actor=actor)
 
+    @trace_method
+    @enforce_types
+    async def set_in_context_messages_async(self, agent_id: str, message_ids: List[str], actor: PydanticUser) -> PydanticAgentState:
+        return await self.update_agent_async(agent_id=agent_id, agent_update=UpdateAgent(message_ids=message_ids), actor=actor)
+
+    @trace_method
     @enforce_types
     async def set_in_context_messages_async(self, agent_id: str, message_ids: List[str], actor: PydanticUser) -> PydanticAgentState:
         return await self.update_agent_async(agent_id=agent_id, agent_update=UpdateAgent(message_ids=message_ids), actor=actor)
@@ -1377,6 +1562,7 @@ class AgentManager:
         new_messages = [message_ids[0]] + message_ids[num:]  # 0 is system message
         return self.set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
 
+    @trace_method
     @enforce_types
     def trim_all_in_context_messages_except_system(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
@@ -1384,6 +1570,7 @@ class AgentManager:
         new_messages = [message_ids[0]]  # 0 is system message
         return self.set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
 
+    @trace_method
     @enforce_types
     def prepend_to_in_context_messages(self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
@@ -1391,6 +1578,7 @@ class AgentManager:
         message_ids = [message_ids[0]] + [m.id for m in new_messages] + message_ids[1:]
         return self.set_in_context_messages(agent_id=agent_id, message_ids=message_ids, actor=actor)
 
+    @trace_method
     @enforce_types
     def append_to_in_context_messages(self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         messages = self.message_manager.create_many_messages(messages, actor=actor)
@@ -1398,6 +1586,7 @@ class AgentManager:
         message_ids += [m.id for m in messages]
         return self.set_in_context_messages(agent_id=agent_id, message_ids=message_ids, actor=actor)
 
+    @trace_method
     @enforce_types
     def reset_messages(self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False) -> PydanticAgentState:
         """
@@ -1445,6 +1634,7 @@ class AgentManager:
             return self.append_to_in_context_messages([system_message], agent_id=agent_state.id, actor=actor)
 
     # TODO: I moved this from agent.py - replace all mentions of this with the agent_manager version
+    @trace_method
     @enforce_types
     def update_memory_if_changed(self, agent_id: str, new_memory: Memory, actor: PydanticUser) -> PydanticAgentState:
         """
@@ -1482,6 +1672,7 @@ class AgentManager:
 
         return agent_state
 
+    @trace_method
     @enforce_types
     async def refresh_memory_async(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
         block_ids = [b.id for b in agent_state.memory.blocks]
@@ -1496,6 +1687,7 @@ class AgentManager:
     # ======================================================================================================================
     # Source Management
     # ======================================================================================================================
+    @trace_method
     @enforce_types
     def attach_source(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
@@ -1540,6 +1732,7 @@ class AgentManager:
 
         return agent.to_pydantic()
 
+    @trace_method
     @enforce_types
     def append_system_message(self, agent_id: str, content: str, actor: PydanticUser):
 
@@ -1552,6 +1745,7 @@ class AgentManager:
         # update agent in-context message IDs
         self.append_to_in_context_messages(messages=[message], agent_id=agent_id, actor=actor)
 
+    @trace_method
     @enforce_types
     def list_attached_sources(self, agent_id: str, actor: PydanticUser) -> List[PydanticSource]:
         """
@@ -1571,6 +1765,27 @@ class AgentManager:
             # Use the lazy-loaded relationship to get sources
             return [source.to_pydantic() for source in agent.sources]
 
+    @trace_method
+    @enforce_types
+    async def list_attached_sources_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticSource]:
+        """
+        Lists all sources attached to an agent.
+
+        Args:
+            agent_id: ID of the agent to list sources for
+            actor: User performing the action
+
+        Returns:
+            List[str]: List of source IDs attached to the agent
+        """
+        async with db_registry.async_session() as session:
+            # Verify agent exists and user has permission to access it
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+            # Use the lazy-loaded relationship to get sources
+            return [source.to_pydantic() for source in agent.sources]
+
+    @trace_method
     @enforce_types
     async def list_attached_sources_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticSource]:
         """
@@ -1620,6 +1835,7 @@ class AgentManager:
     # ======================================================================================================================
     # Block management
     # ======================================================================================================================
+    @trace_method
     @enforce_types
     def get_block_with_label(
         self,
@@ -1635,6 +1851,51 @@ class AgentManager:
                     return block.to_pydantic()
             raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
 
+    @trace_method
+    @enforce_types
+    async def get_block_with_label_async(
+        self,
+        agent_id: str,
+        block_label: str,
+        actor: PydanticUser,
+    ) -> PydanticBlock:
+        """Gets a block attached to an agent by its label."""
+        async with db_registry.async_session() as session:
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            for block in agent.core_memory:
+                if block.label == block_label:
+                    return block.to_pydantic()
+            raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
+
+    @trace_method
+    @enforce_types
+    async def modify_block_by_label_async(
+        self,
+        agent_id: str,
+        block_label: str,
+        block_update: BlockUpdate,
+        actor: PydanticUser,
+    ) -> PydanticBlock:
+        """Gets a block attached to an agent by its label."""
+        async with db_registry.async_session() as session:
+            block = None
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            for block in agent.core_memory:
+                if block.label == block_label:
+                    block = block
+                    break
+            if not block:
+                raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
+
+            update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+
+            for key, value in update_data.items():
+                setattr(block, key, value)
+
+            await block.update_async(session, actor=actor)
+            return block.to_pydantic()
+
+    @trace_method
     @enforce_types
     async def modify_block_by_label_async(
         self,
@@ -1686,6 +1947,7 @@ class AgentManager:
             agent.update(session, actor=actor)
             return agent.to_pydantic()
 
+    @trace_method
     @enforce_types
     def attach_block(self, agent_id: str, block_id: str, actor: PydanticUser) -> PydanticAgentState:
         """Attaches a block to an agent."""
@@ -1697,6 +1959,19 @@ class AgentManager:
             agent.update(session, actor=actor)
             return agent.to_pydantic()
 
+    @trace_method
+    @enforce_types
+    async def attach_block_async(self, agent_id: str, block_id: str, actor: PydanticUser) -> PydanticAgentState:
+        """Attaches a block to an agent."""
+        async with db_registry.async_session() as session:
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
+
+            agent.core_memory.append(block)
+            await agent.update_async(session, actor=actor)
+            return await agent.to_pydantic_async()
+
+    @trace_method
     @enforce_types
     def detach_block(
         self,
@@ -1717,6 +1992,28 @@ class AgentManager:
             agent.update(session, actor=actor)
             return agent.to_pydantic()
 
+    @trace_method
+    @enforce_types
+    async def detach_block_async(
+        self,
+        agent_id: str,
+        block_id: str,
+        actor: PydanticUser,
+    ) -> PydanticAgentState:
+        """Detaches a block from an agent."""
+        async with db_registry.async_session() as session:
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            original_length = len(agent.core_memory)
+
+            agent.core_memory = [b for b in agent.core_memory if b.id != block_id]
+
+            if len(agent.core_memory) == original_length:
+                raise NoResultFound(f"No block with id '{block_id}' found for agent '{agent_id}' with actor id: '{actor.id}'")
+
+            await agent.update_async(session, actor=actor)
+            return await agent.to_pydantic_async()
+
+    @trace_method
     @enforce_types
     def detach_block_with_label(
         self,
@@ -1769,105 +2066,121 @@ class AgentManager:
             embedded_text = np.array(embedded_text)
             embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
 
-        with db_registry.session() as session:
-            # Start with base query for source passages
-            source_passages = None
-            if not agent_only:  # Include source passages
-                if agent_id is not None:
-                    source_passages = (
-                        select(SourcePassage, literal(None).label("agent_id"))
-                        .join(SourcesAgents, SourcesAgents.source_id == SourcePassage.source_id)
-                        .where(SourcesAgents.agent_id == agent_id)
-                        .where(SourcePassage.organization_id == actor.organization_id)
-                    )
-                else:
-                    source_passages = select(SourcePassage, literal(None).label("agent_id")).where(
-                        SourcePassage.organization_id == actor.organization_id
-                    )
-
-                if source_id:
-                    source_passages = source_passages.where(SourcePassage.source_id == source_id)
-                if file_id:
-                    source_passages = source_passages.where(SourcePassage.file_id == file_id)
-
-            # Add agent passages query
-            agent_passages = None
+        # Start with base query for source passages
+        source_passages = None
+        if not agent_only:  # Include source passages
             if agent_id is not None:
-                agent_passages = (
-                    select(
-                        AgentPassage.id,
-                        AgentPassage.text,
-                        AgentPassage.embedding_config,
-                        AgentPassage.metadata_,
-                        AgentPassage.embedding,
-                        AgentPassage.created_at,
-                        AgentPassage.updated_at,
-                        AgentPassage.is_deleted,
-                        AgentPassage._created_by_id,
-                        AgentPassage._last_updated_by_id,
-                        AgentPassage.organization_id,
-                        literal(None).label("file_id"),
-                        literal(None).label("source_id"),
-                        AgentPassage.agent_id,
-                    )
-                    .where(AgentPassage.agent_id == agent_id)
-                    .where(AgentPassage.organization_id == actor.organization_id)
+                source_passages = (
+                    select(SourcePassage, literal(None).label("agent_id"))
+                    .join(SourcesAgents, SourcesAgents.source_id == SourcePassage.source_id)
+                    .where(SourcesAgents.agent_id == agent_id)
+                    .where(SourcePassage.organization_id == actor.organization_id)
+                )
+            else:
+                source_passages = select(SourcePassage, literal(None).label("agent_id")).where(
+                    SourcePassage.organization_id == actor.organization_id
                 )
 
-            # Combine queries
-            if source_passages is not None and agent_passages is not None:
-                combined_query = union_all(source_passages, agent_passages).cte("combined_passages")
-            elif agent_passages is not None:
-                combined_query = agent_passages.cte("combined_passages")
-            elif source_passages is not None:
-                combined_query = source_passages.cte("combined_passages")
-            else:
-                raise ValueError("No passages found")
-
-            # Build main query from combined CTE
-            main_query = select(combined_query)
-
-            # Apply filters
-            if start_date:
-                main_query = main_query.where(combined_query.c.created_at >= start_date)
-            if end_date:
-                main_query = main_query.where(combined_query.c.created_at <= end_date)
             if source_id:
-                main_query = main_query.where(combined_query.c.source_id == source_id)
+                source_passages = source_passages.where(SourcePassage.source_id == source_id)
             if file_id:
-                main_query = main_query.where(combined_query.c.file_id == file_id)
+                source_passages = source_passages.where(SourcePassage.file_id == file_id)
 
-            # Vector search
-            if embedded_text:
-                if settings.letta_pg_uri_no_default:
-                    # PostgreSQL with pgvector
-                    main_query = main_query.order_by(combined_query.c.embedding.cosine_distance(embedded_text).asc())
-                else:
-                    # SQLite with custom vector type
-                    query_embedding_binary = adapt_array(embedded_text)
-                    main_query = main_query.order_by(
-                        func.cosine_distance(combined_query.c.embedding, query_embedding_binary).asc(),
-                        combined_query.c.created_at.asc() if ascending else combined_query.c.created_at.desc(),
-                        combined_query.c.id.asc(),
-                    )
+        # Add agent passages query
+        agent_passages = None
+        if agent_id is not None:
+            agent_passages = (
+                select(
+                    AgentPassage.id,
+                    AgentPassage.text,
+                    AgentPassage.embedding_config,
+                    AgentPassage.metadata_,
+                    AgentPassage.embedding,
+                    AgentPassage.created_at,
+                    AgentPassage.updated_at,
+                    AgentPassage.is_deleted,
+                    AgentPassage._created_by_id,
+                    AgentPassage._last_updated_by_id,
+                    AgentPassage.organization_id,
+                    literal(None).label("file_id"),
+                    literal(None).label("source_id"),
+                    AgentPassage.agent_id,
+                )
+                .where(AgentPassage.agent_id == agent_id)
+                .where(AgentPassage.organization_id == actor.organization_id)
+            )
+
+        # Combine queries
+        if source_passages is not None and agent_passages is not None:
+            combined_query = union_all(source_passages, agent_passages).cte("combined_passages")
+        elif agent_passages is not None:
+            combined_query = agent_passages.cte("combined_passages")
+        elif source_passages is not None:
+            combined_query = source_passages.cte("combined_passages")
+        else:
+            raise ValueError("No passages found")
+
+        # Build main query from combined CTE
+        main_query = select(combined_query)
+
+        # Apply filters
+        if start_date:
+            main_query = main_query.where(combined_query.c.created_at >= start_date)
+        if end_date:
+            main_query = main_query.where(combined_query.c.created_at <= end_date)
+        if source_id:
+            main_query = main_query.where(combined_query.c.source_id == source_id)
+        if file_id:
+            main_query = main_query.where(combined_query.c.file_id == file_id)
+
+        # Vector search
+        if embedded_text:
+            if settings.letta_pg_uri_no_default:
+                # PostgreSQL with pgvector
+                main_query = main_query.order_by(combined_query.c.embedding.cosine_distance(embedded_text).asc())
             else:
-                if query_text:
-                    main_query = main_query.where(func.lower(combined_query.c.text).contains(func.lower(query_text)))
+                # SQLite with custom vector type
+                query_embedding_binary = adapt_array(embedded_text)
+                main_query = main_query.order_by(
+                    func.cosine_distance(combined_query.c.embedding, query_embedding_binary).asc(),
+                    combined_query.c.created_at.asc() if ascending else combined_query.c.created_at.desc(),
+                    combined_query.c.id.asc(),
+                )
+        else:
+            if query_text:
+                main_query = main_query.where(func.lower(combined_query.c.text).contains(func.lower(query_text)))
 
-            # Handle pagination
-            if before or after:
-                # Create reference CTEs
+        # Handle pagination
+        if before or after:
+            # Create reference CTEs
+            if before:
+                before_ref = select(combined_query.c.created_at, combined_query.c.id).where(combined_query.c.id == before).cte("before_ref")
+            if after:
+                after_ref = select(combined_query.c.created_at, combined_query.c.id).where(combined_query.c.id == after).cte("after_ref")
+
+            if before and after:
+                # Window-based query (get records between before and after)
+                main_query = main_query.where(
+                    or_(
+                        combined_query.c.created_at < select(before_ref.c.created_at).scalar_subquery(),
+                        and_(
+                            combined_query.c.created_at == select(before_ref.c.created_at).scalar_subquery(),
+                            combined_query.c.id < select(before_ref.c.id).scalar_subquery(),
+                        ),
+                    )
+                )
+                main_query = main_query.where(
+                    or_(
+                        combined_query.c.created_at > select(after_ref.c.created_at).scalar_subquery(),
+                        and_(
+                            combined_query.c.created_at == select(after_ref.c.created_at).scalar_subquery(),
+                            combined_query.c.id > select(after_ref.c.id).scalar_subquery(),
+                        ),
+                    )
+                )
+            else:
+                # Pure pagination (only before or only after)
                 if before:
-                    before_ref = (
-                        select(combined_query.c.created_at, combined_query.c.id).where(combined_query.c.id == before).cte("before_ref")
-                    )
-                if after:
-                    after_ref = (
-                        select(combined_query.c.created_at, combined_query.c.id).where(combined_query.c.id == after).cte("after_ref")
-                    )
-
-                if before and after:
-                    # Window-based query (get records between before and after)
                     main_query = main_query.where(
                         or_(
                             combined_query.c.created_at < select(before_ref.c.created_at).scalar_subquery(),
@@ -1877,6 +2190,7 @@ class AgentManager:
                             ),
                         )
                     )
+                if after:
                     main_query = main_query.where(
                         or_(
                             combined_query.c.created_at > select(after_ref.c.created_at).scalar_subquery(),
@@ -1886,44 +2200,23 @@ class AgentManager:
                             ),
                         )
                     )
-                else:
-                    # Pure pagination (only before or only after)
-                    if before:
-                        main_query = main_query.where(
-                            or_(
-                                combined_query.c.created_at < select(before_ref.c.created_at).scalar_subquery(),
-                                and_(
-                                    combined_query.c.created_at == select(before_ref.c.created_at).scalar_subquery(),
-                                    combined_query.c.id < select(before_ref.c.id).scalar_subquery(),
-                                ),
-                            )
-                        )
-                    if after:
-                        main_query = main_query.where(
-                            or_(
-                                combined_query.c.created_at > select(after_ref.c.created_at).scalar_subquery(),
-                                and_(
-                                    combined_query.c.created_at == select(after_ref.c.created_at).scalar_subquery(),
-                                    combined_query.c.id > select(after_ref.c.id).scalar_subquery(),
-                                ),
-                            )
-                        )
 
-            # Add ordering if not already ordered by similarity
-            if not embed_query:
-                if ascending:
-                    main_query = main_query.order_by(
-                        combined_query.c.created_at.asc(),
-                        combined_query.c.id.asc(),
-                    )
-                else:
-                    main_query = main_query.order_by(
-                        combined_query.c.created_at.desc(),
-                        combined_query.c.id.asc(),
-                    )
+        # Add ordering if not already ordered by similarity
+        if not embed_query:
+            if ascending:
+                main_query = main_query.order_by(
+                    combined_query.c.created_at.asc(),
+                    combined_query.c.id.asc(),
+                )
+            else:
+                main_query = main_query.order_by(
+                    combined_query.c.created_at.desc(),
+                    combined_query.c.id.asc(),
+                )
 
         return main_query
 
+    @trace_method
     @enforce_types
     def list_passages(
         self,
@@ -1983,6 +2276,67 @@ class AgentManager:
 
             return [p.to_pydantic() for p in passages]
 
+    @trace_method
+    @enforce_types
+    async def list_passages_async(
+        self,
+        actor: PydanticUser,
+        agent_id: Optional[str] = None,
+        file_id: Optional[str] = None,
+        limit: Optional[int] = 50,
+        query_text: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        source_id: Optional[str] = None,
+        embed_query: bool = False,
+        ascending: bool = True,
+        embedding_config: Optional[EmbeddingConfig] = None,
+        agent_only: bool = False,
+    ) -> List[PydanticPassage]:
+        """Lists all passages attached to an agent."""
+        async with db_registry.async_session() as session:
+            main_query = self._build_passage_query(
+                actor=actor,
+                agent_id=agent_id,
+                file_id=file_id,
+                query_text=query_text,
+                start_date=start_date,
+                end_date=end_date,
+                before=before,
+                after=after,
+                source_id=source_id,
+                embed_query=embed_query,
+                ascending=ascending,
+                embedding_config=embedding_config,
+                agent_only=agent_only,
+            )
+
+            # Add limit
+            if limit:
+                main_query = main_query.limit(limit)
+
+            # Execute query
+            result = await session.execute(main_query)
+
+            passages = []
+            for row in result:
+                data = dict(row._mapping)
+                if data["agent_id"] is not None:
+                    # This is an AgentPassage - remove source fields
+                    data.pop("source_id", None)
+                    data.pop("file_id", None)
+                    passage = AgentPassage(**data)
+                else:
+                    # This is a SourcePassage - remove agent field
+                    data.pop("agent_id", None)
+                    passage = SourcePassage(**data)
+                passages.append(passage)
+
+            return [p.to_pydantic() for p in passages]
+
+    @trace_method
     @enforce_types
     async def list_passages_async(
         self,
@@ -2081,9 +2435,48 @@ class AgentManager:
             count_query = select(func.count()).select_from(main_query.subquery())
             return session.scalar(count_query) or 0
 
+    @enforce_types
+    async def passage_size_async(
+        self,
+        actor: PydanticUser,
+        agent_id: Optional[str] = None,
+        file_id: Optional[str] = None,
+        query_text: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        source_id: Optional[str] = None,
+        embed_query: bool = False,
+        ascending: bool = True,
+        embedding_config: Optional[EmbeddingConfig] = None,
+        agent_only: bool = False,
+    ) -> int:
+        async with db_registry.async_session() as session:
+            main_query = self._build_passage_query(
+                actor=actor,
+                agent_id=agent_id,
+                file_id=file_id,
+                query_text=query_text,
+                start_date=start_date,
+                end_date=end_date,
+                before=before,
+                after=after,
+                source_id=source_id,
+                embed_query=embed_query,
+                ascending=ascending,
+                embedding_config=embedding_config,
+                agent_only=agent_only,
+            )
+
+            # Convert to count query
+            count_query = select(func.count()).select_from(main_query.subquery())
+            return (await session.execute(count_query)).scalar() or 0
+
     # ======================================================================================================================
     # Tool Management
     # ======================================================================================================================
+    @trace_method
     @enforce_types
     def attach_tool(self, agent_id: str, tool_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
@@ -2119,6 +2512,7 @@ class AgentManager:
             agent.update(session, actor=actor)
             return agent.to_pydantic()
 
+    @trace_method
     @enforce_types
     def detach_tool(self, agent_id: str, tool_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
@@ -2152,6 +2546,7 @@ class AgentManager:
             agent.update(session, actor=actor)
             return agent.to_pydantic()
 
+    @trace_method
     @enforce_types
     def list_attached_tools(self, agent_id: str, actor: PydanticUser) -> List[PydanticTool]:
         """
@@ -2171,6 +2566,7 @@ class AgentManager:
     # ======================================================================================================================
     # Tag Management
     # ======================================================================================================================
+    @trace_method
     @enforce_types
     def list_tags(
         self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, query_text: Optional[str] = None
@@ -2205,6 +2601,7 @@ class AgentManager:
             results = [tag[0] for tag in query.all()]
             return results
 
+    @trace_method
     @enforce_types
     async def list_tags_async(
         self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, query_text: Optional[str] = None
@@ -2243,3 +2640,279 @@ class AgentManager:
             # Extract the tag values from the result
             results = [row[0] for row in result.all()]
         return results
+
+    async def get_context_window(self, agent_id: str, actor: PydanticUser) -> ContextWindowOverview:
+        if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
+            return await self.get_context_window_from_anthropic_async(agent_id=agent_id, actor=actor)
+        return await self.get_context_window_from_tiktoken_async(agent_id=agent_id, actor=actor)
+
+    async def get_context_window_from_anthropic_async(self, agent_id: str, actor: PydanticUser) -> ContextWindowOverview:
+        """Get the context window of the agent"""
+        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        anthropic_client = LLMClient.create(provider_type=ProviderType.anthropic, actor=actor)
+        model = agent_state.llm_config.model if agent_state.llm_config.model_endpoint_type == "anthropic" else None
+
+        # Grab the in-context messages
+        # conversion of messages to anthropic dict format, which is passed to the token counter
+        (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
+            self.get_in_context_messages_async(agent_id=agent_id, actor=actor),
+            self.passage_manager.size_async(actor=actor, agent_id=agent_id),
+            self.message_manager.size_async(actor=actor, agent_id=agent_id),
+        )
+        in_context_messages_anthropic = [m.to_anthropic_dict() for m in in_context_messages]
+
+        # Extract system, memory and external summary
+        if (
+            len(in_context_messages) > 0
+            and in_context_messages[0].role == MessageRole.system
+            and in_context_messages[0].content
+            and len(in_context_messages[0].content) == 1
+            and isinstance(in_context_messages[0].content[0], TextContent)
+        ):
+            system_message = in_context_messages[0].content[0].text
+
+            external_memory_marker_pos = system_message.find("###")
+            core_memory_marker_pos = system_message.find("<", external_memory_marker_pos)
+            if external_memory_marker_pos != -1 and core_memory_marker_pos != -1:
+                system_prompt = system_message[:external_memory_marker_pos].strip()
+                external_memory_summary = system_message[external_memory_marker_pos:core_memory_marker_pos].strip()
+                core_memory = system_message[core_memory_marker_pos:].strip()
+            else:
+                # if no markers found, put everything in system message
+                system_prompt = system_message
+                external_memory_summary = None
+                core_memory = None
+        else:
+            # if no system message, fall back on agent's system prompt
+            system_prompt = agent_state.system
+            external_memory_summary = None
+            core_memory = None
+
+        num_tokens_system_coroutine = anthropic_client.count_tokens(model=model, messages=[{"role": "user", "content": system_prompt}])
+        num_tokens_core_memory_coroutine = (
+            anthropic_client.count_tokens(model=model, messages=[{"role": "user", "content": core_memory}])
+            if core_memory
+            else asyncio.sleep(0, result=0)
+        )
+        num_tokens_external_memory_summary_coroutine = (
+            anthropic_client.count_tokens(model=model, messages=[{"role": "user", "content": external_memory_summary}])
+            if external_memory_summary
+            else asyncio.sleep(0, result=0)
+        )
+
+        # Check if there's a summary message in the message queue
+        if (
+            len(in_context_messages) > 1
+            and in_context_messages[1].role == MessageRole.user
+            and in_context_messages[1].content
+            and len(in_context_messages[1].content) == 1
+            and isinstance(in_context_messages[1].content[0], TextContent)
+            # TODO remove hardcoding
+            and "The following is a summary of the previous " in in_context_messages[1].content[0].text
+        ):
+            # Summary message exists
+            text_content = in_context_messages[1].content[0].text
+            assert text_content is not None
+            summary_memory = text_content
+            num_tokens_summary_memory_coroutine = anthropic_client.count_tokens(
+                model=model, messages=[{"role": "user", "content": summary_memory}]
+            )
+            # with a summary message, the real messages start at index 2
+            num_tokens_messages_coroutine = (
+                anthropic_client.count_tokens(model=model, messages=in_context_messages_anthropic[2:])
+                if len(in_context_messages_anthropic) > 2
+                else asyncio.sleep(0, result=0)
+            )
+
+        else:
+            summary_memory = None
+            num_tokens_summary_memory_coroutine = asyncio.sleep(0, result=0)
+            # with no summary message, the real messages start at index 1
+            num_tokens_messages_coroutine = (
+                anthropic_client.count_tokens(model=model, messages=in_context_messages_anthropic[1:])
+                if len(in_context_messages_anthropic) > 1
+                else asyncio.sleep(0, result=0)
+            )
+
+        # tokens taken up by function definitions
+        if agent_state.tools and len(agent_state.tools) > 0:
+            available_functions_definitions = [OpenAITool(type="function", function=f.json_schema) for f in agent_state.tools]
+            num_tokens_available_functions_definitions_coroutine = anthropic_client.count_tokens(
+                model=model,
+                tools=available_functions_definitions,
+            )
+        else:
+            available_functions_definitions = []
+            num_tokens_available_functions_definitions_coroutine = asyncio.sleep(0, result=0)
+
+        (
+            num_tokens_system,
+            num_tokens_core_memory,
+            num_tokens_external_memory_summary,
+            num_tokens_summary_memory,
+            num_tokens_messages,
+            num_tokens_available_functions_definitions,
+        ) = await asyncio.gather(
+            num_tokens_system_coroutine,
+            num_tokens_core_memory_coroutine,
+            num_tokens_external_memory_summary_coroutine,
+            num_tokens_summary_memory_coroutine,
+            num_tokens_messages_coroutine,
+            num_tokens_available_functions_definitions_coroutine,
+        )
+
+        num_tokens_used_total = (
+            num_tokens_system  # system prompt
+            + num_tokens_available_functions_definitions  # function definitions
+            + num_tokens_core_memory  # core memory
+            + num_tokens_external_memory_summary  # metadata (statistics) about recall/archival
+            + num_tokens_summary_memory  # summary of ongoing conversation
+            + num_tokens_messages  # tokens taken by messages
+        )
+        assert isinstance(num_tokens_used_total, int)
+
+        return ContextWindowOverview(
+            # context window breakdown (in messages)
+            num_messages=len(in_context_messages),
+            num_archival_memory=passage_manager_size,
+            num_recall_memory=message_manager_size,
+            num_tokens_external_memory_summary=num_tokens_external_memory_summary,
+            external_memory_summary=external_memory_summary,
+            # top-level information
+            context_window_size_max=agent_state.llm_config.context_window,
+            context_window_size_current=num_tokens_used_total,
+            # context window breakdown (in tokens)
+            num_tokens_system=num_tokens_system,
+            system_prompt=system_prompt,
+            num_tokens_core_memory=num_tokens_core_memory,
+            core_memory=core_memory,
+            num_tokens_summary_memory=num_tokens_summary_memory,
+            summary_memory=summary_memory,
+            num_tokens_messages=num_tokens_messages,
+            messages=in_context_messages,
+            # related to functions
+            num_tokens_functions_definitions=num_tokens_available_functions_definitions,
+            functions_definitions=available_functions_definitions,
+        )
+
+    async def get_context_window_from_tiktoken_async(self, agent_id: str, actor: PydanticUser) -> ContextWindowOverview:
+        """Get the context window of the agent"""
+        from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
+
+        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        # Grab the in-context messages
+        # conversion of messages to OpenAI dict format, which is passed to the token counter
+        (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
+            self.get_in_context_messages_async(agent_id=agent_id, actor=actor),
+            self.passage_manager.size_async(actor=actor, agent_id=agent_id),
+            self.message_manager.size_async(actor=actor, agent_id=agent_id),
+        )
+        in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
+
+        # Extract system, memory and external summary
+        if (
+            len(in_context_messages) > 0
+            and in_context_messages[0].role == MessageRole.system
+            and in_context_messages[0].content
+            and len(in_context_messages[0].content) == 1
+            and isinstance(in_context_messages[0].content[0], TextContent)
+        ):
+            system_message = in_context_messages[0].content[0].text
+
+            external_memory_marker_pos = system_message.find("###")
+            core_memory_marker_pos = system_message.find("<", external_memory_marker_pos)
+            if external_memory_marker_pos != -1 and core_memory_marker_pos != -1:
+                system_prompt = system_message[:external_memory_marker_pos].strip()
+                external_memory_summary = system_message[external_memory_marker_pos:core_memory_marker_pos].strip()
+                core_memory = system_message[core_memory_marker_pos:].strip()
+            else:
+                # if no markers found, put everything in system message
+                system_prompt = system_message
+                external_memory_summary = ""
+                core_memory = ""
+        else:
+            # if no system message, fall back on agent's system prompt
+            system_prompt = agent_state.system
+            external_memory_summary = ""
+            core_memory = ""
+
+        num_tokens_system = count_tokens(system_prompt)
+        num_tokens_core_memory = count_tokens(core_memory)
+        num_tokens_external_memory_summary = count_tokens(external_memory_summary)
+
+        # Check if there's a summary message in the message queue
+        if (
+            len(in_context_messages) > 1
+            and in_context_messages[1].role == MessageRole.user
+            and in_context_messages[1].content
+            and len(in_context_messages[1].content) == 1
+            and isinstance(in_context_messages[1].content[0], TextContent)
+            # TODO remove hardcoding
+            and "The following is a summary of the previous " in in_context_messages[1].content[0].text
+        ):
+            # Summary message exists
+            text_content = in_context_messages[1].content[0].text
+            assert text_content is not None
+            summary_memory = text_content
+            num_tokens_summary_memory = count_tokens(text_content)
+            # with a summary message, the real messages start at index 2
+            num_tokens_messages = (
+                num_tokens_from_messages(messages=in_context_messages_openai[2:], model=agent_state.llm_config.model)
+                if len(in_context_messages_openai) > 2
+                else 0
+            )
+
+        else:
+            summary_memory = None
+            num_tokens_summary_memory = 0
+            # with no summary message, the real messages start at index 1
+            num_tokens_messages = (
+                num_tokens_from_messages(messages=in_context_messages_openai[1:], model=agent_state.llm_config.model)
+                if len(in_context_messages_openai) > 1
+                else 0
+            )
+
+        # tokens taken up by function definitions
+        agent_state_tool_jsons = [t.json_schema for t in agent_state.tools]
+        if agent_state_tool_jsons:
+            available_functions_definitions = [OpenAITool(type="function", function=f) for f in agent_state_tool_jsons]
+            num_tokens_available_functions_definitions = num_tokens_from_functions(
+                functions=agent_state_tool_jsons, model=agent_state.llm_config.model
+            )
+        else:
+            available_functions_definitions = []
+            num_tokens_available_functions_definitions = 0
+
+        num_tokens_used_total = (
+            num_tokens_system  # system prompt
+            + num_tokens_available_functions_definitions  # function definitions
+            + num_tokens_core_memory  # core memory
+            + num_tokens_external_memory_summary  # metadata (statistics) about recall/archival
+            + num_tokens_summary_memory  # summary of ongoing conversation
+            + num_tokens_messages  # tokens taken by messages
+        )
+        assert isinstance(num_tokens_used_total, int)
+
+        return ContextWindowOverview(
+            # context window breakdown (in messages)
+            num_messages=len(in_context_messages),
+            num_archival_memory=passage_manager_size,
+            num_recall_memory=message_manager_size,
+            num_tokens_external_memory_summary=num_tokens_external_memory_summary,
+            external_memory_summary=external_memory_summary,
+            # top-level information
+            context_window_size_max=agent_state.llm_config.context_window,
+            context_window_size_current=num_tokens_used_total,
+            # context window breakdown (in tokens)
+            num_tokens_system=num_tokens_system,
+            system_prompt=system_prompt,
+            num_tokens_core_memory=num_tokens_core_memory,
+            core_memory=core_memory,
+            num_tokens_summary_memory=num_tokens_summary_memory,
+            summary_memory=summary_memory,
+            num_tokens_messages=num_tokens_messages,
+            messages=in_context_messages,
+            # related to functions
+            num_tokens_functions_definitions=num_tokens_available_functions_definitions,
+            functions_definitions=available_functions_definitions,
+        )

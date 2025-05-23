@@ -106,7 +106,7 @@ async def poll_batch_updates(server: SyncServer, batch_jobs: List[LLMBatchJob], 
     results: List[BatchPollingResult] = await asyncio.gather(*coros)
 
     # Update the server with batch status changes
-    server.batch_manager.bulk_update_llm_batch_statuses(updates=results)
+    await server.batch_manager.bulk_update_llm_batch_statuses_async(updates=results)
     logger.info(f"[Poll BatchJob] Bulk-updated {len(results)} LLM batch(es) in the DB at job level.")
 
     return results
@@ -197,13 +197,13 @@ async def poll_running_llm_batches(server: "SyncServer") -> List[LettaBatchRespo
         # 6. Bulk update all items for newly completed batch(es)
         if item_updates:
             metrics.updated_items_count = len(item_updates)
-            server.batch_manager.bulk_update_batch_llm_items_results_by_agent(item_updates)
+            await server.batch_manager.bulk_update_batch_llm_items_results_by_agent_async(item_updates)
 
             # ─── Kick off post‑processing for each batch that just completed ───
             completed = [r for r in batch_results if r.request_status == JobStatus.completed]
 
             async def _resume(batch_row: LLMBatchJob) -> LettaBatchResponse:
-                actor: User = server.user_manager.get_user_by_id(batch_row.created_by_id)
+                actor: User = await server.user_manager.get_actor_by_id_async(batch_row.created_by_id)
                 runner = LettaAgentBatch(
                     message_manager=server.message_manager,
                     agent_manager=server.agent_manager,

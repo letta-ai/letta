@@ -23,7 +23,7 @@ async def list_llm_models(
     # Extract user_id from header, default to None if not present
 ):
     """List available LLM models using the asynchronous implementation for improved performance"""
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     models = await server.list_llm_models_async(
         provider_category=provider_category,
@@ -42,7 +42,7 @@ async def list_embedding_models(
     # Extract user_id from header, default to None if not present
 ):
     """List available embedding models using the asynchronous implementation for improved performance"""
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     models = await server.list_embedding_models_async(actor=actor)
 
     return models

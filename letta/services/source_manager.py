@@ -1,3 +1,4 @@
+import asyncio
 from typing import List, Optional
 
 from letta.orm.errors import NoResultFound
@@ -9,6 +10,7 @@ from letta.schemas.source import Source as PydanticSource
 from letta.schemas.source import SourceUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.tracing import trace_method
 from letta.utils import enforce_types, printd
 
 
@@ -16,25 +18,27 @@ class SourceManager:
     """Manager class to handle business logic related to Sources."""
 
     @enforce_types
-    def create_source(self, source: PydanticSource, actor: PydanticUser) -> PydanticSource:
+    @trace_method
+    async def create_source(self, source: PydanticSource, actor: PydanticUser) -> PydanticSource:
         """Create a new source based on the PydanticSource schema."""
         # Try getting the source first by id
-        db_source = self.get_source_by_id(source.id, actor=actor)
+        db_source = await self.get_source_by_id(source.id, actor=actor)
         if db_source:
             return db_source
         else:
-            with db_registry.session() as session:
+            async with db_registry.async_session() as session:
                 # Provide default embedding config if not given
                 source.organization_id = actor.organization_id
                 source = SourceModel(**source.model_dump(to_orm=True, exclude_none=True))
-                source.create(session, actor=actor)
+                await source.create_async(session, actor=actor)
             return source.to_pydantic()
 
     @enforce_types
-    def update_source(self, source_id: str, source_update: SourceUpdate, actor: PydanticUser) -> PydanticSource:
+    @trace_method
+    async def update_source(self, source_id: str, source_update: SourceUpdate, actor: PydanticUser) -> PydanticSource:
         """Update a source by its ID with the given SourceUpdate object."""
-        with db_registry.session() as session:
-            source = SourceModel.read(db_session=session, identifier=source_id, actor=actor)
+        async with db_registry.async_session() as session:
+            source = await SourceModel.read_async(db_session=session, identifier=source_id, actor=actor)
 
             # get update dictionary
             update_data = source_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
@@ -53,18 +57,22 @@ class SourceManager:
             return source.to_pydantic()
 
     @enforce_types
-    def delete_source(self, source_id: str, actor: PydanticUser) -> PydanticSource:
+    @trace_method
+    async def delete_source(self, source_id: str, actor: PydanticUser) -> PydanticSource:
         """Delete a source by its ID."""
-        with db_registry.session() as session:
-            source = SourceModel.read(db_session=session, identifier=source_id)
-            source.hard_delete(db_session=session, actor=actor)
+        async with db_registry.async_session() as session:
+            source = await SourceModel.read_async(db_session=session, identifier=source_id)
+            await source.hard_delete_async(db_session=session, actor=actor)
             return source.to_pydantic()
 
     @enforce_types
-    def list_sources(self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, **kwargs) -> List[PydanticSource]:
+    @trace_method
+    async def list_sources(
+        self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, **kwargs
+    ) -> List[PydanticSource]:
         """List all sources with optional pagination."""
-        with db_registry.session() as session:
-            sources = SourceModel.list(
+        async with db_registry.async_session() as session:
+            sources = await SourceModel.list_async(
                 db_session=session,
                 after=after,
                 limit=limit,
@@ -74,18 +82,17 @@ class SourceManager:
             return [source.to_pydantic() for source in sources]
 
     @enforce_types
-    def size(
-        self,
-        actor: PydanticUser,
-    ) -> int:
+    @trace_method
+    async def size(self, actor: PydanticUser) -> int:
         """
         Get the total count of sources for the given user.
         """
-        with db_registry.session() as session:
-            return SourceModel.size(db_session=session, actor=actor)
+        async with db_registry.async_session() as session:
+            return await SourceModel.size_async(db_session=session, actor=actor)
 
     @enforce_types
-    def list_attached_agents(self, source_id: str, actor: Optional[PydanticUser] = None) -> List[PydanticAgentState]:
+    @trace_method
+    async def list_attached_agents(self, source_id: str, actor: Optional[PydanticUser] = None) -> List[PydanticAgentState]:
         """
         Lists all agents that have the specified source attached.
 
@@ -96,30 +103,33 @@ class SourceManager:
         Returns:
             List[PydanticAgentState]: List of agents that have this source attached
         """
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             # Verify source exists and user has permission to access it
-            source = SourceModel.read(db_session=session, identifier=source_id, actor=actor)
+            source = await SourceModel.read_async(db_session=session, identifier=source_id, actor=actor)
 
             # The agents relationship is already loaded due to lazy="selectin" in the Source model
             # and will be properly filtered by organization_id due to the OrganizationMixin
-            return [agent.to_pydantic() for agent in source.agents]
+            agents_orm = source.agents
+            return await asyncio.gather(*[agent.to_pydantic_async() for agent in agents_orm])
 
     # TODO: We make actor optional for now, but should most likely be enforced due to security reasons
     @enforce_types
-    def get_source_by_id(self, source_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticSource]:
+    @trace_method
+    async def get_source_by_id(self, source_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticSource]:
         """Retrieve a source by its ID."""
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             try:
-                source = SourceModel.read(db_session=session, identifier=source_id, actor=actor)
+                source = await SourceModel.read_async(db_session=session, identifier=source_id, actor=actor)
                 return source.to_pydantic()
             except NoResultFound:
                 return None
 
     @enforce_types
-    def get_source_by_name(self, source_name: str, actor: PydanticUser) -> Optional[PydanticSource]:
+    @trace_method
+    async def get_source_by_name(self, source_name: str, actor: PydanticUser) -> Optional[PydanticSource]:
         """Retrieve a source by its name."""
-        with db_registry.session() as session:
-            sources = SourceModel.list(
+        async with db_registry.async_session() as session:
+            sources = await SourceModel.list_async(
                 db_session=session,
                 name=source_name,
                 organization_id=actor.organization_id,
@@ -131,44 +141,49 @@ class SourceManager:
                 return sources[0].to_pydantic()
 
     @enforce_types
-    def create_file(self, file_metadata: PydanticFileMetadata, actor: PydanticUser) -> PydanticFileMetadata:
+    @trace_method
+    async def create_file(self, file_metadata: PydanticFileMetadata, actor: PydanticUser) -> PydanticFileMetadata:
         """Create a new file based on the PydanticFileMetadata schema."""
-        db_file = self.get_file_by_id(file_metadata.id, actor=actor)
+        db_file = await self.get_file_by_id(file_metadata.id, actor=actor)
         if db_file:
             return db_file
         else:
-            with db_registry.session() as session:
+            async with db_registry.async_session() as session:
                 file_metadata.organization_id = actor.organization_id
                 file_metadata = FileMetadataModel(**file_metadata.model_dump(to_orm=True, exclude_none=True))
-                file_metadata.create(session, actor=actor)
+                await file_metadata.create_async(session, actor=actor)
             return file_metadata.to_pydantic()
 
     # TODO: We make actor optional for now, but should most likely be enforced due to security reasons
     @enforce_types
-    def get_file_by_id(self, file_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticFileMetadata]:
+    @trace_method
+    async def get_file_by_id(self, file_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticFileMetadata]:
         """Retrieve a file by its ID."""
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             try:
-                file = FileMetadataModel.read(db_session=session, identifier=file_id, actor=actor)
+                file = await FileMetadataModel.read_async(db_session=session, identifier=file_id, actor=actor)
                 return file.to_pydantic()
             except NoResultFound:
                 return None
 
     @enforce_types
-    def list_files(
+    @trace_method
+    async def list_files(
         self, source_id: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50
     ) -> List[PydanticFileMetadata]:
         """List all files with optional pagination."""
-        with db_registry.session() as session:
-            files = FileMetadataModel.list(
+        async with db_registry.async_session() as session:
+            files_all = await FileMetadataModel.list_async(db_session=session, organization_id=actor.organization_id, source_id=source_id)
+            files = await FileMetadataModel.list_async(
                 db_session=session, after=after, limit=limit, organization_id=actor.organization_id, source_id=source_id
             )
             return [file.to_pydantic() for file in files]
 
     @enforce_types
-    def delete_file(self, file_id: str, actor: PydanticUser) -> PydanticFileMetadata:
+    @trace_method
+    async def delete_file(self, file_id: str, actor: PydanticUser) -> PydanticFileMetadata:
         """Delete a file by its ID."""
-        with db_registry.session() as session:
-            file = FileMetadataModel.read(db_session=session, identifier=file_id)
-            file.hard_delete(db_session=session, actor=actor)
+        async with db_registry.async_session() as session:
+            file = await FileMetadataModel.read_async(db_session=session, identifier=file_id)
+            await file.hard_delete_async(db_session=session, actor=actor)
             return file.to_pydantic()

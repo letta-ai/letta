@@ -1,89 +1,98 @@
-import json
-import os
-
 import pytest
 from tqdm import tqdm
 
-from letta import create_client
-from letta.functions.functions import derive_openai_json_schema, parse_source_code
-from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.llm_config import LLMConfig
-from letta.schemas.tool import Tool
-from tests.integration_test_summarizer import LLM_CONFIG_DIR
+from letta.config import LettaConfig
+from letta.schemas.agent import CreateAgent
+from letta.schemas.message import MessageCreate
+from letta.server.server import SyncServer
+from tests.utils import create_tool_from_func
 
 
-@pytest.fixture(scope="function")
-def client():
-    filename = os.path.join(LLM_CONFIG_DIR, "claude-3-5-haiku.json")
-    config_data = json.load(open(filename, "r"))
-    llm_config = LLMConfig(**config_data)
-    client = create_client()
-    client.set_default_llm_config(llm_config)
-    client.set_default_embedding_config(EmbeddingConfig.default_config(provider="openai"))
+@pytest.fixture(scope="module")
+def server():
+    """
+    Creates a SyncServer instance for testing.
 
-    yield client
+    Loads and saves config to ensure proper initialization.
+    """
+    config = LettaConfig.load()
+
+    config.save()
+
+    server = SyncServer(init_with_default_org_and_user=True)
+    yield server
 
 
 @pytest.fixture
-def roll_dice_tool(client):
+def default_user(server):
+    actor = server.user_manager.get_user_or_default()
+    yield actor
+
+
+@pytest.fixture
+def roll_dice_tool(server, default_user):
     def roll_dice():
         """
-        Rolls a 6 sided die.
+        Rolls a 6-sided die.
 
         Returns:
-            str: The roll result.
+            str: Result of the die roll.
         """
         return "Rolled a 5!"
 
-    # Set up tool details
-    source_code = parse_source_code(roll_dice)
-    source_type = "python"
-    description = "test_description"
-    tags = ["test"]
-
-    tool = Tool(description=description, tags=tags, source_code=source_code, source_type=source_type)
-    derived_json_schema = derive_openai_json_schema(source_code=tool.source_code, name=tool.name)
-
-    derived_name = derived_json_schema["name"]
-    tool.json_schema = derived_json_schema
-    tool.name = derived_name
-
-    tool = client.server.tool_manager.create_or_update_tool(tool, actor=client.user)
-
-    # Yield the created tool
-    yield tool
+    tool = create_tool_from_func(func=roll_dice)
+    created_tool = server.tool_manager.create_or_update_tool(tool, actor=default_user)
+    yield created_tool
 
 
 @pytest.mark.parametrize("num_workers", [50])
-def test_multi_agent_large(client, roll_dice_tool, num_workers):
+def test_multi_agent_large(server, default_user, roll_dice_tool, num_workers):
     manager_tags = ["manager"]
     worker_tags = ["helpers"]
 
-    # Clean up first from possibly failed tests
-    prev_worker_agents = client.server.agent_manager.list_agents(client.user, tags=worker_tags + manager_tags, match_all_tags=True)
-    for agent in prev_worker_agents:
-        client.delete_agent(agent.id)
+    # Cleanup any pre-existing agents with both tags
+    prev_agents = server.agent_manager.list_agents(actor=default_user, tags=worker_tags + manager_tags, match_all_tags=True)
+    for agent in prev_agents:
+        server.agent_manager.delete_agent(agent.id, actor=default_user)
 
-    # Create "manager" agent
-    send_message_to_agents_matching_tags_tool_id = client.get_tool_id(name="send_message_to_agents_matching_tags")
-    manager_agent_state = client.create_agent(name="manager", tool_ids=[send_message_to_agents_matching_tags_tool_id], tags=manager_tags)
-    manager_agent = client.server.load_agent(agent_id=manager_agent_state.id, actor=client.user)
-
-    # Create 3 worker agents
-    worker_agents = []
-    for idx in tqdm(range(num_workers)):
-        worker_agent_state = client.create_agent(
-            name=f"worker-{idx}", include_multi_agent_tools=False, tags=worker_tags, tool_ids=[roll_dice_tool.id]
-        )
-        worker_agent = client.server.load_agent(agent_id=worker_agent_state.id, actor=client.user)
-        worker_agents.append(worker_agent)
-
-    # Encourage the manager to send a message to the other agent_obj with the secret string
-    broadcast_message = f"Send a message to all agents with tags {worker_tags} asking them to roll a dice for you!"
-    client.send_message(
-        agent_id=manager_agent.agent_state.id,
-        role="user",
-        message=broadcast_message,
+    # Create "manager" agent with multi-agent broadcast tool
+    send_message_tool_id = server.tool_manager.get_tool_id(tool_name="send_message_to_agents_matching_tags", actor=default_user)
+    manager_agent_state = server.create_agent(
+        CreateAgent(
+            name="manager",
+            tool_ids=[send_message_tool_id],
+            include_base_tools=True,
+            model="openai/gpt-4o-mini",
+            embedding="letta/letta-free",
+            tags=manager_tags,
+        ),
+        actor=default_user,
     )
 
-    # Please manually inspect the agent results
+    manager_agent = server.load_agent(agent_id=manager_agent_state.id, actor=default_user)
+
+    # Create N worker agents
+    worker_agents = []
+    for idx in tqdm(range(num_workers)):
+        worker_agent_state = server.create_agent(
+            CreateAgent(
+                name=f"worker-{idx}",
+                tool_ids=[roll_dice_tool.id],
+                include_multi_agent_tools=False,
+                include_base_tools=True,
+                model="openai/gpt-4o-mini",
+                embedding="letta/letta-free",
+                tags=worker_tags,
+            ),
+            actor=default_user,
+        )
+        worker_agent = server.load_agent(agent_id=worker_agent_state.id, actor=default_user)
+        worker_agents.append(worker_agent)
+
+    # Manager sends broadcast message
+    broadcast_message = f"Send a message to all agents with tags {worker_tags} asking them to roll a dice for you!"
+    server.send_messages(
+        actor=default_user,
+        agent_id=manager_agent.agent_state.id,
+        input_messages=[MessageCreate(role="user", content=broadcast_message)],
+    )

@@ -174,20 +174,13 @@ class LettaAgent(BaseAgent):
             for message in letta_messages:
                 yield f"data: {message.model_dump_json()}\n\n"
 
-            # update usage
-            # TODO: add run_id
-            usage.step_count += 1
-            usage.completion_tokens += response.usage.completion_tokens
-            usage.prompt_tokens += response.usage.prompt_tokens
-            usage.total_tokens += response.usage.total_tokens
-
             if not should_continue:
                 break
 
         # Extend the in context message ids
         if not agent_state.message_buffer_autoclear:
             message_ids = [m.id for m in (current_in_context_messages + new_in_context_messages)]
-            self.agent_manager.set_in_context_messages(agent_id=self.agent_id, message_ids=message_ids, actor=self.actor)
+            await self.agent_manager.set_in_context_messages_async(agent_id=self.agent_id, message_ids=message_ids, actor=self.actor)
 
         # Return back usage
         yield f"data: {usage.model_dump_json()}\n\n"
@@ -285,7 +278,7 @@ class LettaAgent(BaseAgent):
         # Extend the in context message ids
         if not agent_state.message_buffer_autoclear:
             message_ids = [m.id for m in (current_in_context_messages + new_in_context_messages)]
-            self.agent_manager.set_in_context_messages(agent_id=self.agent_id, message_ids=message_ids, actor=self.actor)
+            await self.agent_manager.set_in_context_messages_async(agent_id=self.agent_id, message_ids=message_ids, actor=self.actor)
 
         return current_in_context_messages, new_in_context_messages, usage
 
@@ -437,7 +430,7 @@ class LettaAgent(BaseAgent):
         # Extend the in context message ids
         if not agent_state.message_buffer_autoclear:
             message_ids = [m.id for m in (current_in_context_messages + new_in_context_messages)]
-            self.agent_manager.set_in_context_messages(agent_id=self.agent_id, message_ids=message_ids, actor=self.actor)
+            await self.agent_manager.set_in_context_messages_async(agent_id=self.agent_id, message_ids=message_ids, actor=self.actor)
 
         # TODO: This may be out of sync, if in between steps users add files
         # NOTE (cliandy): temporary for now for particlar use cases.
