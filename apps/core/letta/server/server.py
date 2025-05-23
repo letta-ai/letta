@@ -1381,7 +1381,7 @@ class SyncServer(Server):
         """Asynchronously list available models with maximum concurrency"""
         import asyncio
 
-        providers = self.get_enabled_providers(
+        providers = await self.get_enabled_providers_async(
             provider_category=provider_category,
             provider_name=provider_name,
             provider_type=provider_type,
@@ -1427,7 +1427,7 @@ class SyncServer(Server):
         import asyncio
 
         # Get all eligible providers first
-        providers = self.get_enabled_providers(actor=actor)
+        providers = await self.get_enabled_providers_async(actor=actor)
 
         # Fetch embedding models from each provider concurrently
         async def get_provider_embedding_models(provider):
@@ -1465,6 +1465,35 @@ class SyncServer(Server):
 
         if not provider_category or ProviderCategory.byok in provider_category:
             providers_from_db = self.provider_manager.list_providers(
+                name=provider_name,
+                provider_type=provider_type,
+                actor=actor,
+            )
+            providers_from_db = [p.cast_to_subtype() for p in providers_from_db]
+            providers.extend(providers_from_db)
+
+        if provider_name is not None:
+            providers = [p for p in providers if p.name == provider_name]
+
+        if provider_type is not None:
+            providers = [p for p in providers if p.provider_type == provider_type]
+
+        return providers
+
+    async def get_enabled_providers_async(
+        self,
+        actor: User,
+        provider_category: Optional[List[ProviderCategory]] = None,
+        provider_name: Optional[str] = None,
+        provider_type: Optional[ProviderType] = None,
+    ) -> List[Provider]:
+        providers = []
+        if not provider_category or ProviderCategory.base in provider_category:
+            providers_from_env = [p for p in self._enabled_providers]
+            providers.extend(providers_from_env)
+
+        if not provider_category or ProviderCategory.byok in provider_category:
+            providers_from_db = await self.provider_manager.list_providers_async(
                 name=provider_name,
                 provider_type=provider_type,
                 actor=actor,

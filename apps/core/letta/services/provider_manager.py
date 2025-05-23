@@ -93,6 +93,32 @@ class ProviderManager:
 
     @enforce_types
     @trace_method
+    async def list_providers_async(
+        self,
+        actor: PydanticUser,
+        name: Optional[str] = None,
+        provider_type: Optional[ProviderType] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+    ) -> List[PydanticProvider]:
+        """List all providers with optional pagination."""
+        filter_kwargs = {}
+        if name:
+            filter_kwargs["name"] = name
+        if provider_type:
+            filter_kwargs["provider_type"] = provider_type
+        async with db_registry.async_session() as session:
+            providers = await ProviderModel.list_async(
+                db_session=session,
+                after=after,
+                limit=limit,
+                actor=actor,
+                **filter_kwargs,
+            )
+            return [provider.to_pydantic() for provider in providers]
+
+    @enforce_types
+    @trace_method
     def get_provider_id_from_name(self, provider_name: Union[str, None], actor: PydanticUser) -> Optional[str]:
         providers = self.list_providers(name=provider_name, actor=actor)
         return providers[0].id if providers else None
