@@ -75,6 +75,60 @@ class SandboxConfigManager:
 
     @enforce_types
     @trace_method
+    async def get_or_create_default_sandbox_config_async(self, sandbox_type: SandboxType, actor: PydanticUser) -> PydanticSandboxConfig:
+        sandbox_config = await self.get_sandbox_config_by_type_async(sandbox_type, actor=actor)
+        if not sandbox_config:
+            logger.debug(f"Creating new sandbox config of type {sandbox_type}, none found for organization {actor.organization_id}.")
+
+            # TODO: Add more sandbox types later
+            if sandbox_type == SandboxType.E2B:
+                default_config = {}  # Empty
+            else:
+                # TODO: May want to move this to environment variables v.s. persisting in database
+                default_local_sandbox_path = LETTA_TOOL_EXECUTION_DIR
+                default_config = LocalSandboxConfig(sandbox_dir=default_local_sandbox_path).model_dump(exclude_none=True)
+
+            sandbox_config = await self.create_or_update_sandbox_config_async(SandboxConfigCreate(config=default_config), actor=actor)
+        return sandbox_config
+
+    @enforce_types
+    @trace_method
+    async def create_or_update_sandbox_config_async(
+        self, sandbox_config_create: SandboxConfigCreate, actor: PydanticUser
+    ) -> PydanticSandboxConfig:
+        """Create or update a sandbox configuration based on the PydanticSandboxConfig schema."""
+        config = sandbox_config_create.config
+        sandbox_type = config.type
+        sandbox_config = PydanticSandboxConfig(
+            type=sandbox_type, config=config.model_dump(exclude_none=True), organization_id=actor.organization_id
+        )
+
+        # Attempt to retrieve the existing sandbox configuration by type within the organization
+        db_sandbox = await self.get_sandbox_config_by_type_async(sandbox_config.type, actor=actor)
+        if db_sandbox:
+            # Prepare the update data, excluding fields that should not be reset
+            update_data = sandbox_config.model_dump(exclude_unset=True, exclude_none=True)
+            update_data = {key: value for key, value in update_data.items() if getattr(db_sandbox, key) != value}
+
+            # If there are changes, update the sandbox configuration
+            if update_data:
+                db_sandbox = await self.update_sandbox_config_async(db_sandbox.id, SandboxConfigUpdate(**update_data), actor)
+            else:
+                printd(
+                    f"`create_or_update_sandbox_config` was called with user_id={actor.id}, organization_id={actor.organization_id}, "
+                    f"type={sandbox_config.type}, but found existing configuration with nothing to update."
+                )
+
+            return db_sandbox
+        else:
+            # If the sandbox configuration doesn't exist, create a new one
+            async with db_registry.async_session() as session:
+                db_sandbox = SandboxConfigModel(**sandbox_config.model_dump(exclude_none=True))
+                await db_sandbox.create_async(session, actor=actor)
+                return db_sandbox.to_pydantic()
+
+    @enforce_types
+    @trace_method
     def update_sandbox_config(
         self, sandbox_config_id: str, sandbox_update: SandboxConfigUpdate, actor: PydanticUser
     ) -> PydanticSandboxConfig:
@@ -94,6 +148,34 @@ class SandboxConfigManager:
                 for key, value in update_data.items():
                     setattr(sandbox, key, value)
                 sandbox.update(db_session=session, actor=actor)
+            else:
+                printd(
+                    f"`update_sandbox_config` called with user_id={actor.id}, organization_id={actor.organization_id}, "
+                    f"name={sandbox.type}, but nothing to update."
+                )
+            return sandbox.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def update_sandbox_config_async(
+        self, sandbox_config_id: str, sandbox_update: SandboxConfigUpdate, actor: PydanticUser
+    ) -> PydanticSandboxConfig:
+        """Update an existing sandbox configuration."""
+        async with db_registry.async_session() as session:
+            sandbox = await SandboxConfigModel.read_async(db_session=session, identifier=sandbox_config_id, actor=actor)
+            # We need to check that the sandbox_update provided is the same type as the original sandbox
+            if sandbox.type != sandbox_update.config.type:
+                raise ValueError(
+                    f"Mismatched type for sandbox config update: tried to update sandbox_config of type {sandbox.type} with config of type {sandbox_update.config.type}"
+                )
+
+            update_data = sandbox_update.model_dump(exclude_unset=True, exclude_none=True)
+            update_data = {key: value for key, value in update_data.items() if getattr(sandbox, key) != value}
+
+            if update_data:
+                for key, value in update_data.items():
+                    setattr(sandbox, key, value)
+                await sandbox.update_async(db_session=session, actor=actor)
             else:
                 printd(
                     f"`update_sandbox_config` called with user_id={actor.id}, organization_id={actor.organization_id}, "
@@ -164,6 +246,26 @@ class SandboxConfigManager:
         with db_registry.session() as session:
             try:
                 sandboxes = SandboxConfigModel.list(
+                    db_session=session,
+                    type=type,
+                    organization_id=actor.organization_id,
+                    limit=1,
+                )
+                if sandboxes:
+                    return sandboxes[0].to_pydantic()
+                return None
+            except NoResultFound:
+                return None
+
+    @enforce_types
+    @trace_method
+    async def get_sandbox_config_by_type_async(
+        self, type: SandboxType, actor: Optional[PydanticUser] = None
+    ) -> Optional[PydanticSandboxConfig]:
+        """Retrieve a sandbox config by its type."""
+        async with db_registry.async_session() as session:
+            try:
+                sandboxes = await SandboxConfigModel.list_async(
                     db_session=session,
                     type=type,
                     organization_id=actor.organization_id,
@@ -296,6 +398,17 @@ class SandboxConfigManager:
         self, sandbox_config_id: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50
     ) -> Dict[str, str]:
         env_vars = self.list_sandbox_env_vars(sandbox_config_id, actor, after, limit)
+        result = {}
+        for env_var in env_vars:
+            result[env_var.key] = env_var.value
+        return result
+
+    @enforce_types
+    @trace_method
+    async def get_sandbox_env_vars_as_dict_async(
+        self, sandbox_config_id: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50
+    ) -> Dict[str, str]:
+        env_vars = await self.list_sandbox_env_vars_async(sandbox_config_id, actor, after, limit)
         result = {}
         for env_var in env_vars:
             result[env_var.key] = env_var.value
