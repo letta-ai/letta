@@ -1024,34 +1024,6 @@ class AgentManager:
 
     @trace_method
     @enforce_types
-    async def get_agent_by_id_async(
-        self,
-        agent_id: str,
-        actor: PydanticUser,
-        include_relationships: Optional[List[str]] = None,
-    ) -> PydanticAgentState:
-        """Fetch an agent by its ID."""
-        async with db_registry.async_session() as session:
-            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
-            return await agent.to_pydantic_async(include_relationships=include_relationships)
-
-    @enforce_types
-    async def get_agents_by_ids_async(
-        self,
-        agent_ids: list[str],
-        actor: PydanticUser,
-        include_relationships: Optional[List[str]] = None,
-    ) -> list[PydanticAgentState]:
-        """Fetch a list of agents by their IDs."""
-        async with db_registry.async_session() as session:
-            agents = await AgentModel.read_multiple_async(
-                db_session=session,
-                identifiers=agent_ids,
-                actor=actor,
-            )
-            return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
-
-    @enforce_types
     def get_agent_by_name(self, agent_name: str, actor: PydanticUser) -> PydanticAgentState:
         """Fetch an agent by its ID."""
         with db_registry.session() as session:
@@ -1322,11 +1294,6 @@ class AgentManager:
 
     @trace_method
     @enforce_types
-    async def get_in_context_messages_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticMessage]:
-        agent = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=[], actor=actor)
-        return await self.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=actor)
-
-    @enforce_types
     def get_system_message(self, agent_id: str, actor: PydanticUser) -> PydanticMessage:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         return self.message_manager.get_message_by_id(message_id=message_ids[0], actor=actor)
@@ -1476,73 +1443,6 @@ class AgentManager:
 
     @trace_method
     @enforce_types
-    async def rebuild_system_prompt_async(
-        self, agent_id: str, actor: PydanticUser, force=False, update_timestamp=True
-    ) -> PydanticAgentState:
-        """Rebuilds the system message with the latest memory object and any shared memory block updates
-
-        Updates to core memory blocks should trigger a "rebuild", which itself will create a new message object
-
-        Updates to the memory header should *not* trigger a rebuild, since that will simply flood recall storage with excess messages
-        """
-        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory"], actor=actor)
-
-        curr_system_message = await self.get_system_message_async(
-            agent_id=agent_id, actor=actor
-        )  # this is the system + memory bank, not just the system prompt
-        curr_system_message_openai = curr_system_message.to_openai_dict()
-
-        # note: we only update the system prompt if the core memory is changed
-        # this means that the archival/recall memory statistics may be someout out of date
-        curr_memory_str = agent_state.memory.compile()
-        if curr_memory_str in curr_system_message_openai["content"] and not force:
-            # NOTE: could this cause issues if a block is removed? (substring match would still work)
-            logger.debug(
-                f"Memory hasn't changed for agent id={agent_id} and actor=({actor.id}, {actor.name}), skipping system prompt rebuild"
-            )
-            return agent_state
-
-        # If the memory didn't update, we probably don't want to update the timestamp inside
-        # For example, if we're doing a system prompt swap, this should probably be False
-        if update_timestamp:
-            memory_edit_timestamp = get_utc_time()
-        else:
-            # NOTE: a bit of a hack - we pull the timestamp from the message created_by
-            memory_edit_timestamp = curr_system_message.created_at
-
-        num_messages = await self.message_manager.size_async(actor=actor, agent_id=agent_id)
-        num_archival_memories = await self.passage_manager.size_async(actor=actor, agent_id=agent_id)
-
-        # update memory (TODO: potentially update recall/archival stats separately)
-        new_system_message_str = compile_system_message(
-            system_prompt=agent_state.system,
-            in_context_memory=agent_state.memory,
-            in_context_memory_last_edit=memory_edit_timestamp,
-            recent_passages=self.list_passages(actor=actor, agent_id=agent_id, ascending=False, limit=10),
-            previous_message_count=num_messages,
-            archival_memory_size=num_archival_memories,
-        )
-
-        diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
-        if len(diff) > 0:  # there was a diff
-            logger.debug(f"Rebuilding system with new memory...\nDiff:\n{diff}")
-
-            # Swap the system message out (only if there is a diff)
-            message = PydanticMessage.dict_to_message(
-                agent_id=agent_id,
-                model=agent_state.llm_config.model,
-                openai_message_dict={"role": "system", "content": new_system_message_str},
-            )
-            message = await self.message_manager.update_message_by_id_async(
-                message_id=curr_system_message.id,
-                message_update=MessageUpdate(**message.model_dump()),
-                actor=actor,
-            )
-            return await self.set_in_context_messages_async(agent_id=agent_id, message_ids=agent_state.message_ids, actor=actor)
-        else:
-            return agent_state
-
-    @enforce_types
     def set_in_context_messages(self, agent_id: str, message_ids: List[str], actor: PydanticUser) -> PydanticAgentState:
         return self.update_agent(agent_id=agent_id, agent_update=UpdateAgent(message_ids=message_ids), actor=actor)
 
@@ -1552,10 +1452,6 @@ class AgentManager:
         return await self.update_agent_async(agent_id=agent_id, agent_update=UpdateAgent(message_ids=message_ids), actor=actor)
 
     @trace_method
-    @enforce_types
-    async def set_in_context_messages_async(self, agent_id: str, message_ids: List[str], actor: PydanticUser) -> PydanticAgentState:
-        return await self.update_agent_async(agent_id=agent_id, agent_update=UpdateAgent(message_ids=message_ids), actor=actor)
-
     @enforce_types
     def trim_older_in_context_messages(self, num: int, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
@@ -1787,25 +1683,6 @@ class AgentManager:
 
     @trace_method
     @enforce_types
-    async def list_attached_sources_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticSource]:
-        """
-        Lists all sources attached to an agent.
-
-        Args:
-            agent_id: ID of the agent to list sources for
-            actor: User performing the action
-
-        Returns:
-            List[str]: List of source IDs attached to the agent
-        """
-        async with db_registry.async_session() as session:
-            # Verify agent exists and user has permission to access it
-            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
-
-            # Use the lazy-loaded relationship to get sources
-            return [source.to_pydantic() for source in agent.sources]
-
-    @enforce_types
     def detach_source(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Detaches a source from an agent.
@@ -1896,33 +1773,6 @@ class AgentManager:
             return block.to_pydantic()
 
     @trace_method
-    @enforce_types
-    async def modify_block_by_label_async(
-        self,
-        agent_id: str,
-        block_label: str,
-        block_update: BlockUpdate,
-        actor: PydanticUser,
-    ) -> PydanticBlock:
-        """Gets a block attached to an agent by its label."""
-        async with db_registry.async_session() as session:
-            block = None
-            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
-            for block in agent.core_memory:
-                if block.label == block_label:
-                    block = block
-                    break
-            if not block:
-                raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
-
-            update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
-
-            for key, value in update_data.items():
-                setattr(block, key, value)
-
-            await block.update_async(session, actor=actor)
-            return block.to_pydantic()
-
     @enforce_types
     def update_block_with_label(
         self,
@@ -2337,65 +2187,6 @@ class AgentManager:
             return [p.to_pydantic() for p in passages]
 
     @trace_method
-    @enforce_types
-    async def list_passages_async(
-        self,
-        actor: PydanticUser,
-        agent_id: Optional[str] = None,
-        file_id: Optional[str] = None,
-        limit: Optional[int] = 50,
-        query_text: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-        before: Optional[str] = None,
-        after: Optional[str] = None,
-        source_id: Optional[str] = None,
-        embed_query: bool = False,
-        ascending: bool = True,
-        embedding_config: Optional[EmbeddingConfig] = None,
-        agent_only: bool = False,
-    ) -> List[PydanticPassage]:
-        """Lists all passages attached to an agent."""
-        async with db_registry.async_session() as session:
-            main_query = self._build_passage_query(
-                actor=actor,
-                agent_id=agent_id,
-                file_id=file_id,
-                query_text=query_text,
-                start_date=start_date,
-                end_date=end_date,
-                before=before,
-                after=after,
-                source_id=source_id,
-                embed_query=embed_query,
-                ascending=ascending,
-                embedding_config=embedding_config,
-                agent_only=agent_only,
-            )
-
-            # Add limit
-            if limit:
-                main_query = main_query.limit(limit)
-
-            # Execute query
-            result = await session.execute(main_query)
-
-            passages = []
-            for row in result:
-                data = dict(row._mapping)
-                if data["agent_id"] is not None:
-                    # This is an AgentPassage - remove source fields
-                    data.pop("source_id", None)
-                    data.pop("file_id", None)
-                    passage = AgentPassage(**data)
-                else:
-                    # This is a SourcePassage - remove agent field
-                    data.pop("agent_id", None)
-                    passage = SourcePassage(**data)
-                passages.append(passage)
-
-            return [p.to_pydantic() for p in passages]
-
     @enforce_types
     def passage_size(
         self,

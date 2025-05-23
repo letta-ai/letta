@@ -78,17 +78,6 @@ async def list_sources(
     return await server.source_manager.list_sources(actor=actor)
 
 
-@router.get("/count", response_model=int, operation_id="count_sources")
-def count_sources(
-    server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-):
-    """
-    Count all data sources created by a user.
-    """
-    return server.source_manager.size(actor=server.user_manager.get_user_or_default(user_id=actor_id))
-
-
 @router.post("/", response_model=Source, operation_id="create_source")
 async def create_source(
     source_create: SourceCreate,

@@ -7,7 +7,10 @@ from letta.errors import ErrorCode, LLMAuthenticationError, LLMError
 from letta.llm_api.google_constants import GOOGLE_MODEL_FOR_API_KEY_CHECK
 from letta.llm_api.google_vertex_client import GoogleVertexClient
 from letta.log import get_logger
+from letta.schemas.llm_config import LLMConfig
+from letta.schemas.message import Message as PydanticMessage
 from letta.settings import model_settings
+from letta.tracing import trace_method
 
 logger = get_logger(__name__)
 
@@ -16,6 +19,18 @@ class GoogleAIClient(GoogleVertexClient):
 
     def _get_client(self):
         return genai.Client(api_key=model_settings.gemini_api_key)
+
+    @trace_method
+    def build_request_data(
+        self,
+        messages: List[PydanticMessage],
+        llm_config: LLMConfig,
+        tools: List[dict],
+        force_tool_call: Optional[str] = None,
+    ) -> dict:
+        request = super().build_request_data(messages, llm_config, tools, force_tool_call)
+        del request["config"]["thinking_config"]
+        return request
 
 
 def get_gemini_endpoint_and_headers(

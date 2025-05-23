@@ -244,11 +244,10 @@ class GoogleVertexClient(LLMClientBase):
         # Add thinking_config
         # If enable_reasoner is False, set thinking_budget to 0
         # Otherwise, use the value from max_reasoning_tokens
-        if llm_config.enable_reasoner:
-            thinking_config = ThinkingConfig(
-                thinking_budget=llm_config.max_reasoning_tokens,
-            )
-            request_data["config"]["thinking_config"] = thinking_config.model_dump()
+        thinking_config = ThinkingConfig(
+            thinking_budget=llm_config.max_reasoning_tokens if llm_config.enable_reasoner else 0,
+        )
+        request_data["config"]["thinking_config"] = thinking_config.model_dump()
 
         return request_data
 
