@@ -852,9 +852,9 @@ class SyncServer(Server):
 
         if request.enable_sleeptime:
             if request.agent_type == AgentType.voice_convo_agent:
-                main_agent = self.create_voice_sleeptime_agent(main_agent=main_agent, actor=actor)
+                main_agent = await self.create_voice_sleeptime_agent_async(main_agent=main_agent, actor=actor)
             else:
-                main_agent = self.create_sleeptime_agent(main_agent=main_agent, actor=actor)
+                main_agent = await self.create_sleeptime_agent_async(main_agent=main_agent, actor=actor)
 
         return main_agent
 
@@ -897,12 +897,12 @@ class SyncServer(Server):
             request.embedding_config = await self.get_embedding_config_from_handle_async(handle=request.embedding, actor=actor)
 
         if request.enable_sleeptime:
-            agent = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
+            agent = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
             if agent.multi_agent_group is None:
                 if agent.agent_type == AgentType.voice_convo_agent:
-                    self.create_voice_sleeptime_agent(main_agent=agent, actor=actor)
+                    await self.create_voice_sleeptime_agent_async(main_agent=agent, actor=actor)
                 else:
-                    self.create_sleeptime_agent(main_agent=agent, actor=actor)
+                    await self.create_sleeptime_agent_async(main_agent=agent, actor=actor)
 
         return await self.agent_manager.update_agent_async(
             agent_id=agent_id,
@@ -942,6 +942,38 @@ class SyncServer(Server):
         )
         return self.agent_manager.get_agent_by_id(agent_id=main_agent.id, actor=actor)
 
+    async def create_sleeptime_agent_async(self, main_agent: AgentState, actor: User) -> AgentState:
+        request = CreateAgent(
+            name=main_agent.name + "-sleeptime",
+            agent_type=AgentType.sleeptime_agent,
+            block_ids=[block.id for block in main_agent.memory.blocks],
+            memory_blocks=[
+                CreateBlock(
+                    label="memory_persona",
+                    value=get_persona_text("sleeptime_memory_persona"),
+                ),
+            ],
+            llm_config=main_agent.llm_config,
+            embedding_config=main_agent.embedding_config,
+            project_id=main_agent.project_id,
+        )
+        sleeptime_agent = await self.agent_manager.create_agent_async(
+            agent_create=request,
+            actor=actor,
+        )
+        await self.group_manager.create_group_async(
+            group=GroupCreate(
+                description="",
+                agent_ids=[sleeptime_agent.id],
+                manager_config=SleeptimeManager(
+                    manager_agent_id=main_agent.id,
+                    sleeptime_agent_frequency=5,
+                ),
+            ),
+            actor=actor,
+        )
+        return await self.agent_manager.get_agent_by_id_async(agent_id=main_agent.id, actor=actor)
+
     def create_voice_sleeptime_agent(self, main_agent: AgentState, actor: User) -> AgentState:
         # TODO: Inject system
         request = CreateAgent(
@@ -975,6 +1007,40 @@ class SyncServer(Server):
             actor=actor,
         )
         return self.agent_manager.get_agent_by_id(agent_id=main_agent.id, actor=actor)
+
+    async def create_voice_sleeptime_agent_async(self, main_agent: AgentState, actor: User) -> AgentState:
+        # TODO: Inject system
+        request = CreateAgent(
+            name=main_agent.name + "-sleeptime",
+            agent_type=AgentType.voice_sleeptime_agent,
+            block_ids=[block.id for block in main_agent.memory.blocks],
+            memory_blocks=[
+                CreateBlock(
+                    label="memory_persona",
+                    value=get_persona_text("voice_memory_persona"),
+                ),
+            ],
+            llm_config=LLMConfig.default_config("gpt-4.1"),
+            embedding_config=main_agent.embedding_config,
+            project_id=main_agent.project_id,
+        )
+        voice_sleeptime_agent = await self.agent_manager.create_agent_async(
+            agent_create=request,
+            actor=actor,
+        )
+        await self.group_manager.create_group_async(
+            group=GroupCreate(
+                description="Low latency voice chat with async memory management.",
+                agent_ids=[voice_sleeptime_agent.id],
+                manager_config=VoiceSleeptimeManager(
+                    manager_agent_id=main_agent.id,
+                    max_message_buffer_length=constants.DEFAULT_MAX_MESSAGE_BUFFER_LENGTH,
+                    min_message_buffer_length=constants.DEFAULT_MIN_MESSAGE_BUFFER_LENGTH,
+                ),
+            ),
+            actor=actor,
+        )
+        return await self.agent_manager.get_agent_by_id_async(agent_id=main_agent.id, actor=actor)
 
     # convert name->id
 
