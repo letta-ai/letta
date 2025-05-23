@@ -165,6 +165,7 @@ describe-web:
         --set secrets.SENTRY_DSN=${SENTRY_DSN} \
         --set secrets.E2B_API_KEY=${E2B_API_KEY} \
         --set secrets.E2B_SANDBOX_TEMPLATE_ID=${E2B_SANDBOX_TEMPLATE_ID} \
+        --set secrets.TAVILY_API_KEY=${TAVILY_API_KEY} \
         --set secrets.LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS=True \
         --set secrets.LETTA_OTEL_EXPORTER_OTLP_ENDPOINT=${LETTA_OTEL_EXPORTER_OTLP_ENDPOINT} \
         --set secrets.CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT} \

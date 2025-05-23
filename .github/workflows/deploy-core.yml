@@ -92,6 +92,7 @@ jobs:
           E2B_API_KEY: ${{ secrets.E2B_API_KEY }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           E2B_SANDBOX_TEMPLATE_ID: ${{ secrets.E2B_SANDBOX_TEMPLATE_ID }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS: 'True'
           LETTA_OTEL_EXPORTER_OTLP_ENDPOINT: ${{ secrets.LETTA_OTEL_EXPORTER_OTLP_ENDPOINT }}
           CLICKHOUSE_ENDPOINT: ${{ secrets.CLICKHOUSE_ENDPOINT }}
