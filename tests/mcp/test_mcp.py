@@ -105,7 +105,8 @@ def agent_state(client):
     client.agents.delete(agent_state.id)
 
 
-def test_sse_mcp_server(client, agent_state):
+@pytest.mark.asyncio
+async def test_sse_mcp_server(client, agent_state):
     mcp_server_name = "github_composio"
     server_url = "https://mcp.composio.dev/composio/server/3c44733b-75ae-4ba8-9a68-7153265fadd8"
     sse_mcp_config = SSEServerConfig(server_name=mcp_server_name, server_url=server_url)
@@ -148,11 +149,16 @@ def test_sse_mcp_server(client, agent_state):
     # status field
     assert tr.status == "success", f"Bad status: {tr.status}"
     # parse JSON payload
-    payload = json.loads(tr.tool_return)
+    full_payload = json.loads(tr.tool_return)
+    payload = json.loads(full_payload["message"][0])
+    from pprint import pprint
+
+    pprint(payload)
     assert payload.get("successful", False), f"Tool returned failure payload: {payload}"
     assert payload["data"]["details"] == "Action executed successfully", f"Unexpected details: {payload}"
 
 
+@pytest.mark.asyncio
 def test_stdio_mcp_server(client, agent_state):
     req_file = Path(__file__).parent / "weather" / "requirements.txt"
     create_virtualenv_and_install_requirements(req_file, name="venv")

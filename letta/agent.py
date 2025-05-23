@@ -27,7 +27,6 @@ from letta.errors import ContextWindowExceededError
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
 from letta.functions.composio_helpers import execute_composio_action, generate_composio_action_from_func_name
 from letta.functions.functions import get_function_from_module
-from letta.functions.mcp_client.base_client import BaseMCPClient
 from letta.helpers import ToolRulesSolver
 from letta.helpers.composio_helpers import get_composio_api_key
 from letta.helpers.datetime_helpers import get_utc_time
@@ -61,6 +60,7 @@ from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import check_supports_structured_output, compile_memory_metadata_block
 from letta.services.job_manager import JobManager
+from letta.services.mcp.base_client import AsyncBaseMCPClient
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.provider_manager import ProviderManager
@@ -103,7 +103,7 @@ class Agent(BaseAgent):
         # extras
         first_message_verify_mono: bool = True,  # TODO move to config?
         # MCP sessions, state held in-memory in the server
-        mcp_clients: Optional[Dict[str, BaseMCPClient]] = None,
+        mcp_clients: Optional[Dict[str, AsyncBaseMCPClient]] = None,
         save_last_response: bool = False,
     ):
         assert isinstance(agent_state.memory, Memory), f"Memory object is not of type Memory: {type(agent_state.memory)}"
@@ -168,7 +168,11 @@ class Agent(BaseAgent):
         self.logger = get_logger(agent_state.id)
 
         # MCPClient, state/sessions managed by the server
-        self.mcp_clients = mcp_clients
+        # TODO: This is temporary, as a bridge
+        self.mcp_clients = None
+        # TODO: no longer supported
+        # if mcp_clients:
+        #    self.mcp_clients = {client_id: client.to_sync_client() for client_id, client in mcp_clients.items()}
 
     def load_last_function_response(self):
         """Load the last function response from message history"""
@@ -1601,8 +1605,6 @@ class Agent(BaseAgent):
                 if server_name not in self.mcp_clients:
                     raise ValueError(f"Unknown MCP server name: {server_name}")
                 mcp_client = self.mcp_clients[server_name]
-                if not isinstance(mcp_client, BaseMCPClient):
-                    raise RuntimeError(f"Expected an MCPClient, but got: {type(mcp_client)}")
 
                 # Check that tool exists
                 available_tools = mcp_client.list_tools()

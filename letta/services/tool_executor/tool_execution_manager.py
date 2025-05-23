@@ -1,6 +1,7 @@
 import traceback
 from typing import Any, Dict, Optional, Type
 
+from letta.constants import FUNCTION_RETURN_VALUE_TRUNCATED
 from letta.log import get_logger
 from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState
@@ -143,11 +144,26 @@ class ToolExecutionManager:
             )
             # TODO: Extend this async model to composio
             if isinstance(
-                executor, (SandboxToolExecutor, ExternalComposioToolExecutor, LettaBuiltinToolExecutor, LettaMultiAgentToolExecutor)
+                executor,
+                (
+                    SandboxToolExecutor,
+                    ExternalComposioToolExecutor,
+                    ExternalMCPToolExecutor,
+                    LettaBuiltinToolExecutor,
+                    LettaMultiAgentToolExecutor,
+                ),
             ):
                 result = await executor.execute(function_name, function_args, self.agent_state, tool, self.actor)
             else:
                 result = executor.execute(function_name, function_args, self.agent_state, tool, self.actor)
+
+            print("TOOL RESULT", result)
+
+            # trim result
+            return_str = str(result.func_return)
+            if len(return_str) > tool.return_char_limit:
+                # TODO: okay that this become a string?
+                result.func_return = FUNCTION_RETURN_VALUE_TRUNCATED(return_str, len(return_str), tool.return_char_limit)
             return result
 
         except Exception as e:

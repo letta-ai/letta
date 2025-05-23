@@ -21,6 +21,7 @@ from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.tool import Tool, ToolCreate, ToolRunFromSource, ToolUpdate
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
+from letta.settings import tool_settings
 
 router = APIRouter(prefix="/tools", tags=["tools"])
 
@@ -354,18 +355,21 @@ def add_composio_tool(
 
 # Specific routes for MCP
 @router.get("/mcp/servers", response_model=dict[str, Union[SSEServerConfig, StdioServerConfig]], operation_id="list_mcp_servers")
-def list_mcp_servers(server: SyncServer = Depends(get_letta_server), user_id: Optional[str] = Header(None, alias="user_id")):
+async def list_mcp_servers(server: SyncServer = Depends(get_letta_server), user_id: Optional[str] = Header(None, alias="user_id")):
     """
     Get a list of all configured MCP servers
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.get_mcp_servers()
+    if tool_settings.mcp_read_from_config:
+        return server.get_mcp_servers()
+    else:
+        mcp_servers = await server.mcp_manager.list_mcp_servers(actor=server.user_manager.get_user_or_default(user_id=user_id))
+        return {server.server_name: server.to_config() for server in mcp_servers}
 
 
 # NOTE: async because the MCP client/session calls are async
 # TODO: should we make the return type MCPTool, not Tool (since we don't have ID)?
 @router.get("/mcp/servers/{mcp_server_name}/tools", response_model=List[MCPTool], operation_id="list_mcp_tools_by_server")
-def list_mcp_tools_by_server(
+async def list_mcp_tools_by_server(
     mcp_server_name: str,
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
@@ -373,32 +377,36 @@ def list_mcp_tools_by_server(
     """
     Get a list of all tools for a specific MCP server
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    try:
-        return server.get_tools_from_mcp_server(mcp_server_name=mcp_server_name)
-    except ValueError as e:
-        # ValueError means that the MCP server name doesn't exist
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail={
-                "code": "MCPServerNotFoundError",
-                "message": str(e),
-                "mcp_server_name": mcp_server_name,
-            },
-        )
-    except MCPTimeoutError as e:
-        raise HTTPException(
-            status_code=408,  # Timeout
-            detail={
-                "code": "MCPTimeoutError",
-                "message": str(e),
-                "mcp_server_name": mcp_server_name,
-            },
-        )
+    if tool_settings.mcp_read_from_config:
+        try:
+            return await server.get_tools_from_mcp_server(mcp_server_name=mcp_server_name)
+        except ValueError as e:
+            # ValueError means that the MCP server name doesn't exist
+            raise HTTPException(
+                status_code=400,  # Bad Request
+                detail={
+                    "code": "MCPServerNotFoundError",
+                    "message": str(e),
+                    "mcp_server_name": mcp_server_name,
+                },
+            )
+        except MCPTimeoutError as e:
+            raise HTTPException(
+                status_code=408,  # Timeout
+                detail={
+                    "code": "MCPTimeoutError",
+                    "message": str(e),
+                    "mcp_server_name": mcp_server_name,
+                },
+            )
+    else:
+        actor = server.user_manager.get_user_or_default(user_id=actor_id)
+        mcp_tools = await server.mcp_manager.list_mcp_server_tools(mcp_server_name=mcp_server_name, actor=actor)
+        return mcp_tools
 
 
 @router.post("/mcp/servers/{mcp_server_name}/{mcp_tool_name}", response_model=Tool, operation_id="add_mcp_tool")
-def add_mcp_tool(
+async def add_mcp_tool(
     mcp_server_name: str,
     mcp_tool_name: str,
     server: SyncServer = Depends(get_letta_server),
@@ -409,50 +417,55 @@ def add_mcp_tool(
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
-    try:
-        available_tools = server.get_tools_from_mcp_server(mcp_server_name=mcp_server_name)
-    except ValueError as e:
-        # ValueError means that the MCP server name doesn't exist
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail={
-                "code": "MCPServerNotFoundError",
-                "message": str(e),
-                "mcp_server_name": mcp_server_name,
-            },
-        )
-    except MCPTimeoutError as e:
-        raise HTTPException(
-            status_code=408,  # Timeout
-            detail={
-                "code": "MCPTimeoutError",
-                "message": str(e),
-                "mcp_server_name": mcp_server_name,
-            },
-        )
+    if tool_settings.mcp_read_from_config:
 
-    # See if the tool is in the available list
-    mcp_tool = None
-    for tool in available_tools:
-        if tool.name == mcp_tool_name:
-            mcp_tool = tool
-            break
-    if not mcp_tool:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail={
-                "code": "MCPToolNotFoundError",
-                "message": f"Tool {mcp_tool_name} not found in MCP server {mcp_server_name} - available tools: {', '.join([tool.name for tool in available_tools])}",
-                "mcp_tool_name": mcp_tool_name,
-            },
-        )
+        try:
+            available_tools = await server.get_tools_from_mcp_server(mcp_server_name=mcp_server_name)
+        except ValueError as e:
+            # ValueError means that the MCP server name doesn't exist
+            raise HTTPException(
+                status_code=400,  # Bad Request
+                detail={
+                    "code": "MCPServerNotFoundError",
+                    "message": str(e),
+                    "mcp_server_name": mcp_server_name,
+                },
+            )
+        except MCPTimeoutError as e:
+            raise HTTPException(
+                status_code=408,  # Timeout
+                detail={
+                    "code": "MCPTimeoutError",
+                    "message": str(e),
+                    "mcp_server_name": mcp_server_name,
+                },
+            )
 
-    tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
-    return server.tool_manager.create_or_update_mcp_tool(tool_create=tool_create, mcp_server_name=mcp_server_name, actor=actor)
+        # See if the tool is in the available list
+        mcp_tool = None
+        for tool in available_tools:
+            if tool.name == mcp_tool_name:
+                mcp_tool = tool
+                break
+        if not mcp_tool:
+            raise HTTPException(
+                status_code=400,  # Bad Request
+                detail={
+                    "code": "MCPToolNotFoundError",
+                    "message": f"Tool {mcp_tool_name} not found in MCP server {mcp_server_name} - available tools: {', '.join([tool.name for tool in available_tools])}",
+                    "mcp_tool_name": mcp_tool_name,
+                },
+            )
+
+        tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
+        return await server.tool_manager.create_mcp_tool_async(tool_create=tool_create, mcp_server_name=mcp_server_name, actor=actor)
+
+    else:
+        return await server.mcp_manager.add_tool_from_mcp_server(mcp_server_name=mcp_server_name, mcp_tool_name=mcp_tool_name, actor=actor)
 
 
 @router.put("/mcp/servers", response_model=List[Union[StdioServerConfig, SSEServerConfig]], operation_id="add_mcp_server")
-def add_mcp_server_to_config(
+async def add_mcp_server_to_config(
     request: Union[StdioServerConfig, SSEServerConfig] = Body(...),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
@@ -460,14 +473,31 @@ def add_mcp_server_to_config(
     """
     Add a new MCP server to the Letta MCP server config
     """
+
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.add_mcp_server_to_config(server_config=request, allow_upsert=True)
+
+    if tool_settings.mcp_read_from_config:
+        # write to config file
+        return await server.add_mcp_server_to_config(server_config=request, allow_upsert=True)
+    else:
+        # log to DB
+        from letta.schemas.mcp import MCPServer
+
+        if isinstance(request, StdioServerConfig):
+            mapped_request = MCPServer(server_name=request.server_name, server_type=request.type, stdio_config=request)
+        elif isinstance(request, SSEServerConfig):
+            mapped_request = MCPServer(server_name=request.server_name, server_type=request.type, server_url=request.server_url)
+        mcp_server = await server.mcp_manager.create_or_update_mcp_server(mapped_request, actor=actor)
+
+        # TODO: don't do this in the future (just return MCPServer)
+        all_servers = await server.mcp_manager.list_mcp_servers(actor=actor)
+        return [server.to_config() for server in all_servers]
 
 
 @router.delete(
     "/mcp/servers/{mcp_server_name}", response_model=List[Union[StdioServerConfig, SSEServerConfig]], operation_id="delete_mcp_server"
 )
-def delete_mcp_server_from_config(
+async def delete_mcp_server_from_config(
     mcp_server_name: str,
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
@@ -475,5 +505,11 @@ def delete_mcp_server_from_config(
     """
     Add a new MCP server to the Letta MCP server config
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.delete_mcp_server_from_config(server_name=mcp_server_name)
+    if tool_settings.mcp_read_from_config:
+        # write to config file
+        return server.delete_mcp_server_from_config(server_name=mcp_server_name)
+    else:
+        # log to DB
+        actor = server.user_manager.get_user_or_default(user_id=actor_id)
+        mcp_server_id = await server.mcp_manager.get_mcp_server_id_by_name(mcp_server_name, actor)
+        return server.mcp_manager.delete_mcp_server_by_id(mcp_server_id, actor=actor)

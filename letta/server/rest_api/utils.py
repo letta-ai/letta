@@ -21,7 +21,8 @@ from letta.log import get_logger
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message, MessageCreate
+from letta.schemas.message import Message, MessageCreate, ToolReturn
+from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.server.rest_api.interface import StreamingServerInterface
@@ -181,6 +182,7 @@ def create_letta_messages_from_llm_response(
     model: str,
     function_name: str,
     function_arguments: Dict,
+    tool_execution_result: ToolExecutionResult,
     tool_call_id: str,
     function_call_success: bool,
     function_response: Optional[str],
@@ -234,6 +236,14 @@ def create_letta_messages_from_llm_response(
         created_at=get_utc_time(),
         name=function_name,
         batch_item_id=llm_batch_item_id,
+        tool_returns=[
+            ToolReturn(
+                status=tool_execution_result.status,
+                stderr=tool_execution_result.stderr,
+                stdout=tool_execution_result.stdout,
+                # func_return=tool_execution_result.func_return,
+            )
+        ],
     )
     if pre_computed_tool_message_id:
         tool_message.id = pre_computed_tool_message_id
@@ -286,6 +296,7 @@ def create_assistant_messages_from_openai_response(
         model=model,
         function_name=DEFAULT_MESSAGE_TOOL,
         function_arguments={DEFAULT_MESSAGE_TOOL_KWARG: response_text},  # Avoid raw string manipulation
+        tool_execution_result=ToolExecutionResult(status="success"),
         tool_call_id=tool_call_id,
         function_call_success=True,
         function_response=None,

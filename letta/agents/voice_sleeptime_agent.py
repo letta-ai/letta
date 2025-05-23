@@ -89,20 +89,23 @@ class VoiceSleeptimeAgent(LettaAgent):
         )
 
     @trace_method
-    async def _execute_tool(self, tool_name: str, tool_args: dict, agent_state: AgentState) -> Tuple[str, bool]:
+    async def _execute_tool(self, tool_name: str, tool_args: dict, agent_state: AgentState):
         """
         Executes a tool and returns (result, success_flag).
         """
+        from letta.schemas.tool_execution_result import ToolExecutionResult
+
         # Special memory case
         target_tool = next((x for x in agent_state.tools if x.name == tool_name), None)
         if not target_tool:
-            return f"Tool not found: {tool_name}", False
+            return ToolExecutionResult(func_return=f"Tool not found: {tool_name}", success_flag=False)
 
         try:
             if target_tool.name == "rethink_user_memory" and target_tool.tool_type == ToolType.LETTA_VOICE_SLEEPTIME_CORE:
-                return self.rethink_user_memory(agent_state=agent_state, **tool_args)
+                func_return, success_flag = self.rethink_user_memory(agent_state=agent_state, **tool_args)
+                return ToolExecutionResult(func_return=func_return, status="success" if success_flag else "error")
             elif target_tool.name == "finish_rethinking_memory" and target_tool.tool_type == ToolType.LETTA_VOICE_SLEEPTIME_CORE:
-                return "", True
+                return ToolExecutionResult(func_return="", status="success")
             elif target_tool.name == "store_memories" and target_tool.tool_type == ToolType.LETTA_VOICE_SLEEPTIME_CORE:
                 chunks = tool_args.get("chunks", [])
                 results = [self.store_memory(agent_state=self.convo_agent_state, **chunk_args) for chunk_args in chunks]
@@ -110,12 +113,14 @@ class VoiceSleeptimeAgent(LettaAgent):
                 aggregated_result = next((res for res, _ in results if res is not None), None)
                 aggregated_success = all(success for _, success in results)
 
-                return aggregated_result, aggregated_success  # Note that here we store to the convo agent's archival memory
+                return ToolExecutionResult(
+                    func_return=aggregated_result, status="success" if aggregated_success else "error"
+                )  # Note that here we store to the convo agent's archival memory
             else:
                 result = f"Voice sleeptime agent tried invoking invalid tool with type {target_tool.tool_type}: {target_tool}"
-                return result, False
+                return ToolExecutionResult(func_return=result, status="error")
         except Exception as e:
-            return f"Failed to call tool. Error: {e}", False
+            return ToolExecutionResult(func_return=f"Failed to call tool. Error: {e}", status="error")
 
     def rethink_user_memory(self, new_memory: str, agent_state: AgentState) -> Tuple[str, bool]:
         if agent_state.memory.get_block(self.target_block_label) is None:

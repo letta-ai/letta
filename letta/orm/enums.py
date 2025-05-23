@@ -32,3 +32,8 @@ class ActorType(str, Enum):
     LETTA_USER = "letta_user"
     LETTA_AGENT = "letta_agent"
     LETTA_SYSTEM = "letta_system"
+
+
+class MCPServerType(str, Enum):
+    SSE = "sse"
+    STDIO = "stdio"

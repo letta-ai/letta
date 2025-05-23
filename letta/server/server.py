@@ -23,9 +23,6 @@ from letta.config import LettaConfig
 from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.data_sources.connectors import DataConnector, load_data
 from letta.errors import HandleNotFoundError
-from letta.functions.mcp_client.base_client import BaseMCPClient
-from letta.functions.mcp_client.sse_client import MCP_CONFIG_TOPLEVEL_KEY, SSEMCPClient
-from letta.functions.mcp_client.stdio_client import StdioMCPClient
 from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig
 from letta.groups.helpers import load_multi_agent
 from letta.helpers.datetime_helpers import get_utc_time
@@ -87,6 +84,10 @@ from letta.services.helpers.tool_execution_helper import prepare_local_sandbox
 from letta.services.identity_manager import IdentityManager
 from letta.services.job_manager import JobManager
 from letta.services.llm_batch_manager import LLMBatchManager
+from letta.services.mcp.base_client import AsyncBaseMCPClient
+from letta.services.mcp.sse_client import MCP_CONFIG_TOPLEVEL_KEY, AsyncSSEMCPClient
+from letta.services.mcp.stdio_client import AsyncStdioMCPClient
+from letta.services.mcp_manager import MCPManager
 from letta.services.message_manager import MessageManager
 from letta.services.organization_manager import OrganizationManager
 from letta.services.passage_manager import PassageManager
@@ -203,6 +204,7 @@ class SyncServer(Server):
         self.passage_manager = PassageManager()
         self.user_manager = UserManager()
         self.tool_manager = ToolManager()
+        self.mcp_manager = MCPManager()
         self.block_manager = BlockManager()
         self.source_manager = SourceManager()
         self.sandbox_config_manager = SandboxConfigManager()
@@ -380,30 +382,9 @@ class SyncServer(Server):
             self._enabled_providers.append(XAIProvider(name="xai", api_key=model_settings.xai_api_key))
 
         # For MCP
+        # TODO: remove this
         """Initialize the MCP clients (there may be multiple)"""
-        mcp_server_configs = self.get_mcp_servers()
-        self.mcp_clients: Dict[str, BaseMCPClient] = {}
-
-        for server_name, server_config in mcp_server_configs.items():
-            if server_config.type == MCPServerType.SSE:
-                self.mcp_clients[server_name] = SSEMCPClient(server_config)
-            elif server_config.type == MCPServerType.STDIO:
-                self.mcp_clients[server_name] = StdioMCPClient(server_config)
-            else:
-                raise ValueError(f"Invalid MCP server config: {server_config}")
-
-            try:
-                self.mcp_clients[server_name].connect_to_server()
-            except Exception as e:
-                logger.error(e)
-                self.mcp_clients.pop(server_name)
-
-        # Print out the tools that are connected
-        for server_name, client in self.mcp_clients.items():
-            logger.info(f"Attempting to fetch tools from MCP server: {server_name}")
-            mcp_tools = client.list_tools()
-            logger.info(f"MCP tools connected: {', '.join([t.name for t in mcp_tools])}")
-            logger.debug(f"MCP tools: {', '.join([str(t) for t in mcp_tools])}")
+        self.mcp_clients: Dict[str, AsyncBaseMCPClient] = {}
 
         # TODO: Remove these in memory caches
         self._llm_config_cache = {}
@@ -411,6 +392,31 @@ class SyncServer(Server):
 
         # TODO: Replace this with the Anthropic client we have in house
         self.anthropic_async_client = AsyncAnthropic()
+
+    async def init_mcp_clients(self):
+        # TODO: remove this
+        mcp_server_configs = self.get_mcp_servers()
+
+        for server_name, server_config in mcp_server_configs.items():
+            if server_config.type == MCPServerType.SSE:
+                self.mcp_clients[server_name] = AsyncSSEMCPClient(server_config)
+            elif server_config.type == MCPServerType.STDIO:
+                self.mcp_clients[server_name] = AsyncStdioMCPClient(server_config)
+            else:
+                raise ValueError(f"Invalid MCP server config: {server_config}")
+
+            try:
+                await self.mcp_clients[server_name].connect_to_server()
+            except Exception as e:
+                logger.error(e)
+                self.mcp_clients.pop(server_name)
+
+        # Print out the tools that are connected
+        for server_name, client in self.mcp_clients.items():
+            logger.info(f"Attempting to fetch tools from MCP server: {server_name}")
+            mcp_tools = await client.list_tools()
+            logger.info(f"MCP tools connected: {', '.join([t.name for t in mcp_tools])}")
+            logger.debug(f"MCP tools: {', '.join([str(t) for t in mcp_tools])}")
 
     def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
         """Updated method to load agents from persisted storage"""
@@ -1918,7 +1924,8 @@ class SyncServer(Server):
 
         # TODO implement non-flatfile mechanism
         if not tool_settings.mcp_read_from_config:
-            raise RuntimeError("MCP config file disabled. Enable it in settings.")
+            return {}
+            # raise RuntimeError("MCP config file disabled. Enable it in settings.")
 
         mcp_server_list = {}
 
@@ -1972,14 +1979,14 @@ class SyncServer(Server):
         # If the file doesn't exist, return empty dictionary
         return mcp_server_list
 
-    def get_tools_from_mcp_server(self, mcp_server_name: str) -> List[MCPTool]:
+    async def get_tools_from_mcp_server(self, mcp_server_name: str) -> List[MCPTool]:
         """List the tools in an MCP server. Requires a client to be created."""
         if mcp_server_name not in self.mcp_clients:
             raise ValueError(f"No client was created for MCP server: {mcp_server_name}")
 
-        return self.mcp_clients[mcp_server_name].list_tools()
+        return await self.mcp_clients[mcp_server_name].list_tools()
 
-    def add_mcp_server_to_config(
+    async def add_mcp_server_to_config(
         self, server_config: Union[SSEServerConfig, StdioServerConfig], allow_upsert: bool = True
     ) -> List[Union[SSEServerConfig, StdioServerConfig]]:
         """Add a new server config to the MCP config file"""
@@ -2008,19 +2015,19 @@ class SyncServer(Server):
 
         # Attempt to initialize the connection to the server
         if server_config.type == MCPServerType.SSE:
-            new_mcp_client = SSEMCPClient(server_config)
+            new_mcp_client = AsyncSSEMCPClient(server_config)
         elif server_config.type == MCPServerType.STDIO:
-            new_mcp_client = StdioMCPClient(server_config)
+            new_mcp_client = AsyncStdioMCPClient(server_config)
         else:
             raise ValueError(f"Invalid MCP server config: {server_config}")
         try:
-            new_mcp_client.connect_to_server()
+            await new_mcp_client.connect_to_server()
         except:
             logger.exception(f"Failed to connect to MCP server: {server_config.server_name}")
             raise RuntimeError(f"Failed to connect to MCP server: {server_config.server_name}")
         # Print out the tools that are connected
         logger.info(f"Attempting to fetch tools from MCP server: {server_config.server_name}")
-        new_mcp_tools = new_mcp_client.list_tools()
+        new_mcp_tools = await new_mcp_client.list_tools()
         logger.info(f"MCP tools connected: {', '.join([t.name for t in new_mcp_tools])}")
         logger.debug(f"MCP tools: {', '.join([str(t) for t in new_mcp_tools])}")
 

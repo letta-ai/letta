@@ -304,6 +304,7 @@ class LettaAgent(BaseAgent):
         current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_async(
             input_messages, agent_state, self.message_manager, self.actor
         )
+
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
         llm_client = LLMClient.create(
             provider_type=agent_state.llm_config.model_endpoint_type,
@@ -469,6 +470,8 @@ class LettaAgent(BaseAgent):
                 ToolType.LETTA_SLEEPTIME_CORE,
                 ToolType.LETTA_VOICE_SLEEPTIME_CORE,
                 ToolType.LETTA_BUILTIN,
+                ToolType.EXTERNAL_COMPOSIO,
+                ToolType.EXTERNAL_MCP,
             }
             or (t.tool_type == ToolType.EXTERNAL_COMPOSIO)
         ]
@@ -533,12 +536,12 @@ class LettaAgent(BaseAgent):
 
         tool_call_id = tool_call.id or f"call_{uuid.uuid4().hex[:8]}"
 
-        tool_result, success_flag = await self._execute_tool(
+        tool_execution_result = await self._execute_tool(
             tool_name=tool_call_name,
             tool_args=tool_args,
             agent_state=agent_state,
         )
-        function_response = package_function_response(tool_result, success_flag)
+        function_response = package_function_response(tool_execution_result.func_return, tool_execution_result.success_flag)
 
         # 4. Register tool call with tool rule solver
         # Resolve whether or not to continue stepping
@@ -575,9 +578,10 @@ class LettaAgent(BaseAgent):
             model=agent_state.llm_config.model,
             function_name=tool_call_name,
             function_arguments=tool_args,
+            tool_execution_result=tool_execution_result,
             tool_call_id=tool_call_id,
-            function_call_success=success_flag,
-            function_response=tool_result,
+            function_call_success=tool_execution_result.success_flag,
+            function_response=tool_execution_result.func_return,
             actor=self.actor,
             add_heartbeat_request_system_message=continue_stepping,
             reasoning_content=reasoning_content,
@@ -592,34 +596,37 @@ class LettaAgent(BaseAgent):
         return persisted_messages, continue_stepping
 
     @trace_method
-    async def _execute_tool(self, tool_name: str, tool_args: dict, agent_state: AgentState) -> Tuple[str, bool]:
+    async def _execute_tool(self, tool_name: str, tool_args: dict, agent_state: AgentState) -> "ToolExecutionResult":
         """
         Executes a tool and returns (result, success_flag).
         """
+        from letta.schemas.tool_execution_result import ToolExecutionResult
+
         # Special memory case
         target_tool = next((x for x in agent_state.tools if x.name == tool_name), None)
         if not target_tool:
-            return f"Tool not found: {tool_name}", False
+            # TODO: fix this error message
+            return ToolExecutionResult(
+                func_return=f"Tool {tool_name} not found",
+                status="error",
+            )
 
         # TODO: This temp. Move this logic and code to executors
-        try:
-            tool_execution_manager = ToolExecutionManager(
-                agent_state=agent_state,
-                message_manager=self.message_manager,
-                agent_manager=self.agent_manager,
-                block_manager=self.block_manager,
-                passage_manager=self.passage_manager,
-                actor=self.actor,
-            )
-            # TODO: Integrate sandbox result
-            log_event(name=f"start_{tool_name}_execution", attributes=tool_args)
-            tool_execution_result = await tool_execution_manager.execute_tool_async(
-                function_name=tool_name, function_args=tool_args, tool=target_tool
-            )
-            log_event(name=f"finish_{tool_name}_execution", attributes=tool_args)
-            return tool_execution_result.func_return, True
-        except Exception as e:
-            return f"Failed to call tool. Error: {e}", False
+        tool_execution_manager = ToolExecutionManager(
+            agent_state=agent_state,
+            message_manager=self.message_manager,
+            agent_manager=self.agent_manager,
+            block_manager=self.block_manager,
+            passage_manager=self.passage_manager,
+            actor=self.actor,
+        )
+        # TODO: Integrate sandbox result
+        log_event(name=f"start_{tool_name}_execution", attributes=tool_args)
+        tool_execution_result = await tool_execution_manager.execute_tool_async(
+            function_name=tool_name, function_args=tool_args, tool=target_tool
+        )
+        log_event(name=f"finish_{tool_name}_execution", attributes=tool_args)
+        return tool_execution_result
 
     @trace_method
     async def _send_message_to_agents_matching_tags(

@@ -1101,3 +1101,4 @@ class ToolReturn(BaseModel):
     status: Literal["success", "error"] = Field(..., description="The status of the tool call")
     stdout: Optional[List[str]] = Field(None, description="Captured stdout (e.g. prints, logs) from the tool invocation")
     stderr: Optional[List[str]] = Field(None, description="Captured stderr from the tool invocation")
+    # func_return: Optional[Any] = Field(None, description="The function return object")
