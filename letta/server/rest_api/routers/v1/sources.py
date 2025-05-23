@@ -41,7 +41,7 @@ async def retrieve_source(
     """
     Get all sources
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     if not source:
@@ -58,7 +58,7 @@ async def get_source_id_by_name(
     """
     Get a source by name
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     source = await server.source_manager.get_source_by_name(source_name=source_name, actor=actor)
     if not source:
@@ -74,7 +74,7 @@ async def list_sources(
     """
     List all data sources created by a user.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     return await server.source_manager.list_sources(actor=actor)
 
 
@@ -87,14 +87,14 @@ async def create_source(
     """
     Create a new data source.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     # TODO: need to asyncify this
     if not source_create.embedding_config:
         if not source_create.embedding:
             # TODO: modify error type
             raise ValueError("Must specify either embedding or embedding_config in request")
-        source_create.embedding_config = server.get_embedding_config_from_handle(
+        source_create.embedding_config = await server.get_embedding_config_from_handle_async(
             handle=source_create.embedding,
             embedding_chunk_size=source_create.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
             actor=actor,
@@ -120,7 +120,7 @@ async def modify_source(
     Update the name or documentation of an existing data source.
     """
     # TODO: allow updating the handle/embedding config
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     if not await server.source_manager.get_source_by_id(source_id=source_id, actor=actor):
         raise HTTPException(status_code=404, detail=f"Source with id={source_id} does not exist.")
     return await server.source_manager.update_source(source_id=source_id, source_update=source, actor=actor)
@@ -135,7 +135,7 @@ async def delete_source(
     """
     Delete a data source.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     source = await server.source_manager.get_source_by_id(source_id=source_id)
     agents = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
     for agent in agents:
@@ -160,7 +160,7 @@ async def upload_file_to_source(
     """
     Upload a file to a data source.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     assert source is not None, f"Source with id={source_id} not found."
@@ -198,7 +198,7 @@ async def list_source_passages(
     """
     List all passages associated with a data source.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     return await server.agent_manager.list_passages_async(
         actor=actor,
         source_id=source_id,
@@ -219,7 +219,7 @@ async def list_source_files(
     """
     List paginated files associated with a data source.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     return await server.source_manager.list_files(source_id=source_id, limit=limit, after=after, actor=actor)
 
 
@@ -236,7 +236,7 @@ async def delete_file_from_source(
     """
     Delete a data source.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     deleted_file = await server.source_manager.delete_file(file_id=file_id, actor=actor)
 
