@@ -1005,9 +1005,6 @@ class GroqProvider(OpenAIProvider):
     def list_embedding_models(self) -> List[EmbeddingConfig]:
         return []
 
-    def get_model_context_window_size(self, model_name: str):
-        raise NotImplementedError
-
 
 class TogetherProvider(OpenAIProvider):
     """TogetherAI provider that uses the /completions API
