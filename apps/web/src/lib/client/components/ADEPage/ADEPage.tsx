@@ -16,7 +16,8 @@ import { useTranslations } from '@letta-cloud/translations';
 import { useAtomValue } from 'jotai/index';
 import { isAgentConvertingToTemplateAtom } from './DeploymentButton/DeploymentButton';
 import { TemplateNavigationSidebar } from './TemplateNavigationSidebar/TemplateNavigationSidebar';
-
+import { useGlobalSystemWarning } from '$web/client/hooks/useGlobalSystemWarning/useGlobalSystemWarning';
+import './ADEPage.scss';
 interface LoaderContentProps {
   isError?: boolean;
 }
@@ -76,6 +77,8 @@ export function ADEPage(props: ADEPageProps) {
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
 
+  const systemWarning = useGlobalSystemWarning();
+
   useAgentsServiceRetrieveAgent({
     agentId,
   });
@@ -111,7 +114,7 @@ export function ADEPage(props: ADEPageProps) {
       overflow="hidden"
       color="background"
       /* eslint-disable-next-line react/forbid-component-props */
-      className="w-[100vw] p-[8px] h-[100dvh]"
+      className={`w-[100vw] p-[8px]  ${systemWarning ? 'ade-page-system-warning' : 'h-[100dvh]'}`}
       fullHeight
       fullWidth
       gap

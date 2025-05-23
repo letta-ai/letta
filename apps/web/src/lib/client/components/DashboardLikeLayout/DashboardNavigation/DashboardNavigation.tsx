@@ -60,6 +60,7 @@ import { CreditsViewer } from '$web/client/components/CreditsViewer/CreditsViewe
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import './DashboardNavigation.scss';
 import { OrganizationUsageBlock } from '$web/client/components/OrganizationUsageBlock/OrganizationUsageBlock';
+import { useGlobalSystemWarning } from '$web/client/hooks/useGlobalSystemWarning/useGlobalSystemWarning';
 
 interface NavButtonProps {
   href: string;
@@ -548,6 +549,8 @@ function SecondaryMenuItems(props: SecondaryMenuItemsProps) {
 }
 
 export function NavigationSidebar() {
+  const systemWarning = useGlobalSystemWarning();
+
   return (
     <>
       {/* eslint-disable-next-line react/forbid-component-props */}
@@ -560,7 +563,7 @@ export function NavigationSidebar() {
         fullHeight
         zIndex="rightAboveZero"
         /* eslint-disable-next-line react/forbid-component-props */
-        className="top-0 min-w-sidebar h-full max-w-sidebar invisible visibleSidebar:visible"
+        className={`top-0 min-w-sidebar h-full max-w-sidebar invisible visibleSidebar:visible ${systemWarning ? 'system-warning-sidebar' : ''}`}
       >
         <VStack fullHeight gap="small" paddingY="xxsmall" paddingLeft="xxsmall">
           {/* eslint-disable-next-line react/forbid-component-props */}
