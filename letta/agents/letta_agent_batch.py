@@ -396,7 +396,7 @@ class LettaAgentBatch(BaseAgent):
         return cfg, env
 
     @trace_method
-    async def _execute_tools(self, ctx: _ResumeContext) -> Sequence[Tuple[str, Tuple[str, bool]]]:
+    async def _execute_tools(self, ctx: _ResumeContext) -> Sequence[tuple[str, ToolExecutionResult]]:
         sbx_cfg, sbx_env = await self._build_sandbox()
         rethink_memory_tool_name = "rethink_memory"
         tool_params = []
