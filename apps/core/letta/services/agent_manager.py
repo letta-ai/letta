@@ -387,7 +387,7 @@ class AgentManager:
         block_ids = list(agent_create.block_ids or [])
         if agent_create.memory_blocks:
             pydantic_blocks = [PydanticBlock(**b.model_dump(to_orm=True)) for b in agent_create.memory_blocks]
-            created_blocks = self.block_manager.batch_create_blocks(
+            created_blocks = await self.block_manager.batch_create_blocks_async(
                 pydantic_blocks,
                 actor=actor,
             )

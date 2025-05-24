@@ -77,6 +77,30 @@ class BlockManager:
             # Convert back to Pydantic
             return [m.to_pydantic() for m in created_models]
 
+    @trace_method 
+    @enforce_types
+    async def batch_create_blocks_async(self, blocks: List[PydanticBlock], actor: PydanticUser) -> List[PydanticBlock]:
+        """
+        Batch-create multiple Blocks in one transaction for better performance.
+        Args:
+            blocks: List of PydanticBlock schemas to create
+            actor:    The user performing the operation
+        Returns:
+            List of created PydanticBlock instances (with IDs, timestamps, etc.)
+        """
+        if not blocks:
+            return []
+
+        async with db_registry.async_session() as session:
+            block_models = [
+                BlockModel(**block.model_dump(to_orm=True, exclude_none=True), organization_id=actor.organization_id) for block in blocks
+            ]
+
+            created_models = await BlockModel.batch_create_async(items=block_models, db_session=session, actor=actor)
+
+            # Convert back to Pydantic
+            return [m.to_pydantic() for m in created_models]
+
     @trace_method
     @enforce_types
     def update_block(self, block_id: str, block_update: BlockUpdate, actor: PydanticUser) -> PydanticBlock:
