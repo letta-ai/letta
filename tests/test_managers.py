@@ -4987,7 +4987,7 @@ async def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, def
     assert len(steps) == 2
 
     # get agent steps
-    steps = step_manager.list_steps(agent_id=sarah_agent.id, actor=default_user)
+    steps = await step_manager.list_steps_async(agent_id=sarah_agent.id, actor=default_user)
     assert len(steps) == 2
 
 
