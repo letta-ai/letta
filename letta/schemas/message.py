@@ -36,6 +36,7 @@ from letta.schemas.letta_message_content import (
     ReasoningContent,
     RedactedReasoningContent,
     TextContent,
+    ToolReturnContent,
     get_letta_message_content_union_str_json_schema,
 )
 from letta.system import unpack_message
