@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from functools import lru_cache
 from typing import List, Optional
 
 from openai import OpenAI
@@ -13,6 +14,16 @@ from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.tracing import trace_method
 from letta.utils import enforce_types
+
+
+# TODO: Add redis-backed caching for backend
+@lru_cache(maxsize=8192)
+def get_openai_embedding(text: str, model: str, endpoint: str) -> List[float]:
+    from letta.settings import model_settings
+
+    client = OpenAI(api_key=model_settings.openai_api_key, base_url=endpoint, max_retries=0)
+    response = client.embeddings.create(input=text, model=model)
+    return response.data[0].embedding
 
 
 class PassageManager:
@@ -106,14 +117,11 @@ class PassageManager:
                     embedding = embed_model.get_text_embedding(text)
                 else:
                     # TODO should have the settings passed in via the server call
-                    from letta.settings import model_settings
-
-                    # Simple OpenAI client code
-                    client = OpenAI(
-                        api_key=model_settings.openai_api_key, base_url=agent_state.embedding_config.embedding_endpoint, max_retries=0
+                    embedding = get_openai_embedding(
+                        text,
+                        agent_state.embedding_config.embedding_model,
+                        agent_state.embedding_config.embedding_endpoint,
                     )
-                    response = client.embeddings.create(input=text, model=agent_state.embedding_config.embedding_model)
-                    embedding = response.data[0].embedding
 
                 if isinstance(embedding, dict):
                     try:
