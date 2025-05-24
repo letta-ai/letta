@@ -157,8 +157,6 @@ class ToolExecutionManager:
             else:
                 result = executor.execute(function_name, function_args, self.agent_state, tool, self.actor)
 
-            print("TOOL RESULT", result)
-
             # trim result
             return_str = str(result.func_return)
             if len(return_str) > tool.return_char_limit:
