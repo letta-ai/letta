@@ -1310,11 +1310,13 @@ class Agent(BaseAgent):
                 core_memory = system_message[core_memory_marker_pos:].strip()
             else:
                 # if no markers found, put everything in system message
+                self.logger.info("No markers found in system message, core_memory and external_memory_summary will not be loaded")
                 system_prompt = system_message
                 external_memory_summary = ""
                 core_memory = ""
         else:
             # if no system message, fall back on agent's system prompt
+            self.logger.info("No system message found in history, core_memory and external_memory_summary will not be loaded")
             system_prompt = self.agent_state.system
             external_memory_summary = ""
             core_memory = ""
@@ -1430,14 +1432,16 @@ class Agent(BaseAgent):
                 core_memory = system_message[core_memory_marker_pos:].strip()
             else:
                 # if no markers found, put everything in system message
+                self.logger.info("No markers found in system message, core_memory and external_memory_summary will not be loaded")
                 system_prompt = system_message
-                external_memory_summary = None
-                core_memory = None
+                external_memory_summary = ""
+                core_memory = ""
         else:
             # if no system message, fall back on agent's system prompt
+            self.logger.info("No system message found in history, core_memory and external_memory_summary will not be loaded")
             system_prompt = self.agent_state.system
-            external_memory_summary = None
-            core_memory = None
+            external_memory_summary = ""
+            core_memory = ""
 
         num_tokens_system_coroutine = anthropic_client.count_tokens(model=model, messages=[{"role": "user", "content": system_prompt}])
         num_tokens_core_memory_coroutine = (
