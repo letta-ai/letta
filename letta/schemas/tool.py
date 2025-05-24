@@ -11,7 +11,7 @@ from letta.constants import (
     LETTA_VOICE_TOOL_MODULE_NAME,
     MCP_TOOL_TAG_NAME_PREFIX,
 )
-from letta.functions.ast_parsers import get_function_name_and_description
+from letta.functions.ast_parsers import get_function_name_and_docstring
 from letta.functions.composio_helpers import generate_composio_tool_wrapper
 from letta.functions.functions import derive_openai_json_schema, get_json_schema_from_module
 from letta.functions.mcp_client.types import MCPTool
@@ -84,7 +84,7 @@ class Tool(BaseTool):
             # TODO: We skip this for Composio bc composio json schemas are derived differently
             if not (COMPOSIO_TOOL_TAG_NAME in self.tags):
                 if self.args_json_schema is not None:
-                    name, description = get_function_name_and_description(self.source_code, self.name)
+                    name, description = get_function_name_and_docstring(self.source_code, self.name)
                     args_schema = generate_model_from_args_json_schema(self.args_json_schema)
                     self.json_schema = generate_schema_from_args_schema_v2(
                         args_schema=args_schema,

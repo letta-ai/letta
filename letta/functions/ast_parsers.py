@@ -5,23 +5,13 @@ import typing
 from typing import Dict, Optional, Tuple
 
 from letta.errors import LettaToolCreateError
-
-# Registry of known types for annotation resolution
-BUILTIN_TYPES = {
-    "int": int,
-    "float": float,
-    "str": str,
-    "dict": dict,
-    "list": list,
-    "set": set,
-    "tuple": tuple,
-    "bool": bool,
-}
+from letta.types import JsonDict
 
 
 def resolve_type(annotation: str):
     """
     Resolve a type annotation string into a Python type.
+    Previously, primitive support for int, float, str, dict, list, set, tuple, bool.
 
     Args:
         annotation (str): The annotation string (e.g., 'int', 'list[int]', 'dict[str, int]').
@@ -32,24 +22,19 @@ def resolve_type(annotation: str):
     Raises:
         ValueError: If the annotation is unsupported or invalid.
     """
-    if annotation in BUILTIN_TYPES:
-        return BUILTIN_TYPES[annotation]
+    python_types = {**vars(typing), **vars(builtins)}
+
+    if annotation in python_types:
+        return python_types[annotation]
 
     try:
         # Allow use of typing and builtins in a safe eval context
-        namespace = {
-            **vars(typing),
-            **vars(builtins),
-            "list": list,
-            "dict": dict,
-            "tuple": tuple,
-            "set": set,
-        }
-        return eval(annotation, namespace)
+        return eval(annotation, python_types)
     except Exception:
         raise ValueError(f"Unsupported annotation: {annotation}")
 
 
+# TODO :: THIS MUST BE EDITED TO HANDLE THINGS
 def get_function_annotations_from_source(source_code: str, function_name: str) -> Dict[str, str]:
     """
     Parse the source code to extract annotations for a given function name.
@@ -76,7 +61,8 @@ def get_function_annotations_from_source(source_code: str, function_name: str) -
     raise ValueError(f"Function '{function_name}' not found in the provided source code.")
 
 
-def coerce_dict_args_by_annotations(function_args: dict, annotations: Dict[str, str]) -> dict:
+# NOW json_loads -> ast.literal_eval -> typing.get_origin
+def coerce_dict_args_by_annotations(function_args: JsonDict, annotations: Dict[str, str]) -> dict:
     coerced_args = dict(function_args)  # Shallow copy
 
     for arg_name, value in coerced_args.items():
@@ -110,8 +96,8 @@ def coerce_dict_args_by_annotations(function_args: dict, annotations: Dict[str, 
     return coerced_args
 
 
-def get_function_name_and_description(source_code: str, name: Optional[str] = None) -> Tuple[str, str]:
-    """Gets the name and description for a given function source code by parsing the AST.
+def get_function_name_and_docstring(source_code: str, name: Optional[str] = None) -> Tuple[str, str]:
+    """Gets the name and docstring for a given function source code by parsing the AST.
 
     Args:
         source_code: The source code to parse

@@ -143,7 +143,10 @@ def pydantic_model_to_open_ai(model: Type[BaseModel]) -> dict:
     parameters["required"] = sorted(k for k, v in parameters["properties"].items() if "default" not in v)
 
     if "description" not in schema:
-        if docstring.short_description:
+        # Support multiline docstrings for complex functions, TODO (cliandy): consider having this as a setting
+        if docstring.long_description:
+            schema["description"] = docstring.long_description
+        elif docstring.short_description:
             schema["description"] = docstring.short_description
         else:
             raise ValueError(f"No description found in docstring or description field (model: {model}, docstring: {docstring})")
@@ -330,10 +333,17 @@ def generate_schema(function, name: Optional[str] = None, description: Optional[
     # Parse the docstring
     docstring = parse(function.__doc__)
 
+    if not description:
+        # Support multiline docstrings for complex functions, TODO (cliandy): consider having this as a setting
+        if docstring.long_description:
+            description = docstring.long_description
+        else:
+            description = docstring.short_description
+
     # Prepare the schema dictionary
     schema = {
         "name": function.__name__ if name is None else name,
-        "description": docstring.short_description if description is None else description,
+        "description": description,
         "parameters": {"type": "object", "properties": {}, "required": []},
     }
 

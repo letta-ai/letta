@@ -654,6 +654,8 @@ class Message(BaseMessage):
         parse_content_parts = False
         if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
+        elif self.content and len(self.content) == 1 and isinstance(self.content[0], ToolReturnContent):
+            text_content = self.content[0].content
         # Otherwise, check if we have TextContent and multiple other parts
         elif self.content and len(self.content) > 1:
             text = [content for content in self.content if isinstance(content, TextContent)]
@@ -866,6 +868,8 @@ class Message(BaseMessage):
         #     role: str ('user' or 'model')
         if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
+        elif self.content and len(self.content) == 1 and isinstance(self.content[0], ToolReturnContent):
+            text_content = self.content[0].content
         else:
             text_content = None
 
@@ -1000,6 +1004,8 @@ class Message(BaseMessage):
         # embedded function calls in multi-turn conversation become more clear
         if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
+        if self.content and len(self.content) == 1 and isinstance(self.content[0], ToolReturnContent):
+            text_content = self.content[0].content
         else:
             text_content = None
         if self.role == "system":
