@@ -99,6 +99,7 @@ jobs:
           CLICKHOUSE_DATABASE: ${{ secrets.CLICKHOUSE_DATABASE }}
           CLICKHOUSE_USERNAME: ${{ secrets.CLICKHOUSE_USERNAME }}
           CLICKHOUSE_PASSWORD: ${{ secrets.CLICKHOUSE_PASSWORD }}
+          LETTA_USE_EXPERIMENTAL: ${{ secrets.LETTA_USE_EXPERIMENTAL }}
           LETTA_UVICORN_WORKERS: ${{ secrets.LETTA_UVICORN_WORKERS }}
         run: |
           just build-core deploy-core "${DEPLOY_MESSAGE}"
