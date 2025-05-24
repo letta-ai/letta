@@ -266,17 +266,37 @@ class ToolExecutionSandbox:
 
         try:
             with self.temporary_env_vars(env):
-
                 # Read and compile the Python script
                 with open(temp_file_path, "r", encoding="utf-8") as f:
                     source = f.read()
                 code_obj = compile(source, temp_file_path, "exec")
-
-                # Provide a dict for globals.
-                globals_dict = dict(env)  # or {}
-                # If you need to mimic `__main__` behavior:
-                globals_dict["__name__"] = "__main__"
-                globals_dict["__file__"] = temp_file_path
+                restricted_builtins = dict(__builtins__ if isinstance(__builtins__, dict) else __builtins__.__dict__)
+                
+                for dangerous_func in ['exec', 'eval', 'compile', 'open']:
+                    if dangerous_func in restricted_builtins:
+                        restricted_builtins.pop(dangerous_func)
+                
+                original_import = restricted_builtins['__import__']
+                def secure_import(name, *args, **kwargs):
+                    module = original_import(name, *args, **kwargs)
+                    
+                    if name == 'os':
+                        for dangerous_func in ['system', 'popen', 'spawn', 'exec', 'posix_spawn']:
+                            if hasattr(module, dangerous_func):
+                                setattr(module, dangerous_func, None)
+                    elif name == 'subprocess':
+                        for dangerous_func in ['run', 'call', 'check_call', 'check_output', 'Popen']:
+                            if hasattr(module, dangerous_func):
+                                setattr(module, dangerous_func, None)
+                    
+                    return module
+                
+                restricted_builtins['__import__'] = secure_import
+                
+                globals_dict = dict(env)
+                globals_dict['__builtins__'] = restricted_builtins
+                globals_dict['__name__'] = "__main__"
+                globals_dict['__file__'] = temp_file_path
 
                 # Execute the compiled code
                 log_event(name="start exec", attributes={"temp_file_path": temp_file_path})
