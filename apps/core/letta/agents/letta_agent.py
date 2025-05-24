@@ -185,6 +185,7 @@ class LettaAgent(BaseAgent):
 
         # Return back usage
         yield f"data: {usage.model_dump_json()}\n\n"
+        yield f"data: {MessageStreamStatus.done.model_dump_json()}\n\n"
 
     async def _step(
         self, agent_state: AgentState, input_messages: List[MessageCreate], max_steps: int = 10
