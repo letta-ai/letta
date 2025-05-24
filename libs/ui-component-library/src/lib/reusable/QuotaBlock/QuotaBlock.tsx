@@ -5,12 +5,14 @@ import { QuotaProgressBar } from '../../core/QuotaProgressBar/QuotaProgressBar';
 import { HStack } from '../../framing/HStack/HStack';
 import { useTranslations } from '@letta-cloud/translations';
 import { useFormatters } from '@letta-cloud/utils-client';
+import { InfoTooltip } from '../InfoTooltip/InfoTooltip';
 
 interface QuotaBlockProps {
   max: number | 'infinite';
   value: number;
   label: string;
   type?: 'progress';
+  tooltip?: string;
   footer?: React.ReactNode;
 }
 
@@ -24,13 +26,16 @@ function QuotaContentRender(props: QuotaBlockProps) {
 }
 
 export function QuotaBlock(props: QuotaBlockProps) {
-  const { max, value, footer, label, type = 'progress' } = props;
+  const { max, value, footer, label, tooltip, type = 'progress' } = props;
   const t = useTranslations('components/QuotaBlock');
 
   const { formatNumber } = useFormatters();
   return (
     <VStack color="background-grey" padding>
-      <Typography bold>{label}</Typography>
+      <HStack gap="small" align="center">
+        <Typography bold>{label}</Typography>
+        {tooltip && <InfoTooltip text={tooltip} />}
+      </HStack>
       <HStack align="center">
         <HStack border fullWidth padding="xxsmall">
           <QuotaContentRender {...props} type={type} />

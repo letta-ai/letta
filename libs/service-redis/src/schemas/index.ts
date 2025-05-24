@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  activeAgents,
   clientSideAccessTokens,
   db,
   inferenceModelsMetadata,
@@ -7,7 +8,7 @@ import {
   organizations,
   stepCostSchemaTable,
 } from '@letta-cloud/service-database';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, gte } from 'drizzle-orm';
 import {
   accessPolicyVersionOne,
   ModelTiers,
@@ -369,6 +370,34 @@ export const paymentCustomerDefinition = generateDefinitionSatisfies({
   output: PaymentCustomerSchema,
 });
 
+export const activeAgentDefinition = generateDefinitionSatisfies({
+  baseKey: 'activeAgent',
+  input: z.object({ agentId: z.string() }),
+  getKey: (args) => `activeAgent:${args.agentId}`,
+  output: z.object({ lastActiveAt: z.number(), isBilledAgent: z.boolean() }),
+  populateOnMissFn: async (args) => {
+    const agent = await db.query.activeAgents.findFirst({
+      where: eq(activeAgents.agentId, args.agentId),
+    });
+
+    if (!agent) {
+      await db.query.activeAgents.findFirst({
+        where: eq(activeAgents.agentId, args.agentId),
+      });
+
+      return null;
+    }
+
+    return {
+      expiresAt: 0,
+      data: {
+        isBilledAgent: agent.isBilledAgent,
+        lastActiveAt: new Date(agent.lastActiveAt).getTime() || 0,
+      },
+    };
+  },
+});
+
 export const redisDefinitions = {
   userSession: userSessionDefinition,
   organizationRateLimitsPerModel: organizationRateLimitsPerModelDefinition,
@@ -391,6 +420,7 @@ export const redisDefinitions = {
   emailTotp: emailTotpDefinition,
   customerSubscription: customerSubscriptionDefinition,
   paymentCustomer: paymentCustomerDefinition,
+  activeAgent: activeAgentDefinition,
 } satisfies Record<
   string,
   RedisDefinition<

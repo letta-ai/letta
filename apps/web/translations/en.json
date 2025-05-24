@@ -26,7 +26,7 @@
     "QuotaRow": {
       "limit": "<value></value> used of {max}"
     },
-    "title": "Usage (resets monthly)",
+    "title": "Usage",
     "premiumModelUsage": {
       "label": "Premium model requests"
     },
@@ -34,8 +34,10 @@
       "label": "Standard model requests"
     },
     "agentUsage": {
-      "label": "Agents"
-    }
+      "label": "Active Agents",
+      "tooltip": "This is the running count of agents that you have chatted with in the last billing period. This does not include agents that have not been communicated with anyone in the last billing period."
+    },
+    "resetDate": "Your limits will reset on {date}"
   },
   "onboarding/StartOnboardingDialog": {
     "skip": "Skip onboarding",

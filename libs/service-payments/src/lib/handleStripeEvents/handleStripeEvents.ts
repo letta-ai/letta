@@ -2,6 +2,7 @@ import type { Stripe } from 'stripe';
 import { deleteRedisData } from '@letta-cloud/service-redis';
 import { db, organizationBillingDetails } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
+import { downgradeActiveAgents } from './downgradeActiveAgents/downgradeActiveAgents';
 
 function clearCustomerSubscriptionCache(organizationId: string): Promise<void> {
   return deleteRedisData('customerSubscription', {
@@ -43,6 +44,8 @@ export async function handleStripeEvents(event: Stripe.Event) {
       }
 
       await clearCustomerSubscriptionCache(organizationId);
+
+      await downgradeActiveAgents(organizationId);
     }
   }
 }

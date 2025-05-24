@@ -1258,3 +1258,12 @@ export const contentModerationViolationsRelations = relations(
     }),
   }),
 );
+
+export const activeAgents = pgTable('active_agents', {
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  agentId: text('agent_id').notNull().primaryKey(),
+  lastActiveAt: timestamp('last_active_at').notNull().defaultNow(),
+  isBilledAgent: boolean('is_billed_agent').notNull().default(false),
+});

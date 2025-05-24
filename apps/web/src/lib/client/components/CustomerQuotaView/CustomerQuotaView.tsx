@@ -143,9 +143,15 @@ export function CustomerQuotaView() {
 
   const t = useTranslations('components/CustomerQuotaView');
 
+  const { formatDate } = useFormatters();
+
   const billingTier = useMemo(() => {
     return billingData?.body.billingTier || 'free';
   }, [billingData?.body.billingTier]);
+
+  const billingPeriodEnd = useMemo(() => {
+    return billingData?.body.billingPeriodEnd || '';
+  }, [billingData?.body.billingPeriodEnd]);
 
   const limits = useMemo(() => {
     return getUsageLimits(billingTier);
@@ -183,11 +189,17 @@ export function CustomerQuotaView() {
         />
         <HR />
         <QuotaBlock
+          tooltip={t('agentUsage.tooltip')}
           max={limits.agents}
           value={quotaData.body.agents}
           label={t('agentUsage.label')}
         />
       </VStack>
+      {billingPeriodEnd && (
+        <Typography color="lighter" variant="body3">
+          {t('resetDate', { date: formatDate(billingPeriodEnd) })}
+        </Typography>
+      )}
     </Section>
   );
 }

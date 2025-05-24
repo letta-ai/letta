@@ -74,7 +74,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
   free: {
     monthlyCost: 0,
     providers: 50,
-    agents: 10,
+    agents: 1,
     dataSources: 25,
     projects: 25,
     templates: 10,

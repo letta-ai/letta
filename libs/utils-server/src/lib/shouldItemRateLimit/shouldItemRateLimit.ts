@@ -10,14 +10,13 @@
 
 import type { UsageLimits } from '@letta-cloud/utils-shared';
 import pathToRegexp from 'path-to-regexp';
-import { db, deployedAgentMetadata } from '@letta-cloud/service-database';
-import { count, eq } from 'drizzle-orm';
 import {
   BlocksService,
   IdentitiesService,
   SourcesService,
   ToolsService,
 } from '@letta-cloud/sdk-core';
+import { getActiveBillableAgentsCount } from '@letta-cloud/service-payments';
 
 interface ShouldRateLimitPayload {
   path: string;
@@ -46,12 +45,9 @@ async function canCreateAgent(
 
   const { cloudOrganizationId } = actor;
 
-  const [agents] = await db
-    .select({ count: count() })
-    .from(deployedAgentMetadata)
-    .where(eq(deployedAgentMetadata.organizationId, cloudOrganizationId));
+  const agentsCount = await getActiveBillableAgentsCount(cloudOrganizationId);
 
-  if (agents.count >= limits.agents) {
+  if (agentsCount >= limits.agents) {
     return {
       type: 'agents',
       currentLimit: limits.agents,

@@ -1,12 +1,11 @@
 import { getRedisData, setRedisData } from '@letta-cloud/service-redis';
 import {
   db,
-  deployedAgentMetadata,
   embeddingModelsMetadata,
   inferenceModelsMetadata,
   perModelPerOrganizationRateLimitOverrides,
 } from '@letta-cloud/service-database';
-import { count, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { AgentsService, type MessageCreate } from '@letta-cloud/sdk-core';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
 import { getCreditCostPerModel } from '../getCreditCostPerModel/getCreditCostPerModel';
@@ -14,7 +13,7 @@ import { getOrganizationCredits } from '../redisOrganizationCredits/redisOrganiz
 import { getCustomerSubscription } from '@letta-cloud/service-payments';
 import { getRedisModelTransactions } from '../redisModelTransactions/redisModelTransactions';
 import type { RateLimitReason } from '@letta-cloud/types';
-import { LRUCache } from 'lru-cache';
+import { getCanAgentBeUsed } from './getCanAgentBeUsed/getCanAgentBeUsed';
 
 type ModelType = 'embedding' | 'inference';
 
@@ -180,11 +179,6 @@ function isANumberSafe(num: any) {
   return typeof num === 'number' && !isNaN(num) && isFinite(num);
 }
 
-const agentCountMap = new LRUCache<string, number>({
-  max: 100,
-  ttl: 1000,
-});
-
 export async function handleMessageRateLimiting(
   payload: IsRateLimitedForCreatingMessagesPayload,
 ) {
@@ -194,19 +188,14 @@ export async function handleMessageRateLimiting(
 
   const usageLimits = getUsageLimits(subscription.tier);
 
-  let agentCount = agentCountMap.get(lettaAgentsUserId);
+  const canAgentBeUsed = await getCanAgentBeUsed({
+    agentId,
+    organizationId,
+    agentLimit: usageLimits.agents,
+    billingPeriodStart: subscription.billingPeriodStart,
+  });
 
-  if (!agentCount) {
-    const [res] = await db
-      .select({ count: count() })
-      .from(deployedAgentMetadata)
-      .where(eq(deployedAgentMetadata.organizationId, organizationId));
-
-    agentCount = res?.count || 0;
-    agentCountMap.set(lettaAgentsUserId, agentCount);
-  }
-
-  if (usageLimits.agents <= agentCount) {
+  if (!canAgentBeUsed) {
     return {
       isRateLimited: true,
       reasons: ['agents-limit-exceeded'],

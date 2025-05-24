@@ -1,7 +1,6 @@
 import {
   agentTemplates,
   db,
-  deployedAgentMetadata,
   organizationBillingDetails,
   organizationCredits,
   organizationInvitedUsers,
@@ -40,6 +39,7 @@ import {
   getCustomerSubscription,
   resumeSubscription,
   cancelSubscription,
+  getActiveBillableAgentsCount,
 } from '@letta-cloud/service-payments';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import {
@@ -1426,23 +1426,18 @@ async function getOrganizationQuotas(): Promise<GetOrganizationQuotasResponse> {
     throw new Error('Organization not found');
   }
 
-  const [[agents], freeModelRequests, premiumModelRequests] = await Promise.all(
-    [
-      db
-        .select({ count: count() })
-        .from(deployedAgentMetadata)
-        .where(eq(deployedAgentMetadata.organizationId, activeOrganizationId)),
-      getRedisModelTransactions('free', activeOrganizationId),
-      getRedisModelTransactions('premium', activeOrganizationId),
-    ],
-  );
+  const [agents, freeModelRequests, premiumModelRequests] = await Promise.all([
+    getActiveBillableAgentsCount(activeOrganizationId),
+    getRedisModelTransactions('free', activeOrganizationId),
+    getRedisModelTransactions('premium', activeOrganizationId),
+  ]);
 
   return {
     status: 200,
     body: {
       freeModelRequests,
       premiumModelRequests,
-      agents: agents.count,
+      agents,
     },
   };
 }
@@ -1491,7 +1486,7 @@ async function getFullOrganizationQuotas(): Promise<GetFullOrganizationQuotasRes
   }
 
   const [
-    [agents],
+    agentsCount,
     freeInferencesPerMonth,
     premiumInferencesPerMonth,
     [projectsData],
@@ -1500,10 +1495,7 @@ async function getFullOrganizationQuotas(): Promise<GetFullOrganizationQuotasRes
     storage,
     [templatesData],
   ] = await Promise.all([
-    db
-      .select({ count: count() })
-      .from(deployedAgentMetadata)
-      .where(eq(deployedAgentMetadata.organizationId, activeOrganizationId)),
+    getActiveBillableAgentsCount(activeOrganizationId),
     getRedisModelTransactions('free', activeOrganizationId),
     getRedisModelTransactions('premium', activeOrganizationId),
     db
@@ -1541,7 +1533,7 @@ async function getFullOrganizationQuotas(): Promise<GetFullOrganizationQuotasRes
     body: {
       freeInferencesPerMonth,
       premiumInferencesPerMonth,
-      agents: agents.count,
+      agents: agentsCount,
       projects: projectsData.count,
       templates: templatesData.count,
       identities,

@@ -9,15 +9,13 @@ import {
 import type { StarterKitTool } from '@letta-cloud/config-agent-starter-kits';
 import { ToolsService } from '@letta-cloud/sdk-core';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
-import {
-  agentTemplates,
-  db,
-  deployedAgentMetadata,
-  projects,
-} from '@letta-cloud/service-database';
+import { agentTemplates, db, projects } from '@letta-cloud/service-database';
 import { and, count, eq } from 'drizzle-orm';
 import { cloudApiRouter, createTemplate } from 'tmp-cloud-api-router';
-import { getCustomerSubscription } from '@letta-cloud/service-payments';
+import {
+  getActiveBillableAgentsCount,
+  getCustomerSubscription,
+} from '@letta-cloud/service-payments';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
 
 type CreateAgentFromStarterKitsRequest = ServerInferRequest<
@@ -101,12 +99,9 @@ async function createAgentFromStarterKit(
 
   const limits = await getUsageLimits(subscription.tier);
 
-  const [agents] = await db
-    .select({ count: count() })
-    .from(deployedAgentMetadata)
-    .where(eq(deployedAgentMetadata.organizationId, activeOrganizationId));
+  const agentsCount = await getActiveBillableAgentsCount(activeOrganizationId);
 
-  if (agents.count >= limits.agents) {
+  if (agentsCount >= limits.agents) {
     return {
       status: 402,
       body: {
