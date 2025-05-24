@@ -147,7 +147,7 @@ function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
             !isLast ? 'text-text-lighter' : 'font-light',
             !onClick && !href
               ? 'cursor-default hover:bg-transparent'
-              : 'hover:bg-background-grey2 hover:text-background-grey2',
+              : 'hover:bg-background-grey2 hover:text-background-grey2-content',
             bold ? 'font-medium' : '',
           )}
         >
