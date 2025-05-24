@@ -127,7 +127,7 @@ jobs:
           LETTA_PG_DB: ${{ secrets.LETTA_PG_DB }}
           LETTA_PG_HOST: 10.119.0.3
           LETTA_PG_PORT: ${{ secrets.LETTA_PG_PORT }}
-          LETTA_DISABLE_SQLALCHEMY_POOLING: ${{ secrets.LETTA_DISABLE_SQLALCHEMY_POOLING }}
+          LETTA_DISABLE_SQLALCHEMY_POOLING: false
           E2B_API_KEY: ${{ env.E2B_API_KEY }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
@@ -140,4 +140,5 @@ jobs:
           CLICKHOUSE_USERNAME: default
           CLICKHOUSE_PASSWORD: ${{ secrets.CLICKHOUSE_PASSWORD_DEV }}
           ENV_NAME: dev
+          LETTA_UVICORN_WORKERS: 3 # number of CPU cores * 2 + 1
         run: just build-core deploy-core "${DEPLOY_MESSAGE}"
