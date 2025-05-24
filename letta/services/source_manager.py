@@ -48,7 +48,7 @@ class SourceManager:
             if update_data:
                 for key, value in update_data.items():
                     setattr(source, key, value)
-                source.update(db_session=session, actor=actor)
+                await source.update_async(db_session=session, actor=actor)
             else:
                 printd(
                     f"`update_source` was called with user_id={actor.id}, organization_id={actor.organization_id}, name={source.name}, but found existing source with nothing to update."

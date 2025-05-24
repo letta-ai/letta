@@ -548,7 +548,7 @@ async def agent_passages_setup(server, default_source, default_user, sarah_agent
     yield agent_passages, source_passages
 
     # Cleanup
-    server.source_manager.delete_source(default_source.id, actor=actor)
+    await server.source_manager.delete_source(default_source.id, actor=actor)
 
 
 @pytest.fixture
