@@ -1107,7 +1107,7 @@ async def test_messages_with_provider_override(server: SyncServer, user_id: str,
     step_ids = set([msg.step_id for msg in get_messages_response])
     completion_tokens, prompt_tokens, total_tokens = 0, 0, 0
     for step_id in step_ids:
-        step = server.step_manager.get_step(step_id=step_id, actor=actor)
+        step = await server.step_manager.get_step_async(step_id=step_id, actor=actor)
         assert step, "Step was not logged correctly"
         assert step.provider_id == provider.id
         assert step.provider_name == agent.llm_config.model_endpoint_type
@@ -1134,7 +1134,7 @@ async def test_messages_with_provider_override(server: SyncServer, user_id: str,
     step_ids = set([msg.step_id for msg in get_messages_response])
     completion_tokens, prompt_tokens, total_tokens = 0, 0, 0
     for step_id in step_ids:
-        step = server.step_manager.get_step(step_id=step_id, actor=actor)
+        step = await server.step_manager.get_step_async(step_id=step_id, actor=actor)
         assert step, "Step was not logged correctly"
         assert step.provider_id == None
         assert step.provider_name == agent.llm_config.model_endpoint_type
