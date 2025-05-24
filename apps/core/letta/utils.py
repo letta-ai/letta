@@ -1034,6 +1034,20 @@ def get_friendly_error_msg(function_name: str, exception_name: str, exception_me
     return error_msg
 
 
+def parse_stderr_error_msg(stderr_txt: str, last_n_lines: int = 3) -> tuple[str, str]:
+    """
+    Parses out from the last `last_n_line` of `stderr_txt` the Exception type and message.
+    """
+    index = -(last_n_lines + 1)
+    pattern = r"(\w+(?:Error|Exception)): (.+?)$"
+    for line in stderr_txt.split("\n")[:index:-1]:
+        if "Error" in line or "Exception" in line:
+            match = re.search(pattern, line)
+            if match:
+                return match.group(1), match.group(2)
+    return "", ""
+
+
 def run_async_task(coro: Coroutine[Any, Any, Any]) -> Any:
     """
     Safely runs an asynchronous coroutine in a synchronous context.

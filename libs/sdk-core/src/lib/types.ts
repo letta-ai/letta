@@ -96,8 +96,8 @@ export const ToolCallMessageSchema = z.object({
 
 export const ToolReturnMessageSchema = z.object({
   message_type: z.literal('tool_return_message'),
-  stderr: z.array(z.string()).optional(),
-  stdout: z.array(z.string()).optional(),
+  stderr: z.array(z.string()).nullable().optional(),
+  stdout: z.array(z.string()).nullable().optional(),
   tool_return: z.string(),
   tool_call_id: z.string(),
   status: z.string(),

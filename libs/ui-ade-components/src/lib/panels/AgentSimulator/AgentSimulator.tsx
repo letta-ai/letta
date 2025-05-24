@@ -328,8 +328,8 @@ export function useSendMessage(
         if (abortController.current?.signal.aborted) {
           return;
         }
-
-        if (['DONE_GEN', 'DONE_STEP', 'DONE'].includes(e.data)) {
+        
+        if (e.data.trim() === '[DONE]') {
           return;
         }
 
@@ -342,6 +342,7 @@ export function useSendMessage(
         }
 
         try {
+          // TODO (cliandy): handle {"message_type":"usage_statistics"} or don't pass through
           const extracted = AgentMessageSchema.parse(JSON.parse(e.data));
 
           queryClient.setQueriesData<InfiniteData<ListMessagesResponse>>(

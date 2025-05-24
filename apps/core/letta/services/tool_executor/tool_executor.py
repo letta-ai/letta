@@ -39,6 +39,7 @@ from letta.services.tool_sandbox.e2b_sandbox import AsyncToolSandboxE2B
 from letta.services.tool_sandbox.local_sandbox import AsyncToolSandboxLocal
 from letta.settings import tool_settings
 from letta.tracing import trace_method
+from letta.types import JsonDict
 from letta.utils import get_friendly_error_msg
 
 logger = get_logger(__name__)
@@ -107,11 +108,20 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         # Execute the appropriate function
         function_args_copy = function_args.copy()  # Make a copy to avoid modifying the original
-        function_response = function_map[function_name](agent_state, actor, **function_args_copy)
-        return ToolExecutionResult(
-            status="success",
-            func_return=function_response,
-        )
+        try:
+            function_response = function_map[function_name](agent_state, actor, **function_args_copy)
+            return ToolExecutionResult(
+                status="success",
+                func_return=function_response,
+                agent_state=agent_state,
+            )
+        except Exception as e:
+            return ToolExecutionResult(
+                status="error",
+                func_return=e,
+                agent_state=agent_state,
+                stderr=[get_friendly_error_msg(function_name=function_name, exception_name=type(e).__name__, exception_message=str(e))],
+            )
 
     def send_message(self, agent_state: AgentState, actor: User, message: str) -> Optional[str]:
         """
@@ -708,7 +718,7 @@ class SandboxToolExecutor(ToolExecutor):
     async def execute(
         self,
         function_name: str,
-        function_args: dict,
+        function_args: JsonDict,
         agent_state: AgentState,
         tool: Tool,
         actor: User,
@@ -749,7 +759,8 @@ class SandboxToolExecutor(ToolExecutor):
         except Exception as e:
             return self._handle_execution_error(e, function_name, traceback.format_exc())
 
-    def _prepare_function_args(self, function_args: dict, tool: Tool, function_name: str) -> dict:
+    @staticmethod
+    def _prepare_function_args(function_args: JsonDict, tool: Tool, function_name: str) -> dict:
         """Prepare function arguments with proper type coercion."""
         try:
             # Parse the source code to extract function annotations
@@ -761,7 +772,8 @@ class SandboxToolExecutor(ToolExecutor):
             # This is defensive programming - we try to coerce but fall back if it fails
             return function_args
 
-    def _create_agent_state_copy(self, agent_state: AgentState):
+    @staticmethod
+    def _create_agent_state_copy(agent_state: AgentState):
         """Create a copy of agent state for sandbox execution."""
         agent_state_copy = agent_state.__deepcopy__()
         # Remove tools from copy to prevent nested tool execution
@@ -769,8 +781,8 @@ class SandboxToolExecutor(ToolExecutor):
         agent_state_copy.tool_rules = []
         return agent_state_copy
 
+    @staticmethod
     def _handle_execution_error(
-        self,
         exception: Exception,
         function_name: str,
         stderr: str,
@@ -812,6 +824,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         return ToolExecutionResult(
             status="success",
             func_return=function_response,
+            agent_state=agent_state,
         )
 
     async def run_code(self, code: str, language: Literal["python", "js", "ts", "r", "java"]) -> str:
