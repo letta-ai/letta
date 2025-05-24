@@ -638,7 +638,7 @@ async def send_message(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor)
-    agent_eligible = agent.enable_sleeptime or not agent.multi_agent_group
+    agent_eligible = (agent.enable_sleeptime or not agent.multi_agent_group) or agent.agent_type == AgentType.sleeptime_agent
     experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
