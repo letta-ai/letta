@@ -184,6 +184,22 @@ export async function handleMessageRateLimiting(
 ) {
   const { organizationId, agentId, type, lettaAgentsUserId } = payload;
 
+  const agent = await AgentsService.retrieveAgent(
+    {
+      agentId,
+    },
+    {
+      user_id: lettaAgentsUserId,
+    },
+  );
+
+  if (!agent) {
+    return {
+      isRateLimited: true,
+      reasons: ['agent-not-found'],
+    };
+  }
+
   const subscription = await getCustomerSubscription(organizationId);
 
   const usageLimits = getUsageLimits(subscription.tier);
@@ -201,15 +217,6 @@ export async function handleMessageRateLimiting(
       reasons: ['agents-limit-exceeded'],
     };
   }
-
-  const agent = await AgentsService.retrieveAgent(
-    {
-      agentId,
-    },
-    {
-      user_id: lettaAgentsUserId,
-    },
-  );
 
   const handleRoot = agent.llm_config.handle?.split('/')[0];
   const isByok = agent.llm_config.provider_category === 'byok';

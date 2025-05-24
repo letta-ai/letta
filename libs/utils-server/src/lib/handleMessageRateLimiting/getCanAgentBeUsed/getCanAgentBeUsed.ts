@@ -12,6 +12,15 @@ interface GetIsAgentActiveOptions {
 export async function getCanAgentBeUsed(options: GetIsAgentActiveOptions) {
   const { agentId, billingPeriodStart, organizationId, agentLimit } = options;
 
+  const isDeployedAgent = await getRedisData('deployedAgent', {
+    agentId,
+  });
+
+  if (!isDeployedAgent?.isDeployed) {
+    // if its not deployed, it can be used
+    return true;
+  }
+
   const activeAgent = await getRedisData('activeAgent', {
     agentId,
   });

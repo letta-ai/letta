@@ -3,6 +3,7 @@ import {
   activeAgents,
   clientSideAccessTokens,
   db,
+  deployedAgentMetadata,
   inferenceModelsMetadata,
   lettaAPIKeys,
   organizations,
@@ -398,6 +399,43 @@ export const activeAgentDefinition = generateDefinitionSatisfies({
   },
 });
 
+export const deployedAgentDefinition = generateDefinitionSatisfies({
+  baseKey: 'deployedAgent',
+  input: z.object({ agentId: z.string() }),
+  getKey: (args) => `deployedAgent:${args.agentId}`,
+  output: z.object({
+    agentId: z.string(),
+    isDeployed: z.boolean(),
+  }),
+  populateOnMissFn: async (args) => {
+    const agent = await db.query.deployedAgentMetadata.findFirst({
+      where: eq(deployedAgentMetadata.agentId, args.agentId),
+      columns: {
+        organizationId: true,
+        agentId: true,
+      },
+    });
+
+    if (!agent) {
+      return {
+        expiresAt: 0,
+        data: {
+          agentId: args.agentId,
+          isDeployed: false,
+        },
+      };
+    }
+
+    return {
+      expiresAt: 0,
+      data: {
+        agentId: agent.agentId,
+        isDeployed: true,
+      },
+    };
+  },
+});
+
 export const redisDefinitions = {
   userSession: userSessionDefinition,
   organizationRateLimitsPerModel: organizationRateLimitsPerModelDefinition,
@@ -421,6 +459,7 @@ export const redisDefinitions = {
   customerSubscription: customerSubscriptionDefinition,
   paymentCustomer: paymentCustomerDefinition,
   activeAgent: activeAgentDefinition,
+  deployedAgent: deployedAgentDefinition,
 } satisfies Record<
   string,
   RedisDefinition<
