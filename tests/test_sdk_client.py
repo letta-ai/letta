@@ -477,7 +477,7 @@ def test_function_always_error(client: LettaSDKClient, agent: AgentState):
     assert response_message, "ToolReturnMessage message not found in response"
     assert response_message.status == "error"
 
-    assert response_message.tool_return == "Error executing function testing_method: ZeroDivisionError: division by zero"
+    assert "Error executing function testing_method: ZeroDivisionError: division by zero" in response_message.tool_return
     assert "ZeroDivisionError" in response_message.tool_return
 
 

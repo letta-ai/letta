@@ -39,6 +39,7 @@ from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryMana
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
 from letta.system import package_function_response
 from letta.tracing import log_event, trace_method, tracer
+from letta.utils import validate_function_response
 
 logger = get_logger(__name__)
 
@@ -541,7 +542,25 @@ class LettaAgent(BaseAgent):
             tool_args=tool_args,
             agent_state=agent_state,
         )
-        function_response = package_function_response(tool_execution_result.func_return, tool_execution_result.success_flag)
+
+        if tool_call_name in ["conversation_search", "conversation_search_date", "archival_memory_search"]:
+            # with certain functions we rely on the paging mechanism to handle overflow
+            truncate = False
+        else:
+            # but by default, we add a truncation safeguard to prevent bad functions from
+            # overflow the agent context window
+            truncate = True
+
+        # get the function response limit
+        target_tool = next((x for x in agent_state.tools if x.name == tool_call_name), None)
+        return_char_limit = target_tool.return_char_limit
+        function_response_string = validate_function_response(
+            tool_execution_result.func_return, return_char_limit=return_char_limit, truncate=truncate
+        )
+        function_response = package_function_response(
+            was_success=tool_execution_result.success_flag,
+            response_string=function_response_string,
+        )
 
         # 4. Register tool call with tool rule solver
         # Resolve whether or not to continue stepping
@@ -581,7 +600,7 @@ class LettaAgent(BaseAgent):
             tool_execution_result=tool_execution_result,
             tool_call_id=tool_call_id,
             function_call_success=tool_execution_result.success_flag,
-            function_response=tool_execution_result.func_return,
+            function_response=function_response_string,
             actor=self.actor,
             add_heartbeat_request_system_message=continue_stepping,
             reasoning_content=reasoning_content,

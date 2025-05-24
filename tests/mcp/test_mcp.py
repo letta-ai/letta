@@ -150,15 +150,12 @@ async def test_sse_mcp_server(client, agent_state):
     assert tr.status == "success", f"Bad status: {tr.status}"
     # parse JSON payload
     full_payload = json.loads(tr.tool_return)
-    payload = json.loads(full_payload["message"][0])
-    from pprint import pprint
+    payload = json.loads(full_payload["message"])
 
-    pprint(payload)
     assert payload.get("successful", False), f"Tool returned failure payload: {payload}"
     assert payload["data"]["details"] == "Action executed successfully", f"Unexpected details: {payload}"
 
 
-@pytest.mark.asyncio
 def test_stdio_mcp_server(client, agent_state):
     req_file = Path(__file__).parent / "weather" / "requirements.txt"
     create_virtualenv_and_install_requirements(req_file, name="venv")

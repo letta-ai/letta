@@ -701,12 +701,12 @@ class ExternalMCPToolExecutor(ToolExecutor):
 
         mcp_manager = MCPManager()
         # TODO: may need to have better client connection management
-        function_response = await mcp_manager.execute_mcp_server_tool(
+        function_response, success = await mcp_manager.execute_mcp_server_tool(
             mcp_server_name=mcp_server_name, tool_name=function_name, tool_args=function_args, actor=actor
         )
 
         return ToolExecutionResult(
-            status="success",
+            status="success" if success else "error",
             func_return=function_response,
         )
 

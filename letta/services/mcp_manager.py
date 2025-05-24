@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import letta.constants as constants
 from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig
@@ -53,7 +53,7 @@ class MCPManager:
     @enforce_types
     async def execute_mcp_server_tool(
         self, mcp_server_name: str, tool_name: str, tool_args: Optional[Dict[str, Any]], actor: PydanticUser
-    ) -> PydanticTool:
+    ) -> Tuple[str, bool]:
         """Call a specific tool from a specific MCP server."""
 
         from letta.settings import tool_settings
@@ -78,12 +78,13 @@ class MCPManager:
         await mcp_client.connect_to_server()
 
         # call tool
-        result = await mcp_client.execute_tool(tool_name, tool_args)
+        result, success = await mcp_client.execute_tool(tool_name, tool_args)
+        logger.info(f"MCP Result: {result}, Success: {success}")
         # TODO: change to pydantic tool
 
         await mcp_client.cleanup()
 
-        return result
+        return result, success
 
     @enforce_types
     async def add_tool_from_mcp_server(self, mcp_server_name: str, mcp_tool_name: str, actor: PydanticUser) -> PydanticTool:
