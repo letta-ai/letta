@@ -11,6 +11,10 @@ on:
       - 'apps/fern/openapi.json'
       - 'apps/fern/openapi-overrides.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   changed-files:
     runs-on: self-hosted
