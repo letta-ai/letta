@@ -77,7 +77,7 @@ class BlockManager:
             # Convert back to Pydantic
             return [m.to_pydantic() for m in created_models]
 
-    @trace_method 
+    @trace_method
     @enforce_types
     async def batch_create_blocks_async(self, blocks: List[PydanticBlock], actor: PydanticUser) -> List[PydanticBlock]:
         """
