@@ -1,8 +1,6 @@
 name: 🐍🧪 [Core] Alembic Validation
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
 

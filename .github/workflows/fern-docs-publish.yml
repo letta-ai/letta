@@ -2,8 +2,7 @@ name: 🌿 Publish Docs
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   run:

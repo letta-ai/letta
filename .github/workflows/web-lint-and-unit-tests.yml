@@ -5,10 +5,9 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 on:
-  push:
+  pull_request:
     branches:
       - main
-  pull_request:
 
 permissions:
   actions: read

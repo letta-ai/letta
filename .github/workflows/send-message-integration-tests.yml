@@ -1,8 +1,6 @@
 name: 🐍🧪 [Core] Send Message SDK Tests
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
 

@@ -7,13 +7,11 @@ permissions:
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
-
 jobs:
   changed-files:
     runs-on: ubuntu-latest

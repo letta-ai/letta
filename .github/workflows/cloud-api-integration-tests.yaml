@@ -5,19 +5,8 @@ permissions:
   contents: read
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'apps/web/**'
-      - 'apps/core/**'
-      - 'libs/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'tsconfig.json'
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -41,6 +30,12 @@ jobs:
           files: |
             .github/workflows/cloud-api-integration-tests.yaml
             apps/cloud-api/**
+            apps/web/**
+            apps/core/**
+            libs/**
+            package.json
+            package-lock.json
+            tsconfig.json
 
   cloud-api-integration-tests:
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
