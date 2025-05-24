@@ -10,11 +10,11 @@ export async function getActiveBillableAgentsCount(organizationId: string) {
     .from(activeAgents)
     .where(
       and(
-        (eq(activeAgents.organizationId, organizationId),
+        eq(activeAgents.organizationId, organizationId),
         gte(
           activeAgents.lastActiveAt,
           new Date(subscription.billingPeriodStart),
-        )),
+        ),
       ),
     );
 
