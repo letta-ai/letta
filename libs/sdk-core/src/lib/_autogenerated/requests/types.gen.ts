@@ -264,6 +264,7 @@ export type AgentState = {
  */
 export type AgentType =
   | 'memgpt_agent'
+  | 'memgpt_v2_agent'
   | 'split_thread_agent'
   | 'sleeptime_agent'
   | 'voice_convo_agent'

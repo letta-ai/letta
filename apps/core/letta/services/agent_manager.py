@@ -11,6 +11,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from letta.constants import (
     BASE_MEMORY_TOOLS,
+    BASE_MEMORY_TOOLS_V2,
     BASE_SLEEPTIME_CHAT_TOOLS,
     BASE_SLEEPTIME_TOOLS,
     BASE_TOOLS,
@@ -42,6 +43,7 @@ from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.sqlite_functions import adapt_array
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent, get_prompt_template_for_agent_type
+from letta.schemas.block import DEFAULT_BLOCKS
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -255,6 +257,8 @@ class AgentManager:
                 tool_names |= set(BASE_SLEEPTIME_TOOLS)
             elif agent_create.enable_sleeptime:
                 tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
+            elif agent_create.agent_type == AgentType.memgpt_v2_agent:
+                tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS_V2)
             else:
                 tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS)
         if agent_create.include_multi_agent_tools:
@@ -386,7 +390,18 @@ class AgentManager:
         # blocks
         block_ids = list(agent_create.block_ids or [])
         if agent_create.memory_blocks:
+
             pydantic_blocks = [PydanticBlock(**b.model_dump(to_orm=True)) for b in agent_create.memory_blocks]
+
+            # Inject a description for the default blocks if the user didn't specify them
+            # Used for `persona`, `human`, etc
+            default_blocks = {block.label: block for block in DEFAULT_BLOCKS}
+            for block in pydantic_blocks:
+                if block.label in default_blocks:
+                    if block.description is None:
+                        block.description = default_blocks[block.label].description
+
+            # Actually create the blocks
             created_blocks = await self.block_manager.batch_create_blocks_async(
                 pydantic_blocks,
                 actor=actor,
@@ -404,6 +419,8 @@ class AgentManager:
                 tool_names |= set(BASE_SLEEPTIME_TOOLS)
             elif agent_create.enable_sleeptime:
                 tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
+            elif agent_create.agent_type == AgentType.memgpt_v2_agent:
+                tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS_V2)
             else:
                 tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS)
         if agent_create.include_multi_agent_tools:
@@ -433,7 +450,7 @@ class AgentManager:
                     for tn in tool_names:
                         if tn in {"send_message", "send_message_to_agent_async", "memory_finish_edits"}:
                             tool_rules.append(TerminalToolRule(tool_name=tn))
-                        elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_SLEEPTIME_TOOLS):
+                        elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_MEMORY_TOOLS_V2 + BASE_SLEEPTIME_TOOLS):
                             tool_rules.append(ContinueToolRule(tool_name=tn))
 
                 if tool_rules:
