@@ -18,6 +18,8 @@ export async function getActiveBillableAgentsCount(organizationId: string) {
       ),
     );
 
+  console.log('DEBUG123', res, organizationId);
+
   if (!res) {
     return 0;
   }
