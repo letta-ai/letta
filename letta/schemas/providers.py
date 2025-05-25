@@ -289,7 +289,7 @@ class OpenAIProvider(Provider):
 
             # for openai, filter models
             if self.base_url == "https://api.openai.com/v1":
-                allowed_types = ["gpt-4", "o1", "o3"]
+                allowed_types = ["gpt-4", "o1", "o3", "o4"]
                 # NOTE: o1-mini and o1-preview do not support tool calling
                 # NOTE: o1-pro is only available in Responses API
                 disallowed_types = ["transcribe", "search", "realtime", "tts", "audio", "computer", "o1-mini", "o1-preview", "o1-pro"]
