@@ -14,6 +14,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import UsageStatistics
+from letta.schemas.parallel_execution import ParallelExecutionConfig
 from letta.schemas.response_format import ResponseFormatUnion
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
@@ -95,6 +96,10 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     message_buffer_autoclear: bool = Field(
         False,
         description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
+    )
+    parallel_execution_config: Optional[ParallelExecutionConfig] = Field(
+        None, 
+        description="Configuration for parallel tool execution including async and batching"
     )
     enable_sleeptime: Optional[bool] = Field(
         None,
