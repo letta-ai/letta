@@ -34,27 +34,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test_suite:
-          - "test_vector_embeddings.py"
-          - "test_client.py"
-          - "test_sdk_client.py"
-          - "test_client_legacy.py"
-          - "test_server.py"
-          - "test_multi_agent.py"
-          - "test_managers.py"
-          - "test_base_functions.py"
-          - "test_tool_schema_parsing.py"
-          - "test_tool_rule_solver.py"
-          - "test_memory.py"
-          - "test_utils.py"
-          - "test_stream_buffer_readers.py"
-          - "test_agent_serialization.py"
-          - "test_optimistic_json_parser.py"
-          - "test_llm_clients.py"
-          - "test_letta_agent_batch.py"
-          - "test_providers.py"
-          - "sdk/"
-          #- "mcp/"
+        include:
+          - test_suite: "test_vector_embeddings.py"
+          - test_suite: "test_client.py"
+          - test_suite: "test_sdk_client.py"
+          - test_suite: "test_client_legacy.py"
+          - test_suite: "test_server.py"
+          - test_suite: "test_multi_agent.py"
+          - test_suite: "test_managers.py"
+          - test_suite: "test_base_functions.py"
+          - test_suite: "test_tool_schema_parsing.py"
+          - test_suite: "test_tool_rule_solver.py"
+          - test_suite: "test_memory.py"
+          - test_suite: "test_utils.py"
+          - test_suite: "test_stream_buffer_readers.py"
+          - test_suite: "test_agent_serialization.py"
+          - test_suite: "test_optimistic_json_parser.py"
+          - test_suite: "test_llm_clients.py"
+          - test_suite: "test_letta_agent_batch.py"
+          - test_suite: "test_providers.py"
+          - test_suite: "sdk/"
+          - test_suite: "mcp/"
+            use_experimental: true
     services:
       qdrant:
         image: qdrant/qdrant
@@ -154,9 +155,8 @@ jobs:
           E2B_API_KEY: ${{ env.E2B_API_KEY }}
           E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
           LETTA_ENABLE_BATCH_JOB_POLLING: true
-          #LETTA_USE_EXPERIMENTAL: 1 # enable new agent loop
+          LETTA_USE_EXPERIMENTAL: ${{ matrix.use_experimental || 'false' }}
         run: |
           set -o xtrace
           poetry run pip show letta-client
           poetry run pytest -svv tests/${{ matrix.test_suite }}
-          LETTA_USE_EXPERIMENTAL=1 poetry run pytest -svv tests/mcp/
