@@ -1,4 +1,5 @@
 import os
+import re
 from logging import CRITICAL, DEBUG, ERROR, INFO, NOTSET, WARN, WARNING
 
 LETTA_DIR = os.path.join(os.path.expanduser("~"), ".letta")
@@ -56,12 +57,23 @@ DEFAULT_PERSONA = "sam_pov"
 DEFAULT_HUMAN = "basic"
 DEFAULT_PRESET = "memgpt_chat"
 
+DEFAULT_PERSONA_BLOCK_DESCRIPTION = "The persona block: Stores details about your current persona, guiding how you behave and respond. This helps you to maintain consistency and personality in your interactions."
+DEFAULT_HUMAN_BLOCK_DESCRIPTION = "The human block: Stores key details about the person you are conversing with, allowing for more personalized and friend-like conversation."
+
 SEND_MESSAGE_TOOL_NAME = "send_message"
 # Base tools that cannot be edited, as they access agent state directly
 # Note that we don't include "conversation_search_date" for now
 BASE_TOOLS = [SEND_MESSAGE_TOOL_NAME, "conversation_search", "archival_memory_insert", "archival_memory_search"]
 # Base memory tools CAN be edited, and are added by default by the server
 BASE_MEMORY_TOOLS = ["core_memory_append", "core_memory_replace"]
+# New v2 collection of the base memory tools (effecitvely same as sleeptime set), to pair with memgpt_v2 prompt
+BASE_MEMORY_TOOLS_V2 = [
+    "memory_replace",
+    "memory_insert",
+    # NOTE: leaving these ones out to simply the set? Can have these reserved for sleep-time
+    # "memory_rethink",
+    # "memory_finish_edits",
+]
 # Base tools if the memgpt agent has enable_sleeptime on
 BASE_SLEEPTIME_CHAT_TOOLS = [SEND_MESSAGE_TOOL_NAME, "conversation_search", "archival_memory_search"]
 # Base memory tools for sleeptime agent
@@ -84,6 +96,15 @@ BASE_VOICE_SLEEPTIME_TOOLS = [
 ]
 # Multi agent tools
 MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_tags", "send_message_to_agent_async"]
+
+# Used to catch if line numbers are pushed in
+# MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX = re.compile(r"^Line \d+: ", re.MULTILINE)
+# More "robust" version that handles different kinds of whitespace
+# shared constant for both memory_insert and memory_replace
+MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX = re.compile(
+    r"^[ \t]*Line[ \t]+\d+[ \t]*:",  # allow any leading whitespace and flexible spacing
+    re.MULTILINE,
+)
 
 # Built in tools
 BUILTIN_TOOLS = ["run_code", "web_search"]

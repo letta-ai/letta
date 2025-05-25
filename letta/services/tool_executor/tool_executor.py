@@ -10,6 +10,7 @@ from letta.constants import (
     COMPOSIO_ENTITY_ENV_VAR_KEY,
     CORE_MEMORY_LINE_NUMBER_WARNING,
     MCP_TOOL_TAG_NAME_PREFIX,
+    MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX,
     READ_ONLY_BLOCK_EDIT_ERROR,
     RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE,
     WEB_SEARCH_CLIP_CONTENT,
@@ -301,19 +302,18 @@ class LettaCoreToolExecutor(ToolExecutor):
         Args:
             label (str): Section of the memory to be edited, identified by its label.
             old_str (str): The text to replace (must match exactly, including whitespace
-                and indentation).
+                and indentation). Do not include line number prefixes.
             new_str (Optional[str]): The new text to insert in place of the old text.
-                Omit this argument to delete the old_str.
+                Omit this argument to delete the old_str. Do not include line number prefixes.
 
         Returns:
             str: The success message
         """
-        import re
 
         if agent_state.memory.get_block(label).read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
 
-        if bool(re.search(r"\nLine \d+: ", old_str)):
+        if bool(MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX.search(old_str)):
             raise ValueError(
                 "old_str contains a line number prefix, which is not allowed. "
                 "Do not include line numbers when calling memory tools (line "
@@ -325,7 +325,7 @@ class LettaCoreToolExecutor(ToolExecutor):
                 "Do not include line number information when calling memory tools "
                 "(line numbers are for display purposes only)."
             )
-        if bool(re.search(r"\nLine \d+: ", new_str)):
+        if bool(MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX.search(new_str)):
             raise ValueError(
                 "new_str contains a line number prefix, which is not allowed. "
                 "Do not include line numbers when calling memory tools (line "
@@ -393,19 +393,18 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         Args:
             label (str): Section of the memory to be edited, identified by its label.
-            new_str (str): The text to insert.
+            new_str (str): The text to insert. Do not include line number prefixes.
             insert_line (int): The line number after which to insert the text (0 for
                 beginning of file). Defaults to -1 (end of the file).
 
         Returns:
             str: The success message
         """
-        import re
 
         if agent_state.memory.get_block(label).read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
 
-        if bool(re.search(r"\nLine \d+: ", new_str)):
+        if bool(MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX.search(new_str)):
             raise ValueError(
                 "new_str contains a line number prefix, which is not allowed. Do not "
                 "include line numbers when calling memory tools (line numbers are for "
@@ -424,7 +423,9 @@ class LettaCoreToolExecutor(ToolExecutor):
         n_lines = len(current_value_lines)
 
         # Check if we're in range, from 0 (pre-line), to 1 (first line), to n_lines (last line)
-        if insert_line < 0 or insert_line > n_lines:
+        if insert_line == -1:
+            insert_line = n_lines
+        elif insert_line < 0 or insert_line > n_lines:
             raise ValueError(
                 f"Invalid `insert_line` parameter: {insert_line}. It should be within "
                 f"the range of lines of the memory block: {[0, n_lines]}, or -1 to "
@@ -475,17 +476,15 @@ class LettaCoreToolExecutor(ToolExecutor):
         Args:
             label (str): The memory block to be rewritten, identified by its label.
             new_memory (str): The new memory contents with information integrated from
-                existing memory blocks and the conversation context.
+                existing memory blocks and the conversation context. Do not include line number prefixes.
 
         Returns:
             str: The success message
         """
-        import re
-
         if agent_state.memory.get_block(label).read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
 
-        if bool(re.search(r"\nLine \d+: ", new_memory)):
+        if bool(MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX.search(new_memory)):
             raise ValueError(
                 "new_memory contains a line number prefix, which is not allowed. Do not "
                 "include line numbers when calling memory tools (line numbers are for "

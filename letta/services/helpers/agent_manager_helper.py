@@ -94,16 +94,32 @@ def _process_tags(agent: AgentModel, tags: List[str], replace=True):
 def derive_system_message(agent_type: AgentType, enable_sleeptime: Optional[bool] = None, system: Optional[str] = None):
     if system is None:
         # TODO: don't hardcode
+
         if agent_type == AgentType.voice_convo_agent:
             system = gpt_system.get_system_text("voice_chat")
+
         elif agent_type == AgentType.voice_sleeptime_agent:
             system = gpt_system.get_system_text("voice_sleeptime")
+
+        # MemGPT v1, both w/ and w/o sleeptime
         elif agent_type == AgentType.memgpt_agent and not enable_sleeptime:
-            system = gpt_system.get_system_text("memgpt_chat")
+            system = gpt_system.get_system_text("memgpt_v2_chat")
         elif agent_type == AgentType.memgpt_agent and enable_sleeptime:
-            system = gpt_system.get_system_text("memgpt_sleeptime_chat")
+            # NOTE: same as the chat one, since the chat one says that you "may" have the tools
+            system = gpt_system.get_system_text("memgpt_v2_chat")
+
+        # MemGPT v2, both w/ and w/o sleeptime
+        elif agent_type == AgentType.memgpt_v2_agent and not enable_sleeptime:
+            system = gpt_system.get_system_text("memgpt_v2_chat")
+        elif agent_type == AgentType.memgpt_v2_agent and enable_sleeptime:
+            # NOTE: same as the chat one, since the chat one says that you "may" have the tools
+            system = gpt_system.get_system_text("memgpt_v2_chat")
+
+        # Sleeptime
         elif agent_type == AgentType.sleeptime_agent:
-            system = gpt_system.get_system_text("sleeptime")
+            # v2 drops references to specific blocks, and instead relies on the block description injections
+            system = gpt_system.get_system_text("sleeptime_v2")
+
         else:
             raise ValueError(f"Invalid agent type: {agent_type}")
 
@@ -123,15 +139,22 @@ def compile_memory_metadata_block(
     # Create a metadata block of info so the agent knows about the metadata of out-of-context memories
     memory_metadata_block = "\n".join(
         [
-            f"### Current Time: {get_local_time_fast()}" f"### Memory [last modified: {timestamp_str}]",
-            f"{previous_message_count} previous messages between you and the user are stored in recall memory (use functions to access them)",
-            f"{archival_memory_size} total memories you created are stored in archival memory (use functions to access them)",
+            "<memory_metadata>",
+            f"- The current time is: {get_local_time_fast()}",
+            f"- Memory blocks were last modified: {timestamp_str}]",
+            f"- {previous_message_count} previous messages between you and the user are stored in recall memory (use tools to access them)",
+            f"- {archival_memory_size} total memories you created are stored in archival memory (use tools to access them)",
             (
-                f"Most recent archival passages {len(recent_passages)} recent passages: {[passage.text for passage in recent_passages]}"
+                (
+                    "<archival_preview>"
+                    + f"\n{len(recent_passages)} most recent external memories from archival memory:"
+                    + "".join([f"\n- {passage.text}" for passage in recent_passages])
+                    + "\n</archival_preview>"
+                )
                 if recent_passages is not None
                 else ""
             ),
-            "\nCore memory shown below (limited in size, additional information stored in archival / recall memory):",
+            "</memory_metadata>",
         ]
     )
     return memory_metadata_block
@@ -194,7 +217,7 @@ def compile_system_message(
             archival_memory_size=archival_memory_size,
             recent_passages=recent_passages,
         )
-        full_memory_string = memory_metadata_string + "\n" + in_context_memory.compile()
+        full_memory_string = in_context_memory.compile() + "\n\n" + memory_metadata_string
 
         # Add to the variables list to inject
         variables[IN_CONTEXT_MEMORY_KEYWORD] = full_memory_string
@@ -206,7 +229,7 @@ def compile_system_message(
             if memory_variable_string not in system_prompt:
                 # In this case, append it to the end to make sure memory is still injected
                 # warnings.warn(f"{IN_CONTEXT_MEMORY_KEYWORD} variable was missing from system prompt, appending instead")
-                system_prompt += "\n" + memory_variable_string
+                system_prompt += "\n\n" + memory_variable_string
 
         # render the variables using the built-in templater
         try:

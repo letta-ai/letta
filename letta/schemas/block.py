@@ -3,7 +3,7 @@ from typing import Optional
 from pydantic import Field, model_validator
 from typing_extensions import Self
 
-from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT
+from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT, DEFAULT_HUMAN_BLOCK_DESCRIPTION, DEFAULT_PERSONA_BLOCK_DESCRIPTION
 from letta.schemas.letta_base import LettaBase
 
 # block of the LLM context
@@ -85,12 +85,17 @@ class Human(Block):
     """Human block of the LLM context"""
 
     label: str = "human"
+    description: Optional[str] = Field(DEFAULT_HUMAN_BLOCK_DESCRIPTION, description="Description of the block.")
 
 
 class Persona(Block):
     """Persona block of the LLM context"""
 
     label: str = "persona"
+    description: Optional[str] = Field(DEFAULT_PERSONA_BLOCK_DESCRIPTION, description="Description of the block.")
+
+
+DEFAULT_BLOCKS = [Human(value=""), Persona(value="")]
 
 
 class BlockUpdate(BaseBlock):

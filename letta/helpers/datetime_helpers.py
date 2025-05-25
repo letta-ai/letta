@@ -36,7 +36,7 @@ def get_local_time_military():
 
 
 def get_local_time_fast():
-    formatted_time = strftime("%Y-%m-%d %H:%M:%S")
+    formatted_time = strftime("%Y-%m-%d %I:%M:%S %p %Z%z")
 
     return formatted_time
 

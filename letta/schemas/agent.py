@@ -27,6 +27,7 @@ class AgentType(str, Enum):
     """
 
     memgpt_agent = "memgpt_agent"
+    memgpt_v2_agent = "memgpt_v2_agent"
     split_thread_agent = "split_thread_agent"
     sleeptime_agent = "sleeptime_agent"
     voice_convo_agent = "voice_convo_agent"
@@ -298,31 +299,48 @@ class AgentStepState(BaseModel):
 
 
 def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
-    if agent_type == AgentType.sleeptime_agent:
+
+    # Sleeptime agents use the MemGPT v2 memory tools (line numbers)
+    # MemGPT v2 tools use line-number, so core memory blocks should have line numbers
+    if agent_type == AgentType.sleeptime_agent or agent_type == AgentType.memgpt_v2_agent:
         return (
+            "<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n"
             "{% for block in blocks %}"
-            '<{{ block.label }} characters="{{ block.value|length }}/{{ block.limit }}">\n'
-            f"{CORE_MEMORY_LINE_NUMBER_WARNING}"
+            "<{{ block.label }}>\n"
+            "<description>\n"
+            "{{ block.description }}\n"
+            "</description>\n"
+            "<metadata>"
+            "{% if block.read_only %}\n- read_only=true{% endif %}\n- chars_current={{ block.value|length }}\n- chars_limit={{ block.limit }}\n"
+            "</metadata>\n"
+            "<value>\n"
+            f"{CORE_MEMORY_LINE_NUMBER_WARNING}\n"
             "{% for line in block.value.split('\\n') %}"
             "Line {{ loop.index }}: {{ line }}\n"
             "{% endfor %}"
-            "</{{ block.label }}>"
+            "</value>\n"
+            "</{{ block.label }}>\n"
             "{% if not loop.last %}\n{% endif %}"
             "{% endfor %}"
+            "\n</memory_blocks>"
         )
-    return (
-        "{% for block in blocks %}"
-        "<{{ block.label }}>\n"
-        "<description>\n"
-        "{{ block.description }}\n"
-        "</description>\n"
-        "<metadata>\n"
-        '{% if block.read_only %}read_only="true" {% endif %}chars_current="{{ block.value|length }}" chars_limit="{{ block.limit }}"\n'
-        "</metadata>\n"
-        "<value>\n"
-        "{{ block.value }}\n"
-        "</value>\n"
-        "</{{ block.label }}>\n"
-        "{% if not loop.last %}\n{% endif %}"
-        "{% endfor %}"
-    )
+    # Default setup (MemGPT), no line numbers
+    else:
+        return (
+            "<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n"
+            "{% for block in blocks %}"
+            "<{{ block.label }}>\n"
+            "<description>\n"
+            "{{ block.description }}\n"
+            "</description>\n"
+            "<metadata>"
+            "{% if block.read_only %}\n- read_only=true{% endif %}\n- chars_current={{ block.value|length }}\n- chars_limit={{ block.limit }}\n"
+            "</metadata>\n"
+            "<value>\n"
+            "{{ block.value }}\n"
+            "</value>\n"
+            "</{{ block.label }}>\n"
+            "{% if not loop.last %}\n{% endif %}"
+            "{% endfor %}"
+            "\n</memory_blocks>"
+        )
