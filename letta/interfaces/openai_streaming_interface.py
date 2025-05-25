@@ -58,9 +58,10 @@ class OpenAIStreamingInterface:
 
     def get_tool_call_object(self) -> ToolCall:
         """Useful for agent loop"""
+        function_name = self.last_flushed_function_name if self.last_flushed_function_name else self.function_name_buffer
         return ToolCall(
             id=self.letta_tool_message_id,
-            function=FunctionCall(arguments=self.current_function_arguments, name=self.last_flushed_function_name),
+            function=FunctionCall(arguments=self.current_function_arguments, name=function_name),
         )
 
     async def process(self, stream: AsyncStream[ChatCompletionChunk]) -> AsyncGenerator[LettaMessage, None]:
