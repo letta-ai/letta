@@ -41,7 +41,7 @@ def is_openai_reasoning_model(model: str) -> bool:
     """Utility function to check if the model is a 'reasoner'"""
 
     # NOTE: needs to be updated with new model releases
-    is_reasoning = model.startswith("o1") or model.startswith("o3")
+    is_reasoning = model.startswith("o1") or model.startswith("o3") or model.startswith("o4")
     return is_reasoning
 
 
@@ -187,9 +187,9 @@ class OpenAIClient(LLMClientBase):
             tool_choice=tool_choice,
             user=str(),
             max_completion_tokens=llm_config.max_tokens,
-            temperature=llm_config.temperature if supports_temperature_param(model) else None,
+            # NOTE: the reasoners that don't support temperature require 1.0, not None
+            temperature=llm_config.temperature if supports_temperature_param(model) else 1.0,
         )
-
         # always set user id for openai requests
         if self.actor:
             data.user = self.actor.id
