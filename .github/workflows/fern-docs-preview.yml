@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   run:
-    runs-on: self-hosted
+    runs-on: [self-hosted, medium]
     permissions: write-all
     steps:
       - name: Checkout repository

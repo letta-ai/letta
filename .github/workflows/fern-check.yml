@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   run:
-    runs-on: self-hosted
+    runs-on: [self-hosted, medium]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

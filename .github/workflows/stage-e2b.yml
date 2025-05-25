@@ -12,7 +12,7 @@ concurrency:
 jobs:
 
   changed-files:
-    runs-on: self-hosted
+    runs-on: [self-hosted, medium]
     name: changed-files
     outputs:
       all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}

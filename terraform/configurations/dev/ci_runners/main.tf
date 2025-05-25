@@ -27,7 +27,7 @@ module "ci_runners" {
   zone = "us-central1-a"
 
   # instance config
-  runner_image = "family/ci-runner-dev" # not yet built but will provision with packer ig?
+  runner_image = "family/ci-runner-dev"
   machine_type = "c4a-standard-4"
   ssh_pubkey = "letta:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILflk18SwzkU5NS9CPylt3vszYJas365wX7OCTbxPWXw"
 

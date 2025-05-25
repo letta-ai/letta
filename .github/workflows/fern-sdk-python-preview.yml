@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   changed-files:
-    runs-on: self-hosted
+    runs-on: [self-hosted, medium]
     name: changed-files
     outputs:
       all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
@@ -31,7 +31,7 @@ jobs:
   preview-python-sdk:
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     needs: [changed-files]
-    runs-on: self-hosted
+    runs-on: [self-hosted, medium]
     services:
       postgres:
         image: pgvector/pgvector:pg17

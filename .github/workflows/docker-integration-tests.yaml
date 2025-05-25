@@ -26,7 +26,7 @@ jobs:
   test:
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     needs: [changed-files]
-    runs-on: self-hosted
+    runs-on: [self-hosted, medium]
     timeout-minutes: 15
     steps:
     - run: echo "${{ needs.changed-files.outputs.all_changed_files }}"
