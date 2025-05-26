@@ -40,7 +40,7 @@ async def list_providers(
 
 
 @router.post("/", response_model=Provider, operation_id="create_provider")
-def create_provider(
+async def create_provider(
     request: ProviderCreate = Body(...),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
     server: "SyncServer" = Depends(get_letta_server),
@@ -48,16 +48,16 @@ def create_provider(
     """
     Create a new custom provider
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     provider = ProviderCreate(**request.model_dump())
 
-    provider = server.provider_manager.create_provider(provider, actor=actor)
+    provider = await server.provider_manager.create_provider_async(provider, actor=actor)
     return provider
 
 
 @router.patch("/{provider_id}", response_model=Provider, operation_id="modify_provider")
-def modify_provider(
+async def modify_provider(
     provider_id: str,
     request: ProviderUpdate = Body(...),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
