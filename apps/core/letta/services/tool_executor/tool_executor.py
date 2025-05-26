@@ -19,7 +19,7 @@ from letta.constants import (
 )
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
 from letta.functions.composio_helpers import execute_composio_action_async, generate_composio_action_from_func_name
-from letta.helpers.composio_helpers import get_composio_api_key
+from letta.helpers.composio_helpers import get_composio_api_key_async
 from letta.helpers.json_helpers import json_dumps
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
@@ -656,7 +656,7 @@ class ExternalComposioToolExecutor(ToolExecutor):
         entity_id = self._get_entity_id(agent_state)
 
         # Get composio_api_key
-        composio_api_key = get_composio_api_key(actor=actor)
+        composio_api_key = await get_composio_api_key_async(actor=actor)
 
         # TODO (matt): Roll in execute_composio_action into this class
         function_response = await execute_composio_action_async(
