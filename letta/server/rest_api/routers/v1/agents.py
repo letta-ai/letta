@@ -270,7 +270,7 @@ def list_agent_tools(
 
 
 @router.patch("/{agent_id}/tools/attach/{tool_id}", response_model=AgentState, operation_id="attach_tool")
-def attach_tool(
+async def attach_tool(
     agent_id: str,
     tool_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -279,12 +279,12 @@ def attach_tool(
     """
     Attach a tool to an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.agent_manager.attach_tool(agent_id=agent_id, tool_id=tool_id, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.agent_manager.attach_tool_async(agent_id=agent_id, tool_id=tool_id, actor=actor)
 
 
 @router.patch("/{agent_id}/tools/detach/{tool_id}", response_model=AgentState, operation_id="detach_tool")
-def detach_tool(
+async def detach_tool(
     agent_id: str,
     tool_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -293,8 +293,8 @@ def detach_tool(
     """
     Detach a tool from an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.agent_manager.detach_tool(agent_id=agent_id, tool_id=tool_id, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.agent_manager.detach_tool_async(agent_id=agent_id, tool_id=tool_id, actor=actor)
 
 
 @router.patch("/{agent_id}/sources/attach/{source_id}", response_model=AgentState, operation_id="attach_source_to_agent")
