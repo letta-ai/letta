@@ -87,7 +87,7 @@ def check_provider(
 
 
 @router.delete("/{provider_id}", response_model=None, operation_id="delete_provider")
-def delete_provider(
+async def delete_provider(
     provider_id: str,
     actor_id: Optional[str] = Header(None, alias="user_id"),
     server: "SyncServer" = Depends(get_letta_server),
@@ -96,8 +96,8 @@ def delete_provider(
     Delete an existing custom provider
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
-        server.provider_manager.delete_provider_by_id(provider_id=provider_id, actor=actor)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        await server.provider_manager.delete_provider_by_id_async(provider_id=provider_id, actor=actor)
         return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Provider id={provider_id} successfully deleted"})
     except NoResultFound:
         raise HTTPException(status_code=404, detail=f"Provider provider_id={provider_id} not found for user_id={actor.id}.")
