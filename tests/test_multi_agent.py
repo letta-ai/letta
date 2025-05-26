@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import delete
 
 from letta.config import LettaConfig
-from letta.orm import Provider, Step
+from letta.orm import Provider, ProviderTrace, Step
 from letta.schemas.agent import CreateAgent
 from letta.schemas.block import CreateBlock
 from letta.schemas.group import (
@@ -38,6 +38,7 @@ def org_id(server):
 
     # cleanup
     with db_registry.session() as session:
+        session.execute(delete(ProviderTrace))
         session.execute(delete(Step))
         session.execute(delete(Provider))
         session.commit()

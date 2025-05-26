@@ -1,5 +1,7 @@
+import asyncio
 from typing import Dict, List, Optional
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from letta.log import get_logger
@@ -12,6 +14,7 @@ from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.tracing import trace_method
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -20,6 +23,7 @@ logger = get_logger(__name__)
 class BlockManager:
     """Manager class to handle business logic related to Blocks."""
 
+    @trace_method
     @enforce_types
     def create_or_update_block(self, block: PydanticBlock, actor: PydanticUser) -> PydanticBlock:
         """Create a new block based on the Block schema."""
@@ -34,6 +38,22 @@ class BlockManager:
                 block.create(session, actor=actor)
             return block.to_pydantic()
 
+    @trace_method
+    @enforce_types
+    async def create_or_update_block_async(self, block: PydanticBlock, actor: PydanticUser) -> PydanticBlock:
+        """Create a new block based on the Block schema."""
+        db_block = await self.get_block_by_id_async(block.id, actor)
+        if db_block:
+            update_data = BlockUpdate(**block.model_dump(to_orm=True, exclude_none=True))
+            return await self.update_block_async(block.id, update_data, actor)
+        else:
+            async with db_registry.async_session() as session:
+                data = block.model_dump(to_orm=True, exclude_none=True)
+                block = BlockModel(**data, organization_id=actor.organization_id)
+                await block.create_async(session, actor=actor)
+                return block.to_pydantic()
+
+    @trace_method
     @enforce_types
     def batch_create_blocks(self, blocks: List[PydanticBlock], actor: PydanticUser) -> List[PydanticBlock]:
         """
@@ -57,6 +77,7 @@ class BlockManager:
             # Convert back to Pydantic
             return [m.to_pydantic() for m in created_models]
 
+    @trace_method
     @enforce_types
     def update_block(self, block_id: str, block_update: BlockUpdate, actor: PydanticUser) -> PydanticBlock:
         """Update a block by its ID with the given BlockUpdate object."""
@@ -72,6 +93,23 @@ class BlockManager:
             block.update(db_session=session, actor=actor)
             return block.to_pydantic()
 
+    @trace_method
+    @enforce_types
+    async def update_block_async(self, block_id: str, block_update: BlockUpdate, actor: PydanticUser) -> PydanticBlock:
+        """Update a block by its ID with the given BlockUpdate object."""
+        # Safety check for block
+
+        async with db_registry.async_session() as session:
+            block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
+            update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+
+            for key, value in update_data.items():
+                setattr(block, key, value)
+
+            await block.update_async(db_session=session, actor=actor)
+            return block.to_pydantic()
+
+    @trace_method
     @enforce_types
     def delete_block(self, block_id: str, actor: PydanticUser) -> PydanticBlock:
         """Delete a block by its ID."""
@@ -80,43 +118,16 @@ class BlockManager:
             block.hard_delete(db_session=session, actor=actor)
             return block.to_pydantic()
 
+    @trace_method
     @enforce_types
-    def get_blocks(
-        self,
-        actor: PydanticUser,
-        label: Optional[str] = None,
-        is_template: Optional[bool] = None,
-        template_name: Optional[str] = None,
-        identifier_keys: Optional[List[str]] = None,
-        identity_id: Optional[str] = None,
-        id: Optional[str] = None,
-        after: Optional[str] = None,
-        limit: Optional[int] = 50,
-    ) -> List[PydanticBlock]:
-        """Retrieve blocks based on various optional filters."""
-        with db_registry.session() as session:
-            # Prepare filters
-            filters = {"organization_id": actor.organization_id}
-            if label:
-                filters["label"] = label
-            if is_template is not None:
-                filters["is_template"] = is_template
-            if template_name:
-                filters["template_name"] = template_name
-            if id:
-                filters["id"] = id
+    async def delete_block_async(self, block_id: str, actor: PydanticUser) -> PydanticBlock:
+        """Delete a block by its ID."""
+        async with db_registry.async_session() as session:
+            block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
+            await block.hard_delete_async(db_session=session, actor=actor)
+            return block.to_pydantic()
 
-            blocks = BlockModel.list(
-                db_session=session,
-                after=after,
-                limit=limit,
-                identifier_keys=identifier_keys,
-                identity_id=identity_id,
-                **filters,
-            )
-
-            return [block.to_pydantic() for block in blocks]
-
+    @trace_method
     @enforce_types
     async def get_blocks_async(
         self,
@@ -179,6 +190,7 @@ class BlockManager:
 
             return [block.to_pydantic() for block in blocks]
 
+    @trace_method
     @enforce_types
     def get_block_by_id(self, block_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticBlock]:
         """Retrieve a block by its name."""
@@ -189,15 +201,18 @@ class BlockManager:
             except NoResultFound:
                 return None
 
+    @trace_method
     @enforce_types
-    def get_all_blocks_by_ids(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
-        """Retrieve blocks by their ids."""
-        with db_registry.session() as session:
-            blocks = [block.to_pydantic() for block in BlockModel.read_multiple(db_session=session, identifiers=block_ids, actor=actor)]
-            # backwards compatibility. previous implementation added None for every block not found.
-            blocks.extend([None for _ in range(len(block_ids) - len(blocks))])
-            return blocks
+    async def get_block_by_id_async(self, block_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticBlock]:
+        """Retrieve a block by its name."""
+        async with db_registry.async_session() as session:
+            try:
+                block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
+                return block.to_pydantic()
+            except NoResultFound:
+                return None
 
+    @trace_method
     @enforce_types
     async def get_all_blocks_by_ids_async(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
         """Retrieve blocks by their ids without loading unnecessary relationships. Async implementation."""
@@ -245,18 +260,18 @@ class BlockManager:
 
             return pydantic_blocks
 
+    @trace_method
     @enforce_types
-    def get_agents_for_block(self, block_id: str, actor: PydanticUser) -> List[PydanticAgentState]:
+    async def get_agents_for_block_async(self, block_id: str, actor: PydanticUser) -> List[PydanticAgentState]:
         """
         Retrieve all agents associated with a given block.
         """
-        with db_registry.session() as session:
-            block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
+        async with db_registry.async_session() as session:
+            block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
             agents_orm = block.agents
-            agents_pydantic = [agent.to_pydantic() for agent in agents_orm]
+            return await asyncio.gather(*[agent.to_pydantic_async() for agent in agents_orm])
 
-            return agents_pydantic
-
+    @trace_method
     @enforce_types
     def size(
         self,
@@ -270,6 +285,7 @@ class BlockManager:
 
     # Block History Functions
 
+    @trace_method
     @enforce_types
     def checkpoint_block(
         self,
@@ -373,6 +389,7 @@ class BlockManager:
         updated_block = block.update(db_session=session, actor=actor, no_commit=True)
         return updated_block
 
+    @trace_method
     @enforce_types
     def undo_checkpoint_block(self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None) -> PydanticBlock:
         """
@@ -415,6 +432,7 @@ class BlockManager:
             session.commit()
             return block.to_pydantic()
 
+    @trace_method
     @enforce_types
     def redo_checkpoint_block(self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None) -> PydanticBlock:
         """
@@ -453,8 +471,9 @@ class BlockManager:
             session.commit()
             return block.to_pydantic()
 
+    @trace_method
     @enforce_types
-    def bulk_update_block_values(
+    async def bulk_update_block_values_async(
         self, updates: Dict[str, str], actor: PydanticUser, return_hydrated: bool = False
     ) -> Optional[List[PydanticBlock]]:
         """
@@ -469,12 +488,13 @@ class BlockManager:
             the updated Block objects as Pydantic schemas
 
         Raises:
-            NoResultFound if any block_id doesn’t exist or isn’t visible to this actor
-            ValueError     if any new value exceeds its block’s limit
+            NoResultFound if any block_id doesn't exist or isn't visible to this actor
+            ValueError     if any new value exceeds its block's limit
         """
-        with db_registry.session() as session:
-            q = session.query(BlockModel).filter(BlockModel.id.in_(updates.keys()), BlockModel.organization_id == actor.organization_id)
-            blocks = q.all()
+        async with db_registry.async_session() as session:
+            query = select(BlockModel).where(BlockModel.id.in_(updates.keys()), BlockModel.organization_id == actor.organization_id)
+            result = await session.execute(query)
+            blocks = result.scalars().all()
 
             found_ids = {b.id for b in blocks}
             missing = set(updates.keys()) - found_ids
@@ -488,8 +508,10 @@ class BlockManager:
                     new_val = new_val[: block.limit]
                 block.value = new_val
 
-            session.commit()
+            await session.commit()
 
             if return_hydrated:
-                return [b.to_pydantic() for b in blocks]
+                # TODO: implement for async
+                pass
+
             return None

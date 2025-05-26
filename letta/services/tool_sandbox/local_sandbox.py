@@ -60,14 +60,16 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
         additional_env_vars: Optional[Dict],
     ) -> ToolExecutionResult:
         """
-        Unified asynchronougit pus method to run the tool in a local sandbox environment,
+        Unified asynchronous method to run the tool in a local sandbox environment,
         always via subprocess for multi-core parallelism.
         """
         # Get sandbox configuration
         if self.provided_sandbox_config:
             sbx_config = self.provided_sandbox_config
         else:
-            sbx_config = self.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=self.user)
+            sbx_config = await self.sandbox_config_manager.get_or_create_default_sandbox_config_async(
+                sandbox_type=SandboxType.LOCAL, actor=self.user
+            )
         local_configs = sbx_config.get_local_config()
         use_venv = local_configs.use_venv
 
@@ -76,7 +78,9 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
         if self.provided_sandbox_env_vars:
             env.update(self.provided_sandbox_env_vars)
         else:
-            env_vars = self.sandbox_config_manager.get_sandbox_env_vars_as_dict(sandbox_config_id=sbx_config.id, actor=self.user, limit=100)
+            env_vars = await self.sandbox_config_manager.get_sandbox_env_vars_as_dict_async(
+                sandbox_config_id=sbx_config.id, actor=self.user, limit=100
+            )
             env.update(env_vars)
 
         if agent_state:

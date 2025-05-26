@@ -6,15 +6,16 @@ from typing import List
 
 import pytest
 
-from letta import create_client
 from letta.agent import Agent
-from letta.client.client import LocalClient
+from letta.config import LettaConfig
 from letta.llm_api.helpers import calculate_summarizer_cutoff
+from letta.schemas.agent import CreateAgent
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message
+from letta.schemas.message import Message, MessageCreate
+from letta.server.server import SyncServer
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from tests.helpers.endpoints_helper import EMBEDDING_CONFIG_PATH
 from tests.helpers.utils import cleanup
@@ -30,22 +31,34 @@ test_agent_name = f"test_client_{str(uuid.uuid4())}"
 
 
 @pytest.fixture(scope="module")
-def client():
-    client = create_client()
-    # client.set_default_llm_config(LLMConfig.default_config("gpt-4o-mini"))
-    client.set_default_llm_config(LLMConfig.default_config("gpt-4o-mini"))
-    client.set_default_embedding_config(EmbeddingConfig.default_config(provider="openai"))
+def server():
+    config = LettaConfig.load()
+    config.save()
 
-    yield client
+    server = SyncServer()
+    return server
 
 
 @pytest.fixture(scope="module")
-def agent_state(client):
+def default_user(server):
+    yield server.user_manager.get_user_or_default()
+
+
+@pytest.fixture(scope="module")
+def agent_state(server, default_user):
     # Generate uuid for agent name for this example
-    agent_state = client.create_agent(name=test_agent_name)
+    agent_state = server.create_agent(
+        CreateAgent(
+            name=test_agent_name,
+            include_base_tools=True,
+            model="openai/gpt-4o-mini",
+            embedding="letta/letta-free",
+        ),
+        actor=default_user,
+    )
     yield agent_state
 
-    client.delete_agent(agent_state.id)
+    server.agent_manager.delete_agent(agent_state.id, default_user)
 
 
 # Sample data setup
@@ -113,9 +126,9 @@ def test_cutoff_calculation(mocker):
     assert messages[cutoff - 1].role == MessageRole.user
 
 
-def test_cutoff_calculation_with_tool_call(mocker, client: LocalClient, agent_state):
+def test_cutoff_calculation_with_tool_call(mocker, server, agent_state, default_user):
     """Test that trim_older_in_context_messages properly handles tool responses with _trim_tool_response."""
-    agent_state = client.get_agent(agent_id=agent_state.id)
+    agent_state = server.agent_manager.get_agent_by_id(agent_id=agent_state.id, actor=default_user)
 
     # Setup
     messages = [
@@ -133,18 +146,18 @@ def test_cutoff_calculation_with_tool_call(mocker, client: LocalClient, agent_st
     def mock_get_messages_by_ids(message_ids, actor):
         return [msg for msg in messages if msg.id in message_ids]
 
-    mocker.patch.object(client.server.agent_manager.message_manager, "get_messages_by_ids", side_effect=mock_get_messages_by_ids)
+    mocker.patch.object(server.agent_manager.message_manager, "get_messages_by_ids", side_effect=mock_get_messages_by_ids)
 
     # Mock get_agent_by_id to return an agent with our message IDs
     mock_agent = mocker.Mock()
     mock_agent.message_ids = [msg.id for msg in messages]
-    mocker.patch.object(client.server.agent_manager, "get_agent_by_id", return_value=mock_agent)
+    mocker.patch.object(server.agent_manager, "get_agent_by_id", return_value=mock_agent)
 
     # Mock set_in_context_messages to capture what messages are being set
-    mock_set_messages = mocker.patch.object(client.server.agent_manager, "set_in_context_messages", return_value=agent_state)
+    mock_set_messages = mocker.patch.object(server.agent_manager, "set_in_context_messages", return_value=agent_state)
 
     # Test Case: Trim to remove orphaned tool response
-    client.server.agent_manager.trim_older_in_context_messages(agent_id=agent_state.id, num=3, actor=client.user)
+    server.agent_manager.trim_older_in_context_messages(agent_id=agent_state.id, num=3, actor=default_user)
 
     test1 = mock_set_messages.call_args_list[0][1]
     assert len(test1["message_ids"]) == 5
@@ -152,104 +165,92 @@ def test_cutoff_calculation_with_tool_call(mocker, client: LocalClient, agent_st
     mock_set_messages.reset_mock()
 
     # Test Case: Does not result in trimming the orphaned tool response
-    client.server.agent_manager.trim_older_in_context_messages(agent_id=agent_state.id, num=2, actor=client.user)
+    server.agent_manager.trim_older_in_context_messages(agent_id=agent_state.id, num=2, actor=default_user)
     test2 = mock_set_messages.call_args_list[0][1]
     assert len(test2["message_ids"]) == 6
 
 
-def test_summarize_many_messages_basic(client, disable_e2b_api_key):
+def test_summarize_many_messages_basic(server, default_user):
+    """Test that a small-context agent gets enough messages for summarization."""
     small_context_llm_config = LLMConfig.default_config("gpt-4o-mini")
     small_context_llm_config.context_window = 3000
-    small_agent_state = client.create_agent(
-        name="small_context_agent",
-        llm_config=small_context_llm_config,
-    )
-    for _ in range(10):
-        client.user_message(
-            agent_id=small_agent_state.id,
-            message="hi " * 60,
-        )
-    client.delete_agent(small_agent_state.id)
 
-
-def test_summarize_messages_inplace(client, agent_state, disable_e2b_api_key):
-    """Test summarization via sending the summarize CLI command or via a direct call to the agent object"""
-    # First send a few messages (5)
-    response = client.user_message(
-        agent_id=agent_state.id,
-        message="Hey, how's it going? What do you think about this whole shindig",
-    ).messages
-    assert response is not None and len(response) > 0
-    print(f"test_summarize: response={response}")
-
-    response = client.user_message(
-        agent_id=agent_state.id,
-        message="Any thoughts on the meaning of life?",
-    ).messages
-    assert response is not None and len(response) > 0
-    print(f"test_summarize: response={response}")
-
-    response = client.user_message(agent_id=agent_state.id, message="Does the number 42 ring a bell?").messages
-    assert response is not None and len(response) > 0
-    print(f"test_summarize: response={response}")
-
-    response = client.user_message(
-        agent_id=agent_state.id,
-        message="Would you be surprised to learn that you're actually conversing with an AI right now?",
-    ).messages
-    assert response is not None and len(response) > 0
-    print(f"test_summarize: response={response}")
-
-    # reload agent object
-    agent_obj = client.server.load_agent(agent_id=agent_state.id, actor=client.user)
-
-    agent_obj.summarize_messages_inplace()
-
-
-def test_auto_summarize(client, disable_e2b_api_key):
-    """Test that the summarizer triggers by itself"""
-    small_context_llm_config = LLMConfig.default_config("gpt-4o-mini")
-    small_context_llm_config.context_window = 4000
-
-    small_agent_state = client.create_agent(
-        name="small_context_agent",
-        llm_config=small_context_llm_config,
+    agent_state = server.create_agent(
+        CreateAgent(
+            name="small_context_agent",
+            llm_config=small_context_llm_config,
+            embedding="letta/letta-free",
+        ),
+        actor=default_user,
     )
 
     try:
-
-        def summarize_message_exists(messages: List[Message]) -> bool:
-            for message in messages:
-                if message.content[0].text and "The following is a summary of the previous" in message.content[0].text:
-                    print(f"Summarize message found after {message_count} messages: \n {message.content[0].text}")
-                    return True
-            return False
-
-        MAX_ATTEMPTS = 10
-        message_count = 0
-        while True:
-
-            # send a message
-            response = client.user_message(
-                agent_id=small_agent_state.id,
-                message="What is the meaning of life?",
+        for _ in range(10):
+            server.send_messages(
+                actor=default_user,
+                agent_id=agent_state.id,
+                input_messages=[MessageCreate(role="user", content="hi " * 60)],
             )
-            message_count += 1
-
-            print(f"Message {message_count}: \n\n{response.messages}" + "--------------------------------")
-
-            # check if the summarize message is inside the messages
-            assert isinstance(client, LocalClient), "Test only works with LocalClient"
-            in_context_messages = client.server.agent_manager.get_in_context_messages(agent_id=small_agent_state.id, actor=client.user)
-            print("SUMMARY", summarize_message_exists(in_context_messages))
-            if summarize_message_exists(in_context_messages):
-                break
-
-            if message_count > MAX_ATTEMPTS:
-                raise Exception(f"Summarize message not found after {message_count} messages")
-
     finally:
-        client.delete_agent(small_agent_state.id)
+        server.agent_manager.delete_agent(agent_id=agent_state.id, actor=default_user)
+
+
+def test_summarize_messages_inplace(server, agent_state, default_user):
+    """Test summarization logic via agent object API."""
+    for msg in [
+        "Hey, how's it going? What do you think about this whole shindig?",
+        "Any thoughts on the meaning of life?",
+        "Does the number 42 ring a bell?",
+        "Would you be surprised to learn that you're actually conversing with an AI right now?",
+    ]:
+        response = server.send_messages(
+            actor=default_user,
+            agent_id=agent_state.id,
+            input_messages=[MessageCreate(role="user", content=msg)],
+        )
+        assert response.steps_messages
+
+    agent = server.load_agent(agent_id=agent_state.id, actor=default_user)
+    agent.summarize_messages_inplace()
+
+
+def test_auto_summarize(server, default_user):
+    """Test that summarization is automatically triggered."""
+    small_context_llm_config = LLMConfig.default_config("gpt-4o-mini")
+    small_context_llm_config.context_window = 3000
+
+    agent_state = server.create_agent(
+        CreateAgent(
+            name="small_context_agent",
+            llm_config=small_context_llm_config,
+            embedding="letta/letta-free",
+        ),
+        actor=default_user,
+    )
+
+    def summarize_message_exists(messages: List[Message]) -> bool:
+        for message in messages:
+            if message.content[0].text and "The following is a summary of the previous" in message.content[0].text:
+                return True
+        return False
+
+    try:
+        MAX_ATTEMPTS = 10
+        for attempt in range(MAX_ATTEMPTS):
+            server.send_messages(
+                actor=default_user,
+                agent_id=agent_state.id,
+                input_messages=[MessageCreate(role="user", content="What is the meaning of life?")],
+            )
+
+            in_context_messages = server.agent_manager.get_in_context_messages(agent_id=agent_state.id, actor=default_user)
+
+            if summarize_message_exists(in_context_messages):
+                return
+
+        raise AssertionError("Summarization was not triggered after 10 messages")
+    finally:
+        server.agent_manager.delete_agent(agent_id=agent_state.id, actor=default_user)
 
 
 @pytest.mark.parametrize(
@@ -258,51 +259,53 @@ def test_auto_summarize(client, disable_e2b_api_key):
         "openai-gpt-4o.json",
         "azure-gpt-4o-mini.json",
         "claude-3-5-haiku.json",
-        # "groq.json", TODO: Support groq, rate limiting currently makes it impossible to test
-        # "gemini-pro.json", TODO: Gemini is broken
+        # "groq.json",  # rate limits
+        # "gemini-pro.json",  # broken
     ],
 )
-def test_summarizer(config_filename, client, agent_state):
+def test_summarizer(config_filename, server, default_user):
+    """Test summarization across different LLM configs."""
     namespace = uuid.NAMESPACE_DNS
     agent_name = str(uuid.uuid5(namespace, f"integration-test-summarizer-{config_filename}"))
 
-    # Get the LLM config
-    filename = os.path.join(LLM_CONFIG_DIR, config_filename)
-    config_data = json.load(open(filename, "r"))
-
-    # Create client and clean up agents
+    # Load configs
+    config_data = json.load(open(os.path.join(LLM_CONFIG_DIR, config_filename)))
     llm_config = LLMConfig(**config_data)
     embedding_config = EmbeddingConfig(**json.load(open(EMBEDDING_CONFIG_PATH)))
-    client = create_client()
-    client.set_default_llm_config(llm_config)
-    client.set_default_embedding_config(embedding_config)
-    cleanup(client=client, agent_uuid=agent_name)
+
+    # Ensure cleanup
+    cleanup(server=server, agent_uuid=agent_name, actor=default_user)
 
     # Create agent
-    agent_state = client.create_agent(name=agent_name, llm_config=llm_config, embedding_config=embedding_config)
-    full_agent_state = client.get_agent(agent_id=agent_state.id)
+    agent_state = server.create_agent(
+        CreateAgent(
+            name=agent_name,
+            llm_config=llm_config,
+            embedding_config=embedding_config,
+        ),
+        actor=default_user,
+    )
+
+    full_agent_state = server.agent_manager.get_agent_by_id(agent_id=agent_state.id, actor=default_user)
+
     letta_agent = Agent(
         interface=StreamingRefreshCLIInterface(),
         agent_state=full_agent_state,
         first_message_verify_mono=False,
-        user=client.user,
+        user=default_user,
     )
 
-    # Make conversation
-    messages = [
+    for msg in [
         "Did you know that honey never spoils? Archaeologists have found pots of honey in ancient Egyptian tombs that are over 3,000 years old and still perfectly edible.",
         "Octopuses have three hearts, and two of them stop beating when they swim.",
-    ]
-
-    for m in messages:
+    ]:
         letta_agent.step_user_message(
-            user_message_str=m,
+            user_message_str=msg,
             first_message=False,
             skip_verify=False,
             stream=False,
         )
 
-    # Invoke a summarize
     letta_agent.summarize_messages_inplace()
-    in_context_messages = client.get_in_context_messages(agent_state.id)
+    in_context_messages = server.agent_manager.get_in_context_messages(agent_state.id, actor=default_user)
     assert SUMMARY_KEY_PHRASE in in_context_messages[1].content[0].text, f"Test failed for config: {config_filename}"

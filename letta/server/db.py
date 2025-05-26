@@ -6,13 +6,16 @@ from typing import Any, AsyncGenerator, Generator
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import Engine, NullPool, QueuePool, create_engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from letta.config import LettaConfig
 from letta.log import get_logger
 from letta.settings import settings
+from letta.tracing import trace_method
+
+logger = get_logger(__name__)
 
 
 def print_sqlite_schema_error():
@@ -76,16 +79,7 @@ class DatabaseRegistry:
                 self.config.archival_storage_type = "postgres"
                 self.config.archival_storage_uri = settings.letta_pg_uri_no_default
 
-                engine = create_engine(
-                    settings.letta_pg_uri,
-                    # f"{settings.letta_pg_uri}?options=-c%20client_encoding=UTF8",
-                    pool_size=settings.pg_pool_size,
-                    max_overflow=settings.pg_max_overflow,
-                    pool_timeout=settings.pg_pool_timeout,
-                    pool_recycle=settings.pg_pool_recycle,
-                    echo=settings.pg_echo,
-                    # connect_args={"client_encoding": "utf8"},
-                )
+                engine = create_engine(settings.letta_pg_uri, **self._build_sqlalchemy_engine_args(is_async=False))
 
                 self._engines["default"] = engine
             # SQLite engine
@@ -125,26 +119,55 @@ class DatabaseRegistry:
                     async_pg_uri = f"postgresql+asyncpg://{pg_uri.split('://', 1)[1]}" if "://" in pg_uri else pg_uri
                 async_pg_uri = async_pg_uri.replace("sslmode=", "ssl=")
 
-                async_engine = create_async_engine(
-                    async_pg_uri,
-                    pool_size=settings.pg_pool_size,
-                    max_overflow=settings.pg_max_overflow,
-                    pool_timeout=settings.pg_pool_timeout,
-                    pool_recycle=settings.pg_pool_recycle,
-                    echo=settings.pg_echo,
-                )
-
-                self._async_engines["default"] = async_engine
-
-                # Create async session factory
-                self._async_session_factories["default"] = async_sessionmaker(
-                    autocommit=False, autoflush=False, bind=self._async_engines["default"], class_=AsyncSession
-                )
+                async_engine = create_async_engine(async_pg_uri, **self._build_sqlalchemy_engine_args(is_async=True))
                 self._initialized["async"] = True
             else:
                 self.logger.warning("Async SQLite is currently not supported. Please use PostgreSQL for async database operations.")
                 # TODO (cliandy): unclear around async sqlite support in sqlalchemy, we will not currently support this
-                self._initialized["async"] = False
+                self._initialized["async"] = True
+                engine_path = "sqlite+aiosqlite:///" + os.path.join(self.config.recall_storage_path, "sqlite.db")
+                self.logger.info("Creating sqlite engine " + engine_path)
+                async_engine = create_async_engine(engine_path, **self._build_sqlalchemy_engine_args(is_async=True))
+
+            # Create async session factory
+            self._async_engines["default"] = async_engine
+            self._async_session_factories["default"] = async_sessionmaker(
+                autocommit=False, autoflush=False, bind=self._async_engines["default"], class_=AsyncSession
+            )
+            self._initialized["async"] = True
+
+    def _build_sqlalchemy_engine_args(self, *, is_async: bool) -> dict:
+        """Prepare keyword arguments for create_engine / create_async_engine."""
+        use_null_pool = settings.disable_sqlalchemy_pooling
+
+        if use_null_pool:
+            logger.info("Disabling pooling on SqlAlchemy")
+            pool_cls = NullPool
+        else:
+            logger.info("Enabling pooling on SqlAlchemy")
+            pool_cls = QueuePool if not is_async else None
+
+        base_args = {
+            "echo": settings.pg_echo,
+            "pool_pre_ping": settings.pool_pre_ping,
+        }
+
+        if pool_cls:
+            base_args["poolclass"] = pool_cls
+
+        if not use_null_pool:
+            base_args.update(
+                {
+                    "pool_size": settings.pg_pool_size,
+                    "max_overflow": settings.pg_max_overflow,
+                    "pool_timeout": settings.pg_pool_timeout,
+                    "pool_recycle": settings.pg_pool_recycle,
+                }
+            )
+            if not is_async:
+                base_args["pool_use_lifo"] = settings.pool_use_lifo
+
+        return base_args
 
     def _wrap_sqlite_engine(self, engine: Engine) -> None:
         """Wrap SQLite engine with error handling."""
@@ -184,6 +207,7 @@ class DatabaseRegistry:
         self.initialize_async()
         return self._async_session_factories.get(name)
 
+    @trace_method
     @contextmanager
     def session(self, name: str = "default") -> Generator[Any, None, None]:
         """Context manager for database sessions."""
@@ -197,6 +221,7 @@ class DatabaseRegistry:
         finally:
             session.close()
 
+    @trace_method
     @asynccontextmanager
     async def async_session(self, name: str = "default") -> AsyncGenerator[AsyncSession, None]:
         """Async context manager for database sessions."""

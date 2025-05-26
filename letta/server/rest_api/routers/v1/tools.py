@@ -59,7 +59,7 @@ def count_tools(
 
 
 @router.get("/{tool_id}", response_model=Tool, operation_id="retrieve_tool")
-def retrieve_tool(
+async def retrieve_tool(
     tool_id: str,
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -67,8 +67,8 @@ def retrieve_tool(
     """
     Get a tool by ID
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    tool = server.tool_manager.get_tool_by_id(tool_id=tool_id, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    tool = await server.tool_manager.get_tool_by_id_async(tool_id=tool_id, actor=actor)
     if tool is None:
         # return 404 error
         raise HTTPException(status_code=404, detail=f"Tool with id {tool_id} not found.")
@@ -76,7 +76,7 @@ def retrieve_tool(
 
 
 @router.get("/", response_model=List[Tool], operation_id="list_tools")
-def list_tools(
+async def list_tools(
     after: Optional[str] = None,
     limit: Optional[int] = 50,
     name: Optional[str] = None,
@@ -87,11 +87,11 @@ def list_tools(
     Get a list of all tools available to agents belonging to the org of the user
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
         if name is not None:
-            tool = server.tool_manager.get_tool_by_name(tool_name=name, actor=actor)
+            tool = await server.tool_manager.get_tool_by_name_async(tool_name=name, actor=actor)
             return [tool] if tool else []
-        return server.tool_manager.list_tools(actor=actor, after=after, limit=limit)
+        return await server.tool_manager.list_tools_async(actor=actor, after=after, limit=limit)
     except Exception as e:
         # Log or print the full exception here for debugging
         print(f"Error occurred: {e}")
@@ -196,15 +196,15 @@ def modify_tool(
 
 
 @router.post("/add-base-tools", response_model=List[Tool], operation_id="add_base_tools")
-def upsert_base_tools(
+async def upsert_base_tools(
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Upsert base tools
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.tool_manager.upsert_base_tools(actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.tool_manager.upsert_base_tools_async(actor=actor)
 
 
 @router.post("/run", response_model=ToolReturnMessage, operation_id="run_tool_from_source")

@@ -20,15 +20,19 @@ from letta.llm_api.openai import (
     build_openai_chat_completions_request,
     openai_chat_completions_process_stream,
     openai_chat_completions_request,
+    prepare_openai_payload,
 )
 from letta.local_llm.chat_completion_proxy import get_chat_completion
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
+from letta.orm.user import User
 from letta.schemas.enums import ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, cast_message_to_subtype
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
+from letta.schemas.provider_trace import ProviderTraceCreate
+from letta.services.telemetry_manager import TelemetryManager
 from letta.settings import ModelSettings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
 from letta.tracing import log_event, trace_method
@@ -142,6 +146,9 @@ def create(
     model_settings: Optional[dict] = None,  # TODO: eventually pass from server
     put_inner_thoughts_first: bool = True,
     name: Optional[str] = None,
+    telemetry_manager: Optional[TelemetryManager] = None,
+    step_id: Optional[str] = None,
+    actor: Optional[User] = None,
 ) -> ChatCompletionResponse:
     """Return response to chat completion with backoff"""
     from letta.utils import printd
@@ -232,6 +239,16 @@ def create(
             finally:
                 if isinstance(stream_interface, AgentChunkStreamingInterface):
                     stream_interface.stream_end()
+
+        telemetry_manager.create_provider_trace(
+            actor=actor,
+            provider_trace_create=ProviderTraceCreate(
+                request_json=prepare_openai_payload(data),
+                response_json=response.model_json_schema(),
+                step_id=step_id,
+                organization_id=actor.organization_id,
+            ),
+        )
 
         if llm_config.put_inner_thoughts_in_kwargs:
             response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
@@ -406,6 +423,16 @@ def create(
 
         if llm_config.put_inner_thoughts_in_kwargs:
             response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
+
+        telemetry_manager.create_provider_trace(
+            actor=actor,
+            provider_trace_create=ProviderTraceCreate(
+                request_json=chat_completion_request.model_json_schema(),
+                response_json=response.model_json_schema(),
+                step_id=step_id,
+                organization_id=actor.organization_id,
+            ),
+        )
 
         return response
 

@@ -1,16 +1,18 @@
 import difflib
 import json
 import os
+import threading
+import time
 from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any, Dict, List, Mapping
 
 import pytest
-from fastapi.testclient import TestClient
+import requests
+from dotenv import load_dotenv
 from rich.console import Console
 from rich.syntax import Syntax
 
-from letta import create_client
 from letta.config import LettaConfig
 from letta.orm import Base
 from letta.orm.enums import ToolType
@@ -23,10 +25,51 @@ from letta.schemas.message import MessageCreate
 from letta.schemas.organization import Organization
 from letta.schemas.user import User
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
-from letta.server.rest_api.app import app
 from letta.server.server import SyncServer
+from tests.utils import create_tool_from_func
 
 console = Console()
+
+# ------------------------------
+# Fixtures
+# ------------------------------
+
+
+@pytest.fixture(scope="module")
+def server_url() -> str:
+    """
+    Provides the URL for the Letta server.
+    If LETTA_SERVER_URL is not set, starts the server in a background thread
+    and polls until it’s accepting connections.
+    """
+
+    def _run_server() -> None:
+        load_dotenv()
+        from letta.server.rest_api.app import start_server
+
+        start_server(debug=True)
+
+    url: str = os.getenv("LETTA_SERVER_URL", "http://localhost:8283")
+
+    if not os.getenv("LETTA_SERVER_URL"):
+        thread = threading.Thread(target=_run_server, daemon=True)
+        thread.start()
+
+        # Poll until the server is up (or timeout)
+        timeout_seconds = 30
+        deadline = time.time() + timeout_seconds
+        while time.time() < deadline:
+            try:
+                resp = requests.get(url + "/v1/health")
+                if resp.status_code < 500:
+                    break
+            except requests.exceptions.RequestException:
+                pass
+            time.sleep(0.1)
+        else:
+            raise RuntimeError(f"Could not reach {url} within {timeout_seconds}s")
+
+    return url
 
 
 def _clear_tables():
@@ -38,33 +81,19 @@ def _clear_tables():
         session.commit()
 
 
-@pytest.fixture
-def fastapi_client():
-    """Fixture to create a FastAPI test client."""
-    return TestClient(app)
-
-
 @pytest.fixture(autouse=True)
 def clear_tables():
     _clear_tables()
 
 
-@pytest.fixture(scope="module")
-def local_client():
-    client = create_client()
-    client.set_default_llm_config(LLMConfig.default_config("gpt-4o-mini"))
-    client.set_default_embedding_config(EmbeddingConfig.default_config(provider="openai"))
-    yield client
-
-
-@pytest.fixture(scope="module")
+@pytest.fixture
 def server():
     config = LettaConfig.load()
 
     config.save()
 
     server = SyncServer(init_with_default_org_and_user=False)
-    return server
+    yield server
 
 
 @pytest.fixture
@@ -96,14 +125,14 @@ def other_user(server: SyncServer, other_organization):
 
 
 @pytest.fixture
-def weather_tool(local_client, weather_tool_func):
-    weather_tool = local_client.create_or_update_tool(func=weather_tool_func)
+def weather_tool(server, weather_tool_func, default_user):
+    weather_tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=weather_tool_func), actor=default_user)
     yield weather_tool
 
 
 @pytest.fixture
-def print_tool(local_client, print_tool_func):
-    print_tool = local_client.create_or_update_tool(func=print_tool_func)
+def print_tool(server, print_tool_func, default_user):
+    print_tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=print_tool_func), actor=default_user)
     yield print_tool
 
 
@@ -401,7 +430,7 @@ def test_sanity_datetime_mismatch():
 # Agent serialize/deserialize tests
 
 
-def test_deserialize_simple(local_client, server, serialize_test_agent, default_user, other_user):
+def test_deserialize_simple(server, serialize_test_agent, default_user, other_user):
     """Test deserializing JSON into an Agent instance."""
     append_copy_suffix = False
     result = server.agent_manager.serialize(agent_id=serialize_test_agent.id, actor=default_user)
@@ -415,9 +444,7 @@ def test_deserialize_simple(local_client, server, serialize_test_agent, default_
 
 
 @pytest.mark.parametrize("override_existing_tools", [True, False])
-def test_deserialize_override_existing_tools(
-    local_client, server, serialize_test_agent, default_user, weather_tool, print_tool, override_existing_tools
-):
+def test_deserialize_override_existing_tools(server, serialize_test_agent, default_user, weather_tool, print_tool, override_existing_tools):
     """
     Test deserializing an agent with tools and ensure correct behavior for overriding existing tools.
     """
@@ -450,7 +477,7 @@ def test_deserialize_override_existing_tools(
                 assert existing_tool.source_code == weather_tool.source_code, f"Tool {tool_name} should NOT be overridden"
 
 
-def test_agent_serialize_with_user_messages(local_client, server, serialize_test_agent, default_user, other_user):
+def test_agent_serialize_with_user_messages(server, serialize_test_agent, default_user, other_user):
     """Test deserializing JSON into an Agent instance."""
     append_copy_suffix = False
     server.send_messages(
@@ -479,7 +506,7 @@ def test_agent_serialize_with_user_messages(local_client, server, serialize_test
     )
 
 
-def test_agent_serialize_tool_calls(disable_e2b_api_key, local_client, server, serialize_test_agent, default_user, other_user):
+def test_agent_serialize_tool_calls(disable_e2b_api_key, server, serialize_test_agent, default_user, other_user):
     """Test deserializing JSON into an Agent instance."""
     append_copy_suffix = False
     server.send_messages(
@@ -515,7 +542,7 @@ def test_agent_serialize_tool_calls(disable_e2b_api_key, local_client, server, s
     assert copy_agent_response.completion_tokens > 0 and copy_agent_response.step_count > 0
 
 
-def test_agent_serialize_update_blocks(disable_e2b_api_key, local_client, server, serialize_test_agent, default_user, other_user):
+def test_agent_serialize_update_blocks(disable_e2b_api_key, server, serialize_test_agent, default_user, other_user):
     """Test deserializing JSON into an Agent instance."""
     append_copy_suffix = False
     server.send_messages(
@@ -562,14 +589,17 @@ def test_agent_serialize_update_blocks(disable_e2b_api_key, local_client, server
 
 @pytest.mark.parametrize("append_copy_suffix", [True, False])
 @pytest.mark.parametrize("project_id", ["project-12345", None])
-def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent, default_user, other_user, append_copy_suffix, project_id):
+def test_agent_download_upload_flow(server, server_url, serialize_test_agent, default_user, other_user, append_copy_suffix, project_id):
     """
     Test the full E2E serialization and deserialization flow using FastAPI endpoints.
     """
     agent_id = serialize_test_agent.id
 
     # Step 1: Download the serialized agent
-    response = fastapi_client.get(f"/v1/agents/{agent_id}/export", headers={"user_id": default_user.id})
+    response = requests.get(
+        f"{server_url}/v1/agents/{agent_id}/export",
+        headers={"user_id": default_user.id},
+    )
     assert response.status_code == 200, f"Download failed: {response.text}"
 
     # Ensure response matches expected schema
@@ -580,10 +610,14 @@ def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent
     # Step 2: Upload the serialized agent as a copy
     agent_bytes = BytesIO(json.dumps(agent_json).encode("utf-8"))
     files = {"file": ("agent.json", agent_bytes, "application/json")}
-    upload_response = fastapi_client.post(
-        "/v1/agents/import",
+    upload_response = requests.post(
+        f"{server_url}/v1/agents/import",
         headers={"user_id": other_user.id},
-        params={"append_copy_suffix": append_copy_suffix, "override_existing_tools": False, "project_id": project_id},
+        params={
+            "append_copy_suffix": append_copy_suffix,
+            "override_existing_tools": False,
+            "project_id": project_id,
+        },
         files=files,
     )
     assert upload_response.status_code == 200, f"Upload failed: {upload_response.text}"
@@ -613,16 +647,16 @@ def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent
         "memgpt_agent_with_convo.af",
     ],
 )
-def test_upload_agentfile_from_disk(server, disable_e2b_api_key, fastapi_client, other_user, filename):
+def test_upload_agentfile_from_disk(server, server_url, disable_e2b_api_key, other_user, filename):
     """
-    Test uploading each .af file from the test_agent_files directory via FastAPI.
+    Test uploading each .af file from the test_agent_files directory via live FastAPI server.
     """
     file_path = os.path.join(os.path.dirname(__file__), "test_agent_files", filename)
 
     with open(file_path, "rb") as f:
         files = {"file": (filename, f, "application/json")}
-        response = fastapi_client.post(
-            "/v1/agents/import",
+        response = requests.post(
+            f"{server_url}/v1/agents/import",
             headers={"user_id": other_user.id},
             params={"append_copy_suffix": True, "override_existing_tools": False},
             files=files,

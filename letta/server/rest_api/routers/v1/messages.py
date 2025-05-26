@@ -52,7 +52,7 @@ async def create_messages_batch(
             detail=f"Server misconfiguration: LETTA_ENABLE_BATCH_JOB_POLLING is set to False.",
         )
 
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     batch_job = BatchJob(
         user_id=actor.id,
         status=JobStatus.running,
@@ -63,7 +63,7 @@ async def create_messages_batch(
     )
 
     try:
-        batch_job = server.job_manager.create_job(pydantic_job=batch_job, actor=actor)
+        batch_job = await server.job_manager.create_job_async(pydantic_job=batch_job, actor=actor)
 
         # create the batch runner
         batch_runner = LettaAgentBatch(
@@ -86,7 +86,7 @@ async def create_messages_batch(
         traceback.print_exc()
 
         # mark job as failed
-        server.job_manager.update_job_by_id(job_id=batch_job.id, job=BatchJob(status=JobStatus.failed), actor=actor)
+        await server.job_manager.update_job_by_id_async(job_id=batch_job.id, job_update=JobUpdate(status=JobStatus.failed), actor=actor)
         raise
     return batch_job
 
@@ -100,10 +100,10 @@ async def retrieve_batch_run(
     """
     Get the status of a batch run.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
-        job = server.job_manager.get_job_by_id(job_id=batch_id, actor=actor)
+        job = await server.job_manager.get_job_by_id_async(job_id=batch_id, actor=actor)
         return BatchJob.from_job(job)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Batch not found")
@@ -118,7 +118,7 @@ async def list_batch_runs(
     List all batch runs.
     """
     # TODO: filter
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     jobs = server.job_manager.list_jobs(actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.BATCH)
     return [BatchJob.from_job(job) for job in jobs]
@@ -150,18 +150,18 @@ async def list_batch_messages(
     - For subsequent pages, use the ID of the last message from the previous response as the cursor
     - Results will include messages before/after the cursor based on sort_descending
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     # First, verify the batch job exists and the user has access to it
     try:
-        job = server.job_manager.get_job_by_id(job_id=batch_id, actor=actor)
+        job = await server.job_manager.get_job_by_id_async(job_id=batch_id, actor=actor)
         BatchJob.from_job(job)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Batch not found")
 
     # Get messages directly using our efficient method
     # We'll need to update the underlying implementation to use message_id as cursor
-    messages = server.batch_manager.get_messages_for_letta_batch(
+    messages = await server.batch_manager.get_messages_for_letta_batch_async(
         letta_batch_job_id=batch_id, limit=limit, actor=actor, agent_id=agent_id, sort_descending=sort_descending, cursor=cursor
     )
 
@@ -177,14 +177,14 @@ async def cancel_batch_run(
     """
     Cancel a batch run.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
-        job = server.job_manager.get_job_by_id(job_id=batch_id, actor=actor)
-        job = server.job_manager.update_job_by_id(job_id=job.id, job_update=JobUpdate(status=JobStatus.cancelled), actor=actor)
+        job = await server.job_manager.get_job_by_id_async(job_id=batch_id, actor=actor)
+        job = await server.job_manager.update_job_by_id_async(job_id=job.id, job_update=JobUpdate(status=JobStatus.cancelled), actor=actor)
 
         # Get related llm batch jobs
-        llm_batch_jobs = server.batch_manager.list_llm_batch_jobs(letta_batch_id=job.id, actor=actor)
+        llm_batch_jobs = await server.batch_manager.list_llm_batch_jobs_async(letta_batch_id=job.id, actor=actor)
         for llm_batch_job in llm_batch_jobs:
             if llm_batch_job.status in {JobStatus.running, JobStatus.created}:
                 # TODO: Extend to providers beyond anthropic
@@ -194,6 +194,8 @@ async def cancel_batch_run(
                 await server.anthropic_async_client.messages.batches.cancel(anthropic_batch_id)
 
                 # Update all the batch_job statuses
-                server.batch_manager.update_llm_batch_status(llm_batch_id=llm_batch_job.id, status=JobStatus.cancelled, actor=actor)
+                await server.batch_manager.update_llm_batch_status_async(
+                    llm_batch_id=llm_batch_job.id, status=JobStatus.cancelled, actor=actor
+                )
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Run not found")

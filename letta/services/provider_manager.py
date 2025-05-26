@@ -6,12 +6,14 @@ from letta.schemas.providers import Provider as PydanticProvider
 from letta.schemas.providers import ProviderCheck, ProviderCreate, ProviderUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.tracing import trace_method
 from letta.utils import enforce_types
 
 
 class ProviderManager:
 
     @enforce_types
+    @trace_method
     def create_provider(self, request: ProviderCreate, actor: PydanticUser) -> PydanticProvider:
         """Create a new provider if it doesn't already exist."""
         with db_registry.session() as session:
@@ -32,6 +34,7 @@ class ProviderManager:
             return new_provider.to_pydantic()
 
     @enforce_types
+    @trace_method
     def update_provider(self, provider_id: str, provider_update: ProviderUpdate, actor: PydanticUser) -> PydanticProvider:
         """Update provider details."""
         with db_registry.session() as session:
@@ -48,6 +51,7 @@ class ProviderManager:
             return existing_provider.to_pydantic()
 
     @enforce_types
+    @trace_method
     def delete_provider_by_id(self, provider_id: str, actor: PydanticUser):
         """Delete a provider."""
         with db_registry.session() as session:
@@ -62,6 +66,7 @@ class ProviderManager:
             session.commit()
 
     @enforce_types
+    @trace_method
     def list_providers(
         self,
         actor: PydanticUser,
@@ -87,16 +92,45 @@ class ProviderManager:
             return [provider.to_pydantic() for provider in providers]
 
     @enforce_types
+    @trace_method
+    async def list_providers_async(
+        self,
+        actor: PydanticUser,
+        name: Optional[str] = None,
+        provider_type: Optional[ProviderType] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+    ) -> List[PydanticProvider]:
+        """List all providers with optional pagination."""
+        filter_kwargs = {}
+        if name:
+            filter_kwargs["name"] = name
+        if provider_type:
+            filter_kwargs["provider_type"] = provider_type
+        async with db_registry.async_session() as session:
+            providers = await ProviderModel.list_async(
+                db_session=session,
+                after=after,
+                limit=limit,
+                actor=actor,
+                **filter_kwargs,
+            )
+            return [provider.to_pydantic() for provider in providers]
+
+    @enforce_types
+    @trace_method
     def get_provider_id_from_name(self, provider_name: Union[str, None], actor: PydanticUser) -> Optional[str]:
         providers = self.list_providers(name=provider_name, actor=actor)
         return providers[0].id if providers else None
 
     @enforce_types
+    @trace_method
     def get_override_key(self, provider_name: Union[str, None], actor: PydanticUser) -> Optional[str]:
         providers = self.list_providers(name=provider_name, actor=actor)
         return providers[0].api_key if providers else None
 
     @enforce_types
+    @trace_method
     def check_provider_api_key(self, provider_check: ProviderCheck) -> None:
         provider = PydanticProvider(
             name=provider_check.provider_type.value,

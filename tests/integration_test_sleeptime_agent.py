@@ -6,7 +6,7 @@ from sqlalchemy import delete
 from letta.config import LettaConfig
 from letta.constants import DEFAULT_HUMAN
 from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
-from letta.orm import Provider, Step
+from letta.orm import Provider, ProviderTrace, Step
 from letta.orm.enums import JobType
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import CreateAgent
@@ -39,6 +39,7 @@ def org_id(server):
 
     # cleanup
     with db_registry.session() as session:
+        session.execute(delete(ProviderTrace))
         session.execute(delete(Step))
         session.execute(delete(Provider))
         session.commit()
@@ -54,7 +55,7 @@ def actor(server, org_id):
     server.user_manager.delete_user_by_id(user.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_sleeptime_group_chat(server, actor):
     # 0. Refresh base tools
     server.tool_manager.upsert_base_tools(actor=actor)
@@ -105,7 +106,7 @@ async def test_sleeptime_group_chat(server, actor):
     # 3. Verify shared blocks
     sleeptime_agent_id = group.agent_ids[0]
     shared_block = server.agent_manager.get_block_with_label(agent_id=main_agent.id, block_label="human", actor=actor)
-    agents = server.block_manager.get_agents_for_block(block_id=shared_block.id, actor=actor)
+    agents = await server.block_manager.get_agents_for_block_async(block_id=shared_block.id, actor=actor)
     assert len(agents) == 2
     assert sleeptime_agent_id in [agent.id for agent in agents]
     assert main_agent.id in [agent.id for agent in agents]
@@ -169,7 +170,7 @@ async def test_sleeptime_group_chat(server, actor):
         server.agent_manager.get_agent_by_id(agent_id=sleeptime_agent_id, actor=actor)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_sleeptime_group_chat_v2(server, actor):
     # 0. Refresh base tools
     server.tool_manager.upsert_base_tools(actor=actor)
@@ -220,7 +221,7 @@ async def test_sleeptime_group_chat_v2(server, actor):
     # 3. Verify shared blocks
     sleeptime_agent_id = group.agent_ids[0]
     shared_block = server.agent_manager.get_block_with_label(agent_id=main_agent.id, block_label="human", actor=actor)
-    agents = server.block_manager.get_agents_for_block(block_id=shared_block.id, actor=actor)
+    agents = await server.block_manager.get_agents_for_block_async(block_id=shared_block.id, actor=actor)
     assert len(agents) == 2
     assert sleeptime_agent_id in [agent.id for agent in agents]
     assert main_agent.id in [agent.id for agent in agents]
@@ -292,7 +293,7 @@ async def test_sleeptime_group_chat_v2(server, actor):
 
 
 @pytest.mark.skip
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_sleeptime_removes_redundant_information(server, actor):
     # 1. set up sleep-time agent as in test_sleeptime_group_chat
     server.tool_manager.upsert_base_tools(actor=actor)
@@ -360,7 +361,7 @@ async def test_sleeptime_removes_redundant_information(server, actor):
         server.agent_manager.get_agent_by_id(agent_id=sleeptime_agent_id, actor=actor)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_sleeptime_edit(server, actor):
     sleeptime_agent = server.create_agent(
         request=CreateAgent(

@@ -1,7 +1,6 @@
 import datetime
 import json
 import math
-import os
 import random
 import uuid
 
@@ -9,14 +8,11 @@ import pytest
 from faker import Faker
 from tqdm import tqdm
 
-from letta import create_client
+from letta.config import LettaConfig
 from letta.orm import Base
-from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message
-from letta.services.agent_manager import AgentManager
-from letta.services.message_manager import MessageManager
-from tests.integration_test_summarizer import LLM_CONFIG_DIR
+from letta.schemas.agent import CreateAgent
+from letta.schemas.message import Message, MessageCreate
+from letta.server.server import SyncServer
 
 
 @pytest.fixture(autouse=True)
@@ -29,16 +25,25 @@ def truncate_database():
         session.commit()
 
 
-@pytest.fixture(scope="function")
-def client():
-    filename = os.path.join(LLM_CONFIG_DIR, "claude-3-5-sonnet.json")
-    config_data = json.load(open(filename, "r"))
-    llm_config = LLMConfig(**config_data)
-    client = create_client()
-    client.set_default_llm_config(llm_config)
-    client.set_default_embedding_config(EmbeddingConfig.default_config(provider="openai"))
+@pytest.fixture(scope="module")
+def server():
+    """
+    Creates a SyncServer instance for testing.
 
-    yield client
+    Loads and saves config to ensure proper initialization.
+    """
+    config = LettaConfig.load()
+
+    config.save()
+
+    server = SyncServer(init_with_default_org_and_user=True)
+    yield server
+
+
+@pytest.fixture
+def default_user(server):
+    actor = server.user_manager.get_user_or_default()
+    yield actor
 
 
 def generate_tool_call_id():
@@ -129,14 +134,13 @@ def create_tool_message(agent_id, organization_id, tool_call_id, timestamp):
 
 
 @pytest.mark.parametrize("num_messages", [1000])
-def test_many_messages_performance(client, num_messages):
-    """Main test function to generate messages and insert them into the database."""
-    message_manager = MessageManager()
-    agent_manager = AgentManager()
-    actor = client.user
+def test_many_messages_performance(server, default_user, num_messages):
+    """Performance test to insert many messages and ensure retrieval works correctly."""
+    message_manager = server.agent_manager.message_manager
+    agent_manager = server.agent_manager
 
     start_time = datetime.datetime.now()
-    last_event_time = start_time  # Track last event time
+    last_event_time = start_time
 
     def log_event(event):
         nonlocal last_event_time
@@ -144,11 +148,19 @@ def test_many_messages_performance(client, num_messages):
         total_elapsed = (now - start_time).total_seconds()
         step_elapsed = (now - last_event_time).total_seconds()
         print(f"[+{total_elapsed:.3f}s | Δ{step_elapsed:.3f}s] {event}")
-        last_event_time = now  # Update last event time
+        last_event_time = now
 
     log_event(f"Starting test with {num_messages} messages")
 
-    agent_state = client.create_agent(name="manager")
+    agent_state = server.create_agent(
+        CreateAgent(
+            name="manager",
+            include_base_tools=True,
+            model="openai/gpt-4o-mini",
+            embedding="letta/letta-free",
+        ),
+        actor=default_user,
+    )
     log_event(f"Created agent with ID {agent_state.id}")
 
     message_group_size = 3
@@ -158,37 +170,42 @@ def test_many_messages_performance(client, num_messages):
     organization_id = "org-00000000-0000-4000-8000-000000000000"
 
     all_messages = []
-
     for _ in tqdm(range(num_groups)):
         user_text, assistant_text = get_conversation_pair()
         tool_call_id = generate_tool_call_id()
         user_time, send_time, tool_time, current_time = generate_timestamps(current_time)
-        new_messages = [
-            Message(**create_user_message(agent_state.id, organization_id, user_text, user_time)),
-            Message(**create_send_message(agent_state.id, organization_id, assistant_text, tool_call_id, send_time)),
-            Message(**create_tool_message(agent_state.id, organization_id, tool_call_id, tool_time)),
-        ]
-        all_messages.extend(new_messages)
+
+        all_messages.extend(
+            [
+                Message(**create_user_message(agent_state.id, organization_id, user_text, user_time)),
+                Message(**create_send_message(agent_state.id, organization_id, assistant_text, tool_call_id, send_time)),
+                Message(**create_tool_message(agent_state.id, organization_id, tool_call_id, tool_time)),
+            ]
+        )
 
     log_event(f"Finished generating {len(all_messages)} messages")
 
-    message_manager.create_many_messages(all_messages, actor=actor)
+    message_manager.create_many_messages(all_messages, actor=default_user)
     log_event("Inserted messages into the database")
 
     agent_manager.set_in_context_messages(
-        agent_id=agent_state.id, message_ids=agent_state.message_ids + [m.id for m in all_messages], actor=client.user
+        agent_id=agent_state.id,
+        message_ids=agent_state.message_ids + [m.id for m in all_messages],
+        actor=default_user,
     )
     log_event("Updated agent context with messages")
 
-    messages = message_manager.list_messages_for_agent(agent_id=agent_state.id, actor=client.user, limit=1000000000)
+    messages = message_manager.list_messages_for_agent(
+        agent_id=agent_state.id,
+        actor=default_user,
+        limit=1000000000,
+    )
     log_event(f"Retrieved {len(messages)} messages from the database")
 
     assert len(messages) >= num_groups * message_group_size
 
-    response = client.send_message(
-        agent_id=agent_state.id,
-        role="user",
-        message="What have we been talking about?",
+    response = server.send_messages(
+        actor=default_user, agent_id=agent_state.id, input_messages=[MessageCreate(role="user", content="What have we been talking about?")]
     )
     log_event("Sent message to agent and received response")
 

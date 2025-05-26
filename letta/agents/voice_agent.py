@@ -154,7 +154,7 @@ class VoiceAgent(BaseAgent):
         # TODO: Define max steps here
         for _ in range(max_steps):
             # Rebuild memory each loop
-            in_context_messages = self._rebuild_memory(in_context_messages, agent_state)
+            in_context_messages = await self._rebuild_memory_async(in_context_messages, agent_state)
             openai_messages = convert_in_context_letta_messages_to_openai(in_context_messages, exclude_system_messages=True)
             openai_messages.extend(in_memory_message_history)
 
@@ -292,14 +292,14 @@ class VoiceAgent(BaseAgent):
             agent_id=self.agent_id, message_ids=[m.id for m in new_in_context_messages], actor=self.actor
         )
 
-    def _rebuild_memory(
+    async def _rebuild_memory_async(
         self,
         in_context_messages: List[Message],
         agent_state: AgentState,
         num_messages: int | None = None,
         num_archival_memories: int | None = None,
     ) -> List[Message]:
-        return super()._rebuild_memory(
+        return await super()._rebuild_memory_async(
             in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
         )
 
@@ -438,7 +438,7 @@ class VoiceAgent(BaseAgent):
         if start_date and end_date and start_date > end_date:
             start_date, end_date = end_date, start_date
 
-        archival_results = self.agent_manager.list_passages(
+        archival_results = await self.agent_manager.list_passages_async(
             actor=self.actor,
             agent_id=self.agent_id,
             query_text=archival_query,
@@ -457,7 +457,7 @@ class VoiceAgent(BaseAgent):
         keyword_results = {}
         if convo_keyword_queries:
             for keyword in convo_keyword_queries:
-                messages = self.message_manager.list_messages_for_agent(
+                messages = await self.message_manager.list_messages_for_agent_async(
                     agent_id=self.agent_id,
                     actor=self.actor,
                     query_text=keyword,
