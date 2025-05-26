@@ -105,14 +105,14 @@ async def _clear_tables():
 
 
 @pytest.fixture
-def default_organization(server: SyncServer):
+async def default_organization(server: SyncServer):
     """Fixture to create and return the default organization."""
     org = server.organization_manager.create_default_organization()
     yield org
 
 
 @pytest.fixture
-def other_organization(server: SyncServer):
+async def other_organization(server: SyncServer):
     """Fixture to create and return the default organization."""
     org = server.organization_manager.create_organization(pydantic_org=Organization(name="letta"))
     yield org
@@ -2002,55 +2002,61 @@ async def test_list_source_passages_only(server: SyncServer, default_user, defau
 # ======================================================================================================================
 # Organization Manager Tests
 # ======================================================================================================================
-def test_list_organizations(server: SyncServer):
+@pytest.mark.asyncio
+async def test_list_organizations(server: SyncServer, event_loop):
     # Create a new org and confirm that it is created correctly
     org_name = "test"
-    org = server.organization_manager.create_organization(pydantic_org=PydanticOrganization(name=org_name))
+    org = await server.organization_manager.create_organization_async(pydantic_org=PydanticOrganization(name=org_name))
 
-    orgs = server.organization_manager.list_organizations()
+    orgs = await server.organization_manager.list_organizations_async()
     assert len(orgs) == 1
     assert orgs[0].name == org_name
 
     # Delete it after
-    server.organization_manager.delete_organization_by_id(org.id)
-    assert len(server.organization_manager.list_organizations()) == 0
+    await server.organization_manager.delete_organization_by_id_async(org.id)
+    orgs = await server.organization_manager.list_organizations_async()
+    assert len(orgs) == 0
 
 
-def test_create_default_organization(server: SyncServer):
-    server.organization_manager.create_default_organization()
-    retrieved = server.organization_manager.get_default_organization()
+@pytest.mark.asyncio
+async def test_create_default_organization(server: SyncServer, event_loop):
+    await server.organization_manager.create_default_organization_async()
+    retrieved = await server.organization_manager.get_default_organization_async()
     assert retrieved.name == server.organization_manager.DEFAULT_ORG_NAME
 
 
-def test_update_organization_name(server: SyncServer):
+@pytest.mark.asyncio
+async def test_update_organization_name(server: SyncServer, event_loop):
     org_name_a = "a"
     org_name_b = "b"
-    org = server.organization_manager.create_organization(pydantic_org=PydanticOrganization(name=org_name_a))
+    org = await server.organization_manager.create_organization_async(pydantic_org=PydanticOrganization(name=org_name_a))
     assert org.name == org_name_a
-    org = server.organization_manager.update_organization_name_using_id(org_id=org.id, name=org_name_b)
+    org = await server.organization_manager.update_organization_name_using_id_async(org_id=org.id, name=org_name_b)
     assert org.name == org_name_b
 
 
-def test_update_organization_privileged_tools(server: SyncServer):
+@pytest.mark.asyncio
+async def test_update_organization_privileged_tools(server: SyncServer, event_loop):
     org_name = "test"
-    org = server.organization_manager.create_organization(pydantic_org=PydanticOrganization(name=org_name))
+    org = await server.organization_manager.create_organization_async(pydantic_org=PydanticOrganization(name=org_name))
     assert org.privileged_tools == False
-    org = server.organization_manager.update_organization(org_id=org.id, org_update=OrganizationUpdate(privileged_tools=True))
+    org = await server.organization_manager.update_organization_async(org_id=org.id, org_update=OrganizationUpdate(privileged_tools=True))
     assert org.privileged_tools == True
 
 
-def test_list_organizations_pagination(server: SyncServer):
-    server.organization_manager.create_organization(pydantic_org=PydanticOrganization(name="a"))
-    server.organization_manager.create_organization(pydantic_org=PydanticOrganization(name="b"))
+@pytest.mark.asyncio
+async def test_list_organizations_pagination(server: SyncServer, event_loop):
+    await server.organization_manager.create_organization_async(pydantic_org=PydanticOrganization(name="a"))
+    await server.organization_manager.create_organization_async(pydantic_org=PydanticOrganization(name="b"))
 
-    orgs_x = server.organization_manager.list_organizations(limit=1)
+    orgs_x = await server.organization_manager.list_organizations_async(limit=1)
     assert len(orgs_x) == 1
 
-    orgs_y = server.organization_manager.list_organizations(after=orgs_x[0].id, limit=1)
+    orgs_y = await server.organization_manager.list_organizations_async(after=orgs_x[0].id, limit=1)
     assert len(orgs_y) == 1
     assert orgs_y[0].name != orgs_x[0].name
 
-    orgs = server.organization_manager.list_organizations(after=orgs_y[0].id, limit=1)
+    orgs = await server.organization_manager.list_organizations_async(after=orgs_y[0].id, limit=1)
     assert len(orgs) == 0
 
 
@@ -2150,7 +2156,7 @@ async def test_passage_cascade_deletion(
 @pytest.mark.asyncio
 async def test_list_users(server: SyncServer, event_loop):
     # Create default organization
-    org = server.organization_manager.create_default_organization()
+    org = await server.organization_manager.create_default_organization_async()
 
     user_name = "user"
     user = await server.user_manager.create_actor_async(PydanticUser(name=user_name, organization_id=org.id))
@@ -2164,10 +2170,11 @@ async def test_list_users(server: SyncServer, event_loop):
     assert len(await server.user_manager.list_actors_async()) == 0
 
 
-def test_create_default_user(server: SyncServer):
-    org = server.organization_manager.create_default_organization()
-    server.user_manager.create_default_user(org_id=org.id)
-    retrieved = server.user_manager.get_default_user()
+@pytest.mark.asyncio
+async def test_create_default_user(server: SyncServer, event_loop):
+    org = await server.organization_manager.create_default_organization_async()
+    await server.user_manager.create_default_actor_async(org_id=org.id)
+    retrieved = await server.user_manager.get_default_actor_async()
     assert retrieved.name == server.user_manager.DEFAULT_USER_NAME
 
 

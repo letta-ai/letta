@@ -49,7 +49,6 @@ from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
-from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage, PassageUpdate
 from letta.schemas.providers import (
     AnthropicBedrockProvider,
@@ -1423,16 +1422,6 @@ class SyncServer(Server):
 
         # Get the current message
         return self.message_manager.update_message_by_id(message_id=message_id, message_update=request, actor=actor)
-
-    def get_organization_or_default(self, org_id: Optional[str]) -> Organization:
-        """Get the organization object for org_id if it exists, otherwise return the default organization object"""
-        if org_id is None:
-            org_id = self.organization_manager.DEFAULT_ORG_ID
-
-        try:
-            return self.organization_manager.get_organization_by_id(org_id=org_id)
-        except NoResultFound:
-            raise HTTPException(status_code=404, detail=f"Organization with id {org_id} not found")
 
     def list_llm_models(
         self,
