@@ -26,7 +26,7 @@ class OpenAIStreamingInterface:
         self.assistant_message_tool_kwarg = DEFAULT_MESSAGE_TOOL_KWARG
 
         self.optimistic_json_parser: OptimisticJSONParser = OptimisticJSONParser()
-        self.function_args_reader = JSONInnerThoughtsExtractor(wait_for_first_key=True)  # TODO: pass in kward
+        self.function_args_reader = JSONInnerThoughtsExtractor(wait_for_first_key=True)  # TODO: pass in kwarg
         self.function_name_buffer = None
         self.function_args_buffer = None
         self.function_id_buffer = None

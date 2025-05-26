@@ -230,8 +230,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         Returns:
             Optional[str]: None is always returned as this function does not produce a response.
         """
-        # TODO: convert this to async
-        PassageManager().insert_passage(
+        await PassageManager().insert_passage_async(
             agent_state=agent_state,
             agent_id=agent_state.id,
             text=content,

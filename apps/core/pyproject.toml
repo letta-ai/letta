@@ -92,6 +92,7 @@ aiomultiprocess = "^0.9.1"
 matplotlib = "^3.10.1"
 asyncpg = {version = "^0.30.0", optional = true}
 tavily-python = "^0.7.2"
+async-lru = "^2.0.5"
 
 
 [tool.poetry.extras]

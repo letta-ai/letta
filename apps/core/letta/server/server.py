@@ -1128,6 +1128,20 @@ class SyncServer(Server):
 
         return passages
 
+    async def insert_archival_memory_async(self, agent_id: str, memory_contents: str, actor: User) -> List[Passage]:
+        # Get the agent object (loaded in memory)
+        agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        # Insert into archival memory
+        # TODO: @mindy look at moving this to agent_manager to avoid above extra call
+        passages = await self.passage_manager.insert_passage_async(
+            agent_state=agent_state, agent_id=agent_id, text=memory_contents, actor=actor
+        )
+
+        # rebuild agent system prompt - force since no archival change
+        await self.agent_manager.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
+
+        return passages
+
     def modify_archival_memory(self, agent_id: str, memory_id: str, passage: PassageUpdate, actor: User) -> List[Passage]:
         passage = Passage(**passage.model_dump(exclude_unset=True, exclude_none=True))
         passages = self.passage_manager.update_passage_by_id(passage_id=memory_id, passage=passage, actor=actor)

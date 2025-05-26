@@ -2,7 +2,8 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from typing import List, Optional
 
-from openai import OpenAI
+from async_lru import alru_cache
+from openai import AsyncOpenAI, OpenAI
 
 from letta.constants import MAX_EMBEDDING_DIM
 from letta.embeddings import embedding_model, parse_and_chunk_text
@@ -23,6 +24,16 @@ def get_openai_embedding(text: str, model: str, endpoint: str) -> List[float]:
 
     client = OpenAI(api_key=model_settings.openai_api_key, base_url=endpoint, max_retries=0)
     response = client.embeddings.create(input=text, model=model)
+    return response.data[0].embedding
+
+
+# TODO: Add redis-backed caching for backend
+@alru_cache(maxsize=8192)
+async def get_openai_embedding_async(text: str, model: str, endpoint: str) -> List[float]:
+    from letta.settings import model_settings
+
+    client = AsyncOpenAI(api_key=model_settings.openai_api_key, base_url=endpoint, max_retries=0)
+    response = await client.embeddings.create(input=text, model=model)
     return response.data[0].embedding
 
 
@@ -85,6 +96,43 @@ class PassageManager:
 
     @enforce_types
     @trace_method
+    async def create_passage_async(self, pydantic_passage: PydanticPassage, actor: PydanticUser) -> PydanticPassage:
+        """Create a new passage in the appropriate table based on whether it has agent_id or source_id."""
+        # Common fields for both passage types
+        data = pydantic_passage.model_dump(to_orm=True)
+        common_fields = {
+            "id": data.get("id"),
+            "text": data["text"],
+            "embedding": data["embedding"],
+            "embedding_config": data["embedding_config"],
+            "organization_id": data["organization_id"],
+            "metadata_": data.get("metadata", {}),
+            "is_deleted": data.get("is_deleted", False),
+            "created_at": data.get("created_at", datetime.now(timezone.utc)),
+        }
+
+        if "agent_id" in data and data["agent_id"]:
+            assert not data.get("source_id"), "Passage cannot have both agent_id and source_id"
+            agent_fields = {
+                "agent_id": data["agent_id"],
+            }
+            passage = AgentPassage(**common_fields, **agent_fields)
+        elif "source_id" in data and data["source_id"]:
+            assert not data.get("agent_id"), "Passage cannot have both agent_id and source_id"
+            source_fields = {
+                "source_id": data["source_id"],
+                "file_id": data.get("file_id"),
+            }
+            passage = SourcePassage(**common_fields, **source_fields)
+        else:
+            raise ValueError("Passage must have either agent_id or source_id")
+
+        async with db_registry.async_session() as session:
+            passage = await passage.create_async(session, actor=actor)
+            return passage.to_pydantic()
+
+    @enforce_types
+    @trace_method
     def create_many_passages(self, passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
         """Create multiple passages."""
         return [self.create_passage(p, actor) for p in passages]
@@ -132,6 +180,65 @@ class PassageManager:
                             f"Got back an unexpected payload from text embedding function, type={type(embedding)}, value={embedding}"
                         )
                 passage = self.create_passage(
+                    PydanticPassage(
+                        organization_id=actor.organization_id,
+                        agent_id=agent_id,
+                        text=text,
+                        embedding=embedding,
+                        embedding_config=agent_state.embedding_config,
+                    ),
+                    actor=actor,
+                )
+                passages.append(passage)
+
+            return passages
+
+        except Exception as e:
+            raise e
+
+    @enforce_types
+    @trace_method
+    async def insert_passage_async(
+        self,
+        agent_state: AgentState,
+        agent_id: str,
+        text: str,
+        actor: PydanticUser,
+    ) -> List[PydanticPassage]:
+        """Insert passage(s) into archival memory"""
+
+        embedding_chunk_size = agent_state.embedding_config.embedding_chunk_size
+
+        # TODO eventually migrate off of llama-index for embeddings?
+        # Already causing pain for OpenAI proxy endpoints like LM Studio...
+        if agent_state.embedding_config.embedding_endpoint_type != "openai":
+            embed_model = embedding_model(agent_state.embedding_config)
+
+        passages = []
+
+        try:
+            # breakup string into passages
+            for text in parse_and_chunk_text(text, embedding_chunk_size):
+
+                if agent_state.embedding_config.embedding_endpoint_type != "openai":
+                    embedding = embed_model.get_text_embedding(text)
+                else:
+                    # TODO should have the settings passed in via the server call
+                    embedding = await get_openai_embedding_async(
+                        text,
+                        agent_state.embedding_config.embedding_model,
+                        agent_state.embedding_config.embedding_endpoint,
+                    )
+
+                if isinstance(embedding, dict):
+                    try:
+                        embedding = embedding["data"][0]["embedding"]
+                    except (KeyError, IndexError):
+                        # TODO as a fallback, see if we can find any lists in the payload
+                        raise TypeError(
+                            f"Got back an unexpected payload from text embedding function, type={type(embedding)}, value={embedding}"
+                        )
+                passage = await self.create_passage_async(
                     PydanticPassage(
                         organization_id=actor.organization_id,
                         agent_id=agent_id,
