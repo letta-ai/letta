@@ -4083,11 +4083,12 @@ async def test_delete_file(server: SyncServer, default_user, default_source):
 # ======================================================================================================================
 
 
-def test_create_or_update_sandbox_config(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_create_or_update_sandbox_config(server: SyncServer, default_user, event_loop):
     sandbox_config_create = SandboxConfigCreate(
         config=E2BSandboxConfig(),
     )
-    created_config = server.sandbox_config_manager.create_or_update_sandbox_config(sandbox_config_create, actor=default_user)
+    created_config = await server.sandbox_config_manager.create_or_update_sandbox_config_async(sandbox_config_create, actor=default_user)
 
     # Assertions
     assert created_config.type == SandboxType.E2B
@@ -4095,11 +4096,12 @@ def test_create_or_update_sandbox_config(server: SyncServer, default_user):
     assert created_config.organization_id == default_user.organization_id
 
 
-def test_create_local_sandbox_config_defaults(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_create_local_sandbox_config_defaults(server: SyncServer, default_user, event_loop):
     sandbox_config_create = SandboxConfigCreate(
         config=LocalSandboxConfig(),
     )
-    created_config = server.sandbox_config_manager.create_or_update_sandbox_config(sandbox_config_create, actor=default_user)
+    created_config = await server.sandbox_config_manager.create_or_update_sandbox_config_async(sandbox_config_create, actor=default_user)
 
     # Assertions
     assert created_config.type == SandboxType.LOCAL
@@ -4108,8 +4110,11 @@ def test_create_local_sandbox_config_defaults(server: SyncServer, default_user):
     assert created_config.organization_id == default_user.organization_id
 
 
-def test_default_e2b_settings_sandbox_config(server: SyncServer, default_user):
-    created_config = server.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.E2B, actor=default_user)
+@pytest.mark.asyncio
+async def test_default_e2b_settings_sandbox_config(server: SyncServer, default_user, event_loop):
+    created_config = await server.sandbox_config_manager.get_or_create_default_sandbox_config_async(
+        sandbox_type=SandboxType.E2B, actor=default_user
+    )
     e2b_config = created_config.get_e2b_config()
 
     # Assertions
@@ -4117,35 +4122,41 @@ def test_default_e2b_settings_sandbox_config(server: SyncServer, default_user):
     assert e2b_config.template == tool_settings.e2b_sandbox_template_id
 
 
-def test_update_existing_sandbox_config(server: SyncServer, sandbox_config_fixture, default_user):
+@pytest.mark.asyncio
+async def test_update_existing_sandbox_config(server: SyncServer, sandbox_config_fixture, default_user, event_loop):
     update_data = SandboxConfigUpdate(config=E2BSandboxConfig(template="template_2", timeout=120))
-    updated_config = server.sandbox_config_manager.update_sandbox_config(sandbox_config_fixture.id, update_data, actor=default_user)
+    updated_config = await server.sandbox_config_manager.update_sandbox_config_async(
+        sandbox_config_fixture.id, update_data, actor=default_user
+    )
 
     # Assertions
     assert updated_config.config["template"] == "template_2"
     assert updated_config.config["timeout"] == 120
 
 
-def test_delete_sandbox_config(server: SyncServer, sandbox_config_fixture, default_user):
-    deleted_config = server.sandbox_config_manager.delete_sandbox_config(sandbox_config_fixture.id, actor=default_user)
+@pytest.mark.asyncio
+async def test_delete_sandbox_config(server: SyncServer, sandbox_config_fixture, default_user, event_loop):
+    deleted_config = await server.sandbox_config_manager.delete_sandbox_config_async(sandbox_config_fixture.id, actor=default_user)
 
     # Assertions to verify deletion
     assert deleted_config.id == sandbox_config_fixture.id
 
     # Verify it no longer exists
-    config_list = server.sandbox_config_manager.list_sandbox_configs(actor=default_user)
+    config_list = await server.sandbox_config_manager.list_sandbox_configs_async(actor=default_user)
     assert sandbox_config_fixture.id not in [config.id for config in config_list]
 
 
-def test_get_sandbox_config_by_type(server: SyncServer, sandbox_config_fixture, default_user):
-    retrieved_config = server.sandbox_config_manager.get_sandbox_config_by_type(sandbox_config_fixture.type, actor=default_user)
+@pytest.mark.asyncio
+async def test_get_sandbox_config_by_type(server: SyncServer, sandbox_config_fixture, default_user, event_loop):
+    retrieved_config = await server.sandbox_config_manager.get_sandbox_config_by_type_async(sandbox_config_fixture.type, actor=default_user)
 
     # Assertions to verify correct retrieval
     assert retrieved_config.id == sandbox_config_fixture.id
     assert retrieved_config.type == sandbox_config_fixture.type
 
 
-def test_list_sandbox_configs(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_list_sandbox_configs(server: SyncServer, default_user, event_loop):
     # Creating multiple sandbox configs
     config_e2b_create = SandboxConfigCreate(
         config=E2BSandboxConfig(),
@@ -4153,29 +4164,29 @@ def test_list_sandbox_configs(server: SyncServer, default_user):
     config_local_create = SandboxConfigCreate(
         config=LocalSandboxConfig(sandbox_dir=""),
     )
-    config_e2b = server.sandbox_config_manager.create_or_update_sandbox_config(config_e2b_create, actor=default_user)
+    config_e2b = await server.sandbox_config_manager.create_or_update_sandbox_config_async(config_e2b_create, actor=default_user)
     if USING_SQLITE:
         time.sleep(CREATE_DELAY_SQLITE)
-    config_local = server.sandbox_config_manager.create_or_update_sandbox_config(config_local_create, actor=default_user)
+    config_local = await server.sandbox_config_manager.create_or_update_sandbox_config_async(config_local_create, actor=default_user)
 
     # List configs without pagination
-    configs = server.sandbox_config_manager.list_sandbox_configs(actor=default_user)
+    configs = await server.sandbox_config_manager.list_sandbox_configs_async(actor=default_user)
     assert len(configs) >= 2
 
     # List configs with pagination
-    paginated_configs = server.sandbox_config_manager.list_sandbox_configs(actor=default_user, limit=1)
+    paginated_configs = await server.sandbox_config_manager.list_sandbox_configs_async(actor=default_user, limit=1)
     assert len(paginated_configs) == 1
 
-    next_page = server.sandbox_config_manager.list_sandbox_configs(actor=default_user, after=paginated_configs[-1].id, limit=1)
+    next_page = await server.sandbox_config_manager.list_sandbox_configs_async(actor=default_user, after=paginated_configs[-1].id, limit=1)
     assert len(next_page) == 1
     assert next_page[0].id != paginated_configs[0].id
 
     # List configs using sandbox_type filter
-    configs = server.sandbox_config_manager.list_sandbox_configs(actor=default_user, sandbox_type=SandboxType.E2B)
+    configs = await server.sandbox_config_manager.list_sandbox_configs_async(actor=default_user, sandbox_type=SandboxType.E2B)
     assert len(configs) == 1
     assert configs[0].id == config_e2b.id
 
-    configs = server.sandbox_config_manager.list_sandbox_configs(actor=default_user, sandbox_type=SandboxType.LOCAL)
+    configs = await server.sandbox_config_manager.list_sandbox_configs_async(actor=default_user, sandbox_type=SandboxType.LOCAL)
     assert len(configs) == 1
     assert configs[0].id == config_local.id
 
@@ -4185,9 +4196,10 @@ def test_list_sandbox_configs(server: SyncServer, default_user):
 # ======================================================================================================================
 
 
-def test_create_sandbox_env_var(server: SyncServer, sandbox_config_fixture, default_user):
+@pytest.mark.asyncio
+async def test_create_sandbox_env_var(server: SyncServer, sandbox_config_fixture, default_user, event_loop):
     env_var_create = SandboxEnvironmentVariableCreate(key="TEST_VAR", value="test_value", description="A test environment variable.")
-    created_env_var = server.sandbox_config_manager.create_sandbox_env_var(
+    created_env_var = await server.sandbox_config_manager.create_sandbox_env_var_async(
         env_var_create, sandbox_config_id=sandbox_config_fixture.id, actor=default_user
     )
 
@@ -4197,54 +4209,68 @@ def test_create_sandbox_env_var(server: SyncServer, sandbox_config_fixture, defa
     assert created_env_var.organization_id == default_user.organization_id
 
 
-def test_update_sandbox_env_var(server: SyncServer, sandbox_env_var_fixture, default_user):
+@pytest.mark.asyncio
+async def test_update_sandbox_env_var(server: SyncServer, sandbox_env_var_fixture, default_user, event_loop):
     update_data = SandboxEnvironmentVariableUpdate(value="updated_value")
-    updated_env_var = server.sandbox_config_manager.update_sandbox_env_var(sandbox_env_var_fixture.id, update_data, actor=default_user)
+    updated_env_var = await server.sandbox_config_manager.update_sandbox_env_var_async(
+        sandbox_env_var_fixture.id, update_data, actor=default_user
+    )
 
     # Assertions
     assert updated_env_var.value == "updated_value"
     assert updated_env_var.id == sandbox_env_var_fixture.id
 
 
-def test_delete_sandbox_env_var(server: SyncServer, sandbox_config_fixture, sandbox_env_var_fixture, default_user):
-    deleted_env_var = server.sandbox_config_manager.delete_sandbox_env_var(sandbox_env_var_fixture.id, actor=default_user)
+@pytest.mark.asyncio
+async def test_delete_sandbox_env_var(server: SyncServer, sandbox_config_fixture, sandbox_env_var_fixture, default_user, event_loop):
+    deleted_env_var = await server.sandbox_config_manager.delete_sandbox_env_var_async(sandbox_env_var_fixture.id, actor=default_user)
 
     # Assertions to verify deletion
     assert deleted_env_var.id == sandbox_env_var_fixture.id
 
     # Verify it no longer exists
-    env_vars = server.sandbox_config_manager.list_sandbox_env_vars(sandbox_config_id=sandbox_config_fixture.id, actor=default_user)
+    env_vars = await server.sandbox_config_manager.list_sandbox_env_vars_async(
+        sandbox_config_id=sandbox_config_fixture.id, actor=default_user
+    )
     assert sandbox_env_var_fixture.id not in [env_var.id for env_var in env_vars]
 
 
-def test_list_sandbox_env_vars(server: SyncServer, sandbox_config_fixture, default_user):
+@pytest.mark.asyncio
+async def test_list_sandbox_env_vars(server: SyncServer, sandbox_config_fixture, default_user, event_loop):
     # Creating multiple environment variables
     env_var_create_a = SandboxEnvironmentVariableCreate(key="VAR1", value="value1")
     env_var_create_b = SandboxEnvironmentVariableCreate(key="VAR2", value="value2")
-    server.sandbox_config_manager.create_sandbox_env_var(env_var_create_a, sandbox_config_id=sandbox_config_fixture.id, actor=default_user)
+    await server.sandbox_config_manager.create_sandbox_env_var_async(
+        env_var_create_a, sandbox_config_id=sandbox_config_fixture.id, actor=default_user
+    )
     if USING_SQLITE:
         time.sleep(CREATE_DELAY_SQLITE)
-    server.sandbox_config_manager.create_sandbox_env_var(env_var_create_b, sandbox_config_id=sandbox_config_fixture.id, actor=default_user)
+    await server.sandbox_config_manager.create_sandbox_env_var_async(
+        env_var_create_b, sandbox_config_id=sandbox_config_fixture.id, actor=default_user
+    )
 
     # List env vars without pagination
-    env_vars = server.sandbox_config_manager.list_sandbox_env_vars(sandbox_config_id=sandbox_config_fixture.id, actor=default_user)
+    env_vars = await server.sandbox_config_manager.list_sandbox_env_vars_async(
+        sandbox_config_id=sandbox_config_fixture.id, actor=default_user
+    )
     assert len(env_vars) >= 2
 
     # List env vars with pagination
-    paginated_env_vars = server.sandbox_config_manager.list_sandbox_env_vars(
+    paginated_env_vars = await server.sandbox_config_manager.list_sandbox_env_vars_async(
         sandbox_config_id=sandbox_config_fixture.id, actor=default_user, limit=1
     )
     assert len(paginated_env_vars) == 1
 
-    next_page = server.sandbox_config_manager.list_sandbox_env_vars(
+    next_page = await server.sandbox_config_manager.list_sandbox_env_vars_async(
         sandbox_config_id=sandbox_config_fixture.id, actor=default_user, after=paginated_env_vars[-1].id, limit=1
     )
     assert len(next_page) == 1
     assert next_page[0].id != paginated_env_vars[0].id
 
 
-def test_get_sandbox_env_var_by_key(server: SyncServer, sandbox_env_var_fixture, default_user):
-    retrieved_env_var = server.sandbox_config_manager.get_sandbox_env_var_by_key_and_sandbox_config_id(
+@pytest.mark.asyncio
+async def test_get_sandbox_env_var_by_key(server: SyncServer, sandbox_env_var_fixture, default_user, event_loop):
+    retrieved_env_var = await server.sandbox_config_manager.get_sandbox_env_var_by_key_and_sandbox_config_id_async(
         sandbox_env_var_fixture.key, sandbox_env_var_fixture.sandbox_config_id, actor=default_user
     )
 
