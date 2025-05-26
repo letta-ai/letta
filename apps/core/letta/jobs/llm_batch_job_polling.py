@@ -11,6 +11,7 @@ from letta.schemas.letta_response import LettaBatchResponse
 from letta.schemas.llm_batch_job import LLMBatchJob
 from letta.schemas.user import User
 from letta.server.server import SyncServer
+from letta.settings import settings
 
 logger = get_logger(__name__)
 
@@ -180,7 +181,7 @@ async def poll_running_llm_batches(server: "SyncServer") -> List[LettaBatchRespo
 
     try:
         # 1. Retrieve running batch jobs
-        batches = await server.batch_manager.list_running_llm_batches_async()
+        batches = await server.batch_manager.list_running_llm_batches_async(weeks=max(settings.batch_job_polling_lookback_weeks, 1))
         metrics.total_batches = len(batches)
 
         # TODO: Expand to more providers
