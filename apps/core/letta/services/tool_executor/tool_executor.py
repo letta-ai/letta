@@ -155,7 +155,7 @@ class LettaCoreToolExecutor(ToolExecutor):
             raise ValueError(f"'page' argument must be an integer")
 
         count = RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
-        messages = await MessageManager().list_user_messages_for_agent(
+        messages = await MessageManager().list_user_messages_for_agent_async(
             agent_id=agent_state.id,
             actor=actor,
             query_text=query,
