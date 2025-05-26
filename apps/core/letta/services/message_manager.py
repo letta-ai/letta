@@ -593,3 +593,26 @@ class MessageManager:
 
             # 4) return the number of rows deleted
             return result.rowcount
+
+    @enforce_types
+    @trace_method
+    async def delete_all_messages_for_agent_async(self, agent_id: str, actor: PydanticUser) -> int:
+        """
+        Efficiently deletes all messages associated with a given agent_id,
+        while enforcing permission checks and avoiding any ORM‑level loads.
+        """
+        async with db_registry.async_session() as session:
+            # 1) verify the agent exists and the actor has access
+            await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+            # 2) issue a CORE DELETE against the mapped class
+            stmt = (
+                delete(MessageModel).where(MessageModel.agent_id == agent_id).where(MessageModel.organization_id == actor.organization_id)
+            )
+            result = await session.execute(stmt)
+
+            # 3) commit once
+            await session.commit()
+
+            # 4) return the number of rows deleted
+            return result.rowcount
