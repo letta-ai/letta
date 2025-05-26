@@ -351,6 +351,29 @@ class MessageManager:
 
     @enforce_types
     @trace_method
+    async def list_user_messages_for_agent_async(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
+        query_text: Optional[str] = None,
+        limit: Optional[int] = 50,
+        ascending: bool = True,
+    ) -> List[PydanticMessage]:
+        return await self.list_messages_for_agent_async(
+            agent_id=agent_id,
+            actor=actor,
+            after=after,
+            before=before,
+            query_text=query_text,
+            roles=[MessageRole.user],
+            limit=limit,
+            ascending=ascending,
+        )
+
+    @enforce_types
+    @trace_method
     def list_messages_for_agent(
         self,
         agent_id: str,

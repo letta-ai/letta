@@ -1588,6 +1588,49 @@ class AgentManager:
 
     @trace_method
     @enforce_types
+    async def update_memory_if_changed_async(self, agent_id: str, new_memory: Memory, actor: PydanticUser) -> PydanticAgentState:
+        """
+        Update internal memory object and system prompt if there have been modifications.
+
+        Args:
+            actor:
+            agent_id:
+            new_memory (Memory): the new memory object to compare to the current memory object
+
+        Returns:
+            modified (bool): whether the memory was updated
+        """
+        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        system_message = await self.message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)
+        if new_memory.compile() not in system_message.content[0].text:
+            # update the blocks (LRW) in the DB
+            for label in agent_state.memory.list_block_labels():
+                updated_value = new_memory.get_block(label).value
+                if updated_value != agent_state.memory.get_block(label).value:
+                    # update the block if it's changed
+                    block_id = agent_state.memory.get_block(label).id
+                    await self.block_manager.update_block_async(
+                        block_id=block_id, block_update=BlockUpdate(value=updated_value), actor=actor
+                    )
+
+            # refresh memory from DB (using block ids)
+            blocks = await asyncio.gather(
+                *[self.block_manager.get_block_by_id_async(block.id, actor=actor) for block in agent_state.memory.get_blocks()]
+            )
+            agent_state.memory = Memory(
+                blocks=blocks,
+                prompt_template=get_prompt_template_for_agent_type(agent_state.agent_type),
+            )
+
+            # NOTE: don't do this since re-buildin the memory is handled at the start of the step
+            # rebuild memory - this records the last edited timestamp of the memory
+            # TODO: pass in update timestamp from block edit time
+            agent_state = await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor)
+
+        return agent_state
+
+    @trace_method
+    @enforce_types
     async def refresh_memory_async(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
         block_ids = [b.id for b in agent_state.memory.blocks]
         if not block_ids:
