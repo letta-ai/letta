@@ -88,6 +88,21 @@ class ProviderManager:
 
     @enforce_types
     @trace_method
+    async def delete_provider_by_id_async(self, provider_id: str, actor: PydanticUser):
+        """Delete a provider."""
+        async with db_registry.async_session() as session:
+            # Clear api key field
+            existing_provider = await ProviderModel.read_async(db_session=session, identifier=provider_id, actor=actor)
+            existing_provider.api_key = None
+            await existing_provider.update_async(session, actor=actor)
+
+            # Soft delete in provider table
+            await existing_provider.delete_async(session, actor=actor)
+
+            await session.commit()
+
+    @enforce_types
+    @trace_method
     def list_providers(
         self,
         actor: PydanticUser,
