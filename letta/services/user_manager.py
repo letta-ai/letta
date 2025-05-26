@@ -40,6 +40,27 @@ class UserManager:
 
     @enforce_types
     @trace_method
+    async def create_default_actor_async(self, org_id: str = OrganizationManager.DEFAULT_ORG_ID) -> PydanticUser:
+        """Create the default user."""
+        async with db_registry.async_session() as session:
+            # Make sure the org id exists
+            try:
+                await OrganizationModel.read_async(db_session=session, identifier=org_id)
+            except NoResultFound:
+                raise ValueError(f"No organization with {org_id} exists in the organization table.")
+
+            # Try to retrieve the user
+            try:
+                actor = await UserModel.read_async(db_session=session, identifier=self.DEFAULT_USER_ID)
+            except NoResultFound:
+                # If it doesn't exist, make it
+                actor = UserModel(id=self.DEFAULT_USER_ID, name=self.DEFAULT_USER_NAME, organization_id=org_id)
+                await actor.create_async(session)
+
+            return actor.to_pydantic()
+
+    @enforce_types
+    @trace_method
     def create_user(self, pydantic_user: PydanticUser) -> PydanticUser:
         """Create a new user if it doesn't already exist."""
         with db_registry.session() as session:
@@ -154,8 +175,7 @@ class UserManager:
         try:
             return await self.get_actor_by_id_async(self.DEFAULT_USER_ID)
         except NoResultFound:
-            # Fall back to synchronous version since create_default_user isn't async yet
-            return self.create_default_user(org_id=self.DEFAULT_ORG_ID)
+            return await self.create_default_actor_async(org_id=self.DEFAULT_ORG_ID)
 
     @enforce_types
     @trace_method

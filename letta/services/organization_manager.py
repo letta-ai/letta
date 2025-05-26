@@ -17,9 +17,9 @@ class OrganizationManager:
 
     @enforce_types
     @trace_method
-    def get_default_organization(self) -> PydanticOrganization:
+    async def get_default_organization_async(self) -> PydanticOrganization:
         """Fetch the default organization."""
-        return self.get_organization_by_id(self.DEFAULT_ORG_ID)
+        return await self.get_organization_by_id_async(self.DEFAULT_ORG_ID)
 
     @enforce_types
     @trace_method
@@ -31,50 +31,78 @@ class OrganizationManager:
 
     @enforce_types
     @trace_method
-    def create_organization(self, pydantic_org: PydanticOrganization) -> PydanticOrganization:
-        """Create a new organization."""
-        try:
-            org = self.get_organization_by_id(pydantic_org.id)
-            return org
-        except NoResultFound:
-            return self._create_organization(pydantic_org=pydantic_org)
+    async def get_organization_by_id_async(self, org_id: str) -> Optional[PydanticOrganization]:
+        """Fetch an organization by ID."""
+        async with db_registry.async_session() as session:
+            organization = await OrganizationModel.read_async(db_session=session, identifier=org_id)
+            return organization.to_pydantic()
 
     @enforce_types
     @trace_method
-    def _create_organization(self, pydantic_org: PydanticOrganization) -> PydanticOrganization:
+    def create_organization(self, pydantic_org: PydanticOrganization) -> PydanticOrganization:
+        """Create the default organization."""
         with db_registry.session() as session:
+            try:
+                organization = OrganizationModel.read(db_session=session, identifier=pydantic_org.id)
+                return organization.to_pydantic()
+            except:
+                organization = OrganizationModel(**pydantic_org.model_dump(to_orm=True))
+                organization = organization.create(session)
+                return organization.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def create_organization_async(self, pydantic_org: PydanticOrganization) -> PydanticOrganization:
+        """Create a new organization."""
+        try:
+            org = await self.get_organization_by_id_async(pydantic_org.id)
+            return org
+        except NoResultFound:
+            return await self._create_organization_async(pydantic_org=pydantic_org)
+
+    @enforce_types
+    @trace_method
+    async def _create_organization_async(self, pydantic_org: PydanticOrganization) -> PydanticOrganization:
+        async with db_registry.async_session() as session:
             org = OrganizationModel(**pydantic_org.model_dump(to_orm=True))
-            org.create(session)
+            await org.create_async(session)
             return org.to_pydantic()
 
     @enforce_types
     @trace_method
     def create_default_organization(self) -> PydanticOrganization:
         """Create the default organization."""
-        return self.create_organization(PydanticOrganization(name=self.DEFAULT_ORG_NAME, id=self.DEFAULT_ORG_ID))
+        pydantic_org = PydanticOrganization(name=self.DEFAULT_ORG_NAME, id=self.DEFAULT_ORG_ID)
+        return self.create_organization(pydantic_org)
 
     @enforce_types
     @trace_method
-    def update_organization_name_using_id(self, org_id: str, name: Optional[str] = None) -> PydanticOrganization:
+    async def create_default_organization_async(self) -> PydanticOrganization:
+        """Create the default organization."""
+        return await self.create_organization_async(PydanticOrganization(name=self.DEFAULT_ORG_NAME, id=self.DEFAULT_ORG_ID))
+
+    @enforce_types
+    @trace_method
+    async def update_organization_name_using_id_async(self, org_id: str, name: Optional[str] = None) -> PydanticOrganization:
         """Update an organization."""
-        with db_registry.session() as session:
-            org = OrganizationModel.read(db_session=session, identifier=org_id)
+        async with db_registry.async_session() as session:
+            org = await OrganizationModel.read_async(db_session=session, identifier=org_id)
             if name:
                 org.name = name
-            org.update(session)
+            await org.update_async(session)
             return org.to_pydantic()
 
     @enforce_types
     @trace_method
-    def update_organization(self, org_id: str, org_update: OrganizationUpdate) -> PydanticOrganization:
+    async def update_organization_async(self, org_id: str, org_update: OrganizationUpdate) -> PydanticOrganization:
         """Update an organization."""
-        with db_registry.session() as session:
-            org = OrganizationModel.read(db_session=session, identifier=org_id)
+        async with db_registry.async_session() as session:
+            org = await OrganizationModel.read_async(db_session=session, identifier=org_id)
             if org_update.name:
                 org.name = org_update.name
             if org_update.privileged_tools:
                 org.privileged_tools = org_update.privileged_tools
-            org.update(session)
+            await org.update_async(session)
             return org.to_pydantic()
 
     @enforce_types
@@ -87,10 +115,18 @@ class OrganizationManager:
 
     @enforce_types
     @trace_method
-    def list_organizations(self, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticOrganization]:
+    async def delete_organization_by_id_async(self, org_id: str):
+        """Delete an organization by marking it as deleted."""
+        async with db_registry.async_session() as session:
+            organization = await OrganizationModel.read_async(db_session=session, identifier=org_id)
+            await organization.hard_delete_async(session)
+
+    @enforce_types
+    @trace_method
+    async def list_organizations_async(self, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticOrganization]:
         """List all organizations with optional pagination."""
-        with db_registry.session() as session:
-            organizations = OrganizationModel.list(
+        async with db_registry.async_session() as session:
+            organizations = await OrganizationModel.list_async(
                 db_session=session,
                 after=after,
                 limit=limit,
