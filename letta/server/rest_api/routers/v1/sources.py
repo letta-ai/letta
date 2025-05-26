@@ -29,7 +29,8 @@ async def count_sources(
     """
     Count all data sources created by a user.
     """
-    return await server.source_manager.size(actor=server.user_manager.get_user_or_default(user_id=actor_id))
+    actor = server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.source_manager.size_async(actor=actor)
 
 
 @router.get("/{source_id}", response_model=Source, operation_id="retrieve_source")

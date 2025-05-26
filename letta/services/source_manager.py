@@ -83,7 +83,7 @@ class SourceManager:
 
     @enforce_types
     @trace_method
-    async def size(self, actor: PydanticUser) -> int:
+    async def size_async(self, actor: PydanticUser) -> int:
         """
         Get the total count of sources for the given user.
         """
