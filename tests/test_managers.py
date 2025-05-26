@@ -1487,7 +1487,7 @@ async def test_reset_messages_no_messages(server: SyncServer, sarah_agent, defau
     assert updated_agent.message_ids == ["ghost-message-id"]
 
     # Reset messages
-    reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
+    reset_agent = await server.agent_manager.reset_messages_async(agent_id=sarah_agent.id, actor=default_user)
     assert len(reset_agent.message_ids) == 1
     # Double check that physically no messages exist
     assert await server.message_manager.size_async(agent_id=sarah_agent.id, actor=default_user) == 1
@@ -1505,7 +1505,9 @@ async def test_reset_messages_default_messages(server: SyncServer, sarah_agent, 
     assert updated_agent.message_ids == ["ghost-message-id"]
 
     # Reset messages
-    reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user, add_default_initial_messages=True)
+    reset_agent = await server.agent_manager.reset_messages_async(
+        agent_id=sarah_agent.id, actor=default_user, add_default_initial_messages=True
+    )
     assert len(reset_agent.message_ids) == 4
     # Double check that physically no messages exist
     assert await server.message_manager.size_async(agent_id=sarah_agent.id, actor=default_user) == 4
@@ -1544,7 +1546,7 @@ async def test_reset_messages_with_existing_messages(server: SyncServer, sarah_a
     assert await server.message_manager.size_async(agent_id=sarah_agent.id, actor=default_user) == 6
 
     # 2. Reset all messages
-    reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
+    reset_agent = await server.agent_manager.reset_messages_async(agent_id=sarah_agent.id, actor=default_user)
 
     # 3. Verify the agent now has zero message_ids
     assert len(reset_agent.message_ids) == 1
@@ -1569,12 +1571,12 @@ async def test_reset_messages_idempotency(server: SyncServer, sarah_agent, defau
         actor=default_user,
     )
     # First reset
-    reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
+    reset_agent = await server.agent_manager.reset_messages_async(agent_id=sarah_agent.id, actor=default_user)
     assert len(reset_agent.message_ids) == 1
     assert await server.message_manager.size_async(agent_id=sarah_agent.id, actor=default_user) == 1
 
     # Second reset should do nothing new
-    reset_agent_again = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
+    reset_agent_again = await server.agent_manager.reset_messages_async(agent_id=sarah_agent.id, actor=default_user)
     assert len(reset_agent.message_ids) == 1
     assert await server.message_manager.size_async(agent_id=sarah_agent.id, actor=default_user) == 1
 

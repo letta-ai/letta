@@ -580,6 +580,14 @@ class AgentManager:
 
     @trace_method
     @enforce_types
+    async def append_initial_message_sequence_to_in_context_messages_async(
+        self, actor: PydanticUser, agent_state: PydanticAgentState, initial_message_sequence: Optional[List[MessageCreate]] = None
+    ) -> PydanticAgentState:
+        init_messages = self._generate_initial_message_sequence(actor, agent_state, initial_message_sequence)
+        return await self.append_to_in_context_messages_async(init_messages, agent_id=agent_state.id, actor=actor)
+
+    @trace_method
+    @enforce_types
     def update_agent(
         self,
         agent_id: str,
@@ -1502,7 +1510,20 @@ class AgentManager:
 
     @trace_method
     @enforce_types
-    def reset_messages(self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False) -> PydanticAgentState:
+    async def append_to_in_context_messages_async(
+        self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser
+    ) -> PydanticAgentState:
+        messages = await self.message_manager.create_many_messages_async(messages, actor=actor)
+        agent = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        message_ids = agent.message_ids or []
+        message_ids += [m.id for m in messages]
+        return await self.set_in_context_messages_async(agent_id=agent_id, message_ids=message_ids, actor=actor)
+
+    @trace_method
+    @enforce_types
+    async def reset_messages_async(
+        self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False
+    ) -> PydanticAgentState:
         """
         Removes all in-context messages for the specified agent by:
           1) Clearing the agent.messages relationship (which cascades delete-orphans).
@@ -1519,22 +1540,22 @@ class AgentManager:
         Returns:
             PydanticAgentState: The updated agent state with no linked messages.
         """
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             # Retrieve the existing agent (will raise NoResultFound if invalid)
-            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
 
             # Also clear out the message_ids field to keep in-context memory consistent
             agent.message_ids = []
 
             # Commit the update
-            agent.update(db_session=session, actor=actor)
+            await agent.update_async(db_session=session, actor=actor)
 
-            agent_state = agent.to_pydantic()
+            agent_state = await agent.to_pydantic_async()
 
-        self.message_manager.delete_all_messages_for_agent(agent_id=agent_id, actor=actor)
+        await self.message_manager.delete_all_messages_for_agent_async(agent_id=agent_id, actor=actor)
 
         if add_default_initial_messages:
-            return self.append_initial_message_sequence_to_in_context_messages(actor, agent_state)
+            return await self.append_initial_message_sequence_to_in_context_messages_async(actor, agent_state)
         else:
             # We still want to always have a system message
             init_messages = initialize_message_sequence(
@@ -1545,7 +1566,7 @@ class AgentManager:
                 model=agent_state.llm_config.model,
                 openai_message_dict=init_messages[0],
             )
-            return self.append_to_in_context_messages([system_message], agent_id=agent_state.id, actor=actor)
+            return await self.append_to_in_context_messages_async([system_message], agent_id=agent_state.id, actor=actor)
 
     # TODO: I moved this from agent.py - replace all mentions of this with the agent_manager version
     @trace_method

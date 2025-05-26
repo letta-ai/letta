@@ -877,15 +877,17 @@ async def send_message_async(
 
 
 @router.patch("/{agent_id}/reset-messages", response_model=AgentState, operation_id="reset_messages")
-def reset_messages(
+async def reset_messages(
     agent_id: str,
     add_default_initial_messages: bool = Query(default=False, description="If true, adds the default initial messages after resetting."),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """Resets the messages for an agent"""
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.agent_manager.reset_messages(agent_id=agent_id, actor=actor, add_default_initial_messages=add_default_initial_messages)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.agent_manager.reset_messages_async(
+        agent_id=agent_id, actor=actor, add_default_initial_messages=add_default_initial_messages
+    )
 
 
 @router.get("/{agent_id}/groups", response_model=List[Group], operation_id="list_agent_groups")
