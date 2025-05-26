@@ -131,6 +131,12 @@ class ProviderManager:
 
     @enforce_types
     @trace_method
+    async def get_override_key_async(self, provider_name: Union[str, None], actor: PydanticUser) -> Optional[str]:
+        providers = await self.list_providers_async(name=provider_name, actor=actor)
+        return providers[0].api_key if providers else None
+
+    @enforce_types
+    @trace_method
     def check_provider_api_key(self, provider_check: ProviderCheck) -> None:
         provider = PydanticProvider(
             name=provider_check.provider_type.value,
