@@ -53,13 +53,13 @@ class AnthropicClient(LLMClientBase):
 
     @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
-        client = self._get_anthropic_client(llm_config, async_client=True)
+        client = await self._get_anthropic_client_async(llm_config, async_client=True)
         response = await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
         return response.model_dump()
 
     @trace_method
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[BetaRawMessageStreamEvent]:
-        client = self._get_anthropic_client(llm_config, async_client=True)
+        client = await self._get_anthropic_client_async(llm_config, async_client=True)
         request_data["stream"] = True
         return await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
 
@@ -99,7 +99,7 @@ class AnthropicClient(LLMClientBase):
                 for agent_id in agent_messages_mapping
             }
 
-            client = self._get_anthropic_client(list(agent_llm_config_mapping.values())[0], async_client=True)
+            client = await self._get_anthropic_client_async(list(agent_llm_config_mapping.values())[0], async_client=True)
 
             anthropic_requests = [
                 Request(custom_id=agent_id, params=MessageCreateParamsNonStreaming(**params)) for agent_id, params in requests.items()
@@ -121,6 +121,26 @@ class AnthropicClient(LLMClientBase):
         override_key = None
         if llm_config.provider_category == ProviderCategory.byok:
             override_key = ProviderManager().get_override_key(llm_config.provider_name, actor=self.actor)
+
+        if async_client:
+            return (
+                anthropic.AsyncAnthropic(api_key=override_key, max_retries=model_settings.anthropic_max_retries)
+                if override_key
+                else anthropic.AsyncAnthropic(max_retries=model_settings.anthropic_max_retries)
+            )
+        return (
+            anthropic.Anthropic(api_key=override_key, max_retries=model_settings.anthropic_max_retries)
+            if override_key
+            else anthropic.Anthropic(max_retries=model_settings.anthropic_max_retries)
+        )
+
+    @trace_method
+    async def _get_anthropic_client_async(
+        self, llm_config: LLMConfig, async_client: bool = False
+    ) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
+        override_key = None
+        if llm_config.provider_category == ProviderCategory.byok:
+            override_key = await ProviderManager().get_override_key_async(llm_config.provider_name, actor=self.actor)
 
         if async_client:
             return (

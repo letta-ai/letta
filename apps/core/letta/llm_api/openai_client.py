@@ -125,6 +125,23 @@ class OpenAIClient(LLMClientBase):
 
         return kwargs
 
+    async def _prepare_client_kwargs_async(self, llm_config: LLMConfig) -> dict:
+        api_key = None
+        if llm_config.provider_category == ProviderCategory.byok:
+            from letta.services.provider_manager import ProviderManager
+
+            api_key = await ProviderManager().get_override_key_async(llm_config.provider_name, actor=self.actor)
+        if llm_config.model_endpoint_type == ProviderType.together:
+            api_key = model_settings.together_api_key or os.environ.get("TOGETHER_API_KEY")
+
+        if not api_key:
+            api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
+        # supposedly the openai python client requires a dummy API key
+        api_key = api_key or "DUMMY_API_KEY"
+        kwargs = {"api_key": api_key, "base_url": llm_config.model_endpoint}
+
+        return kwargs
+
     @trace_method
     def build_request_data(
         self,
@@ -230,7 +247,8 @@ class OpenAIClient(LLMClientBase):
         """
         Performs underlying asynchronous request to OpenAI API and returns raw response dict.
         """
-        client = AsyncOpenAI(**self._prepare_client_kwargs(llm_config))
+        kwargs = await self._prepare_client_kwargs_async(llm_config)
+        client = AsyncOpenAI(**kwargs)
         response: ChatCompletion = await client.chat.completions.create(**request_data)
         return response.model_dump()
 
@@ -265,7 +283,8 @@ class OpenAIClient(LLMClientBase):
         """
         Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.
         """
-        client = AsyncOpenAI(**self._prepare_client_kwargs(llm_config))
+        kwargs = await self._prepare_client_kwargs_async(llm_config)
+        client = AsyncOpenAI(**kwargs)
         response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
             **request_data, stream=True, stream_options={"include_usage": True}
         )
