@@ -35,6 +35,27 @@ class ProviderManager:
 
     @enforce_types
     @trace_method
+    async def create_provider_async(self, request: ProviderCreate, actor: PydanticUser) -> PydanticProvider:
+        """Create a new provider if it doesn't already exist."""
+        async with db_registry.async_session() as session:
+            provider_create_args = {**request.model_dump(), "provider_category": ProviderCategory.byok}
+            provider = PydanticProvider(**provider_create_args)
+
+            if provider.name == provider.provider_type.value:
+                raise ValueError("Provider name must be unique and different from provider type")
+
+            # Assign the organization id based on the actor
+            provider.organization_id = actor.organization_id
+
+            # Lazily create the provider id prior to persistence
+            provider.resolve_identifier()
+
+            new_provider = ProviderModel(**provider.model_dump(to_orm=True, exclude_unset=True))
+            await new_provider.create_async(session, actor=actor)
+            return new_provider.to_pydantic()
+
+    @enforce_types
+    @trace_method
     def update_provider(self, provider_id: str, provider_update: ProviderUpdate, actor: PydanticUser) -> PydanticProvider:
         """Update provider details."""
         with db_registry.session() as session:
