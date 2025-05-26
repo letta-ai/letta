@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 from functools import lru_cache
 from typing import List, Optional
@@ -136,6 +137,12 @@ class PassageManager:
     def create_many_passages(self, passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
         """Create multiple passages."""
         return [self.create_passage(p, actor) for p in passages]
+
+    @enforce_types
+    @trace_method
+    async def create_many_passages_async(self, passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
+        """Create multiple passages."""
+        return await asyncio.gather(*[self.create_passage_async(p, actor) for p in passages])
 
     @enforce_types
     @trace_method

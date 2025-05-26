@@ -1098,14 +1098,14 @@ async def test_list_attached_tools(server: SyncServer, sarah_agent, print_tool, 
 async def test_attach_source(server: SyncServer, sarah_agent, default_source, default_user, event_loop):
     """Test attaching a source to an agent."""
     # Attach the source
-    server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
 
     # Verify attachment through get_agent_by_id
     agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     assert default_source.id in [s.id for s in agent.sources]
 
     # Verify that attaching the same source again doesn't cause issues
-    server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
     agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     assert len([s for s in agent.sources if s.id == default_source.id]) == 1
 
@@ -1118,8 +1118,8 @@ async def test_list_attached_source_ids(server: SyncServer, sarah_agent, default
     assert len(sources) == 0
 
     # Attach sources
-    server.agent_manager.attach_source(sarah_agent.id, default_source.id, actor=default_user)
-    server.agent_manager.attach_source(sarah_agent.id, other_source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(sarah_agent.id, default_source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(sarah_agent.id, other_source.id, actor=default_user)
 
     # List sources and verify
     sources = await server.agent_manager.list_attached_sources_async(sarah_agent.id, actor=default_user)
@@ -1133,39 +1133,42 @@ async def test_list_attached_source_ids(server: SyncServer, sarah_agent, default
 async def test_detach_source(server: SyncServer, sarah_agent, default_source, default_user, event_loop):
     """Test detaching a source from an agent."""
     # Attach source
-    server.agent_manager.attach_source(sarah_agent.id, default_source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(sarah_agent.id, default_source.id, actor=default_user)
 
     # Verify it's attached
     agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     assert default_source.id in [s.id for s in agent.sources]
 
     # Detach source
-    server.agent_manager.detach_source(sarah_agent.id, default_source.id, actor=default_user)
+    await server.agent_manager.detach_source_async(sarah_agent.id, default_source.id, actor=default_user)
 
     # Verify it's detached
     agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     assert default_source.id not in [s.id for s in agent.sources]
 
     # Verify that detaching an already detached source doesn't cause issues
-    server.agent_manager.detach_source(sarah_agent.id, default_source.id, actor=default_user)
+    await server.agent_manager.detach_source_async(sarah_agent.id, default_source.id, actor=default_user)
 
 
-def test_attach_source_nonexistent_agent(server: SyncServer, default_source, default_user):
+@pytest.mark.asyncio
+async def test_attach_source_nonexistent_agent(server: SyncServer, default_source, default_user, event_loop):
     """Test attaching a source to a nonexistent agent."""
     with pytest.raises(NoResultFound):
-        server.agent_manager.attach_source(agent_id="nonexistent-agent-id", source_id=default_source.id, actor=default_user)
+        await server.agent_manager.attach_source_async(agent_id="nonexistent-agent-id", source_id=default_source.id, actor=default_user)
 
 
-def test_attach_source_nonexistent_source(server: SyncServer, sarah_agent, default_user):
+@pytest.mark.asyncio
+async def test_attach_source_nonexistent_source(server: SyncServer, sarah_agent, default_user, event_loop):
     """Test attaching a nonexistent source to an agent."""
     with pytest.raises(NoResultFound):
-        server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id="nonexistent-source-id", actor=default_user)
+        await server.agent_manager.attach_source_async(agent_id=sarah_agent.id, source_id="nonexistent-source-id", actor=default_user)
 
 
-def test_detach_source_nonexistent_agent(server: SyncServer, default_source, default_user):
+@pytest.mark.asyncio
+async def test_detach_source_nonexistent_agent(server: SyncServer, default_source, default_user, event_loop):
     """Test detaching a source from a nonexistent agent."""
     with pytest.raises(NoResultFound):
-        server.agent_manager.detach_source(agent_id="nonexistent-agent-id", source_id=default_source.id, actor=default_user)
+        await server.agent_manager.detach_source_async(agent_id="nonexistent-agent-id", source_id=default_source.id, actor=default_user)
 
 
 @pytest.mark.asyncio
@@ -1183,7 +1186,7 @@ async def test_list_attached_agents(server: SyncServer, sarah_agent, charles_age
     assert len(attached_agents) == 0
 
     # Attach source to first agent
-    server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
 
     # Verify one agent is now attached
     attached_agents = await server.source_manager.list_attached_agents(source_id=default_source.id, actor=default_user)
@@ -1191,7 +1194,7 @@ async def test_list_attached_agents(server: SyncServer, sarah_agent, charles_age
     assert sarah_agent.id in [a.id for a in attached_agents]
 
     # Attach source to second agent
-    server.agent_manager.attach_source(agent_id=charles_agent.id, source_id=default_source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(agent_id=charles_agent.id, source_id=default_source.id, actor=default_user)
 
     # Verify both agents are now attached
     attached_agents = await server.source_manager.list_attached_agents(source_id=default_source.id, actor=default_user)
@@ -1201,7 +1204,7 @@ async def test_list_attached_agents(server: SyncServer, sarah_agent, charles_age
     assert charles_agent.id in attached_agent_ids
 
     # Detach source from first agent
-    server.agent_manager.detach_source(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
+    await server.agent_manager.detach_source_async(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
 
     # Verify only second agent remains attached
     attached_agents = await server.source_manager.list_attached_agents(source_id=default_source.id, actor=default_user)
@@ -1928,7 +1931,7 @@ async def test_agent_list_passages_vector_search(server, default_user, sarah_age
         "blue shoes",
     ]
 
-    server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
 
     for i, text in enumerate(test_passages):
         embedding = embed_model.get_text_embedding(text)
@@ -3905,7 +3908,7 @@ async def test_delete_attached_source(server: SyncServer, sarah_agent, default_u
     )
     source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
 
-    server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id=source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(agent_id=sarah_agent.id, source_id=source.id, actor=default_user)
 
     # Delete the source
     deleted_source = await server.source_manager.delete_source(source_id=source.id, actor=default_user)

@@ -174,7 +174,7 @@ async def upload_file_to_source(
         completed_at=None,
     )
     job_id = job.id
-    server.job_manager.create_job(job, actor=actor)
+    await server.job_manager.create_job_async(job, actor=actor)
 
     # create background tasks
     asyncio.create_task(load_file_to_source_async(server, source_id=source.id, file=file, job_id=job.id, bytes=bytes, actor=actor))
@@ -182,7 +182,7 @@ async def upload_file_to_source(
 
     # return job information
     # Is this necessary? Can we just return the job from create_job?
-    job = server.job_manager.get_job_by_id(job_id=job_id, actor=actor)
+    job = await server.job_manager.get_job_by_id_async(job_id=job_id, actor=actor)
     assert job is not None, "Job not found"
     return job
 

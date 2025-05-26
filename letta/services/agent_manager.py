@@ -1713,6 +1713,51 @@ class AgentManager:
 
     @trace_method
     @enforce_types
+    async def attach_source_async(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
+        """
+        Attaches a source to an agent.
+
+        Args:
+            agent_id: ID of the agent to attach the source to
+            source_id: ID of the source to attach
+            actor: User performing the action
+
+        Raises:
+            ValueError: If either agent or source doesn't exist
+            IntegrityError: If the source is already attached to the agent
+        """
+
+        async with db_registry.async_session() as session:
+            # Verify both agent and source exist and user has permission to access them
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+            # The _process_relationship helper already handles duplicate checking via unique constraint
+            await _process_relationship_async(
+                session=session,
+                agent=agent,
+                relationship_name="sources",
+                model_class=SourceModel,
+                item_ids=[source_id],
+                allow_partial=False,
+                replace=False,  # Extend existing sources rather than replace
+            )
+
+            # Commit the changes
+            await agent.update_async(session, actor=actor)
+
+        # Force rebuild of system prompt so that the agent is updated with passage count
+        # and recent passages and add system message alert to agent
+        await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
+        await self.append_system_message_async(
+            agent_id=agent_id,
+            content=DATA_SOURCE_ATTACH_ALERT,
+            actor=actor,
+        )
+
+        return await agent.to_pydantic_async()
+
+    @trace_method
+    @enforce_types
     def append_system_message(self, agent_id: str, content: str, actor: PydanticUser):
 
         # get the agent
@@ -1723,6 +1768,19 @@ class AgentManager:
 
         # update agent in-context message IDs
         self.append_to_in_context_messages(messages=[message], agent_id=agent_id, actor=actor)
+
+    @trace_method
+    @enforce_types
+    async def append_system_message_async(self, agent_id: str, content: str, actor: PydanticUser):
+
+        # get the agent
+        agent = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        message = PydanticMessage.dict_to_message(
+            agent_id=agent.id, model=agent.llm_config.model, openai_message_dict={"role": "system", "content": content}
+        )
+
+        # update agent in-context message IDs
+        await self.append_to_in_context_messages_async(messages=[message], agent_id=agent_id, actor=actor)
 
     @trace_method
     @enforce_types
@@ -1791,6 +1849,34 @@ class AgentManager:
             # Commit the changes
             agent.update(session, actor=actor)
             return agent.to_pydantic()
+
+    @trace_method
+    @enforce_types
+    async def detach_source_async(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
+        """
+        Detaches a source from an agent.
+
+        Args:
+            agent_id: ID of the agent to detach the source from
+            source_id: ID of the source to detach
+            actor: User performing the action
+        """
+        async with db_registry.async_session() as session:
+            # Verify agent exists and user has permission to access it
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+            # Remove the source from the relationship
+            remaining_sources = [s for s in agent.sources if s.id != source_id]
+
+            if len(remaining_sources) == len(agent.sources):  # Source ID was not in the relationship
+                logger.warning(f"Attempted to remove unattached source id={source_id} from agent id={agent_id} by actor={actor}")
+
+            # Update the sources relationship
+            agent.sources = remaining_sources
+
+            # Commit the changes
+            await agent.update_async(session, actor=actor)
+            return await agent.to_pydantic_async()
 
     # ======================================================================================================================
     # Block management
