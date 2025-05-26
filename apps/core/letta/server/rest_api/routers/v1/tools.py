@@ -42,7 +42,7 @@ def delete_tool(
 
 
 @router.get("/count", response_model=int, operation_id="count_tools")
-def count_tools(
+async def count_tools(
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
     include_base_tools: Optional[bool] = Query(False, description="Include built-in Letta tools in the count"),
@@ -51,9 +51,8 @@ def count_tools(
     Get a count of all tools available to agents belonging to the org of the user.
     """
     try:
-        return server.tool_manager.size(
-            actor=server.user_manager.get_user_or_default(user_id=actor_id), include_base_tools=include_base_tools
-        )
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        return await server.tool_manager.size_async(actor=actor, include_base_tools=include_base_tools)
     except Exception as e:
         print(f"Error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -100,7 +99,7 @@ async def list_tools(
 
 
 @router.post("/", response_model=Tool, operation_id="create_tool")
-def create_tool(
+async def create_tool(
     request: ToolCreate = Body(...),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -109,9 +108,9 @@ def create_tool(
     Create a new tool
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
         tool = Tool(**request.model_dump())
-        return server.tool_manager.create_tool(pydantic_tool=tool, actor=actor)
+        return await server.tool_manager.create_tool_async(pydantic_tool=tool, actor=actor)
     except UniqueConstraintViolationError as e:
         # Log or print the full exception here for debugging
         print(f"Error occurred: {e}")
@@ -132,7 +131,7 @@ def create_tool(
 
 
 @router.put("/", response_model=Tool, operation_id="upsert_tool")
-def upsert_tool(
+async def upsert_tool(
     request: ToolCreate = Body(...),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
@@ -141,8 +140,8 @@ def upsert_tool(
     Create or update a tool
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
-        tool = server.tool_manager.create_or_update_tool(pydantic_tool=Tool(**request.model_dump()), actor=actor)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        tool = await server.tool_manager.create_or_update_tool_async(pydantic_tool=Tool(**request.model_dump()), actor=actor)
         return tool
     except UniqueConstraintViolationError as e:
         # Log the error and raise a conflict exception
@@ -266,7 +265,7 @@ def list_composio_actions_by_app(
 
 
 @router.post("/composio/{composio_action_name}", response_model=Tool, operation_id="add_composio_tool")
-def add_composio_tool(
+async def add_composio_tool(
     composio_action_name: str,
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
@@ -274,11 +273,11 @@ def add_composio_tool(
     """
     Add a new Composio tool by action name (Composio refers to each tool as an `Action`)
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
         tool_create = ToolCreate.from_composio(action_name=composio_action_name)
-        return server.tool_manager.create_or_update_composio_tool(tool_create=tool_create, actor=actor)
+        return await server.tool_manager.create_or_update_composio_tool_async(tool_create=tool_create, actor=actor)
     except ConnectedAccountNotFoundError as e:
         raise HTTPException(
             status_code=400,  # Bad Request

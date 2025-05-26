@@ -73,6 +73,7 @@ from letta.services.helpers.agent_manager_helper import (
     _apply_pagination_async,
     _apply_tag_filter,
     _process_relationship,
+    _process_relationship_async,
     check_supports_structured_output,
     compile_system_message,
     derive_system_message,
@@ -2387,6 +2388,42 @@ class AgentManager:
 
     @trace_method
     @enforce_types
+    async def attach_tool_async(self, agent_id: str, tool_id: str, actor: PydanticUser) -> PydanticAgentState:
+        """
+        Attaches a tool to an agent.
+
+        Args:
+            agent_id: ID of the agent to attach the tool to.
+            tool_id: ID of the tool to attach.
+            actor: User performing the action.
+
+        Raises:
+            NoResultFound: If the agent or tool is not found.
+
+        Returns:
+            PydanticAgentState: The updated agent state.
+        """
+        async with db_registry.async_session() as session:
+            # Verify the agent exists and user has permission to access it
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+            # Use the _process_relationship helper to attach the tool
+            await _process_relationship_async(
+                session=session,
+                agent=agent,
+                relationship_name="tools",
+                model_class=ToolModel,
+                item_ids=[tool_id],
+                allow_partial=False,  # Ensure the tool exists
+                replace=False,  # Extend the existing tools
+            )
+
+            # Commit and refresh the agent
+            await agent.update_async(session, actor=actor)
+            return await agent.to_pydantic_async()
+
+    @trace_method
+    @enforce_types
     def detach_tool(self, agent_id: str, tool_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Detaches a tool from an agent.
@@ -2418,6 +2455,40 @@ class AgentManager:
             # Commit and refresh the agent
             agent.update(session, actor=actor)
             return agent.to_pydantic()
+
+    @trace_method
+    @enforce_types
+    async def detach_tool_async(self, agent_id: str, tool_id: str, actor: PydanticUser) -> PydanticAgentState:
+        """
+        Detaches a tool from an agent.
+
+        Args:
+            agent_id: ID of the agent to detach the tool from.
+            tool_id: ID of the tool to detach.
+            actor: User performing the action.
+
+        Raises:
+            NoResultFound: If the agent or tool is not found.
+
+        Returns:
+            PydanticAgentState: The updated agent state.
+        """
+        async with db_registry.async_session() as session:
+            # Verify the agent exists and user has permission to access it
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+            # Filter out the tool to be detached
+            remaining_tools = [tool for tool in agent.tools if tool.id != tool_id]
+
+            if len(remaining_tools) == len(agent.tools):  # Tool ID was not in the relationship
+                logger.warning(f"Attempted to remove unattached tool id={tool_id} from agent id={agent_id} by actor={actor}")
+
+            # Update the tools relationship
+            agent.tools = remaining_tools
+
+            # Commit and refresh the agent
+            await agent.update_async(session, actor=actor)
+            return await agent.to_pydantic_async()
 
     @trace_method
     @enforce_types

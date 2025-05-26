@@ -68,6 +68,50 @@ def _process_relationship(
         current_relationship.extend(new_items)
 
 
+@trace_method
+async def _process_relationship_async(
+    session, agent: AgentModel, relationship_name: str, model_class, item_ids: List[str], allow_partial=False, replace=True
+):
+    """
+    Generalized function to handle relationships like tools, sources, and blocks using item IDs.
+
+    Args:
+        session: The database session.
+        agent: The AgentModel instance.
+        relationship_name: The name of the relationship attribute (e.g., 'tools', 'sources').
+        model_class: The ORM class corresponding to the related items.
+        item_ids: List of IDs to set or update.
+        allow_partial: If True, allows missing items without raising errors.
+        replace: If True, replaces the entire relationship; otherwise, extends it.
+
+    Raises:
+        ValueError: If `allow_partial` is False and some IDs are missing.
+    """
+    current_relationship = getattr(agent, relationship_name, [])
+    if not item_ids:
+        if replace:
+            setattr(agent, relationship_name, [])
+        return
+
+    # Retrieve models for the provided IDs
+    result = await session.execute(select(model_class).where(model_class.id.in_(item_ids)))
+    found_items = result.scalars().all()
+
+    # Validate all items are found if allow_partial is False
+    if not allow_partial and len(found_items) != len(item_ids):
+        missing = set(item_ids) - {item.id for item in found_items}
+        raise NoResultFound(f"Items not found in {relationship_name}: {missing}")
+
+    if replace:
+        # Replace the relationship
+        setattr(agent, relationship_name, found_items)
+    else:
+        # Extend the relationship (only add new items)
+        current_ids = {item.id for item in current_relationship}
+        new_items = [item for item in found_items if item.id not in current_ids]
+        current_relationship.extend(new_items)
+
+
 def _process_tags(agent: AgentModel, tags: List[str], replace=True):
     """
     Handles tags for an agent.
