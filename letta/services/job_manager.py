@@ -199,6 +199,15 @@ class JobManager:
 
     @enforce_types
     @trace_method
+    async def delete_job_by_id_async(self, job_id: str, actor: PydanticUser) -> PydanticJob:
+        """Delete a job by its ID."""
+        async with db_registry.async_session() as session:
+            job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor)
+            await job.hard_delete_async(db_session=session, actor=actor)
+            return job.to_pydantic()
+
+    @enforce_types
+    @trace_method
     def get_job_messages(
         self,
         job_id: str,
@@ -599,25 +608,23 @@ class JobManager:
 
     async def _dispatch_callback_async(self, session, job: JobModel) -> None:
         """
-        POST a standard JSON payload to job.callback_url
-        and record timestamp + HTTP status asynchronously.
+        POST a standard JSON payload to job.callback_url and record timestamp + HTTP status asynchronously.
         """
-
         payload = {
             "job_id": job.id,
             "status": job.status,
-            "completed_at": job.completed_at.isoformat(),
+            "completed_at": job.completed_at.isoformat() if job.completed_at else None,
         }
+
         try:
             import httpx
 
             async with httpx.AsyncClient() as client:
                 resp = await client.post(job.callback_url, json=payload, timeout=5.0)
-                job.callback_sent_at = get_utc_time()
+                # Ensure timestamp is timezone-naive for DB compatibility
+                job.callback_sent_at = get_utc_time().replace(tzinfo=None)
                 job.callback_status_code = resp.status_code
-
         except Exception:
-            return
-
-        session.add(job)
-        await session.commit()
+            # Silently fail on callback errors - job updates should still succeed
+            # In production, this would include proper error logging
+            pass
