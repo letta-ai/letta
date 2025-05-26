@@ -1384,13 +1384,13 @@ class SyncServer(Server):
         # TODO: this should be implemented as a batch job or at least async, since it may take a long time
 
         # load data from a data source into the document store
-        user = self.user_manager.get_user_by_id(user_id=user_id)
-        source = await self.source_manager.get_source_by_name(source_name=source_name, actor=user)
+        actor = await self.user_manager.get_actor_by_id_async(actor_id=user_id)
+        source = await self.source_manager.get_source_by_name(source_name=source_name, actor=actor)
         if source is None:
             raise ValueError(f"Data source {source_name} does not exist for user {user_id}")
 
         # load data into the document store
-        passage_count, document_count = await load_data(connector, source, self.passage_manager, self.source_manager, actor=user)
+        passage_count, document_count = await load_data(connector, source, self.passage_manager, self.source_manager, actor=actor)
         return passage_count, document_count
 
     def list_data_source_passages(self, user_id: str, source_id: str) -> List[Passage]:
