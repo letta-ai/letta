@@ -158,7 +158,7 @@ async def upsert_tool(
 
 
 @router.patch("/{tool_id}", response_model=Tool, operation_id="modify_tool")
-def modify_tool(
+async def modify_tool(
     tool_id: str,
     request: ToolUpdate = Body(...),
     server: SyncServer = Depends(get_letta_server),
@@ -168,8 +168,8 @@ def modify_tool(
     Update an existing tool
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
-        return server.tool_manager.update_tool_by_id(tool_id=tool_id, tool_update=request, actor=actor)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        return await server.tool_manager.update_tool_by_id_async(tool_id=tool_id, tool_update=request, actor=actor)
     except LettaToolCreateError as e:
         # HTTP 400 == Bad Request
         print(f"Error occurred during tool update: {e}")
