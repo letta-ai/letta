@@ -508,7 +508,7 @@ def server():
 
 @pytest.fixture
 @pytest.mark.asyncio
-async def agent_passages_setup(server, default_source, default_user, sarah_agent):
+async def agent_passages_setup(server, default_source, default_user, sarah_agent, event_loop):
     """Setup fixture for agent passages tests"""
     agent_id = sarah_agent.id
     actor = default_user
@@ -518,7 +518,7 @@ async def agent_passages_setup(server, default_source, default_user, sarah_agent
     # Create some source passages
     source_passages = []
     for i in range(3):
-        passage = server.passage_manager.create_passage(
+        passage = await server.passage_manager.create_passage_async(
             PydanticPassage(
                 organization_id=actor.organization_id,
                 source_id=default_source.id,
@@ -533,7 +533,7 @@ async def agent_passages_setup(server, default_source, default_user, sarah_agent
     # Create some agent passages
     agent_passages = []
     for i in range(2):
-        passage = server.passage_manager.create_passage(
+        passage = await server.passage_manager.create_passage_async(
             PydanticPassage(
                 organization_id=actor.organization_id,
                 agent_id=agent_id,
@@ -1948,7 +1948,7 @@ async def test_agent_list_passages_vector_search(server, default_user, sarah_age
                 embedding_config=DEFAULT_EMBEDDING_CONFIG,
                 embedding=embedding,
             )
-        created_passage = server.passage_manager.create_passage(passage, default_user)
+        created_passage = await server.passage_manager.create_passage_async(passage, default_user)
         passages.append(created_passage)
 
     # Query vector similar to "red" embedding
@@ -2097,14 +2097,15 @@ def test_passage_create_source(server: SyncServer, source_passage_fixture, defau
     assert retrieved.text == source_passage_fixture.text
 
 
-def test_passage_create_invalid(server: SyncServer, agent_passage_fixture, default_user):
+@pytest.mark.asyncio
+async def test_passage_create_invalid(server: SyncServer, agent_passage_fixture, default_user, event_loop):
     """Test creating an agent passage."""
     assert agent_passage_fixture is not None
     assert agent_passage_fixture.text == "Hello, I am an agent passage"
 
     # Try to create an invalid passage (with both agent_id and source_id)
     with pytest.raises(AssertionError):
-        server.passage_manager.create_passage(
+        await server.passage_manager.create_passage_async(
             PydanticPassage(
                 text="Invalid passage",
                 agent_id="123",
