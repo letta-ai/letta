@@ -298,7 +298,7 @@ async def detach_tool(
 
 
 @router.patch("/{agent_id}/sources/attach/{source_id}", response_model=AgentState, operation_id="attach_source_to_agent")
-def attach_source(
+async def attach_source(
     agent_id: str,
     source_id: str,
     background_tasks: BackgroundTasks,
@@ -308,8 +308,8 @@ def attach_source(
     """
     Attach a source to an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    agent = server.agent_manager.attach_source(agent_id=agent_id, source_id=source_id, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    agent = await server.agent_manager.attach_source_async(agent_id=agent_id, source_id=source_id, actor=actor)
     if agent.enable_sleeptime:
         source = server.source_manager.get_source_by_id(source_id=source_id)
         background_tasks.add_task(server.sleeptime_document_ingest, agent, source, actor)
@@ -317,7 +317,7 @@ def attach_source(
 
 
 @router.patch("/{agent_id}/sources/detach/{source_id}", response_model=AgentState, operation_id="detach_source_from_agent")
-def detach_source(
+async def detach_source(
     agent_id: str,
     source_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -326,8 +326,8 @@ def detach_source(
     """
     Detach a source from an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    agent = server.agent_manager.detach_source(agent_id=agent_id, source_id=source_id, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    agent = await server.agent_manager.detach_source_async(agent_id=agent_id, source_id=source_id, actor=actor)
     if agent.enable_sleeptime:
         try:
             source = server.source_manager.get_source_by_id(source_id=source_id)

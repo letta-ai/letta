@@ -98,14 +98,14 @@ async def load_data(
             embedding_to_document_name[hashable_embedding] = file_name
             if len(passages) >= 100:
                 # insert passages into passage store
-                passage_manager.create_many_passages(passages, actor)
+                await passage_manager.create_many_passages_async(passages, actor)
 
                 passage_count += len(passages)
                 passages = []
 
     if len(passages) > 0:
         # insert passages into passage store
-        passage_manager.create_many_passages(passages, actor)
+        await passage_manager.create_many_passages_async(passages, actor)
         passage_count += len(passages)
 
     return passage_count, file_count

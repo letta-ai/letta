@@ -1289,9 +1289,9 @@ class SyncServer(Server):
     async def load_file_to_source(self, source_id: str, file_path: str, job_id: str, actor: User) -> Job:
 
         # update job
-        job = self.job_manager.get_job_by_id(job_id, actor=actor)
+        job = await self.job_manager.get_job_by_id_async(job_id, actor=actor)
         job.status = JobStatus.running
-        self.job_manager.update_job_by_id(job_id=job_id, job_update=JobUpdate(**job.model_dump()), actor=actor)
+        await self.job_manager.update_job_by_id_async(job_id=job_id, job_update=JobUpdate(**job.model_dump()), actor=actor)
 
         # try:
         from letta.data_sources.connectors import DirectoryConnector
@@ -1310,18 +1310,18 @@ class SyncServer(Server):
 
             # Attach source to agent
             curr_passage_size = await self.agent_manager.passage_size_async(actor=actor, agent_id=agent_id)
-            agent_state = self.agent_manager.attach_source(agent_id=agent_state.id, source_id=source_id, actor=actor)
+            agent_state = await self.agent_manager.attach_source_async(agent_id=agent_state.id, source_id=source_id, actor=actor)
             new_passage_size = await self.agent_manager.passage_size_async(actor=actor, agent_id=agent_id)
             assert new_passage_size >= curr_passage_size  # in case empty files are added
 
             # rebuild system prompt and force
-            agent_state = self.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True)
+            agent_state = await self.agent_manager.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
 
         # update job status
         job.status = JobStatus.completed
         job.metadata["num_passages"] = num_passages
         job.metadata["num_documents"] = num_documents
-        self.job_manager.update_job_by_id(job_id=job_id, job_update=JobUpdate(**job.model_dump()), actor=actor)
+        await self.job_manager.update_job_by_id_async(job_id=job_id, job_update=JobUpdate(**job.model_dump()), actor=actor)
 
         return job
 
