@@ -5,6 +5,16 @@ permissions:
   contents: read
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/web/**'
+      - 'apps/core/**'
+      - 'libs/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
   pull_request:
     branches:
       - main
