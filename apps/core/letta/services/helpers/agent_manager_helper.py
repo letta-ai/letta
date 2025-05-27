@@ -1,7 +1,7 @@
 import datetime
 from typing import List, Literal, Optional
 
-from sqlalchemy import and_, asc, desc, func, literal, or_, select
+from sqlalchemy import and_, asc, desc, or_, select
 from sqlalchemy.sql.expression import exists
 
 from letta import system
