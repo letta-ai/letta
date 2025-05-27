@@ -288,6 +288,7 @@ class AnthropicClient(LLMClientBase):
             token_count -= 8
         return token_count
 
+    @trace_method
     def handle_llm_error(self, e: Exception) -> Exception:
         if isinstance(e, anthropic.APIConnectionError):
             logger.warning(f"[Anthropic] API connection error: {e.__cause__}")

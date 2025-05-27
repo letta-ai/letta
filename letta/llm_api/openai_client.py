@@ -279,6 +279,7 @@ class OpenAIClient(LLMClientBase):
 
         return chat_completion_response
 
+    @trace_method
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[ChatCompletionChunk]:
         """
         Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.
@@ -290,6 +291,7 @@ class OpenAIClient(LLMClientBase):
         )
         return response_stream
 
+    @trace_method
     def handle_llm_error(self, e: Exception) -> Exception:
         """
         Maps OpenAI-specific errors to common LLMError types.
