@@ -720,6 +720,7 @@ async def send_message_streaming(
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
+    not_letta_endpoint = not ("inference.letta.com" in agent.llm_config.model_endpoint)
 
     if user_eligible and agent_eligible and feature_enabled and model_compatible:
         if agent.enable_sleeptime:
@@ -749,7 +750,7 @@ async def send_message_streaming(
             )
         from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
 
-        if request.stream_tokens and model_compatible_token_streaming:
+        if request.stream_tokens and model_compatible_token_streaming and not_letta_endpoint:
             result = StreamingResponseWithStatusCode(
                 experimental_agent.step_stream(
                     input_messages=request.messages,
