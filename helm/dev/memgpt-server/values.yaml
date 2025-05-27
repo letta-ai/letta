@@ -73,7 +73,7 @@ livenessProbe:
     path: /v1/health/
     port: 8083
     scheme: HTTP
-  initialDelaySeconds: 30
+  initialDelaySeconds: 390
   periodSeconds: 15
   successThreshold: 1
   timeoutSeconds: 15
@@ -84,7 +84,7 @@ readinessProbe:
     path: /v1/health/
     port: 8083
     scheme: HTTP
-  initialDelaySeconds: 20
+  initialDelaySeconds: 390
   periodSeconds: 10
   successThreshold: 1
   timeoutSeconds: 15
@@ -92,7 +92,7 @@ readinessProbe:
 autoscaling:
   enabled: true
   minReplicas: 8
-  maxReplicas: 16
+  maxReplicas: 10
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
