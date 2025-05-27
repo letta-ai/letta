@@ -42,6 +42,7 @@ export async function createProPaymentLink(organizationId: string) {
       },
     ],
     mode: 'subscription',
+    allow_promotion_codes: true,
     saved_payment_method_options: {
       payment_method_save: 'enabled',
     },
