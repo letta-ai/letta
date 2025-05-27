@@ -236,3 +236,5 @@ export * from './lib/reusable/CoreMemoryEditor/CoreMemoryEditor';
 export * from './lib/reusable/JobStatusBadge/JobStatusBadge';
 
 export * from './lib/reusable/BetaTag/BetaTag';
+
+export * from './lib/core/TimelineTrace/TimelineTrace';

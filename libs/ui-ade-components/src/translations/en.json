@@ -781,13 +781,28 @@
       "default": "There was an error updating the agent name, please try again or contact support."
     }
   },
+  "ADE/AgentSimulator/TraceViewer": {
+    "raw": {
+      "view": "View raw trace details",
+      "hide": "Hide raw trace details"
+    },
+    "table": {
+      "key": "Key",
+      "value": "Value"
+    },
+    "children": {
+      "view": "View child spans",
+      "hide": "Hide child spans"
+    }
+  },
   "ADE/AgentSimulator/DetailedMessageView": {
     "trigger": "View details",
     "title": "Message Details",
     "loading": "Loading message details...",
     "tabs": {
       "general": "General",
-      "raw": "Raw Traces"
+      "replay": "Replay",
+      "raw": "Debug"
     },
     "TransactionDetails": {
       "title": "Transaction details",

@@ -193,7 +193,7 @@ interface StepDetailsViewerProps {
   step: Step;
 }
 
-type DetailViewTypes = 'general' | 'raw';
+type DetailViewTypes = 'general' | 'raw' | 'replay';
 
 function StepDetailsViewer(props: StepDetailsViewerProps) {
   const { step } = props;
@@ -235,6 +235,10 @@ function StepDetailsViewer(props: StepDetailsViewerProps) {
               label: t('tabs.general'),
               value: 'general',
             },
+            // {
+            //   label: t('tabs.replay'),
+            //   value: 'replay',
+            // },
             {
               label: t('tabs.raw'),
               value: 'raw',
@@ -242,7 +246,7 @@ function StepDetailsViewer(props: StepDetailsViewerProps) {
           ]}
         />
       )}
-      {detailsView === 'general' ? (
+      {detailsView === 'general' && (
         <>
           <StepBasicDetails step={step} />
           {!isLocal && <TransactionDetails stepId={step.id} />}
@@ -250,9 +254,8 @@ function StepDetailsViewer(props: StepDetailsViewerProps) {
             <TraceMetricsViewer traces={traceData.body} />
           )}
         </>
-      ) : (
-        <TraceViewer traces={traceData?.body || []} />
       )}
+      {detailsView === 'raw' && <TraceViewer traces={traceData?.body || []} />}
     </VStack>
   );
 }

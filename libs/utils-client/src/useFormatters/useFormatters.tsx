@@ -56,6 +56,49 @@ export function useFormatters() {
     ).format(number);
   }
 
+  function formatSmallDuration(
+    duration: number, // in nanoseconds
+    options?: Intl.NumberFormatOptions,
+  ) {
+    // if less than 1 millisecond, format in microseconds
+    if (duration < 1_000_000) {
+      return `${duration / 1000} μs`;
+    }
+
+    // if less than 1 second, format in milliseconds
+    if (duration < 1_000_000_000) {
+      return new Intl.NumberFormat(defaultLocal, {
+        style: 'unit',
+        unit: 'millisecond',
+        ...options,
+      }).format(duration / 1_000_000);
+    }
+
+    // if less than 1 minute, format in seconds
+    if (duration < 60_000_000_000) {
+      return new Intl.NumberFormat(defaultLocal, {
+        style: 'unit',
+        unit: 'second',
+        ...options,
+      }).format(duration / 1_000_000_000);
+    }
+
+    // if less than 1 hour, format in minutes
+    if (duration < 3_600_000_000_000) {
+      return new Intl.NumberFormat(defaultLocal, {
+        style: 'unit',
+        unit: 'minute',
+        ...options,
+      }).format(duration / 60_000_000_000);
+    }
+
+    return new Intl.NumberFormat(defaultLocal, {
+      style: 'unit',
+      unit: 'hour',
+      ...options,
+    }).format(duration / 3_600_000_000_000);
+  }
+
   // Currency Formatters
 
   function formatCurrency(amount: number, options?: Intl.NumberFormatOptions) {
@@ -88,6 +131,23 @@ export function useFormatters() {
     }
   }
 
+  function formatTime(
+    date: Date | string,
+    options?: Intl.DateTimeFormatOptions,
+  ) {
+    try {
+      return new Intl.DateTimeFormat(
+        defaultLocal,
+        options || {
+          timeStyle: 'short',
+        },
+      ).format(new Date(date));
+    } catch (e) {
+      console.error('Error formatting time:', e);
+      return '';
+    }
+  }
+
   function formatDate(
     date: Date | string,
     options?: Intl.DateTimeFormatOptions,
@@ -107,8 +167,10 @@ export function useFormatters() {
 
   return {
     formatNumber,
+    formatSmallDuration,
     formatFileSize,
     formatCurrency,
+    formatTime,
     formatDateAndTime,
     formatDate,
   };
