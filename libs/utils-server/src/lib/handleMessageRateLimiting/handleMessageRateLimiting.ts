@@ -204,12 +204,18 @@ export async function handleMessageRateLimiting(
 
   const usageLimits = getUsageLimits(subscription.tier);
 
-  const canAgentBeUsed = await getCanAgentBeUsed({
+  const isDeployedAgent = await getRedisData('deployedAgent', {
     agentId,
-    organizationId,
-    agentLimit: usageLimits.agents,
-    billingPeriodStart: subscription.billingPeriodStart,
   });
+
+  const canAgentBeUsed =
+    isDeployedAgent?.isDeployed ||
+    (await getCanAgentBeUsed({
+      agentId,
+      organizationId,
+      agentLimit: usageLimits.agents,
+      billingPeriodStart: subscription.billingPeriodStart,
+    }));
 
   if (!canAgentBeUsed) {
     return {
