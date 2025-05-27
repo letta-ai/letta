@@ -80,7 +80,7 @@ function DefinitionRow(props: DefinitionRowProps) {
 
   return (
     <Row
-      key={definition.key}
+      key={index}
       width={width}
       keyCell={
         <HStack
@@ -91,7 +91,6 @@ function DefinitionRow(props: DefinitionRowProps) {
         >
           <input
             placeholder={t('keyPlaceholder')}
-            key={definition.key}
             className=" focus:outline-0  py-2  pt-3 w-full bg-transparent text-xs font-mono "
             value={definition.key}
             disabled={disableKeyInput || definition.disableKeyInput}
