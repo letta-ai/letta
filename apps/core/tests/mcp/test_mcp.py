@@ -108,7 +108,7 @@ def agent_state(client):
 @pytest.mark.asyncio
 async def test_sse_mcp_server(client, agent_state):
     mcp_server_name = "github_composio"
-    server_url = "https://mcp.composio.dev/composio/server/3c44733b-75ae-4ba8-9a68-7153265fadd8"
+    server_url = "https://mcp.composio.dev/composio/server/3c44733b-75ae-4ba8-9a68-7153265fadd8/sse?useComposioHelperActions=true"
     sse_mcp_config = SSEServerConfig(server_name=mcp_server_name, server_url=server_url)
     client.tools.add_mcp_server(request=sse_mcp_config)
 
