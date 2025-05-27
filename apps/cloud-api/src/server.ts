@@ -211,6 +211,8 @@ export function startServer() {
           Buffer.byteLength(JSON.stringify(req.body)),
         );
       }
+
+      header['X-Organization-Id'] = req.actor?.cloudOrganizationId || '';
     }
 
     return createProxyMiddleware<Request, Response>({

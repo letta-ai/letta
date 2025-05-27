@@ -37,7 +37,8 @@ export async function rateLimitMiddleware(
     return;
   }
 
-  const { isRateLimited, reasons } = await handleMessageRateLimiting({
+  // @ts-expect-error - this is a valid type
+  const { isRateLimited, reasons } = await handleMessageRateLimiting(req, {
     organizationId: req.actor.cloudOrganizationId,
     agentId,
     messages: body.data.messages as MessageCreate[],

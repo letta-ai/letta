@@ -14,7 +14,7 @@ import { getCustomerSubscription } from '@letta-cloud/service-payments';
 import { getRedisModelTransactions } from '../redisModelTransactions/redisModelTransactions';
 import type { RateLimitReason } from '@letta-cloud/types';
 import { getCanAgentBeUsed } from './getCanAgentBeUsed/getCanAgentBeUsed';
-
+import type { Request } from 'express';
 type ModelType = 'embedding' | 'inference';
 
 interface IsRateLimitedForCreatingMessagesPayload {
@@ -180,6 +180,7 @@ function isANumberSafe(num: any) {
 }
 
 export async function handleMessageRateLimiting(
+  req: Request,
   payload: IsRateLimitedForCreatingMessagesPayload,
 ) {
   const { organizationId, agentId, type, lettaAgentsUserId } = payload;
@@ -192,6 +193,20 @@ export async function handleMessageRateLimiting(
       user_id: lettaAgentsUserId,
     },
   );
+
+  req.headers['x-agent-id'] = agentId;
+
+  if (agent.project_id) {
+    req.headers['x-project-id'] = agent.project_id;
+  }
+
+  if (agent.template_id) {
+    req.headers['x-template-id'] = agent.template_id;
+  }
+
+  if (agent.base_template_id) {
+    req.headers['x-base-template-id'] = agent.base_template_id;
+  }
 
   if (!agent) {
     return {
