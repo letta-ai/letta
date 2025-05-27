@@ -60,6 +60,23 @@ class PassageManager:
 
     @enforce_types
     @trace_method
+    async def get_passage_by_id_async(self, passage_id: str, actor: PydanticUser) -> Optional[PydanticPassage]:
+        """Fetch a passage by ID."""
+        async with db_registry.async_session() as session:
+            # Try source passages first
+            try:
+                passage = await SourcePassage.read_async(db_session=session, identifier=passage_id, actor=actor)
+                return passage.to_pydantic()
+            except NoResultFound:
+                # Try archival passages
+                try:
+                    passage = await AgentPassage.read_async(db_session=session, identifier=passage_id, actor=actor)
+                    return passage.to_pydantic()
+                except NoResultFound:
+                    raise NoResultFound(f"Passage with id {passage_id} not found in database.")
+
+    @enforce_types
+    @trace_method
     def create_passage(self, pydantic_passage: PydanticPassage, actor: PydanticUser) -> PydanticPassage:
         """Create a new passage in the appropriate table based on whether it has agent_id or source_id."""
         passage = self._preprocess_passage_for_creation(pydantic_passage=pydantic_passage)
@@ -327,6 +344,28 @@ class PassageManager:
                 try:
                     passage = AgentPassage.read(db_session=session, identifier=passage_id, actor=actor)
                     passage.hard_delete(session, actor=actor)
+                    return True
+                except NoResultFound:
+                    raise NoResultFound(f"Passage with id {passage_id} not found.")
+
+    @enforce_types
+    @trace_method
+    async def delete_passage_by_id_async(self, passage_id: str, actor: PydanticUser) -> bool:
+        """Delete a passage from either source or archival passages."""
+        if not passage_id:
+            raise ValueError("Passage ID must be provided.")
+
+        async with db_registry.async_session() as session:
+            # Try source passages first
+            try:
+                passage = await SourcePassage.read_async(db_session=session, identifier=passage_id, actor=actor)
+                await passage.hard_delete(session, actor=actor)
+                return True
+            except NoResultFound:
+                # Try archival passages
+                try:
+                    passage = await AgentPassage.read_async(db_session=session, identifier=passage_id, actor=actor)
+                    await passage.hard_delete_async(session, actor=actor)
                     return True
                 except NoResultFound:
                     raise NoResultFound(f"Passage with id {passage_id} not found.")
