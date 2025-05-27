@@ -29,7 +29,7 @@ async def count_sources(
     """
     Count all data sources created by a user.
     """
-    actor = server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     return await server.source_manager.size_async(actor=actor)
 
 
