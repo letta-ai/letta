@@ -169,6 +169,7 @@ class JobManager:
         statuses: Optional[List[JobStatus]] = None,
         job_type: JobType = JobType.JOB,
         ascending: bool = True,
+        source_id: Optional[str] = None,
     ) -> List[PydanticJob]:
         """List all jobs with optional pagination and status filter."""
         async with db_registry.async_session() as session:
@@ -177,6 +178,9 @@ class JobManager:
             # Add status filter if provided
             if statuses:
                 filter_kwargs["status"] = statuses
+
+            if source_id:
+                filter_kwargs["metadata_.source_id"] = source_id
 
             jobs = await JobModel.list_async(
                 db_session=session,
