@@ -314,6 +314,10 @@ class LettaAgent(BaseAgent):
             actor=self.actor,
         )
         usage = LettaUsageStatistics()
+        first_chunk, ttft_span = True, None
+        if request_start_timestamp_ns is not None:
+            ttft_span = tracer.start_span("time_to_first_token", start_time=request_start_timestamp_ns)
+            ttft_span.set_attributes({f"llm_config.{k}": v for k, v in agent_state.llm_config.model_dump().items() if v is not None})
 
         for _ in range(max_steps):
             step_id = generate_step_id()
@@ -353,11 +357,6 @@ class LettaAgent(BaseAgent):
                 )
             else:
                 raise ValueError(f"Streaming not supported for {agent_state.llm_config}")
-
-            first_chunk, ttft_span = True, None
-            if request_start_timestamp_ns is not None:
-                ttft_span = tracer.start_span("time_to_first_token", start_time=request_start_timestamp_ns)
-                ttft_span.set_attributes({f"llm_config.{k}": v for k, v in agent_state.llm_config.model_dump().items() if v is not None})
 
             async for chunk in interface.process(stream):
                 # Measure time to first token
