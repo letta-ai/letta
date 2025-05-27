@@ -5247,7 +5247,26 @@
         "summary": "List Active Jobs",
         "description": "List all active jobs.",
         "operationId": "list_active_jobs",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only list jobs associated with the source.",
+              "title": "Source Id"
+            },
+            "description": "Only list jobs associated with the source."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",

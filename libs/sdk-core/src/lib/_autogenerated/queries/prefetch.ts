@@ -1387,6 +1387,7 @@ export const prefetchUseJobsServiceListJobs = (
  * List Active Jobs
  * List all active jobs.
  * @param data The data for the request.
+ * @param data.sourceId Only list jobs associated with the source.
  * @param data.userId
  * @returns Job Successful Response
  * @throws ApiError
@@ -1394,14 +1395,16 @@ export const prefetchUseJobsServiceListJobs = (
 export const prefetchUseJobsServiceListActiveJobs = (
   queryClient: QueryClient,
   {
+    sourceId,
     userId,
   }: {
+    sourceId?: string;
     userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseJobsServiceListActiveJobsKeyFn({ userId }),
-    queryFn: () => JobsService.listActiveJobs({ userId }),
+    queryKey: Common.UseJobsServiceListActiveJobsKeyFn({ sourceId, userId }),
+    queryFn: () => JobsService.listActiveJobs({ sourceId, userId }),
   });
 /**
  * Retrieve Job

@@ -4339,6 +4339,15 @@ async def test_list_jobs(server: SyncServer, default_user, event_loop):
     assert all(job.metadata["type"].startswith("test") for job in jobs)
 
 
+async def test_list_jobs_with_metadata(server: SyncServer, default_user, event_loop):
+    for i in range(3):
+        job_data = PydanticJob(status=JobStatus.created, metadata={"source_id": f"source-test-{i}"})
+        await server.job_manager.create_job_async(pydantic_job=job_data, actor=default_user)
+    jobs = await server.job_manager.list_jobs_async(actor=default_user, source_id="source-test-2")
+    assert len(jobs) == 1
+    assert jobs[0].metadata["source_id"] == "source-test-2"
+
+
 @pytest.mark.asyncio
 async def test_update_job_by_id(server: SyncServer, default_user, event_loop):
     """Test updating a job by its ID."""

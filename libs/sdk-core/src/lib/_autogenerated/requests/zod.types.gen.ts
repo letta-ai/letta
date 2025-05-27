@@ -7204,6 +7204,11 @@ export const get_List_active_jobs = {
   path: z.literal('/v1/jobs/active'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    query: z.object({
+      source_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
     header: z.object({
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])

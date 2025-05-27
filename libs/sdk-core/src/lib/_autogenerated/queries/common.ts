@@ -1059,12 +1059,14 @@ export type JobsServiceListActiveJobsQueryResult<
 export const useJobsServiceListActiveJobsKey = 'JobsServiceListActiveJobs';
 export const UseJobsServiceListActiveJobsKeyFn = (
   {
+    sourceId,
     userId,
   }: {
+    sourceId?: string;
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useJobsServiceListActiveJobsKey, ...(queryKey ?? [{ userId }])];
+) => [useJobsServiceListActiveJobsKey, ...(queryKey ?? [{ sourceId, userId }])];
 export type JobsServiceRetrieveJobDefaultResponse = Awaited<
   ReturnType<typeof JobsService.retrieveJob>
 >;

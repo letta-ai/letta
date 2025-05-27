@@ -2847,6 +2847,7 @@ export class JobsService {
    * List Active Jobs
    * List all active jobs.
    * @param data The data for the request.
+   * @param data.sourceId Only list jobs associated with the source.
    * @param data.userId
    * @returns Job Successful Response
    * @throws ApiError
@@ -2858,6 +2859,9 @@ export class JobsService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/jobs/active',
+      query: {
+        source_id: data.sourceId,
+      },
       errors: {
         422: 'Validation Error',
       },

@@ -1729,6 +1729,7 @@ export const useJobsServiceListJobs = <
  * List Active Jobs
  * List all active jobs.
  * @param data The data for the request.
+ * @param data.sourceId Only list jobs associated with the source.
  * @param data.userId
  * @returns Job Successful Response
  * @throws ApiError
@@ -1739,16 +1740,21 @@ export const useJobsServiceListActiveJobs = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    sourceId,
     userId,
   }: {
+    sourceId?: string;
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseJobsServiceListActiveJobsKeyFn({ userId }, queryKey),
-    queryFn: () => JobsService.listActiveJobs({ userId }) as TData,
+    queryKey: Common.UseJobsServiceListActiveJobsKeyFn(
+      { sourceId, userId },
+      queryKey,
+    ),
+    queryFn: () => JobsService.listActiveJobs({ sourceId, userId }) as TData,
     ...options,
   });
 /**

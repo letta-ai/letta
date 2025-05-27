@@ -4941,6 +4941,10 @@ export type ListJobsData = {
 export type ListJobsResponse = Array<Job>;
 
 export type ListActiveJobsData = {
+  /**
+   * Only list jobs associated with the source.
+   */
+  sourceId?: string | null;
   userId?: string | null;
 };
 

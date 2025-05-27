@@ -280,15 +280,28 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             query = query.join(cls.identities).filter(cls.identities.property.mapper.class_.id == identity_id)
 
         # Apply filtering logic from kwargs
+        # 1 part: <column> // 2 parts: <table>.<column> OR <column>.<json_key> // 3 parts: <table>.<column>.<json_key>
+        # TODO (cliandy): can make this more robust down the line
         for key, value in kwargs.items():
-            if "." in key:
-                # Handle joined table columns
-                table_name, column_name = key.split(".")
+            parts = key.split(".")
+            if len(parts) == 1:
+                column = getattr(cls, key)
+            elif len(parts) == 2:
+                if locals().get(parts[0]) or globals().get(parts[0]):
+                    # It's a joined table column
+                    joined_table = locals().get(parts[0]) or globals().get(parts[0])
+                    column = getattr(joined_table, parts[1])
+                else:
+                    # It's a JSON field on the main table
+                    column = getattr(cls, parts[0])
+                    column = column.op("->>")(parts[1])
+            elif len(parts) == 3:
+                table_name, column_name, json_key = parts
                 joined_table = locals().get(table_name) or globals().get(table_name)
                 column = getattr(joined_table, column_name)
+                column = column.op("->>")(json_key)
             else:
-                # Handle columns from main table
-                column = getattr(cls, key)
+                raise ValueError(f"Unhandled column name {key}")
 
             if isinstance(value, (list, tuple, set)):
                 query = query.where(column.in_(value))
