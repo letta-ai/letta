@@ -80,6 +80,31 @@ async def update_trace_attributes(request: Request):
     if user_id:
         span.set_attribute("user.id", user_id)
 
+    # Add organization_id if available
+    organization_id = request.headers.get("x-organization-id")
+    if organization_id:
+        span.set_attribute("organization.id", organization_id)
+
+    # Add project_id if available
+    project_id = request.headers.get("x-project-id")
+    if project_id:
+        span.set_attribute("project.id", project_id)
+
+    # Add agent_id if available
+    agent_id = request.headers.get("x-agent-id")
+    if agent_id:
+        span.set_attribute("agent.id", agent_id)
+
+    # Add template_id if available
+    template_id = request.headers.get("x-template-id")
+    if template_id:
+        span.set_attribute("template.id", template_id)
+
+    # Add base_template_id if available
+    base_template_id = request.headers.get("x-base-template-id")
+    if base_template_id:
+        span.set_attribute("base_template.id", base_template_id)
+
     # Add request body if available
     try:
         body = await request.json()
