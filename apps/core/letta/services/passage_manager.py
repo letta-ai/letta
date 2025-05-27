@@ -62,34 +62,7 @@ class PassageManager:
     @trace_method
     def create_passage(self, pydantic_passage: PydanticPassage, actor: PydanticUser) -> PydanticPassage:
         """Create a new passage in the appropriate table based on whether it has agent_id or source_id."""
-        # Common fields for both passage types
-        data = pydantic_passage.model_dump(to_orm=True)
-        common_fields = {
-            "id": data.get("id"),
-            "text": data["text"],
-            "embedding": data["embedding"],
-            "embedding_config": data["embedding_config"],
-            "organization_id": data["organization_id"],
-            "metadata_": data.get("metadata", {}),
-            "is_deleted": data.get("is_deleted", False),
-            "created_at": data.get("created_at", datetime.now(timezone.utc)),
-        }
-
-        if "agent_id" in data and data["agent_id"]:
-            assert not data.get("source_id"), "Passage cannot have both agent_id and source_id"
-            agent_fields = {
-                "agent_id": data["agent_id"],
-            }
-            passage = AgentPassage(**common_fields, **agent_fields)
-        elif "source_id" in data and data["source_id"]:
-            assert not data.get("agent_id"), "Passage cannot have both agent_id and source_id"
-            source_fields = {
-                "source_id": data["source_id"],
-                "file_id": data.get("file_id"),
-            }
-            passage = SourcePassage(**common_fields, **source_fields)
-        else:
-            raise ValueError("Passage must have either agent_id or source_id")
+        passage = self._preprocess_passage_for_creation(pydantic_passage=pydantic_passage)
 
         with db_registry.session() as session:
             passage.create(session, actor=actor)
@@ -100,6 +73,13 @@ class PassageManager:
     async def create_passage_async(self, pydantic_passage: PydanticPassage, actor: PydanticUser) -> PydanticPassage:
         """Create a new passage in the appropriate table based on whether it has agent_id or source_id."""
         # Common fields for both passage types
+        passage = self._preprocess_passage_for_creation(pydantic_passage=pydantic_passage)
+        async with db_registry.async_session() as session:
+            passage = await passage.create_async(session, actor=actor)
+            return passage.to_pydantic()
+
+    @trace_method
+    def _preprocess_passage_for_creation(self, pydantic_passage: PydanticPassage) -> "SqlAlchemyBase":
         data = pydantic_passage.model_dump(to_orm=True)
         common_fields = {
             "id": data.get("id"),
@@ -128,9 +108,7 @@ class PassageManager:
         else:
             raise ValueError("Passage must have either agent_id or source_id")
 
-        async with db_registry.async_session() as session:
-            passage = await passage.create_async(session, actor=actor)
-            return passage.to_pydantic()
+        return passage
 
     @enforce_types
     @trace_method
@@ -142,7 +120,28 @@ class PassageManager:
     @trace_method
     async def create_many_passages_async(self, passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
         """Create multiple passages."""
-        return await asyncio.gather(*[self.create_passage_async(p, actor) for p in passages])
+        async with db_registry.async_session() as session:
+            agent_passages = []
+            source_passages = []
+
+            for p in passages:
+                model = self._preprocess_passage_for_creation(p)
+                if isinstance(model, AgentPassage):
+                    agent_passages.append(model)
+                elif isinstance(model, SourcePassage):
+                    source_passages.append(model)
+                else:
+                    raise TypeError(f"Unexpected passage type: {type(model)}")
+
+            results = []
+            if agent_passages:
+                agent_created = await AgentPassage.batch_create_async(items=agent_passages, db_session=session, actor=actor)
+                results.extend(agent_created)
+            if source_passages:
+                source_created = await SourcePassage.batch_create_async(items=source_passages, db_session=session, actor=actor)
+                results.extend(source_created)
+
+            return [p.to_pydantic() for p in results]
 
     @enforce_types
     @trace_method
@@ -215,52 +214,65 @@ class PassageManager:
         """Insert passage(s) into archival memory"""
 
         embedding_chunk_size = agent_state.embedding_config.embedding_chunk_size
+        text_chunks = list(parse_and_chunk_text(text, embedding_chunk_size))
 
-        # TODO eventually migrate off of llama-index for embeddings?
-        # Already causing pain for OpenAI proxy endpoints like LM Studio...
-        if agent_state.embedding_config.embedding_endpoint_type != "openai":
-            embed_model = embedding_model(agent_state.embedding_config)
-
-        passages = []
+        if not text_chunks:
+            return []
 
         try:
-            # breakup string into passages
-            for text in parse_and_chunk_text(text, embedding_chunk_size):
+            embeddings = await self._generate_embeddings_concurrent(text_chunks, agent_state.embedding_config)
 
-                if agent_state.embedding_config.embedding_endpoint_type != "openai":
-                    embedding = embed_model.get_text_embedding(text)
-                else:
-                    # TODO should have the settings passed in via the server call
-                    embedding = await get_openai_embedding_async(
-                        text,
-                        agent_state.embedding_config.embedding_model,
-                        agent_state.embedding_config.embedding_endpoint,
-                    )
-
-                if isinstance(embedding, dict):
-                    try:
-                        embedding = embedding["data"][0]["embedding"]
-                    except (KeyError, IndexError):
-                        # TODO as a fallback, see if we can find any lists in the payload
-                        raise TypeError(
-                            f"Got back an unexpected payload from text embedding function, type={type(embedding)}, value={embedding}"
-                        )
-                passage = await self.create_passage_async(
-                    PydanticPassage(
-                        organization_id=actor.organization_id,
-                        agent_id=agent_id,
-                        text=text,
-                        embedding=embedding,
-                        embedding_config=agent_state.embedding_config,
-                    ),
-                    actor=actor,
+            passages = [
+                PydanticPassage(
+                    organization_id=actor.organization_id,
+                    agent_id=agent_id,
+                    text=chunk_text,
+                    embedding=embedding,
+                    embedding_config=agent_state.embedding_config,
                 )
-                passages.append(passage)
+                for chunk_text, embedding in zip(text_chunks, embeddings)
+            ]
+
+            passages = await self.create_many_passages_async(passages=passages, actor=actor)
 
             return passages
 
         except Exception as e:
             raise e
+
+    async def _generate_embeddings_concurrent(self, text_chunks: List[str], embedding_config) -> List[List[float]]:
+        """Generate embeddings for all text chunks concurrently"""
+
+        if embedding_config.embedding_endpoint_type != "openai":
+            embed_model = embedding_model(embedding_config)
+            loop = asyncio.get_event_loop()
+
+            tasks = [loop.run_in_executor(None, embed_model.get_text_embedding, text) for text in text_chunks]
+            embeddings = await asyncio.gather(*tasks)
+        else:
+            tasks = [
+                get_openai_embedding_async(
+                    text,
+                    embedding_config.embedding_model,
+                    embedding_config.embedding_endpoint,
+                )
+                for text in text_chunks
+            ]
+            embeddings = await asyncio.gather(*tasks)
+
+        processed_embeddings = []
+        for embedding in embeddings:
+            if isinstance(embedding, dict):
+                try:
+                    processed_embeddings.append(embedding["data"][0]["embedding"])
+                except (KeyError, IndexError):
+                    raise TypeError(
+                        f"Got back an unexpected payload from text embedding function, type={type(embedding)}, value={embedding}"
+                    )
+            else:
+                processed_embeddings.append(embedding)
+
+        return processed_embeddings
 
     @enforce_types
     @trace_method
