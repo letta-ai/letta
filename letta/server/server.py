@@ -1158,6 +1158,17 @@ class SyncServer(Server):
         # rebuild system prompt and force
         self.agent_manager.rebuild_system_prompt(agent_id=passage.agent_id, actor=actor, force=True)
 
+    async def delete_archival_memory_async(self, memory_id: str, actor: User):
+        # TODO check if it exists first, and throw error if not
+        # TODO: need to also rebuild the prompt here
+        passage = await self.passage_manager.get_passage_by_id_async(passage_id=memory_id, actor=actor)
+
+        # delete the passage
+        await self.passage_manager.delete_passage_by_id_async(passage_id=memory_id, actor=actor)
+
+        # rebuild system prompt and force
+        await self.agent_manager.rebuild_system_prompt_async(agent_id=passage.agent_id, actor=actor, force=True)
+
     def get_agent_recall(
         self,
         user_id: str,

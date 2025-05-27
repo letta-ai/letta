@@ -549,7 +549,7 @@ def modify_passage(
 # TODO(ethan): query or path parameter for memory_id?
 # @router.delete("/{agent_id}/archival")
 @router.delete("/{agent_id}/archival-memory/{memory_id}", response_model=None, operation_id="delete_passage")
-def delete_passage(
+async def delete_passage(
     agent_id: str,
     memory_id: str,
     # memory_id: str = Query(..., description="Unique ID of the memory to be deleted."),
@@ -559,9 +559,9 @@ def delete_passage(
     """
     Delete a memory from an agent's archival memory store.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    server.delete_archival_memory(memory_id=memory_id, actor=actor)
+    await server.delete_archival_memory_async(memory_id=memory_id, actor=actor)
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Memory id={memory_id} successfully deleted"})
 
 
