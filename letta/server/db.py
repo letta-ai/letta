@@ -1,6 +1,5 @@
 import os
 import threading
-import uuid
 from contextlib import asynccontextmanager, contextmanager
 from typing import Any, AsyncGenerator, Generator
 
@@ -165,15 +164,6 @@ class DatabaseRegistry:
             )
             if not is_async:
                 base_args["pool_use_lifo"] = settings.pool_use_lifo
-
-        elif is_async:
-            base_args.update(
-                {
-                    "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4()}__",
-                    "statement_cache_size": 0,
-                    "prepared_statement_cache_size": 0,
-                }
-            )
 
         return base_args
 
