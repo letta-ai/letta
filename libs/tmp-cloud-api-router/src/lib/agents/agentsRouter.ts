@@ -125,6 +125,15 @@ async function createAgent(
     }
   }
 
+  if (!projectId) {
+    return {
+      status: 400,
+      body: {
+        message: 'Project ID is required',
+      },
+    };
+  }
+
   if (!from_template) {
     try {
       // standard agent creation route, this should just pipe
