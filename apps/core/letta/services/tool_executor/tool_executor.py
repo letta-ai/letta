@@ -751,7 +751,7 @@ class SandboxToolExecutor(ToolExecutor):
 
             # Update agent memory if needed
             if tool_execution_result.agent_state is not None:
-                AgentManager().update_memory_if_changed(agent_state.id, tool_execution_result.agent_state.memory, actor)
+                await AgentManager().update_memory_if_changed_async(agent_state.id, tool_execution_result.agent_state.memory, actor)
 
             return tool_execution_result
 
