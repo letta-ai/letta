@@ -121,10 +121,10 @@ async function canCreateSource(
     },
   );
 
-  if (sourcesCount >= limits.identities) {
+  if (sourcesCount >= limits.dataSources) {
     return {
       type: 'sources',
-      currentLimit: limits.identities,
+      currentLimit: limits.dataSources,
     };
   }
 
@@ -144,8 +144,6 @@ async function canCreateBlock(
       user_id: coreUserId,
     },
   );
-
-  console.log('a', blocksCount);
 
   if (blocksCount >= limits.blocks) {
     return {

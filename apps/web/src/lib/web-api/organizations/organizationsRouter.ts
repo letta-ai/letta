@@ -1509,7 +1509,9 @@ async function getFullOrganizationQuotas(): Promise<GetFullOrganizationQuotasRes
       },
     ),
     SourcesService.countSources(
-      {},
+      {
+        userId: lettaAgentsId,
+      },
       {
         user_id: lettaAgentsId,
       },
