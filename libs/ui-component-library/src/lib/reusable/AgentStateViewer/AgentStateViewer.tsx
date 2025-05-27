@@ -43,12 +43,13 @@ function getChangeClass({ isChanged, isAdditive }: GetChangeClassProps) {
 interface ToolVariableViewerProps {
   toolVariables: CleanedAgentState['tool_exec_environment_variables'];
   comparedVariables?: CleanedAgentState['tool_exec_environment_variables'];
+  negative?: boolean;
 }
 
 function ToolVariableViewer(props: ToolVariableViewerProps) {
   const t = useTranslations('components/AgentStateViewer');
 
-  const { toolVariables, comparedVariables } = props;
+  const { toolVariables, negative, comparedVariables } = props;
 
   if (!toolVariables || toolVariables.length === 0) {
     return (
@@ -71,6 +72,7 @@ function ToolVariableViewer(props: ToolVariableViewerProps) {
               className={cn(
                 getChangeClass({
                   isChanged: !comparedValue,
+                  isAdditive: negative,
                 }),
               )}
               key={variable.key}
@@ -183,10 +185,11 @@ function SectionWrapper(props: React.PropsWithChildren<SectionWrapperProps>) {
 interface ToolRuleViewerProps {
   toolRules: AgentState['tool_rules'];
   comparedToolRules?: AgentState['tool_rules'];
+  negative?: boolean;
 }
 
 function ToolRuleViewer(props: ToolRuleViewerProps) {
-  const { toolRules = [], comparedToolRules = [] } = props;
+  const { toolRules = [], negative, comparedToolRules = [] } = props;
   const t = useTranslations('components/AgentStateViewer');
 
   const maxRules = Math.max(
@@ -199,8 +202,24 @@ function ToolRuleViewer(props: ToolRuleViewerProps) {
       {new Array(maxRules).fill(0).map((_, index) => {
         const comparedRule = comparedToolRules?.[index];
         const rule = toolRules?.[index];
+
+        if (!rule) {
+          return null;
+        }
+
         return (
-          <VStack borderBottom gap={false} key={index} fullWidth>
+          <VStack
+            className={cn(
+              getChangeClass({
+                isChanged: !comparedRule,
+                isAdditive: negative,
+              }),
+            )}
+            borderBottom
+            gap={false}
+            key={index}
+            fullWidth
+          >
             <HStack align="center" padding="small">
               <Typography bold variant="body3">
                 {t('ToolRuleViewer.rule', { index: index + 1 })}
@@ -350,10 +369,11 @@ function KeyValueDiffViewer(props: KeyValueDiffViewerProps) {
 interface ToolsViewerProps {
   toolIds: CleanedAgentState['toolIds'];
   comparedToolIds?: CleanedAgentState['toolIds'];
+  negative?: boolean;
 }
 
 function ToolsViewer(props: ToolsViewerProps) {
-  const { toolIds, comparedToolIds } = props;
+  const { toolIds, comparedToolIds, negative } = props;
   const { tools } = useSingleStateViewerContext();
 
   return (
@@ -367,11 +387,10 @@ function ToolsViewer(props: ToolsViewerProps) {
             gap={false}
             key={toolId}
             className={cn(
-              comparedTool
-                ? getChangeClass({
-                    isChanged: !comparedTool,
-                  })
-                : null,
+              getChangeClass({
+                isChanged: !comparedTool,
+                isAdditive: negative,
+              }),
               'p-3',
             )}
             align="start"
@@ -396,11 +415,12 @@ function ToolsViewer(props: ToolsViewerProps) {
 
 interface SourceViewerProps {
   sourceIds: CleanedAgentState['sourceIds'];
+  negative?: boolean;
   comparedSourceIds?: CleanedAgentState['sourceIds'];
 }
 
 function SourceViewer(props: SourceViewerProps) {
-  const { sourceIds, comparedSourceIds } = props;
+  const { sourceIds, negative, comparedSourceIds } = props;
   const { sources } = useSingleStateViewerContext();
   const t = useTranslations('components/AgentStateViewer');
 
@@ -421,6 +441,7 @@ function SourceViewer(props: SourceViewerProps) {
             className={cn(
               getChangeClass({
                 isChanged: !comparedSource,
+                isAdditive: negative,
               }),
               'p-3',
             )}
@@ -631,12 +652,18 @@ function StateViewer(props: StateViewerProps) {
         ></SectionWrapper>
         <SectionWrapper
           hasDifference={hasToolIdsDifference}
-          base={<ToolsViewer toolIds={state.toolIds} />}
+          base={
+            <ToolsViewer
+              negative
+              comparedToolIds={toCompare?.toolIds}
+              toolIds={state.toolIds}
+            />
+          }
           compared={
             toCompare && (
               <ToolsViewer
-                toolIds={state.toolIds}
-                comparedToolIds={toCompare?.toolIds}
+                toolIds={toCompare?.toolIds}
+                comparedToolIds={state.toolIds}
               />
             )
           }
@@ -644,12 +671,18 @@ function StateViewer(props: StateViewerProps) {
         ></SectionWrapper>
         <SectionWrapper
           hasDifference={hasSourceIdsDifference}
-          base={<SourceViewer sourceIds={state.sourceIds} />}
+          base={
+            <SourceViewer
+              negative
+              comparedSourceIds={toCompare?.sourceIds}
+              sourceIds={state.sourceIds}
+            />
+          }
           compared={
             toCompare && (
               <SourceViewer
-                sourceIds={state.sourceIds}
-                comparedSourceIds={toCompare?.sourceIds}
+                sourceIds={toCompare?.sourceIds}
+                comparedSourceIds={state?.sourceIds}
               />
             )
           }
@@ -686,8 +719,8 @@ function StateViewer(props: StateViewerProps) {
             toCompare && (
               <GenericCompare>
                 <InlineTextDiff
-                  text={state.system}
-                  comparedText={toCompare?.system}
+                  text={toCompare.system}
+                  comparedText={state?.system}
                 />
               </GenericCompare>
             )
@@ -696,12 +729,18 @@ function StateViewer(props: StateViewerProps) {
         ></SectionWrapper>
         <SectionWrapper
           hasDifference={!!hasToolRulesDifference}
-          base={<ToolRuleViewer toolRules={state.toolRules} />}
+          base={
+            <ToolRuleViewer
+              negative
+              toolRules={state.toolRules}
+              comparedToolRules={toCompare?.toolRules}
+            />
+          }
           compared={
             toCompare && (
               <ToolRuleViewer
-                toolRules={state.toolRules}
-                comparedToolRules={toCompare?.toolRules}
+                toolRules={toCompare.toolRules}
+                comparedToolRules={state?.toolRules}
               />
             )
           }
@@ -711,14 +750,16 @@ function StateViewer(props: StateViewerProps) {
           hasDifference={hasToolVariablesDifference}
           base={
             <ToolVariableViewer
+              negative
               toolVariables={state.tool_exec_environment_variables}
+              comparedVariables={toCompare?.tool_exec_environment_variables}
             />
           }
           compared={
             toCompare && (
               <ToolVariableViewer
-                toolVariables={state.tool_exec_environment_variables}
-                comparedVariables={toCompare?.tool_exec_environment_variables}
+                toolVariables={toCompare.tool_exec_environment_variables}
+                comparedVariables={state?.tool_exec_environment_variables}
               />
             )
           }
