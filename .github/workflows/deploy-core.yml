@@ -103,5 +103,6 @@ jobs:
           LETTA_UVICORN_WORKERS: ${{ secrets.LETTA_UVICORN_WORKERS }}
           LETTA_PG_POOL_SIZE: ${{ secrets.LETTA_PG_POOL_SIZE }}
           LETTA_PG_MAX_OVERFLOW: ${{ secrets.LETTA_PG_MAX_OVERFLOW }}
+          MCP_READ_FROM_CONFIG: false
         run: |
           just build-core deploy-core "${DEPLOY_MESSAGE}"

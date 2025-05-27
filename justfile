@@ -176,7 +176,8 @@ describe-web:
         --set secrets.LETTA_DISABLE_SQLALCHEMY_POOLING=${LETTA_DISABLE_SQLALCHEMY_POOLING} \
         --set secrets.LETTA_UVICORN_WORKERS=${LETTA_UVICORN_WORKERS} \
         --set secrets.LETTA_PG_POOL_SIZE=${LETTA_PG_POOL_SIZE} \
-        --set secrets.LETTA_PG_MAX_OVERFLOW=${LETTA_PG_MAX_OVERFLOW}
+        --set secrets.LETTA_PG_MAX_OVERFLOW=${LETTA_PG_MAX_OVERFLOW} \
+        --set secrets.MCP_READ_FROM_CONFIG=false
 
 # Deploy Grafana
 deploy-grafana:

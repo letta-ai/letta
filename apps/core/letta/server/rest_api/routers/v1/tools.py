@@ -484,8 +484,11 @@ async def add_mcp_server_to_config(
 
         if isinstance(request, StdioServerConfig):
             mapped_request = MCPServer(server_name=request.server_name, server_type=request.type, stdio_config=request)
+            # don't allow stdio servers
+            raise HTTPException(status_code=400, detail="StdioServerConfig is not supported")
         elif isinstance(request, SSEServerConfig):
             mapped_request = MCPServer(server_name=request.server_name, server_type=request.type, server_url=request.server_url)
+        # TODO: add HTTP streaming
         mcp_server = await server.mcp_manager.create_or_update_mcp_server(mapped_request, actor=actor)
 
         # TODO: don't do this in the future (just return MCPServer)
