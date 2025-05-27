@@ -29,7 +29,7 @@ logger = get_logger(__name__)
 
 
 @router.delete("/{tool_id}", operation_id="delete_tool")
-def delete_tool(
+async def delete_tool(
     tool_id: str,
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -37,8 +37,8 @@ def delete_tool(
     """
     Delete a tool by name
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    server.tool_manager.delete_tool_by_id(tool_id=tool_id, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    await server.tool_manager.delete_tool_by_id_async(tool_id=tool_id, actor=actor)
 
 
 @router.get("/count", response_model=int, operation_id="count_tools")
