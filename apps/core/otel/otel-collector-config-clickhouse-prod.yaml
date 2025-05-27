@@ -10,30 +10,6 @@ receivers:
       - /root/.letta/logs/Letta.log
     multiline:
       line_start_pattern: ^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
-    operators:
-      # Extract timestamp and other fields
-      - type: regex_parser
-        regex: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})\s+-\s+(?P<component>[\w\.-]+)\s+-\s+(?P<severity>\w+)\s+-\s+(?P<body>.*)$'
-      # Parse the timestamp
-      - type: time_parser
-        parse_from: attributes.timestamp
-        layout: '%Y-%m-%d %H:%M:%S,%L'
-      # Set severity
-      - type: severity_parser
-        parse_from: attributes.severity
-        mapping:
-          debug: DEBUG
-          info: INFO
-          warning: WARN
-          error: ERROR
-          critical: FATAL
-      # Add resource attributes
-      - type: add
-        field: resource.service_name
-        value: letta-server
-      - type: add
-        field: resource.environment
-        value: ${ENV_NAME}
 
 processors:
   batch:
