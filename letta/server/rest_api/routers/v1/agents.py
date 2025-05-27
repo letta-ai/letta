@@ -311,8 +311,8 @@ async def attach_source(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     agent = await server.agent_manager.attach_source_async(agent_id=agent_id, source_id=source_id, actor=actor)
     if agent.enable_sleeptime:
-        source = server.source_manager.get_source_by_id(source_id=source_id)
-        background_tasks.add_task(server.sleeptime_document_ingest, agent, source, actor)
+        source = await server.source_manager.get_source_by_id(source_id=source_id)
+        background_tasks.add_task(server.sleeptime_document_ingest_async, agent, source, actor)
     return agent
 
 

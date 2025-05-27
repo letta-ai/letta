@@ -267,4 +267,4 @@ async def sleeptime_document_ingest_async(server: SyncServer, source_id: str, ac
     agents = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
     for agent in agents:
         if agent.enable_sleeptime:
-            server.sleeptime_document_ingest(agent, source, actor, clear_history)  # TODO: make async
+            await server.sleeptime_document_ingest_async(agent, source, actor, clear_history)
