@@ -137,14 +137,13 @@ async def delete_source(
     Delete a data source.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    source = await server.source_manager.get_source_by_id(source_id=source_id)
+    source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     agents = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
     for agent in agents:
         if agent.enable_sleeptime:
             try:
-                # TODO: make async
-                block = server.agent_manager.get_block_with_label(agent_id=agent.id, block_label=source.name, actor=actor)
-                server.block_manager.delete_block(block.id, actor)
+                block = await server.agent_manager.get_block_with_label_async(agent_id=agent.id, block_label=source.name, actor=actor)
+                await server.block_manager.delete_block_async(block.id, actor)
             except:
                 pass
     await server.delete_source(source_id=source_id, actor=actor)
