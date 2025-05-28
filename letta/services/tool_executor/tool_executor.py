@@ -68,9 +68,9 @@ class ToolExecutor(ABC):
         self,
         function_name: str,
         function_args: dict,
-        agent_state: AgentState,
         tool: Tool,
         actor: User,
+        agent_state: Optional[AgentState] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
@@ -84,13 +84,14 @@ class LettaCoreToolExecutor(ToolExecutor):
         self,
         function_name: str,
         function_args: dict,
-        agent_state: AgentState,
         tool: Tool,
         actor: User,
+        agent_state: Optional[AgentState] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
         # Map function names to method calls
+        assert agent_state is not None, "Agent state is required for core tools"
         function_map = {
             "send_message": self.send_message,
             "conversation_search": self.conversation_search,
@@ -537,12 +538,13 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
         self,
         function_name: str,
         function_args: dict,
-        agent_state: AgentState,
         tool: Tool,
         actor: User,
+        agent_state: Optional[AgentState] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
+        assert agent_state is not None, "Agent state is required for multi-agent tools"
         function_map = {
             "send_message_to_agent_and_wait_for_reply": self.send_message_to_agent_and_wait_for_reply,
             "send_message_to_agent_async": self.send_message_to_agent_async,
@@ -644,12 +646,13 @@ class ExternalComposioToolExecutor(ToolExecutor):
         self,
         function_name: str,
         function_args: dict,
-        agent_state: AgentState,
         tool: Tool,
         actor: User,
+        agent_state: Optional[AgentState] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
+        assert agent_state is not None, "Agent state is required for external Composio tools"
         action_name = generate_composio_action_from_func_name(tool.name)
 
         # Get entity ID from the agent_state
@@ -684,9 +687,9 @@ class ExternalMCPToolExecutor(ToolExecutor):
         self,
         function_name: str,
         function_args: dict,
-        agent_state: AgentState,
         tool: Tool,
         actor: User,
+        agent_state: Optional[AgentState] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
@@ -718,21 +721,21 @@ class SandboxToolExecutor(ToolExecutor):
         self,
         function_name: str,
         function_args: JsonDict,
-        agent_state: AgentState,
         tool: Tool,
         actor: User,
+        agent_state: Optional[AgentState] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
 
         # Store original memory state
-        orig_memory_str = agent_state.memory.compile()
+        orig_memory_str = agent_state.memory.compile() if agent_state else None
 
         try:
             # Prepare function arguments
             function_args = self._prepare_function_args(function_args, tool, function_name)
 
-            agent_state_copy = self._create_agent_state_copy(agent_state)
+            agent_state_copy = self._create_agent_state_copy(agent_state) if agent_state else None
 
             # Execute in sandbox depending on API key
             if tool_settings.e2b_api_key:
@@ -747,7 +750,8 @@ class SandboxToolExecutor(ToolExecutor):
             tool_execution_result = await sandbox.run(agent_state=agent_state_copy)
 
             # Verify memory integrity
-            assert orig_memory_str == agent_state.memory.compile(), "Memory should not be modified in a sandbox tool"
+            if agent_state:
+                assert orig_memory_str == agent_state.memory.compile(), "Memory should not be modified in a sandbox tool"
 
             # Update agent memory if needed
             if tool_execution_result.agent_state is not None:
@@ -805,9 +809,9 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         self,
         function_name: str,
         function_args: dict,
-        agent_state: AgentState,
         tool: Tool,
         actor: User,
+        agent_state: Optional[AgentState] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:

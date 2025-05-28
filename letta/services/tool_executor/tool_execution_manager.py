@@ -69,8 +69,8 @@ class ToolExecutionManager:
         agent_manager: AgentManager,
         block_manager: BlockManager,
         passage_manager: PassageManager,
-        agent_state: AgentState,
         actor: User,
+        agent_state: Optional[AgentState] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ):
@@ -98,7 +98,9 @@ class ToolExecutionManager:
                 passage_manager=self.passage_manager,
                 actor=self.actor,
             )
-            result = await executor.execute(function_name, function_args, self.agent_state, tool, self.actor)
+            result = await executor.execute(
+                function_name, function_args, tool, self.actor, self.agent_state, self.sandbox_config, self.sandbox_env_vars
+            )
 
             # trim result
             return_str = str(result.func_return)

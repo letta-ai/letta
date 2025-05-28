@@ -193,7 +193,7 @@ async def upsert_base_tools(
 
 
 @router.post("/run", response_model=ToolReturnMessage, operation_id="run_tool_from_source")
-def run_tool_from_source(
+async def run_tool_from_source(
     server: SyncServer = Depends(get_letta_server),
     request: ToolRunFromSource = Body(...),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -201,10 +201,10 @@ def run_tool_from_source(
     """
     Attempt to build a tool from source, then run it on the provided arguments
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
-        return server.run_tool_from_source(
+        return await server.run_tool_from_source(
             tool_source=request.source_code,
             tool_source_type=request.source_type,
             tool_args=request.args,

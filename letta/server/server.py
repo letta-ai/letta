@@ -96,7 +96,7 @@ from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.source_manager import SourceManager
 from letta.services.step_manager import StepManager
 from letta.services.telemetry_manager import TelemetryManager
-from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSandbox
+from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings, settings, tool_settings
@@ -1865,7 +1865,7 @@ class SyncServer(Server):
     def add_embedding_model(self, request: EmbeddingConfig) -> EmbeddingConfig:
         """Add a new embedding model"""
 
-    def run_tool_from_source(
+    async def run_tool_from_source(
         self,
         actor: User,
         tool_args: Dict[str, str],
@@ -1898,8 +1898,20 @@ class SyncServer(Server):
 
         # Next, attempt to run the tool with the sandbox
         try:
-            tool_execution_result = ToolExecutionSandbox(tool.name, tool_args, actor, tool_object=tool).run(
-                agent_state=agent_state, additional_env_vars=tool_env_vars
+            tool_execution_manager = ToolExecutionManager(
+                agent_state=agent_state,
+                message_manager=self.message_manager,
+                agent_manager=self.agent_manager,
+                block_manager=self.block_manager,
+                passage_manager=self.passage_manager,
+                actor=actor,
+                sandbox_env_vars=tool_env_vars,
+            )
+            # TODO: Integrate sandbox result
+            tool_execution_result = await tool_execution_manager.execute_tool_async(
+                function_name=tool_name,
+                function_args=tool_args,
+                tool=tool,
             )
             return ToolReturnMessage(
                 id="null",
