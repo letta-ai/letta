@@ -172,6 +172,10 @@ class Settings(BaseSettings):
     debug: Optional[bool] = False
     cors_origins: Optional[list] = cors_origins
 
+    # default handles
+    default_llm_handle: Optional[str] = None
+    default_embedding_handle: Optional[str] = None
+
     # database configuration
     pg_db: Optional[str] = None
     pg_user: Optional[str] = None

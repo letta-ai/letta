@@ -142,5 +142,7 @@ jobs:
           ENV_NAME: dev
           LETTA_USE_EXPERIMENTAL: ${{ secrets.LETTA_USE_EXPERIMENTAL }}
           LETTA_UVICORN_WORKERS: 3 # number of CPU cores * 2 + 1
+          LETTA_DEFAULT_LLM_HANDLE: ${{ secrets.LETTA_DEFAULT_LLM_HANDLE }}
+          LETTA_DEFAULT_EMBEDDING_HANDLE: ${{ secrets.LETTA_DEFAULT_EMBEDDING_HANDLE }}
           MCP_READ_FROM_CONFIG: false # disable MCP config
         run: just build-core deploy-core "${DEPLOY_MESSAGE}"

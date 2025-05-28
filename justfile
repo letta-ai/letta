@@ -177,6 +177,8 @@ describe-web:
         --set secrets.LETTA_UVICORN_WORKERS=${LETTA_UVICORN_WORKERS} \
         --set secrets.LETTA_PG_POOL_SIZE=${LETTA_PG_POOL_SIZE} \
         --set secrets.LETTA_PG_MAX_OVERFLOW=${LETTA_PG_MAX_OVERFLOW} \
+        --set env.LETTA_DEFAULT_LLM_HANDLE=${LETTA_DEFAULT_LLM_HANDLE} \
+        --set env.LETTA_DEFAULT_EMBEDDING_HANDLE=${LETTA_DEFAULT_EMBEDDING_HANDLE}
         --set secrets.MCP_READ_FROM_CONFIG=false
 
 # Deploy Grafana
