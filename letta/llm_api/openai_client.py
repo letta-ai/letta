@@ -22,6 +22,7 @@ from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_st
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
 from letta.log import get_logger
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
@@ -123,6 +124,18 @@ class OpenAIClient(LLMClientBase):
         api_key = api_key or "DUMMY_API_KEY"
         kwargs = {"api_key": api_key, "base_url": llm_config.model_endpoint}
 
+        return kwargs
+
+    def _prepare_client_kwargs_embedding(self, embedding_config: EmbeddingConfig) -> dict:
+        api_key = None
+        if embedding_config.embedding_endpoint_type == ProviderType.together:
+            api_key = model_settings.together_api_key or os.environ.get("TOGETHER_API_KEY")
+
+        if not api_key:
+            api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
+        # supposedly the openai python client requires a dummy API key
+        api_key = api_key or "DUMMY_API_KEY"
+        kwargs = {"api_key": api_key, "base_url": embedding_config.embedding_endpoint}
         return kwargs
 
     async def _prepare_client_kwargs_async(self, llm_config: LLMConfig) -> dict:
@@ -290,6 +303,16 @@ class OpenAIClient(LLMClientBase):
             **request_data, stream=True, stream_options={"include_usage": True}
         )
         return response_stream
+
+    @trace_method
+    async def request_embeddings(self, inputs: List[str], embedding_config: EmbeddingConfig) -> List[dict]:
+        """Request embeddings given texts and embedding config"""
+        kwargs = self._prepare_client_kwargs_embedding(embedding_config)
+        client = AsyncOpenAI(**kwargs)
+        response = await client.embeddings.create(model=embedding_config.embedding_model, input=inputs)
+
+        # TODO: add total usage
+        return [r.embedding for r in response.data]
 
     @trace_method
     def handle_llm_error(self, e: Exception) -> Exception:
