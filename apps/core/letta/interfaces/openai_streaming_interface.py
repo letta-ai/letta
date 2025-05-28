@@ -12,7 +12,6 @@ from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
 from letta.server.rest_api.json_parser import OptimisticJSONParser
 from letta.streaming_utils import JSONInnerThoughtsExtractor
-from letta.tracing import trace_method
 
 
 class OpenAIStreamingInterface:
