@@ -5,6 +5,7 @@ from openai import AsyncStream
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.schemas.letta_message import AssistantMessage, LettaMessage, ReasoningMessage, ToolCallDelta, ToolCallMessage
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message
@@ -65,16 +66,30 @@ class OpenAIStreamingInterface:
             function=FunctionCall(arguments=self.current_function_arguments, name=function_name),
         )
 
-    @trace_method
-    async def process(self, stream: AsyncStream[ChatCompletionChunk]) -> AsyncGenerator[LettaMessage, None]:
+    async def process(
+        self,
+        stream: AsyncStream[ChatCompletionChunk],
+        ttft_span: Optional["Span"] = None,
+        provider_request_start_timestamp_ns: Optional[int] = None,
+    ) -> AsyncGenerator[LettaMessage, None]:
         """
         Iterates over the OpenAI stream, yielding SSE events.
         It also collects tokens and detects if a tool call is triggered.
         """
+        first_chunk = True
+
         async with stream:
             prev_message_type = None
             message_index = 0
             async for chunk in stream:
+                if first_chunk and ttft_span is not None and provider_request_start_timestamp_ns is not None:
+                    now = get_utc_timestamp_ns()
+                    ttft_ns = now - provider_request_start_timestamp_ns
+                    ttft_span.add_event(
+                        name="openai_time_to_first_token_ms", attributes={"openai_time_to_first_token_ms": ttft_ns // 1_000_000}
+                    )
+                    first_chunk = False
+
                 if not self.model or not self.message_id:
                     self.model = chunk.model
                     self.message_id = chunk.id
