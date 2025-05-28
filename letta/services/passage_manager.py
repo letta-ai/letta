@@ -385,6 +385,17 @@ class PassageManager:
 
     @enforce_types
     @trace_method
+    async def delete_source_passages_async(
+        self,
+        actor: PydanticUser,
+        passages: List[PydanticPassage],
+    ) -> bool:
+        async with db_registry.async_session() as session:
+            await SourcePassage.bulk_hard_delete_async(db_session=session, identifiers=[p.id for p in passages], actor=actor)
+            return True
+
+    @enforce_types
+    @trace_method
     def size(
         self,
         actor: PydanticUser,

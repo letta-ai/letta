@@ -19,6 +19,7 @@ import letta.constants as constants
 import letta.server.utils as server_utils
 import letta.system as system
 from letta.agent import Agent, save_agent
+from letta.agents.letta_agent import LettaAgent
 from letta.config import LettaConfig
 from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.data_sources.connectors import DataConnector, load_data
@@ -1295,11 +1296,8 @@ class SyncServer(Server):
         await self.source_manager.delete_source(source_id=source_id, actor=actor)
 
         # delete data from passage store
-        # TODO: make async
-        passages_to_be_deleted = self.agent_manager.list_passages(actor=actor, source_id=source_id, limit=None)
-
-        # TODO: make this async
-        self.passage_manager.delete_passages(actor=actor, passages=passages_to_be_deleted)
+        passages_to_be_deleted = await self.agent_manager.list_passages_async(actor=actor, source_id=source_id, limit=None)
+        await self.passage_manager.delete_source_passages_async(actor=actor, passages=passages_to_be_deleted)
 
         # TODO: delete data from agent passage stores (?)
 
@@ -1345,9 +1343,9 @@ class SyncServer(Server):
     async def sleeptime_document_ingest_async(
         self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False
     ) -> None:
-        sleeptime_agent = await self.create_document_sleeptime_agent_async(main_agent, source, actor, clear_history)
+        sleeptime_agent_state = await self.create_document_sleeptime_agent_async(main_agent, source, actor, clear_history)
         sleeptime_agent = LettaAgent(
-            agent_id=sleeptime_agent.id,
+            agent_id=sleeptime_agent_state.id,
             message_manager=self.message_manager,
             agent_manager=self.agent_manager,
             block_manager=self.block_manager,
@@ -1363,7 +1361,7 @@ class SyncServer(Server):
                     MessageCreate(role="user", content=passage.text),
                 ]
             )
-        await self.agent_manager.delete_agent_async(agent_id=sleeptime_agent.id, actor=actor)
+        await self.agent_manager.delete_agent_async(agent_id=sleeptime_agent_state.id, actor=actor)
 
     async def create_document_sleeptime_agent_async(
         self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False
