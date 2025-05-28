@@ -359,7 +359,7 @@ class PassageManager:
             # Try source passages first
             try:
                 passage = await SourcePassage.read_async(db_session=session, identifier=passage_id, actor=actor)
-                await passage.hard_delete(session, actor=actor)
+                await passage.hard_delete_async(session, actor=actor)
                 return True
             except NoResultFound:
                 # Try archival passages
