@@ -8,6 +8,7 @@ from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from letta.agents.base_agent import BaseAgent
+from letta.agents.ephemeral_summary_agent import EphemeralSummaryAgent
 from letta.agents.helpers import _create_letta_response, _prepare_in_context_messages_async, generate_step_id
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
@@ -35,8 +36,11 @@ from letta.services.block_manager import BlockManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.step_manager import NoopStepManager, StepManager
+from letta.services.summarizer.enums import SummarizationMode
+from letta.services.summarizer.summarizer import Summarizer
 from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
+from letta.settings import model_settings
 from letta.system import package_function_response
 from letta.tracing import log_event, trace_method, tracer
 from letta.utils import validate_function_response
@@ -56,6 +60,7 @@ class LettaAgent(BaseAgent):
         actor: User,
         step_manager: StepManager = NoopStepManager(),
         telemetry_manager: TelemetryManager = NoopTelemetryManager(),
+        summary_block_label: str = "convo_summary",
     ):
         super().__init__(agent_id=agent_id, openai_client=None, message_manager=message_manager, agent_manager=agent_manager, actor=actor)
 
@@ -72,6 +77,28 @@ class LettaAgent(BaseAgent):
         # Cached archival memory/message size
         self.num_messages = 0
         self.num_archival_memories = 0
+
+        self.summarization_agent = None
+        self.summary_block_label = summary_block_label
+
+        # TODO: Expand to more
+        if model_settings.openai_api_key:
+            self.summarization_agent = EphemeralSummaryAgent(
+                target_block_label=self.summary_block_label,
+                agent_id=agent_id,
+                block_manager=self.block_manager,
+                message_manager=self.message_manager,
+                agent_manager=self.agent_manager,
+                actor=self.actor,
+            )
+
+        self.summarizer = Summarizer(
+            mode=SummarizationMode.STATIC_MESSAGE_BUFFER,
+            summarizer_agent=self.summarization_agent,
+            # TODO: Make this configurable
+            message_buffer_limit=60,
+            message_buffer_min=15,
+        )
 
     @trace_method
     async def step(self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = True) -> LettaResponse:
@@ -180,8 +207,7 @@ class LettaAgent(BaseAgent):
 
         # Extend the in context message ids
         if not agent_state.message_buffer_autoclear:
-            message_ids = [m.id for m in (current_in_context_messages + new_in_context_messages)]
-            await self.agent_manager.set_in_context_messages_async(agent_id=self.agent_id, message_ids=message_ids, actor=self.actor)
+            await self._rebuild_context_window(in_context_messages=current_in_context_messages, new_letta_messages=new_in_context_messages)
 
         # Return back usage
         yield f"data: {usage.model_dump_json()}\n\n"
@@ -279,8 +305,7 @@ class LettaAgent(BaseAgent):
 
         # Extend the in context message ids
         if not agent_state.message_buffer_autoclear:
-            message_ids = [m.id for m in (current_in_context_messages + new_in_context_messages)]
-            await self.agent_manager.set_in_context_messages_async(agent_id=self.agent_id, message_ids=message_ids, actor=self.actor)
+            await self._rebuild_context_window(in_context_messages=current_in_context_messages, new_letta_messages=new_in_context_messages)
 
         return current_in_context_messages, new_in_context_messages, usage
 
@@ -440,8 +465,7 @@ class LettaAgent(BaseAgent):
 
         # Extend the in context message ids
         if not agent_state.message_buffer_autoclear:
-            message_ids = [m.id for m in (current_in_context_messages + new_in_context_messages)]
-            await self.agent_manager.set_in_context_messages_async(agent_id=self.agent_id, message_ids=message_ids, actor=self.actor)
+            await self._rebuild_context_window(in_context_messages=current_in_context_messages, new_letta_messages=new_in_context_messages)
 
         # TODO: This may be out of sync, if in between steps users add files
         # NOTE (cliandy): temporary for now for particlar use cases.
@@ -451,6 +475,15 @@ class LettaAgent(BaseAgent):
         # TODO: Also yield out a letta usage stats SSE
         yield f"data: {usage.model_dump_json()}\n\n"
         yield f"data: {MessageStreamStatus.done.model_dump_json()}\n\n"
+
+    @trace_method
+    async def _rebuild_context_window(self, in_context_messages: List[Message], new_letta_messages: List[Message]) -> None:
+        new_in_context_messages, updated = self.summarizer.summarize(
+            in_context_messages=in_context_messages, new_letta_messages=new_letta_messages
+        )
+        await self.agent_manager.set_in_context_messages_async(
+            agent_id=self.agent_id, message_ids=[m.id for m in new_in_context_messages], actor=self.actor
+        )
 
     @trace_method
     async def _create_llm_request_data_async(
