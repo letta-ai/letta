@@ -37,6 +37,9 @@ TOOL_CALL_ID_MAX_LEN = 29
 # minimum context window size
 MIN_CONTEXT_WINDOW = 4096
 
+# number of concurrent embedding requests to sent
+EMBEDDING_BATCH_SIZE = 200
+
 # Voice Sleeptime message buffer lengths
 DEFAULT_MAX_MESSAGE_BUFFER_LENGTH = 30
 DEFAULT_MIN_MESSAGE_BUFFER_LENGTH = 15
