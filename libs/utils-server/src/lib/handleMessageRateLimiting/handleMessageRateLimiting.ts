@@ -224,7 +224,7 @@ export async function handleMessageRateLimiting(
   });
 
   const canAgentBeUsed =
-    isDeployedAgent?.isDeployed ||
+    !isDeployedAgent?.isDeployed ||
     (await getCanAgentBeUsed({
       agentId,
       organizationId,
