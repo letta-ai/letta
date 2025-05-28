@@ -825,7 +825,10 @@ class SyncServer(Server):
     ) -> AgentState:
         if request.llm_config is None:
             if request.model is None:
-                raise ValueError("Must specify either model or llm_config in request")
+                if settings.default_llm_handle is None:
+                    raise ValueError("Must specify either model or llm_config in request")
+                else:
+                    request.model = settings.default_llm_handle
             config_params = {
                 "handle": request.model,
                 "context_window_limit": request.context_window_limit,
@@ -839,7 +842,10 @@ class SyncServer(Server):
 
         if request.embedding_config is None:
             if request.embedding is None:
-                raise ValueError("Must specify either embedding or embedding_config in request")
+                if settings.default_embedding_handle is None:
+                    raise ValueError("Must specify either embedding or embedding_config in request")
+                else:
+                    request.embedding = settings.default_embedding_handle
             embedding_config_params = {
                 "handle": request.embedding,
                 "embedding_chunk_size": request.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
