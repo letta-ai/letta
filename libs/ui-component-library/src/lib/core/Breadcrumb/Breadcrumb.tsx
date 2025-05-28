@@ -144,6 +144,7 @@ function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
           variant={size === 'small' ? 'body2' : 'body'}
           onClick={onClick}
           className={cn(
+            'flex items-center gap-1',
             !isLast ? 'text-text-lighter' : 'font-light',
             !onClick && !href
               ? 'cursor-default hover:bg-transparent'

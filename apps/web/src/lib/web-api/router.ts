@@ -26,6 +26,7 @@ import { composioRouter } from '$web/web-api/composio/composioRouter';
 import { transactionsRoutes } from '$web/web-api/transactions/transactionsRoutes';
 import { tracesRoutes } from '$web/web-api/traces/tracesRouter';
 import { adminContentViolationsRouter } from '$web/web-api/admin/contentViolations/adminContentViolationsRouter';
+import { observabilityRouter } from '$web/web-api/observability/observabilityRouter';
 
 export const router = {
   user: userRouter,
@@ -49,6 +50,7 @@ export const router = {
   composio: composioRouter,
   transactions: transactionsRoutes,
   traces: tracesRoutes,
+  observability: observabilityRouter,
   admin: {
     usage: adminUsageRouter,
     users: adminUsersRouter,

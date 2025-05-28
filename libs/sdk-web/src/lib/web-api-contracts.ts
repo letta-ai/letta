@@ -80,6 +80,10 @@ import {
   adminContentViolationQueryKeys,
   adminContentViolationsContracts,
 } from './admin/adminContentViolationsContracts';
+import {
+  observabilityContracts,
+  observabilityQueryKeys,
+} from './public/observabilityContracts';
 
 export const contracts = {
   user: userContract,
@@ -102,6 +106,7 @@ export const contracts = {
   models: modelContracts,
   cloudAccessCode: cloudAccessCodeContract,
   transactions: transactionsContracts,
+  observability: observabilityContracts,
   traces: tracesContracts,
   admin: {
     usage: adminUsageContracts,
@@ -132,6 +137,7 @@ export const queryClientKeys = {
   composio: composioQueryKeys,
   models: modelQueryClientKeys,
   transactions: transactionsQueryKeys,
+  observability: observabilityQueryKeys,
   traces: tracesQueryKeys,
   admin: {
     usage: adminUsageQueryKeys,

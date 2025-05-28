@@ -1439,6 +1439,27 @@
       "createAgentTemplate": "New agent template"
     }
   },
+  "pages/projects/observability/ObservabilityHeader": {
+    "root": "All charts"
+  },
+  "pages/projects/observability/TimeToFirstTokenChart": {
+    "title": "Average time to first token (seconds) over last 30 days",
+    "tooltip": {
+      "withValue": "Time to first token",
+      "noData": "No data was recorded for this date"
+    }
+  },
+  "pages/projects/observability/TotalMessagesPerDayChart": {
+    "title": "Total messages per day over last 30 days",
+    "tooltip": "Messages"
+  },
+  "pages/projects/observability/TotalResponseTimeChart": {
+    "title": "Average total response time (seconds) over last 30 days",
+    "tooltip": {
+      "withValue": "Average total response time",
+      "noData": "No data was recorded for this date"
+    }
+  },
   "projects/(projectSlug)/layout": {
     "nav": {
       "return": "All projects",
@@ -1446,7 +1467,8 @@
       "templates": "Templates",
       "agents": "Agents",
       "identities": "Identities",
-      "settings": "Settings"
+      "settings": "Settings",
+      "observability": "Observability"
     }
   },
   "components/AgentTemplateCard": {

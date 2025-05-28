@@ -61,6 +61,11 @@ export const featureFlags = {
     expiryDate: '2024-07-01',
     flagValue: z.boolean(),
   },
+  PROJECT_OBSERVABILITY: {
+    description: 'Project observability',
+    expiryDate: '2024-08-01',
+    flagValue: z.boolean(),
+  },
   GENERAL_ACCESS: {
     description: 'General access',
     expiryDate: '2025-07-01',

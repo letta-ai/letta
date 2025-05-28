@@ -1,7 +1,7 @@
 import { createClient } from '@clickhouse/client';
 import * as process from 'node:process';
 
-export function getClient() {
+export function getClickhouseClient() {
   if (
     !process.env['CLICKHOUSE_ENDPOINT'] ||
     !process.env['CLICKHOUSE_DATABASE'] ||

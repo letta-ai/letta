@@ -1,8 +1,8 @@
-import { getClient } from '../getClient/getClient';
+import { getClickhouseClient } from '../getClickhouseClient/getClickhouseClient';
 import type { OtelTrace } from '@letta-cloud/types';
 
 export async function getTracesById(traceId: string): Promise<OtelTrace[]> {
-  const client = getClient();
+  const client = getClickhouseClient();
 
   if (!client) {
     return [];

@@ -238,3 +238,5 @@ export * from './lib/reusable/JobStatusBadge/JobStatusBadge';
 export * from './lib/reusable/BetaTag/BetaTag';
 
 export * from './lib/core/TimelineTrace/TimelineTrace';
+
+export * from './lib/reusable/DashboardChartWrapper/DashboardChartWrapper';

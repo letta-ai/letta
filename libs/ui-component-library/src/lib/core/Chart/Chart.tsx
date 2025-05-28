@@ -23,16 +23,16 @@ const defaultOptions: EChartsOption = {
 };
 
 interface MakeFormattedTooltipOptions {
-  value: string;
+  value?: string;
   label: string;
-  color: string;
+  color?: string;
 }
 
 export function makeFormattedTooltip(options: MakeFormattedTooltipOptions) {
   const { value, label, color } = options;
   return `<div class="tooltip-format-container">
-    <div class="tooltip-color" style="background-color: ${color}"></div>
-    <div class="tooltip-value">${value}</div>
+    ${typeof color === 'string' ? `<div class="tooltip-color" style="background-color: ${color}"></div>` : ''}
+    ${typeof value === 'string' ? `<div class="tooltip-value">${value}</div>` : ''}
         <div class="tooltip-label">${label}</div>
 </div>`;
 }

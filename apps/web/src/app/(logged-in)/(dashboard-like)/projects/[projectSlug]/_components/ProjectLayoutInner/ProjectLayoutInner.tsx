@@ -9,6 +9,7 @@ import {
   SidebarTitle,
   HStack,
   IdentitiesIcon,
+  MonitoringIcon,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import type { PropsWithChildren } from 'react';
@@ -16,6 +17,7 @@ import React from 'react';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 type ProjectLayoutInnerProps = PropsWithChildren;
 
@@ -25,6 +27,8 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
   const [canCRDProjects] = useUserHasPermission(
     ApplicationServices.CREATE_UPDATE_DELETE_PROJECTS,
   );
+
+  const { data: enabled } = useFeatureFlag('PROJECT_OBSERVABILITY');
 
   return (
     <DashboardWithSidebarWrapper
@@ -65,6 +69,16 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
           label: t('nav.identities'),
           href: `/projects/${projectSlug}/identities`,
         },
+        ...(enabled
+          ? [
+              {
+                icon: <MonitoringIcon />,
+                id: 'observability',
+                label: t('nav.observability'),
+                href: `/projects/${projectSlug}/observability`,
+              },
+            ]
+          : []),
         ...(canCRDProjects
           ? [
               {
