@@ -16,7 +16,6 @@ import {
   CompanyIcon,
   Dialog,
   DropdownMenuItem,
-  EarthIcon,
   HStack,
   isMultiValue,
   KeyIcon,
@@ -98,14 +97,14 @@ function ShareAgentPermissionsDropdown(
         ),
         value: 'logged-in',
       },
-      {
-        icon: <EarthIcon />,
-        label: t('ShareAgentDialog.generalAccess.options.everyone.label'),
-        description: t(
-          'ShareAgentDialog.generalAccess.options.everyone.description',
-        ),
-        value: 'everyone',
-      },
+      // {
+      //   icon: <EarthIcon />,
+      //   label: t('ShareAgentDialog.generalAccess.options.everyone.label'),
+      //   description: t(
+      //     'ShareAgentDialog.generalAccess.options.everyone.description',
+      //   ),
+      //   value: 'everyone',
+      // },
     ],
     [t],
   );
