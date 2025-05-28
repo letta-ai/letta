@@ -289,7 +289,7 @@ def test_composio_tool_schema_generation(openai_model: str, structured_output: b
     action_names = [
         "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",  # Simple
         "CAL_GET_AVAILABLE_SLOTS_INFO",  # has an array arg, needs to be converted properly
-        "SALESFORCE_RETRIEVE_LEAD_DETAILS_BY_ID_WITH_CONDITIONAL_SUPPORT",
+        "SALESFORCE_RETRIEVE_LEAD_BY_ID",
         # has an array arg, needs to be converted properly
     ]
 
