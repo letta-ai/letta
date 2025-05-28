@@ -16,6 +16,8 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.trace import Status, StatusCode
 
+from letta import __version__ as letta_version
+
 tracer = trace.get_tracer(__name__)
 _is_tracing_initialized = False
 _excluded_v1_endpoints_regex: List[str] = [
@@ -24,6 +26,7 @@ _excluded_v1_endpoints_regex: List[str] = [
     # "^GET /v1/agents/(?P<agent_id>[^/]+)/archival-memory$",
     # "^GET /v1/agents/(?P<agent_id>[^/]+)/sources$",
     # r"^POST /v1/voice-beta/.*/chat/completions$",
+    "^GET /v1/health$",
 ]
 
 
@@ -149,7 +152,8 @@ def setup_tracing(
         resource=Resource.create(
             {
                 "service.name": service_name,
-                "device.id": uuid.getnode(),  # MAC address as unique device identifier
+                "device.id": uuid.getnode(),  # MAC address as unique device identifier,
+                "letta.version": letta_version,
             }
         )
     )

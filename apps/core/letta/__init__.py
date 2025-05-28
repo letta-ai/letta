@@ -1,4 +1,10 @@
+import os
+
 __version__ = "0.7.14"
+
+if os.environ.get("LETTA_VERSION"):
+    __version__ = os.environ["LETTA_VERSION"]
+
 
 # import clients
 from letta.client.client import RESTClient
