@@ -120,7 +120,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
     )
     multi_agent_group: Mapped["Group"] = relationship(
         "Group",
-        lazy="joined",
+        lazy="selectin",
         viewonly=True,
         back_populates="manager_agent",
     )
