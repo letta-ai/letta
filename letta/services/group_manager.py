@@ -54,6 +54,13 @@ class GroupManager:
 
     @trace_method
     @enforce_types
+    async def retrieve_group_async(self, group_id: str, actor: PydanticUser) -> PydanticGroup:
+        async with db_registry.async_session() as session:
+            group = await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
+            return group.to_pydantic()
+
+    @trace_method
+    @enforce_types
     def create_group(self, group: GroupCreate, actor: PydanticUser) -> PydanticGroup:
         with db_registry.session() as session:
             new_group = GroupModel()
