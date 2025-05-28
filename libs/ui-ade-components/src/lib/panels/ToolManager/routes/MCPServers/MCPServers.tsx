@@ -464,8 +464,6 @@ function MCPServerList(props: MCPServerListProps) {
 export function MCPServers() {
   const t = useTranslations('ToolsEditor/MCPServers');
 
-  const { isLocal } = useCurrentAgentMetaData();
-
   const [search, setSearch] = React.useState('');
 
   const { data: servers, isLoading, isError } = useToolsServiceListMcpServers();
@@ -500,14 +498,6 @@ export function MCPServers() {
       [search],
     );
   }, [search, serversAsArray]);
-
-  if (!isLocal) {
-    return (
-      <VStack fullWidth fullHeight align="center" justify="center">
-        <LoadingEmptyStatusComponent emptyMessage={t('notLocal')} />
-      </VStack>
-    );
-  }
 
   return (
     <ToolManagerPage border>
