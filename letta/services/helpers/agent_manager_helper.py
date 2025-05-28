@@ -1,7 +1,7 @@
 import datetime
 from typing import List, Literal, Optional
 
-from sqlalchemy import and_, asc, desc, func, literal, or_, select
+from sqlalchemy import and_, asc, desc, exists, or_, select
 
 from letta import system
 from letta.constants import IN_CONTEXT_MEMORY_KEYWORD, STRUCTURED_OUTPUT_MODELS
@@ -438,13 +438,11 @@ def _apply_tag_filter(query, tags: Optional[List[str]], match_all_tags: bool):
         The modified query with tag filters applied.
     """
     if tags:
-        # Build a subquery to select agent IDs that have the specified tags.
-        subquery = select(AgentsTags.agent_id).where(AgentsTags.tag.in_(tags)).group_by(AgentsTags.agent_id)
-        # If all tags must match, add a HAVING clause to ensure the count of tags equals the number provided.
         if match_all_tags:
-            subquery = subquery.having(func.count(AgentsTags.tag) == literal(len(tags)))
-        # Filter the main query to include only agents present in the subquery.
-        query = query.where(AgentModel.id.in_(subquery))
+            for tag in tags:
+                query = query.filter(exists().where((AgentsTags.agent_id == AgentModel.id) & (AgentsTags.tag == tag)))
+            else:
+                query = query.where(exists().where((AgentsTags.agent_id == AgentModel.id) & (AgentsTags.tag.in_(tags))))
     return query
 
 
