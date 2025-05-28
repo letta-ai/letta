@@ -4,7 +4,7 @@ from functools import wraps
 from pprint import pformat
 from typing import TYPE_CHECKING, List, Literal, Optional, Tuple, Union
 
-from sqlalchemy import String, and_, func, or_, select
+from sqlalchemy import String, and_, delete, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError, TimeoutError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, Session, mapped_column
@@ -762,6 +762,36 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 await session.rollback()
                 logger.exception(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}")
                 raise ValueError(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}: {e}")
+
+    @classmethod
+    @handle_db_timeout
+    async def bulk_hard_delete_async(
+        cls,
+        db_session: "AsyncSession",
+        identifiers: List[str],
+        actor: Optional["User"],
+        access: Optional[List[Literal["read", "write", "admin"]]] = ["write"],
+        access_type: AccessType = AccessType.ORGANIZATION,
+    ) -> None:
+        """Permanently removes the record from the database asynchronously."""
+        logger.debug(f"Hard deleting {cls.__name__} with IDs: {identifiers} with actor={actor} (async)")
+
+        if len(identifiers) == 0:
+            logger.debug(f"No identifiers provided for {cls.__name__}, nothing to delete")
+            return
+
+        query = delete(cls)
+        query = query.where(cls.id.in_(identifiers))
+        query = cls.apply_access_predicate(query, actor, access, access_type)
+        async with db_session as session:
+            try:
+                result = await session.execute(query)
+                await session.commit()
+                logger.debug(f"Successfully deleted {result.rowcount} {cls.__name__} records")
+            except Exception as e:
+                await session.rollback()
+                logger.exception(f"Failed to hard delete {cls.__name__} with identifiers {identifiers}")
+                raise ValueError(f"Failed to hard delete {cls.__name__} with identifiers {identifiers}: {e}")
 
     @handle_db_timeout
     def update(self, db_session: Session, actor: Optional["User"] = None, no_commit: bool = False) -> "SqlalchemyBase":

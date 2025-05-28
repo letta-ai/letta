@@ -330,9 +330,9 @@ async def detach_source(
     agent = await server.agent_manager.detach_source_async(agent_id=agent_id, source_id=source_id, actor=actor)
     if agent.enable_sleeptime:
         try:
-            source = server.source_manager.get_source_by_id(source_id=source_id)
-            block = server.agent_manager.get_block_with_label(agent_id=agent.id, block_label=source.name, actor=actor)
-            server.block_manager.delete_block(block.id, actor)
+            source = await server.source_manager.get_source_by_id(source_id=source_id)
+            block = await server.agent_manager.get_block_with_label_async(agent_id=agent.id, block_label=source.name, actor=actor)
+            await server.block_manager.delete_block_async(block.id, actor)
         except:
             pass
     return agent

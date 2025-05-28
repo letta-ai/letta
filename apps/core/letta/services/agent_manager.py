@@ -1658,9 +1658,8 @@ class AgentManager:
         if not block_ids:
             return agent_state
 
-        agent_state.memory.blocks = await self.block_manager.get_all_blocks_by_ids_async(
-            block_ids=[b.id for b in agent_state.memory.blocks], actor=actor
-        )
+        blocks = await self.block_manager.get_all_blocks_by_ids_async(block_ids=[b.id for b in agent_state.memory.blocks], actor=actor)
+        agent_state.memory.blocks = [b for b in blocks if b is not None]
         return agent_state
 
     # ======================================================================================================================
