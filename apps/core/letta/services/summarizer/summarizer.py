@@ -1,8 +1,9 @@
 import asyncio
 import json
 import traceback
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
+from letta.agents.ephemeral_summary_agent import EphemeralSummaryAgent
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
 from letta.schemas.enums import MessageRole
@@ -23,7 +24,7 @@ class Summarizer:
     def __init__(
         self,
         mode: SummarizationMode,
-        summarizer_agent: Optional["VoiceSleeptimeAgent"] = None,
+        summarizer_agent: Optional[Union[EphemeralSummaryAgent, "VoiceSleeptimeAgent"]] = None,
         message_buffer_limit: int = 10,
         message_buffer_min: int = 3,
     ):
@@ -104,7 +105,10 @@ class Summarizer:
 
             # TODO: This is hyperspecific to voice, generalize!
             # Update the message transcript of the memory agent
-            self.summarizer_agent.update_message_transcript(message_transcripts=formatted_evicted_messages + formatted_in_context_messages)
+            if not isinstance(self.summarizer_agent, EphemeralSummaryAgent):
+                self.summarizer_agent.update_message_transcript(
+                    message_transcripts=formatted_evicted_messages + formatted_in_context_messages
+                )
 
             # Add line numbers to the formatted messages
             offset = len(formatted_evicted_messages)
