@@ -319,6 +319,7 @@ class LettaAgent(BaseAgent):
             ttft_span = tracer.start_span("time_to_first_token", start_time=request_start_timestamp_ns)
             ttft_span.set_attributes({f"llm_config.{k}": v for k, v in agent_state.llm_config.model_dump().items() if v is not None})
 
+        provider_request_start_timestamp_ns = None
         for _ in range(max_steps):
             step_id = generate_step_id()
             in_context_messages = await self._rebuild_memory_async(
@@ -338,6 +339,12 @@ class LettaAgent(BaseAgent):
             log_event("agent.stream.llm_request.created")  # [2^]
 
             try:
+                if first_chunk and ttft_span is not None:
+                    provider_request_start_timestamp_ns = get_utc_timestamp_ns()
+                    provider_req_start_ns = provider_request_start_timestamp_ns - request_start_timestamp_ns
+                    ttft_span.add_event(
+                        name="provider_req_start_ns", attributes={"provider_req_start_ms": provider_req_start_ns // 1_000_000}
+                    )
                 stream = await llm_client.stream_async(request_data, agent_state.llm_config)
             except Exception as e:
                 raise llm_client.handle_llm_error(e)
@@ -358,7 +365,9 @@ class LettaAgent(BaseAgent):
             else:
                 raise ValueError(f"Streaming not supported for {agent_state.llm_config}")
 
-            async for chunk in interface.process(stream):
+            async for chunk in interface.process(
+                stream, ttft_span=ttft_span, provider_request_start_timestamp_ns=provider_request_start_timestamp_ns
+            ):
                 # Measure time to first token
                 if first_chunk and ttft_span is not None:
                     now = get_utc_timestamp_ns()
