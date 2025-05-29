@@ -85,9 +85,7 @@ async def _prepare_in_context_messages_async(
 
     if agent_state.message_buffer_autoclear:
         # If autoclear is enabled, only include the most recent system message (usually at index 0)
-        current_in_context_messages = [
-            (await message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor))[0]
-        ]
+        current_in_context_messages = [await message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)]
     else:
         # Otherwise, include the full list of messages by ID for context
         current_in_context_messages = await message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor)
