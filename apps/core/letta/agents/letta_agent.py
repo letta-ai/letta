@@ -167,8 +167,11 @@ class LettaAgent(BaseAgent):
                         signature=response.choices[0].message.reasoning_content_signature,
                     )
                 ]
-            else:
+            elif response.choices[0].message.content:
                 reasoning = [TextContent(text=response.choices[0].message.content)]  # reasoning placed into content for legacy reasons
+            else:
+                logger.info("No reasoning content found.")
+                reasoning = None
 
             persisted_messages, should_continue = await self._handle_ai_response(
                 tool_call, agent_state, tool_rules_solver, response.usage, reasoning_content=reasoning
@@ -269,8 +272,11 @@ class LettaAgent(BaseAgent):
                         signature=response.choices[0].message.reasoning_content_signature,
                     )
                 ]
-            else:
+            elif response.choices[0].message.content:
                 reasoning = [TextContent(text=response.choices[0].message.content)]  # reasoning placed into content for legacy reasons
+            else:
+                logger.info("No reasoning content found.")
+                reasoning = None
 
             persisted_messages, should_continue = await self._handle_ai_response(
                 tool_call, agent_state, tool_rules_solver, response.usage, reasoning_content=reasoning, step_id=step_id
