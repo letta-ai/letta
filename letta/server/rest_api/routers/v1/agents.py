@@ -902,3 +902,47 @@ async def list_agent_groups(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     print("in list agents with manager_type", manager_type)
     return server.agent_manager.list_groups(agent_id=agent_id, manager_type=manager_type, actor=actor)
+
+
+@router.post("/{agent_id}/summarize", response_model=AgentState, operation_id="summarize_agent_conversation")
+async def summarize_agent_conversation(
+    agent_id: str,
+    request_obj: Request,  # FastAPI Request
+    max_message_length: int = Query(..., description="Maximum number of messages to retain after summarization."),
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Summarize an agent's conversation history to a target message length.
+
+    This endpoint summarizes the current message history for a given agent,
+    truncating and compressing it down to the specified `max_message_length`.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+
+    user_eligible = actor.organization_id not in ["org-4a3af5dd-4c6a-48cb-ac13-3f73ecaaa4bf", "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6"]
+    # TODO: This is redundant, remove soon
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
+    agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
+    experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
+    feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
+    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
+
+    if user_eligible and agent_eligible and feature_enabled and model_compatible:
+        agent = LettaAgent(
+            agent_id=agent_id,
+            message_manager=server.message_manager,
+            agent_manager=server.agent_manager,
+            block_manager=server.block_manager,
+            passage_manager=server.passage_manager,
+            actor=actor,
+            step_manager=server.step_manager,
+            telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
+            message_buffer_min=max_message_length,
+        )
+        return await agent.summarize_conversation_history()
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Summarization is not currently supported for this agent configuration. Please contact Letta support.",
+    )
