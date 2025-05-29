@@ -1314,12 +1314,6 @@ class AgentManager:
 
     @trace_method
     @enforce_types
-    async def get_in_context_messages_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticMessage]:
-        agent = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=[], actor=actor)
-        return await self.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=actor)
-
-    @trace_method
-    @enforce_types
     def get_system_message(self, agent_id: str, actor: PydanticUser) -> PydanticMessage:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         return self.message_manager.get_message_by_id(message_id=message_ids[0], actor=actor)
@@ -2684,7 +2678,7 @@ class AgentManager:
         # Grab the in-context messages
         # conversion of messages to anthropic dict format, which is passed to the token counter
         (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
-            self.get_in_context_messages_async(agent_id=agent_id, actor=actor),
+            self.message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor),
             self.passage_manager.size_async(actor=actor, agent_id=agent_id),
             self.message_manager.size_async(actor=actor, agent_id=agent_id),
         )
@@ -2832,7 +2826,7 @@ class AgentManager:
         # Grab the in-context messages
         # conversion of messages to OpenAI dict format, which is passed to the token counter
         (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
-            self.get_in_context_messages_async(agent_id=agent_id, actor=actor),
+            self.message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor),
             self.passage_manager.size_async(actor=actor, agent_id=agent_id),
             self.message_manager.size_async(actor=actor, agent_id=agent_id),
         )
