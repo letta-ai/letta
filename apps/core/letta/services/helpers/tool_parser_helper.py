@@ -3,8 +3,10 @@ import base64
 import pickle
 from typing import Any
 
+from letta.constants import REQUEST_HEARTBEAT_DESCRIPTION, REQUEST_HEARTBEAT_PARAM, SEND_MESSAGE_TOOL_NAME
 from letta.schemas.agent import AgentState
-from letta.types import JsonValue
+from letta.schemas.response_format import ResponseFormat, ResponseFormatType, ResponseFormatUnion
+from letta.types import JsonDict, JsonValue
 
 
 def parse_stdout_best_effort(text: str | bytes) -> tuple[Any, AgentState | None]:
@@ -61,3 +63,38 @@ def convert_param_to_str_value(param_type: str, raw_value: JsonValue) -> str:
         #         raise ValueError(f'Invalid array value: "{raw_value}"')
         #     return raw_value.strip()
     return str(raw_value)
+
+
+def runtime_override_tool_json_schema(
+    tool_list: list[JsonDict],
+    response_format: ResponseFormatUnion | None,
+    request_heartbeat: bool = True,
+) -> list[JsonDict]:
+    """Override the tool JSON schemas at runtime if certain conditions are met.
+
+    Cases:
+        1. We will inject `send_message` tool calls with `response_format` if provided
+        2. Tools will have an additional `request_heartbeat` parameter added.
+    """
+    for tool_json in tool_list:
+        if tool_json["name"] == SEND_MESSAGE_TOOL_NAME and response_format and response_format.type != ResponseFormatType.text:
+            if response_format.type == ResponseFormatType.json_schema:
+                tool_json["parameters"]["properties"]["message"] = response_format.json_schema["schema"]
+            if response_format.type == ResponseFormatType.json_object:
+                tool_json["parameters"]["properties"]["message"] = {
+                    "type": "object",
+                    "description": "Message contents. All unicode (including emojis) are supported.",
+                    "additionalProperties": True,
+                    "properties": {},
+                }
+        if request_heartbeat:
+            # TODO (cliandy): see support for tool control loop parameters
+            if tool_json["name"] != SEND_MESSAGE_TOOL_NAME:
+                tool_json["parameters"]["properties"][REQUEST_HEARTBEAT_PARAM] = {
+                    "type": "boolean",
+                    "description": REQUEST_HEARTBEAT_DESCRIPTION,
+                }
+                if REQUEST_HEARTBEAT_PARAM not in tool_json["parameters"]["required"]:
+                    tool_json["parameters"]["required"].append(REQUEST_HEARTBEAT_PARAM)
+
+    return tool_list

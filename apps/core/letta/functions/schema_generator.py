@@ -7,6 +7,7 @@ from docstring_parser import parse
 from pydantic import BaseModel
 from typing_extensions import Literal
 
+from letta.constants import REQUEST_HEARTBEAT_DESCRIPTION, REQUEST_HEARTBEAT_PARAM
 from letta.functions.mcp_client.types import MCPTool
 
 
@@ -422,17 +423,6 @@ def generate_schema(function, name: Optional[str] = None, description: Optional[
         # TODO is this not duplicating the other append directly above?
         if param.annotation == inspect.Parameter.empty:
             schema["parameters"]["required"].append(param.name)
-
-    # append the heartbeat
-    # TODO: don't hard-code
-    # TODO: if terminal, don't include this
-    # if function.__name__ not in ["send_message"]:
-    schema["parameters"]["properties"]["request_heartbeat"] = {
-        "type": "boolean",
-        "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function.",
-    }
-    schema["parameters"]["required"].append("request_heartbeat")
-
     return schema
 
 
@@ -455,11 +445,11 @@ def generate_schema_from_args_schema_v2(
     }
 
     if append_heartbeat:
-        function_call_json["parameters"]["properties"]["request_heartbeat"] = {
+        function_call_json["parameters"]["properties"][REQUEST_HEARTBEAT_PARAM] = {
             "type": "boolean",
-            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function.",
+            "description": REQUEST_HEARTBEAT_DESCRIPTION,
         }
-        function_call_json["parameters"]["required"].append("request_heartbeat")
+        function_call_json["parameters"]["required"].append(REQUEST_HEARTBEAT_PARAM)
 
     return function_call_json
 
@@ -486,11 +476,11 @@ def generate_tool_schema_for_mcp(
 
     # Add the optional heartbeat parameter
     if append_heartbeat:
-        parameters_schema["properties"]["request_heartbeat"] = {
+        parameters_schema["properties"][REQUEST_HEARTBEAT_PARAM] = {
             "type": "boolean",
-            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function.",
+            "description": REQUEST_HEARTBEAT_DESCRIPTION,
         }
-        parameters_schema["required"].append("request_heartbeat")
+        parameters_schema["required"].append(REQUEST_HEARTBEAT_PARAM)
 
     # Return the final schema
     if strict:
@@ -548,11 +538,11 @@ def generate_tool_schema_for_composio(
 
     # Add the optional heartbeat parameter
     if append_heartbeat:
-        properties_json["request_heartbeat"] = {
+        properties_json[REQUEST_HEARTBEAT_PARAM] = {
             "type": "boolean",
-            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function.",
+            "description": REQUEST_HEARTBEAT_DESCRIPTION,
         }
-        required_fields.append("request_heartbeat")
+        required_fields.append(REQUEST_HEARTBEAT_PARAM)
 
     # Return the final schema
     if strict:

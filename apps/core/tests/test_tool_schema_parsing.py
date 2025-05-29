@@ -67,7 +67,7 @@ def _run_schema_test(schema_name: str, desired_function_name: str, expect_struct
     with open(os.path.join(os.path.dirname(__file__), f"test_tool_schema_parsing_files/{schema_name}.json"), "r") as file:
         expected_schema = json.load(file)
 
-    _compare_schemas(schema, expected_schema)
+    _compare_schemas(schema, expected_schema, False)
 
     # Convert to structured output and compare
     if expect_structured_output_fail:
