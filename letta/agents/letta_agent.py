@@ -128,12 +128,7 @@ class LettaAgent(BaseAgent):
         for _ in range(max_steps):
             step_id = generate_step_id()
 
-            in_context_messages = await self._rebuild_memory_async(
-                current_in_context_messages + new_in_context_messages,
-                agent_state,
-                num_messages=self.num_messages,
-                num_archival_memories=self.num_archival_memories,
-            )
+            in_context_messages = current_in_context_messages + new_in_context_messages
             log_event("agent.stream_no_tokens.messages.refreshed")  # [1^]
 
             request_data = await self._create_llm_request_data_async(
@@ -236,12 +231,7 @@ class LettaAgent(BaseAgent):
         for _ in range(max_steps):
             step_id = generate_step_id()
 
-            in_context_messages = await self._rebuild_memory_async(
-                current_in_context_messages + new_in_context_messages,
-                agent_state,
-                num_messages=self.num_messages,
-                num_archival_memories=self.num_archival_memories,
-            )
+            in_context_messages = current_in_context_messages + new_in_context_messages
             log_event("agent.step.messages.refreshed")  # [1^]
 
             request_data = await self._create_llm_request_data_async(
@@ -347,12 +337,7 @@ class LettaAgent(BaseAgent):
         provider_request_start_timestamp_ns = None
         for _ in range(max_steps):
             step_id = generate_step_id()
-            in_context_messages = await self._rebuild_memory_async(
-                current_in_context_messages + new_in_context_messages,
-                agent_state,
-                num_messages=self.num_messages,
-                num_archival_memories=self.num_archival_memories,
-            )
+            in_context_messages = current_in_context_messages + new_in_context_messages
             log_event("agent.step.messages.refreshed")  # [1^]
 
             request_data = await self._create_llm_request_data_async(
