@@ -638,7 +638,7 @@ async def send_message(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     user_eligible = actor.organization_id not in ["org-4a3af5dd-4c6a-48cb-ac13-3f73ecaaa4bf", "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6"]
     # TODO: This is redundant, remove soon
-    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor)
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
     experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
@@ -714,7 +714,7 @@ async def send_message_streaming(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     user_eligible = actor.organization_id not in ["org-4a3af5dd-4c6a-48cb-ac13-3f73ecaaa4bf", "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6"]
     # TODO: This is redundant, remove soon
-    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor)
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
     experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
