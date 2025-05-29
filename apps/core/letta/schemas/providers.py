@@ -86,7 +86,7 @@ class Provider(ProviderBase):
         return f"{base_name}/{model_name}"
 
     def cast_to_subtype(self):
-        match (self.provider_type):
+        match self.provider_type:
             case ProviderType.letta:
                 return LettaProvider(**self.model_dump(exclude_none=True))
             case ProviderType.openai:

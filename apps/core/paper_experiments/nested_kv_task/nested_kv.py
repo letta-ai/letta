@@ -207,7 +207,6 @@ if __name__ == "__main__":
 
     # skip if exists
     model_formatted = args.model.replace("/", "-")
-    model_formatted = args.model.replace("/", "-")
     baseline_formatted = args.baseline.replace("/", "-")
     filename = f"results/nested_kv/nested_kv_results_{baseline_formatted}_nesting_{args.nesting_levels}_model_{model_formatted}_seed_{args.seed}.json"
     if not args.rerun and os.path.exists(filename):

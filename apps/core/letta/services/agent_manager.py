@@ -1563,45 +1563,6 @@ class AgentManager:
             )
             return await self.append_to_in_context_messages_async([system_message], agent_id=agent_state.id, actor=actor)
 
-    # TODO: I moved this from agent.py - replace all mentions of this with the agent_manager version
-    @trace_method
-    @enforce_types
-    def update_memory_if_changed(self, agent_id: str, new_memory: Memory, actor: PydanticUser) -> PydanticAgentState:
-        """
-        Update internal memory object and system prompt if there have been modifications.
-
-        Args:
-            actor:
-            agent_id:
-            new_memory (Memory): the new memory object to compare to the current memory object
-
-        Returns:
-            modified (bool): whether the memory was updated
-        """
-        agent_state = self.get_agent_by_id(agent_id=agent_id, actor=actor)
-        system_message = self.message_manager.get_message_by_id(message_id=agent_state.message_ids[0], actor=actor)
-        if new_memory.compile() not in system_message.content[0].text:
-            # update the blocks (LRW) in the DB
-            for label in agent_state.memory.list_block_labels():
-                updated_value = new_memory.get_block(label).value
-                if updated_value != agent_state.memory.get_block(label).value:
-                    # update the block if it's changed
-                    block_id = agent_state.memory.get_block(label).id
-                    self.block_manager.update_block(block_id=block_id, block_update=BlockUpdate(value=updated_value), actor=actor)
-
-            # refresh memory from DB (using block ids)
-            agent_state.memory = Memory(
-                blocks=[self.block_manager.get_block_by_id(block.id, actor=actor) for block in agent_state.memory.get_blocks()],
-                prompt_template=get_prompt_template_for_agent_type(agent_state.agent_type),
-            )
-
-            # NOTE: don't do this since re-buildin the memory is handled at the start of the step
-            # rebuild memory - this records the last edited timestamp of the memory
-            # TODO: pass in update timestamp from block edit time
-            agent_state = self.rebuild_system_prompt(agent_id=agent_id, actor=actor)
-
-        return agent_state
-
     @trace_method
     @enforce_types
     async def update_memory_if_changed_async(self, agent_id: str, new_memory: Memory, actor: PydanticUser) -> PydanticAgentState:
@@ -1659,51 +1620,6 @@ class AgentManager:
     # ======================================================================================================================
     # Source Management
     # ======================================================================================================================
-    @trace_method
-    @enforce_types
-    def attach_source(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
-        """
-        Attaches a source to an agent.
-
-        Args:
-            agent_id: ID of the agent to attach the source to
-            source_id: ID of the source to attach
-            actor: User performing the action
-
-        Raises:
-            ValueError: If either agent or source doesn't exist
-            IntegrityError: If the source is already attached to the agent
-        """
-
-        with db_registry.session() as session:
-            # Verify both agent and source exist and user has permission to access them
-            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
-
-            # The _process_relationship helper already handles duplicate checking via unique constraint
-            _process_relationship(
-                session=session,
-                agent=agent,
-                relationship_name="sources",
-                model_class=SourceModel,
-                item_ids=[source_id],
-                allow_partial=False,
-                replace=False,  # Extend existing sources rather than replace
-            )
-
-            # Commit the changes
-            agent.update(session, actor=actor)
-
-        # Force rebuild of system prompt so that the agent is updated with passage count
-        # and recent passages and add system message alert to agent
-        self.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True)
-        self.append_system_message(
-            agent_id=agent_id,
-            content=DATA_SOURCE_ATTACH_ALERT,
-            actor=actor,
-        )
-
-        return agent.to_pydantic()
-
     @trace_method
     @enforce_types
     async def attach_source_async(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
