@@ -40,6 +40,7 @@ class BaseAgent(ABC):
         self.message_manager = message_manager
         self.agent_manager = agent_manager
         self.actor = actor
+        self.logger = get_logger(agent_id)
 
     @abstractmethod
     async def step(self, input_messages: List[MessageCreate], max_steps: int = 10) -> LettaResponse:

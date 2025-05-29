@@ -5,7 +5,7 @@ from typing import Any
 
 from letta.constants import REQUEST_HEARTBEAT_DESCRIPTION, REQUEST_HEARTBEAT_PARAM, SEND_MESSAGE_TOOL_NAME
 from letta.schemas.agent import AgentState
-from letta.schemas.response_format import ResponseFormat, ResponseFormatType, ResponseFormatUnion
+from letta.schemas.response_format import ResponseFormatType, ResponseFormatUnion
 from letta.types import JsonDict, JsonValue
 
 

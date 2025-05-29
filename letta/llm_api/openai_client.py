@@ -12,6 +12,7 @@ from letta.errors import (
     LLMAuthenticationError,
     LLMBadRequestError,
     LLMConnectionError,
+    LLMContextWindowExceededError,
     LLMNotFoundError,
     LLMPermissionDeniedError,
     LLMRateLimitError,
@@ -340,11 +341,19 @@ class OpenAIClient(LLMClientBase):
             # BadRequestError can signify different issues (e.g., invalid args, context length)
             # Check message content if finer-grained errors are needed
             # Example: if "context_length_exceeded" in str(e): return LLMContextLengthExceededError(...)
-            return LLMBadRequestError(
-                message=f"Bad request to OpenAI: {str(e)}",
-                code=ErrorCode.INVALID_ARGUMENT,  # Or more specific if detectable
-                details=e.body,
-            )
+            # TODO: This is a super soft check. Not sure if we can do better, needs more investigation.
+            if "context" in str(e):
+                return LLMContextWindowExceededError(
+                    message=f"Bad request to OpenAI (context length exceeded): {str(e)}",
+                    code=ErrorCode.INVALID_ARGUMENT,  # Or more specific if detectable
+                    details=e.body,
+                )
+            else:
+                return LLMBadRequestError(
+                    message=f"Bad request to OpenAI: {str(e)}",
+                    code=ErrorCode.INVALID_ARGUMENT,  # Or more specific if detectable
+                    details=e.body,
+                )
 
         if isinstance(e, openai.AuthenticationError):
             logger.error(f"[OpenAI] Authentication error (401): {str(e)}")  # More severe log level

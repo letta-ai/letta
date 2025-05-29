@@ -273,6 +273,9 @@ class SleeptimeMultiAgentV2(BaseAgent):
                 actor=self.actor,
                 step_manager=self.step_manager,
                 telemetry_manager=self.telemetry_manager,
+                message_buffer_limit=20,  # TODO: Make this configurable
+                message_buffer_min=8,  # TODO: Make this configurable
+                enable_summarization=False,  # TODO: Make this configurable
             )
 
             # Perform sleeptime agent step
