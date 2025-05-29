@@ -513,7 +513,7 @@ async def agent_passages_setup(server, default_source, default_user, sarah_agent
     agent_id = sarah_agent.id
     actor = default_user
 
-    server.agent_manager.attach_source(agent_id=agent_id, source_id=default_source.id, actor=actor)
+    await server.agent_manager.attach_source_async(agent_id=agent_id, source_id=default_source.id, actor=actor)
 
     # Create some source passages
     source_passages = []
@@ -3551,7 +3551,7 @@ async def test_create_and_upsert_identity(server: SyncServer, default_user, even
     assert identity.identity_type == identity_create.identity_type
     assert identity.properties == identity_create.properties
     assert identity.agent_ids == []
-    assert identity.project_id == None
+    assert identity.project_id is None
 
     with pytest.raises(UniqueConstraintViolationError):
         await server.identity_manager.create_identity_async(
@@ -4896,7 +4896,7 @@ def test_get_run_messages(server: SyncServer, default_user: PydanticUser, sarah_
         assert msg.tool_call.name == "custom_tool"
 
 
-def test_get_run_messages(server: SyncServer, default_user: PydanticUser, sarah_agent):
+def test_get_run_messages_with_assistant_message(server: SyncServer, default_user: PydanticUser, sarah_agent):
     """Test getting messages for a run with request config."""
     # Create a run with custom request config
     run = server.job_manager.create_job(

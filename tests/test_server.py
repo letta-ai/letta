@@ -1143,7 +1143,7 @@ async def test_messages_with_provider_override(server: SyncServer, user_id: str,
     for step_id in step_ids:
         step = await server.step_manager.get_step_async(step_id=step_id, actor=actor)
         assert step, "Step was not logged correctly"
-        assert step.provider_id == None
+        assert step.provider_id is None
         assert step.provider_name == agent.llm_config.model_endpoint_type
         assert step.model == agent.llm_config.model
         assert step.context_window_limit == agent.llm_config.context_window

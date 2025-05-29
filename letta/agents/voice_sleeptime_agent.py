@@ -98,7 +98,7 @@ class VoiceSleeptimeAgent(LettaAgent):
         # Special memory case
         target_tool = next((x for x in agent_state.tools if x.name == tool_name), None)
         if not target_tool:
-            return ToolExecutionResult(func_return=f"Tool not found: {tool_name}", success_flag=False)
+            return ToolExecutionResult(status="error", func_return=f"Tool not found: {tool_name}")
 
         try:
             if target_tool.name == "rethink_user_memory" and target_tool.tool_type == ToolType.LETTA_VOICE_SLEEPTIME_CORE:

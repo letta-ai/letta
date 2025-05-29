@@ -134,10 +134,7 @@ def get_function_name_and_docstring(source_code: str, name: Optional[str] = None
         return function_name, docstring
 
     except Exception as e:
-        raise LettaToolCreateError(f"Failed to parse function name and docstring: {str(e)}")
-
-    except Exception as e:
         import traceback
 
         traceback.print_exc()
-        raise LettaToolCreateError(f"Name and docstring generation failed: {str(e)}")
+        raise LettaToolCreateError(f"Failed to parse function name and docstring: {str(e)}")

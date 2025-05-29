@@ -239,7 +239,7 @@ async def test_round_robin(server, actor, participant_agents):
     assert group.manager_type == ManagerType.round_robin
     assert group.description == description
     assert group.agent_ids == [agent.id for agent in participant_agents]
-    assert group.max_turns == None
+    assert group.max_turns is None
     assert group.manager_agent_id is None
     assert group.termination_token is None
 

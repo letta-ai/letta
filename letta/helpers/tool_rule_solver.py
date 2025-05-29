@@ -141,7 +141,8 @@ class ToolRulesSolver(BaseModel):
         """Check if the tool is defined as a continue tool in the tool rules."""
         return any(rule.tool_name == tool_name for rule in self.continue_tool_rules)
 
-    def validate_conditional_tool(self, rule: ConditionalToolRule):
+    @staticmethod
+    def validate_conditional_tool(rule: ConditionalToolRule):
         """
         Validate a conditional tool rule
 

@@ -16,11 +16,6 @@ def datetime_to_timestamp(dt):
     return int(dt.timestamp())
 
 
-def timestamp_to_datetime(ts):
-    # convert integer timestamp to datetime object
-    return datetime.fromtimestamp(ts)
-
-
 def get_local_time_military():
     # Get the current time in UTC
     current_time_utc = datetime.now(pytz.utc)
