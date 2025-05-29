@@ -489,6 +489,10 @@ export type Block = {
    */
   is_template?: boolean;
   /**
+   * Preserve the block on template migration.
+   */
+  preserve_on_migration?: boolean;
+  /**
    * Label of the block (e.g. 'human', 'persona') in the context window.
    */
   label?: string | null;
@@ -544,6 +548,10 @@ export type BlockUpdate = {
    * Whether the block is a template (e.g. saved human/persona options).
    */
   is_template?: boolean;
+  /**
+   * Preserve the block on template migration.
+   */
+  preserve_on_migration?: boolean;
   /**
    * Label of the block (e.g. 'human', 'persona') in the context window.
    */
@@ -1256,6 +1264,10 @@ export type CreateBlock = {
    */
   name?: string | null;
   is_template?: boolean;
+  /**
+   * Preserve the block on template migration.
+   */
+  preserve_on_migration?: boolean;
   /**
    * Label of the block.
    */

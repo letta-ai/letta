@@ -663,6 +663,7 @@ export const Block = z.object({
     ])
     .optional(),
   is_template: z.union([z.boolean(), z.undefined()]).optional(),
+  preserve_on_migration: z.union([z.boolean(), z.undefined()]).optional(),
   label: z
     .union([
       z.string(),
@@ -1426,6 +1427,7 @@ export const BlockUpdate = z.object({
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
   is_template: z.boolean().optional(),
+  preserve_on_migration: z.boolean().optional(),
   label: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
@@ -2956,6 +2958,7 @@ export const CreateBlock = z.object({
     ])
     .optional(),
   is_template: z.union([z.boolean(), z.undefined()]).optional(),
+  preserve_on_migration: z.union([z.boolean(), z.undefined()]).optional(),
   label: z.string(),
   read_only: z.union([z.boolean(), z.undefined()]).optional(),
   description: z

@@ -1497,6 +1497,14 @@
                                         {}
                                       ]
                                     },
+                                    "preserve_on_migration": {
+                                      "oneOf": [
+                                        {
+                                          "type": "boolean"
+                                        },
+                                        {}
+                                      ]
+                                    },
                                     "label": {
                                       "oneOf": [
                                         {
@@ -5324,6 +5332,14 @@
                                       "nullable": true
                                     },
                                     "is_template": {
+                                      "oneOf": [
+                                        {
+                                          "type": "boolean"
+                                        },
+                                        {}
+                                      ]
+                                    },
+                                    "preserve_on_migration": {
                                       "oneOf": [
                                         {
                                           "type": "boolean"

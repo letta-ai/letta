@@ -1473,6 +1473,12 @@ export const $Block = {
         'Whether the block is a template (e.g. saved human/persona options).',
       default: false,
     },
+    preserve_on_migration: {
+      type: 'boolean',
+      title: 'Preserve On Migration',
+      description: 'Preserve the block on template migration.',
+      default: false,
+    },
     label: {
       anyOf: [
         {
@@ -1623,6 +1629,12 @@ export const $BlockUpdate = {
       title: 'Is Template',
       description:
         'Whether the block is a template (e.g. saved human/persona options).',
+      default: false,
+    },
+    preserve_on_migration: {
+      type: 'boolean',
+      title: 'Preserve On Migration',
+      description: 'Preserve the block on template migration.',
       default: false,
     },
     label: {
@@ -3938,6 +3950,12 @@ export const $CreateBlock = {
     is_template: {
       type: 'boolean',
       title: 'Is Template',
+      default: false,
+    },
+    preserve_on_migration: {
+      type: 'boolean',
+      title: 'Preserve On Migration',
+      description: 'Preserve the block on template migration.',
       default: false,
     },
     label: {

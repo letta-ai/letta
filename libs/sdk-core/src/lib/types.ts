@@ -28,7 +28,7 @@ export interface SourceMetadata {
 export const SystemMessageSchema = z.object({
   message_type: z.literal('system_message'),
   content: z.string(),
-  step_id: z.string().nullable().optional(),
+  step_id: z.string().nullish(),
   date: z.string(),
   id: z.string(),
 });
@@ -43,9 +43,9 @@ export const UserMessageSchema = z.object({
   message_type: z.literal('user_message'),
   formattedMessage: z.record(z.unknown()).optional(),
   content: z.string(),
-  step_id: z.string().nullable().optional(),
-  otid: z.string().nullable().optional(),
-  name: z.string().nullable().optional(),
+  step_id: z.string().nullish(),
+  otid: z.string().nullish(),
+  name: z.string().nullish(),
   date: z.string(),
   id: z.string(),
 });
@@ -53,11 +53,11 @@ export const UserMessageSchema = z.object({
 export const ReasoningMessageSchema = z.object({
   message_type: z.literal('reasoning_message'),
   source: z.enum(['reasoner_model', 'non_reasoner_model']),
-  signature: z.string().nullable().optional(),
+  signature: z.string().nullish(),
   reasoning: z.string(),
-  step_id: z.string().nullable().optional(),
-  otid: z.string().nullable().optional(),
-  name: z.string().nullable().optional(),
+  step_id: z.string().nullish(),
+  otid: z.string().nullish(),
+  name: z.string().nullish(),
   date: z.string(),
   id: z.string(),
 });
@@ -65,10 +65,10 @@ export const ReasoningMessageSchema = z.object({
 export const HiddenReasoningMessageSchema = z.object({
   message_type: z.literal('hidden_reasoning_message'),
   state: z.enum(['redacted', 'omitted']),
-  hidden_reasoning: z.string().nullable().optional(),
-  otid: z.string().nullable().optional(),
-  name: z.string().nullable().optional(),
-  step_id: z.string().nullable().optional(),
+  hidden_reasoning: z.string().nullish(),
+  otid: z.string().nullish(),
+  name: z.string().nullish(),
+  step_id: z.string().nullish(),
   date: z.string(),
   id: z.string(),
 });
@@ -87,24 +87,24 @@ export const ToolCallMessageSchema = z.object({
     arguments: z.string().optional(),
     formattedArguments: z.record(z.unknown()).optional(),
   }),
-  otid: z.string().nullable().optional(),
-  name: z.string().nullable().optional(),
+  otid: z.string().nullish(),
+  name: z.string().nullish(),
   date: z.string(),
-  step_id: z.string().nullable().optional(),
+  step_id: z.string().nullish(),
   id: z.string(),
 });
 
 export const ToolReturnMessageSchema = z.object({
   message_type: z.literal('tool_return_message'),
-  stderr: z.array(z.string()).nullable().optional(),
-  stdout: z.array(z.string()).nullable().optional(),
+  stderr: z.array(z.string()).nullish(),
+  stdout: z.array(z.string()).nullish(),
   tool_return: z.string(),
   tool_call_id: z.string(),
   status: z.string(),
-  otid: z.string().nullable().optional(),
-  name: z.string().nullable().optional(),
+  otid: z.string().nullish(),
+  name: z.string().nullish(),
   date: z.string(),
-  step_id: z.string().nullable().optional(),
+  step_id: z.string().nullish(),
   id: z.string(),
 });
 
@@ -163,7 +163,7 @@ export const LLMConfigSchema = z.object({
   handle: z.string().optional().nullable(),
   model_endpoint_type: modelEndpointTypesSchema,
   model_endpoint: z.string().optional().nullable(),
-  model_wrapper: z.string().nullable().optional(),
+  model_wrapper: z.string().nullish(),
   context_window: z.number(),
 });
 
@@ -183,17 +183,18 @@ const BlockMetadataSchema = z.record(z.unknown());
 export const BlockSchema: ToZod<Omit<Block, 'metadata'>> = z.object({
   value: z.string(),
   limit: z.number().optional(),
-  name: z.string().nullable().optional(),
-  label: z.string().nullable().optional(),
-  description: z.string().nullable().optional(),
+  name: z.string().nullish(),
+  label: z.string().nullish(),
+  description: z.string().nullish(),
   metadata: BlockMetadataSchema.optional(),
   id: z.string().optional(),
-  organization_id: z.string().nullable().optional(),
-  created_by_id: z.string().nullable().optional(),
-  last_updated_by_id: z.string().nullable().optional(),
+  organization_id: z.string().nullish(),
+  created_by_id: z.string().nullish(),
+  last_updated_by_id: z.string().nullish(),
   is_template: z.boolean().optional(),
   identity_ids: z.array(z.string()).optional(),
   read_only: z.boolean().optional(),
+  preserve_on_migration: z.boolean().optional(),
 });
 
 export const MemorySchema = z.object({
@@ -205,13 +206,14 @@ export const CreateBlockSchema: ToZod<Omit<CreateBlock, 'metadata'>> = z.object(
   {
     value: z.string(),
     limit: z.number().optional(),
-    name: z.string().nullable().optional(),
+    name: z.string().nullish(),
     label: z.string(),
-    description: z.string().nullable().optional(),
+    description: z.string().nullish(),
     metadata: BlockMetadataSchema.optional(),
     is_template: z.boolean().optional(),
-    identity_ids: z.array(z.string()).nullable().optional(),
+    identity_ids: z.array(z.string()).nullish(),
     read_only: z.boolean().optional(),
+    preserve_on_migration: z.boolean().optional(),
   },
 );
 
