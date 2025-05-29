@@ -361,7 +361,8 @@ async def list_mcp_servers(server: SyncServer = Depends(get_letta_server), user_
     if tool_settings.mcp_read_from_config:
         return server.get_mcp_servers()
     else:
-        mcp_servers = await server.mcp_manager.list_mcp_servers(actor=server.user_manager.get_user_or_default(user_id=user_id))
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=user_id)
+        mcp_servers = await server.mcp_manager.list_mcp_servers(actor=actor)
         return {server.server_name: server.to_config() for server in mcp_servers}
 
 
