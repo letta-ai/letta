@@ -1439,22 +1439,37 @@
       "createAgentTemplate": "New agent template"
     }
   },
+  "pages/projects/observability/ActiveAgentChart": {
+    "title": "Active agents",
+    "info": "This chart shows the number of agents that were active on a given day. It is segemented on new agents (first time active) and returning agents (active after their first time).",
+    "tooltip": "{newAgents} new agents, {returningAgents} returning agents"
+  },
   "pages/projects/observability/ObservabilityHeader": {
-    "root": "All charts"
+    "root": "All charts",
+    "DateRangeSelector": {
+      "30Days": "30D",
+      "7Days": "7D",
+      "60Days": "60D",
+      "90Days": "90D",
+      "365Days": "1Y"
+    }
   },
   "pages/projects/observability/TimeToFirstTokenChart": {
-    "title": "Average time to first token (seconds) over last 30 days",
+    "title": "Average time to first token",
     "tooltip": {
       "withValue": "Time to first token",
       "noData": "No data was recorded for this date"
     }
   },
   "pages/projects/observability/TotalMessagesPerDayChart": {
-    "title": "Total messages per day over last 30 days",
-    "tooltip": "Messages"
+    "title": "Total messages per day",
+    "tooltip": {
+      "withValue": "Messages",
+      "noData": "No data was recorded for this date"
+    }
   },
   "pages/projects/observability/TotalResponseTimeChart": {
-    "title": "Average total response time (seconds) over last 30 days",
+    "title": "Average total response time",
     "tooltip": {
       "withValue": "Average total response time",
       "noData": "No data was recorded for this date"

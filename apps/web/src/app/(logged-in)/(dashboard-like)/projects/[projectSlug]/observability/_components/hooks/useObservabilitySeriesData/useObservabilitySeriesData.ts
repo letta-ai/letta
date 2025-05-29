@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
+import { useFormatters } from '@letta-cloud/utils-client';
 
 interface BaseType {
   date: string; // Assuming the date is in YYYY-MM-DD format
 }
 
 interface UseSeriesDataOptions<T extends BaseType> {
-  startDate: Date;
-  endDate: Date;
+  startDate: string;
+  endDate: string;
   data?: T[] | null;
   getterFn: (data: T) => number;
 }
@@ -16,27 +17,39 @@ export function useObservabilitySeriesData<T extends BaseType>(
 ) {
   const { startDate, endDate, getterFn, data } = options;
 
+  const { formatDate } = useFormatters();
+
   const xAxis = useMemo(() => {
     // Generate x-axis labels based on the date range
     const labels = [];
 
     for (
       let date = new Date(startDate);
-      date <= endDate;
+      date < new Date(endDate);
       date.setDate(date.getDate() + 1)
     ) {
-      labels.push(date.toISOString().split('T')[0]); // Format as YYYY-MM-DD
+      labels.push(
+        formatDate(date, {
+          month: 'short',
+          day: 'numeric',
+        }),
+      );
     }
 
-    return labels;
-  }, [startDate, endDate]);
+    return labels.slice(0, -1);
+  }, [startDate, endDate, formatDate]);
 
   const seriesData = useMemo(() => {
     if (!data) return [];
 
     const mappedData = data.reduce(
       (acc, item) => {
-        acc[item.date] = getterFn(item) || 0; // Use the getter function to extract the value
+        acc[
+          formatDate(item.date, {
+            month: 'short',
+            day: 'numeric',
+          })
+        ] = getterFn(item) || 0; // Use the getter function to extract the value
 
         return acc;
       },
@@ -48,9 +61,9 @@ export function useObservabilitySeriesData<T extends BaseType>(
       const dateKey = date; // Assuming date is in YYYY-MM-DD format
       const item = mappedData[dateKey];
 
-      return item || 0;
+      return item || undefined;
     });
-  }, [data, getterFn, xAxis]);
+  }, [formatDate, data, getterFn, xAxis]);
 
   return {
     xAxis,

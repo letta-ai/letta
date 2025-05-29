@@ -288,6 +288,10 @@ deploy-cloud-api: push-cloud-api
         --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
         --set env.OPENAI_API_KEY="${OPENAI_API_KEY}" \
         --set env.STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET}" \
+        --set env.CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT} \
+        --set env.CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
+        --set env.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
+        --set env.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} \
         --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}"
 
 

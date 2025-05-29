@@ -1,5 +1,6 @@
 import { activeAgents, db } from '@letta-cloud/service-database';
 import { setRedisData } from '@letta-cloud/service-redis';
+import { trackDailyAgentUsage } from '@letta-cloud/service-clickhouse';
 
 interface MarkActiveAgentOptions {
   organizationId: string;
@@ -40,4 +41,6 @@ export async function markActiveAgent(options: MarkActiveAgentOptions) {
       },
     },
   );
+
+  await trackDailyAgentUsage(agentId);
 }

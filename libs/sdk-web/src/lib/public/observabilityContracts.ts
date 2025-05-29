@@ -16,12 +16,14 @@ const TimeToFirstTokenMetricsResponseSchema = z.object({
 export const DefaultMetricsQuery = z
   .object({
     projectId: z.string(),
-    startTimeUnix: z.number(),
-    endTimeUnix: z.number(),
+    startDate: z.string(),
+    endDate: z.string(),
   })
   .refine(
     (data) => {
-      return data.startTimeUnix < data.endTimeUnix;
+      return (
+        new Date(data.startDate).getTime() < new Date(data.endDate).getTime()
+      );
     },
     {
       message: 'startTimeUnix must be less than endTimeUnix',
@@ -29,12 +31,16 @@ export const DefaultMetricsQuery = z
   )
   .refine(
     (data) => {
-      // Check if the time range is within 30 days
-      const timeRange = data.endTimeUnix - data.startTimeUnix;
-      return timeRange <= 30 * 24 * 60 * 60; // 30 days in s
+      // Check if the time range is within 365 days
+      const startTime = new Date(data.startDate).getTime();
+      const endTime = new Date(data.endDate).getTime();
+
+      const timeDifference = endTime - startTime;
+
+      return timeDifference <= 365 * 24 * 60 * 60 * 1000; // 365 days in milliseconds
     },
     {
-      message: 'Time range must be within 30 days',
+      message: 'Time range must be within 365 days',
     },
   );
 
@@ -84,10 +90,30 @@ const getTotalMessagesPerDayContract = c.query({
   },
 });
 
+const activeAgentItem = z.object({
+  date: z.string(), // ISO date string
+  activeAgents: z.number(), // Number of active agents for the date
+});
+
+const activeAgentsResponseSchema = z.object({
+  returningActiveAgents: z.array(activeAgentItem),
+  newActiveAgents: z.array(activeAgentItem),
+});
+
+const getActiveAgentsContract = c.query({
+  path: '/observability/metrics/active-agents',
+  method: 'GET',
+  query: DefaultMetricsQuery,
+  responses: {
+    200: activeAgentsResponseSchema,
+  },
+});
+
 export const observabilityContracts = c.router({
   getTimeToFirstTokenMetrics: timeToFirstTokenMetricsContract,
   getAverageResponseTime: getAverageResponseTimeContract,
   getTotalMessagesPerDay: getTotalMessagesPerDayContract,
+  getActiveAgentsPerDay: getActiveAgentsContract,
 });
 
 export const observabilityQueryKeys = {
@@ -104,6 +130,11 @@ export const observabilityQueryKeys = {
   getTotalMessagesPerDay: (query: z.infer<typeof DefaultMetricsQuery>) => [
     'observability',
     'getTotalMessagesPerDay',
+    query,
+  ],
+  getActiveAgentsPerDay: (query: z.infer<typeof DefaultMetricsQuery>) => [
+    'observability',
+    'getActiveAgentsPerDay',
     query,
   ],
 };

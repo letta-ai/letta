@@ -10,12 +10,11 @@ import { useFormatters } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
 import { get } from 'lodash-es';
 import { useObservabilitySeriesData } from '../../hooks/useObservabilitySeriesData/useObservabilitySeriesData';
-import { useObservabilitySeriesDates } from '../../hooks/useObservabilitySeriesDates/useObservabilitySeriesDates';
+import { useObservabilityContext } from '../../hooks/useObservabilityContext/useObservabilityContext';
 
 export function TimeToFirstTokenChart() {
   const { id: projectId } = useCurrentProject();
-  const { startDate, endDate, startTimeUnix, endTimeUnix } =
-    useObservabilitySeriesDates();
+  const { startDate, endDate } = useObservabilityContext();
 
   const t = useTranslations(
     'pages/projects/observability/TimeToFirstTokenChart',
@@ -23,15 +22,15 @@ export function TimeToFirstTokenChart() {
 
   const { data } = webApi.observability.getTimeToFirstTokenMetrics.useQuery({
     queryKey: webApiQueryKeys.observability.getTimeToFirstTokenMetrics({
-      projectId: projectId, // Replace with actual project slug
-      startTimeUnix,
-      endTimeUnix,
+      projectId,
+      startDate,
+      endDate,
     }),
     queryData: {
       query: {
-        projectId: projectId,
-        startTimeUnix,
-        endTimeUnix,
+        projectId,
+        startDate,
+        endDate,
       },
     },
   });
@@ -56,8 +55,9 @@ export function TimeToFirstTokenChart() {
             top: 15,
           },
           tooltip: {
+            trigger: 'axis',
             formatter: (e) => {
-              const value = get(e, 'value', null);
+              const value = get(e, '0.data', null);
 
               if (typeof value !== 'number') {
                 return makeFormattedTooltip({
@@ -75,6 +75,7 @@ export function TimeToFirstTokenChart() {
             {
               data: seriesData,
               type: 'line',
+              symbol: 'dot',
             },
           ],
           xAxis: {

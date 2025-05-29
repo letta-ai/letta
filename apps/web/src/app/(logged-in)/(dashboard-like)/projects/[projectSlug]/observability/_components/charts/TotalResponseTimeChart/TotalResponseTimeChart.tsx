@@ -10,12 +10,11 @@ import { useFormatters } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
 import { get } from 'lodash-es';
 import { useObservabilitySeriesData } from '../../hooks/useObservabilitySeriesData/useObservabilitySeriesData';
-import { useObservabilitySeriesDates } from '../../hooks/useObservabilitySeriesDates/useObservabilitySeriesDates';
+import { useObservabilityContext } from '../../hooks/useObservabilityContext/useObservabilityContext';
 
 export function TotalResponseTimeChart() {
   const { id: projectId } = useCurrentProject();
-  const { startDate, endDate, startTimeUnix, endTimeUnix } =
-    useObservabilitySeriesDates();
+  const { startDate, endDate } = useObservabilityContext();
 
   const t = useTranslations(
     'pages/projects/observability/TotalResponseTimeChart',
@@ -24,14 +23,14 @@ export function TotalResponseTimeChart() {
   const { data } = webApi.observability.getAverageResponseTime.useQuery({
     queryKey: webApiQueryKeys.observability.getAverageResponseTime({
       projectId: projectId, // Replace with actual project slug
-      startTimeUnix,
-      endTimeUnix,
+      startDate,
+      endDate,
     }),
     queryData: {
       query: {
         projectId: projectId,
-        startTimeUnix,
-        endTimeUnix,
+        startDate,
+        endDate,
       },
     },
   });
@@ -82,6 +81,7 @@ export function TotalResponseTimeChart() {
             type: 'category',
           },
           yAxis: {
+            minInterval: 1,
             type: 'value',
           },
         }}

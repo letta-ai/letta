@@ -3,6 +3,10 @@ import { getRedisData } from '@letta-cloud/service-redis';
 import { markActiveAgent } from '../../markActiveAgent/markActiveAgent';
 import { getActiveBillableAgentsCount } from '@letta-cloud/service-payments';
 
+jest.mock('@letta-cloud/service-clickhouse', () => ({
+  trackDailyAgentUsage: jest.fn(),
+}));
+
 jest.mock('@letta-cloud/service-redis', () => ({
   getRedisData: jest.fn(),
   setRedisData: jest.fn(),

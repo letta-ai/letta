@@ -18,12 +18,12 @@ type GetTimeToFirstTokenMetricsResponse = ServerInferResponses<
 async function getTimeToFirstTokenMetrics(
   request: GetTimeToFirstTokenMetricsRequest,
 ): Promise<GetTimeToFirstTokenMetricsResponse> {
-  const { projectId, startTimeUnix, endTimeUnix } = request.query;
+  const { projectId, startDate, endDate } = request.query;
 
   const response = await getTimeToFirstTokenAverages({
     projectId,
-    startUnixTimestamp: startTimeUnix,
-    endUnixTimestamp: endTimeUnix,
+    startUnixTimestamp: new Date(startDate).getTime() / 1000,
+    endUnixTimestamp: new Date(endDate).getTime() / 1000,
   });
 
   return {
@@ -48,12 +48,12 @@ type GetAverageResponseTimeResponse = ServerInferResponses<
 async function getAverageResponseTime(
   request: GetAverageResponseTimeRequest,
 ): Promise<GetAverageResponseTimeResponse> {
-  const { projectId, startTimeUnix, endTimeUnix } = request.query;
+  const { projectId, startDate, endDate } = request.query;
 
   const response = await getTotalResponseTimeAverages({
     projectId,
-    startUnixTimestamp: startTimeUnix,
-    endUnixTimestamp: endTimeUnix,
+    startUnixTimestamp: new Date(startDate).getTime() / 1000,
+    endUnixTimestamp: new Date(endDate).getTime() / 1000,
   });
 
   return {
@@ -79,13 +79,13 @@ type GetTotalMessagesPerDayResponse = ServerInferResponses<
 async function getTotalMessagesPerDay(
   request: GetTotalMessagesPerDayRequest,
 ): Promise<GetTotalMessagesPerDayResponse> {
-  const { projectId, startTimeUnix, endTimeUnix } = request.query;
+  const { projectId, startDate, endDate } = request.query;
 
   const client = getClickhouseClient();
 
   if (!client) {
     return {
-      status: 500,
+      status: 200,
       body: {
         items: [],
       },
@@ -94,14 +94,13 @@ async function getTotalMessagesPerDay(
 
   const result = await client.query({
     query: `
-      SELECT
-        toDate(Timestamp) as date,
+      SELECT toDate(Timestamp) as date,
         count() as total_messages
       FROM otel_traces
       WHERE SpanName = 'POST /v1/agents/{agent_id}/messages/stream'
         AND SpanAttributes['project.id'] = '${projectId}'
-        AND Timestamp >= toDateTime64(${startTimeUnix}, 9)
-        AND Timestamp <= toDateTime64(${endTimeUnix}, 9)
+        AND Timestamp >= toDateTime64(${new Date(startDate).getTime() / 1000}, 9)
+        AND Timestamp <= toDateTime64(${new Date(endDate).getTime() / 1000}, 9)
       GROUP BY toDate(Timestamp)
       ORDER BY date;
     `,
@@ -111,7 +110,7 @@ async function getTotalMessagesPerDay(
   const response = await getClickhouseData<
     Array<{
       date: string;
-      total_messages: number;
+      total_messages: string;
     }>
   >(result);
 
@@ -120,7 +119,77 @@ async function getTotalMessagesPerDay(
     body: {
       items: response.map((item) => ({
         date: item.date,
-        totalMessages: item.total_messages,
+        totalMessages: parseInt(item.total_messages, 10), // Convert string to number
+      })),
+    },
+  };
+}
+
+type GetActiveAgentsPerDayRequest = ServerInferRequest<
+  typeof contracts.observability.getActiveAgentsPerDay
+>;
+
+type GetActiveAgentsPerDayResponse = ServerInferResponses<
+  typeof contracts.observability.getActiveAgentsPerDay
+>;
+
+async function getActiveAgentsPerDay(
+  request: GetActiveAgentsPerDayRequest,
+): Promise<GetActiveAgentsPerDayResponse> {
+  const { projectId, startDate, endDate } = request.query;
+
+  const client = getClickhouseClient('default');
+
+  if (!client) {
+    return {
+      status: 200,
+      body: {
+        returningActiveAgents: [],
+        newActiveAgents: [],
+      },
+    };
+  }
+
+  const result = await client.query({
+    query: `
+      SELECT
+        date,
+        countIf(is_first_usage = false) as returning_active_agents_count,
+        countIf(is_first_usage = true) as new_active_agents_count,
+        count() as total_active_agents_count
+      FROM agent_usage
+      WHERE messaged_at >= {startDate: DateTime}
+        AND messaged_at <= {endDate: DateTime}
+        AND project_id = {projectId: String}
+      GROUP BY date
+      ORDER BY date;
+    `,
+    query_params: {
+      startDate: Math.round(new Date(startDate).getTime() / 1000),
+      endDate: Math.round(new Date(endDate).getTime() / 1000),
+      projectId,
+    },
+    format: 'JSONEachRow',
+  });
+
+  const response = await getClickhouseData<
+    Array<{
+      date: string;
+      returning_active_agents_count: string;
+      new_active_agents_count: string;
+    }>
+  >(result);
+
+  return {
+    status: 200,
+    body: {
+      returningActiveAgents: response.map((item) => ({
+        date: item.date,
+        activeAgents: parseInt(item.returning_active_agents_count, 10),
+      })),
+      newActiveAgents: response.map((item) => ({
+        date: item.date,
+        activeAgents: parseInt(item.new_active_agents_count, 10),
       })),
     },
   };
@@ -130,4 +199,5 @@ export const observabilityRouter = {
   getTimeToFirstTokenMetrics,
   getAverageResponseTime,
   getTotalMessagesPerDay,
+  getActiveAgentsPerDay,
 };

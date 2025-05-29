@@ -10,13 +10,12 @@ import { useFormatters } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
 import { get } from 'lodash-es';
 import { useObservabilitySeriesData } from '../../hooks/useObservabilitySeriesData/useObservabilitySeriesData';
-import { useObservabilitySeriesDates } from '../../hooks/useObservabilitySeriesDates/useObservabilitySeriesDates';
+
+import { useObservabilityContext } from '../../hooks/useObservabilityContext/useObservabilityContext';
 
 export function TotalMessagesPerDayChart() {
   const { id: projectId } = useCurrentProject();
-  const { startDate, endDate, startTimeUnix, endTimeUnix } =
-    useObservabilitySeriesDates();
-
+  const { startDate, endDate } = useObservabilityContext();
   const t = useTranslations(
     'pages/projects/observability/TotalMessagesPerDayChart',
   );
@@ -24,14 +23,14 @@ export function TotalMessagesPerDayChart() {
   const { data } = webApi.observability.getTotalMessagesPerDay.useQuery({
     queryKey: webApiQueryKeys.observability.getTotalMessagesPerDay({
       projectId: projectId, // Replace with actual project slug
-      startTimeUnix,
-      endTimeUnix,
+      startDate,
+      endDate,
     }),
     queryData: {
       query: {
         projectId: projectId,
-        startTimeUnix,
-        endTimeUnix,
+        startDate,
+        endDate,
       },
     },
   });
@@ -56,21 +55,25 @@ export function TotalMessagesPerDayChart() {
             top: 15,
           },
           tooltip: {
+            trigger: 'axis',
             formatter: (e) => {
-              let value = get(e, 'value', null);
+              const value = get(e, '0.data', null);
 
               if (typeof value !== 'number') {
-                value = 0;
+                return makeFormattedTooltip({
+                  label: t('tooltip.noData'),
+                });
               }
 
               return makeFormattedTooltip({
-                label: t('tooltip'),
+                label: t('tooltip.withValue'),
                 value: formatNumber(value),
               });
             },
           },
           series: [
             {
+              symbol: 'dot',
               data: seriesData,
               type: 'line',
             },
@@ -80,6 +83,7 @@ export function TotalMessagesPerDayChart() {
             type: 'category',
           },
           yAxis: {
+            minInterval: 1,
             type: 'value',
           },
         }}

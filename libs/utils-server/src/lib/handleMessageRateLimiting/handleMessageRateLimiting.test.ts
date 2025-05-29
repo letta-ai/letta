@@ -6,6 +6,9 @@ import { get } from 'lodash';
 import { mockDatabase } from '@letta-cloud/service-database-testing';
 import { getAndSeedOrganizationLimits } from './handleMessageRateLimiting';
 
+jest.mock('@letta-cloud/service-clickhouse', () => ({
+  trackDailyAgentUsage: jest.fn(),
+}));
 jest.mock('@letta-cloud/service-redis', () => ({
   getRedisData: jest.fn(),
   setRedisData: jest.fn(),
