@@ -471,8 +471,10 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         """
         # this is ok because read_multiple will check if the
         identifiers = [] if identifier is None else [identifier]
-        found = await cls.read_multiple_async(db_session, identifiers, actor, access, access_type, **kwargs)
-        if len(found) == 0:
+        query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, **kwargs)
+        result = await db_session.execute(query)
+        item = result.scalar_one_or_none()
+        if item is None:
             # for backwards compatibility.
             conditions = []
             if identifier:
@@ -482,7 +484,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             if hasattr(cls, "is_deleted"):
                 conditions.append("is_deleted=False")
             raise NoResultFound(f"{cls.__name__} not found with {', '.join(conditions if conditions else ['no conditions'])}")
-        return found[0]
+        return item
 
     @classmethod
     @handle_db_timeout
