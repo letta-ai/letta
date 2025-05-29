@@ -75,8 +75,8 @@ class LettaAgent(BaseAgent):
         self.last_function_response = None
 
         # Cached archival memory/message size
-        self.num_messages = 0
-        self.num_archival_memories = 0
+        self.num_messages = None
+        self.num_archival_memories = None
 
         self.summarization_agent = None
         self.summary_block_label = summary_block_label
@@ -466,11 +466,6 @@ class LettaAgent(BaseAgent):
         # Extend the in context message ids
         if not agent_state.message_buffer_autoclear:
             await self._rebuild_context_window(in_context_messages=current_in_context_messages, new_letta_messages=new_in_context_messages)
-
-        # TODO: This may be out of sync, if in between steps users add files
-        # NOTE (cliandy): temporary for now for particlar use cases.
-        self.num_messages = await self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id)
-        self.num_archival_memories = await self.passage_manager.size_async(actor=self.actor, agent_id=agent_state.id)
 
         # TODO: Also yield out a letta usage stats SSE
         yield f"data: {usage.model_dump_json()}\n\n"
