@@ -399,7 +399,7 @@ async def list_mcp_tools_by_server(
                 },
             )
     else:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
         mcp_tools = await server.mcp_manager.list_mcp_server_tools(mcp_server_name=mcp_server_name, actor=actor)
         return mcp_tools
 
@@ -473,7 +473,7 @@ async def add_mcp_server_to_config(
     Add a new MCP server to the Letta MCP server config
     """
 
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     if tool_settings.mcp_read_from_config:
         # write to config file
@@ -512,6 +512,6 @@ async def delete_mcp_server_from_config(
         return server.delete_mcp_server_from_config(server_name=mcp_server_name)
     else:
         # log to DB
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
         mcp_server_id = await server.mcp_manager.get_mcp_server_id_by_name(mcp_server_name, actor)
         return server.mcp_manager.delete_mcp_server_by_id(mcp_server_id, actor=actor)
