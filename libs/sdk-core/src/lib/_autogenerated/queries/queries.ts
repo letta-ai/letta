@@ -3328,6 +3328,56 @@ export const useAgentsServiceCreateAgentMessageAsync = <
     ...options,
   });
 /**
+ * Summarize Agent Conversation
+ * Summarize an agent's conversation history to a target message length.
+ *
+ * This endpoint summarizes the current message history for a given agent,
+ * truncating and compressing it down to the specified `max_message_length`.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.maxMessageLength Maximum number of messages to retain after summarization.
+ * @param data.userId
+ * @returns AgentState Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceSummarizeAgentConversation = <
+  TData = Common.AgentsServiceSummarizeAgentConversationMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        maxMessageLength: number;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      maxMessageLength: number;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, maxMessageLength, userId }) =>
+      AgentsService.summarizeAgentConversation({
+        agentId,
+        maxMessageLength,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
  * Create Group
  * Create a new multi-agent group with the specified configuration.
  * @param data The data for the request.

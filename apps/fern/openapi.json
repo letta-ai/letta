@@ -3480,6 +3480,58 @@
         }
       }
     },
+    "/v1/agents/{agent_id}/summarize": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "Summarize Agent Conversation",
+        "description": "Summarize an agent's conversation history to a target message length.\n\nThis endpoint summarizes the current message history for a given agent,\ntruncating and compressing it down to the specified `max_message_length`.",
+        "operationId": "summarize_agent_conversation",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "max_message_length",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Maximum number of messages to retain after summarization.",
+              "title": "Max Message Length"
+            },
+            "description": "Maximum number of messages to retain after summarization."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/groups/": {
       "get": {
         "tags": ["groups"],

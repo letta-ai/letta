@@ -124,6 +124,8 @@ import type {
   ResetMessagesResponse,
   ListAgentGroupsData,
   ListAgentGroupsResponse,
+  SummarizeAgentConversationData,
+  SummarizeAgentConversationResponse,
   ListGroupsData,
   ListGroupsResponse,
   CreateGroupData,
@@ -1968,6 +1970,39 @@ export class AgentsService {
       },
       query: {
         manager_type: data.managerType,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Summarize Agent Conversation
+   * Summarize an agent's conversation history to a target message length.
+   *
+   * This endpoint summarizes the current message history for a given agent,
+   * truncating and compressing it down to the specified `max_message_length`.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.maxMessageLength Maximum number of messages to retain after summarization.
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static summarizeAgentConversation(
+    data: SummarizeAgentConversationData,
+    headers?: { user_id: string },
+  ): CancelablePromise<SummarizeAgentConversationResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/agents/{agent_id}/summarize',
+      path: {
+        agent_id: data.agentId,
+      },
+      query: {
+        max_message_length: data.maxMessageLength,
       },
       errors: {
         422: 'Validation Error',

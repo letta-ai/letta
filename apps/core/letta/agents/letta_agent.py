@@ -615,6 +615,18 @@ class LettaAgent(BaseAgent):
         return new_in_context_messages
 
     @trace_method
+    async def summarize_conversation_history(self) -> AgentState:
+        agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=self.agent_id, actor=self.actor)
+        message_ids = agent_state.message_ids
+        in_context_messages = await self.message_manager.get_messages_by_ids_async(message_ids=message_ids, actor=self.actor)
+        new_in_context_messages, updated = self.summarizer.summarize(
+            in_context_messages=in_context_messages, new_letta_messages=[], force=True
+        )
+        return await self.agent_manager.set_in_context_messages_async(
+            agent_id=self.agent_id, message_ids=[m.id for m in new_in_context_messages], actor=self.actor
+        )
+
+    @trace_method
     async def _create_llm_request_data_async(
         self,
         llm_client: LLMClientBase,

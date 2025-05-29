@@ -1668,6 +1668,9 @@ export type AgentsServiceCreateAgentMessageStreamMutationResult = Awaited<
 export type AgentsServiceCreateAgentMessageAsyncMutationResult = Awaited<
   ReturnType<typeof AgentsService.createAgentMessageAsync>
 >;
+export type AgentsServiceSummarizeAgentConversationMutationResult = Awaited<
+  ReturnType<typeof AgentsService.summarizeAgentConversation>
+>;
 export type GroupsServiceCreateGroupMutationResult = Awaited<
   ReturnType<typeof GroupsService.createGroup>
 >;

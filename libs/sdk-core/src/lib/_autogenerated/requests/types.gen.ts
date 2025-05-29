@@ -4653,6 +4653,17 @@ export type ListAgentGroupsData = {
 
 export type ListAgentGroupsResponse = Array<Group>;
 
+export type SummarizeAgentConversationData = {
+  agentId: string;
+  /**
+   * Maximum number of messages to retain after summarization.
+   */
+  maxMessageLength: number;
+  userId?: string | null;
+};
+
+export type SummarizeAgentConversationResponse = AgentState;
+
 export type ListGroupsData = {
   /**
    * Cursor for pagination
@@ -6302,6 +6313,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Array<Group>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/summarize': {
+    post: {
+      req: SummarizeAgentConversationData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: AgentState;
         /**
          * Validation Error
          */

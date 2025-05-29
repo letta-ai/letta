@@ -6581,6 +6581,28 @@ export const get_List_agent_groups = {
   response: z.array(Group),
 };
 
+export type post_Summarize_agent_conversation =
+  typeof post_Summarize_agent_conversation;
+export const post_Summarize_agent_conversation = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/agents/{agent_id}/summarize'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      max_message_length: z.number(),
+    }),
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: AgentState,
+};
+
 export type get_List_groups = typeof get_List_groups;
 export const get_List_groups = {
   method: z.literal('GET'),
@@ -8389,6 +8411,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/messages': post_Send_message,
     '/v1/agents/{agent_id}/messages/stream': post_Create_agent_message_stream,
     '/v1/agents/{agent_id}/messages/async': post_Create_agent_message_async,
+    '/v1/agents/{agent_id}/summarize': post_Summarize_agent_conversation,
     '/v1/groups/': post_Create_group,
     '/v1/groups/{group_id}/messages': post_Send_group_message,
     '/v1/groups/{group_id}/messages/stream': post_Send_group_message_streaming,
