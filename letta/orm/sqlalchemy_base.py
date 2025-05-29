@@ -840,7 +840,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         **kwargs,
     ):
         logger.debug(f"Calculating size for {cls.__name__} with filters {kwargs}")
-        query = select(func.count()).select_from(cls)
+        query = select(func.count(1)).select_from(cls)
 
         if actor:
             query = cls.apply_access_predicate(query, actor, access, access_type)

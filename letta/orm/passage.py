@@ -90,4 +90,8 @@ class AgentPassage(BasePassage, AgentMixin):
                 Index("agent_passages_created_at_id_idx", "created_at", "id"),
                 {"extend_existing": True},
             )
-        return (Index("agent_passages_created_at_id_idx", "created_at", "id"), {"extend_existing": True})
+        return (
+            Index("ix_agent_passages_org_agent", "organization_id", "agent_id"),
+            Index("agent_passages_created_at_id_idx", "created_at", "id"),
+            {"extend_existing": True},
+        )
