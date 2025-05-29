@@ -473,9 +473,17 @@ class LettaAgent(BaseAgent):
         agent_state: AgentState,
         tool_rules_solver: ToolRulesSolver,
     ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:
-        self.num_messages = self.num_messages or (await self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id))
-        self.num_archival_memories = self.num_archival_memories or (
-            await self.passage_manager.size_async(actor=self.actor, agent_id=agent_state.id)
+        self.num_messages, self.num_archival_memories = await asyncio.gather(
+            (
+                self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id)
+                if self.num_messages is None
+                else asyncio.sleep(0, result=self.num_messages)
+            ),
+            (
+                self.passage_manager.size_async(actor=self.actor, agent_id=agent_state.id)
+                if self.num_archival_memories is None
+                else asyncio.sleep(0, result=self.num_archival_memories)
+            ),
         )
         in_context_messages = await self._rebuild_memory_async(
             in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
