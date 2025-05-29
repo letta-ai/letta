@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node ./dist/main.js",
     "dev": "ts-node --swc ./src/main.ts",
-    "build": "esbuild src/main.ts --tsconfig=tsconfig.app.json --bundle --platform=node --outdir=dist --format=cjs --sourcemap --external:pg --external:postgres --external:ioredis --external:zod --external:@sentry/node --external:dotenv --external:drizzle-orm --external:date-fns"
+    "build": "esbuild src/main.ts --tsconfig=tsconfig.app.json --bundle --platform=node --outdir=dist --format=cjs --sourcemap --external:pg --external:postgres --external:ioredis --external:zod --external:@sentry/node --external:dotenv --external:drizzle-orm --external:date-fns --external:@clickhouse/client"
   },
   "author": "",
   "license": "ISC",
@@ -16,6 +16,7 @@
     "esbuild-node-externals": "^1.16.0"
   },
   "dependencies": {
+    "@clickhouse/client": "^1.11.1",
     "@react-email/components": "^0.0.33",
     "@sentry/node": "^8.52.0",
     "@t3-oss/env-nextjs": "^0.12.0",
