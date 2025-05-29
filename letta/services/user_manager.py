@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from letta.orm.errors import NoResultFound
 from letta.orm.organization import Organization as OrganizationModel
@@ -146,10 +146,14 @@ class UserManager:
     async def get_actor_by_id_async(self, actor_id: str) -> PydanticUser:
         """Fetch a user by ID asynchronously."""
         async with db_registry.async_session() as session:
-            # Direct query instead of using the more general read_async
-            stmt = select(UserModel).where(UserModel.id == actor_id, UserModel.is_deleted == False)
-            result = await session.execute(stmt)
-            user = result.scalar_one_or_none()
+            # Turn off seqscan to force use pk index
+            await session.execute(text("SET LOCAL enable_seqscan = OFF"))
+            try:
+                stmt = select(UserModel).where(UserModel.id == actor_id)
+                result = await session.execute(stmt)
+                user = result.scalar_one_or_none()
+            finally:
+                await session.execute(text("SET LOCAL enable_seqscan = ON"))
 
         if not user:
             raise NoResultFound(f"User not found with id={actor_id}")
