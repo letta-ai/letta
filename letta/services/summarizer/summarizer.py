@@ -10,6 +10,7 @@ from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message, MessageCreate
 from letta.services.summarizer.enums import SummarizationMode
+from letta.tracing import trace_method
 
 logger = get_logger(__name__)
 
@@ -36,6 +37,7 @@ class Summarizer:
         self.summarizer_agent = summarizer_agent
         # TODO: Move this to config
 
+    @trace_method
     def summarize(self, in_context_messages: List[Message], new_letta_messages: List[Message]) -> Tuple[List[Message], bool]:
         """
         Summarizes or trims in_context_messages according to the chosen mode,
