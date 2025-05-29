@@ -548,7 +548,7 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
         function_map = {
             "send_message_to_agent_and_wait_for_reply": self.send_message_to_agent_and_wait_for_reply,
             "send_message_to_agent_async": self.send_message_to_agent_async,
-            "send_message_to_agents_matching_tags": self.send_message_to_agents_matching_tags,
+            "send_message_to_agents_matching_tags": self.send_message_to_agents_matching_tags_async,
         }
 
         if function_name not in function_map:
@@ -586,11 +586,13 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
 
         return "Successfully sent message"
 
-    async def send_message_to_agents_matching_tags(
+    async def send_message_to_agents_matching_tags_async(
         self, agent_state: AgentState, message: str, match_all: List[str], match_some: List[str]
     ) -> str:
         # Find matching agents
-        matching_agents = self.agent_manager.list_agents_matching_tags(actor=self.actor, match_all=match_all, match_some=match_some)
+        matching_agents = await self.agent_manager.list_agents_matching_tags_async(
+            actor=self.actor, match_all=match_all, match_some=match_some
+        )
         if not matching_agents:
             return str([])
 

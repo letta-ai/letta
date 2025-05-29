@@ -1,7 +1,7 @@
 import asyncio
 import json
 import uuid
-from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple, Union
+from typing import AsyncGenerator, Dict, List, Optional, Tuple, Union
 
 from openai import AsyncStream
 from openai.types.chat import ChatCompletionChunk
@@ -22,7 +22,6 @@ from letta.log import get_logger
 from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole, MessageStreamStatus
-from letta.schemas.letta_message import AssistantMessage
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
@@ -839,58 +838,6 @@ class LettaAgent(BaseAgent):
         )
         log_event(name=f"finish_{tool_name}_execution", attributes=tool_args)
         return tool_execution_result
-
-    @trace_method
-    async def _send_message_to_agents_matching_tags(
-        self, message: str, match_all: List[str], match_some: List[str]
-    ) -> List[Dict[str, Any]]:
-        # Find matching agents
-        matching_agents = self.agent_manager.list_agents_matching_tags(actor=self.actor, match_all=match_all, match_some=match_some)
-        if not matching_agents:
-            return []
-
-        async def process_agent(agent_state: AgentState, message: str) -> Dict[str, Any]:
-            try:
-                letta_agent = LettaAgent(
-                    agent_id=agent_state.id,
-                    message_manager=self.message_manager,
-                    agent_manager=self.agent_manager,
-                    block_manager=self.block_manager,
-                    passage_manager=self.passage_manager,
-                    actor=self.actor,
-                )
-
-                augmented_message = (
-                    "[Incoming message from external Letta agent - to reply to this message, "
-                    "make sure to use the 'send_message' at the end, and the system will notify "
-                    "the sender of your response] "
-                    f"{message}"
-                )
-
-                letta_response = await letta_agent.step(
-                    [MessageCreate(role=MessageRole.system, content=[TextContent(text=augmented_message)])]
-                )
-                messages = letta_response.messages
-
-                send_message_content = [message.content for message in messages if isinstance(message, AssistantMessage)]
-
-                return {
-                    "agent_id": agent_state.id,
-                    "agent_name": agent_state.name,
-                    "response": send_message_content if send_message_content else ["<no response>"],
-                }
-
-            except Exception as e:
-                return {
-                    "agent_id": agent_state.id,
-                    "agent_name": agent_state.name,
-                    "error": str(e),
-                    "type": type(e).__name__,
-                }
-
-        tasks = [asyncio.create_task(process_agent(agent_state=agent_state, message=message)) for agent_state in matching_agents]
-        results = await asyncio.gather(*tasks)
-        return results
 
     @trace_method
     def _load_last_function_response(self, in_context_messages: List[Message]):
