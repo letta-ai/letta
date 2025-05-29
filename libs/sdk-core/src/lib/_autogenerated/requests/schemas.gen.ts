@@ -1474,7 +1474,14 @@ export const $Block = {
       default: false,
     },
     preserve_on_migration: {
-      type: 'boolean',
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Preserve On Migration',
       description: 'Preserve the block on template migration.',
       default: false,
@@ -1632,7 +1639,14 @@ export const $BlockUpdate = {
       default: false,
     },
     preserve_on_migration: {
-      type: 'boolean',
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Preserve On Migration',
       description: 'Preserve the block on template migration.',
       default: false,
@@ -3953,7 +3967,14 @@ export const $CreateBlock = {
       default: false,
     },
     preserve_on_migration: {
-      type: 'boolean',
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Preserve On Migration',
       description: 'Preserve the block on template migration.',
       default: false,

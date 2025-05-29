@@ -1502,8 +1502,30 @@
                                         {
                                           "type": "boolean"
                                         },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "boolean"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
                                         {}
-                                      ]
+                                      ],
+                                      "nullable": true
                                     },
                                     "label": {
                                       "oneOf": [
@@ -5344,8 +5366,30 @@
                                         {
                                           "type": "boolean"
                                         },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "boolean"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
                                         {}
-                                      ]
+                                      ],
+                                      "nullable": true
                                     },
                                     "label": {
                                       "oneOf": [
