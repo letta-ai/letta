@@ -257,6 +257,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         join_conditions: Optional[Union[Tuple, List]] = None,
         identifier_keys: Optional[List[str]] = None,
         identity_id: Optional[str] = None,
+        check_is_deleted: bool = False,
         **kwargs,
     ):
         """
@@ -373,7 +374,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 is_ordered = True
 
         # Handle soft deletes
-        if hasattr(cls, "is_deleted"):
+        if check_is_deleted and hasattr(cls, "is_deleted"):
             query = query.where(cls.is_deleted == False)
 
         # Apply ordering
@@ -417,6 +418,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
+        check_is_deleted: bool = False,
         **kwargs,
     ) -> "SqlalchemyBase":
         """The primary accessor for an ORM record.
@@ -433,7 +435,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         """
         # this is ok because read_multiple will check if the
         identifiers = [] if identifier is None else [identifier]
-        found = cls.read_multiple(db_session, identifiers, actor, access, access_type, **kwargs)
+        found = cls.read_multiple(db_session, identifiers, actor, access, access_type, check_is_deleted, **kwargs)
         if len(found) == 0:
             # for backwards compatibility.
             conditions = []
@@ -441,7 +443,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 conditions.append(f"id={identifier}")
             if actor:
                 conditions.append(f"access level in {access} for {actor}")
-            if hasattr(cls, "is_deleted"):
+            if check_is_deleted and hasattr(cls, "is_deleted"):
                 conditions.append("is_deleted=False")
             raise NoResultFound(f"{cls.__name__} not found with {', '.join(conditions if conditions else ['no conditions'])}")
         return found[0]
@@ -455,6 +457,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
+        check_is_deleted: bool = False,
         **kwargs,
     ) -> "SqlalchemyBase":
         """The primary accessor for an ORM record. Async version of read method.
@@ -470,7 +473,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             NoResultFound: if the object is not found
         """
         identifiers = [] if identifier is None else [identifier]
-        query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, **kwargs)
+        query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, check_is_deleted, **kwargs)
         await db_session.execute(text("SET LOCAL enable_seqscan = OFF"))
         try:
             result = await db_session.execute(query)
@@ -491,6 +494,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
+        check_is_deleted: bool = False,
         **kwargs,
     ) -> List["SqlalchemyBase"]:
         """The primary accessor for ORM record(s)
@@ -505,7 +509,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         Raises:
             NoResultFound: if the object is not found
         """
-        query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, **kwargs)
+        query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, check_is_deleted, **kwargs)
         results = db_session.execute(query).scalars().all()
         return cls._read_multiple_postprocess(results, identifiers, query_conditions)
 
@@ -518,13 +522,14 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
+        check_is_deleted: bool = False,
         **kwargs,
     ) -> List["SqlalchemyBase"]:
         """
         Async version of read_multiple(...)
         The primary accessor for ORM record(s)
         """
-        query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, **kwargs)
+        query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, check_is_deleted, **kwargs)
         results = await db_session.execute(query)
         return cls._read_multiple_postprocess(results.scalars().all(), identifiers, query_conditions)
 
@@ -535,6 +540,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"],
         access: Optional[List[Literal["read", "write", "admin"]]],
         access_type: AccessType,
+        check_is_deleted: bool,
         **kwargs,
     ):
         logger.debug(f"Reading {cls.__name__} with ID(s): {identifiers} with actor={actor}")
@@ -563,7 +569,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             query = cls.apply_access_predicate(query, actor, access, access_type)
             query_conditions.append(f"access level in {access} for actor='{actor}'")
 
-        if hasattr(cls, "is_deleted"):
+        if check_is_deleted and hasattr(cls, "is_deleted"):
             query = query.where(cls.is_deleted == False)
             query_conditions.append("is_deleted=False")
 
@@ -830,6 +836,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
+        check_is_deleted: bool = False,
         **kwargs,
     ):
         logger.debug(f"Calculating size for {cls.__name__} with filters {kwargs}")
@@ -849,9 +856,8 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 else:  # Single value for equality filtering
                     query = query.where(column == value)
 
-        # TODO: Handle soft deletes if the class has the 'is_deleted' attribute
-        # if hasattr(cls, "is_deleted"):
-        #    query = query.where(cls.is_deleted == False)
+        if check_is_deleted and hasattr(cls, "is_deleted"):
+            query = query.where(cls.is_deleted == False)
 
         return query
 
@@ -864,6 +870,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
+        check_is_deleted: bool = False,
         **kwargs,
     ) -> int:
         """
@@ -880,7 +887,14 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             DBAPIError: If a database error occurs
         """
         with db_session as session:
-            query = cls._size_preprocess(db_session=session, actor=actor, access=access, access_type=access_type, **kwargs)
+            query = cls._size_preprocess(
+                db_session=session,
+                actor=actor,
+                access=access,
+                access_type=access_type,
+                check_is_deleted=check_is_deleted,
+                **kwargs,
+            )
 
             try:
                 count = session.execute(query).scalar()
@@ -898,6 +912,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
+        check_is_deleted: bool = False,
         **kwargs,
     ) -> int:
         """
@@ -910,7 +925,14 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         Raises:
             DBAPIError: If a database error occurs
         """
-        query = cls._size_preprocess(db_session=db_session, actor=actor, access=access, access_type=access_type, **kwargs)
+        query = cls._size_preprocess(
+            db_session=db_session,
+            actor=actor,
+            access=access,
+            access_type=access_type,
+            check_is_deleted=check_is_deleted,
+            **kwargs,
+        )
 
         try:
             result = await db_session.execute(query)

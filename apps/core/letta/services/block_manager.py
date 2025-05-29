@@ -262,9 +262,9 @@ class BlockManager:
             if actor:
                 query = BlockModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
 
-            # Add soft delete filter if applicable
-            if hasattr(BlockModel, "is_deleted"):
-                query = query.where(BlockModel.is_deleted == False)
+            # TODO: Add soft delete filter if applicable
+            # if hasattr(BlockModel, "is_deleted"):
+            #     query = query.where(BlockModel.is_deleted == False)
 
             # Execute the query
             result = await session.execute(query)

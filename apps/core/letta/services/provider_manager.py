@@ -60,7 +60,7 @@ class ProviderManager:
         """Update provider details."""
         with db_registry.session() as session:
             # Retrieve the existing provider by ID
-            existing_provider = ProviderModel.read(db_session=session, identifier=provider_id, actor=actor)
+            existing_provider = ProviderModel.read(db_session=session, identifier=provider_id, actor=actor, check_is_deleted=True)
 
             # Update only the fields that are provided in ProviderUpdate
             update_data = provider_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
@@ -77,7 +77,7 @@ class ProviderManager:
         """Delete a provider."""
         with db_registry.session() as session:
             # Clear api key field
-            existing_provider = ProviderModel.read(db_session=session, identifier=provider_id, actor=actor)
+            existing_provider = ProviderModel.read(db_session=session, identifier=provider_id, actor=actor, check_is_deleted=True)
             existing_provider.api_key = None
             existing_provider.update(session, actor=actor)
 
@@ -92,7 +92,9 @@ class ProviderManager:
         """Delete a provider."""
         async with db_registry.async_session() as session:
             # Clear api key field
-            existing_provider = await ProviderModel.read_async(db_session=session, identifier=provider_id, actor=actor)
+            existing_provider = await ProviderModel.read_async(
+                db_session=session, identifier=provider_id, actor=actor, check_is_deleted=True
+            )
             existing_provider.api_key = None
             await existing_provider.update_async(session, actor=actor)
 
@@ -123,6 +125,7 @@ class ProviderManager:
                 after=after,
                 limit=limit,
                 actor=actor,
+                check_is_deleted=True,
                 **filter_kwargs,
             )
             return [provider.to_pydantic() for provider in providers]
@@ -149,6 +152,7 @@ class ProviderManager:
                 after=after,
                 limit=limit,
                 actor=actor,
+                check_is_deleted=True,
                 **filter_kwargs,
             )
             return [provider.to_pydantic() for provider in providers]
