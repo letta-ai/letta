@@ -188,56 +188,55 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
         logger.debug(f"Listing {cls.__name__} with kwarg filters {kwargs}")
 
-        async with db_session as session:
-            # Get the reference objects for pagination
-            before_obj = None
-            after_obj = None
+        # Get the reference objects for pagination
+        before_obj = None
+        after_obj = None
 
-            if before:
-                before_obj = await session.get(cls, before)
-                if not before_obj:
-                    raise NoResultFound(f"No {cls.__name__} found with id {before}")
+        if before:
+            before_obj = await db_session.get(cls, before)
+            if not before_obj:
+                raise NoResultFound(f"No {cls.__name__} found with id {before}")
 
-            if after:
-                after_obj = await session.get(cls, after)
-                if not after_obj:
-                    raise NoResultFound(f"No {cls.__name__} found with id {after}")
+        if after:
+            after_obj = await db_session.get(cls, after)
+            if not after_obj:
+                raise NoResultFound(f"No {cls.__name__} found with id {after}")
 
-            # Validate that before comes after the after object if both are provided
-            if before_obj and after_obj and before_obj.created_at < after_obj.created_at:
-                raise ValueError("'before' reference must be later than 'after' reference")
+        # Validate that before comes after the after object if both are provided
+        if before_obj and after_obj and before_obj.created_at < after_obj.created_at:
+            raise ValueError("'before' reference must be later than 'after' reference")
 
-            query = cls._list_preprocess(
-                before_obj=before_obj,
-                after_obj=after_obj,
-                start_date=start_date,
-                end_date=end_date,
-                limit=limit,
-                query_text=query_text,
-                query_embedding=query_embedding,
-                ascending=ascending,
-                actor=actor,
-                access=access,
-                access_type=access_type,
-                join_model=join_model,
-                join_conditions=join_conditions,
-                identifier_keys=identifier_keys,
-                identity_id=identity_id,
-                **kwargs,
-            )
+        query = cls._list_preprocess(
+            before_obj=before_obj,
+            after_obj=after_obj,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit,
+            query_text=query_text,
+            query_embedding=query_embedding,
+            ascending=ascending,
+            actor=actor,
+            access=access,
+            access_type=access_type,
+            join_model=join_model,
+            join_conditions=join_conditions,
+            identifier_keys=identifier_keys,
+            identity_id=identity_id,
+            **kwargs,
+        )
 
-            # Execute the query
-            results = await session.execute(query)
+        # Execute the query
+        results = await db_session.execute(query)
 
-            results = list(results.scalars())
-            results = cls._list_postprocess(
-                before=before,
-                after=after,
-                limit=limit,
-                results=results,
-            )
+        results = list(results.scalars())
+        results = cls._list_postprocess(
+            before=before,
+            after=after,
+            limit=limit,
+            results=results,
+        )
 
-            return results
+        return results
 
     @classmethod
     def _list_preprocess(
@@ -692,22 +691,21 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 item._set_created_and_updated_by_fields(actor.id)
 
         try:
-            async with db_session as session:
-                session.add_all(items)
-                await session.flush()  # Flush to generate IDs but don't commit yet
+            db_session.add_all(items)
+            await db_session.flush()  # Flush to generate IDs but don't commit yet
 
-                # Collect IDs to fetch the complete objects after commit
-                item_ids = [item.id for item in items]
+            # Collect IDs to fetch the complete objects after commit
+            item_ids = [item.id for item in items]
 
-                await session.commit()
+            await db_session.commit()
 
-                # Re-query the objects to get them with relationships loaded
-                query = select(cls).where(cls.id.in_(item_ids))
-                if hasattr(cls, "created_at"):
-                    query = query.order_by(cls.created_at)
+            # Re-query the objects to get them with relationships loaded
+            query = select(cls).where(cls.id.in_(item_ids))
+            if hasattr(cls, "created_at"):
+                query = query.order_by(cls.created_at)
 
-                result = await session.execute(query)
-                return list(result.scalars())
+            result = await db_session.execute(query)
+            return list(result.scalars())
 
         except (DBAPIError, IntegrityError) as e:
             cls._handle_dbapi_error(e)
@@ -754,14 +752,13 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         """Permanently removes the record from the database asynchronously."""
         logger.debug(f"Hard deleting {self.__class__.__name__} with ID: {self.id} with actor={actor} (async)")
 
-        async with db_session as session:
-            try:
-                await session.delete(self)
-                await session.commit()
-            except Exception as e:
-                await session.rollback()
-                logger.exception(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}")
-                raise ValueError(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}: {e}")
+        try:
+            await db_session.delete(self)
+            await db_session.commit()
+        except Exception as e:
+            await db_session.rollback()
+            logger.exception(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}")
+            raise ValueError(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}: {e}")
 
     @classmethod
     @handle_db_timeout
@@ -783,15 +780,14 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         query = delete(cls)
         query = query.where(cls.id.in_(identifiers))
         query = cls.apply_access_predicate(query, actor, access, access_type)
-        async with db_session as session:
-            try:
-                result = await session.execute(query)
-                await session.commit()
-                logger.debug(f"Successfully deleted {result.rowcount} {cls.__name__} records")
-            except Exception as e:
-                await session.rollback()
-                logger.exception(f"Failed to hard delete {cls.__name__} with identifiers {identifiers}")
-                raise ValueError(f"Failed to hard delete {cls.__name__} with identifiers {identifiers}: {e}")
+        try:
+            result = await db_session.execute(query)
+            await db_session.commit()
+            logger.debug(f"Successfully deleted {result.rowcount} {cls.__name__} records")
+        except Exception as e:
+            await db_session.rollback()
+            logger.exception(f"Failed to hard delete {cls.__name__} with identifiers {identifiers}")
+            raise ValueError(f"Failed to hard delete {cls.__name__} with identifiers {identifiers}: {e}")
 
     @handle_db_timeout
     def update(self, db_session: Session, actor: Optional["User"] = None, no_commit: bool = False) -> "SqlalchemyBase":
@@ -913,16 +909,15 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         Raises:
             DBAPIError: If a database error occurs
         """
-        async with db_session as session:
-            query = cls._size_preprocess(db_session=session, actor=actor, access=access, access_type=access_type, **kwargs)
+        query = cls._size_preprocess(db_session=db_session, actor=actor, access=access, access_type=access_type, **kwargs)
 
-            try:
-                result = await session.execute(query)
-                count = result.scalar()
-                return count if count else 0
-            except DBAPIError as e:
-                logger.exception(f"Failed to calculate size for {cls.__name__}")
-                raise e
+        try:
+            result = await db_session.execute(query)
+            count = result.scalar()
+            return count if count else 0
+        except DBAPIError as e:
+            logger.exception(f"Failed to calculate size for {cls.__name__}")
+            raise e
 
     @classmethod
     def apply_access_predicate(
