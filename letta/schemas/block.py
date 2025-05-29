@@ -21,7 +21,7 @@ class BaseBlock(LettaBase, validate_assignment=True):
     # template data (optional)
     template_name: Optional[str] = Field(None, description="Name of the block if it is a template.", alias="name")
     is_template: bool = Field(False, description="Whether the block is a template (e.g. saved human/persona options).")
-    preserve_on_migration: bool = Field(False, description="Preserve the block on template migration.")
+    preserve_on_migration: Optional[bool] = Field(False, description="Preserve the block on template migration.")
 
     # context window label
     label: Optional[str] = Field(None, description="Label of the block (e.g. 'human', 'persona') in the context window.")
