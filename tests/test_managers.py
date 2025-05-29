@@ -1224,8 +1224,9 @@ async def test_list_attached_agents_nonexistent_source(server: SyncServer, defau
 # ======================================================================================================================
 
 
-def test_list_agents_matching_all_tags(server: SyncServer, default_user, agent_with_tags):
-    agents = server.agent_manager.list_agents_matching_tags(
+@pytest.mark.asyncio
+async def test_list_agents_matching_all_tags(server: SyncServer, default_user, agent_with_tags, event_loop):
+    agents = await server.agent_manager.list_agents_matching_tags_async(
         actor=default_user,
         match_all=["primary_agent", "benefit_1"],
         match_some=[],
@@ -1234,8 +1235,9 @@ def test_list_agents_matching_all_tags(server: SyncServer, default_user, agent_w
     assert {a.name for a in agents} == {"agent1", "agent3"}
 
 
-def test_list_agents_matching_some_tags(server: SyncServer, default_user, agent_with_tags):
-    agents = server.agent_manager.list_agents_matching_tags(
+@pytest.mark.asyncio
+async def test_list_agents_matching_some_tags(server: SyncServer, default_user, agent_with_tags, event_loop):
+    agents = await server.agent_manager.list_agents_matching_tags_async(
         actor=default_user,
         match_all=["primary_agent"],
         match_some=["benefit_1", "benefit_2"],
@@ -1244,8 +1246,9 @@ def test_list_agents_matching_some_tags(server: SyncServer, default_user, agent_
     assert {a.name for a in agents} == {"agent1", "agent2", "agent3"}
 
 
-def test_list_agents_matching_all_and_some_tags(server: SyncServer, default_user, agent_with_tags):
-    agents = server.agent_manager.list_agents_matching_tags(
+@pytest.mark.asyncio
+async def test_list_agents_matching_all_and_some_tags(server: SyncServer, default_user, agent_with_tags, event_loop):
+    agents = await server.agent_manager.list_agents_matching_tags_async(
         actor=default_user,
         match_all=["primary_agent", "benefit_1"],
         match_some=["benefit_2", "nonexistent"],
@@ -1254,8 +1257,9 @@ def test_list_agents_matching_all_and_some_tags(server: SyncServer, default_user
     assert agents[0].name == "agent3"
 
 
-def test_list_agents_matching_no_tags(server: SyncServer, default_user, agent_with_tags):
-    agents = server.agent_manager.list_agents_matching_tags(
+@pytest.mark.asyncio
+async def test_list_agents_matching_no_tags(server: SyncServer, default_user, agent_with_tags, event_loop):
+    agents = await server.agent_manager.list_agents_matching_tags_async(
         actor=default_user,
         match_all=["primary_agent", "nonexistent_tag"],
         match_some=["benefit_1", "benefit_2"],
