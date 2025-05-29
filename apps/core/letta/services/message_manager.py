@@ -49,7 +49,7 @@ class MessageManager:
     def get_messages_by_ids(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
         """Fetch messages by ID and return them in the requested order."""
         with db_registry.session() as session:
-            results = MessageModel.list(db_session=session, id=message_ids, organization_id=actor.organization_id, limit=len(message_ids))
+            results = MessageModel.read_multiple(db_session=session, identifiers=message_ids, actor=actor)
         return self._get_messages_by_id_postprocess(results, message_ids)
 
     @enforce_types
@@ -57,9 +57,7 @@ class MessageManager:
     async def get_messages_by_ids_async(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
         """Fetch messages by ID and return them in the requested order. Async version of above function."""
         async with db_registry.async_session() as session:
-            results = await MessageModel.list_async(
-                db_session=session, id=message_ids, organization_id=actor.organization_id, limit=len(message_ids)
-            )
+            results = await MessageModel.read_multiple_async(db_session=session, identifiers=message_ids, actor=actor)
         return self._get_messages_by_id_postprocess(results, message_ids)
 
     def _get_messages_by_id_postprocess(
