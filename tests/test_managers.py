@@ -687,7 +687,7 @@ async def test_create_agent_passed_in_initial_messages(server: SyncServer, defau
         actor=default_user,
     )
     assert await server.message_manager.size_async(agent_id=agent_state.id, actor=default_user) == 2
-    init_messages = await server.agent_manager.get_in_context_messages_async(agent_id=agent_state.id, actor=default_user)
+    init_messages = await server.message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=default_user)
 
     # Check that the system appears in the first initial message
     assert create_agent_request.system in init_messages[0].content[0].text
@@ -715,7 +715,7 @@ async def test_create_agent_default_initial_message(server: SyncServer, default_
         actor=default_user,
     )
     assert await server.message_manager.size_async(agent_id=agent_state.id, actor=default_user) == 4
-    init_messages = await server.agent_manager.get_in_context_messages_async(agent_id=agent_state.id, actor=default_user)
+    init_messages = await server.message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=default_user)
     # Check that the system appears in the first initial message
     assert create_agent_request.system in init_messages[0].content[0].text
     assert create_agent_request.memory_blocks[0].value in init_messages[0].content[0].text

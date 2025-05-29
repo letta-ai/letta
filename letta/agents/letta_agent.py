@@ -516,7 +516,7 @@ class LettaAgent(BaseAgent):
 
         # Mirror the sync agent loop: get allowed tools or allow all if none are allowed
         if self.last_function_response is None:
-            self.last_function_response = await self._load_last_function_response_async()
+            self.last_function_response = await self._load_last_function_response_async(agent_state)
         valid_tool_names = tool_rules_solver.get_allowed_tool_names(
             available_tools=set([t.name for t in tools]),
             last_function_response=self.last_function_response,
@@ -737,9 +737,9 @@ class LettaAgent(BaseAgent):
         return results
 
     @trace_method
-    async def _load_last_function_response_async(self):
+    async def _load_last_function_response_async(self, agent_state: AgentState):
         """Load the last function response from message history"""
-        in_context_messages = await self.agent_manager.get_in_context_messages_async(agent_id=self.agent_id, actor=self.actor)
+        in_context_messages = await self.message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=self.actor)
         for msg in reversed(in_context_messages):
             if msg.role == MessageRole.tool and msg.content and len(msg.content) == 1 and isinstance(msg.content[0], TextContent):
                 text_content = msg.content[0].text
