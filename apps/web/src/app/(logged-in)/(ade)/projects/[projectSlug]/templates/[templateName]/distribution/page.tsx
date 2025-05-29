@@ -95,7 +95,7 @@ client = Letta(
 )
 
 # create agent
-response = client.templates.create_agents(
+response = client.templates.agents.create(
     project="${slug}",
     template_version="${templateName}:latest",
 )
