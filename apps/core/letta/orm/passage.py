@@ -41,16 +41,6 @@ class BasePassage(SqlalchemyBase, OrganizationMixin):
         """Relationship to organization"""
         return relationship("Organization", back_populates="passages", lazy="selectin")
 
-    @declared_attr
-    def __table_args__(cls):
-        if settings.letta_pg_uri_no_default:
-            return (
-                Index(f"{cls.__tablename__}_org_idx", "organization_id"),
-                Index(f"{cls.__tablename__}_created_at_id_idx", "created_at", "id"),
-                {"extend_existing": True},
-            )
-        return (Index(f"{cls.__tablename__}_created_at_id_idx", "created_at", "id"), {"extend_existing": True})
-
 
 class SourcePassage(BasePassage, FileMixin, SourceMixin):
     """Passages derived from external files/sources"""
@@ -67,6 +57,16 @@ class SourcePassage(BasePassage, FileMixin, SourceMixin):
         return relationship("Organization", back_populates="source_passages", lazy="selectin")
 
     @declared_attr
+    def __table_args__(cls):
+        if settings.letta_pg_uri_no_default:
+            return (
+                Index("source_passages_org_idx", "organization_id"),
+                Index("source_passages_created_at_id_idx", "created_at", "id"),
+                {"extend_existing": True},
+            )
+        return (Index("source_passages_created_at_id_idx", "created_at", "id"), {"extend_existing": True})
+
+    @declared_attr
     def source(cls) -> Mapped["Source"]:
         """Relationship to source"""
         return relationship("Source", back_populates="passages", lazy="selectin", passive_deletes=True)
@@ -80,3 +80,14 @@ class AgentPassage(BasePassage, AgentMixin):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", back_populates="agent_passages", lazy="selectin")
+
+    @declared_attr
+    def __table_args__(cls):
+        if settings.letta_pg_uri_no_default:
+            return (
+                Index("agent_passages_org_idx", "organization_id"),
+                Index("ix_agent_passages_org_agent", "organization_id", "agent_id"),
+                Index("agent_passages_created_at_id_idx", "created_at", "id"),
+                {"extend_existing": True},
+            )
+        return (Index("agent_passages_created_at_id_idx", "created_at", "id"), {"extend_existing": True})
