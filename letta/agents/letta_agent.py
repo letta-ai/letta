@@ -33,6 +33,7 @@ from letta.schemas.user import User
 from letta.server.rest_api.utils import create_letta_messages_from_llm_response
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
+from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.step_manager import NoopStepManager, StepManager
@@ -478,7 +479,7 @@ class LettaAgent(BaseAgent):
         in_context_messages: List[Message],
         agent_state: AgentState,
         tool_rules_solver: ToolRulesSolver,
-    ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:
+    ) -> dict:
         self.num_messages, self.num_archival_memories = await asyncio.gather(
             (
                 self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id)
@@ -510,7 +511,6 @@ class LettaAgent(BaseAgent):
                 ToolType.EXTERNAL_COMPOSIO,
                 ToolType.EXTERNAL_MCP,
             }
-            or (t.tool_type == ToolType.EXTERNAL_COMPOSIO)
         ]
 
         # Mirror the sync agent loop: get allowed tools or allow all if none are allowed
@@ -528,6 +528,9 @@ class LettaAgent(BaseAgent):
             force_tool_call = valid_tool_names[0]
 
         allowed_tools = [enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names)]
+        allowed_tools = runtime_override_tool_json_schema(
+            tool_list=allowed_tools, response_format=agent_state.response_format, request_heartbeat=True
+        )
 
         return llm_client.build_request_data(in_context_messages, agent_state.llm_config, allowed_tools, force_tool_call)
 

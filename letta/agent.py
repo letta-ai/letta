@@ -59,6 +59,7 @@ from letta.schemas.usage import LettaUsageStatistics
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import check_supports_structured_output, compile_memory_metadata_block
+from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
 from letta.services.job_manager import JobManager
 from letta.services.mcp.base_client import AsyncBaseMCPClient
 from letta.services.message_manager import MessageManager
@@ -327,7 +328,9 @@ class Agent(BaseAgent):
                 return None
 
         allowed_functions = [func for func in agent_state_tool_jsons if func["name"] in allowed_tool_names]
-        allowed_functions = self._runtime_override_tool_json_schema(allowed_functions)
+        allowed_functions = runtime_override_tool_json_schema(
+            tool_list=allowed_functions, response_format=self.agent_state.response_format, request_heartbeat=True
+        )
 
         # For the first message, force the initial tool if one is specified
         force_tool_call = None

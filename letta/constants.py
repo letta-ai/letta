@@ -139,6 +139,7 @@ DEFAULT_MESSAGE_TOOL_KWARG = "message"
 PRE_EXECUTION_MESSAGE_ARG = "pre_exec_msg"
 
 REQUEST_HEARTBEAT_PARAM = "request_heartbeat"
+REQUEST_HEARTBEAT_DESCRIPTION = "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
 
 
 # Structured output models
