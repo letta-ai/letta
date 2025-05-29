@@ -22,12 +22,15 @@ class BaseServerConfig(BaseModel):
 class SSEServerConfig(BaseServerConfig):
     type: MCPServerType = MCPServerType.SSE
     server_url: str = Field(..., description="The URL of the server (MCP SSE client will connect to this URL)")
+    token: Optional[str] = Field(None, description="The bearer token to use for authentication (if required)")
 
     def to_dict(self) -> dict:
         values = {
             "transport": "sse",
             "url": self.server_url,
         }
+        if self.token is not None:
+            values["token"] = self.token
         return values
 
 
