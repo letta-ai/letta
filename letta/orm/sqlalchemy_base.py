@@ -848,9 +848,9 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 else:  # Single value for equality filtering
                     query = query.where(column == value)
 
-        # Handle soft deletes if the class has the 'is_deleted' attribute
-        if hasattr(cls, "is_deleted"):
-            query = query.where(cls.is_deleted == False)
+        # TODO: Handle soft deletes if the class has the 'is_deleted' attribute
+        # if hasattr(cls, "is_deleted"):
+        #    query = query.where(cls.is_deleted == False)
 
         return query
 
