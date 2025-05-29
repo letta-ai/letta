@@ -88,6 +88,10 @@ class LLMPermissionDeniedError(LLMError):
     """Error when permission is denied by LLM service"""
 
 
+class LLMContextWindowExceededError(LLMError):
+    """Error when the context length is exceeded."""
+
+
 class LLMNotFoundError(LLMError):
     """Error when requested resource is not found"""
 

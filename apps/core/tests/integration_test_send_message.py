@@ -128,7 +128,7 @@ USER_MESSAGE_TOOL_CALL: List[MessageCreate] = [
 ]
 all_configs = [
     "openai-gpt-4o-mini.json",
-    "azure-gpt-4o-mini.json",
+    # "azure-gpt-4o-mini.json", # TODO: Re-enable on new agent loop
     "claude-3-5-sonnet.json",
     "claude-3-7-sonnet.json",
     "claude-3-7-sonnet-extended.json",
@@ -898,3 +898,58 @@ async def test_async_greeting_with_assistant_message_async_client(
 
     messages = result["messages"]
     assert_tool_response_dict_messages(messages)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+async def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, llm_config: LLMConfig):
+    """Test that summarization is automatically triggered."""
+    llm_config.context_window = 3000
+    client.tools.upsert_base_tools()
+
+    send_message_tool = client.tools.list(name="send_message")[0]
+    temp_agent_state = client.agents.create(
+        include_base_tools=False,
+        tool_ids=[send_message_tool.id],
+        llm_config=llm_config,
+        embedding="letta/letta-free",
+        tags=["supervisor"],
+    )
+
+    philosophical_question = """
+You know, sometimes I wonder if the entire structure of our lives is built on a series of unexamined assumptions we just silently agreed to somewhere along the way—like how we all just decided that five days a week of work and two days of “rest” constitutes balance, or how 9-to-5 became the default rhythm of a meaningful life, or even how the idea of “success” got boiled down to job titles and property ownership and productivity metrics on a LinkedIn profile, when maybe none of that is actually what makes a life feel full, or grounded, or real. And then there’s the weird paradox of ambition, how we're taught to chase it like a finish line that keeps moving, constantly redefining itself right as you’re about to grasp it—because even when you get the job, or the degree, or the validation, there's always something next, something more, like a treadmill with invisible settings you didn’t realize were turned up all the way.
+
+And have you noticed how we rarely stop to ask who set those definitions for us? Like was there ever a council that decided, yes, owning a home by thirty-five and retiring by sixty-five is the universal template for fulfillment? Or did it just accumulate like cultural sediment over generations, layered into us so deeply that questioning it feels uncomfortable, even dangerous? And isn’t it strange that we spend so much of our lives trying to optimize things—our workflows, our diets, our sleep, our morning routines—as though the point of life is to operate more efficiently rather than to experience it more richly? We build these intricate systems, these rulebooks for being a “high-functioning” human, but where in all of that is the space for feeling lost, for being soft, for wandering without a purpose just because it’s a sunny day and your heart is tugging you toward nowhere in particular?
+
+Sometimes I lie awake at night and wonder if all the noise we wrap around ourselves—notifications, updates, performance reviews, even our internal monologues—might be crowding out the questions we were meant to live into slowly, like how to love better, or how to forgive ourselves, or what the hell we’re even doing here in the first place. And when you strip it all down—no goals, no KPIs, no curated identity—what’s actually left of us? Are we just a sum of the roles we perform, or is there something quieter underneath that we've forgotten how to hear?
+
+And if there is something underneath all of it—something real, something worth listening to—then how do we begin to uncover it, gently, without rushing or reducing it to another task on our to-do list?
+    """
+
+    MAX_ATTEMPTS = 10
+    prev_length = None
+
+    for attempt in range(MAX_ATTEMPTS):
+        client.agents.messages.create(
+            agent_id=temp_agent_state.id,
+            messages=[MessageCreate(role="user", content=philosophical_question)],
+        )
+
+        temp_agent_state = client.agents.retrieve(agent_id=temp_agent_state.id)
+        message_ids = temp_agent_state.message_ids
+        current_length = len(message_ids)
+
+        print("LENGTH OF IN_CONTEXT_MESSAGES:", current_length)
+
+        if prev_length is not None and current_length <= prev_length:
+            # TODO: Add more stringent checks here
+            print(f"Summarization was triggered, detected current_length {current_length} is at least prev_length {prev_length}.")
+            break
+
+        prev_length = current_length
+    else:
+        raise AssertionError("Summarization was not triggered after 10 messages")

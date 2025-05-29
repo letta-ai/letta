@@ -4,12 +4,12 @@ import uuid
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple, Union
 
 from openai import AsyncStream
-from openai.types import CompletionUsage
-from openai.types.chat import ChatCompletion, ChatCompletionChunk
+from openai.types.chat import ChatCompletionChunk
 
 from letta.agents.base_agent import BaseAgent
 from letta.agents.ephemeral_summary_agent import EphemeralSummaryAgent
 from letta.agents.helpers import _create_letta_response, _prepare_in_context_messages_async, generate_step_id
+from letta.errors import LLMContextWindowExceededError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.helpers.tool_execution_helper import enable_strict_mode
@@ -25,6 +25,7 @@ from letta.schemas.enums import MessageRole, MessageStreamStatus
 from letta.schemas.letta_message import AssistantMessage
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
+from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
 from letta.schemas.provider_trace import ProviderTraceCreate
@@ -61,7 +62,11 @@ class LettaAgent(BaseAgent):
         actor: User,
         step_manager: StepManager = NoopStepManager(),
         telemetry_manager: TelemetryManager = NoopTelemetryManager(),
-        summary_block_label: str = "convo_summary",
+        summary_block_label: str = "conversation_summary",
+        message_buffer_limit: int = 60,  # TODO: Make this configurable
+        message_buffer_min: int = 15,  # TODO: Make this configurable
+        enable_summarization: bool = True,  # TODO: Make this configurable
+        max_summarization_retries: int = 3,  # TODO: Make this configurable
     ):
         super().__init__(agent_id=agent_id, openai_client=None, message_manager=message_manager, agent_manager=agent_manager, actor=actor)
 
@@ -81,9 +86,10 @@ class LettaAgent(BaseAgent):
 
         self.summarization_agent = None
         self.summary_block_label = summary_block_label
+        self.max_summarization_retries = max_summarization_retries
 
         # TODO: Expand to more
-        if model_settings.openai_api_key:
+        if enable_summarization and model_settings.openai_api_key:
             self.summarization_agent = EphemeralSummaryAgent(
                 target_block_label=self.summary_block_label,
                 agent_id=agent_id,
@@ -97,8 +103,8 @@ class LettaAgent(BaseAgent):
             mode=SummarizationMode.STATIC_MESSAGE_BUFFER,
             summarizer_agent=self.summarization_agent,
             # TODO: Make this configurable
-            message_buffer_limit=60,
-            message_buffer_min=15,
+            message_buffer_limit=message_buffer_limit,
+            message_buffer_min=message_buffer_min,
         )
 
     @trace_method
@@ -129,22 +135,15 @@ class LettaAgent(BaseAgent):
         for _ in range(max_steps):
             step_id = generate_step_id()
 
-            in_context_messages = current_in_context_messages + new_in_context_messages
-            log_event("agent.stream_no_tokens.messages.refreshed")  # [1^]
-
-            request_data = await self._create_llm_request_data_async(
-                llm_client=llm_client,
-                in_context_messages=in_context_messages,
-                agent_state=agent_state,
-                tool_rules_solver=tool_rules_solver,
-                # TODO: pass in reasoning content
+            request_data, response_data, current_in_context_messages, new_in_context_messages = await self._build_and_request_from_llm(
+                current_in_context_messages,
+                new_in_context_messages,
+                agent_state,
+                llm_client,
+                tool_rules_solver,
             )
-            log_event("agent.stream_no_tokens.llm_request.created")  # [2^]
+            in_context_messages = current_in_context_messages + new_in_context_messages
 
-            try:
-                response_data = await llm_client.request_async(request_data, agent_state.llm_config)
-            except Exception as e:
-                raise llm_client.handle_llm_error(e)
             log_event("agent.stream_no_tokens.llm_response.received")  # [3^]
 
             response = llm_client.convert_response_to_chat_completion(response_data, in_context_messages, agent_state.llm_config)
@@ -206,7 +205,13 @@ class LettaAgent(BaseAgent):
 
         # Extend the in context message ids
         if not agent_state.message_buffer_autoclear:
-            await self._rebuild_context_window(in_context_messages=current_in_context_messages, new_letta_messages=new_in_context_messages)
+            await self._rebuild_context_window(
+                in_context_messages=current_in_context_messages,
+                new_letta_messages=new_in_context_messages,
+                llm_config=agent_state.llm_config,
+                total_tokens=usage.total_tokens,
+                force=False,
+            )
 
         # Return back usage
         yield f"data: {usage.model_dump_json()}\n\n"
@@ -214,7 +219,7 @@ class LettaAgent(BaseAgent):
 
     async def _step(
         self, agent_state: AgentState, input_messages: List[MessageCreate], max_steps: int = 10
-    ) -> Tuple[List[Message], List[Message], CompletionUsage]:
+    ) -> Tuple[List[Message], List[Message], LettaUsageStatistics]:
         """
         Carries out an invocation of the agent loop. In each step, the agent
             1. Rebuilds its memory
@@ -234,23 +239,11 @@ class LettaAgent(BaseAgent):
         usage = LettaUsageStatistics()
         for _ in range(max_steps):
             step_id = generate_step_id()
-
-            in_context_messages = current_in_context_messages + new_in_context_messages
-            log_event("agent.step.messages.refreshed")  # [1^]
-
-            request_data = await self._create_llm_request_data_async(
-                llm_client=llm_client,
-                in_context_messages=in_context_messages,
-                agent_state=agent_state,
-                tool_rules_solver=tool_rules_solver,
-                # TODO: pass in reasoning content
+            request_data, response_data, current_in_context_messages, new_in_context_messages = await self._build_and_request_from_llm(
+                current_in_context_messages, new_in_context_messages, agent_state, llm_client, tool_rules_solver
             )
-            log_event("agent.step.llm_request.created")  # [2^]
+            in_context_messages = current_in_context_messages + new_in_context_messages
 
-            try:
-                response_data = await llm_client.request_async(request_data, agent_state.llm_config)
-            except Exception as e:
-                raise llm_client.handle_llm_error(e)
             log_event("agent.step.llm_response.received")  # [3^]
 
             response = llm_client.convert_response_to_chat_completion(response_data, in_context_messages, agent_state.llm_config)
@@ -302,7 +295,13 @@ class LettaAgent(BaseAgent):
 
         # Extend the in context message ids
         if not agent_state.message_buffer_autoclear:
-            await self._rebuild_context_window(in_context_messages=current_in_context_messages, new_letta_messages=new_in_context_messages)
+            await self._rebuild_context_window(
+                in_context_messages=current_in_context_messages,
+                new_letta_messages=new_in_context_messages,
+                llm_config=agent_state.llm_config,
+                total_tokens=usage.total_tokens,
+                force=False,
+            )
 
         return current_in_context_messages, new_in_context_messages, usage
 
@@ -344,27 +343,16 @@ class LettaAgent(BaseAgent):
         provider_request_start_timestamp_ns = None
         for _ in range(max_steps):
             step_id = generate_step_id()
-            in_context_messages = current_in_context_messages + new_in_context_messages
-            log_event("agent.step.messages.refreshed")  # [1^]
-
-            request_data = await self._create_llm_request_data_async(
-                llm_client=llm_client,
-                in_context_messages=in_context_messages,
-                agent_state=agent_state,
-                tool_rules_solver=tool_rules_solver,
+            request_data, stream, current_in_context_messages, new_in_context_messages = await self._build_and_request_from_llm_streaming(
+                first_chunk,
+                ttft_span,
+                request_start_timestamp_ns,
+                current_in_context_messages,
+                new_in_context_messages,
+                agent_state,
+                llm_client,
+                tool_rules_solver,
             )
-            log_event("agent.stream.llm_request.created")  # [2^]
-
-            try:
-                if first_chunk and ttft_span is not None:
-                    provider_request_start_timestamp_ns = get_utc_timestamp_ns()
-                    provider_req_start_ns = provider_request_start_timestamp_ns - request_start_timestamp_ns
-                    ttft_span.add_event(
-                        name="provider_req_start_ns", attributes={"provider_req_start_ms": provider_req_start_ns // 1_000_000}
-                    )
-                stream = await llm_client.stream_async(request_data, agent_state.llm_config)
-            except Exception as e:
-                raise llm_client.handle_llm_error(e)
             log_event("agent.stream.llm_response.received")  # [3^]
 
             # TODO: THIS IS INCREDIBLY UGLY
@@ -457,20 +445,174 @@ class LettaAgent(BaseAgent):
 
         # Extend the in context message ids
         if not agent_state.message_buffer_autoclear:
-            await self._rebuild_context_window(in_context_messages=current_in_context_messages, new_letta_messages=new_in_context_messages)
+            await self._rebuild_context_window(
+                in_context_messages=current_in_context_messages,
+                new_letta_messages=new_in_context_messages,
+                llm_config=agent_state.llm_config,
+                total_tokens=usage.total_tokens,
+                force=False,
+            )
 
         # TODO: Also yield out a letta usage stats SSE
         yield f"data: {usage.model_dump_json()}\n\n"
         yield f"data: {MessageStreamStatus.done.model_dump_json()}\n\n"
 
+    async def _build_and_request_from_llm(
+        self,
+        current_in_context_messages: List[Message],
+        new_in_context_messages: List[Message],
+        agent_state: AgentState,
+        llm_client: LLMClientBase,
+        tool_rules_solver: ToolRulesSolver,
+    ) -> Tuple[Dict, Dict, List[Message], List[Message]]:
+        for attempt in range(self.max_summarization_retries + 1):
+            try:
+                # Rebuild memory with current state
+                in_context_messages = await self._rebuild_memory_async(
+                    current_in_context_messages + new_in_context_messages,
+                    agent_state,
+                    num_messages=self.num_messages,
+                    num_archival_memories=self.num_archival_memories,
+                )
+                log_event("agent.stream_no_tokens.messages.refreshed")
+
+                # Create LLM request data
+                request_data = await self._create_llm_request_data_async(
+                    llm_client=llm_client,
+                    in_context_messages=in_context_messages,
+                    agent_state=agent_state,
+                    tool_rules_solver=tool_rules_solver,
+                )
+                log_event("agent.stream_no_tokens.llm_request.created")
+
+                # Attempt LLM request
+                return (
+                    request_data,
+                    await llm_client.request_async(request_data, agent_state.llm_config),
+                    current_in_context_messages,
+                    new_in_context_messages,
+                )
+
+            except Exception as e:
+                if attempt == self.max_summarization_retries:
+                    raise e
+
+                # Handle the error and prepare for retry
+                current_in_context_messages = await self._handle_llm_error(
+                    e,
+                    llm_client=llm_client,
+                    in_context_messages=current_in_context_messages,
+                    new_letta_messages=new_in_context_messages,
+                    llm_config=agent_state.llm_config,
+                    force=True,
+                )
+                new_in_context_messages = []
+                log_event(f"agent.stream_no_tokens.retry_attempt.{attempt + 1}")
+
+    async def _build_and_request_from_llm_streaming(
+        self,
+        first_chunk: bool,
+        ttft_span: "Span",
+        request_start_timestamp_ns: int,
+        current_in_context_messages: List[Message],
+        new_in_context_messages: List[Message],
+        agent_state: AgentState,
+        llm_client: LLMClientBase,
+        tool_rules_solver: ToolRulesSolver,
+    ) -> Tuple[Dict, AsyncStream[ChatCompletionChunk], List[Message], List[Message]]:
+        for attempt in range(self.max_summarization_retries + 1):
+            try:
+                in_context_messages = await self._rebuild_memory_async(
+                    current_in_context_messages + new_in_context_messages,
+                    agent_state,
+                    num_messages=self.num_messages,
+                    num_archival_memories=self.num_archival_memories,
+                )
+                log_event("agent.step.messages.refreshed")  # [1^]
+
+                request_data = await self._create_llm_request_data_async(
+                    llm_client=llm_client,
+                    in_context_messages=in_context_messages,
+                    agent_state=agent_state,
+                    tool_rules_solver=tool_rules_solver,
+                )
+                log_event("agent.stream.llm_request.created")  # [2^]
+
+                if first_chunk and ttft_span is not None:
+                    provider_request_start_timestamp_ns = get_utc_timestamp_ns()
+                    provider_req_start_ns = provider_request_start_timestamp_ns - request_start_timestamp_ns
+                    ttft_span.add_event(
+                        name="provider_req_start_ns", attributes={"provider_req_start_ms": provider_req_start_ns // 1_000_000}
+                    )
+
+                # Attempt LLM request
+                return (
+                    request_data,
+                    await llm_client.stream_async(request_data, agent_state.llm_config),
+                    current_in_context_messages,
+                    new_in_context_messages,
+                )
+
+            except Exception as e:
+                if attempt == self.max_summarization_retries:
+                    raise e
+
+                # Handle the error and prepare for retry
+                current_in_context_messages = await self._handle_llm_error(
+                    e,
+                    llm_client=llm_client,
+                    in_context_messages=current_in_context_messages,
+                    new_letta_messages=new_in_context_messages,
+                    llm_config=agent_state.llm_config,
+                    force=True,
+                )
+                new_in_context_messages = []
+                log_event(f"agent.stream_no_tokens.retry_attempt.{attempt + 1}")
+
     @trace_method
-    async def _rebuild_context_window(self, in_context_messages: List[Message], new_letta_messages: List[Message]) -> None:
-        new_in_context_messages, updated = self.summarizer.summarize(
-            in_context_messages=in_context_messages, new_letta_messages=new_letta_messages
-        )
+    async def _handle_llm_error(
+        self,
+        e: Exception,
+        llm_client: LLMClientBase,
+        in_context_messages: List[Message],
+        new_letta_messages: List[Message],
+        llm_config: LLMConfig,
+        force: bool,
+    ) -> List[Message]:
+        if isinstance(e, LLMContextWindowExceededError):
+            return await self._rebuild_context_window(
+                in_context_messages=in_context_messages, new_letta_messages=new_letta_messages, llm_config=llm_config, force=force
+            )
+        else:
+            raise llm_client.handle_llm_error(e)
+
+    @trace_method
+    async def _rebuild_context_window(
+        self,
+        in_context_messages: List[Message],
+        new_letta_messages: List[Message],
+        llm_config: LLMConfig,
+        total_tokens: Optional[int] = None,
+        force: bool = False,
+    ) -> List[Message]:
+        # If total tokens is reached, we truncate down
+        # TODO: This can be broken by bad configs, e.g. lower bound too high, initial messages too fat, etc.
+        if force or (total_tokens and total_tokens > llm_config.context_window):
+            self.logger.warning(
+                f"Total tokens {total_tokens} exceeds configured max tokens {llm_config.context_window}, forcefully clearing message history."
+            )
+            new_in_context_messages, updated = self.summarizer.summarize(
+                in_context_messages=in_context_messages, new_letta_messages=new_letta_messages, force=True, clear=True
+            )
+        else:
+            new_in_context_messages, updated = self.summarizer.summarize(
+                in_context_messages=in_context_messages, new_letta_messages=new_letta_messages
+            )
         await self.agent_manager.set_in_context_messages_async(
             agent_id=self.agent_id, message_ids=[m.id for m in new_in_context_messages], actor=self.actor
         )
+
+        return new_in_context_messages
 
     @trace_method
     async def _create_llm_request_data_async(
