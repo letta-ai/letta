@@ -491,19 +491,11 @@ class LettaAgent(BaseAgent):
     ) -> Tuple[Dict, Dict, List[Message], List[Message]]:
         for attempt in range(self.max_summarization_retries + 1):
             try:
-                # Rebuild memory with current state
-                in_context_messages = await self._rebuild_memory_async(
-                    current_in_context_messages + new_in_context_messages,
-                    agent_state,
-                    num_messages=self.num_messages,
-                    num_archival_memories=self.num_archival_memories,
-                )
                 log_event("agent.stream_no_tokens.messages.refreshed")
-
                 # Create LLM request data
                 request_data = await self._create_llm_request_data_async(
                     llm_client=llm_client,
-                    in_context_messages=in_context_messages,
+                    in_context_messages=current_in_context_messages + new_in_context_messages,
                     agent_state=agent_state,
                     tool_rules_solver=tool_rules_solver,
                 )
@@ -546,17 +538,11 @@ class LettaAgent(BaseAgent):
     ) -> Tuple[Dict, AsyncStream[ChatCompletionChunk], List[Message], List[Message]]:
         for attempt in range(self.max_summarization_retries + 1):
             try:
-                in_context_messages = await self._rebuild_memory_async(
-                    current_in_context_messages + new_in_context_messages,
-                    agent_state,
-                    num_messages=self.num_messages,
-                    num_archival_memories=self.num_archival_memories,
-                )
-                log_event("agent.step.messages.refreshed")  # [1^]
-
+                log_event("agent.stream_no_tokens.messages.refreshed")
+                # Create LLM request data
                 request_data = await self._create_llm_request_data_async(
                     llm_client=llm_client,
-                    in_context_messages=in_context_messages,
+                    in_context_messages=current_in_context_messages + new_in_context_messages,
                     agent_state=agent_state,
                     tool_rules_solver=tool_rules_solver,
                 )
