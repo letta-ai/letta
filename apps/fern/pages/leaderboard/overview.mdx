@@ -1,5 +1,5 @@
 ---
-title: Letta Leaderboards
+title: The Letta Leaderboard
 subtitle: Understand which models to use when building your agents
 # layout: page
 # hide-feedback: true
@@ -8,17 +8,17 @@ slug: leaderboard
 ---
 
 <Note>
-The Letta Leaderboards are [open source](https://github.com/letta-ai/letta-leaderboard) and we actively encourage contributions! To learn how to add additional results or benchmarking tasks, read our [contributor guide](/leaderboard/contributing).
+The Letta Leaderboard is [open source](https://github.com/letta-ai/letta-leaderboard) and we actively encourage contributions! To learn how to add additional results or benchmarking tasks, read our [contributor guide](/leaderboard/contributing).
 </Note>
 
-The Letta Leaderboards help developers select which language models to use in the Letta framework by reporting the performance of popular models on a series of tasks.
+The Letta Leaderboard helps developers select which language models to use in the Letta framework by reporting the performance of popular models on a series of tasks.
 
 Letta is designed for building [stateful agents](/guides/agents/overview) - agents that are long-running and can automatically manage long-term memory to learn and adapt over time.
 To implement intelligent memory management, agents in Letta rely heavily on **tool (function) calling**, so models that excel at tool use tend to do well in Letta. Conversely, models that struggle to call tools properly often perform poorly when used to drive Letta agents.
 
-## Letta Memory Leaderboard
+## Memory Benchmarks
 
-The memory benchmark tests the ability of a model to understand a memory hierarchy and manage its own memory. Models that are strong at function calling and aware of their limitations (understanding in-context vs out-of-context data) typically excel here.
+The memory benchmarks test the ability of a model to understand a memory hierarchy and manage its own memory. Models that are strong at function calling and aware of their limitations (understanding in-context vs out-of-context data) typically excel here.
 
 **Overall Score** refers to the average score from memory read, write, and update tasks. **Cost** refers to (approximate) cost in USD to run the benchmark. Open weights models prefixed with `together` were run on [Together's API](/guides/server/providers/together).
 
@@ -48,11 +48,13 @@ Try refreshing the page if the leaderboard data is not visible.
 
 ## Understanding the Benchmark
 
+<Note>
+For a more in-depth breakdown of our memory benchmarks, [read our blog](https://www.letta.com/blog/letta-leaderboard).
+</Note>
+
 We measure two foundational aspects of context management: **core memory** and **archival memory**. Core memory is what is inside the agent’s [context window](https://www.letta.com/blog/memory-blocks) (aka "in-context memory") and archival memory is managing context external to the agent (aka "out-of-context memory", or "external memory"). This benchmark evaluates stateful agent's fundamental capabilities on _reading_, _writing_, and _updating_ memories.
 
-For all the tasks in Letta Memory Benchmark, we generate a fictional question-answering dataset with supporting facts to minimize prior knowledge from LLM training. To evaluate, we use a prompted GPT 4.1 to grade the agent-generated answer and the ground-truth answer, following [SimpleQA](https://openai.com/index/introducing-simpleqa/). We add a penalty for extraneous memory operations to penalize models for inefficient or incorrect archival memory accesses.
-
-To read about more details on the benchmark, refer to our [blog post](https://www.letta.com/blog/memory-benchmark).
+For all the tasks in the memory benchmarks, we generate a fictional question-answering dataset with supporting facts to minimize prior knowledge from LLM training. To evaluate, we use a prompted GPT 4.1 to grade the agent-generated answer and the ground-truth answer, following [SimpleQA](https://openai.com/index/introducing-simpleqa/). We add a penalty for extraneous memory operations to penalize models for inefficient or incorrect archival memory accesses.
 
 ### Main Results and Recommendations
 

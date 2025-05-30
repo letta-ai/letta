@@ -46,7 +46,7 @@ tabs:
     display-name: Examples
     skip-slug: true
   leaderboard:
-    display-name: Leaderboards
+    display-name: Leaderboard
     skip-slug: true
 
 
@@ -433,7 +433,7 @@ navigation:
       - link: DeepLearning.AI Course
         icon: fa-sharp fa-light fa-building-columns
         href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
-      - section: Letta Leaderboards
+      - section: Letta Leaderboard
         contents:
           - page: Overview
             path: pages/leaderboard/overview.mdx
