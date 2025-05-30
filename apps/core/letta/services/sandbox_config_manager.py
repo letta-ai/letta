@@ -340,7 +340,7 @@ class SandboxConfigManager:
             async with db_registry.async_session() as session:
                 env_var = SandboxEnvVarModel(**env_var.model_dump(to_orm=True, exclude_none=True))
                 await env_var.create_async(session, actor=actor)
-            return env_var.to_pydantic()
+                return env_var.to_pydantic()
 
     @enforce_types
     @trace_method
