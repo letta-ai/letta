@@ -636,7 +636,7 @@ async def send_message(
     This endpoint accepts a message from a user and processes it through the agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    user_eligible = actor.organization_id not in ["org-4a3af5dd-4c6a-48cb-ac13-3f73ecaaa4bf", "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6"]
+    # user_eligible = actor.organization_id not in ["org-4a3af5dd-4c6a-48cb-ac13-3f73ecaaa4bf", "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6"]
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
@@ -644,7 +644,7 @@ async def send_message(
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
 
-    if user_eligible and agent_eligible and feature_enabled and model_compatible:
+    if agent_eligible and feature_enabled and model_compatible:
         if agent.enable_sleeptime:
             experimental_agent = SleeptimeMultiAgentV2(
                 agent_id=agent_id,
@@ -712,7 +712,7 @@ async def send_message_streaming(
     """
     request_start_timestamp_ns = get_utc_timestamp_ns()
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    user_eligible = actor.organization_id not in ["org-4a3af5dd-4c6a-48cb-ac13-3f73ecaaa4bf", "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6"]
+    # user_eligible = actor.organization_id not in ["org-4a3af5dd-4c6a-48cb-ac13-3f73ecaaa4bf", "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6"]
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
@@ -722,7 +722,7 @@ async def send_message_streaming(
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
     not_letta_endpoint = not ("inference.letta.com" in agent.llm_config.model_endpoint)
 
-    if user_eligible and agent_eligible and feature_enabled and model_compatible:
+    if agent_eligible and feature_enabled and model_compatible:
         if agent.enable_sleeptime:
             experimental_agent = SleeptimeMultiAgentV2(
                 agent_id=agent_id,
@@ -920,7 +920,7 @@ async def summarize_agent_conversation(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    user_eligible = actor.organization_id not in ["org-4a3af5dd-4c6a-48cb-ac13-3f73ecaaa4bf", "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6"]
+    # user_eligible = actor.organization_id not in ["org-4a3af5dd-4c6a-48cb-ac13-3f73ecaaa4bf", "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6"]
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
@@ -928,7 +928,7 @@ async def summarize_agent_conversation(
     feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
 
-    if user_eligible and agent_eligible and feature_enabled and model_compatible:
+    if agent_eligible and feature_enabled and model_compatible:
         agent = LettaAgent(
             agent_id=agent_id,
             message_manager=server.message_manager,
