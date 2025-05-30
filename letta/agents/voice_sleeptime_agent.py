@@ -1,4 +1,4 @@
-from typing import AsyncGenerator, List, Tuple, Union
+from typing import AsyncGenerator, List, Optional, Tuple, Union
 
 from letta.agents.helpers import _create_letta_response, serialize_message_history
 from letta.agents.letta_agent import LettaAgent
@@ -89,7 +89,7 @@ class VoiceSleeptimeAgent(LettaAgent):
         )
 
     @trace_method
-    async def _execute_tool(self, tool_name: str, tool_args: dict, agent_state: AgentState):
+    async def _execute_tool(self, tool_name: str, tool_args: dict, agent_state: AgentState, agent_step_span: Optional["Span"] = None):
         """
         Executes a tool and returns (result, success_flag).
         """
