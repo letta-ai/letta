@@ -1363,46 +1363,71 @@ class SyncServer(Server):
             )
         await self.agent_manager.delete_agent_async(agent_id=sleeptime_agent_state.id, actor=actor)
 
-    async def insert_document_into_context_window(self, source: Source, bytes: bytes, filename: str, actor: User) -> None:
+    async def _upsert_document_block(self, agent_id: str, text: str, filename: str, actor: User) -> None:
+        """
+        Internal method to create or update a document block for an agent.
+        This is the shared logic between single and multiple document insertion.
+        """
+        truncated_text = text[:CORE_MEMORY_SOURCE_CHAR_LIMIT]
+
+        try:
+            block = await self.agent_manager.get_block_with_label_async(
+                agent_id=agent_id,
+                block_label=filename,
+                actor=actor,
+            )
+            await self.block_manager.update_block_async(
+                block_id=block.id,
+                block_update=BlockUpdate(value=truncated_text),
+                actor=actor,
+            )
+        except NoResultFound:
+            block = await self.block_manager.create_or_update_block_async(
+                block=Block(
+                    value=truncated_text,
+                    label=filename,
+                    description=f"Contains the parsed contents of external file {filename}",
+                    limit=CORE_MEMORY_SOURCE_CHAR_LIMIT,
+                ),
+                actor=actor,
+            )
+            await self.agent_manager.attach_block_async(
+                agent_id=agent_id,
+                block_id=block.id,
+                actor=actor,
+            )
+
+    async def insert_document_into_context_windows(self, source_id: str, text: str, filename: str, actor: User) -> None:
         """
         Insert the uploaded document into the context window of all agents
         attached to the given source.
         """
-        agent_states = await self.source_manager.list_attached_agents(source_id=source.id, actor=actor)
-        logger.info(f"Inserting document into context window for source: {source}")
+        agent_states = await self.source_manager.list_attached_agents(source_id=source_id, actor=actor)
+
+        # Return early
+        if not agent_states:
+            return
+
+        logger.info(f"Inserting document into context window for source: {source_id}")
         logger.info(f"Attached agents: {[a.id for a in agent_states]}")
 
-        passages = bytes.decode("utf-8")[:CORE_MEMORY_SOURCE_CHAR_LIMIT]
+        await asyncio.gather(*(self._upsert_document_block(agent_state.id, text, filename, actor) for agent_state in agent_states))
 
-        async def process_agent(agent_state):
-            try:
-                block = await self.agent_manager.get_block_with_label_async(
-                    agent_id=agent_state.id,
-                    block_label=filename,
-                    actor=actor,
-                )
-                await self.block_manager.update_block_async(
-                    block_id=block.id,
-                    block_update=BlockUpdate(value=passages),
-                    actor=actor,
-                )
-            except NoResultFound:
-                block = await self.block_manager.create_or_update_block_async(
-                    block=Block(
-                        value=passages,
-                        label=filename,
-                        description="Contains recursive summarizations of the conversation so far",
-                        limit=CORE_MEMORY_SOURCE_CHAR_LIMIT,
-                    ),
-                    actor=actor,
-                )
-                await self.agent_manager.attach_block_async(
-                    agent_id=agent_state.id,
-                    block_id=block.id,
-                    actor=actor,
-                )
+    async def insert_documents_into_context_window(
+        self, agent_state: AgentState, texts: List[str], filenames: List[str], actor: User
+    ) -> None:
+        """
+        Insert the uploaded documents into the context window of an agent
+        attached to the given source.
+        """
+        logger.info(f"Inserting documents into context window for agent_state: {agent_state.id}")
 
-        await asyncio.gather(*(process_agent(agent) for agent in agent_states))
+        if len(texts) != len(filenames):
+            raise ValueError(f"Mismatch between number of texts ({len(texts)}) and filenames ({len(filenames)})")
+
+        await asyncio.gather(
+            *(self._upsert_document_block(agent_state.id, text, filename, actor) for text, filename in zip(texts, filenames))
+        )
 
     async def create_document_sleeptime_agent_async(
         self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False
