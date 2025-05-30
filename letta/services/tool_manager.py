@@ -169,7 +169,7 @@ class ToolManager:
 
             tool = ToolModel(**tool_data)
             await tool.create_async(session, actor=actor)  # Re-raise other database-related errors
-        return tool.to_pydantic()
+            return tool.to_pydantic()
 
     @enforce_types
     @trace_method
@@ -239,6 +239,7 @@ class ToolManager:
     @trace_method
     async def list_tools_async(self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticTool]:
         """List all tools with optional pagination."""
+        tools_to_delete = []
         async with db_registry.async_session() as session:
             tools = await ToolModel.list_async(
                 db_session=session,
@@ -247,17 +248,20 @@ class ToolManager:
                 organization_id=actor.organization_id,
             )
 
-        # Remove any malformed tools
-        results = []
-        for tool in tools:
-            try:
-                pydantic_tool = tool.to_pydantic()
-                results.append(pydantic_tool)
-            except (ValueError, ModuleNotFoundError, AttributeError) as e:
-                logger.warning(f"Deleting malformed tool with id={tool.id} and name={tool.name}, error was:\n{e}")
-                logger.warning("Deleted tool: ")
-                logger.warning(tool.pretty_print_columns())
-                await self.delete_tool_by_id_async(tool.id, actor=actor)
+            # Remove any malformed tools
+            results = []
+            for tool in tools:
+                try:
+                    pydantic_tool = tool.to_pydantic()
+                    results.append(pydantic_tool)
+                except (ValueError, ModuleNotFoundError, AttributeError) as e:
+                    tools_to_delete.append(tool)
+                    logger.warning(f"Deleting malformed tool with id={tool.id} and name={tool.name}, error was:\n{e}")
+                    logger.warning("Deleted tool: ")
+                    logger.warning(tool.pretty_print_columns())
+
+        for tool in tools_to_delete:
+            await self.delete_tool_by_id_async(tool.id, actor=actor)
 
         return results
 

@@ -31,7 +31,7 @@ class SourceManager:
                 source.organization_id = actor.organization_id
                 source = SourceModel(**source.model_dump(to_orm=True, exclude_none=True))
                 await source.create_async(session, actor=actor)
-            return source.to_pydantic()
+                return source.to_pydantic()
 
     @enforce_types
     @trace_method
@@ -152,7 +152,7 @@ class SourceManager:
                 file_metadata.organization_id = actor.organization_id
                 file_metadata = FileMetadataModel(**file_metadata.model_dump(to_orm=True, exclude_none=True))
                 await file_metadata.create_async(session, actor=actor)
-            return file_metadata.to_pydantic()
+                return file_metadata.to_pydantic()
 
     # TODO: We make actor optional for now, but should most likely be enforced due to security reasons
     @enforce_types

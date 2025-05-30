@@ -538,11 +538,10 @@ class AgentManager:
                 new_agent.message_ids = [msg.id for msg in init_messages]
 
             await session.refresh(new_agent)
+            result = await new_agent.to_pydantic_async()
 
-        # Using the synchronous version since we don't have an async version yet
-        # If you implement an async version of create_many_messages, you can switch to that
         await self.message_manager.create_many_messages_async(pydantic_msgs=init_messages, actor=actor)
-        return await new_agent.to_pydantic_async()
+        return result
 
     @enforce_types
     def _generate_initial_message_sequence(
@@ -1700,14 +1699,14 @@ class AgentManager:
 
         # Force rebuild of system prompt so that the agent is updated with passage count
         # and recent passages and add system message alert to agent
-        await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
+        pydantic_agent = await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
         await self.append_system_message_async(
             agent_id=agent_id,
             content=DATA_SOURCE_ATTACH_ALERT,
             actor=actor,
         )
 
-        return await agent.to_pydantic_async()
+        return pydantic_agent
 
     @trace_method
     @enforce_types
@@ -2622,7 +2621,7 @@ class AgentManager:
             result = await session.execute(query)
             # Extract the tag values from the result
             results = [row[0] for row in result.all()]
-        return results
+            return results
 
     async def get_context_window(self, agent_id: str, actor: PydanticUser) -> ContextWindowOverview:
         if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":

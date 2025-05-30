@@ -108,7 +108,7 @@ class MCPManager:
                 organization_id=actor.organization_id,
             )
 
-        return [mcp_server.to_pydantic() for mcp_server in mcp_servers]
+            return [mcp_server.to_pydantic() for mcp_server in mcp_servers]
 
     @enforce_types
     async def create_or_update_mcp_server(self, pydantic_mcp_server: MCPServer, actor: PydanticUser) -> MCPServer:
@@ -200,7 +200,7 @@ class MCPManager:
                         "mcp_server_name": mcp_server_name,
                     },
                 )
-        return mcp_server.to_pydantic()
+            return mcp_server.to_pydantic()
 
     # @enforce_types
     # async def delete_mcp_server(self, mcp_server_name: str, actor: PydanticUser) -> None:

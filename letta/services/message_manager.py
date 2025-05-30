@@ -58,7 +58,7 @@ class MessageManager:
         """Fetch messages by ID and return them in the requested order. Async version of above function."""
         async with db_registry.async_session() as session:
             results = await MessageModel.read_multiple_async(db_session=session, identifiers=message_ids, actor=actor)
-        return self._get_messages_by_id_postprocess(results, message_ids)
+            return self._get_messages_by_id_postprocess(results, message_ids)
 
     def _get_messages_by_id_postprocess(
         self,
