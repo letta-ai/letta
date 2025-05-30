@@ -173,3 +173,4 @@ export * from './public/modelsContracts';
 export * from './public/composioContracts';
 export * from './public/transactionsContracts';
 export * from './admin/adminContentViolationsContracts';
+export * from './public/observabilityContracts';

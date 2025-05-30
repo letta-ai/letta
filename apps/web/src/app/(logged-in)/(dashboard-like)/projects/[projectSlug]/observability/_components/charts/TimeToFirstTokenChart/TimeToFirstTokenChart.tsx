@@ -12,9 +12,14 @@ import { get } from 'lodash-es';
 import { useObservabilitySeriesData } from '../../hooks/useObservabilitySeriesData/useObservabilitySeriesData';
 import { useObservabilityContext } from '../../hooks/useObservabilityContext/useObservabilityContext';
 
-export function TimeToFirstTokenChart() {
-  const { id: projectId } = useCurrentProject();
+interface TimeToFirstTokenChartProps {
+  analysisLink?: string;
+}
+
+export function TimeToFirstTokenChart(props: TimeToFirstTokenChartProps) {
   const { startDate, endDate } = useObservabilityContext();
+  const { analysisLink } = props;
+  const { id: projectId } = useCurrentProject();
 
   const t = useTranslations(
     'pages/projects/observability/TimeToFirstTokenChart',
@@ -35,9 +40,13 @@ export function TimeToFirstTokenChart() {
     },
   });
 
-  const { xAxis, seriesData } = useObservabilitySeriesData({
-    data: data?.body.items,
-    getterFn: (item) => item.averageTimeToFirstTokenMs / 1000, // Convert ms to seconds
+  const tableOptions = useObservabilitySeriesData({
+    seriesData: [
+      {
+        data: data?.body.items,
+        getterFn: (item) => item.averageTimeToFirstTokenMs / 1000,
+      },
+    ],
     startDate,
     endDate,
   });
@@ -45,15 +54,14 @@ export function TimeToFirstTokenChart() {
   const { formatSmallDuration } = useFormatters();
 
   return (
-    <DashboardChartWrapper title={t('title')} isLoading={!data}>
+    <DashboardChartWrapper
+      analysisLink={analysisLink}
+      title={t('title')}
+      isLoading={!data}
+    >
       <Chart
         options={{
-          grid: {
-            left: 30,
-            right: 20,
-            bottom: 30,
-            top: 15,
-          },
+          ...tableOptions,
           tooltip: {
             trigger: 'axis',
             formatter: (e) => {
@@ -70,20 +78,6 @@ export function TimeToFirstTokenChart() {
                 value: formatSmallDuration(value * 1_000_000),
               });
             },
-          },
-          series: [
-            {
-              data: seriesData,
-              type: 'line',
-              symbol: 'dot',
-            },
-          ],
-          xAxis: {
-            data: xAxis,
-            type: 'category',
-          },
-          yAxis: {
-            type: 'value',
           },
         }}
       />

@@ -33,18 +33,19 @@ export function ActiveAgentChart() {
     },
   });
 
-  const { xAxis, seriesData: returningData } = useObservabilitySeriesData({
-    data: data?.body.returningActiveAgents,
-    getterFn: (item) => item.activeAgents, // Convert ms to seconds
+  const tableOptions = useObservabilitySeriesData({
     startDate,
     endDate,
-  });
-
-  const { seriesData: newData } = useObservabilitySeriesData({
-    data: data?.body.newActiveAgents,
-    getterFn: (item) => item.activeAgents, // Convert ms to seconds
-    startDate,
-    endDate,
+    seriesData: [
+      {
+        data: data?.body.newActiveAgents,
+        getterFn: (item) => item.activeAgents,
+      },
+      {
+        data: data?.body.returningActiveAgents,
+        getterFn: (item) => item.activeAgents,
+      },
+    ],
   });
 
   const { formatNumber } = useFormatters();
@@ -53,12 +54,7 @@ export function ActiveAgentChart() {
     <DashboardChartWrapper title={t('title')} isLoading={!data}>
       <Chart
         options={{
-          grid: {
-            left: 30,
-            right: 20,
-            bottom: 30,
-            top: 15,
-          },
+          ...tableOptions,
           tooltip: {
             trigger: 'axis',
             formatter: (e) => {
@@ -95,25 +91,13 @@ export function ActiveAgentChart() {
               });
             },
           },
-          series: [
-            {
-              data: returningData,
-              type: 'line',
-              symbol: 'dot',
-            },
-            {
-              data: newData,
-              type: 'line',
-              symbol: 'dot',
-            },
-          ],
-          xAxis: {
-            data: xAxis,
-            type: 'category',
-          },
           yAxis: {
+            ...tableOptions.yAxis,
+            startValue: 0,
             minInterval: 1,
-            type: 'value',
+            max: function (value) {
+              return Math.max(value.max, 5);
+            },
           },
         }}
       />

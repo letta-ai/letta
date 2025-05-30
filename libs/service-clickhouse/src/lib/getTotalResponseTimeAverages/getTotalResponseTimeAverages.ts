@@ -35,7 +35,7 @@ export async function getTotalResponseTimeAverages(
     count() as sample_count
         FROM otel_traces
         WHERE ParentSpanId = ''
-          AND SpanName = 'POST /v1/agents/{agent_id}/messages/stream'
+          AND (SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR SpanName = 'POST /v1/agents/{agent_id}/messages')
           AND SpanAttributes['project.id'] = '${projectId}'
           AND Timestamp >= toDateTime64(${startUnixTimestamp}
             , 9)

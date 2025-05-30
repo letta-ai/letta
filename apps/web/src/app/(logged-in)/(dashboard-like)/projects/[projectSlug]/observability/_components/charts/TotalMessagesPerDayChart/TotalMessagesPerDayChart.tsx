@@ -35,9 +35,13 @@ export function TotalMessagesPerDayChart() {
     },
   });
 
-  const { xAxis, seriesData } = useObservabilitySeriesData({
-    data: data?.body.items,
-    getterFn: (item) => item.totalMessages,
+  const tableOptions = useObservabilitySeriesData({
+    seriesData: [
+      {
+        data: data?.body.items,
+        getterFn: (item) => item.totalMessages,
+      },
+    ],
     startDate,
     endDate,
   });
@@ -48,11 +52,11 @@ export function TotalMessagesPerDayChart() {
     <DashboardChartWrapper title={t('title')} isLoading={!data}>
       <Chart
         options={{
-          grid: {
-            left: 30,
-            right: 20,
-            bottom: 30,
-            top: 15,
+          ...tableOptions,
+          yAxis: {
+            ...tableOptions.yAxis,
+            minInterval: 1,
+            type: 'value',
           },
           tooltip: {
             trigger: 'axis',
@@ -70,21 +74,6 @@ export function TotalMessagesPerDayChart() {
                 value: formatNumber(value),
               });
             },
-          },
-          series: [
-            {
-              symbol: 'dot',
-              data: seriesData,
-              type: 'line',
-            },
-          ],
-          xAxis: {
-            data: xAxis,
-            type: 'category',
-          },
-          yAxis: {
-            minInterval: 1,
-            type: 'value',
           },
         }}
       />

@@ -1475,6 +1475,24 @@
       "noData": "No data was recorded for this date"
     }
   },
+  "pages/projects/observability/timeToFirstToken": {
+    "title": "Time to first token",
+    "description": "Average time to first token is calculated as the time between the agent being activated and the first token being generated in response to a user message. This metric is useful for understanding how quickly your agents can respond to user input.",
+    "table": {
+      "notAvailable": "Not available",
+      "title": "Latest messages",
+      "columns": {
+        "createdAt": "Created at",
+        "agent": "Agent",
+        "timeToFirstToken": "Time to first token",
+        "message": "Input",
+        "actions": "Actions"
+      },
+      "actions": {
+        "viewAgent": "View in ADE"
+      }
+    }
+  },
   "projects/(projectSlug)/layout": {
     "nav": {
       "return": "All projects",

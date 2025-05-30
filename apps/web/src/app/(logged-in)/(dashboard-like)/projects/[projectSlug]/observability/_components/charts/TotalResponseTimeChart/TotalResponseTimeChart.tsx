@@ -35,9 +35,13 @@ export function TotalResponseTimeChart() {
     },
   });
 
-  const { xAxis, seriesData } = useObservabilitySeriesData({
-    data: data?.body.items,
-    getterFn: (item) => item.averageResponseTimeMs / 1000, // Convert ms to seconds
+  const tableOptions = useObservabilitySeriesData({
+    seriesData: [
+      {
+        data: data?.body.items,
+        getterFn: (item) => item.averageResponseTimeMs / 1000, // Convert ms to seconds
+      },
+    ],
     startDate,
     endDate,
   });
@@ -48,12 +52,7 @@ export function TotalResponseTimeChart() {
     <DashboardChartWrapper title={t('title')} isLoading={!data}>
       <Chart
         options={{
-          grid: {
-            left: 30,
-            right: 20,
-            bottom: 30,
-            top: 15,
-          },
+          ...tableOptions,
           tooltip: {
             formatter: (e) => {
               const value = get(e, 'value', null);
@@ -70,19 +69,9 @@ export function TotalResponseTimeChart() {
               });
             },
           },
-          series: [
-            {
-              data: seriesData,
-              type: 'line',
-            },
-          ],
-          xAxis: {
-            data: xAxis,
-            type: 'category',
-          },
           yAxis: {
+            ...tableOptions.yAxis,
             minInterval: 1,
-            type: 'value',
           },
         }}
       />

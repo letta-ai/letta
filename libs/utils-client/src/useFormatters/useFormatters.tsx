@@ -131,6 +131,17 @@ export function useFormatters() {
     }
   }
 
+  function formatShorthandNumber(val: number, decimals = 0) {
+    if (val >= 1_000_000_000) {
+      return `${(val / 1_000_000_000).toFixed(decimals)}B`;
+    } else if (val >= 1_000_000) {
+      return `${(val / 1_000_000).toFixed(decimals)}M`;
+    } else if (val >= 1_000) {
+      return `${(val / 1_000).toFixed(decimals)}K`;
+    }
+    return val.toString();
+  }
+
   function formatTime(
     date: Date | string,
     options?: Intl.DateTimeFormatOptions,
@@ -171,6 +182,7 @@ export function useFormatters() {
     formatFileSize,
     formatCurrency,
     formatTime,
+    formatShorthandNumber,
     formatDateAndTime,
     formatDate,
   };

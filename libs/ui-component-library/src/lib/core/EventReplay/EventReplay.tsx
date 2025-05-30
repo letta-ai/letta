@@ -10,7 +10,7 @@ interface TimelineTraceItem {
   event: string;
   icon?: React.ReactNode;
   timestamp: string;
-  duration: number; // in nanoseconds
+  duration?: number; // in nanoseconds
   details: React.ReactNode;
 }
 
@@ -31,13 +31,17 @@ function TimelineItemComponent(props: TimelineItemComponentProps) {
     >
       <HStack
         as="button"
+        align="center"
         onClick={() => {
           setShowDetails(!showDetails);
         }}
       >
-        <div className="bg-background-grey2 px-2 rounded-sm w-[8ch] text-xs flex items-center justify-center">
-          {formatSmallDuration(item.duration)}
-        </div>
+        <div className="w-1.5 h-1.5 bg-background-grey3 rounded-full" />
+        {/*{item.duration && (*/}
+        {/*  <div className="bg-background-grey2 px-2 rounded-sm w-[8ch] text-xs flex items-center justify-center">*/}
+        {/*    {formatSmallDuration(item.duration)}*/}
+        {/*  </div>*/}
+        {/*)}*/}
         <HStack align="center">
           {item.icon && <HStack>{item.icon}</HStack>}
           <Typography variant="body2">{item.event}</Typography>
@@ -52,7 +56,7 @@ interface TimelineTraceProps {
   items: TimelineTraceItem[];
 }
 
-export function TimelineTrace(props: TimelineTraceProps) {
+export function EventReplay(props: TimelineTraceProps) {
   const { items } = props;
   return (
     <VStack gap="text">

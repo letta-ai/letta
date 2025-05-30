@@ -20,7 +20,3 @@
   overflow: hidden;
 }
 
-.fake-border {
-  height: calc(100% - var(--head-cell-height));
-  top: var(--head-cell-height);
-}

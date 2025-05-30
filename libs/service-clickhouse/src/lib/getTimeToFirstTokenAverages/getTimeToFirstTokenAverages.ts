@@ -38,7 +38,7 @@ export async function getTimeToFirstTokenAverages(
           SELECT TraceId
           FROM otel_traces
           WHERE ParentSpanId = ''
-          AND SpanName = 'POST /v1/agents/{agent_id}/messages/stream'
+          AND (SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR SpanName = 'POST /v1/agents/{agent_id}/messages' OR SpanName = 'POST /v1/agents/{agent_id}/messages/async')
           AND SpanAttributes['project.id'] = '${projectId}'
           AND Timestamp >= toDate(${startUnixTimestamp})
           AND Timestamp <= toDate(${endUnixTimestamp})

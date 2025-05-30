@@ -1,5 +1,6 @@
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
+import { zodTypes } from '@letta-cloud/sdk-core';
 
 const c = initContract();
 
@@ -13,36 +14,51 @@ const TimeToFirstTokenMetricsResponseSchema = z.object({
   items: z.array(TimeToFirstTokenMetricsItem),
 });
 
-export const DefaultMetricsQuery = z
-  .object({
+function applyRefine(schema: z.ZodObject<any>) {
+  return schema
+    .refine(
+      (data) => {
+        return (
+          new Date(data.startDate).getTime() < new Date(data.endDate).getTime()
+        );
+      },
+      {
+        message: 'startTimeUnix must be less than endTimeUnix',
+      },
+    )
+    .refine(
+      (data) => {
+        // Check if the time range is within 365 days
+        const startTime = new Date(data.startDate).getTime();
+        const endTime = new Date(data.endDate).getTime();
+
+        const timeDifference = endTime - startTime;
+
+        return timeDifference <= 365 * 24 * 60 * 60 * 1000; // 365 days in milliseconds
+      },
+      {
+        message: 'Time range must be within 365 days',
+      },
+    );
+}
+
+export const DefaultMetricsQuery = applyRefine(
+  z.object({
     projectId: z.string(),
     startDate: z.string(),
     endDate: z.string(),
-  })
-  .refine(
-    (data) => {
-      return (
-        new Date(data.startDate).getTime() < new Date(data.endDate).getTime()
-      );
-    },
-    {
-      message: 'startTimeUnix must be less than endTimeUnix',
-    },
-  )
-  .refine(
-    (data) => {
-      // Check if the time range is within 365 days
-      const startTime = new Date(data.startDate).getTime();
-      const endTime = new Date(data.endDate).getTime();
+  }),
+);
 
-      const timeDifference = endTime - startTime;
-
-      return timeDifference <= 365 * 24 * 60 * 60 * 1000; // 365 days in milliseconds
-    },
-    {
-      message: 'Time range must be within 365 days',
-    },
-  );
+const DefaultPagedMetricsQuery = applyRefine(
+  z.object({
+    projectId: z.string(),
+    startDate: z.string(),
+    endDate: z.string(),
+    offset: z.number(),
+    limit: z.number().max(25),
+  }),
+);
 
 const timeToFirstTokenMetricsContract = c.query({
   path: '/observability/metrics/time-to-first-token',
@@ -50,6 +66,32 @@ const timeToFirstTokenMetricsContract = c.query({
   query: DefaultMetricsQuery,
   responses: {
     200: TimeToFirstTokenMetricsResponseSchema,
+  },
+});
+
+const TimeToFirstTokenMessageItem = z.object({
+  createdAt: z.string(),
+  traceId: z.string(),
+  messages: zodTypes.MessageCreate.array(),
+  timeToFirstTokenNs: z.number().nullable(),
+  agentId: z.string(),
+});
+
+export type TimeToFirstTokenMessageItemType = z.infer<
+  typeof TimeToFirstTokenMessageItem
+>;
+
+const TimeToFirstTokenMessagesResponseSchema = z.object({
+  items: z.array(TimeToFirstTokenMessageItem),
+  hasNextPage: z.boolean(),
+});
+
+const getTimeToFirstTokenMessagesContract = c.query({
+  path: '/observability/metrics/time-to-first-token/messages',
+  method: 'GET',
+  query: DefaultPagedMetricsQuery,
+  responses: {
+    200: TimeToFirstTokenMessagesResponseSchema,
   },
 });
 
@@ -114,6 +156,7 @@ export const observabilityContracts = c.router({
   getAverageResponseTime: getAverageResponseTimeContract,
   getTotalMessagesPerDay: getTotalMessagesPerDayContract,
   getActiveAgentsPerDay: getActiveAgentsContract,
+  getTimeToFirstTokenMessages: getTimeToFirstTokenMessagesContract,
 });
 
 export const observabilityQueryKeys = {
@@ -137,4 +180,7 @@ export const observabilityQueryKeys = {
     'getActiveAgentsPerDay',
     query,
   ],
+  getTimeToFirstTokenMessages: (
+    query: z.infer<typeof DefaultPagedMetricsQuery>,
+  ) => ['observability', 'getTimeToFirstTokenMessages', query],
 };

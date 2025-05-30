@@ -9,6 +9,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import { useObservabilityContext } from '../hooks/useObservabilityContext/useObservabilityContext';
 import { useCallback, useMemo } from 'react';
 import { differenceInDays } from 'date-fns';
+import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 
 type DateTypes =
   | '7Days'
@@ -107,9 +108,16 @@ function DateRangeSelector() {
   );
 }
 
-export function ObservabilityHeader() {
-  const t = useTranslations('pages/projects/observability/ObservabilityHeader');
+interface ObservabilityHeaderProps {
+  subPage?: {
+    title: string;
+  };
+}
 
+export function ObservabilityHeader(props: ObservabilityHeaderProps) {
+  const t = useTranslations('pages/projects/observability/ObservabilityHeader');
+  const { subPage } = props;
+  const { slug } = useCurrentProject();
   return (
     <HStack
       borderBottom
@@ -126,9 +134,16 @@ export function ObservabilityHeader() {
           items={[
             {
               preIcon: <MonitoringIcon />,
-
+              ...(subPage ? { href: `/projects/${slug}/observability` } : {}),
               label: t('root'),
             },
+            ...(subPage
+              ? [
+                  {
+                    label: subPage.title,
+                  },
+                ]
+              : []),
           ]}
         />
         <DateRangeSelector />

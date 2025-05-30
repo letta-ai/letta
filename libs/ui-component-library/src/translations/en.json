@@ -5,6 +5,9 @@
   "components/SharedMemoryIndicator": {
     "thisAgent": "Current"
   },
+  "components/DashboardChartWrapper": {
+    "explore": "Explore"
+  },
   "components/CoreMemoryEditor": {
     "CoreMemoryEditorContent": {
       "placeholder": "Enter your memories",

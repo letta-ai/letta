@@ -3,25 +3,44 @@ import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
 import { Skeleton } from '../../core/Skeleton/Skeleton';
 import { cn } from '@letta-cloud/ui-styles';
+import { Button } from '../../core/Button/Button';
+import { useTranslations } from '@letta-cloud/translations';
+import { ExploreIcon } from '../../icons';
 
 interface DashboardChartWrapperProps {
   title: string;
   children: React.ReactNode;
   isLoading?: boolean;
+  analysisLink?: string;
 }
 
 export function DashboardChartWrapper(props: DashboardChartWrapperProps) {
-  const { title, children, isLoading } = props;
+  const { title, children, isLoading, analysisLink } = props;
+  const t = useTranslations('components/DashboardChartWrapper');
   return (
-    <div
-      className={cn(
-        'h-[300px] flex flex-col bg-background min-w-[250px] border w-full',
-      )}
-    >
-      <HStack padding="medium">
+    <div className={cn('h-[300px] flex flex-col p-2  min-w-[250px] w-full')}>
+      <HStack
+        align="center"
+        justify="spaceBetween"
+        padding="medium"
+        paddingLeft="large"
+      >
         <Typography variant="body2" bold>
           {title}
         </Typography>
+        <HStack>
+          {analysisLink && (
+            <Button
+              label={t('explore')}
+              hideLabel
+              color="tertiary"
+              href={analysisLink}
+              size="xsmall"
+              square
+              preIcon={<ExploreIcon />}
+            />
+          )}
+        </HStack>
       </HStack>
       <div className="px-3 pb-3 w-full h-full">
         {isLoading ? (

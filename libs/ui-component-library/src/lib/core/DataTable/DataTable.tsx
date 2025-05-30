@@ -53,7 +53,7 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
 
   if (isLoading || table.getRowModel().rows.length === 0) {
     return (
-      <TableBody>
+      <TableBody className="border">
         <TableRow>
           <TableCell colSpan={columnLength} className="h-full min-h-24">
             <LoadingEmptyStatusComponent
@@ -74,12 +74,13 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
 
   if (table.getRowModel().rows.length) {
     return (
-      <TableBody>
+      <TableBody className="border">
         {table.getRowModel().rows.map((row) => (
           <TableRow
-            className={
-              onRowClick ? 'cursor-pointer hover:bg-secondary-hover' : ''
-            }
+            className={cn(
+              '',
+              onRowClick ? 'cursor-pointer  hover:bg-secondary-hover' : '',
+            )}
             onClick={() => {
               onRowClick?.(row.original);
             }}
@@ -96,6 +97,7 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
                     'sticky right-0',
                   cell.column.columnDef.meta?.style?.sticky &&
                     'linear-gradient-background',
+                  '',
                 )}
                 style={{
                   width: cell.column.columnDef.meta?.style?.width,
@@ -323,8 +325,8 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
       >
         <div
           className={cn(
-            variant !== 'minimal' ? 'border' : '',
-            'w-full h-full absolute fake-border top-0 touch-none pointer-events-none',
+            variant !== 'minimal' ? '' : '',
+            'w-full h-full absolute top-0 touch-none pointer-events-none',
           )}
         />
 
