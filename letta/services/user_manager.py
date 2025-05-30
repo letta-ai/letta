@@ -155,10 +155,10 @@ class UserManager:
             finally:
                 await session.execute(text("SET LOCAL enable_seqscan = ON"))
 
-        if not user:
-            raise NoResultFound(f"User not found with id={actor_id}")
+            if not user:
+                raise NoResultFound(f"User not found with id={actor_id}")
 
-        return user.to_pydantic()
+            return user.to_pydantic()
 
     @enforce_types
     @trace_method
