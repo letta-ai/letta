@@ -93,19 +93,19 @@ class IdentityManager:
                 actor=actor,
             )
 
-        if existing_identity is None:
-            return await self.create_identity_async(identity=IdentityCreate(**identity.model_dump()), actor=actor)
-        else:
-            identity_update = IdentityUpdate(
-                name=identity.name,
-                identifier_key=identity.identifier_key,
-                identity_type=identity.identity_type,
-                agent_ids=identity.agent_ids,
-                properties=identity.properties,
-            )
-            return await self._update_identity_async(
-                session=session, existing_identity=existing_identity, identity=identity_update, actor=actor, replace=True
-            )
+            if existing_identity is None:
+                return await self.create_identity_async(identity=IdentityCreate(**identity.model_dump()), actor=actor)
+            else:
+                identity_update = IdentityUpdate(
+                    name=identity.name,
+                    identifier_key=identity.identifier_key,
+                    identity_type=identity.identity_type,
+                    agent_ids=identity.agent_ids,
+                    properties=identity.properties,
+                )
+                return await self._update_identity_async(
+                    session=session, existing_identity=existing_identity, identity=identity_update, actor=actor, replace=True
+                )
 
     @enforce_types
     @trace_method
