@@ -21,7 +21,7 @@ import letta.system as system
 from letta.agent import Agent, save_agent
 from letta.agents.letta_agent import LettaAgent
 from letta.config import LettaConfig
-from letta.constants import LETTA_TOOL_EXECUTION_DIR
+from letta.constants import CORE_MEMORY_SOURCE_CHAR_LIMIT, LETTA_TOOL_EXECUTION_DIR
 from letta.data_sources.connectors import DataConnector, load_data
 from letta.errors import HandleNotFoundError
 from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig
@@ -1362,6 +1362,47 @@ class SyncServer(Server):
                 ]
             )
         await self.agent_manager.delete_agent_async(agent_id=sleeptime_agent_state.id, actor=actor)
+
+    async def insert_document_into_context_window(self, source: Source, bytes: bytes, filename: str, actor: User) -> None:
+        """
+        Insert the uploaded document into the context window of all agents
+        attached to the given source.
+        """
+        agent_states = await self.source_manager.list_attached_agents(source_id=source.id, actor=actor)
+        logger.info(f"Inserting document into context window for source: {source}")
+        logger.info(f"Attached agents: {[a.id for a in agent_states]}")
+
+        passages = bytes.decode("utf-8")[:CORE_MEMORY_SOURCE_CHAR_LIMIT]
+
+        async def process_agent(agent_state):
+            try:
+                block = await self.agent_manager.get_block_with_label_async(
+                    agent_id=agent_state.id,
+                    block_label=filename,
+                    actor=actor,
+                )
+                await self.block_manager.update_block_async(
+                    block_id=block.id,
+                    block_update=BlockUpdate(value=passages),
+                    actor=actor,
+                )
+            except NoResultFound:
+                block = await self.block_manager.create_or_update_block_async(
+                    block=Block(
+                        value=passages,
+                        label=filename,
+                        description="Contains recursive summarizations of the conversation so far",
+                        limit=CORE_MEMORY_SOURCE_CHAR_LIMIT,
+                    ),
+                    actor=actor,
+                )
+                await self.agent_manager.attach_block_async(
+                    agent_id=agent_state.id,
+                    block_id=block.id,
+                    actor=actor,
+                )
+
+        await asyncio.gather(*(process_agent(agent) for agent in agent_states))
 
     async def create_document_sleeptime_agent_async(
         self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False

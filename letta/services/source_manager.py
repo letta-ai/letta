@@ -173,7 +173,6 @@ class SourceManager:
     ) -> List[PydanticFileMetadata]:
         """List all files with optional pagination."""
         async with db_registry.async_session() as session:
-            files_all = await FileMetadataModel.list_async(db_session=session, organization_id=actor.organization_id, source_id=source_id)
             files = await FileMetadataModel.list_async(
                 db_session=session, after=after, limit=limit, organization_id=actor.organization_id, source_id=source_id
             )

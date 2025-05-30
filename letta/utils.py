@@ -1018,7 +1018,7 @@ def sanitize_filename(filename: str) -> str:
         base = base[:max_base_length]
 
     # Append a unique UUID suffix for uniqueness
-    unique_suffix = uuid.uuid4().hex
+    unique_suffix = uuid.uuid4().hex[:4]
     sanitized_filename = f"{base}_{unique_suffix}{ext}"
 
     # Return the sanitized filename
@@ -1088,3 +1088,13 @@ def log_telemetry(logger: Logger, event: str, **kwargs):
 
 def make_key(*args, **kwargs):
     return str((args, tuple(sorted(kwargs.items()))))
+
+
+def safe_create_task(coro, logger: Logger, label: str = "background task"):
+    async def wrapper():
+        try:
+            await coro
+        except Exception as e:
+            logger.exception(f"{label} failed with {type(e).__name__}: {e}")
+
+    return asyncio.create_task(wrapper())

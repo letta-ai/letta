@@ -9,21 +9,21 @@
         "description": "List of steps to add to the task plan.",
         "items": {
           "type": "object",
-            "properties": {
-              "name": {
-                "type": "string",
-                "description": "Name of the step."
-              },
-              "key": {
-                "type": "string",
-                "description": "Unique identifier for the step."
-              },
-              "description": {
-                "type": "string",
-                "description": "An exhaustic description of what this step is trying to achieve and accomplish."
-              }
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name of the step."
             },
-            "required": ["name", "key", "description"]
+            "key": {
+              "type": "string",
+              "description": "Unique identifier for the step."
+            },
+            "description": {
+              "type": "string",
+              "description": "An exhaustic description of what this step is trying to achieve and accomplish."
+            }
+          },
+          "required": ["name", "key", "description"]
         }
       }
     },

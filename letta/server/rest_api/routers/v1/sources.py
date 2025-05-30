@@ -4,8 +4,10 @@ import tempfile
 from typing import List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, UploadFile
+from starlette import status
 
 import letta.constants as constants
+from letta.log import get_logger
 from letta.schemas.file import FileMetadata
 from letta.schemas.job import Job
 from letta.schemas.passage import Passage
@@ -13,9 +15,9 @@ from letta.schemas.source import Source, SourceCreate, SourceUpdate
 from letta.schemas.user import User
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
-from letta.utils import sanitize_filename
+from letta.utils import safe_create_task, sanitize_filename
 
-# These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
+logger = get_logger(__name__)
 
 
 router = APIRouter(prefix="/sources", tags=["sources"])
@@ -153,7 +155,6 @@ async def delete_source(
 async def upload_file_to_source(
     file: UploadFile,
     source_id: str,
-    background_tasks: BackgroundTasks,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -163,7 +164,8 @@ async def upload_file_to_source(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
-    assert source is not None, f"Source with id={source_id} not found."
+    if source is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Source with id={source_id} not found.")
     bytes = file.file.read()
 
     # create job
@@ -175,14 +177,25 @@ async def upload_file_to_source(
     job_id = job.id
     await server.job_manager.create_job_async(job, actor=actor)
 
-    # create background tasks
-    asyncio.create_task(load_file_to_source_async(server, source_id=source.id, file=file, job_id=job.id, bytes=bytes, actor=actor))
-    asyncio.create_task(sleeptime_document_ingest_async(server, source_id, actor))
+    # sanitize filename
+    sanitized_filename = sanitize_filename(file.filename)
 
-    # return job information
-    # Is this necessary? Can we just return the job from create_job?
+    # create background tasks
+    safe_create_task(
+        load_file_to_source_async(server, source_id=source.id, filename=sanitized_filename, job_id=job.id, bytes=bytes, actor=actor),
+        logger=logger,
+        label="load_file_to_source_async",
+    )
+    safe_create_task(
+        insert_document_into_context_window_async(server, filename=sanitized_filename, source_id=source_id, actor=actor, bytes=bytes),
+        logger=logger,
+        label="insert_document_into_context_window_async",
+    )
+    safe_create_task(sleeptime_document_ingest_async(server, source_id, actor), logger=logger, label="sleeptime_document_ingest_async")
+
     job = await server.job_manager.get_job_by_id_async(job_id=job_id, actor=actor)
-    assert job is not None, "Job not found"
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job with id={job_id} not found.")
     return job
 
 
@@ -246,12 +259,10 @@ async def delete_file_from_source(
         raise HTTPException(status_code=404, detail=f"File with id={file_id} not found.")
 
 
-async def load_file_to_source_async(server: SyncServer, source_id: str, job_id: str, file: UploadFile, bytes: bytes, actor: User):
+async def load_file_to_source_async(server: SyncServer, source_id: str, job_id: str, filename: str, bytes: bytes, actor: User):
     # Create a temporary directory (deleted after the context manager exits)
     with tempfile.TemporaryDirectory() as tmpdirname:
-        # Sanitize the filename
-        sanitized_filename = sanitize_filename(file.filename)
-        file_path = os.path.join(tmpdirname, sanitized_filename)
+        file_path = os.path.join(tmpdirname, filename)
 
         # Write the file to the sanitized path
         with open(file_path, "wb") as buffer:
@@ -267,3 +278,8 @@ async def sleeptime_document_ingest_async(server: SyncServer, source_id: str, ac
     for agent in agents:
         if agent.enable_sleeptime:
             await server.sleeptime_document_ingest_async(agent, source, actor, clear_history)
+
+
+async def insert_document_into_context_window_async(server: SyncServer, filename: str, source_id: str, actor: User, bytes: bytes):
+    source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
+    await server.insert_document_into_context_window(source, bytes=bytes, filename=filename, actor=actor)

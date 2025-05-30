@@ -420,7 +420,7 @@ def test_load_file(client: RESTClient, agent: AgentState):
     # Get the memgpt paper
     file = files[0]
     # Assert the filename matches the pattern
-    pattern = re.compile(r"^memgpt_paper_[a-f0-9]{32}\.pdf$")
+    pattern = re.compile(r"^memgpt_paper_[a-f0-9]+\.pdf$")
     assert pattern.match(file.file_name), f"Filename '{file.file_name}' does not match expected pattern."
 
     assert file.source_id == source.id
