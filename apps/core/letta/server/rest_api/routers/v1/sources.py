@@ -168,6 +168,11 @@ async def upload_file_to_source(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Source with id={source_id} not found.")
     bytes = file.file.read()
 
+    try:
+        text = bytes.decode("utf-8")
+    except Exception:
+        text = ""
+
     # create job
     job = Job(
         user_id=actor.id,
@@ -180,16 +185,14 @@ async def upload_file_to_source(
     # sanitize filename
     sanitized_filename = sanitize_filename(file.filename)
 
+    # Add blocks
+    await server.insert_document_into_context_windows(source_id=source_id, text=text, filename=sanitized_filename, actor=actor)
+
     # create background tasks
     safe_create_task(
         load_file_to_source_async(server, source_id=source.id, filename=sanitized_filename, job_id=job.id, bytes=bytes, actor=actor),
         logger=logger,
         label="load_file_to_source_async",
-    )
-    safe_create_task(
-        insert_document_into_context_window_async(server, filename=sanitized_filename, source_id=source_id, actor=actor, bytes=bytes),
-        logger=logger,
-        label="insert_document_into_context_window_async",
     )
     safe_create_task(sleeptime_document_ingest_async(server, source_id, actor), logger=logger, label="sleeptime_document_ingest_async")
 
@@ -278,8 +281,3 @@ async def sleeptime_document_ingest_async(server: SyncServer, source_id: str, ac
     for agent in agents:
         if agent.enable_sleeptime:
             await server.sleeptime_document_ingest_async(agent, source, actor, clear_history)
-
-
-async def insert_document_into_context_window_async(server: SyncServer, filename: str, source_id: str, actor: User, bytes: bytes):
-    source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
-    await server.insert_document_into_context_window(source, bytes=bytes, filename=filename, actor=actor)

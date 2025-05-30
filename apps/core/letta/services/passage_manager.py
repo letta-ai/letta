@@ -5,6 +5,7 @@ from typing import List, Optional
 
 from async_lru import alru_cache
 from openai import AsyncOpenAI, OpenAI
+from sqlalchemy import select
 
 from letta.constants import MAX_EMBEDDING_DIM
 from letta.embeddings import embedding_model, parse_and_chunk_text
@@ -448,3 +449,16 @@ class PassageManager:
         BYTES_PER_EMBEDDING_DIM = 4
         GB_PER_EMBEDDING = BYTES_PER_EMBEDDING_DIM / BYTES_PER_STORAGE_UNIT[storage_unit] * MAX_EMBEDDING_DIM
         return await self.size_async(actor=actor, agent_id=agent_id) * GB_PER_EMBEDDING
+
+    @enforce_types
+    @trace_method
+    async def list_passages_by_file_id_async(self, file_id: str, actor: PydanticUser) -> List[PydanticPassage]:
+        """
+        List all source passages associated with a given file_id.
+        """
+        async with db_registry.async_session() as session:
+            result = await session.execute(
+                select(SourcePassage).where(SourcePassage.file_id == file_id).where(SourcePassage.organization_id == actor.organization_id)
+            )
+            passages = result.scalars().all()
+            return [p.to_pydantic() for p in passages]

@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
-from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.constants import CORE_MEMORY_SOURCE_CHAR_LIMIT, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
@@ -36,6 +36,7 @@ from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 from letta.services.telemetry_manager import NoopTelemetryManager
 from letta.settings import settings
+from letta.utils import safe_create_task
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
 
@@ -301,7 +302,6 @@ async def detach_tool(
 async def attach_source(
     agent_id: str,
     source_id: str,
-    background_tasks: BackgroundTasks,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
@@ -309,11 +309,30 @@ async def attach_source(
     Attach a source to an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    agent = await server.agent_manager.attach_source_async(agent_id=agent_id, source_id=source_id, actor=actor)
-    if agent.enable_sleeptime:
+    agent_state = await server.agent_manager.attach_source_async(agent_id=agent_id, source_id=source_id, actor=actor)
+
+    files = await server.source_manager.list_files(source_id, actor)
+    texts = []
+    filenames = []
+    for f in files:
+        passages = await server.passage_manager.list_passages_by_file_id_async(file_id=f.id, actor=actor)
+        passage_text = ""
+        for p in passages:
+            if len(passage_text) <= CORE_MEMORY_SOURCE_CHAR_LIMIT:
+                passage_text += p.text
+
+        texts.append(passage_text)
+        filenames.append(f.file_name)
+
+    await server.insert_documents_into_context_window(agent_state=agent_state, texts=texts, filenames=filenames, actor=actor)
+
+    if agent_state.enable_sleeptime:
         source = await server.source_manager.get_source_by_id(source_id=source_id)
-        background_tasks.add_task(server.sleeptime_document_ingest_async, agent, source, actor)
-    return agent
+        safe_create_task(
+            server.sleeptime_document_ingest_async(agent_state, source, actor), logger=logger, label="sleeptime_document_ingest_async"
+        )
+
+    return agent_state
 
 
 @router.patch("/{agent_id}/sources/detach/{source_id}", response_model=AgentState, operation_id="detach_source_from_agent")
