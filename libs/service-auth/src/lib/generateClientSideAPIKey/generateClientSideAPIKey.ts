@@ -36,7 +36,7 @@ export async function generateClientSideAPIKey(options: GenerateAPIKeyOptions) {
   const coreUser = await UsersService.createUser({
     requestBody: {
       organization_id: response.lettaAgentsId,
-      name: `API user for ${organizationId}`,
+      name: `Client Side API user for ${organizationId} - ${apiKey}`,
     },
   });
 

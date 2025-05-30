@@ -24,7 +24,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { webApi, webApiQueryKeys } from '$web/client';
+import { webApi, webApiContracts, webApiQueryKeys } from '$web/client';
 import type { APIKeyType } from '$web/web-api/contracts';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useQueryClient } from '@tanstack/react-query';
@@ -33,6 +33,9 @@ import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { useErrorTranslationMessage } from '@letta-cloud/utils-client';
+import { getUsageLimits } from '@letta-cloud/utils-shared';
+import { useOrganizationBillingTier } from '$web/client/hooks/useOrganizationBillingTier/useOrganizationBillingTier';
 
 const CreateAPIKeySchema = z.object({
   name: z.string(),
@@ -43,7 +46,7 @@ function CreateAPIKeyDialog() {
   const queryClient = useQueryClient();
   const user = useCurrentUser();
   const t = useTranslations('api-keys/page');
-  const { mutate, isPending } = webApi.apiKeys.createAPIKey.useMutation({
+  const { mutate, isPending, error } = webApi.apiKeys.createAPIKey.useMutation({
     onSuccess: (response) => {
       trackClientSideEvent(AnalyticsEvent.CREATED_API_KEY, {
         userId: user?.id || '',
@@ -54,6 +57,19 @@ function CreateAPIKeyDialog() {
         queryKey: webApiQueryKeys.apiKeys.getAPIKeys,
       });
     },
+  });
+
+  const billingTier = useOrganizationBillingTier();
+  const limits = getUsageLimits(billingTier || 'free');
+
+  const errorMessage = useErrorTranslationMessage(error, {
+    messageMap: {
+      maxUsage: t('CreateAPIKeyDialog.errors.overage', {
+        limit: limits.apiKeys,
+      }),
+      default: t('CreateAPIKeyDialog.errors.default'),
+    },
+    contract: webApiContracts.apiKeys.createAPIKey,
   });
 
   const form = useForm<z.infer<typeof CreateAPIKeySchema>>({
@@ -73,6 +89,7 @@ function CreateAPIKeyDialog() {
   return (
     <FormProvider {...form}>
       <Dialog
+        errorMessage={errorMessage?.message}
         preventCloseFromOutside
         onOpenChange={(isOpen) => {
           if (!isOpen) {

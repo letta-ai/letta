@@ -15,6 +15,7 @@ export interface UsageLimits {
   groups: number;
   blocks: number;
   monthlyCost: number; // in dollars
+  apiKeys: number; // number of API keys allowed
 }
 
 const OneGB = 1_073_741_824; // 1024 * 1024 * 1024
@@ -38,6 +39,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     premiumInferencesPerMonth: 1_000_000_000_000,
     freeInferencesPerMonth: 1_000_000_000,
     storage: OneGB * 100, // 100 GB
+    apiKeys: 100_000, // 100,000 API keys
   },
   pro: {
     monthlyCost: 20,
@@ -54,6 +56,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     freeInferencesPerMonth: 5_000,
     fileSize: TwentyFiveMB,
     storage: OneGB * 10, // 1 GB
+    apiKeys: 1_000, // 100 API keys
   },
   scale: {
     monthlyCost: 750,
@@ -70,6 +73,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     freeInferencesPerMonth: 50_000,
     fileSize: TwentyFiveMB,
     storage: OneGB * 100, // 1 GB
+    apiKeys: 5_000, // 5,000 API keys
   },
   free: {
     monthlyCost: 0,
@@ -86,6 +90,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     freeInferencesPerMonth: 500,
     fileSize: FiveMB, // 5 MB
     storage: OneGB, // 1 GB
+    apiKeys: 25,
   },
 };
 

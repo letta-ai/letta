@@ -7,6 +7,8 @@ import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { deleteRedisData } from '@letta-cloud/service-redis';
 import { AdminService } from '@letta-cloud/sdk-core';
 import { generateServerSideAPIKey } from '@letta-cloud/service-auth';
+import { getCustomerSubscription } from '@letta-cloud/service-payments';
+import { getUsageLimits } from '@letta-cloud/utils-shared';
 
 type CreateAPIKeyPayload = ServerInferRequest<
   typeof contracts.apiKeys.createAPIKey
@@ -30,6 +32,27 @@ export async function createAPIKey(
     return {
       status: 403,
       body: null,
+    };
+  }
+
+  const subscription = await getCustomerSubscription(organizationId);
+
+  const limits = await getUsageLimits(subscription.tier);
+
+  const existingKeys = await db.query.lettaAPIKeys.findMany({
+    where: and(eq(lettaAPIKeys.organizationId, organizationId)),
+    columns: {
+      id: true,
+    },
+  });
+
+  if (existingKeys.length >= limits.apiKeys) {
+    return {
+      status: 403,
+      body: {
+        errorCode: 'maxUsage',
+        error: `API key limit reached, limit ${limits.apiKeys}`,
+      },
     };
   }
 

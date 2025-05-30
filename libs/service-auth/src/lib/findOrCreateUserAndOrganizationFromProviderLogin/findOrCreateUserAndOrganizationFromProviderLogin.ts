@@ -206,11 +206,15 @@ async function createUserAndOrganization(
   const userFullName = userData.name;
 
   await Promise.all([
-    generateServerSideAPIKey({
-      name: `${userFullName}'s API Key`,
-      organizationId,
-      creatorUserId: createdUser.userId,
-    }),
+    ...(isNewOrganization
+      ? [
+          generateServerSideAPIKey({
+            name: `${userFullName}'s API Key`,
+            organizationId,
+            creatorUserId: createdUser.userId,
+          }),
+        ]
+      : []),
     db
       .update(users)
       .set({

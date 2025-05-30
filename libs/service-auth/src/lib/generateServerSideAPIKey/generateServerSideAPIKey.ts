@@ -1,10 +1,7 @@
 import { db, lettaAPIKeys, organizations } from '@letta-cloud/service-database';
 import { UsersService } from '@letta-cloud/sdk-core';
 import { eq } from 'drizzle-orm';
-import {
-  type AccessTokenTypes,
-  accessTokenTypeToPrefix,
-} from '@letta-cloud/types';
+import { accessTokenTypeToPrefix } from '@letta-cloud/types';
 
 interface GenerateAPIKeyOptions {
   organizationId: string;
@@ -32,7 +29,7 @@ export async function generateServerSideAPIKey(options: GenerateAPIKeyOptions) {
   const coreUser = await UsersService.createUser({
     requestBody: {
       organization_id: response.lettaAgentsId,
-      name: `API user for ${organizationId}`,
+      name: `Server API user for ${organizationId} - ${apiKey}`,
     },
   });
 

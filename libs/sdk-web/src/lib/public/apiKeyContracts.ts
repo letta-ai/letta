@@ -41,6 +41,10 @@ const createAPIKeyContract = c.mutation({
   body: CreateAPIKeyPayloadSchema,
   responses: {
     201: CreatedAPIKeySchema,
+    400: z.object({
+      message: z.string(),
+      errorCode: z.enum(['maxUsage', 'default']),
+    }),
   },
 });
 
