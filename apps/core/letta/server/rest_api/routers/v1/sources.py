@@ -3,7 +3,7 @@ import os
 import tempfile
 from typing import List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, UploadFile
 from starlette import status
 
 import letta.constants as constants
@@ -140,11 +140,16 @@ async def delete_source(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
-    agents = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
-    for agent in agents:
-        if agent.enable_sleeptime:
+    agent_states = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
+    files = await server.source_manager.list_files(source_id, actor)
+    filenames = [f.file_name for f in files]
+
+    for agent_state in agent_states:
+        await server.remove_documents_from_context_window(agent_state=agent_state, filenames=filenames, actor=actor)
+
+        if agent_state.enable_sleeptime:
             try:
-                block = await server.agent_manager.get_block_with_label_async(agent_id=agent.id, block_label=source.name, actor=actor)
+                block = await server.agent_manager.get_block_with_label_async(agent_id=agent_state.id, block_label=source.name, actor=actor)
                 await server.block_manager.delete_block_async(block.id, actor)
             except:
                 pass
@@ -245,7 +250,6 @@ async def list_source_files(
 async def delete_file_from_source(
     source_id: str,
     file_id: str,
-    background_tasks: BackgroundTasks,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -256,7 +260,9 @@ async def delete_file_from_source(
 
     deleted_file = await server.source_manager.delete_file(file_id=file_id, actor=actor)
 
-    # TODO: make async
+    # Remove blocks
+    await server.remove_document_from_context_windows(source_id=source_id, filename=deleted_file.file_name, actor=actor)
+
     asyncio.create_task(sleeptime_document_ingest_async(server, source_id, actor, clear_history=True))
     if deleted_file is None:
         raise HTTPException(status_code=404, detail=f"File with id={file_id} not found.")

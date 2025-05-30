@@ -346,15 +346,19 @@ async def detach_source(
     Detach a source from an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    agent = await server.agent_manager.detach_source_async(agent_id=agent_id, source_id=source_id, actor=actor)
-    if agent.enable_sleeptime:
+    agent_state = await server.agent_manager.detach_source_async(agent_id=agent_id, source_id=source_id, actor=actor)
+    files = await server.source_manager.list_files(source_id, actor)
+    filenames = [f.file_name for f in files]
+    await server.remove_documents_from_context_window(agent_state=agent_state, filenames=filenames, actor=actor)
+
+    if agent_state.enable_sleeptime:
         try:
             source = await server.source_manager.get_source_by_id(source_id=source_id)
-            block = await server.agent_manager.get_block_with_label_async(agent_id=agent.id, block_label=source.name, actor=actor)
+            block = await server.agent_manager.get_block_with_label_async(agent_id=agent_state.id, block_label=source.name, actor=actor)
             await server.block_manager.delete_block_async(block.id, actor)
         except:
             pass
-    return agent
+    return agent_state
 
 
 @router.get("/{agent_id}", response_model=AgentState, operation_id="retrieve_agent")
