@@ -131,7 +131,7 @@ class DatabaseRegistry:
             # Create async session factory
             self._async_engines["default"] = async_engine
             self._async_session_factories["default"] = async_sessionmaker(
-                autocommit=False, autoflush=False, bind=self._async_engines["default"], class_=AsyncSession
+                close_resets_only=False, autocommit=False, autoflush=False, bind=self._async_engines["default"], class_=AsyncSession
             )
             self._initialized["async"] = True
 
