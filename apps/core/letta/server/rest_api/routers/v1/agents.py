@@ -655,6 +655,7 @@ async def send_message(
     This endpoint accepts a message from a user and processes it through the agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    request_start_timestamp_ns = get_utc_timestamp_ns()
     # user_eligible = actor.organization_id not in ["org-4a3af5dd-4c6a-48cb-ac13-3f73ecaaa4bf", "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6"]
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
@@ -688,7 +689,12 @@ async def send_message(
                 telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
             )
 
-        result = await experimental_agent.step(request.messages, max_steps=10, use_assistant_message=request.use_assistant_message)
+        result = await experimental_agent.step(
+            request.messages,
+            max_steps=10,
+            use_assistant_message=request.use_assistant_message,
+            request_start_timestamp_ns=request_start_timestamp_ns,
+        )
     else:
         result = await server.send_message_to_agent(
             agent_id=agent_id,
@@ -740,6 +746,7 @@ async def send_message_streaming(
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
     not_letta_endpoint = not ("inference.letta.com" in agent.llm_config.model_endpoint)
+    request_start_timestamp_ns = get_utc_timestamp_ns()
 
     if agent_eligible and feature_enabled and model_compatible:
         if agent.enable_sleeptime:
@@ -782,7 +789,10 @@ async def send_message_streaming(
         else:
             result = StreamingResponseWithStatusCode(
                 experimental_agent.step_stream_no_tokens(
-                    request.messages, max_steps=10, use_assistant_message=request.use_assistant_message
+                    request.messages,
+                    max_steps=10,
+                    use_assistant_message=request.use_assistant_message,
+                    request_start_timestamp_ns=request_start_timestamp_ns,
                 ),
                 media_type="text/event-stream",
             )
@@ -815,6 +825,7 @@ async def process_message_background(
 ) -> None:
     """Background task to process the message and update job status."""
     try:
+        request_start_timestamp_ns = get_utc_timestamp_ns()
         result = await server.send_message_to_agent(
             agent_id=agent_id,
             actor=actor,
@@ -825,6 +836,7 @@ async def process_message_background(
             assistant_message_tool_name=assistant_message_tool_name,
             assistant_message_tool_kwarg=assistant_message_tool_kwarg,
             metadata={"job_id": job_id},  # Pass job_id through metadata
+            request_start_timestamp_ns=request_start_timestamp_ns,
         )
 
         # Update job status to completed
