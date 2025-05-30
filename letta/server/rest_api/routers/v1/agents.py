@@ -669,7 +669,7 @@ async def send_message(
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
 
     if agent_eligible and feature_enabled and model_compatible:
-        if agent.enable_sleeptime:
+        if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
             experimental_agent = SleeptimeMultiAgentV2(
                 agent_id=agent_id,
                 message_manager=server.message_manager,
@@ -753,7 +753,7 @@ async def send_message_streaming(
     request_start_timestamp_ns = get_utc_timestamp_ns()
 
     if agent_eligible and feature_enabled and model_compatible:
-        if agent.enable_sleeptime:
+        if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
             experimental_agent = SleeptimeMultiAgentV2(
                 agent_id=agent_id,
                 message_manager=server.message_manager,
