@@ -113,9 +113,8 @@ def test_shared_blocks(client: LettaSDKClient):
             )
         ],
     )
-    assert (
-        "charles" in client.agents.blocks.retrieve(agent_id=agent_state2.id, block_label="human").value.lower()
-    ), f"Shared block update failed {client.agents.blocks.retrieve(agent_id=agent_state2.id, block_label="human").value}"
+    block_value = client.agents.blocks.retrieve(agent_id=agent_state2.id, block_label="human").value
+    assert "charles" in block_value.lower(), f"Shared block update failed {block_value}"
 
     # cleanup
     client.agents.delete(agent_state1.id)
@@ -682,7 +681,7 @@ def test_many_blocks(client: LettaSDKClient):
     client.agents.delete(agent2.id)
 
 
-def test_sources(client: LettaSDKClient, agent: AgentState):
+def test_sources_crud(client: LettaSDKClient, agent: AgentState):
 
     # Clear existing sources
     for source in client.sources.list():

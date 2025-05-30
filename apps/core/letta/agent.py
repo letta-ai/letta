@@ -231,6 +231,7 @@ class Agent(BaseAgent):
             self.agent_state = self.agent_manager.rebuild_system_prompt(agent_id=self.agent_state.id, actor=self.user)
 
             return True
+
         return False
 
     def _handle_function_error_response(

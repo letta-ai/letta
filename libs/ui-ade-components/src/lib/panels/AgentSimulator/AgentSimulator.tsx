@@ -328,7 +328,7 @@ export function useSendMessage(
         if (abortController.current?.signal.aborted) {
           return;
         }
-        
+
         if (e.data.trim() === '[DONE]') {
           return;
         }

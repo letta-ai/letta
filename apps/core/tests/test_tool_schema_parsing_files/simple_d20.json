@@ -1,9 +1,9 @@
 {
-    "name": "roll_d20",
-    "description": "This function generates a random integer between 1 and 20, inclusive,\nwhich represents the outcome of a single roll of a d20.",
-    "parameters": {
-      "type": "object",
-      "properties": {},
-      "required": []
-    }
+  "name": "roll_d20",
+  "description": "This function generates a random integer between 1 and 20, inclusive,\nwhich represents the outcome of a single roll of a d20.",
+  "parameters": {
+    "type": "object",
+    "properties": {},
+    "required": []
   }
+}
