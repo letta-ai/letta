@@ -167,7 +167,6 @@ class DatabaseRegistry:
                 base_args.update(
                     {
                         "pool_use_lifo": settings.pool_use_lifo,
-                        "pool_timeout": settings.pg_pool_timeout,
                     }
                 )
 
@@ -175,8 +174,8 @@ class DatabaseRegistry:
             # For asyncpg, statement_cache_size should be in connect_args
             base_args.update(
                 {
-                    "pool_timeout": settings.pg_pool_timeout,
                     "connect_args": {
+                        "timeout": settings.pg_pool_timeout,
                         "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4()}__",
                         "statement_cache_size": 0,
                         "prepared_statement_cache_size": 0,
