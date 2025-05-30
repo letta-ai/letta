@@ -30,6 +30,7 @@ const publicApis = [
   new RegExp('/api/user/new(.+)?'),
   new RegExp('/api/user/forgot-password(.+)?'),
   new RegExp('/api/verify-sso-email(.+)?'),
+  new RegExp('/api/user/new-with-invite(.+)?'),
   new RegExp('/api/user/login(.+)?'),
   new RegExp('/api/feature-flags(.+)?'),
 ];
