@@ -15,7 +15,7 @@ import { Typography } from '../../core/Typography/Typography';
 import { VStack } from '../../framing/VStack/VStack';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Button } from '../../core/Button/Button';
-import { SendIcon } from '../../icons';
+import { SendIcon, ThinkingIcon } from '../../icons';
 import { Popover } from '../../core/Popover/Popover';
 import { useTranslations } from '@letta-cloud/translations';
 import { Slot } from '@radix-ui/react-slot';
@@ -210,7 +210,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
           )}
         >
           <div>
-            <LettaLoader variant="flipper" size="small" color="muted" />
+            <ThinkingIcon color="muted" size="small" />
           </div>
           <Typography color="muted" bold>
             {sendingMessageText}
