@@ -164,17 +164,23 @@ class DatabaseRegistry:
                 }
             )
             if not is_async:
-                base_args["pool_use_lifo"] = settings.pool_use_lifo
+                base_args.update(
+                    {
+                        "pool_use_lifo": settings.pool_use_lifo,
+                        "pool_timeout": settings.pg_pool_timeout,
+                    }
+                )
 
         elif is_async:
             # For asyncpg, statement_cache_size should be in connect_args
             base_args.update(
                 {
+                    "pool_timeout": settings.pg_pool_timeout,
                     "connect_args": {
                         "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4()}__",
                         "statement_cache_size": 0,
                         "prepared_statement_cache_size": 0,
-                    }
+                    },
                 }
             )
         return base_args
