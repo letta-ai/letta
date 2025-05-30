@@ -96,6 +96,15 @@ def test_file_upload_creates_source_blocks_correctly(client: LettaSDKClient, age
     assert "test" in [b.value for b in blocks]
     assert any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
+    # Remove file from source
+    client.sources.files.delete(source_id=source.id, file_id=files[0].id)
+
+    # Get the agent state, check blocks do NOT exist
+    blocks = client.agents.blocks.list(agent_id=agent_state.id)
+    assert len(blocks) == 1
+    assert "test" not in [b.value for b in blocks]
+    assert not any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
+
 
 def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKClient, agent_state: AgentState):
     # Clear existing sources
@@ -136,3 +145,57 @@ def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKC
     assert len(blocks) == 2
     assert "test" in [b.value for b in blocks]
     assert any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
+
+    # Detach the source
+    client.agents.sources.detach(source_id=source.id, agent_id=agent_state.id)
+
+    # Get the agent state, check blocks do NOT exist
+    blocks = client.agents.blocks.list(agent_id=agent_state.id)
+    assert len(blocks) == 1
+    assert "test" not in [b.value for b in blocks]
+    assert not any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
+
+
+def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, agent_state: AgentState):
+    # Clear existing sources
+    for source in client.sources.list():
+        client.sources.delete(source_id=source.id)
+
+    # Clear existing jobs
+    for job in client.jobs.list():
+        client.jobs.delete(job_id=job.id)
+
+    # Create a new source
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
+    assert len(client.sources.list()) == 1
+
+    # Attach
+    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+
+    # Load files into the source
+    file_path = "tests/data/test.txt"
+
+    # Upload the files
+    with open(file_path, "rb") as f:
+        job = client.sources.files.upload(source_id=source.id, file=f)
+
+    # Wait for the jobs to complete
+    while job.status != "completed":
+        time.sleep(1)
+        job = client.jobs.retrieve(job_id=job.id)
+        print("Waiting for jobs to complete...", job.status)
+
+    # Get the agent state, check blocks exist
+    blocks = client.agents.blocks.list(agent_id=agent_state.id)
+    assert len(blocks) == 2
+    assert "test" in [b.value for b in blocks]
+    assert any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
+
+    # Remove file from source
+    client.sources.delete(source_id=source.id)
+
+    # Get the agent state, check blocks do NOT exist
+    blocks = client.agents.blocks.list(agent_id=agent_state.id)
+    assert len(blocks) == 1
+    assert "test" not in [b.value for b in blocks]
+    assert not any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
