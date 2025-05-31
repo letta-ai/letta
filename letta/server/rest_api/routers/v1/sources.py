@@ -172,6 +172,13 @@ async def upload_file_to_source(
     """
     Upload a file to a data source.
     """
+    allowed_media_types = {"application/pdf", "text/plain", "application/json"}
+    if file.content_type not in allowed_media_types:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"Unsupported file type: {file.content_type}.  Only PDF, .txt, or .json allowed.",
+        )
+
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
