@@ -8,6 +8,7 @@ from starlette import status
 
 import letta.constants as constants
 from letta.log import get_logger
+from letta.schemas.agent import AgentState
 from letta.schemas.file import FileMetadata
 from letta.schemas.job import Job
 from letta.schemas.passage import Passage
@@ -15,6 +16,11 @@ from letta.schemas.source import Source, SourceCreate, SourceUpdate
 from letta.schemas.user import User
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
+from letta.services.file_processor.chunker.llama_index_chunker import LlamaIndexChunker
+from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
+from letta.services.file_processor.file_processor import FileProcessor
+from letta.services.file_processor.parser.mistral_parser import MistralFileParser
+from letta.settings import model_settings, settings
 from letta.utils import safe_create_task, sanitize_filename
 
 logger = get_logger(__name__)
@@ -171,12 +177,15 @@ async def upload_file_to_source(
     source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     if source is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Source with id={source_id} not found.")
-    bytes = file.file.read()
+    content = await file.read()
+
+    # sanitize filename
+    file.filename = sanitize_filename(file.filename)
 
     try:
-        text = bytes.decode("utf-8")
+        text = content.decode("utf-8")
     except Exception:
-        text = ""
+        text = "[Currently parsing...]"
 
     # create job
     job = Job(
@@ -184,26 +193,28 @@ async def upload_file_to_source(
         metadata={"type": "embedding", "filename": file.filename, "source_id": source_id},
         completed_at=None,
     )
-    job_id = job.id
-    await server.job_manager.create_job_async(job, actor=actor)
+    job = await server.job_manager.create_job_async(job, actor=actor)
 
-    # sanitize filename
-    sanitized_filename = sanitize_filename(file.filename)
+    # Add blocks (sometimes without content, for UX purposes)
+    agent_states = await server.insert_document_into_context_windows(source_id=source_id, text=text, filename=file.filename, actor=actor)
 
-    # Add blocks
-    await server.insert_document_into_context_windows(source_id=source_id, text=text, filename=sanitized_filename, actor=actor)
-
-    # create background tasks
-    safe_create_task(
-        load_file_to_source_async(server, source_id=source.id, filename=sanitized_filename, job_id=job.id, bytes=bytes, actor=actor),
-        logger=logger,
-        label="load_file_to_source_async",
-    )
+    # NEW: Cloud based file processing
+    if settings.mistral_api_key and model_settings.openai_api_key:
+        logger.info("Running experimental cloud based file processing...")
+        safe_create_task(
+            load_file_to_source_cloud(server, agent_states, content, file, job, source_id, actor),
+            logger=logger,
+            label="file_processor.process",
+        )
+    else:
+        # create background tasks
+        safe_create_task(
+            load_file_to_source_async(server, source_id=source.id, filename=file.filename, job_id=job.id, bytes=content, actor=actor),
+            logger=logger,
+            label="load_file_to_source_async",
+        )
     safe_create_task(sleeptime_document_ingest_async(server, source_id, actor), logger=logger, label="sleeptime_document_ingest_async")
 
-    job = await server.job_manager.get_job_by_id_async(job_id=job_id, actor=actor)
-    if job is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job with id={job_id} not found.")
     return job
 
 
@@ -287,3 +298,13 @@ async def sleeptime_document_ingest_async(server: SyncServer, source_id: str, ac
     for agent in agents:
         if agent.enable_sleeptime:
             await server.sleeptime_document_ingest_async(agent, source, actor, clear_history)
+
+
+async def load_file_to_source_cloud(
+    server: SyncServer, agent_states: List[AgentState], content: bytes, file: UploadFile, job: Job, source_id: str, actor: User
+):
+    file_processor = MistralFileParser()
+    text_chunker = LlamaIndexChunker()
+    embedder = OpenAIEmbedder()
+    file_processor = FileProcessor(file_parser=file_processor, text_chunker=text_chunker, embedder=embedder, actor=actor)
+    await file_processor.process(server=server, agent_states=agent_states, source_id=source_id, content=content, file=file, job=job)
