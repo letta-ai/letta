@@ -179,6 +179,7 @@ describe-web:
         --set secrets.LETTA_PG_MAX_OVERFLOW=${LETTA_PG_MAX_OVERFLOW} \
         --set env.LETTA_DEFAULT_LLM_HANDLE=${LETTA_DEFAULT_LLM_HANDLE} \
         --set env.LETTA_DEFAULT_EMBEDDING_HANDLE=${LETTA_DEFAULT_EMBEDDING_HANDLE} \
+        --set secrets.LETTA_MISTRAL_API_KEY=${LETTA_MISTRAL_API_KEY} \
         --set secrets.MCP_READ_FROM_CONFIG=false
 
 # Deploy Grafana
