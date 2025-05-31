@@ -4147,7 +4147,7 @@ export type AddMcpServerData = {
   userId?: string | null;
 };
 
-export type AddMcpServerResponse = Array<SSEServerConfig | StdioServerConfig>;
+export type AddMcpServerResponse = Array<StdioServerConfig | SSEServerConfig>;
 
 export type ListMcpToolsByServerData = {
   mcpServerName: string;
@@ -4170,7 +4170,7 @@ export type DeleteMcpServerData = {
 };
 
 export type DeleteMcpServerResponse = Array<
-  SSEServerConfig | StdioServerConfig
+  StdioServerConfig | SSEServerConfig
 >;
 
 export type CountSourcesData = {
@@ -5635,7 +5635,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Array<SSEServerConfig | StdioServerConfig>;
+        200: Array<StdioServerConfig | SSEServerConfig>;
         /**
          * Validation Error
          */
@@ -5680,7 +5680,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Array<SSEServerConfig | StdioServerConfig>;
+        200: Array<StdioServerConfig | SSEServerConfig>;
         /**
          * Validation Error
          */

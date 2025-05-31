@@ -234,6 +234,9 @@ class Settings(BaseSettings):
     poll_lock_retry_interval_seconds: int = 5 * 60
     batch_job_polling_lookback_weeks: int = 2
 
+    # for OCR
+    mistral_api_key: Optional[str] = None
+
     @property
     def letta_pg_uri(self) -> str:
         if self.pg_uri:

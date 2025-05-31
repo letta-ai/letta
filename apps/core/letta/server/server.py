@@ -1340,6 +1340,9 @@ class SyncServer(Server):
 
         return job
 
+    async def load_file_to_source_via_mistral(self):
+        pass
+
     async def sleeptime_document_ingest_async(
         self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False
     ) -> None:
@@ -1410,21 +1413,25 @@ class SyncServer(Server):
         except NoResultFound:
             logger.info(f"Document block with label {filename} already removed, skipping...")
 
-    async def insert_document_into_context_windows(self, source_id: str, text: str, filename: str, actor: User) -> None:
+    async def insert_document_into_context_windows(
+        self, source_id: str, text: str, filename: str, actor: User, agent_states: Optional[List[AgentState]] = None
+    ) -> List[AgentState]:
         """
         Insert the uploaded document into the context window of all agents
         attached to the given source.
         """
-        agent_states = await self.source_manager.list_attached_agents(source_id=source_id, actor=actor)
+        agent_states = agent_states or await self.source_manager.list_attached_agents(source_id=source_id, actor=actor)
 
         # Return early
         if not agent_states:
-            return
+            return []
 
         logger.info(f"Inserting document into context window for source: {source_id}")
         logger.info(f"Attached agents: {[a.id for a in agent_states]}")
 
         await asyncio.gather(*(self._upsert_document_block(agent_state.id, text, filename, actor) for agent_state in agent_states))
+
+        return agent_states
 
     async def insert_documents_into_context_window(
         self, agent_state: AgentState, texts: List[str], filenames: List[str], actor: User
