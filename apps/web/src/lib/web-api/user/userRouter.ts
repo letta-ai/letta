@@ -391,15 +391,6 @@ async function createAccountWithPasswordAndInviteCode(
 ): Promise<CreateAccountWithPasswordAndInviteCodeResponse> {
   const { email, password, name, inviteCode } = req.body;
 
-  const flag = await getSingleFlag('EMAIL_SIGNUP');
-
-  if (!flag) {
-    return {
-      status: 401,
-      body: {},
-    };
-  }
-
   const invitedUserList = await db.query.organizationInvitedUsers.findFirst({
     where: and(
       eq(organizationInvitedUsers.email, email),
@@ -478,6 +469,15 @@ async function createAccountWithPassword(
   req: CreateAccountWithPasswordRequest,
 ): Promise<CreateAccountWithPasswordResponse> {
   const { email, password, name } = req.body;
+
+  const flag = await getSingleFlag('EMAIL_SIGNUP');
+
+  if (!flag) {
+    return {
+      status: 401,
+      body: {},
+    };
+  }
 
   const existingUser = await db.query.users.findFirst({
     where: eq(users.email, email),
