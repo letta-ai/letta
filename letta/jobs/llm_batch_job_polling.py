@@ -181,7 +181,9 @@ async def poll_running_llm_batches(server: "SyncServer") -> List[LettaBatchRespo
 
     try:
         # 1. Retrieve running batch jobs
-        batches = await server.batch_manager.list_running_llm_batches_async(weeks=max(settings.batch_job_polling_lookback_weeks, 1))
+        batches = await server.batch_manager.list_running_llm_batches_async(
+            weeks=max(settings.batch_job_polling_lookback_weeks, 1), batch_size=settings.batch_job_polling_batch_size
+        )
         metrics.total_batches = len(batches)
 
         # TODO: Expand to more providers

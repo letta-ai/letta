@@ -233,6 +233,7 @@ class Settings(BaseSettings):
     poll_running_llm_batches_interval_seconds: int = 5 * 60
     poll_lock_retry_interval_seconds: int = 5 * 60
     batch_job_polling_lookback_weeks: int = 2
+    batch_job_polling_batch_size: Optional[int] = None
 
     # for OCR
     mistral_api_key: Optional[str] = None
