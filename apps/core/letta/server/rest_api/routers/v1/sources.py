@@ -1,6 +1,8 @@
 import asyncio
+import mimetypes
 import os
 import tempfile
+from pathlib import Path
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, UploadFile
@@ -167,16 +169,37 @@ async def upload_file_to_source(
     file: UploadFile,
     source_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     Upload a file to a data source.
     """
     allowed_media_types = {"application/pdf", "text/plain", "application/json"}
-    if file.content_type not in allowed_media_types:
+
+    # Normalize incoming Content-Type header (strip charset or any parameters).
+    raw_ct = file.content_type or ""
+    media_type = raw_ct.split(";", 1)[0].strip().lower()
+
+    # If client didn’t supply a Content-Type or it’s not one of the allowed types,
+    #    attempt to infer from filename extension.
+    if media_type not in allowed_media_types and file.filename:
+        guessed, _ = mimetypes.guess_type(file.filename)
+        media_type = (guessed or "").lower()
+
+        if media_type not in allowed_media_types:
+            ext = Path(file.filename).suffix.lower()
+            ext_map = {
+                ".pdf": "application/pdf",
+                ".txt": "text/plain",
+                ".json": "application/json",
+            }
+            media_type = ext_map.get(ext, media_type)
+
+    # If still not allowed, reject with 415.
+    if media_type not in allowed_media_types:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=f"Unsupported file type: {file.content_type}.  Only PDF, .txt, or .json allowed.",
+            detail=(f"Unsupported file type: {media_type or 'unknown'} " f"(filename: {file.filename}). Only PDF, .txt, or .json allowed."),
         )
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
