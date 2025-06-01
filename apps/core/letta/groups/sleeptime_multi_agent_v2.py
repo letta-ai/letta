@@ -127,6 +127,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
         input_messages: List[MessageCreate],
         max_steps: int = 10,
         use_assistant_message: bool = True,
+        request_start_timestamp_ns: Optional[int] = None,
     ):
         response = await self.step(input_messages, max_steps, use_assistant_message)
 
