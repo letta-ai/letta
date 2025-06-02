@@ -6,12 +6,20 @@ from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.organization import Organization as PydanticOrganization
 
 if TYPE_CHECKING:
-
     from letta.orm.agent import Agent
+    from letta.orm.agent_passage import AgentPassage
+    from letta.orm.block import Block
     from letta.orm.file import FileMetadata
+    from letta.orm.group import Group
     from letta.orm.identity import Identity
+    from letta.orm.llm_batch_item import LLMBatchItem
+    from letta.orm.llm_batch_job import LLMBatchJob
+    from letta.orm.message import Message
     from letta.orm.provider import Provider
-    from letta.orm.sandbox_config import AgentEnvironmentVariable
+    from letta.orm.sandbox_config import AgentEnvironmentVariable, SandboxConfig
+    from letta.orm.sandbox_environment_variable import SandboxEnvironmentVariable
+    from letta.orm.source import Source
+    from letta.orm.source_passage import SourcePassage
     from letta.orm.tool import Tool
     from letta.orm.user import User
 
