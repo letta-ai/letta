@@ -70,10 +70,12 @@ function ToolVariableViewer(props: ToolVariableViewerProps) {
           return (
             <tr
               className={cn(
-                getChangeClass({
-                  isChanged: !comparedValue,
-                  isAdditive: negative,
-                }),
+                comparedVariables
+                  ? getChangeClass({
+                      isChanged: !comparedValue,
+                      isAdditive: negative,
+                    })
+                  : '',
               )}
               key={variable.key}
             >
@@ -210,10 +212,12 @@ function ToolRuleViewer(props: ToolRuleViewerProps) {
         return (
           <VStack
             className={cn(
-              getChangeClass({
-                isChanged: !comparedRule,
-                isAdditive: negative,
-              }),
+              comparedToolRules
+                ? getChangeClass({
+                    isChanged: !comparedRule,
+                    isAdditive: negative,
+                  })
+                : '',
             )}
             borderBottom
             gap={false}
@@ -387,10 +391,12 @@ function ToolsViewer(props: ToolsViewerProps) {
             gap={false}
             key={toolId}
             className={cn(
-              getChangeClass({
-                isChanged: !comparedTool,
-                isAdditive: negative,
-              }),
+              comparedToolIds
+                ? getChangeClass({
+                    isChanged: !comparedTool,
+                    isAdditive: negative,
+                  })
+                : '',
               'p-3',
             )}
             align="start"
@@ -439,10 +445,12 @@ function SourceViewer(props: SourceViewerProps) {
             gap={false}
             key={sourceId}
             className={cn(
-              getChangeClass({
-                isChanged: !comparedSource,
-                isAdditive: negative,
-              }),
+              comparedSourceIds
+                ? getChangeClass({
+                    isChanged: !comparedSource,
+                    isAdditive: negative,
+                  })
+                : '',
               'p-3',
             )}
             align="start"
