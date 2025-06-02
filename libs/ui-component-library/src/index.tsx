@@ -242,3 +242,5 @@ export * from './lib/core/EventReplay/EventReplay';
 export * from './lib/reusable/DashboardChartWrapper/DashboardChartWrapper';
 
 export * from './lib/core/VR/VR';
+
+export * from './lib/core/MessageReplay/MessageReplay';

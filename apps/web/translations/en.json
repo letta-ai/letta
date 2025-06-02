@@ -1439,6 +1439,15 @@
       "createAgentTemplate": "New agent template"
     }
   },
+  "pages/projects/observability/TraceDetails": {
+    "title": "Message history",
+    "description": "Below is the message history for this trace. You can see the input and output messages, as well as the tools used by the agent."
+  },
+  "pages/projects/observability/ToolErrorsChart": {
+    "title": "Tool errors",
+    "info": "This chart shows the number of tool errors that occurred on a given day. A tool error is when an agent tries to use a tool but it fails to execute.",
+    "tooltip": "errors"
+  },
   "pages/projects/observability/ActiveAgentChart": {
     "title": "Active agents",
     "info": "This chart shows the number of agents that were active on a given day. It is segemented on new agents (first time active) and returning agents (active after their first time).",
@@ -1473,6 +1482,28 @@
     "tooltip": {
       "withValue": "Average total response time",
       "noData": "No data was recorded for this date"
+    }
+  },
+  "pages/projects/observability/ViewMessageTrace": {
+    "title": "View message",
+    "loadingMessage": "Loading message details..."
+  },
+  "pages/projects/observability/tool-errors": {
+    "title": "Tool errors",
+    "description": "Tool errors are when an agent tries to use a tool but it fails to execute. This can happen for a variety of reasons, such as the tool not being configured correctly or the agent not having permission to use the tool.",
+    "table": {
+      "title": "Latest errors",
+      "columns": {
+        "createdAt": "Executed at",
+        "agent": "Agent",
+        "toolName": "Tool name",
+        "actions": "Actions"
+      },
+      "actions": {
+        "exploreMessage": "Inpsect message",
+        "viewAgent": "View in ADE",
+        "copyAgentId": "Copy agent ID"
+      }
     }
   },
   "pages/projects/observability/timeToFirstToken": {

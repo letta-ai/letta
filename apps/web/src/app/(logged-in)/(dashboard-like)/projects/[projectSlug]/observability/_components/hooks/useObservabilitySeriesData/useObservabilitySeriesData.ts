@@ -12,6 +12,7 @@ interface UseSeriesDataOptions<T extends BaseType> {
   endDate: string;
   seriesData: Array<{
     data?: T[] | null;
+    defaultValue?: number;
     getterFn: (data: T) => number;
   }>;
 }
@@ -44,7 +45,11 @@ export function useObservabilitySeriesData<T extends BaseType>(
   }, [startDate, endDate, formatDate]);
 
   const getSeriesData = useCallback(
-    (data: T[] | null | undefined, getterFn: (data: T) => number) => {
+    (
+      data: T[] | null | undefined,
+      getterFn: (data: T) => number,
+      defaultValue?: number,
+    ) => {
       if (!data) return [];
 
       const mappedData = data.reduce(
@@ -66,7 +71,15 @@ export function useObservabilitySeriesData<T extends BaseType>(
         const dateKey = date; // Assuming date is in YYYY-MM-DD format
         const item = mappedData[dateKey];
 
-        return item || undefined;
+        if (typeof item === 'undefined') {
+          if (typeof defaultValue === 'number') {
+            return defaultValue;
+          }
+
+          return undefined;
+        }
+
+        return item;
       });
     },
     [xAxis, formatDate],
@@ -74,12 +87,12 @@ export function useObservabilitySeriesData<T extends BaseType>(
 
   const series: SeriesOption[] = useMemo(() => {
     return seriesData.map((item) => {
-      const { data, getterFn } = item;
+      const { data, getterFn, defaultValue } = item;
 
       return {
         type: 'line',
         symbol: 'circle',
-        data: getSeriesData(data, getterFn),
+        data: getSeriesData(data, getterFn, defaultValue),
       };
     });
   }, [getSeriesData, seriesData]);
@@ -87,7 +100,7 @@ export function useObservabilitySeriesData<T extends BaseType>(
 
   const [styles, setStyles] = useState(() => {
     if (typeof window === 'undefined') {
-      return new CSSStyleDeclaration();
+      return null;
     }
 
     return getComputedStyle(document.documentElement);
@@ -107,12 +120,12 @@ export function useObservabilitySeriesData<T extends BaseType>(
         data: xAxis,
         alignTicks: true,
         lineStyle: {
-          color: `hsl(${styles.getPropertyValue('--border')})`,
+          color: `hsl(${styles?.getPropertyValue('--border')})`,
         },
         splitLine: {
           show: true,
           lineStyle: {
-            color: `hsl(${styles.getPropertyValue('--border')})`,
+            color: `hsl(${styles?.getPropertyValue('--border')})`,
           },
         },
         axisLine: {
@@ -122,8 +135,8 @@ export function useObservabilitySeriesData<T extends BaseType>(
           show: false,
         },
         axisLabel: {
-          fontFamily: styles.getPropertyValue('--font-mono'),
-          fontSize: styles.getPropertyValue('--font-size-xs'),
+          fontFamily: styles?.getPropertyValue('--font-mono'),
+          fontSize: styles?.getPropertyValue('--font-size-xs'),
         },
       },
       yAxis: {
@@ -131,7 +144,7 @@ export function useObservabilitySeriesData<T extends BaseType>(
         splitLine: {
           show: true,
           lineStyle: {
-            color: `hsl(${styles.getPropertyValue('--border')})`,
+            color: `hsl(${styles?.getPropertyValue('--border')})`,
           },
         },
         axisLine: {
@@ -141,8 +154,8 @@ export function useObservabilitySeriesData<T extends BaseType>(
           show: false,
         },
         axisLabel: {
-          fontFamily: styles.getPropertyValue('--font-mono'),
-          fontSize: styles.getPropertyValue('--font-size-xs'),
+          fontFamily: styles?.getPropertyValue('--font-mono'),
+          fontSize: styles?.getPropertyValue('--font-size-xs'),
           inside: false,
           formatter: function (value: number) {
             if (value > 1) {
@@ -154,7 +167,7 @@ export function useObservabilitySeriesData<T extends BaseType>(
         },
       },
       grid: {
-        borderColor: `hsl(${styles.getPropertyValue('--border')})`,
+        borderColor: `hsl(${styles?.getPropertyValue('--border')})`,
         show: true,
         left: 32,
         right: 0,

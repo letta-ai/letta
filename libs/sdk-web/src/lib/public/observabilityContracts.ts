@@ -60,6 +60,49 @@ const DefaultPagedMetricsQuery = applyRefine(
   }),
 );
 
+const GetToolErrorItem = z.object({
+  date: z.string(), // ISO date string
+  errorCount: z.number(), // Number of errors for the tool on that date
+});
+
+const GetToolErrorsResponseSchema = z.object({
+  items: z.array(GetToolErrorItem),
+});
+
+const getToolErrorsMetricsContract = c.query({
+  path: '/observability/metrics/tool-errors',
+  method: 'GET',
+  query: DefaultMetricsQuery,
+  responses: {
+    200: GetToolErrorsResponseSchema,
+  },
+});
+
+const GetToolErrorMessagesItem = z.object({
+  createdAt: z.string(), // ISO date string
+  traceId: z.string(),
+  agentId: z.string(),
+  toolName: z.string(),
+});
+
+export type GetToolErrorMessagesItemType = z.infer<
+  typeof GetToolErrorMessagesItem
+>;
+
+const GetToolErrorMessagesResponseSchema = z.object({
+  items: z.array(GetToolErrorMessagesItem),
+  hasNextPage: z.boolean(),
+});
+
+const getToolErrorMessagesContract = c.query({
+  path: '/observability/metrics/tool-errors/messages',
+  method: 'GET',
+  query: DefaultPagedMetricsQuery,
+  responses: {
+    200: GetToolErrorMessagesResponseSchema,
+  },
+});
+
 const timeToFirstTokenMetricsContract = c.query({
   path: '/observability/metrics/time-to-first-token',
   method: 'GET',
@@ -157,6 +200,8 @@ export const observabilityContracts = c.router({
   getTotalMessagesPerDay: getTotalMessagesPerDayContract,
   getActiveAgentsPerDay: getActiveAgentsContract,
   getTimeToFirstTokenMessages: getTimeToFirstTokenMessagesContract,
+  getToolErrorsMetrics: getToolErrorsMetricsContract,
+  getToolErrorMessages: getToolErrorMessagesContract,
 });
 
 export const observabilityQueryKeys = {
@@ -183,4 +228,14 @@ export const observabilityQueryKeys = {
   getTimeToFirstTokenMessages: (
     query: z.infer<typeof DefaultPagedMetricsQuery>,
   ) => ['observability', 'getTimeToFirstTokenMessages', query],
+  getToolErrorsMetrics: (query: z.infer<typeof DefaultMetricsQuery>) => [
+    'observability',
+    'getToolErrorsMetrics',
+    query,
+  ],
+  getToolErrorMessages: (query: z.infer<typeof DefaultPagedMetricsQuery>) => [
+    'observability',
+    'getToolErrorMessages',
+    query,
+  ],
 };

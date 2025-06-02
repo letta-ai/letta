@@ -8,6 +8,7 @@ import './observability.scss';
 import { ActiveAgentChart } from './_components/charts/ActiveAgentChart/ActiveAgentChart';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { ObservabilityPageWrapper } from './_components/ObservabilityPageWrapper/ObservabilityPageWrapper';
+import { ToolErrorsChart } from './_components/charts/ToolErrorsChart/ToolErrorsChart';
 
 function ProjectObservabilityPage() {
   const { slug } = useCurrentProject();
@@ -22,7 +23,13 @@ function ProjectObservabilityPage() {
         <TotalMessagesPerDayChart />
       </HStack>
       <HR />
-      <ActiveAgentChart />
+      <HStack gap={false}>
+        <ToolErrorsChart
+          analysisLink={`/projects/${slug}/observability/tool-errors`}
+        />
+        <VR />
+        <ActiveAgentChart />
+      </HStack>
     </ObservabilityPageWrapper>
   );
 }

@@ -2,11 +2,232 @@ import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/sdk-web';
 import {
   getClickhouseClient,
-  getTimeToFirstTokenAverages,
   getTotalResponseTimeAverages,
 } from '@letta-cloud/service-clickhouse';
 import { getClickhouseData } from '@letta-cloud/service-clickhouse';
 import type { MessageCreate } from '@letta-cloud/sdk-core';
+import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
+
+const DEFAULT_SPAN_SEARCH = `(SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
+                   SpanName = 'POST /v1/agents/{agent_id}/messages' OR
+                   SpanName = 'POST /v1/agents/{agent_id}/messages/async')`;
+
+type GetToolErrorsMetricsRequest = ServerInferRequest<
+  typeof contracts.observability.getToolErrorsMetrics
+>;
+
+type GetToolErrorsMetricsResponse = ServerInferResponses<
+  typeof contracts.observability.getToolErrorsMetrics
+>;
+
+async function getToolErrorsMetrics(
+  request: GetToolErrorsMetricsRequest,
+): Promise<GetToolErrorsMetricsResponse> {
+  const { projectId, startDate, endDate } = request.query;
+
+  const client = getClickhouseClient();
+
+  if (!client) {
+    return {
+      status: 200,
+      body: {
+        items: [],
+      },
+    };
+  }
+
+  const result = await client.query({
+    query: `
+      SELECT toDate(Timestamp) as error_date,
+             count()           as error_count
+      FROM otel_traces
+      WHERE SpanName = 'agent_step'
+        AND arrayExists(
+        event -> event.Attributes['success'] = 'false',
+        Events
+            )
+        AND Timestamp >= {startDate: DateTime}
+        AND Timestamp <= {endDate: DateTime}
+        AND TraceId IN (
+        SELECT DISTINCT TraceId
+        FROM otel_traces
+        WHERE (${DEFAULT_SPAN_SEARCH})
+        AND ParentSpanId = ''
+        AND SpanAttributes['project.id'] = {projectId: String}
+        AND Timestamp >= {startDate: DateTime}
+        AND Timestamp <= {endDate: DateTime}
+        )
+      GROUP BY toDate(Timestamp)
+      ORDER BY error_date DESC
+    `,
+    query_params: {
+      startDate: Math.round(new Date(startDate).getTime() / 1000),
+      endDate: Math.round(new Date(endDate).getTime() / 1000),
+      projectId,
+    },
+    format: 'JSONEachRow',
+  });
+
+  const response = await getClickhouseData<
+    Array<{
+      error_date: string;
+      error_count: string;
+    }>
+  >(result);
+
+  return {
+    status: 200,
+    body: {
+      items: response.map((item) => ({
+        date: item.error_date,
+        errorCount: parseInt(item.error_count, 10), // Convert string to number
+      })),
+    },
+  };
+}
+
+type GetToolErrorMessagesRequest = ServerInferRequest<
+  typeof contracts.observability.getToolErrorMessages
+>;
+
+type GetToolErrorMessagesResponse = ServerInferResponses<
+  typeof contracts.observability.getToolErrorMessages
+>;
+
+async function getToolErrorMessages(
+  request: GetToolErrorMessagesRequest,
+): Promise<GetToolErrorMessagesResponse> {
+  const {
+    projectId,
+    startDate,
+    endDate,
+    limit = 10,
+    offset = 0,
+  } = request.query;
+  const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  const client = getClickhouseClient();
+
+  if (!client) {
+    return {
+      status: 200,
+      body: {
+        items: [],
+        hasNextPage: false,
+      },
+    };
+  }
+
+  const data = await client.query({
+    query: `
+      SELECT TraceId,
+             SpanAttributes,
+             ParentSpanId,
+             Events, Timestamp as created_at
+      FROM otel_traces
+      WHERE SpanName = 'agent_step'
+        AND arrayExists(
+        event -> event.Attributes['success'] = 'false'
+          , Events
+        )
+        AND Timestamp >= {startDate: DateTime}
+        AND Timestamp <= {endDate: DateTime}
+        AND TraceId IN (
+        SELECT DISTINCT TraceId
+        FROM otel_traces
+        WHERE (${DEFAULT_SPAN_SEARCH})
+        AND ParentSpanId = ''
+        AND SpanAttributes['project.id'] = {projectId: String}
+        AND SpanAttributes['organization.id'] = {organizationId: String}
+        AND Timestamp >= {startDate: DateTime}
+        AND Timestamp <= {endDate: DateTime}
+        )
+      ORDER BY created_at DESC
+        LIMIT {limit: Int64}
+      OFFSET {offset: Int64}
+    `,
+    query_params: {
+      startDate: Math.round(new Date(startDate).getTime() / 1000),
+      endDate: Math.round(new Date(endDate).getTime() / 1000),
+      projectId,
+      organizationId: user.activeOrganizationId,
+      limit: limit + 1, // Fetch one extra item to check for next page
+      offset,
+    },
+    format: 'JSONEachRow',
+  });
+
+  type ToolErrorResponse = Array<{
+    TraceId: string;
+    ParentSpanId: string;
+    created_at: string;
+    SpanAttributes: {
+      'agent.id': string;
+    };
+    Events: Array<{
+      Name: 'tool_execution_completed';
+      Attributes: {
+        tool_name: string;
+      };
+    }>;
+  }>;
+
+  const response = await getClickhouseData<ToolErrorResponse>(data);
+
+  const parentSpans = await client.query({
+    query: `SELECT *
+            FROM otel_traces
+            WHERE TraceId IN ({traceIds: Array(String)})
+              AND ParentSpanId = ''
+    `,
+    query_params: {
+      traceIds: response.map((item) => item.TraceId),
+    },
+    format: 'JSONEachRow',
+  });
+
+  type ParentSpanResponse = Array<{
+    SpanAttributes: {
+      'agent.id': string;
+    };
+    TraceId: string;
+  }>;
+
+  const parentSpansData =
+    await getClickhouseData<ParentSpanResponse>(parentSpans);
+
+  const parentSpanMap = new Map<string, { agentId: string; traceId: string }>();
+
+  parentSpansData.forEach((span) => {
+    parentSpanMap.set(span.TraceId, {
+      agentId: span.SpanAttributes['agent.id'],
+      traceId: span.TraceId,
+    });
+  });
+
+  const items = response.map((item) => {
+    const toolName =
+      item.Events.find((event) => event.Name === 'tool_execution_completed')
+        ?.Attributes?.tool_name || 'Unknown Tool';
+
+    return {
+      traceId: item.TraceId,
+      agentId: parentSpanMap.get(item.TraceId)?.agentId || '',
+      createdAt: new Date(item.created_at).toISOString(),
+      toolName,
+    };
+  });
+
+  const hasNextPage = response.length > limit;
+
+  return {
+    status: 200,
+    body: {
+      items: items.slice(0, limit), // Return only the requested number of items
+      hasNextPage,
+    },
+  };
+}
 
 type GetTimeToFirstTokenMetricsRequest = ServerInferRequest<
   typeof contracts.observability.getTimeToFirstTokenMetrics
@@ -20,12 +241,57 @@ async function getTimeToFirstTokenMetrics(
   request: GetTimeToFirstTokenMetricsRequest,
 ): Promise<GetTimeToFirstTokenMetricsResponse> {
   const { projectId, startDate, endDate } = request.query;
+  const user = await getUserWithActiveOrganizationIdOrThrow();
 
-  const response = await getTimeToFirstTokenAverages({
-    projectId,
-    startUnixTimestamp: new Date(startDate).getTime() / 1000,
-    endUnixTimestamp: new Date(endDate).getTime() / 1000,
+  const client = getClickhouseClient();
+
+  if (!client) {
+    return {
+      status: 200,
+      body: {
+        items: [],
+      },
+    };
+  }
+
+  const result = await client.query({
+    query: `
+      SELECT toDate(Timestamp) as date,
+    avg(Duration) as avg_time_to_first_token_ns,
+    avg(Duration) / 1000000 as avg_time_to_first_token_ms,
+    count() as sample_count
+      FROM otel_traces
+      WHERE TraceId IN (
+        SELECT TraceId
+        FROM otel_traces
+        WHERE ParentSpanId = ''
+        AND (${DEFAULT_SPAN_SEARCH})
+        AND SpanAttributes['project.id'] = {projectId: String}
+        AND SpanAttributes['organization.id'] = {organizationId: String}
+        AND Timestamp >= {startDate: DateTime}
+        AND Timestamp <= {endDate: DateTime}
+        )
+        AND SpanName = 'time_to_first_token'
+      GROUP BY toDate(Timestamp)
+      ORDER BY date;
+    `,
+    query_params: {
+      startDate: Math.round(new Date(startDate).getTime() / 1000),
+      endDate: Math.round(new Date(endDate).getTime() / 1000),
+      projectId,
+      organizationId: user.activeOrganizationId,
+    },
+    format: 'JSONEachRow',
   });
+
+  interface QueryResult {
+    date: string;
+    avg_time_to_first_token_ns: number;
+    avg_time_to_first_token_ms: number;
+    sample_count: number;
+  }
+
+  const response = await getClickhouseData<QueryResult[]>(result);
 
   return {
     status: 200,
@@ -93,20 +359,27 @@ async function getTotalMessagesPerDay(
     };
   }
 
+  const user = await getUserWithActiveOrganizationIdOrThrow();
+
   const result = await client.query({
     query: `
       SELECT toDate(Timestamp) as date,
         count() as total_messages
       FROM otel_traces
-      WHERE SpanName = 'POST /v1/agents/{agent_id}/messages/stream'
-        AND SpanAttributes['project.id'] = '${projectId}'
-        AND Timestamp >= toDateTime64(${new Date(startDate).getTime() / 1000}
-          , 9)
-        AND Timestamp <= toDateTime64(${new Date(endDate).getTime() / 1000}
-          , 9)
+      WHERE (${DEFAULT_SPAN_SEARCH})
+        AND SpanAttributes['project.id'] = {projectId: String}
+        AND SpanAttributes['organization.id'] = {organizationId: String}
+        AND Timestamp >= {startDate: DateTime}
+        AND Timestamp <= {endDate: DateTime}
       GROUP BY toDate(Timestamp)
       ORDER BY date;
     `,
+    query_params: {
+      startDate: Math.round(new Date(startDate).getTime() / 1000),
+      endDate: Math.round(new Date(endDate).getTime() / 1000),
+      projectId,
+      organizationId: user.activeOrganizationId,
+    },
     format: 'JSONEachRow',
   });
 
@@ -215,6 +488,7 @@ async function getTimeToFirstTokenMessages(
   } = request.query;
 
   const client = getClickhouseClient();
+  const user = await getUserWithActiveOrganizationIdOrThrow();
 
   if (!client) {
     return {
@@ -234,6 +508,7 @@ async function getTimeToFirstTokenMessages(
                    SpanName = 'POST /v1/agents/{agent_id}/messages' OR
                    SpanName = 'POST /v1/agents/{agent_id}/messages/async')
               AND SpanAttributes['project.id'] = {projectId: String}
+              AND SpanAttributes['organization.id'] = {organizationId: String}
               AND Timestamp >= {startDate: DateTime}
               AND Timestamp <= {endDate: DateTime}
               LIMIT {limit: Int64}
@@ -242,6 +517,7 @@ async function getTimeToFirstTokenMessages(
       projectId,
       startDate: Math.round(new Date(startDate).getTime() / 1000),
       endDate: Math.round(new Date(endDate).getTime() / 1000),
+      organizationId: user.activeOrganizationId,
       limit: limit + 1,
       offset,
     },
@@ -307,6 +583,7 @@ async function getTimeToFirstTokenMessages(
         // the string is using singlequotes for strings, we need to replace them with double quotes
         return str.replace(/'/g, '"');
       }
+
       messages = JSON.parse(
         fixStringifiedJSON(item.SpanAttributes['http.request.body.messages']),
       );
@@ -338,4 +615,6 @@ export const observabilityRouter = {
   getAverageResponseTime,
   getTotalMessagesPerDay,
   getActiveAgentsPerDay,
+  getToolErrorsMetrics,
+  getToolErrorMessages,
 };

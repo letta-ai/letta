@@ -53,7 +53,7 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
 
   if (isLoading || table.getRowModel().rows.length === 0) {
     return (
-      <TableBody className="border">
+      <TableBody>
         <TableRow>
           <TableCell colSpan={columnLength} className="h-full min-h-24">
             <LoadingEmptyStatusComponent
@@ -74,7 +74,7 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
 
   if (table.getRowModel().rows.length) {
     return (
-      <TableBody className="border">
+      <TableBody>
         {table.getRowModel().rows.map((row) => (
           <TableRow
             className={cn(
@@ -326,7 +326,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
         <div
           className={cn(
             variant !== 'minimal' ? '' : '',
-            'w-full h-full absolute top-0 touch-none pointer-events-none',
+            'w-full h-full absolute top-0 border  fake-border touch-none pointer-events-none',
           )}
         />
 

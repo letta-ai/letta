@@ -1,0 +1,23 @@
+.message-replay-event-bar {
+  position: absolute;
+  width: 1px;
+  top: 0;
+
+  background-color: hsl(var(--border));
+  margin-left: 1rem;
+  z-index: -1;
+
+  height: 100%;
+
+}
+
+
+.message-replay:first-child .message-replay-event-bar {
+  height: calc(100% - 0.75rem);
+  margin-top: 0.75rem;
+}
+
+.message-replay:last-child .message-replay-event-bar {
+  height: calc(100% - 0.75rem);
+  bottom: -0.75rem;
+}

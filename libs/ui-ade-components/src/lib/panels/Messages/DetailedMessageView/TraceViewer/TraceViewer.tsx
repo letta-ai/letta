@@ -12,19 +12,46 @@ import {
 import { useMemo, useState } from 'react';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
-import type { OrderedTrace } from '../hooks/useOrderedTraces/useOrderedTraces';
-import { useOrderedTraces } from '../hooks/useOrderedTraces/useOrderedTraces';
+import type { OrderedTrace } from '../../../../hooks';
+import { useOrderedTraces } from '../../../../hooks';
 
 interface TraceViewerProps {
   traces: OtelTrace[];
 }
 
 interface RenderSpanAttributesProps {
-  attributes: Record<string, any>;
+  trace: OrderedTrace;
 }
 
 function RenderSpanAttributes(props: RenderSpanAttributesProps) {
-  const { attributes } = props;
+  const { trace } = props;
+
+  const {
+    SpanAttributes,
+    ['Events.Attributes']: eventAttributes,
+    ['Events.Name']: eventNames,
+  } = trace.traceDetails || {};
+
+  const mappedEvents = useMemo(() => {
+    if (!eventAttributes || !eventNames) return [];
+    return eventAttributes.reduce(
+      (acc, attribute, index) => {
+        const eventName = eventNames[index];
+        if (eventName) {
+          acc[eventName] = attribute;
+        }
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
+  }, [eventAttributes, eventNames]);
+
+  const attributes = useMemo(() => {
+    if (SpanAttributes) {
+      return { ...SpanAttributes, ...mappedEvents };
+    }
+    return mappedEvents;
+  }, [SpanAttributes, mappedEvents]);
 
   const t = useTranslations('ADE/AgentSimulator/TraceViewer');
   const stringifiedAttributeArray = useMemo(() => {
@@ -134,11 +161,7 @@ function TraceDetails({ trace }: TraceDetailsProps) {
             </Typography>
           </HStack>
         </HStack>
-        {showRaw && (
-          <RenderSpanAttributes
-            attributes={trace.traceDetails.SpanAttributes}
-          />
-        )}
+        {showRaw && <RenderSpanAttributes trace={trace} />}
       </VStack>
       {trace.children.length > 0 && (
         <>

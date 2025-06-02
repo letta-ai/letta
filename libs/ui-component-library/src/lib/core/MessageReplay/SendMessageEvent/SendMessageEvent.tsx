@@ -1,0 +1,60 @@
+import type { ExecuteToolTelemetrySpan } from '@letta-cloud/types';
+import { useTranslations } from '@letta-cloud/translations';
+import { useMemo, useState } from 'react';
+import { get } from 'lodash-es';
+import { Typography } from '../../Typography/Typography';
+import { MessageEvent } from '../MessageEvent/MessageEvent';
+import { LettaAlienChatIcon } from '../../../icons';
+
+interface SendMessageEventProps {
+  trace: ExecuteToolTelemetrySpan;
+}
+
+const MAX_MESSAGE_LENGTH = 150;
+export function SendMessageEvent(props: SendMessageEventProps) {
+  const { trace } = props;
+
+  const t = useTranslations('components/MessageReplay');
+
+  const [showMore, setShowMore] = useState(true);
+
+  const message = useMemo(() => {
+    const message = get(trace['Events.Attributes'], '0.message', '');
+
+    if (typeof message === 'string') {
+      return message;
+    }
+
+    return JSON.stringify(message);
+  }, [trace]);
+
+  const isLongMessage = useMemo(() => {
+    return message.length > MAX_MESSAGE_LENGTH;
+  }, [message]);
+
+  return (
+    <MessageEvent
+      icon={<LettaAlienChatIcon size="small" />}
+      name={t('events.sendMessage.title')}
+    >
+      <div className="bg-background-grey w-full p-2 line-clamp-2">
+        <Typography variant="body3" className="text-text-lighter">
+          {showMore ? message.slice(0, MAX_MESSAGE_LENGTH) : message}
+          {isLongMessage && (
+            <>
+              {' '}
+              <button
+                className="text-primary"
+                onClick={() => {
+                  setShowMore((prev) => !prev);
+                }}
+              >
+                {showMore ? t('showMore') : t('showLess')}
+              </button>
+            </>
+          )}
+        </Typography>
+      </div>
+    </MessageEvent>
+  );
+}

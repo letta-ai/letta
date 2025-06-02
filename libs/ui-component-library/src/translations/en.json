@@ -8,6 +8,43 @@
   "components/DashboardChartWrapper": {
     "explore": "Explore"
   },
+  "components/MessageReplay": {
+    "events": {
+      "sendMessage": {
+        "title": "Message sent"
+      },
+      "end": {
+        "title": "Agent loop completed"
+      }
+    },
+    "showMore": "show more",
+    "showLess": "show less"
+  },
+  "components/StartEvent": {
+    "title": "Agent loop initiated"
+  },
+  "ui-component-library/FunctionCall": {
+    "isExecuting": "Executing",
+    "error": "Error",
+    "empty": "None",
+    "success": "Success",
+    "request": "Tool input",
+    "seeMore": "Tool output truncated, click to view all",
+    "response": "Tool output",
+    "FunctionCallDataViewerDialog": {
+      "title": "View response"
+    }
+  },
+  "components/MessageReplay/ExecuteToolEvent": {
+    "title": "Tool executed",
+    "status": {
+      "success": "Success",
+      "error": "Error"
+    },
+    "response": {
+      "title": "Response"
+    }
+  },
   "components/CoreMemoryEditor": {
     "CoreMemoryEditorContent": {
       "placeholder": "Enter your memories",

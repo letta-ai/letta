@@ -642,18 +642,6 @@
     "output": "Output",
     "inputPlaceholder": ""
   },
-  "ui-component-library/FunctionCall": {
-    "isExecuting": "Executing",
-    "error": "Error",
-    "empty": "None",
-    "success": "Success",
-    "request": "Tool input",
-    "seeMore": "Tool output truncated, click to view all",
-    "response": "Tool output",
-    "FunctionCallDataViewerDialog": {
-      "title": "View response"
-    }
-  },
   "ui-component-library/CopyWithCodePreview": {
     "description": "The code below will be copied to your clipboard:"
   },

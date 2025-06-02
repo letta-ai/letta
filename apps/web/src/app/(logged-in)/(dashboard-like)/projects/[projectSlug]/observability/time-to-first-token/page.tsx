@@ -1,9 +1,7 @@
 'use client';
-import { ObservabilityPageWrapper } from '../_components/ObservabilityPageWrapper/ObservabilityPageWrapper';
 import { useTranslations } from '@letta-cloud/translations';
 import { TimeToFirstTokenChart } from '../_components/charts/TimeToFirstTokenChart/TimeToFirstTokenChart';
 import {
-  Alert,
   Button,
   Code,
   CopyButton,
@@ -19,8 +17,8 @@ import { useMemo, useState } from 'react';
 import { useObservabilityContext } from '../_components/hooks/useObservabilityContext/useObservabilityContext';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import type { ColumnDef } from '@tanstack/react-table';
-import { ObservabilityTableWrapper } from '../_components/ObservabilityTableWrapper/ObservabilityTableWrapper';
 import { useFormatters } from '@letta-cloud/utils-client';
+import { ObservabilityExplorerPageWrapper } from '../_components/ObservabilityExplorerPageWrapper/ObservabilityExplorerPageWrapper';
 
 function LatestMessagesTable() {
   const t = useTranslations('pages/projects/observability/timeToFirstToken');
@@ -165,13 +163,14 @@ function LatestMessagesTable() {
 
 export default function TimeToFirstTokenPage() {
   const t = useTranslations('pages/projects/observability/timeToFirstToken');
+
   return (
-    <ObservabilityPageWrapper title={t('title')}>
-      <TimeToFirstTokenChart />
-      <Alert title={t('description')} variant="info" />
-      <ObservabilityTableWrapper title={t('table.title')}>
-        <LatestMessagesTable />
-      </ObservabilityTableWrapper>
-    </ObservabilityPageWrapper>
+    <ObservabilityExplorerPageWrapper
+      table={<LatestMessagesTable />}
+      chart={<TimeToFirstTokenChart />}
+      info={t('description')}
+      pageTitle={t('title')}
+      tableTitle={t('table.title')}
+    />
   );
 }
