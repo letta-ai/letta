@@ -640,6 +640,27 @@ def event_loop(request):
     loop.close()
 
 
+@pytest.fixture
+async def file_attachment(server, default_user, sarah_agent, default_file):
+    assoc = await server.file_agent_manager.attach_file(
+        agent_id=sarah_agent.id,
+        file_id=default_file.id,
+        actor=default_user,
+        visible_content="initial",
+    )
+    yield assoc
+
+
+@pytest.fixture
+async def another_file(server, default_source, default_user, default_organization):
+    pf = PydanticFileMetadata(
+        file_name="another_file",
+        organization_id=default_organization.id,
+        source_id=default_source.id,
+    )
+    return await server.source_manager.create_file(pf, actor=default_user)
+
+
 # ======================================================================================================================
 # AgentManager Tests - Basic
 # ======================================================================================================================
@@ -5754,3 +5775,141 @@ async def test_create_mcp_server(server, default_user, event_loop):
     assert tool.name == tool_name
     assert f"mcp:{created_server.server_name}" in tool.tags, f"Expected tag {f'mcp:{created_server.server_name}'}, got {tool.tags}"
     print("TAGS", tool.tags)
+
+
+# ======================================================================================================================
+# FileAgent Tests
+# ======================================================================================================================
+
+
+@pytest.mark.asyncio
+async def test_attach_creates_association(server, default_user, sarah_agent, default_file):
+    assoc = await server.file_agent_manager.attach_file(
+        agent_id=sarah_agent.id,
+        file_id=default_file.id,
+        actor=default_user,
+        visible_content="hello",
+    )
+
+    assert assoc.agent_id == sarah_agent.id
+    assert assoc.file_id == default_file.id
+    assert assoc.is_open is True
+    assert assoc.visible_content == "hello"
+
+
+@pytest.mark.asyncio
+async def test_attach_is_idempotent(server, default_user, sarah_agent, default_file):
+    a1 = await server.file_agent_manager.attach_file(
+        agent_id=sarah_agent.id,
+        file_id=default_file.id,
+        actor=default_user,
+        visible_content="first",
+    )
+
+    # second attach with different params
+    a2 = await server.file_agent_manager.attach_file(
+        agent_id=sarah_agent.id,
+        file_id=default_file.id,
+        actor=default_user,
+        is_open=False,
+        visible_content="second",
+    )
+
+    assert a1.id == a2.id
+    assert a2.is_open is False
+    assert a2.visible_content == "second"
+
+
+@pytest.mark.asyncio
+async def test_update_file_agent(server, file_attachment, default_user):
+    updated = await server.file_agent_manager.update_file_agent(
+        agent_id=file_attachment.agent_id,
+        file_id=file_attachment.file_id,
+        actor=default_user,
+        is_open=False,
+        visible_content="updated",
+    )
+    assert updated.is_open is False
+    assert updated.visible_content == "updated"
+
+
+@pytest.mark.asyncio
+async def test_mark_access(server, file_attachment, default_user):
+    old_ts = file_attachment.last_accessed_at
+    if USING_SQLITE:
+        time.sleep(CREATE_DELAY_SQLITE)
+    else:
+        await asyncio.sleep(0.01)
+
+    await server.file_agent_manager.mark_access(
+        agent_id=file_attachment.agent_id,
+        file_id=file_attachment.file_id,
+        actor=default_user,
+    )
+    refreshed = await server.file_agent_manager.get_file_agent(
+        agent_id=file_attachment.agent_id,
+        file_id=file_attachment.file_id,
+        actor=default_user,
+    )
+    assert refreshed.last_accessed_at > old_ts
+
+
+@pytest.mark.asyncio
+async def test_list_files_and_agents(
+    server,
+    default_user,
+    sarah_agent,
+    charles_agent,
+    default_file,
+    another_file,
+):
+    # default_file ↔ charles  (open)
+    await server.file_agent_manager.attach_file(agent_id=charles_agent.id, file_id=default_file.id, actor=default_user)
+    # default_file ↔ sarah    (open)
+    await server.file_agent_manager.attach_file(agent_id=sarah_agent.id, file_id=default_file.id, actor=default_user)
+    # another_file ↔ sarah    (closed)
+    await server.file_agent_manager.attach_file(agent_id=sarah_agent.id, file_id=another_file.id, actor=default_user, is_open=False)
+
+    files_for_sarah = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
+    assert {f.file_id for f in files_for_sarah} == {default_file.id, another_file.id}
+
+    open_only = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
+    assert {f.file_id for f in open_only} == {default_file.id}
+
+    agents_for_default = await server.file_agent_manager.list_agents_for_file(default_file.id, actor=default_user)
+    assert {a.agent_id for a in agents_for_default} == {sarah_agent.id, charles_agent.id}
+
+
+@pytest.mark.asyncio
+async def test_detach_file(server, file_attachment, default_user):
+    await server.file_agent_manager.detach_file(
+        agent_id=file_attachment.agent_id,
+        file_id=file_attachment.file_id,
+        actor=default_user,
+    )
+    res = await server.file_agent_manager.get_file_agent(
+        agent_id=file_attachment.agent_id,
+        file_id=file_attachment.file_id,
+        actor=default_user,
+    )
+    assert res is None
+
+
+@pytest.mark.asyncio
+async def test_org_scoping(
+    server,
+    default_user,
+    other_user_different_org,
+    sarah_agent,
+    default_file,
+):
+    # attach as default_user
+    await server.file_agent_manager.attach_file(
+        agent_id=sarah_agent.id,
+        file_id=default_file.id,
+        actor=default_user,
+    )
+
+    # other org should see nothing
+    files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=other_user_different_org)
+    assert files == []

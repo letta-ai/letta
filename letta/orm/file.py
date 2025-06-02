@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin):
-    """Represents metadata for an uploaded file."""
+    """Represents an uploaded file."""
 
     __tablename__ = "files"
     __pydantic_model__ = PydanticFileMetadata
