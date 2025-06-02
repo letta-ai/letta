@@ -6,13 +6,38 @@ slug: guides/agents/memory
 
 Effectively managing what tokens are included in the context window is critical for the performance of your agent. Deciding what is or isn't included in the context window determines what information (such as long-term memories) or instructions the agent is aware of.
 
-Typical context windows have a system prompt at the beginning of the context window, and then the message history. Letta adds additional sections of the context window, called *memory blocks*. These memory blocks are units of context management. Memory blocks can be modified by the agent itself (via tools), by other agents, or by the developer (via the API).
+Typical context windows have a system prompt at the beginning of the context window, and then the message history. Letta adds additional sections of the context window, called **memory blocks**. These memory blocks are units of context management. Memory blocks can be modified by the agent itself (via tools), by other agents, or by the developer (via the API).
 
 # Memory Blocks
+
+<Info>
+Interested in learning more about the origin of memory blocks? Read our [blog post](https://www.letta.com/blog/memory-blocks).
+</Info>
+
 Memory blocks represent a section of an agent's context window. An agent may have multiple memory blocks, or none at all. A memory block consists of:
-* A `limit`, corresponding to the character limit of the block (i.e. how many characters in the context window can be used up by this block)
-* A `value`, corresponding to the data represented in the context window for this block
-* A `label`, corresponding to the type of data represented in the block (e.g. `human`, `persona`)
+* A `label`, which is a unique identifier for the block
+* A `description`, which describes the purpose of the block
+* A `value`, which is the contents/data of the block
+* A `limit`, which is the size limit (in characters) of the block
+
+## The importance of the `description` field
+
+When making memory blocks, it's crucial to provide a good `description` field that accurately describes what the block should be used for.
+The `description` is the main information used by the agent to determine how to read and write to that block. Without a good description, the agent may not understand how to use the block.
+
+Because `persona` and `human` are two popular block labels, Letta autogenerates default descriptions for these blocks if you don't provide them. If you provide a description for a memory block labelled `persona` or `human`, the default description will be overridden.
+
+For `persona`, the default is:
+> The persona block: Stores details about your current persona, guiding how you behave and respond. This helps you to maintain consistency and personality in your interactions.
+
+For `human`, the default is:
+> The human block: Stores key details about the person you are conversing with, allowing for more personalized and friend-like conversation.
+
+## Read-only blocks
+
+Memory blocks are read-write by default (so the agent can update the block using memory tools), but can be set to read-only by setting the `real_only` field to `true`. When a block is read-only, the agent cannot update the block.
+
+Read-only blocks are useful when you want to give an agent access to information (for example, a shared memory block about an organization), but you don't want the agent to be able to make potentially destructive changes to the block.
 
 ## Creating an agent with memory blocks
 When you create an agent, you can specify memory blocks to also be created with the agent. For most chat applications, we recommend create a `human` block (to represent memories about the user) and a `persona` block (to represent the agent's persona).
@@ -83,6 +108,7 @@ Below is an example of creating a block directory, and attaching the block to tw
 # create a persisted block, which can be attached to agents
 block = client.blocks.create(
     label="organization",
+    description="A block to store information about the organization",
     value="Organization: Letta",
     limit=4000,
 )
@@ -119,6 +145,7 @@ shared_block_agent2 = client.agents.create(
 // create a persisted block, which can be attached to agents
 const block = await client.blocks.create({
     label: "organization",
+    description: "A block to store information about the organization",
     value: "Organization: Letta",
     limit: 4000,
 });
