@@ -1233,7 +1233,6 @@ class Agent(BaseAgent):
             memory_edit_timestamp=get_utc_time(),
             previous_message_count=self.message_manager.size(actor=self.user, agent_id=self.agent_state.id),
             archival_memory_size=self.agent_manager.passage_size(actor=self.user, agent_id=self.agent_state.id),
-            recent_passages=self.agent_manager.list_passages(actor=self.user, agent_id=self.agent_state.id, ascending=False, limit=10),
         )
         num_tokens_external_memory_summary = count_tokens(external_memory_summary)
 
