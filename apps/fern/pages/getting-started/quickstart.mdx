@@ -25,7 +25,7 @@ This guide will show you how to create a Letta agent with the Letta APIs or SDKs
   ```
   </CodeGroup>
   </Step>
-  
+
   <Step title="Create an agent">
   <CodeGroup>
 ```python title="python" maxLines=50
@@ -45,7 +45,8 @@ agent_state = client.agents.create(
           "label": "persona",
           "value": "My name is Sam, the all-knowing sentient AI."
         }
-    ]
+    ],
+    tools=["web_search", "run_code"]
 )
 
 print(agent_state.id)
@@ -67,12 +68,13 @@ const agentState = await client.agents.create({
           label: "persona",
           value: "My name is Sam, the all-knowing sentient AI."
         }
-    ]
+    ],
+    tools: ["web_search", "run_code"]
 });
 
 console.log(agentState.id);
 ```
-```curl curl 
+```curl curl
 curl -X POST https://api.letta.com/v1/agents \
      -H "Authorization: Bearer $LETTA_API_KEY" \
      -H "Content-Type: application/json" \
@@ -88,7 +90,8 @@ curl -X POST https://api.letta.com/v1/agents \
       "label": "persona",
       "value": "My name is Sam, the all-knowing sentient AI."
     }
-  ]
+  ],
+  "tools": ["web_search", "run_code"]
 }'
 ```
   </CodeGroup>
@@ -190,7 +193,7 @@ You can read more about the response format from the message route [here](/guide
 
 ## Next steps
 
-Congratulations! 🎉 You just created and messaged your first stateful agent with Letta, using both the Letta ADE, API, and Python/Typescript SDKs. See the following resources for next steps for building more complex agents with Letta: 
+Congratulations! 🎉 You just created and messaged your first stateful agent with Letta, using both the Letta ADE, API, and Python/Typescript SDKs. See the following resources for next steps for building more complex agents with Letta:
 * Create and attach [custom tools](/guides/agents/custom-tools) to your agent
 * Customize agentic [memory management](/guides/agents/memory)
 * Version and distribute your agent with [agent templates](/guides/templates/overview)

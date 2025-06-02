@@ -1,11 +1,19 @@
 ---
 title: Tools
+subtitle: Understanding how to use tools with Letta agents
 slug: guides/agents/tools
 ---
-Tools allow agents to take actions by executing Python code. Letta uses tools to manage memory and even to send messages to the end user. You can add custom tools to Letta by defining your own tools, and also customize the execution environment of the tools. You can import external tool libraries like Composio.
+Tools allow agents to take actions that affect the real world.
+Letta agents can use tools to manage their own memory, send messages to the end user, search the web, and more.
 
-# Default Tools
-By default, agents in Letta are created with the following tools:
+You can add custom tools to Letta by defining your own tools, and also customize the execution environment of the tools.
+You can import external tool libraries by connecting your Letta agents to MCP (Model Context Protocol) servers. MCP servers are a way to expose APIs to Letta agents.
+
+# Pre-built Tools
+
+## Default Memory Tools
+
+By default, agents in Letta are created with a set of default tools including `send_message` (which generates a message to send to the user), core memory tools (allowing the agent to edit its memory blocks), and external memory tools (to read/write from archival memory, and to access recall memory, aka the conversation history):
 
 | Tool                       | Description                                          |
 |----------------------------|------------------------------------------------------|
@@ -16,10 +24,28 @@ By default, agents in Letta are created with the following tools:
 | `archival_memory_insert`   | Add a memory to archival memory                      |
 | `archival_memory_search`   | Search archival memory via embedding search          |
 
+You can disable the default tools by setting `include_base_tools` to `false` during agent creation. Note that disabling the `send_message` tool may cause agent messages (intended for the user) to appear as "reasoning" messages in the API and ADE.
+
+## Multi-Agent Tools
+
 Letta also includes a set of pre-made tools designed for multi-agent interaction.
 See [our guide on multi-agent](/guides/agents/multi-agent) for more information.
 
-You can disable the default tools by passing `include_base_tools=False` to the agent creation.
+## Web Search
+
+The `web_search` tool allows agents to search the web for information.
+
+<Info>
+On [Letta Cloud](/guides/cloud/overview), this tool works out of the box, but when using this tool on a self-hosted Letta server, you must set a `TAVILY_API_KEY` environment variable either in during server startup or in your agent's [tool execution environment](/guides/agents/tool-variables).
+</Info>
+
+## Code Interpreter
+
+The `run_code` tool allows agents to run code (in a sandbox), for example to do data analysis or calculations. Supports Python, Javascript, Typescript, R, and Java.
+
+<Info>
+On [Letta Cloud](/guides/cloud/overview), this tool works out of the box, but when using this tool on a self-hosted Letta server, you must set a `E2B_API_KEY` environment variable either in during server startup or in your agent's [tool execution environment](/guides/agents/tool-variables).
+</Info>
 
 # Defining Custom Tools
 You can create custom tools in Letta using the SDKs, as well as via the [ADE tool builder](/guides/ade/tools). See more on defining custom tools [here](/guides/agents/custom-tools).
