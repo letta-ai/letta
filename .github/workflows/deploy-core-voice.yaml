@@ -105,4 +105,4 @@ jobs:
           TAG: ${{ github.event.inputs.git_hash || github.sha }}
           DEPLOY_MESSAGE: ${{ github.event.inputs.deploy_message || github.event.head_commit.message }}
 
-        run: just build-core deploy-voice "${DEPLOY_MESSAGE}"
+        run: just build-voice deploy-voice "${DEPLOY_MESSAGE}"
