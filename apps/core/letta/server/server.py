@@ -79,6 +79,7 @@ from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
+from letta.services.files_agents_manager import FileAgentManager
 from letta.services.group_manager import GroupManager
 from letta.services.helpers.tool_execution_helper import prepare_local_sandbox
 from letta.services.identity_manager import IdentityManager
@@ -217,6 +218,7 @@ class SyncServer(Server):
         self.group_manager = GroupManager()
         self.batch_manager = LLMBatchManager()
         self.telemetry_manager = TelemetryManager()
+        self.file_agent_manager = FileAgentManager()
 
         # A resusable httpx client
         timeout = httpx.Timeout(connect=10.0, read=20.0, write=10.0, pool=10.0)
