@@ -696,7 +696,7 @@ def _test_get_messages_letta_format(
 
             elif message.role == MessageRole.tool:
                 assert isinstance(letta_message, ToolReturnMessage)
-                assert message.content[0].text == letta_message.tool_return
+                assert str(json.loads(message.content[0].text)["message"]) == letta_message.tool_return
                 letta_message_index += 1
 
             else:

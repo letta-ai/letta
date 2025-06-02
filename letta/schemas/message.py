@@ -383,6 +383,7 @@ class Message(BaseMessage):
 
             try:
                 function_return = parse_json(text_content)
+                text_content = str(function_return.get("message", text_content))
                 status = function_return["status"]
                 if status == "OK":
                     status_enum = "success"
