@@ -1484,6 +1484,11 @@
     "info": "This chart shows the number of tool errors that occurred on a given day. A tool error is when an agent tries to use a tool but it fails to execute.",
     "tooltip": "errors"
   },
+  "pages/projects/observability/APIErrorsChart": {
+    "title": "API errors",
+    "info": "This chart shows the number of API errors that occurred on a given day. An API error is when a request to the agent API fails.",
+    "tooltip": "errors"
+  },
   "pages/projects/observability/ActiveAgentChart": {
     "title": "Active agents",
     "info": "This chart shows the number of agents that were active on a given day. It is segemented on new agents (first time active) and returning agents (active after their first time).",
@@ -1514,7 +1519,7 @@
     }
   },
   "pages/projects/observability/TotalResponseTimeChart": {
-    "title": "Average total response time",
+    "title": "Total response time",
     "p50ResponseTime": {
       "label": "Median response time"
     },

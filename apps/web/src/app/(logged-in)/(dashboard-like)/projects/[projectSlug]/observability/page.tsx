@@ -11,6 +11,7 @@ import { ObservabilityPageWrapper } from './_components/ObservabilityPageWrapper
 import { ToolErrorsChart } from './_components/charts/ToolErrorsChart/ToolErrorsChart';
 import { ObservabilityOverview } from './_components/ObservabilityOverview/ObservabilityOverview';
 import { TotalResponseTimeChart } from './_components/charts/TotalResponseTimeChart/TotalResponseTimeChart';
+import { APIErrorsChart } from './_components/charts/APIErrorsChart/APIErrorsChart';
 
 interface ChartRowProps {
   children: React.ReactNode;
@@ -44,9 +45,13 @@ function ProjectObservabilityPage() {
             <VR />
             <ActiveAgentChart />
           </ChartRow>
+          <HR />
           <ChartRow>
             <TotalResponseTimeChart />
+            <VR />
+            <APIErrorsChart />
           </ChartRow>
+          <HR />
         </VStack>
         <VR />
         <ObservabilityOverview />

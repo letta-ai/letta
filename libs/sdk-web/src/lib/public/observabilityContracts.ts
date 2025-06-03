@@ -216,6 +216,24 @@ const getObservabilityOverviewContract = c.query({
   },
 });
 
+const APIErrorCountItem = z.object({
+  date: z.string(), // ISO date string
+  errorCount: z.number(), // Number of API errors for the date
+});
+
+const APIErrorCountResponseSchema = z.object({
+  items: z.array(APIErrorCountItem),
+});
+
+const getApiErrorCountContract = c.query({
+  path: '/observability/metrics/api-errors',
+  method: 'GET',
+  query: DefaultMetricsQuery,
+  responses: {
+    200: APIErrorCountResponseSchema,
+  },
+});
+
 export const observabilityContracts = c.router({
   getTimeToFirstTokenMetrics: timeToFirstTokenMetricsContract,
   getAverageResponseTime: getAverageResponseTimeContract,
@@ -225,6 +243,7 @@ export const observabilityContracts = c.router({
   getToolErrorsMetrics: getToolErrorsMetricsContract,
   getToolErrorMessages: getToolErrorMessagesContract,
   getObservabilityOverview: getObservabilityOverviewContract,
+  getApiErrorCount: getApiErrorCountContract,
 });
 
 export const observabilityQueryKeys = {
@@ -246,6 +265,11 @@ export const observabilityQueryKeys = {
   getActiveAgentsPerDay: (query: z.infer<typeof DefaultMetricsQuery>) => [
     'observability',
     'getActiveAgentsPerDay',
+    query,
+  ],
+  getApiErrorCount: (query: z.infer<typeof DefaultMetricsQuery>) => [
+    'observability',
+    'getApiErrorCount',
     query,
   ],
   getTimeToFirstTokenMessages: (
