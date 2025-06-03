@@ -22,6 +22,7 @@ from letta.schemas.tool_rule import ToolRule
 
 if TYPE_CHECKING:
     from letta.orm.agents_tags import AgentsTags
+    from letta.orm.files_agents import FileAgent
     from letta.orm.identity import Identity
     from letta.orm.organization import Organization
     from letta.orm.source import Source
@@ -126,6 +127,12 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
         back_populates="manager_agent",
     )
     batch_items: Mapped[List["LLMBatchItem"]] = relationship("LLMBatchItem", back_populates="agent", lazy="selectin")
+    file_agents: Mapped[List["FileAgent"]] = relationship(
+        "FileAgent",
+        back_populates="agent",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     def to_pydantic(self, include_relationships: Optional[Set[str]] = None) -> PydanticAgentState:
         """
@@ -186,6 +193,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
             "sources": lambda: [s.to_pydantic() for s in self.sources],
             "memory": lambda: Memory(
                 blocks=[b.to_pydantic() for b in self.core_memory],
+                file_blocks=[block for b in self.file_agents if (block := b.to_pydantic_block()) is not None],
                 prompt_template=get_prompt_template_for_agent_type(self.agent_type),
             ),
             "identity_ids": lambda: [i.id for i in self.identities],
@@ -276,23 +284,10 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
             if "tool_exec_environment_variables" in include_relationships
             else empty_list_async()
         )
+        file_agents = self.awaitable_attrs.file_agents if "memory" in include_relationships else empty_list_async()
 
-        (
-            tags,
-            tools,
-            sources,
-            memory,
-            identities,
-            multi_agent_group,
-            tool_exec_environment_variables,
-        ) = await asyncio.gather(
-            tags,
-            tools,
-            sources,
-            memory,
-            identities,
-            multi_agent_group,
-            tool_exec_environment_variables,
+        (tags, tools, sources, memory, identities, multi_agent_group, tool_exec_environment_variables, file_agents) = await asyncio.gather(
+            tags, tools, sources, memory, identities, multi_agent_group, tool_exec_environment_variables, file_agents
         )
 
         state["tags"] = [t.tag for t in tags]
@@ -300,6 +295,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
         state["sources"] = [s.to_pydantic() for s in sources]
         state["memory"] = Memory(
             blocks=[m.to_pydantic() for m in memory],
+            file_blocks=[block for b in self.file_agents if (block := b.to_pydantic_block()) is not None],
             prompt_template=get_prompt_template_for_agent_type(self.agent_type),
         )
         state["identity_ids"] = [i.id for i in identities]

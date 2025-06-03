@@ -76,7 +76,7 @@ from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
 from letta.services.organization_manager import OrganizationManager
 from letta.settings import tool_settings
-from tests.helpers.utils import comprehensive_agent_checks
+from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
 from tests.utils import random_string
 
 DEFAULT_EMBEDDING_CONFIG = EmbeddingConfig(
@@ -685,6 +685,30 @@ async def test_create_get_list_agent(server: SyncServer, comprehensive_test_agen
 
     # Test deleting the agent
     server.agent_manager.delete_agent(get_agent.id, default_user)
+    list_agents = await server.agent_manager.list_agents_async(actor=default_user)
+    assert len(list_agents) == 0
+
+
+@pytest.mark.asyncio
+async def test_get_context_window_basic(server: SyncServer, comprehensive_test_agent_fixture, default_user, default_file, event_loop):
+    # Test agent creation
+    created_agent, create_agent_request = comprehensive_test_agent_fixture
+    comprehensive_agent_checks(created_agent, create_agent_request, actor=default_user)
+
+    # Attach a file
+    await server.file_agent_manager.attach_file(
+        agent_id=created_agent.id,
+        file_id=default_file.id,
+        actor=default_user,
+        visible_content="hello",
+    )
+
+    # Get context window and check for basic appearances
+    context_window_overview = await server.agent_manager.get_context_window(agent_id=created_agent.id, actor=default_user)
+    validate_context_window_overview(context_window_overview)
+
+    # Test deleting the agent
+    server.agent_manager.delete_agent(created_agent.id, default_user)
     list_agents = await server.agent_manager.list_agents_async(actor=default_user)
     assert len(list_agents) == 0
 
@@ -5796,6 +5820,12 @@ async def test_attach_creates_association(server, default_user, sarah_agent, def
     assert assoc.is_open is True
     assert assoc.visible_content == "hello"
 
+    sarah_agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    file_blocks = sarah_agent.memory.file_blocks
+    assert len(file_blocks) == 1
+    assert file_blocks[0].value == assoc.visible_content
+    assert file_blocks[0].label == default_file.file_name
+
 
 @pytest.mark.asyncio
 async def test_attach_is_idempotent(server, default_user, sarah_agent, default_file):
@@ -5818,6 +5848,10 @@ async def test_attach_is_idempotent(server, default_user, sarah_agent, default_f
     assert a1.id == a2.id
     assert a2.is_open is False
     assert a2.visible_content == "second"
+
+    sarah_agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    file_blocks = sarah_agent.memory.file_blocks
+    assert len(file_blocks) == 0  # Is not open
 
 
 @pytest.mark.asyncio
@@ -5878,6 +5912,18 @@ async def test_list_files_and_agents(
 
     agents_for_default = await server.file_agent_manager.list_agents_for_file(default_file.id, actor=default_user)
     assert {a.agent_id for a in agents_for_default} == {sarah_agent.id, charles_agent.id}
+
+    sarah_agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    file_blocks = sarah_agent.memory.file_blocks
+    assert len(file_blocks) == 1
+    assert file_blocks[0].value == ""
+    assert file_blocks[0].label == default_file.file_name
+
+    charles_agent = await server.agent_manager.get_agent_by_id_async(agent_id=charles_agent.id, actor=default_user)
+    file_blocks = charles_agent.memory.file_blocks
+    assert len(file_blocks) == 1
+    assert file_blocks[0].value == ""
+    assert file_blocks[0].label == default_file.file_name
 
 
 @pytest.mark.asyncio

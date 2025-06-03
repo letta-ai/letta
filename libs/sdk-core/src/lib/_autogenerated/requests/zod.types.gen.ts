@@ -726,6 +726,7 @@ export const Block = z.object({
 export type Memory = z.infer<typeof Memory>;
 export const Memory = z.object({
   blocks: z.array(Block),
+  file_blocks: z.union([z.array(Block), z.undefined()]).optional(),
   prompt_template: z.union([z.string(), z.undefined()]).optional(),
 });
 

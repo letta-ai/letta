@@ -2240,6 +2240,10 @@ export type Memory = {
    */
   blocks: Array<Block>;
   /**
+   * Blocks representing the agent's in-context memory of an attached file
+   */
+  file_blocks?: Array<Block>;
+  /**
    * Jinja2 template for compiling memory blocks into a prompt string
    */
   prompt_template?: string;

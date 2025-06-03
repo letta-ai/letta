@@ -6296,6 +6296,15 @@ export const $Memory = {
       title: 'Blocks',
       description: "Memory blocks contained in the agent's in-context memory",
     },
+    file_blocks: {
+      items: {
+        $ref: '#/components/schemas/Block',
+      },
+      type: 'array',
+      title: 'File Blocks',
+      description:
+        "Blocks representing the agent's in-context memory of an attached file",
+    },
     prompt_template: {
       type: 'string',
       title: 'Prompt Template',

@@ -1,10 +1,13 @@
 import functools
 import time
-from typing import Union
+from typing import Optional, Union
 
 from letta.functions.functions import parse_source_code
 from letta.functions.schema_generator import generate_schema
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
+from letta.schemas.enums import MessageRole
+from letta.schemas.file import FileAgent
+from letta.schemas.memory import ContextWindowOverview
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
 from letta.schemas.user import User as PydanticUser
@@ -159,3 +162,79 @@ def comprehensive_agent_checks(agent: AgentState, request: Union[CreateAgent, Up
     # Assert message_buffer_autoclear
     if not request.message_buffer_autoclear is None:
         assert agent.message_buffer_autoclear == request.message_buffer_autoclear
+
+
+def validate_context_window_overview(overview: ContextWindowOverview, attached_file: Optional[FileAgent] = None) -> None:
+    """Validate common sense assertions for ContextWindowOverview"""
+
+    # 1. Current context size should not exceed maximum
+    assert (
+        overview.context_window_size_current <= overview.context_window_size_max
+    ), f"Current context size ({overview.context_window_size_current}) exceeds maximum ({overview.context_window_size_max})"
+
+    # 2. All token counts should be non-negative
+    assert overview.num_tokens_system >= 0, "System token count cannot be negative"
+    assert overview.num_tokens_core_memory >= 0, "Core memory token count cannot be negative"
+    assert overview.num_tokens_external_memory_summary >= 0, "External memory summary token count cannot be negative"
+    assert overview.num_tokens_summary_memory >= 0, "Summary memory token count cannot be negative"
+    assert overview.num_tokens_messages >= 0, "Messages token count cannot be negative"
+    assert overview.num_tokens_functions_definitions >= 0, "Functions definitions token count cannot be negative"
+
+    # 3. Token components should sum to total
+    expected_total = (
+        overview.num_tokens_system
+        + overview.num_tokens_core_memory
+        + overview.num_tokens_external_memory_summary
+        + overview.num_tokens_summary_memory
+        + overview.num_tokens_messages
+        + overview.num_tokens_functions_definitions
+    )
+    assert (
+        overview.context_window_size_current == expected_total
+    ), f"Token sum ({expected_total}) doesn't match current size ({overview.context_window_size_current})"
+
+    # 4. Message count should match messages list length
+    assert (
+        len(overview.messages) == overview.num_messages
+    ), f"Messages list length ({len(overview.messages)}) doesn't match num_messages ({overview.num_messages})"
+
+    # 5. If summary_memory is None, its token count should be 0
+    if overview.summary_memory is None:
+        assert overview.num_tokens_summary_memory == 0, "Summary memory is None but has non-zero token count"
+
+    # 7. External memory summary consistency
+    assert overview.num_tokens_external_memory_summary > 0, "External memory summary exists but has zero token count"
+
+    # 8. System prompt consistency
+    assert overview.num_tokens_system > 0, "System prompt exists but has zero token count"
+
+    # 9. Core memory consistency
+    assert overview.num_tokens_core_memory > 0, "Core memory exists but has zero token count"
+
+    # 10. Functions definitions consistency
+    assert overview.num_tokens_functions_definitions > 0, "Functions definitions exist but have zero token count"
+    assert len(overview.functions_definitions) > 0, "Functions definitions list should not be empty"
+
+    # 11. Memory counts should be non-negative
+    assert overview.num_archival_memory >= 0, "Archival memory count cannot be negative"
+    assert overview.num_recall_memory >= 0, "Recall memory count cannot be negative"
+
+    # 12. Context window max should be positive
+    assert overview.context_window_size_max > 0, "Maximum context window size must be positive"
+
+    # 13. If there are messages, check basic structure
+    # At least one message should be system message (typical pattern)
+    has_system_message = any(msg.role == MessageRole.system for msg in overview.messages)
+    # This is a soft assertion - log warning instead of failing
+    if not has_system_message:
+        print("Warning: No system message found in messages list")
+
+    # Average tokens per message should be reasonable (typically > 0)
+    avg_tokens_per_message = overview.num_tokens_messages / overview.num_messages
+    assert avg_tokens_per_message >= 0, "Average tokens per message should be non-negative"
+
+    # 16. Check attached file is visible
+    if attached_file:
+        assert attached_file.visible_content in overview.core_memory
+        assert "<file>" in overview.core_memory
+        assert "</file>" in overview.core_memory
