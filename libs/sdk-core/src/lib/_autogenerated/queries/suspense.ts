@@ -2197,6 +2197,7 @@ export const useRunsServiceListRunStepsSuspense = <
  * @param data.endDate Return steps before this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")
  * @param data.model Filter by the name of the model used for the step
  * @param data.agentId Filter by the ID of the agent that performed the step
+ * @param data.traceIds Filter by trace ids returned by the server
  * @param data.userId
  * @returns Step Successful Response
  * @throws ApiError
@@ -2215,6 +2216,7 @@ export const useStepsServiceListStepsSuspense = <
     model,
     order,
     startDate,
+    traceIds,
     userId,
   }: {
     after?: string;
@@ -2225,6 +2227,7 @@ export const useStepsServiceListStepsSuspense = <
     model?: string;
     order?: string;
     startDate?: string;
+    traceIds?: string[];
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
@@ -2241,6 +2244,7 @@ export const useStepsServiceListStepsSuspense = <
         model,
         order,
         startDate,
+        traceIds,
         userId,
       },
       queryKey,
@@ -2255,6 +2259,7 @@ export const useStepsServiceListStepsSuspense = <
         model,
         order,
         startDate,
+        traceIds,
         userId,
       }) as TData,
     ...options,

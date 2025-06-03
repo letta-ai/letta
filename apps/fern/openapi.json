@@ -6349,6 +6349,27 @@
               "title": "Agent Id"
             },
             "description": "Filter by the ID of the agent that performed the step"
+          },
+          {
+            "name": "trace_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by trace ids returned by the server",
+              "title": "Trace Ids"
+            },
+            "description": "Filter by trace ids returned by the server"
           }
         ],
         "responses": {

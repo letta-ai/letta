@@ -3666,6 +3666,7 @@ export class StepsService {
    * @param data.endDate Return steps before this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")
    * @param data.model Filter by the name of the model used for the step
    * @param data.agentId Filter by the ID of the agent that performed the step
+   * @param data.traceIds Filter by trace ids returned by the server
    * @param data.userId
    * @returns Step Successful Response
    * @throws ApiError
@@ -3686,6 +3687,7 @@ export class StepsService {
         end_date: data.endDate,
         model: data.model,
         agent_id: data.agentId,
+        trace_ids: data.traceIds,
       },
       errors: {
         422: 'Validation Error',

@@ -5271,6 +5271,10 @@ export type ListStepsData = {
    * Return steps after this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")
    */
   startDate?: string | null;
+  /**
+   * Filter by trace ids returned by the server
+   */
+  traceIds?: Array<string> | null;
   userId?: string | null;
 };
 
