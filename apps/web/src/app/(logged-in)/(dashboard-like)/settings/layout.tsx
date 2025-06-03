@@ -63,7 +63,7 @@ function SettingsLayout(props: SettingsLayoutProps) {
                     href: '/settings/organization/integrations',
                   },
                   {
-                    id: 'environemnt-variables',
+                    id: 'environment-variables',
                     label: t('organization.environmentVariables'),
                     href: '/settings/organization/environment-variables',
                   },
