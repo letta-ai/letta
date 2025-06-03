@@ -101,6 +101,9 @@
   --background-grey2: 210, 10%, 96%;
   --background-grey2-content: var(--text-default);
 
+  --user-content-background: 0deg 0% 96.86%;
+  --agent-content-background: 240deg 33.33% 95.88%;
+
   --background-black: 0, 0%, 0%;
   --background-black-content: 0, 0%, 100%;
   --background-black-hover: 0, 0%, 20%;
@@ -157,11 +160,15 @@
   --background-grey-content: var(--background-content);
   --background-grey2: var(--background-black-content);
 
+  --user-content-background: var(--background);
+  --agent-content-background: var(--background);
+
 
   --grey3: 182, 100%, 30%;
   --grey3-content: var(--background-content);
 
   --element-focus: var(--background);
+
 
 
   --text-lighter: 0, 0%, 100%;
@@ -224,6 +231,9 @@
 
   --panel-input-background: 0, 0%, 8%;
   --panel-input-background-content: var(--text-default);
+
+  --user-content-background: 210deg 3.23% 12.16%;
+  --agent-content-background: 231.43deg 8.64% 15.88%;
 
   --background-grey: 0, 0%, 9%;
   --background-grey-content: var(--text-default);

@@ -144,11 +144,15 @@ function MessageGroup({ group }: MessageGroupType) {
 
   return (
     <HStack
-      padding="small"
+      padding="medium"
       /* eslint-disable-next-line react/forbid-component-props */
       style={{
-        backgroundColor: name === 'User' ? 'hsl(var(--element-focus))' : '',
+        backgroundColor:
+          name === 'User'
+            ? 'hsl(var(--user-content-background))'
+            : 'hsl(var(--agent-content-background))',
       }}
+      className="rounded-t-[0.75rem] rounded-br-[0.75rem]"
       data-testid="message-group"
       gap="medium"
     >
@@ -870,7 +874,7 @@ export function Messages(props: MessagesProps) {
       fullWidth
       collapseHeight
       overflowY="auto"
-      gap="small"
+      gap="large"
       padding="small"
     >
       {hasNextPage && (
