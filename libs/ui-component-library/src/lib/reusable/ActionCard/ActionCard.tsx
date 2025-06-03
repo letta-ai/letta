@@ -78,7 +78,7 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
       mainAction,
       children,
       description,
-      disableTooltip,
+      disableTooltip = true,
       actions,
       isSkeleton,
     } = props;
