@@ -107,7 +107,7 @@ def stringify_message(message: Message, use_assistant_name: bool = False) -> str
     elif message.role == "tool":
         if message.content:
             content = json.loads(message.content[0].text)
-            if content["message"] is not "None" and content["message"] is not None:
+            if str(content["message"]) != "None":
                 return f"{assistant_name}: Tool call returned {content['message']}"
         return None
     elif message.role == "system":
