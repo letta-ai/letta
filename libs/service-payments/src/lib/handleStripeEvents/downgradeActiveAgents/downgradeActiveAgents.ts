@@ -12,7 +12,6 @@ export async function downgradeActiveAgents(organizationId: string) {
 
   // if active agents is less than the limit, do nothign
   if (activeAgentCount < usageLimits.agents) {
-    console.log('b');
     return;
   }
 

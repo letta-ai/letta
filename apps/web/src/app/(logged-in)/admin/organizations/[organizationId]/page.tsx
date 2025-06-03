@@ -43,6 +43,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { creditsToDollars } from '@letta-cloud/utils-shared';
 import { PricingModelEnum } from '@letta-cloud/types';
+import { RefreshBillingDataButton } from './RefreshBillingDataButton/RefreshBillingDataButton';
 
 function SetAsEnterpriseBillingMethodButton() {
   const organization = useCurrentAdminOrganization();
@@ -1033,7 +1034,10 @@ function OrganizationProperties() {
         name: 'Billing Plan',
         value: <BillingPlanConfiguration />,
       },
-
+      {
+        name: 'Fix subscription data (stripe only)',
+        value: <RefreshBillingDataButton />,
+      },
       {
         name: 'Total Members',
         value: (

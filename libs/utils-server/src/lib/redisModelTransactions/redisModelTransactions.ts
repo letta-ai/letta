@@ -1,13 +1,14 @@
 import type { ModelTiersType } from '@letta-cloud/types';
-import { createRedisInstance } from '@letta-cloud/service-redis';
+import {
+  createRedisInstance,
+  getRedisModelTransactionsKey,
+} from '@letta-cloud/service-redis';
 import {
   db,
   organizationCreditTransactions,
 } from '@letta-cloud/service-database';
 import { and, count, eq, gt } from 'drizzle-orm';
 import { getCustomerSubscription } from '@letta-cloud/service-payments';
-
-const MODEL_TRANSACTIONS_REDIS_KEY = 'modelTransactions_1';
 
 export async function getRedisModelTransactions(
   type: ModelTiersType,
@@ -16,7 +17,7 @@ export async function getRedisModelTransactions(
   const redis = createRedisInstance();
 
   const data = await redis.get(
-    `${MODEL_TRANSACTIONS_REDIS_KEY}:${type}:${organizationId}`,
+    getRedisModelTransactionsKey(type, organizationId),
   );
 
   if (data) {
@@ -49,11 +50,14 @@ export async function getRedisModelTransactions(
     );
   }
 
-  const expireTime =
-    new Date(subscription.billingPeriodEnd).getTime() - Date.now();
+  // should expire every day or when the subscription ends
+  const expireTime = Math.min(
+    new Date(subscription.billingPeriodEnd).getTime() - new Date().getTime(),
+    24 * 60 * 60 * 1000, // at least one day
+  );
 
   await redis.setex(
-    `${MODEL_TRANSACTIONS_REDIS_KEY}:${type}:${organizationId}`,
+    getRedisModelTransactionsKey(type, organizationId),
     Math.round(expireTime),
     res[0].count,
   );
@@ -71,7 +75,7 @@ export async function incrementRedisModelTransactions(
   await getRedisModelTransactions(type, organizationId);
 
   return redis.incrby(
-    `${MODEL_TRANSACTIONS_REDIS_KEY}:${type}:${organizationId}`,
+    getRedisModelTransactionsKey(type, organizationId),
     amount,
   );
 }

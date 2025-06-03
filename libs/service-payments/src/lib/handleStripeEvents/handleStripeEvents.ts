@@ -1,13 +1,25 @@
 import type { Stripe } from 'stripe';
-import { deleteRedisData } from '@letta-cloud/service-redis';
+import {
+  createRedisInstance,
+  deleteRedisData,
+  getRedisModelTransactionsKey,
+} from '@letta-cloud/service-redis';
 import { db, organizationBillingDetails } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 import { downgradeActiveAgents } from './downgradeActiveAgents/downgradeActiveAgents';
 
-function clearCustomerSubscriptionCache(organizationId: string): Promise<void> {
-  return deleteRedisData('customerSubscription', {
-    organizationId,
-  });
+export async function clearCustomerSubscriptionCache(
+  organizationId: string,
+): Promise<void> {
+  const redis = createRedisInstance();
+
+  await Promise.all([
+    deleteRedisData('customerSubscription', {
+      organizationId,
+    }),
+    redis.del(getRedisModelTransactionsKey('free', organizationId)),
+    redis.del(getRedisModelTransactionsKey('premium', organizationId)),
+  ]);
 }
 
 async function getOrganizationIdFromPaymentCustomerId(
@@ -27,6 +39,19 @@ async function getOrganizationIdFromPaymentCustomerId(
   return billingDetails.organizationId;
 }
 
+export async function handleStripeCustomerChange(customerId: string) {
+  const organizationId =
+    await getOrganizationIdFromPaymentCustomerId(customerId);
+
+  if (!organizationId) {
+    return;
+  }
+
+  await clearCustomerSubscriptionCache(organizationId);
+
+  await downgradeActiveAgents(organizationId);
+}
+
 export async function handleStripeEvents(event: Stripe.Event) {
   switch (event.type) {
     case 'customer.subscription.paused':
@@ -36,16 +61,7 @@ export async function handleStripeEvents(event: Stripe.Event) {
     case 'customer.subscription.created': {
       const customerId = event.data.object.customer as string;
 
-      const organizationId =
-        await getOrganizationIdFromPaymentCustomerId(customerId);
-
-      if (!organizationId) {
-        return;
-      }
-
-      await clearCustomerSubscriptionCache(organizationId);
-
-      await downgradeActiveAgents(organizationId);
+      await handleStripeCustomerChange(customerId);
     }
   }
 }

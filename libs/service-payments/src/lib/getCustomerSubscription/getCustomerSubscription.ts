@@ -134,6 +134,12 @@ export async function getCustomerSubscription(
 
   const subscription = await getCustomerSubscriptionMainLogic(organizationId);
 
+  // expires every hour or when the billing period ends
+  const expiresAt = Math.min(
+    new Date(subscription.billingPeriodEnd).getTime(),
+    60 * 60 * 1000 + Date.now(),
+  );
+
   await setRedisData(
     'customerSubscription',
     {
@@ -141,6 +147,7 @@ export async function getCustomerSubscription(
     },
     {
       data: subscription,
+      expiresAt,
     },
   );
 

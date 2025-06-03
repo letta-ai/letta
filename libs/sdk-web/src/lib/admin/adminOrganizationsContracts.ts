@@ -561,6 +561,20 @@ const adminGetBillingMethodContract = c.query({
   },
 });
 
+const refreshBillingDataContract = c.mutation({
+  path: '/admin/organizations/:organizationId/billing-method/refresh',
+  method: 'POST',
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
 export const adminOrganizationsContracts = {
   getOrganizations: getOrganizationsContract,
   getOrganization: getOrganizationContract,
@@ -576,6 +590,7 @@ export const adminOrganizationsContracts = {
   adminRemoveUserFromOrganization: adminRemoveUserFromOrganizationContract,
   adminListOrganizationUsers: adminListOrganizationUsersContract,
   adminGetOrganizationStatistics: adminGetOrganizationStatisticsContract,
+  refreshBillingData: refreshBillingDataContract,
   adminDeleteOrganization: adminDeleteOrganizationContract,
   adminGetOrganizationInferenceUsage:
     adminGetOrganizationInferenceUsageByModelContract,

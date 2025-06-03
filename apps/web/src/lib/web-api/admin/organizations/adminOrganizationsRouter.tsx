@@ -26,6 +26,7 @@ import { getUserOrThrow } from '$web/server/auth';
 import { getOrganizationLettaServiceAccountId } from '$web/server/lib/getOrganizationLettaServiceAccountId/getOrganizationLettaServiceAccountId';
 import { deleteRedisData } from '@letta-cloud/service-redis';
 import { deleteOrganization } from '$web/server/auth/lib/deleteOrganization/deleteOrganization';
+import { handleStripeCustomerChange } from '@letta-cloud/service-payments';
 
 /* Get Organizations */
 type GetOrganizationsResponse = ServerInferResponses<
@@ -1250,9 +1251,55 @@ async function adminGetBillingMethod(
   };
 }
 
+type RefreshBillingDataRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.refreshBillingData
+>;
+
+type RefreshBillingDataResponse = ServerInferResponses<
+  typeof contracts.admin.organizations.refreshBillingData
+>;
+
+async function refreshBillingData(
+  req: RefreshBillingDataRequest,
+): Promise<RefreshBillingDataResponse> {
+  const { organizationId } = req.params;
+
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, organizationId),
+    with: {
+      organizationBillingDetails: {
+        columns: {
+          stripeCustomerId: true,
+        },
+      },
+    },
+  });
+
+  if (!organization?.organizationBillingDetails?.stripeCustomerId) {
+    return {
+      status: 404,
+      body: {
+        message: 'Organization not found',
+      },
+    };
+  }
+
+  await handleStripeCustomerChange(
+    organization.organizationBillingDetails.stripeCustomerId,
+  );
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 export const adminOrganizationsRouter = {
   getOrganizations,
   getOrganization,
+  refreshBillingData,
   toggleCloudOrganization,
   adminBanOrganization,
   adminUnbanOrganization,
