@@ -33,6 +33,7 @@ class StepManager:
         order: Optional[str] = None,
         model: Optional[str] = None,
         agent_id: Optional[str] = None,
+        trace_ids: Optional[list[str]] = None,
     ) -> List[PydanticStep]:
         """List all jobs with optional pagination and status filter."""
         async with db_registry.async_session() as session:
@@ -41,6 +42,8 @@ class StepManager:
                 filter_kwargs["model"] = model
             if agent_id:
                 filter_kwargs["agent_id"] = agent_id
+            if trace_ids:
+                filter_kwargs["trace_id"] = trace_ids
 
             steps = await StepModel.list_async(
                 db_session=session,

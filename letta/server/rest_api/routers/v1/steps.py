@@ -21,6 +21,7 @@ async def list_steps(
     end_date: Optional[str] = Query(None, description='Return steps before this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")'),
     model: Optional[str] = Query(None, description="Filter by the name of the model used for the step"),
     agent_id: Optional[str] = Query(None, description="Filter by the ID of the agent that performed the step"),
+    trace_ids: Optional[list[str]] = Query(None, description="Filter by trace ids returned by the server"),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
@@ -44,6 +45,7 @@ async def list_steps(
         order=order,
         model=model,
         agent_id=agent_id,
+        trace_ids=trace_ids,
     )
 
 
