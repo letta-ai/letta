@@ -185,11 +185,13 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
     );
 
     const typeOverride = useMemo(() => {
-      if (showVisibilityControls) {
-        return visibility ? type : 'password';
+      if (!showVisibilityControls) return type;
+
+      if (visibility) {
+        return type === 'password' ? 'text' : type;
       }
 
-      return type;
+      return 'password';
     }, [showVisibilityControls, visibility, type]);
 
     const postIconRender = useMemo(() => {
