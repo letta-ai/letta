@@ -1688,6 +1688,62 @@
       "description": "The unique identifier is a unique string that can be used to look up this identity, usually this should be your user or organization ID on your platform."
     }
   },
+  "CreateNewMemoryBlockDialog/ExampleBlocks": {
+    "details": "Click on a block below to prepopulate the form with example values. You can then edit the values as needed.",
+    "human": {
+      "title": "Human",
+      "description": "A memory block for keeping track of the human (user) the agent is interacting with."
+    },
+    "persona": {
+      "title": "Persona",
+      "description": "A memory block for storing the agent’s core personality details and behavior profile."
+    },
+    "organization": {
+      "title": "Organization",
+      "description": "A memory block for storing information about an organization the agent belongs to."
+    }
+  },
+  "CreateNewMemoryBlockDialog": {
+    "advanced": "Advanced settings",
+    "title": "Create New Memory Block",
+    "tabs": {
+      "custom": "Custom blocks",
+      "example": "Example blocks"
+    },
+    "label": {
+      "label": "Label",
+      "placeholder": "e.g., user_profile, system_context"
+    },
+    "description": {
+      "label": "Description",
+      "placeholder": "Brief description of this memory block's purpose"
+    },
+    "value": {
+      "label": "Value",
+      "placeholder": "Initial content for this memory block"
+    },
+    "characterLimit": {
+      "label": "Character Limit",
+      "description": "Maximum number of characters allowed in this memory block",
+      "placeholder": "e.g., 2000"
+    },
+    "readonly": {
+      "label": "Read-only",
+      "description": "When enabled, this memory block cannot be modified by the agent"
+    },
+    "errors": {
+      "labelRequired": "Label is required",
+      "labelFormat": "Label must start with a letter, underscore, or hyphen and contain only letters, numbers, underscores, and hyphens",
+      "labelExists": "A memory block with this label already exists",
+      "characterLimitMustBeNumber": "Character limit must be a number",
+      "overage": "You have reached the maximum number of memory blocks for your plan, please <link>upgrade</link> or delete some memory blocks.",
+      "default": "There was an error creating this memory block, please try again or contact support.",
+      "noAgent": "No agent selected",
+      "createBlockError": "Failed to create memory block",
+      "attachError": "Failed to attach memory block to agent"
+    },
+    "success": "Memory block created successfully"
+  },
   "ExportAgentButton": {
     "error": "There was an error exporting this agent, please try again or contact support."
   },

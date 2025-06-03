@@ -23,7 +23,6 @@ import { useCurrentAgentMetaData } from '../../hooks';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import {
   AdvancedCoreMemoryEditor,
-  CreateNewMemoryBlockForm,
   useAdvancedCoreMemoryEditor,
 } from './AdvancedCoreMemoryEditor';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
@@ -35,6 +34,7 @@ import { useBlocksServiceListAgentsForBlock } from '@letta-cloud/sdk-core';
 import { useRouter } from 'next/navigation';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { useADEAppContext } from '../../AppContext/AppContext';
+import { CreateNewMemoryBlockDialog } from './CreateNewMemoryBlockDialog/CreateNewMemoryBlockDialog';
 
 interface AdvancedEditorPayload {
   label: string;
@@ -168,7 +168,7 @@ function MemoryWrapper(props: MemoryWrapperProps) {
         <Typography color="lighter" variant="body2">
           {t('MemoryWrapper.emptyMemoryBlock')}
         </Typography>
-        <CreateNewMemoryBlockForm
+        <CreateNewMemoryBlockDialog
           trigger={
             <Button
               preIcon={<PlusIcon />}
@@ -292,6 +292,7 @@ function AdvancedEditorButton() {
       fullHeight
       paddingTop="xxsmall"
       paddingBottom="xxsmall"
+      className="h-[34px]"
       align="center"
       position="relative"
       justify="end"
@@ -339,7 +340,7 @@ export function EditMemory() {
           fullHeight
           gap={false}
         >
-          <VStack paddingX="small">
+          <VStack fullWidth paddingX="small">
             <TabGroup
               color="transparent"
               bold

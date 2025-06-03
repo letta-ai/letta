@@ -559,7 +559,7 @@ function DeleteMemoryBlockDialog(props: DeleteMemoryBlockDialogProps) {
                 (block) => block.id !== blockId,
               );
 
-              if (nextBlocks?.[0].label) {
+              if (nextBlocks?.[0]?.label) {
                 setSelectMemoryBlockLabel((prev) => ({
                   ...prev,
                   selectedMemoryBlockLabel: nextBlocks[0].label || '',
