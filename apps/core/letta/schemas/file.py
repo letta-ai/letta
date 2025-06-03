@@ -1,9 +1,19 @@
 from datetime import datetime
+from enum import Enum
 from typing import Optional
 
 from pydantic import Field
 
 from letta.schemas.letta_base import LettaBase
+
+
+class FileStatus(str, Enum):
+    """
+    Enum to represent the state of a file.
+    """
+
+    open = "open"
+    closed = "closed"
 
 
 class FileMetadataBase(LettaBase):

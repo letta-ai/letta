@@ -58,13 +58,11 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
     )
 
     # TODO: This is temporary as we figure out if we want FileBlock as a first class citizen
-    def to_pydantic_block(self) -> Optional[PydanticBlock]:
-        if self.is_open:
-            return PydanticBlock(
-                organization_id=self.organization_id,
-                value=self.visible_content if self.visible_content else "",
-                label=self.file.file_name,
-                read_only=True,
-            )
-        else:
-            return None
+    def to_pydantic_block(self) -> PydanticBlock:
+        visible_content = self.visible_content if self.visible_content and self.is_open else ""
+        return PydanticBlock(
+            organization_id=self.organization_id,
+            value=visible_content,
+            label=self.file.file_name,
+            read_only=True,
+        )
