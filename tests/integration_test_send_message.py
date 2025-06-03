@@ -147,6 +147,7 @@ all_configs = [
     "gemini-2.5-flash-vertex.json",
     "gemini-2.5-pro-vertex.json",
     "together-qwen-2.5-72b-instruct.json",
+    "ollama.json",
 ]
 requested = os.getenv("LLM_CONFIG_FILE")
 filenames = [requested] if requested else all_configs
