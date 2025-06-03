@@ -102,7 +102,7 @@ function useContextWindowDetails() {
   const systemPromptSummary = system;
   const toolSummary = contextWindow?.functions_definitions;
   const externalSummary = contextWindow?.external_memory_summary;
-  const coreMemorySummary = computedMemoryString;
+  const coreMemorySummary = contextWindow?.core_memory || computedMemoryString;
   const recursiveMemorySummary = contextWindow?.summary_memory;
   const messagesTokensSummary = contextWindow?.messages?.slice(1);
 
