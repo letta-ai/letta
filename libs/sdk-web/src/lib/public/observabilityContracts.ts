@@ -140,7 +140,8 @@ const getTimeToFirstTokenMessagesContract = c.query({
 
 const AverageResponseTimeItem = z.object({
   date: z.string(), // ISO date string
-  averageResponseTimeMs: z.number(), // Average response time in milliseconds
+  p50ResponseTimeNs: z.number(), // 50th percentile response time in milliseconds
+  p99ResponseTimeNs: z.number(), // 99th percentile response time in milliseconds
   sampleCount: z.number(), // Number of samples for the date
 });
 
@@ -194,6 +195,27 @@ const getActiveAgentsContract = c.query({
   },
 });
 
+const ObservabilityOverviewSchema = z.object({
+  totalMessageCount: z.number(),
+  totalTokenCount: z.number(),
+  tokenPerMessageMedian: z.number(),
+  apiErrorRate: z.number(),
+  toolErrorRate: z.number(),
+  p50TimeToFirstTokenNs: z.number(),
+  p99TimeToFirstTokenNs: z.number(),
+  p50ResponseTimeNs: z.number(),
+  p99ResponseTimeNs: z.number(),
+});
+
+const getObservabilityOverviewContract = c.query({
+  path: '/observability/overview',
+  method: 'GET',
+  query: DefaultMetricsQuery,
+  responses: {
+    200: ObservabilityOverviewSchema,
+  },
+});
+
 export const observabilityContracts = c.router({
   getTimeToFirstTokenMetrics: timeToFirstTokenMetricsContract,
   getAverageResponseTime: getAverageResponseTimeContract,
@@ -202,6 +224,7 @@ export const observabilityContracts = c.router({
   getTimeToFirstTokenMessages: getTimeToFirstTokenMessagesContract,
   getToolErrorsMetrics: getToolErrorsMetricsContract,
   getToolErrorMessages: getToolErrorMessagesContract,
+  getObservabilityOverview: getObservabilityOverviewContract,
 });
 
 export const observabilityQueryKeys = {
@@ -236,6 +259,11 @@ export const observabilityQueryKeys = {
   getToolErrorMessages: (query: z.infer<typeof DefaultPagedMetricsQuery>) => [
     'observability',
     'getToolErrorMessages',
+    query,
+  ],
+  getObservabilityOverview: (query: z.infer<typeof DefaultMetricsQuery>) => [
+    'observability',
+    'getObservabilityOverview',
     query,
   ],
 };

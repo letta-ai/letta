@@ -1,5 +1,5 @@
 'use client';
-import { HR, HStack, VR } from '@letta-cloud/ui-component-library';
+import { HR, HStack, VR, VStack } from '@letta-cloud/ui-component-library';
 import { TimeToFirstTokenChart } from './_components/charts/TimeToFirstTokenChart/TimeToFirstTokenChart';
 import { TotalMessagesPerDayChart } from './_components/charts/TotalMessagesPerDayChart/TotalMessagesPerDayChart';
 
@@ -9,26 +9,47 @@ import { ActiveAgentChart } from './_components/charts/ActiveAgentChart/ActiveAg
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { ObservabilityPageWrapper } from './_components/ObservabilityPageWrapper/ObservabilityPageWrapper';
 import { ToolErrorsChart } from './_components/charts/ToolErrorsChart/ToolErrorsChart';
+import { ObservabilityOverview } from './_components/ObservabilityOverview/ObservabilityOverview';
+import { TotalResponseTimeChart } from './_components/charts/TotalResponseTimeChart/TotalResponseTimeChart';
+
+interface ChartRowProps {
+  children: React.ReactNode;
+}
+
+function ChartRow(props: ChartRowProps) {
+  const { children } = props;
+
+  return <div className="observability-chart-row">{children}</div>;
+}
 
 function ProjectObservabilityPage() {
   const { slug } = useCurrentProject();
 
   return (
     <ObservabilityPageWrapper>
-      <HStack gap={false}>
-        <TimeToFirstTokenChart
-          analysisLink={`/projects/${slug}/observability/time-to-first-token`}
-        />
+      <HStack gap={false} fullWidth fullHeight>
+        <VStack gap={false} fullHeight collapseWidth flex>
+          <ChartRow>
+            <TimeToFirstTokenChart
+              analysisLink={`/projects/${slug}/observability/time-to-first-token`}
+            />
+            <VR />
+            <TotalMessagesPerDayChart />
+          </ChartRow>
+          <HR />
+          <ChartRow>
+            <ToolErrorsChart
+              analysisLink={`/projects/${slug}/observability/tool-errors`}
+            />
+            <VR />
+            <ActiveAgentChart />
+          </ChartRow>
+          <ChartRow>
+            <TotalResponseTimeChart />
+          </ChartRow>
+        </VStack>
         <VR />
-        <TotalMessagesPerDayChart />
-      </HStack>
-      <HR />
-      <HStack gap={false}>
-        <ToolErrorsChart
-          analysisLink={`/projects/${slug}/observability/tool-errors`}
-        />
-        <VR />
-        <ActiveAgentChart />
+        <ObservabilityOverview />
       </HStack>
     </ObservabilityPageWrapper>
   );

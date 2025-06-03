@@ -24,9 +24,10 @@ export function useObservabilitySeriesData<T extends BaseType>(
 
   const { formatDate } = useFormatters();
 
-  const xAxis = useMemo(() => {
+  const { labels: xAxis } = useMemo(() => {
     // Generate x-axis labels based on the date range
     const labels = [];
+    const dates = [];
 
     for (
       let date = new Date(startDate);
@@ -39,9 +40,13 @@ export function useObservabilitySeriesData<T extends BaseType>(
           day: 'numeric',
         }),
       );
+      dates.push(date);
     }
 
-    return labels.slice(0, -1);
+    return {
+      labels: labels.slice(0, -1),
+      dates: dates.slice(0, -1),
+    };
   }, [startDate, endDate, formatDate]);
 
   const getSeriesData = useCallback(
@@ -91,6 +96,7 @@ export function useObservabilitySeriesData<T extends BaseType>(
 
       return {
         type: 'line',
+        connectNulls: true,
         symbol: 'circle',
         data: getSeriesData(data, getterFn, defaultValue),
       };

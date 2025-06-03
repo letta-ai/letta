@@ -4,7 +4,7 @@ import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurren
 import {
   Chart,
   DashboardChartWrapper,
-  makeFormattedTooltip,
+  makeMultiValueFormattedTooltip,
 } from '@letta-cloud/ui-component-library';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
@@ -39,7 +39,11 @@ export function TotalResponseTimeChart() {
     seriesData: [
       {
         data: data?.body.items,
-        getterFn: (item) => item.averageResponseTimeMs / 1000, // Convert ms to seconds
+        getterFn: (item) => item.p50ResponseTimeNs / 1_000_000_000, // Convert to seconds
+      },
+      {
+        data: data?.body.items,
+        getterFn: (item) => item.p99ResponseTimeNs / 1_000_000_000, // Convert to seconds
       },
     ],
     startDate,
@@ -54,24 +58,35 @@ export function TotalResponseTimeChart() {
         options={{
           ...tableOptions,
           tooltip: {
+            trigger: 'axis',
             formatter: (e) => {
-              const value = get(e, 'value', null);
+              const p50Response = get(e, '0.data', null);
+              const p99Response = get(e, '1.data', null);
 
-              if (typeof value !== 'number') {
-                return makeFormattedTooltip({
-                  label: t('tooltip.noData'),
-                });
-              }
-
-              return makeFormattedTooltip({
-                label: t('tooltip.withValue'),
-                value: formatSmallDuration(value * 1_000_000),
+              return makeMultiValueFormattedTooltip({
+                options: [
+                  {
+                    color: get(e, '0.color', '#333') as string,
+                    label: t('p50ResponseTime.label'),
+                    value:
+                      typeof p50Response === 'number'
+                        ? formatSmallDuration(p50Response * 1_000_000_000)
+                        : '-',
+                  },
+                  {
+                    color: get(e, '1.color', '#555') as string,
+                    label: t('p99ResponseTime.label'),
+                    value:
+                      typeof p99Response === 'number'
+                        ? formatSmallDuration(p99Response * 1_000_000_000)
+                        : '-',
+                  },
+                ],
               });
             },
           },
           yAxis: {
             ...tableOptions.yAxis,
-            minInterval: 1,
           },
         }}
       />

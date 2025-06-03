@@ -16,16 +16,37 @@ interface ChartOptions {
   width?: number;
 }
 
+interface MakeFormattedTooltipOptions {
+  value?: string;
+  label: string;
+  color?: string;
+}
+
 const defaultOptions: EChartsOption = {
   tooltip: {
     show: true,
   },
 };
 
-interface MakeFormattedTooltipOptions {
-  value?: string;
-  label: string;
-  color?: string;
+interface MakeMultiValueFormattedTooltipOptions {
+  options: MakeFormattedTooltipOptions[];
+}
+
+export function makeMultiValueFormattedTooltip(
+  options: MakeMultiValueFormattedTooltipOptions,
+): string {
+  const { options: tooltipOptions } = options;
+  return `<div class="tooltip-multi-format-container">
+    ${tooltipOptions
+      .map(
+        (option) => `<div class="tooltip-format-container">
+          ${typeof option.color === 'string' ? `<div class="tooltip-color" style="background-color: ${option.color}"></div>` : ''}
+          ${typeof option.value === 'string' ? `<div class="tooltip-value">${option.value}</div>` : ''}
+          <div class="tooltip-label">${option.label}</div>
+        </div>`,
+      )
+      .join('')}
+</div>`;
 }
 
 export function makeFormattedTooltip(options: MakeFormattedTooltipOptions) {

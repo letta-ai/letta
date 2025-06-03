@@ -1,9 +1,6 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/sdk-web';
-import {
-  getClickhouseClient,
-  getTotalResponseTimeAverages,
-} from '@letta-cloud/service-clickhouse';
+import { getClickhouseClient } from '@letta-cloud/service-clickhouse';
 import { getClickhouseData } from '@letta-cloud/service-clickhouse';
 import type { MessageCreate } from '@letta-cloud/sdk-core';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
@@ -25,6 +22,7 @@ async function getToolErrorsMetrics(
 ): Promise<GetToolErrorsMetricsResponse> {
   const { projectId, startDate, endDate } = request.query;
 
+  const user = await getUserWithActiveOrganizationIdOrThrow();
   const client = getClickhouseClient();
 
   if (!client) {
@@ -54,6 +52,7 @@ async function getToolErrorsMetrics(
         WHERE (${DEFAULT_SPAN_SEARCH})
         AND ParentSpanId = ''
         AND SpanAttributes['project.id'] = {projectId: String}
+        AND SpanAttributes['organization.id'] = {organizationId: String}
         AND Timestamp >= {startDate: DateTime}
         AND Timestamp <= {endDate: DateTime}
         )
@@ -63,6 +62,7 @@ async function getToolErrorsMetrics(
     query_params: {
       startDate: Math.round(new Date(startDate).getTime() / 1000),
       endDate: Math.round(new Date(endDate).getTime() / 1000),
+      organizationId: user.activeOrganizationId,
       projectId,
     },
     format: 'JSONEachRow',
@@ -317,18 +317,63 @@ async function getAverageResponseTime(
 ): Promise<GetAverageResponseTimeResponse> {
   const { projectId, startDate, endDate } = request.query;
 
-  const response = await getTotalResponseTimeAverages({
-    projectId,
-    startUnixTimestamp: new Date(startDate).getTime() / 1000,
-    endUnixTimestamp: new Date(endDate).getTime() / 1000,
+  const user = await getUserWithActiveOrganizationIdOrThrow();
+  const client = getClickhouseClient();
+
+  if (!client) {
+    return {
+      status: 200,
+      body: {
+        items: [],
+      },
+    };
+  }
+
+  const response = await client.query({
+    query: `
+      SELECT toDate(Timestamp) as date,
+      avg(toInt64OrNull(Events.Attributes[2]['duration_ms'])) * 1000000 as p50ResponseTimeNs,
+      quantile(0.99)(toInt64OrNull(Events.Attributes[2]['duration_ms'])) * 1000000 as p99ResponseTimeNs,
+      count() as sample_count
+      FROM otel_traces
+      WHERE TraceId IN (
+        SELECT TraceId
+        FROM otel_traces
+        WHERE ParentSpanId = ''
+          AND (${DEFAULT_SPAN_SEARCH})
+          AND SpanAttributes['project.id'] = {projectId: String}
+          AND SpanAttributes['organization.id'] = {organizationId: String}
+          AND Timestamp >= {startDate: DateTime}
+          AND Timestamp <= {endDate: DateTime}
+      )
+      GROUP BY toDate(Timestamp)
+      ORDER BY date;
+    `,
+    query_params: {
+      startDate: Math.round(new Date(startDate).getTime() / 1000),
+      endDate: Math.round(new Date(endDate).getTime() / 1000),
+      projectId,
+      organizationId: user.activeOrganizationId,
+    },
+    format: 'JSONEachRow',
   });
+
+  const result = await getClickhouseData<
+    Array<{
+      date: string;
+      p50ResponseTimeNs: number;
+      p99ResponseTimeNs: number;
+      sample_count: number;
+    }>
+  >(response);
 
   return {
     status: 200,
     body: {
-      items: response.map((item) => ({
+      items: result.map((item) => ({
         date: item.date,
-        averageResponseTimeMs: item.avg_total_response_time_ms,
+        p50ResponseTimeNs: item.p50ResponseTimeNs,
+        p99ResponseTimeNs: item.p99ResponseTimeNs,
         sampleCount: item.sample_count,
       })),
     },
@@ -609,6 +654,211 @@ async function getTimeToFirstTokenMessages(
   };
 }
 
+type GetObservabilityOverviewRequest = ServerInferRequest<
+  typeof contracts.observability.getObservabilityOverview
+>;
+
+type GetObservabilityOverviewResponse = ServerInferResponses<
+  typeof contracts.observability.getObservabilityOverview
+>;
+
+async function getObservabilityOverview(
+  request: GetObservabilityOverviewRequest,
+): Promise<GetObservabilityOverviewResponse> {
+  const { projectId, startDate, endDate } = request.query;
+
+  const client = getClickhouseClient();
+
+  if (!client) {
+    return {
+      status: 200,
+      body: {
+        totalMessageCount: 0,
+        totalTokenCount: 0,
+        tokenPerMessageMedian: 0,
+        apiErrorRate: 0,
+        toolErrorRate: 0,
+        p50TimeToFirstTokenNs: 0,
+        p99TimeToFirstTokenNs: 0,
+        p50ResponseTimeNs: 0,
+        p99ResponseTimeNs: 0,
+      },
+    };
+  }
+
+  const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  function getAllMessagesCount() {
+    return client
+      ?.query({
+        query: `
+      SELECT
+        count() as total_message_count,
+        countIf(SpanAttributes['StatusCode'] = 'STATUS_CODE_ERROR') as error_message_count
+      FROM otel_traces
+      WHERE (${DEFAULT_SPAN_SEARCH})
+        AND SpanAttributes['project.id'] = {projectId: String}
+        AND SpanAttributes['organization.id'] = {organizationId: String}
+        AND Timestamp >= {startDate: DateTime}
+        AND Timestamp <= {endDate: DateTime}
+    `,
+        query_params: {
+          projectId,
+          organizationId: user.activeOrganizationId,
+          startDate: Math.round(new Date(startDate).getTime() / 1000),
+          endDate: Math.round(new Date(endDate).getTime() / 1000),
+        },
+        format: 'JSONEachRow',
+      })
+      .then((result) =>
+        getClickhouseData<
+          Array<{
+            total_message_count: string;
+            error_message_count: string;
+          }>
+        >(result),
+      )
+      .then((v) => v[0]);
+  }
+
+  function getToolErrorsCount() {
+    return client
+      ?.query({
+        query: `
+      SELECT
+        count() as tool_error_count
+      FROM otel_traces
+      WHERE SpanName = 'agent_step'
+        AND arrayExists(
+          event -> event.Attributes['success'] = 'false',
+          Events
+        )
+        AND Timestamp >= {startDate: DateTime}
+        AND Timestamp <= {endDate: DateTime}
+        AND TraceId IN (
+          SELECT DISTINCT TraceId
+          FROM otel_traces
+          WHERE (${DEFAULT_SPAN_SEARCH})
+            AND ParentSpanId = ''
+            AND SpanAttributes['project.id'] = {projectId: String}
+            AND SpanAttributes['organization.id'] = {organizationId: String}
+            AND Timestamp >= {startDate: DateTime}
+            AND Timestamp <= {endDate: DateTime}
+        )
+    `,
+        query_params: {
+          projectId,
+          organizationId: user.activeOrganizationId,
+          startDate: Math.round(new Date(startDate).getTime() / 1000),
+          endDate: Math.round(new Date(endDate).getTime() / 1000),
+        },
+        format: 'JSONEachRow',
+      })
+      .then((result) =>
+        getClickhouseData<Array<{ tool_error_count: string }>>(result),
+      )
+      .then((v) => v[0]);
+  }
+
+  function getP50AndP99TimeToFirstToken() {
+    return client
+      ?.query({
+        query: `
+      SELECT
+        quantile(0.5)(Duration) as p50_time_to_first_token_ns,
+        quantile(0.99)(Duration) as p99_time_to_first_token_ns,
+        quantile(0.5)(toInt64OrNull(Events.Attributes[2]['duration_ms'])) as p50_response_time_ms,
+        quantile(0.99)(toInt64OrNull(Events.Attributes[2]['duration_ms'])) as p99_response_time_ms
+      FROM otel_traces
+      WHERE TraceId IN (
+        SELECT TraceId
+        FROM otel_traces
+        WHERE ParentSpanId = ''
+          AND (${DEFAULT_SPAN_SEARCH})
+          AND SpanAttributes['project.id'] = {projectId: String}
+          AND SpanAttributes['organization.id'] = {organizationId: String}
+          AND Timestamp >= {startDate: DateTime}
+          AND Timestamp <= {endDate: DateTime}
+      )
+      AND SpanName = 'time_to_first_token'
+    `,
+        query_params: {
+          projectId,
+          organizationId: user.activeOrganizationId,
+          startDate: Math.round(new Date(startDate).getTime() / 1000),
+          endDate: Math.round(new Date(endDate).getTime() / 1000),
+        },
+        format: 'JSONEachRow',
+      })
+      .then((result) =>
+        getClickhouseData<
+          Array<{
+            p99_response_time_ms: string;
+            p50_response_time_ms: string;
+            p50_time_to_first_token_ns: string;
+            p99_time_to_first_token_ns: string;
+          }>
+        >(result),
+      )
+      .then((v) => {
+        return v[0];
+      });
+  }
+
+  const [allMessagesDetails, toolErrorsDetails, ttfsDetails] =
+    await Promise.all([
+      getAllMessagesCount(),
+      getToolErrorsCount(),
+      getP50AndP99TimeToFirstToken(),
+    ]);
+
+  const totalMessageCount = parseInt(
+    allMessagesDetails?.total_message_count || '0',
+    10,
+  );
+  const errorMessageCount = parseInt(
+    allMessagesDetails?.error_message_count || '0',
+    10,
+  );
+  const toolErrorsCount = parseInt(
+    toolErrorsDetails?.tool_error_count || '0',
+    10,
+  );
+
+  const toolErrorRate = toolErrorsCount / (totalMessageCount || 1);
+  const apiErrorRate = errorMessageCount / (totalMessageCount || 1);
+
+  const p50TimeToFirstTokenNs = parseFloat(
+    ttfsDetails?.p50_time_to_first_token_ns || '0',
+  );
+  const p99TimeToFirstTokenNs = parseFloat(
+    ttfsDetails?.p99_time_to_first_token_ns || '0',
+  );
+
+  const p50ResponseTimeNs =
+    parseFloat(ttfsDetails?.p50_response_time_ms || '0') * 1000000; // Convert ms to ns
+  const p99ResponseTimeNs =
+    parseFloat(ttfsDetails?.p99_response_time_ms || '0') * 1000000; // Convert ms to ns
+
+  return {
+    status: 200,
+    body: {
+      totalMessageCount: parseInt(
+        allMessagesDetails?.total_message_count || '0',
+        10,
+      ),
+      totalTokenCount: 0,
+      tokenPerMessageMedian: 0,
+      apiErrorRate: apiErrorRate,
+      toolErrorRate: toolErrorRate,
+      p50TimeToFirstTokenNs,
+      p99TimeToFirstTokenNs,
+      p50ResponseTimeNs,
+      p99ResponseTimeNs,
+    },
+  };
+}
+
 export const observabilityRouter = {
   getTimeToFirstTokenMetrics,
   getTimeToFirstTokenMessages,
@@ -617,4 +867,5 @@ export const observabilityRouter = {
   getActiveAgentsPerDay,
   getToolErrorsMetrics,
   getToolErrorMessages,
+  getObservabilityOverview,
 };
