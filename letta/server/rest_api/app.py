@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import logging
 import os
@@ -315,19 +316,53 @@ def start_server(
         # Add the handler to the logger
         server_logger.addHandler(stream_handler)
 
+    # Experimental UV Loop Support
+    try:
+        if importlib.util.find_spec("uvloop") is not None and settings.use_uvloop:
+            print("Running server on uvloop...")
+            import asyncio
+
+            import uvloop
+
+            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    except:
+        pass
+
     if (os.getenv("LOCAL_HTTPS") == "true") or "--localhttps" in sys.argv:
         print(f"▶ Server running at: https://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
         print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
-        uvicorn.run(
-            "letta.server.rest_api.app:app",
-            host=host or "localhost",
-            port=port or REST_DEFAULT_PORT,
-            workers=settings.uvicorn_workers,
-            reload=reload or settings.uvicorn_reload,
-            timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
-            ssl_keyfile="certs/localhost-key.pem",
-            ssl_certfile="certs/localhost.pem",
-        )
+        if importlib.util.find_spec("granian") is not None and settings.use_uvloop:
+            from granian import Granian
+
+            # Experimental Granian engine
+            Granian(
+                target="letta.server.rest_api.app:app",
+                # factory=True,
+                interface="asgi",
+                address=host or "localhost",
+                port=port or REST_DEFAULT_PORT,
+                workers=settings.uvicorn_workers,
+                # threads=
+                reload=reload or settings.uvicorn_reload,
+                reload_ignore_patterns=["openapi_letta.json"],
+                reload_ignore_worker_failure=True,
+                reload_tick=100,
+                # log_level="info"
+                ssl_keyfile="certs/localhost-key.pem",
+                ssl_cert="certs/localhost.pem",
+            ).serve()
+        else:
+            uvicorn.run(
+                "letta.server.rest_api.app:app",
+                host=host or "localhost",
+                port=port or REST_DEFAULT_PORT,
+                workers=settings.uvicorn_workers,
+                reload=reload or settings.uvicorn_reload,
+                timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
+                ssl_keyfile="certs/localhost-key.pem",
+                ssl_certfile="certs/localhost.pem",
+            )
+
     else:
         if is_windows:
             # Windows doesn't those the fancy unicode characters
@@ -337,11 +372,30 @@ def start_server(
             print(f"▶ Server running at: http://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
             print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
 
-        uvicorn.run(
-            "letta.server.rest_api.app:app",
-            host=host or "localhost",
-            port=port or REST_DEFAULT_PORT,
-            workers=settings.uvicorn_workers,
-            reload=reload or settings.uvicorn_reload,
-            timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
-        )
+        if importlib.util.find_spec("granian") is not None and settings.use_granian:
+            # Experimental Granian engine
+            from granian import Granian
+
+            Granian(
+                target="letta.server.rest_api.app:app",
+                # factory=True,
+                interface="asgi",
+                address=host or "localhost",
+                port=port or REST_DEFAULT_PORT,
+                workers=settings.uvicorn_workers,
+                # threads=
+                reload=reload or settings.uvicorn_reload,
+                reload_ignore_patterns=["openapi_letta.json"],
+                reload_ignore_worker_failure=True,
+                reload_tick=100,
+                # log_level="info"
+            ).serve()
+        else:
+            uvicorn.run(
+                "letta.server.rest_api.app:app",
+                host=host or "localhost",
+                port=port or REST_DEFAULT_PORT,
+                workers=settings.uvicorn_workers,
+                reload=reload or settings.uvicorn_reload,
+                timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
+            )
