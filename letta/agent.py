@@ -222,6 +222,7 @@ class Agent(BaseAgent):
             # refresh memory from DB (using block ids)
             self.agent_state.memory = Memory(
                 blocks=[self.block_manager.get_block_by_id(block.id, actor=self.user) for block in self.agent_state.memory.get_blocks()],
+                file_blocks=self.agent_state.memory.file_blocks,
                 prompt_template=get_prompt_template_for_agent_type(self.agent_state.agent_type),
             )
 
@@ -866,6 +867,7 @@ class Agent(BaseAgent):
             # only pulling latest block data if shared memory is being used
             current_persisted_memory = Memory(
                 blocks=[self.block_manager.get_block_by_id(block.id, actor=self.user) for block in self.agent_state.memory.get_blocks()],
+                file_blocks=self.agent_state.memory.file_blocks,
                 prompt_template=get_prompt_template_for_agent_type(self.agent_state.agent_type),
             )  # read blocks from DB
             self.update_memory_if_changed(current_persisted_memory)

@@ -3,14 +3,15 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, UniqueConstraint, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
+from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.file import FileAgent as PydanticFileAgent
 
 if TYPE_CHECKING:
-    pass
+    from letta.orm.file import FileMetadata
 
 
 class FileAgent(SqlalchemyBase, OrganizationMixin):
@@ -43,3 +44,27 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
         nullable=False,
         doc="UTC timestamp when this agent last accessed the file.",
     )
+
+    # relationships
+    agent: Mapped["Agent"] = relationship(
+        "Agent",
+        back_populates="file_agents",
+        lazy="selectin",
+    )
+    file: Mapped["FileMetadata"] = relationship(
+        "FileMetadata",
+        foreign_keys=[file_id],
+        lazy="selectin",
+    )
+
+    # TODO: This is temporary as we figure out if we want FileBlock as a first class citizen
+    def to_pydantic_block(self) -> Optional[PydanticBlock]:
+        if self.is_open:
+            return PydanticBlock(
+                organization_id=self.organization_id,
+                value=self.visible_content if self.visible_content else "",
+                label=self.file.file_name,
+                read_only=True,
+            )
+        else:
+            return None

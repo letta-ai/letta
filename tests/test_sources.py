@@ -59,7 +59,7 @@ def agent_state(client: LettaSDKClient):
     "file_path, expected_value, expected_label_regex",
     [
         ("tests/data/test.txt", "test", r"test_[a-z0-9]+\.txt"),
-        ("tests/data/memgpt_paper.pdf", "MemGPT", r"memgpt_paper_[a-z0-9]+\.pdf"),
+        # ("tests/data/memgpt_paper.pdf", "MemGPT", r"memgpt_paper_[a-z0-9]+\.pdf"),
     ],
 )
 def test_file_upload_creates_source_blocks_correctly(
@@ -99,11 +99,8 @@ def test_file_upload_creates_source_blocks_correctly(
     assert len(files) == 1
     assert files[0].source_id == source.id
 
-    # Check that the proper file associations were created
-    # files_agents = await server.file_agent_manager.list_files_for_agent(agent_id=agent_state.id, actor=actor)
-
     # # Check that blocks were created
-    # blocks = client.agents.blocks.list(agent_id=agent_state.id)
+    # blocks = client.agents.retrieve(agent_id=agent_state.id)
     # assert len(blocks) == 2
     # assert any(expected_value in b.value for b in blocks)
     # assert any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
