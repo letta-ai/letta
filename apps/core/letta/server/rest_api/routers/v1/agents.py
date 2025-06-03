@@ -313,7 +313,7 @@ async def attach_source(
 
     files = await server.source_manager.list_files(source_id, actor)
     texts = []
-    filenames = []
+    file_ids = []
     for f in files:
         passages = await server.passage_manager.list_passages_by_file_id_async(file_id=f.id, actor=actor)
         passage_text = ""
@@ -322,9 +322,9 @@ async def attach_source(
                 passage_text += p.text
 
         texts.append(passage_text)
-        filenames.append(f.file_name)
+        file_ids.append(f.id)
 
-    await server.insert_documents_into_context_window(agent_state=agent_state, texts=texts, filenames=filenames, actor=actor)
+    await server.insert_files_into_context_window(agent_state=agent_state, texts=texts, file_ids=file_ids, actor=actor)
 
     if agent_state.enable_sleeptime:
         source = await server.source_manager.get_source_by_id(source_id=source_id)
@@ -348,8 +348,8 @@ async def detach_source(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     agent_state = await server.agent_manager.detach_source_async(agent_id=agent_id, source_id=source_id, actor=actor)
     files = await server.source_manager.list_files(source_id, actor)
-    filenames = [f.file_name for f in files]
-    await server.remove_documents_from_context_window(agent_state=agent_state, filenames=filenames, actor=actor)
+    file_ids = [f.id for f in files]
+    await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
 
     if agent_state.enable_sleeptime:
         try:

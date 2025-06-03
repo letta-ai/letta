@@ -1368,55 +1368,28 @@ class SyncServer(Server):
             )
         await self.agent_manager.delete_agent_async(agent_id=sleeptime_agent_state.id, actor=actor)
 
-    async def _upsert_document_block(self, agent_id: str, text: str, filename: str, actor: User) -> None:
+    async def _upsert_file_to_agent(self, agent_id: str, text: str, file_id: str, actor: User) -> None:
         """
-        Internal method to create or update a document block for an agent.
+        Internal method to create or update a file <-> agent association
         """
         truncated_text = text[:CORE_MEMORY_SOURCE_CHAR_LIMIT]
+        await self.file_agent_manager.attach_file(agent_id=agent_id, file_id=file_id, actor=actor, visible_content=truncated_text)
 
-        try:
-            block = await self.agent_manager.get_block_with_label_async(
-                agent_id=agent_id,
-                block_label=filename,
-                actor=actor,
-            )
-            await self.block_manager.update_block_async(
-                block_id=block.id,
-                block_update=BlockUpdate(value=truncated_text),
-                actor=actor,
-            )
-        except NoResultFound:
-            block = await self.block_manager.create_or_update_block_async(
-                block=Block(
-                    value=truncated_text,
-                    label=filename,
-                    description=f"Contains the parsed contents of external file {filename}",
-                    limit=CORE_MEMORY_SOURCE_CHAR_LIMIT,
-                ),
-                actor=actor,
-            )
-            await self.agent_manager.attach_block_async(
-                agent_id=agent_id,
-                block_id=block.id,
-                actor=actor,
-            )
-
-    async def _remove_document_block(self, agent_id: str, filename: str, actor: User) -> None:
+    async def _remove_file_from_agent(self, agent_id: str, file_id: str, actor: User) -> None:
         """
         Internal method to remove a document block for an agent.
         """
         try:
-            block = await self.agent_manager.get_block_with_label_async(
+            await self.file_agent_manager.detach_file(
                 agent_id=agent_id,
-                block_label=filename,
+                file_id=file_id,
                 actor=actor,
             )
-            await self.block_manager.delete_block_async(block_id=block.id, actor=actor)
         except NoResultFound:
-            logger.info(f"Document block with label {filename} already removed, skipping...")
+            logger.info(f"File {file_id} already removed from agent {agent_id}, skipping...")
 
-    async def insert_document_into_context_windows(
-        self, source_id: str, text: str, filename: str, actor: User, agent_states: Optional[List[AgentState]] = None
+    async def insert_file_into_context_windows(
+        self, source_id: str, text: str, file_id: str, actor: User, agent_states: Optional[List[AgentState]] = None
     ) -> List[AgentState]:
         """
         Insert the uploaded document into the context window of all agents
@@ -1431,51 +1404,48 @@ class SyncServer(Server):
         logger.info(f"Inserting document into context window for source: {source_id}")
         logger.info(f"Attached agents: {[a.id for a in agent_states]}")
 
-        await asyncio.gather(*(self._upsert_document_block(agent_state.id, text, filename, actor) for agent_state in agent_states))
+        await asyncio.gather(*(self._upsert_file_to_agent(agent_state.id, text, file_id, actor) for agent_state in agent_states))
 
         return agent_states
 
-    async def insert_documents_into_context_window(
-        self, agent_state: AgentState, texts: List[str], filenames: List[str], actor: User
-    ) -> None:
+    async def insert_files_into_context_window(self, agent_state: AgentState, texts: List[str], file_ids: List[str], actor: User) -> None:
         """
         Insert the uploaded documents into the context window of an agent
         attached to the given source.
         """
         logger.info(f"Inserting documents into context window for agent_state: {agent_state.id}")
 
-        if len(texts) != len(filenames):
-            raise ValueError(f"Mismatch between number of texts ({len(texts)}) and filenames ({len(filenames)})")
+        if len(texts) != len(file_ids):
+            raise ValueError(f"Mismatch between number of texts ({len(texts)}) and file ids ({len(file_ids)})")
 
-        await asyncio.gather(
-            *(self._upsert_document_block(agent_state.id, text, filename, actor) for text, filename in zip(texts, filenames))
-        )
+        await asyncio.gather(*(self._upsert_file_to_agent(agent_state.id, text, file_id, actor) for text, file_id in zip(texts, file_ids)))
 
-    async def remove_document_from_context_windows(self, source_id: str, filename: str, actor: User) -> None:
+    async def remove_file_from_context_windows(self, source_id: str, file_id: str, actor: User) -> None:
         """
         Remove the document from the context window of all agents
         attached to the given source.
         """
+        # TODO: We probably do NOT need to get the entire agent state, we can just get the IDs
         agent_states = await self.source_manager.list_attached_agents(source_id=source_id, actor=actor)
 
         # Return early
         if not agent_states:
             return
 
-        logger.info(f"Removing document from context window for source: {source_id}")
+        logger.info(f"Removing file from context window for source: {source_id}")
         logger.info(f"Attached agents: {[a.id for a in agent_states]}")
 
-        await asyncio.gather(*(self._remove_document_block(agent_state.id, filename, actor) for agent_state in agent_states))
+        await asyncio.gather(*(self._remove_file_from_agent(agent_state.id, file_id, actor) for agent_state in agent_states))
 
-    async def remove_documents_from_context_window(self, agent_state: AgentState, filenames: List[str], actor: User) -> None:
+    async def remove_files_from_context_window(self, agent_state: AgentState, file_ids: List[str], actor: User) -> None:
         """
         Remove multiple documents from the context window of an agent
         attached to the given source.
         """
-        logger.info(f"Removing documents from context window for agent_state: {agent_state.id}")
-        logger.info(f"Documents to remove: {filenames}")
+        logger.info(f"Removing files from context window for agent_state: {agent_state.id}")
+        logger.info(f"Files to remove: {file_ids}")
 
-        await asyncio.gather(*(self._remove_document_block(agent_state.id, filename, actor) for filename in filenames))
+        await asyncio.gather(*(self._remove_file_from_agent(agent_state.id, file_id, actor) for file_id in file_ids))
 
     async def create_document_sleeptime_agent_async(
         self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False

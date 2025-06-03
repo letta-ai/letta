@@ -86,10 +86,10 @@ class FileProcessor:
 
             logger.info(f"Successfully processed {filename}: {len(all_passages)} passages")
 
-            await server.insert_document_into_context_windows(
+            await server.insert_file_into_context_windows(
                 source_id=source_id,
                 text="".join([ocr_response.pages[i].markdown for i in range(min(3, len(ocr_response.pages)))]),
-                filename=file.filename,
+                file_id=file_metadata.id,
                 actor=self.actor,
                 agent_states=agent_states,
             )
