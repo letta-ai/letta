@@ -59,7 +59,6 @@ export function PanelBar(props: PanelBarProps) {
           type="button"
           preIcon={<ChevronLeftIcon />}
           onClick={onReturn}
-          variant="inline-panel"
         ></Button>
       )}
       <div className="w-full flex-row flex items-center gap-2">

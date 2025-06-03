@@ -8,7 +8,7 @@ import { MaybeTooltip } from '../Tooltip/Tooltip';
 import type { Placement } from '@floating-ui/react';
 
 const buttonVariants = cva(
-  'items-center cursor-pointer inline-flex disable-app-header whitespace-nowrap transition-width duration-200 ease-in-out',
+  'items-center cursor-pointer border inline-flex disable-app-header whitespace-nowrap transition-width duration-200 ease-in-out',
   {
     variants: {
       animate: {
@@ -31,11 +31,7 @@ const buttonVariants = cva(
       square: {
         true: '',
       },
-      variant: {
-        'inline-panel':
-          'h-full px-3 text-base first:border-l-0 border-l last:border-r-0 border-r',
-        default: ' border',
-      },
+
       color: {
         tertiary:
           'bg-transparent border-none hover:bg-secondary-hover text-tertiary-content',
@@ -84,10 +80,6 @@ const buttonVariants = cva(
         className: 'bg-secondary-active',
       },
       {
-        variant: 'inline-panel',
-        className: 'h-full',
-      },
-      {
         hideLabel: true,
         size: 'small',
         className:
@@ -126,7 +118,6 @@ const buttonVariants = cva(
     ],
     defaultVariants: {
       color: 'primary',
-      variant: 'default',
       size: 'default',
     },
   },
@@ -165,7 +156,6 @@ export const Button = forwardRef<
     color,
     tooltipPlacement,
     busy,
-    variant,
     active,
     fullWidth,
     animate,
@@ -222,7 +212,6 @@ export const Button = forwardRef<
             align,
             square,
             size,
-            variant,
             fullWidth,
             disabled: rest.disabled,
             fullHeight,
