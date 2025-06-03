@@ -8,6 +8,7 @@ from letta.helpers import ToolRulesSolver
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.environment_variables import AgentEnvironmentVariable
+from letta.schemas.file import FileStatus
 from letta.schemas.group import Group
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.llm_config import LLMConfig
@@ -311,7 +312,9 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{{ block.description }}\n"
             "</description>\n"
             "<metadata>"
-            "{% if block.read_only %}\n- read_only=true{% endif %}\n- chars_current={{ block.value|length }}\n- chars_limit={{ block.limit }}\n"
+            "{% if block.read_only %}\n- read_only=true{% endif %}\n"
+            "- chars_current={{ block.value|length }}\n"
+            "- chars_limit={{ block.limit }}\n"
             "</metadata>\n"
             "<value>\n"
             f"{CORE_MEMORY_LINE_NUMBER_WARNING}\n"
@@ -323,14 +326,17 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% if not loop.last %}\n{% endif %}"
             "{% endfor %}"
             "\n</memory_blocks>"
-            "<files>\nThe following memory blocks are currently accessible in your core memory unit:\n\n"
+            "<files>\nThe following memory files are currently accessible:\n\n"
             "{% for block in file_blocks %}"
+            f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\">\n"
             "<{{ block.label }}>\n"
             "<description>\n"
             "{{ block.description }}\n"
             "</description>\n"
             "<metadata>"
-            "{% if block.read_only %}\n- read_only=true{% endif %}\n- chars_current={{ block.value|length }}\n- chars_limit={{ block.limit }}\n"
+            "{% if block.read_only %}\n- read_only=true{% endif %}\n"
+            "- chars_current={{ block.value|length }}\n"
+            "- chars_limit={{ block.limit }}\n"
             "</metadata>\n"
             "<value>\n"
             f"{CORE_MEMORY_LINE_NUMBER_WARNING}\n"
@@ -339,11 +345,12 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% endfor %}"
             "</value>\n"
             "</{{ block.label }}>\n"
+            "</file>\n"
             "{% if not loop.last %}\n{% endif %}"
             "{% endfor %}"
-            "\n</memory_blocks>"
-            "</files>"
+            "\n</files>"
         )
+
     # Default setup (MemGPT), no line numbers
     else:
         return (
@@ -354,7 +361,9 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{{ block.description }}\n"
             "</description>\n"
             "<metadata>"
-            "{% if block.read_only %}\n- read_only=true{% endif %}\n- chars_current={{ block.value|length }}\n- chars_limit={{ block.limit }}\n"
+            "{% if block.read_only %}\n- read_only=true{% endif %}\n"
+            "- chars_current={{ block.value|length }}\n"
+            "- chars_limit={{ block.limit }}\n"
             "</metadata>\n"
             "<value>\n"
             "{{ block.value }}\n"
@@ -364,18 +373,22 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% endfor %}"
             "\n</memory_blocks>"
             "<files>\nThe following memory files are currently accessible:\n\n"
-            "{% for block in file_blocks%}"
+            "{% for block in file_blocks %}"
+            f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\">\n"
             "<{{ block.label }}>\n"
             "<description>\n"
             "{{ block.description }}\n"
             "</description>\n"
             "<metadata>"
-            "{% if block.read_only %}\n- read_only=true{% endif %}\n- chars_current={{ block.value|length }}\n- chars_limit={{ block.limit }}\n"
+            "{% if block.read_only %}\n- read_only=true{% endif %}\n"
+            "- chars_current={{ block.value|length }}\n"
+            "- chars_limit={{ block.limit }}\n"
             "</metadata>\n"
             "<value>\n"
             "{{ block.value }}\n"
             "</value>\n"
             "</{{ block.label }}>\n"
+            "</file>\n"
             "{% if not loop.last %}\n{% endif %}"
             "{% endfor %}"
             "\n</files>"

@@ -2622,7 +2622,7 @@ class AgentManager:
             return results
 
     async def get_context_window(self, agent_id: str, actor: PydanticUser) -> ContextWindowOverview:
-        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        agent_state = await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
         calculator = ContextWindowCalculator()
 
         if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" or agent_state.llm_config.model_endpoint_type == "anthropic":

@@ -696,7 +696,7 @@ async def test_get_context_window_basic(server: SyncServer, comprehensive_test_a
     comprehensive_agent_checks(created_agent, create_agent_request, actor=default_user)
 
     # Attach a file
-    await server.file_agent_manager.attach_file(
+    assoc = await server.file_agent_manager.attach_file(
         agent_id=created_agent.id,
         file_id=default_file.id,
         actor=default_user,
@@ -705,7 +705,7 @@ async def test_get_context_window_basic(server: SyncServer, comprehensive_test_a
 
     # Get context window and check for basic appearances
     context_window_overview = await server.agent_manager.get_context_window(agent_id=created_agent.id, actor=default_user)
-    validate_context_window_overview(context_window_overview)
+    validate_context_window_overview(context_window_overview, assoc)
 
     # Test deleting the agent
     server.agent_manager.delete_agent(created_agent.id, default_user)
@@ -5851,7 +5851,9 @@ async def test_attach_is_idempotent(server, default_user, sarah_agent, default_f
 
     sarah_agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     file_blocks = sarah_agent.memory.file_blocks
-    assert len(file_blocks) == 0  # Is not open
+    assert len(file_blocks) == 1
+    assert file_blocks[0].value == ""  # not open
+    assert file_blocks[0].label == default_file.file_name
 
 
 @pytest.mark.asyncio
@@ -5915,10 +5917,7 @@ async def test_list_files_and_agents(
 
     sarah_agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     file_blocks = sarah_agent.memory.file_blocks
-    assert len(file_blocks) == 1
-    assert file_blocks[0].value == ""
-    assert file_blocks[0].label == default_file.file_name
-
+    assert len(file_blocks) == 2
     charles_agent = await server.agent_manager.get_agent_by_id_async(agent_id=charles_agent.id, actor=default_user)
     file_blocks = charles_agent.memory.file_blocks
     assert len(file_blocks) == 1
