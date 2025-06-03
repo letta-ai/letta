@@ -84,6 +84,7 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
                 {dropText}
               </Typography>
               <Button
+                type="button"
                 onClick={triggerChooseFile}
                 color="secondary"
                 label={chooseFileText}
@@ -109,12 +110,14 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
             <Button
               onClick={triggerChooseFile}
               color="secondary"
+              type="button"
               label={changeFileText}
             ></Button>
             <Button
               onClick={() => {
                 onChange(undefined);
               }}
+              type="button"
               color="destructive"
               label={removeFileText}
             ></Button>
