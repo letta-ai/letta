@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "letta"
-version = "0.7.14"
+version = "0.7.30"
 packages = [
     {include = "letta"},
 ]
@@ -96,6 +96,7 @@ async-lru = "^2.0.5"
 mistralai = "^1.8.1"
 uvloop = {version = "^0.21.0", optional = true}
 granian = {version = "^2.3.2", extras = ["uvloop", "reload"], optional = true}
+aiosqlite = "^0.21.0"
 
 
 [tool.poetry.extras]
@@ -111,6 +112,7 @@ bedrock = ["boto3"]
 google = ["google-genai"]
 desktop = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2", "pyright", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust"]
 all = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2", "pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "pyright", "pytest-order", "autoflake", "isort", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust", "uvloop", "granian"]
+
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"
