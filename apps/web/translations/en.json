@@ -1543,7 +1543,7 @@
         "actions": "Actions"
       },
       "actions": {
-        "exploreMessage": "Inpsect message",
+        "exploreMessage": "Inspect message",
         "viewAgent": "View in ADE",
         "copyAgentId": "Copy agent ID"
       }
