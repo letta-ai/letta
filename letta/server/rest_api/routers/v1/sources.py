@@ -150,10 +150,10 @@ async def delete_source(
     source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     agent_states = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
     files = await server.source_manager.list_files(source_id, actor)
-    filenames = [f.file_name for f in files]
+    file_ids = [f.id for f in files]
 
     for agent_state in agent_states:
-        await server.remove_documents_from_context_window(agent_state=agent_state, filenames=filenames, actor=actor)
+        await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
 
         if agent_state.enable_sleeptime:
             try:
@@ -212,11 +212,6 @@ async def upload_file_to_source(
     # sanitize filename
     file.filename = sanitize_filename(file.filename)
 
-    try:
-        text = content.decode("utf-8")
-    except Exception:
-        text = "[Currently parsing...]"
-
     # create job
     job = Job(
         user_id=actor.id,
@@ -225,8 +220,8 @@ async def upload_file_to_source(
     )
     job = await server.job_manager.create_job_async(job, actor=actor)
 
-    # Add blocks (sometimes without content, for UX purposes)
-    agent_states = await server.insert_document_into_context_windows(source_id=source_id, text=text, filename=file.filename, actor=actor)
+    # TODO: Do we need to pull in the full agent_states? Can probably simplify here right?
+    agent_states = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
 
     # NEW: Cloud based file processing
     if settings.mistral_api_key and model_settings.openai_api_key:
@@ -301,8 +296,7 @@ async def delete_file_from_source(
 
     deleted_file = await server.source_manager.delete_file(file_id=file_id, actor=actor)
 
-    # Remove blocks
-    await server.remove_document_from_context_windows(source_id=source_id, filename=deleted_file.file_name, actor=actor)
+    await server.remove_file_from_context_windows(source_id=source_id, file_id=deleted_file.id, actor=actor)
 
     asyncio.create_task(sleeptime_document_ingest_async(server, source_id, actor, clear_history=True))
     if deleted_file is None:

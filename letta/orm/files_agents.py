@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from letta.orm.mixins import OrganizationMixin
@@ -22,7 +22,10 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
     """
 
     __tablename__ = "files_agents"
-    __table_args__ = (Index("ix_files_agents_file_id_agent_id", "file_id", "agent_id"),)
+    __table_args__ = (
+        Index("ix_files_agents_file_id_agent_id", "file_id", "agent_id"),
+        UniqueConstraint("file_id", "agent_id", name="uq_files_agents_file_agent"),
+    )
     __pydantic_model__ = PydanticFileAgent
 
     # TODO: We want to migrate all the ORM models to do this, so we will need to move this to the SqlalchemyBase
