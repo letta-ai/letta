@@ -126,6 +126,7 @@ function CollapseController(props: CollapseControllerProps) {
 
 interface CoreMemoryEditorHeaderProps {
   memoryBlock: Block;
+  disabled?: boolean;
   sharedAgents: SharedAgent[];
   isLocked: boolean;
   editedValue: string;
@@ -139,6 +140,7 @@ function CoreMemoryEditorHeader(props: CoreMemoryEditorHeaderProps) {
     memoryBlock,
     editedValue,
     isLocked,
+    disabled,
     isCollapsed,
     onCollapseChange,
     onLockChange,
@@ -159,6 +161,7 @@ function CoreMemoryEditorHeader(props: CoreMemoryEditorHeaderProps) {
             onClick={() => {
               onLockChange(!isLocked);
             }}
+            disabled={disabled}
             label={
               isLocked
                 ? t('CoreMemoryEditorHeader.isLocked.locked')
@@ -424,6 +427,7 @@ export function CoreMemoryEditor(props: CoreMemoryEditorProps) {
         isCollapsed={isCollapsed}
         sharedAgents={sharedAgents}
         memoryBlock={memoryBlock}
+        disabled={disabled}
         editedValue={editedValue}
         isLocked={isLocked}
       />

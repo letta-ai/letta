@@ -24,18 +24,27 @@ const infoChipVariants = cva(
 interface InfoChipProps extends VariantProps<typeof infoChipVariants> {
   label: string;
   icon: React.ReactNode;
+  disabled?: boolean;
   onClick?: () => void;
   value?: string;
 }
 
 export function InfoChip(props: InfoChipProps) {
-  const { label, onClick, icon, variant, value } = props;
+  const { label, disabled, onClick, icon, variant, value } = props;
   return (
     <Tooltip asChild content={label} placement="top">
-      <div onClick={onClick} className={cn(infoChipVariants({ variant }))}>
+      <button
+        disabled={disabled}
+        onClick={() => {
+          if (!disabled && onClick) {
+            onClick();
+          }
+        }}
+        className={cn(infoChipVariants({ variant }))}
+      >
         <Slot className="max-w-3 min-w-3">{icon}</Slot>
         {value && <Typography variant="body4">{value}</Typography>}
-      </div>
+      </button>
     </Tooltip>
   );
 }
