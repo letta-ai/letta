@@ -6,6 +6,7 @@ interface ADEItem {
   content: React.ReactNode;
   title: string;
   id: string;
+  badge?: React.ReactNode;
 }
 
 interface ADEGroupProps {
@@ -37,6 +38,7 @@ export function ADEGroup(props: ADEGroupProps) {
               paddingX="small"
               paddingY="xsmall"
               color="background-grey"
+              align="center"
               key={item.id}
               onClick={() => {
                 setActiveTab(index);
@@ -45,12 +47,16 @@ export function ADEGroup(props: ADEGroupProps) {
               <Typography
                 uppercase
                 bold
+                fullWidth
+                noWrap
+                overflow="ellipsis"
                 className="tracking-[0.04em]"
                 color={activeTab === index ? 'default' : 'muted'}
                 variant="body4"
               >
                 {item.title}
               </Typography>
+              {item.badge}
             </HStack>
           );
         })}

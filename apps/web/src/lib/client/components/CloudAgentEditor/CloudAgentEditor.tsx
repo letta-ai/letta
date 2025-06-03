@@ -1,19 +1,14 @@
 'use client';
 import { ADEPage } from '$web/client/components/ADEPage/ADEPage';
 import {
-  Alert,
   Frame,
   HiddenOnMobile,
   VisibleOnMobile,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import {
-  ADELayout,
-  useCurrentAgentMetaData,
-} from '@letta-cloud/ui-ade-components';
+import { ADELayout } from '@letta-cloud/ui-ade-components';
 import React, { useState } from 'react';
 import { useCurrentProject } from '../../hooks/useCurrentProject/useCurrentProject';
-import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser } from '$web/client/hooks';
 
 interface MobileNavigationContextData {
@@ -49,10 +44,6 @@ function MobileNavigationProvider(props: MobileNavigationProviderProps) {
 
 export function CloudAgentEditor() {
   const { id: projectId, slug } = useCurrentProject();
-  const { isTemplate, isLocal } = useCurrentAgentMetaData();
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage',
-  );
 
   const user = useCurrentUser();
 
@@ -60,9 +51,6 @@ export function CloudAgentEditor() {
     <ADEPage>
       <HiddenOnMobile>
         <VStack overflow="hidden" position="relative" fullWidth fullHeight>
-          {!isTemplate && !isLocal && (
-            <Alert variant="warning" title={t('liveAgentWarning')} />
-          )}
           <Frame overflow="hidden" position="relative" fullWidth fullHeight>
             <HiddenOnMobile checkWithJs>
               <ADELayout user={user} projectId={projectId} projectSlug={slug} />

@@ -1,6 +1,7 @@
 'use client';
 import {
   AppsIcon,
+  Badge,
   Button,
   CloseIcon,
   CodeIcon,
@@ -20,9 +21,11 @@ import {
   OnboardingSteps,
   SettingsApplicationsIcon,
   ToolsIcon,
+  Tooltip,
   Typography,
   VisibleOnMobile,
   VStack,
+  WarningIcon,
 } from '@letta-cloud/ui-component-library';
 import {
   AgentSettingsOnboarding,
@@ -30,7 +33,7 @@ import {
 } from '../panels/AgentSettingsPanel/AgentSettingsPanel';
 import { ADEGroup } from '../shared/ADEGroup/ADEGroup';
 import { useTranslations } from '@letta-cloud/translations';
-import { useAgentBaseTypeName } from '../hooks';
+import { useAgentBaseTypeName, useCurrentAgentMetaData } from '../hooks';
 import {
   ToolsPanel,
   useToolsPanelTitle,
@@ -97,6 +100,8 @@ function DesktopLayout() {
     archivalMemoriesTitle,
   } = useADETitleTranslations();
 
+  const { isTemplate, isLocal } = useCurrentAgentMetaData();
+
   return (
     <HStack border color="background-grey" fullWidth fullHeight>
       <PanelGroup className="h-full" direction="horizontal" autoSaveId="ade">
@@ -153,6 +158,17 @@ function DesktopLayout() {
             <ADEGroup
               items={[
                 {
+                  badge: !isTemplate && !isLocal && (
+                    <Tooltip content={t('liveAgentWarning.tooltip')}>
+                      <Badge
+                        border
+                        preIcon={<WarningIcon />}
+                        size="small"
+                        variant="warning"
+                        content={t('liveAgentWarning.label')}
+                      />
+                    </Tooltip>
+                  ),
                   title: t('agentSimulator'),
                   id: 'agent-simulator',
                   content: <AgentSimulator />,

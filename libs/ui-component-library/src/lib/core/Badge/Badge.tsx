@@ -11,7 +11,8 @@ const badgeVariants = cva(
     variants: {
       size: {
         default: 'text-xs  h-[18px] max-h-[16px]',
-        small: 'text-[0.625rem]  h-[16px] max-h-[16px] font-semibold',
+        small:
+          'text-[0.625rem] gap-1 rounded-[2px] h-[16px] max-h-[16px] font-semibold px-1',
         large: 'text-sm h-[24px] max-h-[24px]',
       },
       border: {
@@ -19,7 +20,8 @@ const badgeVariants = cva(
       },
       variant: {
         default: 'bg-background-grey2 text-background-grey2-content',
-        warning: 'bg-background-warning text-background-warning-content',
+        warning:
+          'bg-background-warning text-background-warning-content border-color-[#ffedc3]',
         destructive:
           'bg-background-destructive text-background-destructive-content',
         success: 'bg-background-success text-background-success-content',
@@ -35,6 +37,19 @@ const badgeVariants = cva(
     },
   },
 );
+
+const iconVariants = cva('', {
+  variants: {
+    size: {
+      default: 'w-3 h-3',
+      small: 'max-w-3 max-h-3',
+      large: 'w-4 h-4',
+    },
+  },
+  defaultVariants: {
+    size: 'default',
+  },
+});
 
 export interface BadgeProps extends VariantProps<typeof badgeVariants> {
   content: React.ReactNode;
@@ -57,7 +72,7 @@ export function Badge(props: BadgeProps) {
       )}
       gap="small"
     >
-      {preIcon && <Slot className="w-3 h-3">{preIcon}</Slot>}
+      {preIcon && <Slot className={iconVariants({ size })}>{preIcon}</Slot>}
       <span className="whitespace-nowrap bold">{content}</span>
     </HStack>
   );

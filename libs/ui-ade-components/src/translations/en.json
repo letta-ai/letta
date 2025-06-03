@@ -525,6 +525,10 @@
     "contextWindowSimulator": "Context simulator",
     "settings": "{baseName} Settings",
     "advancedSettings": "Advanced settings",
+    "liveAgentWarning": {
+      "label": "Live agent",
+      "tooltip": "You are editing a live agent, be aware that editing this agent may impact live deployments"
+    },
     "ADEOnboarding": {
       "welcome": "Your Agent Development Environment (ADE)",
       "skip": "Pause onboarding",
