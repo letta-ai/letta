@@ -8,7 +8,7 @@ import {
   isBrandKey,
 } from '@letta-cloud/ui-component-library';
 import { useModelsServiceListModels } from '@letta-cloud/sdk-core';
-import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useTranslations } from '@letta-cloud/translations';
 
 function useLocalModelsOptions(enabled: boolean) {
@@ -64,7 +64,6 @@ function useHostedOptions(enabled: boolean) {
     enabled,
   });
 
-  const { data: isProPlan } = useFeatureFlag('PRO_PLAN');
   const t = useTranslations('ADE/AgentSettingsPanel/useHostedOptions');
 
   const options = useMemo(() => {
@@ -99,7 +98,7 @@ function useHostedOptions(enabled: boolean) {
       const brand = model?.brand || 'ollama';
 
       const badge = (() => {
-        if (!isProPlan) {
+        if (model.type === 'byok') {
           return null;
         }
 
@@ -152,7 +151,7 @@ function useHostedOptions(enabled: boolean) {
     return options.filter(
       (option) => option.options && option.options.length > 0,
     );
-  }, [modelsList, t, isProPlan]);
+  }, [modelsList, t]);
 
   const getLLMConfigFromHandle = useCallback(
     (handle: string) => {

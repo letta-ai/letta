@@ -147,22 +147,32 @@ function useSelectComponents(selectProps: BaseSelectProps) {
         </components.MultiValueContainer>
       ),
       // @ts-expect-error yest
-      SingleValue: ({ children, ...props }) => (
-        // @ts-expect-error yest
-        <components.SingleValue {...props}>
-          <HStack align="center" gap="medium">
-            <HStack align="center" gap="small" fullWidth>
-              {props.data.icon && (
-                <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
-              )}
-              <Typography align="left" noWrap overflow="ellipsis">
-                {children}
-              </Typography>
+      SingleValue: ({ children, ...props }) => {
+        const badge = props.data.badge || null;
+
+        return (
+          // @ts-expect-error yest
+          <components.SingleValue {...props}>
+            <HStack align="center" fullWidth overflow="hidden" gap="medium">
+              <HStack
+                align="center"
+                gap="small"
+                flex
+                collapseWidth
+                overflow="hidden"
+              >
+                {props.data.icon && (
+                  <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
+                )}
+                <Typography fullWidth align="left" noWrap overflow="ellipsis">
+                  {children}
+                </Typography>
+              </HStack>
+              {badge}
             </HStack>
-            {props.data.badge}
-          </HStack>
-        </components.SingleValue>
-      ),
+          </components.SingleValue>
+        );
+      },
       // @ts-expect-error yest
       GroupHeading: ({ children, ...props }) => (
         // @ts-expect-error yest
@@ -202,15 +212,16 @@ function useSelectComponents(selectProps: BaseSelectProps) {
           // @ts-expect-error yest
           <components.Option {...props}>
             <HStack
+              fullWidth
               align="center"
               data-testid={`select-box-option-${props.data.value}`}
               data-testid_alt={`select-box-option-container-${props.data.label}`}
             >
-              <HStack align="center" fullWidth>
+              <HStack align="center" collapseWidth flex>
                 {props.data.icon && !hideIconsOnOptions && (
                   <Slot className="max-h-3  w-3">{props.data.icon}</Slot>
                 )}
-                <Typography align="left" noWrap overflow="ellipsis">
+                <Typography align="left" noWrap fullWidth overflow="ellipsis">
                   {children}
                 </Typography>
               </HStack>
@@ -272,7 +283,8 @@ function getClassNames(props: GetClassNameArgs = {}) {
       cn(
         'mt-1 bg-panel-input-background text-panel-input-background-content border',
       ),
-    option: () => cn('px-3 py-2  hover:bg-background-hover'),
+    option: () =>
+      cn('px-3 py-2  hover:bg-background-hover flex w-full overflow-hidden'),
     noOptionsMessage: () => cn('py-3 px-3'),
     valueContainer: () => cn('flex items-center gap-1 text-sm'),
     groupHeading: () =>
@@ -303,7 +315,7 @@ function useStyles(args: UseStylesArgs) {
     noOptionsMessage: () => ({ fontSize: 'var(--font-size-sm)' }),
     menu: (base: any) => ({
       ...base,
-      ...(menuWidth ? { maxWidth: menuWidth, width: '100vw' } : {}),
+      ...(menuWidth ? { minWidth: menuWidth } : {}),
     }),
   };
 }
