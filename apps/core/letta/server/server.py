@@ -1593,7 +1593,7 @@ class SyncServer(Server):
             actor=actor,
         )
 
-        async def get_provider_models(provider):
+        async def get_provider_models(provider: Provider) -> list[LLMConfig]:
             try:
                 return await provider.list_llm_models_async()
             except Exception as e:
