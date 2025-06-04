@@ -1,4 +1,5 @@
 import os
+import re
 import threading
 import time
 
@@ -59,7 +60,10 @@ def agent_state(client: LettaSDKClient):
     "file_path, expected_value, expected_label_regex",
     [
         ("tests/data/test.txt", "test", r"test_[a-z0-9]+\.txt"),
-        # ("tests/data/memgpt_paper.pdf", "MemGPT", r"memgpt_paper_[a-z0-9]+\.pdf"),
+        ("tests/data/memgpt_paper.pdf", "MemGPT", r"memgpt_paper_[a-z0-9]+\.pdf"),
+        ("tests/data/toy_chat_fine_tuning.jsonl", '{"messages"', r"toy_chat_fine_tuning_[a-z0-9]+\.jsonl"),
+        ("tests/data/test.md", "h2 Heading", r"test_[a-z0-9]+\.md"),
+        ("tests/data/test.json", "glossary", r"test_[a-z0-9]+\.json"),
     ],
 )
 def test_file_upload_creates_source_blocks_correctly(
@@ -99,20 +103,22 @@ def test_file_upload_creates_source_blocks_correctly(
     assert len(files) == 1
     assert files[0].source_id == source.id
 
-    # # Check that blocks were created
-    # blocks = client.agents.retrieve(agent_id=agent_state.id)
-    # assert len(blocks) == 2
-    # assert any(expected_value in b.value for b in blocks)
-    # assert any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
-    #
-    # # Remove file from source
-    # client.sources.files.delete(source_id=source.id, file_id=files[0].id)
-    #
-    # # Confirm blocks were removed
-    # blocks = client.agents.blocks.list(agent_id=agent_state.id)
-    # assert len(blocks) == 1
-    # assert not any(expected_value in b.value for b in blocks)
-    # assert not any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
+    # Check that blocks were created
+    agent_state = client.agents.retrieve(agent_id=agent_state.id)
+    blocks = agent_state.memory.file_blocks
+    assert len(blocks) == 1
+    assert any(expected_value in b.value for b in blocks)
+    assert any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
+
+    # Remove file from source
+    client.sources.files.delete(source_id=source.id, file_id=files[0].id)
+
+    # Confirm blocks were removed
+    agent_state = client.agents.retrieve(agent_id=agent_state.id)
+    blocks = agent_state.memory.file_blocks
+    assert len(blocks) == 0
+    assert not any(expected_value in b.value for b in blocks)
+    assert not any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
 
 
 def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKClient, agent_state: AgentState):
@@ -149,20 +155,22 @@ def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKC
     # Attach after uploading the file
     client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
 
-    # # Get the agent state, check blocks exist
-    # blocks = client.agents.blocks.list(agent_id=agent_state.id)
-    # assert len(blocks) == 2
-    # assert "test" in [b.value for b in blocks]
-    # assert any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
+    # Get the agent state, check blocks exist
+    agent_state = client.agents.retrieve(agent_id=agent_state.id)
+    blocks = agent_state.memory.file_blocks
+    assert len(blocks) == 1
+    assert "test" in [b.value for b in blocks]
+    assert any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
     # Detach the source
     client.agents.sources.detach(source_id=source.id, agent_id=agent_state.id)
 
-    # # Get the agent state, check blocks do NOT exist
-    # blocks = client.agents.blocks.list(agent_id=agent_state.id)
-    # assert len(blocks) == 1
-    # assert "test" not in [b.value for b in blocks]
-    # assert not any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
+    # Get the agent state, check blocks do NOT exist
+    agent_state = client.agents.retrieve(agent_id=agent_state.id)
+    blocks = agent_state.memory.file_blocks
+    assert len(blocks) == 0
+    assert "test" not in [b.value for b in blocks]
+    assert not any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
 
 def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, agent_state: AgentState):
@@ -195,16 +203,18 @@ def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, a
         print("Waiting for jobs to complete...", job.status)
 
     # Get the agent state, check blocks exist
-    # blocks = client.agents.blocks.list(agent_id=agent_state.id)
-    # assert len(blocks) == 2
-    # assert "test" in [b.value for b in blocks]
-    # assert any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
+    agent_state = client.agents.retrieve(agent_id=agent_state.id)
+    blocks = agent_state.memory.file_blocks
+    assert len(blocks) == 1
+    assert "test" in [b.value for b in blocks]
+    assert any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
     # Remove file from source
     client.sources.delete(source_id=source.id)
 
     # Get the agent state, check blocks do NOT exist
-    # blocks = client.agents.blocks.list(agent_id=agent_state.id)
-    # assert len(blocks) == 1
-    # assert "test" not in [b.value for b in blocks]
-    # assert not any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
+    agent_state = client.agents.retrieve(agent_id=agent_state.id)
+    blocks = agent_state.memory.file_blocks
+    assert len(blocks) == 0
+    assert "test" not in [b.value for b in blocks]
+    assert not any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)

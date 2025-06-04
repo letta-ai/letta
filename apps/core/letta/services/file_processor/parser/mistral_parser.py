@@ -9,6 +9,16 @@ from letta.settings import settings
 logger = get_logger(__name__)
 
 
+SIMPLE_TEXT_MIME_TYPES = {
+    "text/plain",
+    "text/markdown",
+    "text/x-markdown",
+    "application/json",
+    "application/jsonl",
+    "application/x-jsonlines",
+}
+
+
 class MistralFileParser(FileParser):
     """Mistral-based OCR extraction"""
 
@@ -23,7 +33,7 @@ class MistralFileParser(FileParser):
 
             # TODO: Kind of hacky...we try to exit early here?
             # TODO: Create our internal file parser representation we return instead of OCRResponse
-            if mime_type == "text/plain":
+            if mime_type in SIMPLE_TEXT_MIME_TYPES or mime_type.startswith("text/"):
                 text = content.decode("utf-8", errors="replace")
                 return OCRResponse(
                     model=self.model,

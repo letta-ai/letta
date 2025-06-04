@@ -27,6 +27,11 @@ from letta.utils import safe_create_task, sanitize_filename
 
 logger = get_logger(__name__)
 
+mimetypes.add_type("text/markdown", ".md")
+mimetypes.add_type("text/markdown", ".markdown")
+mimetypes.add_type("application/jsonl", ".jsonl")
+mimetypes.add_type("application/x-jsonlines", ".jsonl")
+
 
 router = APIRouter(prefix="/sources", tags=["sources"])
 
@@ -174,7 +179,15 @@ async def upload_file_to_source(
     """
     Upload a file to a data source.
     """
-    allowed_media_types = {"application/pdf", "text/plain", "application/json"}
+    allowed_media_types = {
+        "application/pdf",
+        "text/plain",
+        "text/markdown",
+        "text/x-markdown",
+        "application/json",
+        "application/jsonl",
+        "application/x-jsonlines",
+    }
 
     # Normalize incoming Content-Type header (strip charset or any parameters).
     raw_ct = file.content_type or ""
@@ -192,6 +205,9 @@ async def upload_file_to_source(
                 ".pdf": "application/pdf",
                 ".txt": "text/plain",
                 ".json": "application/json",
+                ".md": "text/markdown",
+                ".markdown": "text/markdown",
+                ".jsonl": "application/jsonl",
             }
             media_type = ext_map.get(ext, media_type)
 
