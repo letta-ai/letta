@@ -14,7 +14,7 @@ from letta.agents.helpers import (
     _prepare_in_context_messages_no_persist_async,
     generate_step_id,
 )
-from letta.errors import LLMContextWindowExceededError
+from letta.errors import ContextWindowExceededError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.helpers.tool_execution_helper import enable_strict_mode
@@ -692,7 +692,7 @@ class LettaAgent(BaseAgent):
         llm_config: LLMConfig,
         force: bool,
     ) -> List[Message]:
-        if isinstance(e, LLMContextWindowExceededError):
+        if isinstance(e, ContextWindowExceededError):
             return await self._rebuild_context_window(
                 in_context_messages=in_context_messages, new_letta_messages=new_letta_messages, llm_config=llm_config, force=force
             )

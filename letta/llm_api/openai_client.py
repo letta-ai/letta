@@ -8,11 +8,11 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from letta.constants import LETTA_MODEL_ENDPOINT
 from letta.errors import (
+    ContextWindowExceededError,
     ErrorCode,
     LLMAuthenticationError,
     LLMBadRequestError,
     LLMConnectionError,
-    LLMContextWindowExceededError,
     LLMNotFoundError,
     LLMPermissionDeniedError,
     LLMRateLimitError,
@@ -342,11 +342,9 @@ class OpenAIClient(LLMClientBase):
             # Check message content if finer-grained errors are needed
             # Example: if "context_length_exceeded" in str(e): return LLMContextLengthExceededError(...)
             # TODO: This is a super soft check. Not sure if we can do better, needs more investigation.
-            if "context" in str(e):
-                return LLMContextWindowExceededError(
-                    message=f"Bad request to OpenAI (context length exceeded): {str(e)}",
-                    code=ErrorCode.INVALID_ARGUMENT,  # Or more specific if detectable
-                    details=e.body,
+            if "This model's maximum context length is" in str(e):
+                return ContextWindowExceededError(
+                    message=f"Bad request to OpenAI (context window exceeded): {str(e)}",
                 )
             else:
                 return LLMBadRequestError(
