@@ -43,7 +43,7 @@ env:
   CLICKHOUSE_PASSWORD: ${{ secrets.CLICKHOUSE_PASSWORD }}
   TWILIO_SID: ${{ secrets.TWILIO_SID }}
   TWILIO_SECRET: ${{ secrets.TWILIO_SECRET }}
-  NEXT_PUBLIC_CURRENT_HOST: https://api.letta.com
+  NEXT_PUBLIC_CURRENT_HOST: https://app.letta.com
   CLOUD_API_ENDPOINT: https://api.letta.com
   REDIS_HOST: "10.167.199.148"
   REDIS_PORT: "6379"
