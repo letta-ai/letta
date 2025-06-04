@@ -967,6 +967,7 @@ export class SourcesService {
    * @param data.sourceId
    * @param data.limit Number of files to return
    * @param data.after Pagination cursor to fetch the next set of results
+   * @param data.includeContent Whether to include full file content
    * @param data.userId
    * @returns FileMetadata Successful Response
    * @throws ApiError
@@ -984,6 +985,7 @@ export class SourcesService {
       query: {
         limit: data.limit,
         after: data.after,
+        include_content: data.includeContent,
       },
       errors: {
         422: 'Validation Error',

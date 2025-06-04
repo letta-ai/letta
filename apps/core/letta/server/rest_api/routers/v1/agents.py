@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
-from letta.constants import CORE_MEMORY_SOURCE_CHAR_LIMIT, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
@@ -311,20 +311,18 @@ async def attach_source(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     agent_state = await server.agent_manager.attach_source_async(agent_id=agent_id, source_id=source_id, actor=actor)
 
-    files = await server.source_manager.list_files(source_id, actor)
+    files = await server.source_manager.list_files(source_id, actor, include_content=True)
     texts = []
     file_ids = []
+    file_names = []
     for f in files:
-        passages = await server.passage_manager.list_passages_by_file_id_async(file_id=f.id, actor=actor)
-        passage_text = ""
-        for p in passages:
-            if len(passage_text) <= CORE_MEMORY_SOURCE_CHAR_LIMIT:
-                passage_text += p.text
-
-        texts.append(passage_text)
+        texts.append(f.content if f.content else "")
         file_ids.append(f.id)
+        file_names.append(f.file_name)
 
-    await server.insert_files_into_context_window(agent_state=agent_state, texts=texts, file_ids=file_ids, actor=actor)
+    await server.insert_files_into_context_window(
+        agent_state=agent_state, texts=texts, file_ids=file_ids, file_names=file_names, actor=actor
+    )
 
     if agent_state.enable_sleeptime:
         source = await server.source_manager.get_source_by_id(source_id=source_id)

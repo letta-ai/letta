@@ -3397,6 +3397,14 @@ export const FileMetadata = z.object({
     ])
     .optional(),
   is_deleted: z.union([z.boolean(), z.undefined()]).optional(),
+  content: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type RoundRobinManager = z.infer<typeof RoundRobinManager>;
@@ -5823,6 +5831,7 @@ export const get_List_source_files = {
       after: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      include_content: z.boolean().optional(),
     }),
     path: z.object({
       source_id: z.string(),

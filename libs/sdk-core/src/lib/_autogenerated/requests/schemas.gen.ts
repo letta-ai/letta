@@ -4454,6 +4454,19 @@ export const $FileMetadata = {
       description: 'Whether this file is deleted or not.',
       default: false,
     },
+    content: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Content',
+      description:
+        'Optional full-text content of the file; only populated on demand due to its size.',
+    },
   },
   additionalProperties: false,
   type: 'object',

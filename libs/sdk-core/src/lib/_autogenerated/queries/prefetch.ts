@@ -351,6 +351,7 @@ export const prefetchUseSourcesServiceListSourcePassages = (
  * @param data.sourceId
  * @param data.limit Number of files to return
  * @param data.after Pagination cursor to fetch the next set of results
+ * @param data.includeContent Whether to include full file content
  * @param data.userId
  * @returns FileMetadata Successful Response
  * @throws ApiError
@@ -359,11 +360,13 @@ export const prefetchUseSourcesServiceListSourceFiles = (
   queryClient: QueryClient,
   {
     after,
+    includeContent,
     limit,
     sourceId,
     userId,
   }: {
     after?: string;
+    includeContent?: boolean;
     limit?: number;
     sourceId: string;
     userId?: string;
@@ -372,12 +375,19 @@ export const prefetchUseSourcesServiceListSourceFiles = (
   queryClient.prefetchQuery({
     queryKey: Common.UseSourcesServiceListSourceFilesKeyFn({
       after,
+      includeContent,
       limit,
       sourceId,
       userId,
     }),
     queryFn: () =>
-      SourcesService.listSourceFiles({ after, limit, sourceId, userId }),
+      SourcesService.listSourceFiles({
+        after,
+        includeContent,
+        limit,
+        sourceId,
+        userId,
+      }),
   });
 /**
  * List Agents

@@ -431,6 +431,7 @@ export const useSourcesServiceListSourcePassagesSuspense = <
  * @param data.sourceId
  * @param data.limit Number of files to return
  * @param data.after Pagination cursor to fetch the next set of results
+ * @param data.includeContent Whether to include full file content
  * @param data.userId
  * @returns FileMetadata Successful Response
  * @throws ApiError
@@ -442,11 +443,13 @@ export const useSourcesServiceListSourceFilesSuspense = <
 >(
   {
     after,
+    includeContent,
     limit,
     sourceId,
     userId,
   }: {
     after?: string;
+    includeContent?: boolean;
     limit?: number;
     sourceId: string;
     userId?: string;
@@ -456,12 +459,13 @@ export const useSourcesServiceListSourceFilesSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceListSourceFilesKeyFn(
-      { after, limit, sourceId, userId },
+      { after, includeContent, limit, sourceId, userId },
       queryKey,
     ),
     queryFn: () =>
       SourcesService.listSourceFiles({
         after,
+        includeContent,
         limit,
         sourceId,
         userId,

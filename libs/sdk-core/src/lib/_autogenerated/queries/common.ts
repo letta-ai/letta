@@ -292,11 +292,13 @@ export const useSourcesServiceListSourceFilesKey =
 export const UseSourcesServiceListSourceFilesKeyFn = (
   {
     after,
+    includeContent,
     limit,
     sourceId,
     userId,
   }: {
     after?: string;
+    includeContent?: boolean;
     limit?: number;
     sourceId: string;
     userId?: string;
@@ -304,7 +306,7 @@ export const UseSourcesServiceListSourceFilesKeyFn = (
   queryKey?: Array<unknown>,
 ) => [
   useSourcesServiceListSourceFilesKey,
-  ...(queryKey ?? [{ after, limit, sourceId, userId }]),
+  ...(queryKey ?? [{ after, includeContent, limit, sourceId, userId }]),
 ];
 export type AgentsServiceListAgentsDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgents>

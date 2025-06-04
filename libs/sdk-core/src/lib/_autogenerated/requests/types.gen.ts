@@ -1475,6 +1475,10 @@ export type FileMetadata = {
    * Whether this file is deleted or not.
    */
   is_deleted?: boolean;
+  /**
+   * Optional full-text content of the file; only populated on demand due to its size.
+   */
+  content?: string | null;
 };
 
 export type Function_Output = {
@@ -4257,6 +4261,10 @@ export type ListSourceFilesData = {
    * Pagination cursor to fetch the next set of results
    */
   after?: string | null;
+  /**
+   * Whether to include full file content
+   */
+  includeContent?: boolean;
   /**
    * Number of files to return
    */

@@ -270,14 +270,21 @@ async def list_source_files(
     source_id: str,
     limit: int = Query(1000, description="Number of files to return"),
     after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
+    include_content: bool = Query(False, description="Whether to include full file content"),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     List paginated files associated with a data source.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    return await server.source_manager.list_files(source_id=source_id, limit=limit, after=after, actor=actor)
+    return await server.source_manager.list_files(
+        source_id=source_id,
+        limit=limit,
+        after=after,
+        actor=actor,
+        include_content=include_content,
+    )
 
 
 # it's redundant to include /delete in the URL path. The HTTP verb DELETE already implies that action.

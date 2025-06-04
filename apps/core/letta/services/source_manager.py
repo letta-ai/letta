@@ -1,9 +1,15 @@
 import asyncio
 from typing import List, Optional
 
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
+
 from letta.orm.errors import NoResultFound
+from letta.orm.file import FileContent as FileContentModel
 from letta.orm.file import FileMetadata as FileMetadataModel
 from letta.orm.source import Source as SourceModel
+from letta.orm.sqlalchemy_base import AccessType
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.source import Source as PydanticSource
@@ -142,41 +148,102 @@ class SourceManager:
 
     @enforce_types
     @trace_method
-    async def create_file(self, file_metadata: PydanticFileMetadata, actor: PydanticUser) -> PydanticFileMetadata:
-        """Create a new file based on the PydanticFileMetadata schema."""
-        db_file = await self.get_file_by_id(file_metadata.id, actor=actor)
-        if db_file:
-            return db_file
-        else:
-            async with db_registry.async_session() as session:
+    async def create_file(
+        self,
+        file_metadata: PydanticFileMetadata,
+        actor: PydanticUser,
+        *,
+        text: Optional[str] = None,
+    ) -> PydanticFileMetadata:
+
+        # short-circuit if it already exists
+        existing = await self.get_file_by_id(file_metadata.id, actor=actor)
+        if existing:
+            return existing
+
+        async with db_registry.async_session() as session:
+            try:
                 file_metadata.organization_id = actor.organization_id
-                file_metadata = FileMetadataModel(**file_metadata.model_dump(to_orm=True, exclude_none=True))
-                await file_metadata.create_async(session, actor=actor)
-                return file_metadata.to_pydantic()
+                file_orm = FileMetadataModel(**file_metadata.model_dump(to_orm=True, exclude_none=True))
+                await file_orm.create_async(session, actor=actor, no_commit=True)
+
+                if text is not None:
+                    content_orm = FileContentModel(file_id=file_orm.id, text=text)
+                    await content_orm.create_async(session, actor=actor, no_commit=True)
+
+                await session.commit()
+                await session.refresh(file_orm)
+                return await file_orm.to_pydantic_async()
+
+            except IntegrityError:
+                await session.rollback()
+                return await self.get_file_by_id(file_metadata.id, actor=actor)
 
     # TODO: We make actor optional for now, but should most likely be enforced due to security reasons
     @enforce_types
     @trace_method
-    async def get_file_by_id(self, file_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticFileMetadata]:
-        """Retrieve a file by its ID."""
+    async def get_file_by_id(
+        self,
+        file_id: str,
+        actor: Optional[PydanticUser] = None,
+        *,
+        include_content: bool = False,
+    ) -> Optional[PydanticFileMetadata]:
+        """Retrieve a file by its ID.
+
+        If `include_content=True`, the FileContent relationship is eagerly
+        loaded so `to_pydantic(include_content=True)` never triggers a
+        lazy SELECT (avoids MissingGreenlet).
+        """
         async with db_registry.async_session() as session:
             try:
-                file = await FileMetadataModel.read_async(db_session=session, identifier=file_id, actor=actor)
-                return file.to_pydantic()
+                if include_content:
+                    # explicit eager load
+                    query = (
+                        select(FileMetadataModel).where(FileMetadataModel.id == file_id).options(selectinload(FileMetadataModel.content))
+                    )
+                    # apply org-scoping if actor provided
+                    if actor:
+                        query = FileMetadataModel.apply_access_predicate(
+                            query,
+                            actor,
+                            access=["read"],
+                            access_type=AccessType.ORGANIZATION,
+                        )
+
+                    result = await session.execute(query)
+                    file_orm = result.scalar_one()
+                else:
+                    # fast path (metadata only)
+                    file_orm = await FileMetadataModel.read_async(
+                        db_session=session,
+                        identifier=file_id,
+                        actor=actor,
+                    )
+
+                return await file_orm.to_pydantic_async(include_content=include_content)
+
             except NoResultFound:
                 return None
 
     @enforce_types
     @trace_method
     async def list_files(
-        self, source_id: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50
+        self, source_id: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, include_content: bool = False
     ) -> List[PydanticFileMetadata]:
         """List all files with optional pagination."""
         async with db_registry.async_session() as session:
+            options = [selectinload(FileMetadataModel.content)] if include_content else None
+
             files = await FileMetadataModel.list_async(
-                db_session=session, after=after, limit=limit, organization_id=actor.organization_id, source_id=source_id
+                db_session=session,
+                after=after,
+                limit=limit,
+                organization_id=actor.organization_id,
+                source_id=source_id,
+                query_options=options,
             )
-            return [file.to_pydantic() for file in files]
+            return [await file.to_pydantic_async(include_content=include_content) for file in files]
 
     @enforce_types
     @trace_method
@@ -185,4 +252,4 @@ class SourceManager:
         async with db_registry.async_session() as session:
             file = await FileMetadataModel.read_async(db_session=session, identifier=file_id)
             await file.hard_delete_async(db_session=session, actor=actor)
-            return file.to_pydantic()
+            return await file.to_pydantic_async()
