@@ -62,10 +62,10 @@ ingress:
 resources:
   limits:
     cpu: 1
-    memory: 2Gi
+    memory: 6Gi
   requests:
     cpu: 1
-    memory: 1Gi
+    memory: 3Gi
 
 livenessProbe:
   failureThreshold: 5
