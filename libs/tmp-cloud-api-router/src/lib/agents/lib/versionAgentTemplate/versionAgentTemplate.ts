@@ -16,7 +16,6 @@ import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
 import type { cloudContracts } from '@letta-cloud/sdk-cloud-api';
 import { environment } from '@letta-cloud/config-environment-variables';
 import { startMigrateAgents } from '@letta-cloud/lettuce-client';
-import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 import { getContextDataHack } from '../../../getContextDataHack/getContextDataHack';
 
 type DeployAgentTemplateRequest = ServerInferRequest<
@@ -152,13 +151,7 @@ export async function versionAgentTemplate(
       };
     }
 
-    // Set this to true if you want to connect to your local Temporal server for testing (just start-temporal, just lettuce)
-    const shouldUseTemporal = await getSingleFlag(
-      'USE_TEMPORAL_FOR_MIGRATIONS',
-      organizationId,
-    );
-
-    if (environment.TEMPORAL_LETTUCE_API_HOST && shouldUseTemporal) {
+    if (environment.TEMPORAL_LETTUCE_API_HOST) {
       await startMigrateAgents({
         template: nextVersion,
         preserveCoreMemories: false,
