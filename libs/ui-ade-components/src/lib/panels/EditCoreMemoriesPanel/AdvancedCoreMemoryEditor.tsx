@@ -1,6 +1,5 @@
 import {
   Alert,
-  BillingLink,
   Button,
   Checkbox,
   CloseIcon,
@@ -19,7 +18,6 @@ import {
   RawInput,
   SearchIcon,
   TextArea,
-  toast,
   TrashIcon,
   Typography,
   useForm,
@@ -31,12 +29,9 @@ import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent, useCurrentAgentMetaData } from '../../hooks';
 import { useFormContext } from 'react-hook-form';
 import type { Block, AgentState } from '@letta-cloud/sdk-core';
-import { isAPIError } from '@letta-cloud/sdk-core';
 import {
-  useAgentsServiceAttachCoreMemoryBlock,
   useAgentsServiceModifyCoreMemoryBlock,
   UseAgentsServiceRetrieveAgentKeyFn,
-  useBlocksServiceCreateBlock,
   useBlocksServiceDeleteBlock,
 } from '@letta-cloud/sdk-core';
 import { z } from 'zod';
@@ -46,6 +41,7 @@ import { useSortedMemories } from '@letta-cloud/utils-client';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import { CreateNewMemoryBlockDialog } from './CreateNewMemoryBlockDialog/CreateNewMemoryBlockDialog';
 
 interface CurrentAdvancedCoreMemoryState {
   selectedMemoryBlockLabel?: string;
@@ -352,171 +348,6 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
   );
 }
 
-interface CreateNewMemoryBlockFormProps {
-  trigger: React.ReactNode;
-}
-
-export function CreateNewMemoryBlockForm(props: CreateNewMemoryBlockFormProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const t = useTranslations('ADE/AdvancedCoreMemoryEditor');
-
-  const setSelectMemoryBlockLabel = useSetAtom(currentAdvancedCoreMemoryAtom);
-  const agent = useCurrentAgent();
-
-  const existingMemoryLabels = useMemo(() => {
-    return new Set(
-      agent.memory?.blocks
-        .filter((block) => block.label)
-        .map((block) => block.label || ''),
-    );
-  }, [agent.memory]);
-
-  const {
-    mutate: createBlock,
-    reset: resetCreating,
-    isPending: isCreatingBlock,
-    error,
-  } = useBlocksServiceCreateBlock();
-  const {
-    mutate: attachBlock,
-    reset: resetAttaching,
-    isPending: isAttachingBlock,
-  } = useAgentsServiceAttachCoreMemoryBlock();
-
-  const errorMessage = useMemo(() => {
-    if (error) {
-      if (isAPIError(error) && error.status === 402) {
-        return t.rich('CreateNewMemoryBlockForm.errors.overage', {
-          link: (chunks) => <BillingLink>{chunks}</BillingLink>,
-        });
-      }
-
-      return t('CreateNewMemoryBlockForm.errors.default');
-    }
-    return undefined;
-  }, [error, t]);
-
-  const CreateNewMemoryBlockSchema = useMemo(() => {
-    return z.object({
-      label: z
-        .string()
-        .min(1, t('CreateNewMemoryBlockForm.label.error'))
-        .regex(
-          /^[a-zA-Z_-][a-zA-Z0-9_-]*$/,
-          t('CreateNewMemoryBlockForm.label.error'),
-        )
-        .refine((value) => {
-          return !existingMemoryLabels.has(value);
-        }, t('CreateNewMemoryBlockForm.label.exists')),
-    });
-  }, [existingMemoryLabels, t]);
-
-  type CreateNewMemoryBlockPayload = z.infer<typeof CreateNewMemoryBlockSchema>;
-
-  const form = useForm<CreateNewMemoryBlockPayload>({
-    resolver: zodResolver(CreateNewMemoryBlockSchema),
-    defaultValues: {
-      label: '',
-    },
-  });
-
-  const queryClient = useQueryClient();
-
-  const handleCreateBlock = useCallback(
-    async (values: CreateNewMemoryBlockPayload) => {
-      createBlock(
-        {
-          requestBody: {
-            label: values.label,
-            value: '',
-            limit: 6000,
-          },
-        },
-        {
-          onSuccess: (data) => {
-            if (!data.id) {
-              toast.error(t('CreateNewMemoryBlockForm.createBlockError'));
-              return;
-            }
-
-            attachBlock(
-              {
-                agentId: agent.id,
-                blockId: data.id,
-              },
-              {
-                onSuccess: (nextAgentState) => {
-                  setSelectMemoryBlockLabel((prev) => ({
-                    ...prev,
-                    selectedMemoryBlockLabel: values.label,
-                  }));
-
-                  queryClient.setQueriesData<AgentState | undefined>(
-                    {
-                      queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-                        agentId: agent.id,
-                      }),
-                    },
-                    () => {
-                      return nextAgentState;
-                    },
-                  );
-
-                  resetCreating();
-                  resetAttaching();
-                  form.reset();
-                  setIsOpen(false);
-                },
-              },
-            );
-          },
-        },
-      );
-    },
-    [
-      agent.id,
-      attachBlock,
-      createBlock,
-      form,
-      setSelectMemoryBlockLabel,
-      queryClient,
-      resetAttaching,
-      resetCreating,
-      t,
-    ],
-  );
-
-  return (
-    <FormProvider {...form}>
-      <Dialog
-        isOpen={isOpen}
-        errorMessage={errorMessage}
-        onSubmit={form.handleSubmit(handleCreateBlock)}
-        onOpenChange={setIsOpen}
-        isConfirmBusy={isCreatingBlock || isAttachingBlock}
-        trigger={props.trigger}
-        testId="create-new-memory-block-dialog"
-        title={t('CreateNewMemoryBlockForm.title')}
-      >
-        <VStack fullWidth gap="form">
-          <FormField
-            name="label"
-            render={({ field }) => (
-              <Input
-                data-testid="create-new-memory-block-label-input"
-                fullWidth
-                label={t('CreateNewMemoryBlockForm.label.label')}
-                description={t('CreateNewMemoryBlockForm.label.description')}
-                {...field}
-              />
-            )}
-          />
-        </VStack>
-      </Dialog>
-    </FormProvider>
-  );
-}
-
 interface DeleteMemoryBlockDialogProps {
   blockId: string;
 }
@@ -689,7 +520,7 @@ function CoreMemorySidebar() {
             setSearch(e.target.value);
           }}
         />
-        <CreateNewMemoryBlockForm
+        <CreateNewMemoryBlockDialog
           trigger={
             canUpdateAgent && (
               <Button
