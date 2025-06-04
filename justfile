@@ -698,3 +698,6 @@ trigger-model-proxy-deploy branch="" deploy_message="":
     fi
     echo "🚀 Triggering model-proxy deployment workflow on branch: $BRANCH"
     gh workflow run "🕸️🚀 Deploy model-proxy" --ref $BRANCH
+
+alert message="":
+    npm run slack-bot-says "{{message}}"
