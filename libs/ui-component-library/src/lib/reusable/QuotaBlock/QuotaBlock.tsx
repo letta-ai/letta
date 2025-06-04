@@ -12,6 +12,7 @@ interface QuotaBlockProps {
   value: number;
   label: string;
   type?: 'progress';
+  testId?: string;
   tooltip?: string;
   footer?: React.ReactNode;
 }
@@ -26,7 +27,15 @@ function QuotaContentRender(props: QuotaBlockProps) {
 }
 
 export function QuotaBlock(props: QuotaBlockProps) {
-  const { max, value, footer, label, tooltip, type = 'progress' } = props;
+  const {
+    max,
+    value,
+    footer,
+    label,
+    testId,
+    tooltip,
+    type = 'progress',
+  } = props;
   const t = useTranslations('components/QuotaBlock');
 
   const { formatNumber } = useFormatters();
@@ -49,7 +58,13 @@ export function QuotaBlock(props: QuotaBlockProps) {
           <Typography noWrap>
             {t.rich('usage', {
               value: () => (
-                <Typography bold variant="heading3" noWrap overrideEl="span">
+                <Typography
+                  data-testid={`${testId}-value`}
+                  bold
+                  variant="heading3"
+                  noWrap
+                  overrideEl="span"
+                >
                   {formatNumber(value)}
                 </Typography>
               ),

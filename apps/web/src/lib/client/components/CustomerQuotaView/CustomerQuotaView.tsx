@@ -189,6 +189,7 @@ export function CustomerQuotaView() {
         />
         <HR />
         <QuotaBlock
+          testId="agent-usage"
           tooltip={t('agentUsage.tooltip')}
           max={limits.agents}
           value={quotaData.body.agents}

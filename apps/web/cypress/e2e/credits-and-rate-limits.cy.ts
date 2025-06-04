@@ -202,8 +202,10 @@ describe('credit usage', () => {
 
     cy.findByTestId('create-project-dialog-confirm-button').click();
 
+    cy.findAllByTestId('nav-button-agents', { timeout: 50000 }).first().click();
+
     // creates an agent
-    cy.findAllByTestId('create-agent-template-button', { timeout: 50000 })
+    cy.findAllByTestId('deploy-agent-dialog-start', { timeout: 50000 })
       .first()
       .click();
 
@@ -211,7 +213,7 @@ describe('credit usage', () => {
 
     cy.location('pathname', { timeout: 50000 }).should(
       'match',
-      /\/projects\/(.+)\/templates\/(.+)/,
+      /\/projects\/(.+)\/agents\/(.+)/,
     );
 
     cy.findAllByTestId('agent-message-content', { timeout: 50000 })
@@ -243,6 +245,10 @@ describe('credit usage', () => {
     cy.findByTestId('total-credits', {
       timeout: 50000,
     }).contains('0.06', { timeout: 50000 });
+
+    cy.findByTestId('agent-usage-value', {
+      timeout: 50000,
+    }).should('contain', '1');
   });
 
   it('should rate limit a user', () => {
