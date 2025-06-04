@@ -28,3 +28,7 @@ jobs:
       run: |
         template_id=$(gcloud secrets versions access latest --secret dev_e2b_E2B_SANDBOX_TEMPLATE_ID)
         echo "$template_id" | gcloud secrets versions add dev_ci_E2B_SANDBOX_TEMPLATE_ID --data-file=-
+
+    - name: Fire alert
+      if: failure()
+      run: just alert "${{ github.workflow }} failed!" "${{ github.actor }}"

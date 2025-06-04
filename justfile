@@ -699,5 +699,49 @@ trigger-model-proxy-deploy branch="" deploy_message="":
     echo "🚀 Triggering model-proxy deployment workflow on branch: $BRANCH"
     gh workflow run "🕸️🚀 Deploy model-proxy" --ref $BRANCH
 
-alert message="":
-    npm run slack-bot-says "{{message}}"
+# Send an alert to Slack with optional mention of a GitHub user
+alert message="" actor="":
+	#!/usr/bin/env bash
+	# Map GitHub usernames to Slack usernames
+	SLACK_USERNAME=""
+	if [ -n "{{actor}}" ]; then
+		case "{{actor}}" in
+			"kianjones9")
+				SLACK_USERNAME="<@U08NMPQL5U1>"
+				;;
+			"carenthomas")
+				SLACK_USERNAME="<@U084ALUCPL2>"
+				;;
+			"4shub")
+				SLACK_USERNAME="<@U07GQQTFG8P>"
+				;;
+			"mattzh72")
+				SLACK_USERNAME="<@U07NEHAJJ66>"
+				;;
+			"cliandy")
+				SLACK_USERNAME="<@U08NLGD3CJW>"
+				;;
+			"sarahwooders")
+				SLACK_USERNAME="<@U07A2TRU5DG>"
+				;;
+			"cpacker")
+				SLACK_USERNAME="<@U079W8F9Z7G>"
+				;;
+			"kl2806")
+				SLACK_USERNAME="<@U07PHNYLG31>"
+				;;
+			"jnjpng")
+				SLACK_USERNAME="<@U08QX68FU3X>"
+				;;
+			"lyeric2022")
+				SLACK_USERNAME="<@U08V2PKUFQA>"
+				;;
+			*)
+				SLACK_USERNAME="<@U07GQQTFG8P> <@U08NMPQL5U1>"
+				;;
+		esac
+	fi
+	echo "SLACK_USERNAME: ${SLACK_USERNAME}"
+
+	# Send the message with Slack username if available
+	npm run slack-bot-says "{{message}} ${SLACK_USERNAME}"

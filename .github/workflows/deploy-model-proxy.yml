@@ -125,3 +125,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           deployment-id: ${{ steps.deployment.outputs.deployment_id }}
           state: failure
+
+      - name: Fire alert
+        if: failure()
+        run: just alert "${{ github.workflow }} failed!" "${{ github.actor }}"

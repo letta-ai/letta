@@ -1,4 +1,4 @@
-name:  🕸🚀 Deploy
+name: 🕸🚀 Deploy Web
 
 on:
     workflow_run:
@@ -166,4 +166,4 @@ jobs:
 
       - name: Fire alert
         if: failure()
-        run: just alert "(testing) ${{ github.workflow }} failed @shub"
+        run: just alert "${{ github.workflow }} failed!" "${{ github.actor }}"

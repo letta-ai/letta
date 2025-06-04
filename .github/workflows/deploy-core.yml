@@ -109,3 +109,7 @@ jobs:
           MCP_READ_FROM_CONFIG: false
         run: |
           just build-core deploy-core "${DEPLOY_MESSAGE}"
+
+      - name: Fire alert
+        if: failure()
+        run: just alert "${{ github.workflow }} failed!" "${{ github.actor }}"
