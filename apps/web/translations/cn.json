@@ -398,7 +398,8 @@
       "settings": "设置",
       "signOut": "退出登录",
       "organization": "组织",
-      "switchOrganizations": "切换组织"
+      "switchOrganizations": "切换组织",
+      "apiKeys": "API密钥"
     },
     "header": {
       "Documentation": "文档"

@@ -513,6 +513,12 @@ function SecondaryMenuItems(props: SecondaryMenuItemsProps) {
           )}
           <AdminNav />
           <NavButton
+            id="api-keys"
+            href="/api-keys"
+            label={t('secondaryNav.apiKeys')}
+            icon={<KeyIcon />}
+          />
+          <NavButton
             id="select-organization"
             href="/settings/organization/members"
             label={t('secondaryNav.addMembers')}

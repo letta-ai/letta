@@ -428,7 +428,8 @@
       "signOut": "Sign out",
       "organization": "Organization",
       "switchOrganizations": "Switch organizations",
-      "addMembers": "Invite teammates"
+      "addMembers": "Invite teammates",
+      "apiKeys": "API keys"
     },
     "header": {
       "Documentation": "Docs"
