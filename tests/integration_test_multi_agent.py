@@ -94,8 +94,9 @@ def agent_obj(client):
     agent_state_instance = client.agents.create(
         include_base_tools=True,
         tool_ids=[send_message_to_agent_tool.id],
-        model="openai/gpt-4o-mini",
+        model="openai/gpt-4o",
         embedding="letta/letta-free",
+        context_window_limit=32000,
     )
     yield agent_state_instance
 
@@ -108,8 +109,9 @@ def other_agent_obj(client):
     agent_state_instance = client.agents.create(
         include_base_tools=True,
         include_multi_agent_tools=False,
-        model="openai/gpt-4o-mini",
+        model="openai/gpt-4o",
         embedding="letta/letta-free",
+        context_window_limit=32000,
     )
 
     yield agent_state_instance

@@ -1,11 +1,16 @@
 import asyncio
+import mimetypes
 import os
 import tempfile
+from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, UploadFile
+from starlette import status
 
 import letta.constants as constants
+from letta.log import get_logger
+from letta.schemas.agent import AgentState
 from letta.schemas.file import FileMetadata
 from letta.schemas.job import Job
 from letta.schemas.passage import Passage
@@ -13,9 +18,14 @@ from letta.schemas.source import Source, SourceCreate, SourceUpdate
 from letta.schemas.user import User
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
-from letta.utils import sanitize_filename
+from letta.services.file_processor.chunker.llama_index_chunker import LlamaIndexChunker
+from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
+from letta.services.file_processor.file_processor import FileProcessor
+from letta.services.file_processor.parser.mistral_parser import MistralFileParser
+from letta.settings import model_settings, settings
+from letta.utils import safe_create_task, sanitize_filename
 
-# These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
+logger = get_logger(__name__)
 
 
 router = APIRouter(prefix="/sources", tags=["sources"])
@@ -29,7 +39,8 @@ async def count_sources(
     """
     Count all data sources created by a user.
     """
-    return await server.source_manager.size(actor=server.user_manager.get_user_or_default(user_id=actor_id))
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.source_manager.size_async(actor=actor)
 
 
 @router.get("/{source_id}", response_model=Source, operation_id="retrieve_source")
@@ -41,7 +52,7 @@ async def retrieve_source(
     """
     Get all sources
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     if not source:
@@ -58,7 +69,7 @@ async def get_source_id_by_name(
     """
     Get a source by name
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     source = await server.source_manager.get_source_by_name(source_name=source_name, actor=actor)
     if not source:
@@ -74,7 +85,7 @@ async def list_sources(
     """
     List all data sources created by a user.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     return await server.source_manager.list_sources(actor=actor)
 
 
@@ -87,14 +98,14 @@ async def create_source(
     """
     Create a new data source.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     # TODO: need to asyncify this
     if not source_create.embedding_config:
         if not source_create.embedding:
             # TODO: modify error type
             raise ValueError("Must specify either embedding or embedding_config in request")
-        source_create.embedding_config = server.get_embedding_config_from_handle(
+        source_create.embedding_config = await server.get_embedding_config_from_handle_async(
             handle=source_create.embedding,
             embedding_chunk_size=source_create.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
             actor=actor,
@@ -120,7 +131,7 @@ async def modify_source(
     Update the name or documentation of an existing data source.
     """
     # TODO: allow updating the handle/embedding config
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     if not await server.source_manager.get_source_by_id(source_id=source_id, actor=actor):
         raise HTTPException(status_code=404, detail=f"Source with id={source_id} does not exist.")
     return await server.source_manager.update_source(source_id=source_id, source_update=source, actor=actor)
@@ -135,15 +146,19 @@ async def delete_source(
     """
     Delete a data source.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    source = await server.source_manager.get_source_by_id(source_id=source_id)
-    agents = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
-    for agent in agents:
-        if agent.enable_sleeptime:
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
+    agent_states = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
+    files = await server.source_manager.list_files(source_id, actor)
+    file_ids = [f.id for f in files]
+
+    for agent_state in agent_states:
+        await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
+
+        if agent_state.enable_sleeptime:
             try:
-                # TODO: make async
-                block = server.agent_manager.get_block_with_label(agent_id=agent.id, block_label=source.name, actor=actor)
-                server.block_manager.delete_block(block.id, actor)
+                block = await server.agent_manager.get_block_with_label_async(agent_id=agent_state.id, block_label=source.name, actor=actor)
+                await server.block_manager.delete_block_async(block.id, actor)
             except:
                 pass
     await server.delete_source(source_id=source_id, actor=actor)
@@ -153,18 +168,49 @@ async def delete_source(
 async def upload_file_to_source(
     file: UploadFile,
     source_id: str,
-    background_tasks: BackgroundTasks,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     Upload a file to a data source.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    allowed_media_types = {"application/pdf", "text/plain", "application/json"}
+
+    # Normalize incoming Content-Type header (strip charset or any parameters).
+    raw_ct = file.content_type or ""
+    media_type = raw_ct.split(";", 1)[0].strip().lower()
+
+    # If client didn’t supply a Content-Type or it’s not one of the allowed types,
+    #    attempt to infer from filename extension.
+    if media_type not in allowed_media_types and file.filename:
+        guessed, _ = mimetypes.guess_type(file.filename)
+        media_type = (guessed or "").lower()
+
+        if media_type not in allowed_media_types:
+            ext = Path(file.filename).suffix.lower()
+            ext_map = {
+                ".pdf": "application/pdf",
+                ".txt": "text/plain",
+                ".json": "application/json",
+            }
+            media_type = ext_map.get(ext, media_type)
+
+    # If still not allowed, reject with 415.
+    if media_type not in allowed_media_types:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=(f"Unsupported file type: {media_type or 'unknown'} " f"(filename: {file.filename}). Only PDF, .txt, or .json allowed."),
+        )
+
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
-    assert source is not None, f"Source with id={source_id} not found."
-    bytes = file.file.read()
+    if source is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Source with id={source_id} not found.")
+    content = await file.read()
+
+    # sanitize filename
+    file.filename = sanitize_filename(file.filename)
 
     # create job
     job = Job(
@@ -172,17 +218,28 @@ async def upload_file_to_source(
         metadata={"type": "embedding", "filename": file.filename, "source_id": source_id},
         completed_at=None,
     )
-    job_id = job.id
-    server.job_manager.create_job(job, actor=actor)
+    job = await server.job_manager.create_job_async(job, actor=actor)
 
-    # create background tasks
-    asyncio.create_task(load_file_to_source_async(server, source_id=source.id, file=file, job_id=job.id, bytes=bytes, actor=actor))
-    asyncio.create_task(sleeptime_document_ingest_async(server, source_id, actor))
+    # TODO: Do we need to pull in the full agent_states? Can probably simplify here right?
+    agent_states = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
 
-    # return job information
-    # Is this necessary? Can we just return the job from create_job?
-    job = server.job_manager.get_job_by_id(job_id=job_id, actor=actor)
-    assert job is not None, "Job not found"
+    # NEW: Cloud based file processing
+    if settings.mistral_api_key and model_settings.openai_api_key:
+        logger.info("Running experimental cloud based file processing...")
+        safe_create_task(
+            load_file_to_source_cloud(server, agent_states, content, file, job, source_id, actor),
+            logger=logger,
+            label="file_processor.process",
+        )
+    else:
+        # create background tasks
+        safe_create_task(
+            load_file_to_source_async(server, source_id=source.id, filename=file.filename, job_id=job.id, bytes=content, actor=actor),
+            logger=logger,
+            label="load_file_to_source_async",
+        )
+    safe_create_task(sleeptime_document_ingest_async(server, source_id, actor), logger=logger, label="sleeptime_document_ingest_async")
+
     return job
 
 
@@ -198,7 +255,7 @@ async def list_source_passages(
     """
     List all passages associated with a data source.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     return await server.agent_manager.list_passages_async(
         actor=actor,
         source_id=source_id,
@@ -219,7 +276,7 @@ async def list_source_files(
     """
     List paginated files associated with a data source.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     return await server.source_manager.list_files(source_id=source_id, limit=limit, after=after, actor=actor)
 
 
@@ -229,29 +286,27 @@ async def list_source_files(
 async def delete_file_from_source(
     source_id: str,
     file_id: str,
-    background_tasks: BackgroundTasks,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Delete a data source.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     deleted_file = await server.source_manager.delete_file(file_id=file_id, actor=actor)
 
-    # TODO: make async
+    await server.remove_file_from_context_windows(source_id=source_id, file_id=deleted_file.id, actor=actor)
+
     asyncio.create_task(sleeptime_document_ingest_async(server, source_id, actor, clear_history=True))
     if deleted_file is None:
         raise HTTPException(status_code=404, detail=f"File with id={file_id} not found.")
 
 
-async def load_file_to_source_async(server: SyncServer, source_id: str, job_id: str, file: UploadFile, bytes: bytes, actor: User):
+async def load_file_to_source_async(server: SyncServer, source_id: str, job_id: str, filename: str, bytes: bytes, actor: User):
     # Create a temporary directory (deleted after the context manager exits)
     with tempfile.TemporaryDirectory() as tmpdirname:
-        # Sanitize the filename
-        sanitized_filename = sanitize_filename(file.filename)
-        file_path = os.path.join(tmpdirname, sanitized_filename)
+        file_path = os.path.join(tmpdirname, filename)
 
         # Write the file to the sanitized path
         with open(file_path, "wb") as buffer:
@@ -266,4 +321,14 @@ async def sleeptime_document_ingest_async(server: SyncServer, source_id: str, ac
     agents = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
     for agent in agents:
         if agent.enable_sleeptime:
-            server.sleeptime_document_ingest(agent, source, actor, clear_history)  # TODO: make async
+            await server.sleeptime_document_ingest_async(agent, source, actor, clear_history)
+
+
+async def load_file_to_source_cloud(
+    server: SyncServer, agent_states: List[AgentState], content: bytes, file: UploadFile, job: Job, source_id: str, actor: User
+):
+    file_processor = MistralFileParser()
+    text_chunker = LlamaIndexChunker()
+    embedder = OpenAIEmbedder()
+    file_processor = FileProcessor(file_parser=file_processor, text_chunker=text_chunker, embedder=embedder, actor=actor)
+    await file_processor.process(server=server, agent_states=agent_states, source_id=source_id, content=content, file=file, job=job)

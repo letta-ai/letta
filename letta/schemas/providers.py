@@ -86,7 +86,7 @@ class Provider(ProviderBase):
         return f"{base_name}/{model_name}"
 
     def cast_to_subtype(self):
-        match (self.provider_type):
+        match self.provider_type:
             case ProviderType.letta:
                 return LettaProvider(**self.model_dump(exclude_none=True))
             case ProviderType.openai:
@@ -869,6 +869,38 @@ class OllamaProvider(OpenAIProvider):
         ..., description="Default prompt formatter (aka model wrapper) to use on a /completions style API."
     )
 
+    async def list_llm_models_async(self) -> List[LLMConfig]:
+        """Async version of list_llm_models below"""
+        endpoint = f"{self.base_url}/api/tags"
+
+        import aiohttp
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(endpoint) as response:
+                if response.status != 200:
+                    raise Exception(f"Failed to list Ollama models: {response.text}")
+                response_json = await response.json()
+
+        configs = []
+        for model in response_json["models"]:
+            context_window = self.get_model_context_window(model["name"])
+            if context_window is None:
+                print(f"Ollama model {model['name']} has no context window")
+                continue
+            configs.append(
+                LLMConfig(
+                    model=model["name"],
+                    model_endpoint_type="ollama",
+                    model_endpoint=self.base_url,
+                    model_wrapper=self.default_prompt_formatter,
+                    context_window=context_window,
+                    handle=self.get_handle(model["name"]),
+                    provider_name=self.name,
+                    provider_category=self.provider_category,
+                )
+            )
+        return configs
+
     def list_llm_models(self) -> List[LLMConfig]:
         # https://github.com/ollama/ollama/blob/main/docs/api.md#list-local-models
         import requests
@@ -1004,9 +1036,6 @@ class GroqProvider(OpenAIProvider):
 
     def list_embedding_models(self) -> List[EmbeddingConfig]:
         return []
-
-    def get_model_context_window_size(self, model_name: str):
-        raise NotImplementedError
 
 
 class TogetherProvider(OpenAIProvider):

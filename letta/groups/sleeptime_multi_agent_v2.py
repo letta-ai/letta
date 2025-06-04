@@ -21,6 +21,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.step_manager import NoopStepManager, StepManager
 from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
+from letta.tracing import trace_method
 
 
 class SleeptimeMultiAgentV2(BaseAgent):
@@ -55,11 +56,13 @@ class SleeptimeMultiAgentV2(BaseAgent):
         assert group.manager_type == ManagerType.sleeptime, f"Expected group manager type to be 'sleeptime', got {group.manager_type}"
         self.group = group
 
+    @trace_method
     async def step(
         self,
         input_messages: List[MessageCreate],
         max_steps: int = 10,
         use_assistant_message: bool = True,
+        request_start_timestamp_ns: Optional[int] = None,
     ) -> LettaResponse:
         run_ids = []
 
@@ -119,6 +122,22 @@ class SleeptimeMultiAgentV2(BaseAgent):
         response.usage.run_ids = run_ids
         return response
 
+    @trace_method
+    async def step_stream_no_tokens(
+        self,
+        input_messages: List[MessageCreate],
+        max_steps: int = 10,
+        use_assistant_message: bool = True,
+        request_start_timestamp_ns: Optional[int] = None,
+    ):
+        response = await self.step(input_messages, max_steps, use_assistant_message)
+
+        for message in response.messages:
+            yield f"data: {message.model_dump_json()}\n\n"
+
+        yield f"data: {response.usage.model_dump_json()}\n\n"
+
+    @trace_method
     async def step_stream(
         self,
         input_messages: List[MessageCreate],
@@ -256,6 +275,9 @@ class SleeptimeMultiAgentV2(BaseAgent):
                 actor=self.actor,
                 step_manager=self.step_manager,
                 telemetry_manager=self.telemetry_manager,
+                message_buffer_limit=20,  # TODO: Make this configurable
+                message_buffer_min=8,  # TODO: Make this configurable
+                enable_summarization=False,  # TODO: Make this configurable
             )
 
             # Perform sleeptime agent step

@@ -189,7 +189,7 @@ def test_web_search(
 ) -> None:
     user_message = MessageCreate(
         role="user",
-        content=("Use the web search tool to find the latest news about San Francisco."),
+        content="Use the web search tool to find the latest news about San Francisco.",
         otid=USER_MESSAGE_OTID,
     )
 

@@ -7,6 +7,7 @@ from letta.helpers.converters import (
     deserialize_create_batch_response,
     deserialize_embedding_config,
     deserialize_llm_config,
+    deserialize_mcp_stdio_config,
     deserialize_message_content,
     deserialize_poll_batch_response,
     deserialize_response_format,
@@ -19,6 +20,7 @@ from letta.helpers.converters import (
     serialize_create_batch_response,
     serialize_embedding_config,
     serialize_llm_config,
+    serialize_mcp_stdio_config,
     serialize_message_content,
     serialize_poll_batch_response,
     serialize_response_format,
@@ -183,3 +185,14 @@ class ResponseFormatColumn(TypeDecorator):
 
     def process_result_value(self, value, dialect):
         return deserialize_response_format(value)
+
+
+class MCPStdioServerConfigColumn(TypeDecorator):
+    impl = JSON
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return serialize_mcp_stdio_config(value)
+
+    def process_result_value(self, value, dialect):
+        return deserialize_mcp_stdio_config(value)

@@ -6,6 +6,7 @@ from openai import AsyncStream, Stream
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from letta.errors import LLMError
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
@@ -135,6 +136,20 @@ class LLMClientBase:
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
         Performs underlying request to llm and returns raw response.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def request_embeddings(self, texts: List[str], embedding_config: EmbeddingConfig) -> List[List[float]]:
+        """
+        Generate embeddings for a batch of texts.
+
+        Args:
+            texts (List[str]): List of texts to generate embeddings for.
+            embedding_config (EmbeddingConfig): Configuration for the embedding model.
+
+        Returns:
+            embeddings (List[List[float]]): List of embeddings for the input texts.
         """
         raise NotImplementedError
 

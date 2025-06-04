@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from typing import TYPE_CHECKING, List, Optional, Set
 
@@ -21,6 +22,7 @@ from letta.schemas.tool_rule import ToolRule
 
 if TYPE_CHECKING:
     from letta.orm.agents_tags import AgentsTags
+    from letta.orm.files_agents import FileAgent
     from letta.orm.identity import Identity
     from letta.orm.organization import Organization
     from letta.orm.source import Source
@@ -125,6 +127,12 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
         back_populates="manager_agent",
     )
     batch_items: Mapped[List["LLMBatchItem"]] = relationship("LLMBatchItem", back_populates="agent", lazy="selectin")
+    file_agents: Mapped[List["FileAgent"]] = relationship(
+        "FileAgent",
+        back_populates="agent",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     def to_pydantic(self, include_relationships: Optional[Set[str]] = None) -> PydanticAgentState:
         """
@@ -166,6 +174,8 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
             "last_updated_by_id": self.last_updated_by_id,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "enable_sleeptime": self.enable_sleeptime,
+            "response_format": self.response_format,
             # optional field defaults
             "tags": [],
             "tools": [],
@@ -174,8 +184,6 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
             "identity_ids": [],
             "multi_agent_group": None,
             "tool_exec_environment_variables": [],
-            "enable_sleeptime": None,
-            "response_format": self.response_format,
         }
 
         # Optional fields: only included if requested
@@ -185,12 +193,12 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
             "sources": lambda: [s.to_pydantic() for s in self.sources],
             "memory": lambda: Memory(
                 blocks=[b.to_pydantic() for b in self.core_memory],
+                file_blocks=[block for b in self.file_agents if (block := b.to_pydantic_block()) is not None],
                 prompt_template=get_prompt_template_for_agent_type(self.agent_type),
             ),
             "identity_ids": lambda: [i.id for i in self.identities],
             "multi_agent_group": lambda: self.multi_agent_group,
             "tool_exec_environment_variables": lambda: self.tool_exec_environment_variables,
-            "enable_sleeptime": lambda: self.enable_sleeptime,
         }
 
         include_relationships = set(optional_fields.keys() if include_relationships is None else include_relationships)
@@ -242,15 +250,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
             "last_updated_by_id": self.last_updated_by_id,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
-            # optional field defaults
-            "tags": [],
-            "tools": [],
-            "sources": [],
-            "memory": Memory(blocks=[]),
-            "identity_ids": [],
-            "multi_agent_group": None,
-            "tool_exec_environment_variables": [],
-            "enable_sleeptime": None,
+            "enable_sleeptime": self.enable_sleeptime,
             "response_format": self.response_format,
         }
         optional_fields = {
@@ -261,43 +261,45 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
             "identity_ids": [],
             "multi_agent_group": None,
             "tool_exec_environment_variables": [],
-            "enable_sleeptime": None,
-            "response_format": self.response_format,
         }
 
         # Initialize include_relationships to an empty set if it's None
         include_relationships = set(optional_fields.keys() if include_relationships is None else include_relationships)
 
+        async def empty_list_async():
+            return []
+
+        async def none_async():
+            return None
+
         # Only load requested relationships
-        if "tags" in include_relationships:
-            tags = await self.awaitable_attrs.tags
-            state["tags"] = [t.tag for t in tags]
+        tags = self.awaitable_attrs.tags if "tags" in include_relationships else empty_list_async()
+        tools = self.awaitable_attrs.tools if "tools" in include_relationships else empty_list_async()
+        sources = self.awaitable_attrs.sources if "sources" in include_relationships else empty_list_async()
+        memory = self.awaitable_attrs.core_memory if "memory" in include_relationships else empty_list_async()
+        identities = self.awaitable_attrs.identities if "identity_ids" in include_relationships else empty_list_async()
+        multi_agent_group = self.awaitable_attrs.multi_agent_group if "multi_agent_group" in include_relationships else none_async()
+        tool_exec_environment_variables = (
+            self.awaitable_attrs.tool_exec_environment_variables
+            if "tool_exec_environment_variables" in include_relationships
+            else empty_list_async()
+        )
+        file_agents = self.awaitable_attrs.file_agents if "memory" in include_relationships else empty_list_async()
 
-        if "tools" in include_relationships:
-            state["tools"] = await self.awaitable_attrs.tools
+        (tags, tools, sources, memory, identities, multi_agent_group, tool_exec_environment_variables, file_agents) = await asyncio.gather(
+            tags, tools, sources, memory, identities, multi_agent_group, tool_exec_environment_variables, file_agents
+        )
 
-        if "sources" in include_relationships:
-            sources = await self.awaitable_attrs.sources
-            state["sources"] = [s.to_pydantic() for s in sources]
-
-        if "memory" in include_relationships:
-            memory_blocks = await self.awaitable_attrs.core_memory
-            state["memory"] = Memory(
-                blocks=[b.to_pydantic() for b in memory_blocks],
-                prompt_template=get_prompt_template_for_agent_type(self.agent_type),
-            )
-
-        if "identity_ids" in include_relationships:
-            identities = await self.awaitable_attrs.identities
-            state["identity_ids"] = [i.id for i in identities]
-
-        if "multi_agent_group" in include_relationships:
-            state["multi_agent_group"] = await self.awaitable_attrs.multi_agent_group
-
-        if "tool_exec_environment_variables" in include_relationships:
-            state["tool_exec_environment_variables"] = await self.awaitable_attrs.tool_exec_environment_variables
-
-        if "enable_sleeptime" in include_relationships:
-            state["enable_sleeptime"] = await self.awaitable_attrs.enable_sleeptime
+        state["tags"] = [t.tag for t in tags]
+        state["tools"] = [t.to_pydantic() for t in tools]
+        state["sources"] = [s.to_pydantic() for s in sources]
+        state["memory"] = Memory(
+            blocks=[m.to_pydantic() for m in memory],
+            file_blocks=[block for b in self.file_agents if (block := b.to_pydantic_block()) is not None],
+            prompt_template=get_prompt_template_for_agent_type(self.agent_type),
+        )
+        state["identity_ids"] = [i.id for i in identities]
+        state["multi_agent_group"] = multi_agent_group
+        state["tool_exec_environment_variables"] = tool_exec_environment_variables
 
         return self.__pydantic_model__(**state)

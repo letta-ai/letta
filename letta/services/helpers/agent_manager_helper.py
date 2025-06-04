@@ -1,7 +1,8 @@
 import datetime
 from typing import List, Literal, Optional
 
-from sqlalchemy import and_, asc, desc, exists, or_, select
+from sqlalchemy import and_, asc, desc, or_, select
+from sqlalchemy.sql.expression import exists
 
 from letta import system
 from letta.constants import IN_CONTEXT_MEMORY_KEYWORD, STRUCTURED_OUTPUT_MODELS
@@ -17,7 +18,6 @@ from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message, MessageCreate
-from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.tool_rule import ToolRule
 from letta.schemas.user import User
 from letta.system import get_initial_boot_messages, get_login_event, package_function_response
@@ -68,6 +68,50 @@ def _process_relationship(
         current_relationship.extend(new_items)
 
 
+@trace_method
+async def _process_relationship_async(
+    session, agent: AgentModel, relationship_name: str, model_class, item_ids: List[str], allow_partial=False, replace=True
+):
+    """
+    Generalized function to handle relationships like tools, sources, and blocks using item IDs.
+
+    Args:
+        session: The database session.
+        agent: The AgentModel instance.
+        relationship_name: The name of the relationship attribute (e.g., 'tools', 'sources').
+        model_class: The ORM class corresponding to the related items.
+        item_ids: List of IDs to set or update.
+        allow_partial: If True, allows missing items without raising errors.
+        replace: If True, replaces the entire relationship; otherwise, extends it.
+
+    Raises:
+        ValueError: If `allow_partial` is False and some IDs are missing.
+    """
+    current_relationship = getattr(agent, relationship_name, [])
+    if not item_ids:
+        if replace:
+            setattr(agent, relationship_name, [])
+        return
+
+    # Retrieve models for the provided IDs
+    result = await session.execute(select(model_class).where(model_class.id.in_(item_ids)))
+    found_items = result.scalars().all()
+
+    # Validate all items are found if allow_partial is False
+    if not allow_partial and len(found_items) != len(item_ids):
+        missing = set(item_ids) - {item.id for item in found_items}
+        raise NoResultFound(f"Items not found in {relationship_name}: {missing}")
+
+    if replace:
+        # Replace the relationship
+        setattr(agent, relationship_name, found_items)
+    else:
+        # Extend the relationship (only add new items)
+        current_ids = {item.id for item in current_relationship}
+        new_items = [item for item in found_items if item.id not in current_ids]
+        current_relationship.extend(new_items)
+
+
 def _process_tags(agent: AgentModel, tags: List[str], replace=True):
     """
     Handles tags for an agent.
@@ -94,16 +138,32 @@ def _process_tags(agent: AgentModel, tags: List[str], replace=True):
 def derive_system_message(agent_type: AgentType, enable_sleeptime: Optional[bool] = None, system: Optional[str] = None):
     if system is None:
         # TODO: don't hardcode
+
         if agent_type == AgentType.voice_convo_agent:
             system = gpt_system.get_system_text("voice_chat")
+
         elif agent_type == AgentType.voice_sleeptime_agent:
             system = gpt_system.get_system_text("voice_sleeptime")
+
+        # MemGPT v1, both w/ and w/o sleeptime
         elif agent_type == AgentType.memgpt_agent and not enable_sleeptime:
-            system = gpt_system.get_system_text("memgpt_chat")
+            system = gpt_system.get_system_text("memgpt_v2_chat")
         elif agent_type == AgentType.memgpt_agent and enable_sleeptime:
-            system = gpt_system.get_system_text("memgpt_sleeptime_chat")
+            # NOTE: same as the chat one, since the chat one says that you "may" have the tools
+            system = gpt_system.get_system_text("memgpt_v2_chat")
+
+        # MemGPT v2, both w/ and w/o sleeptime
+        elif agent_type == AgentType.memgpt_v2_agent and not enable_sleeptime:
+            system = gpt_system.get_system_text("memgpt_v2_chat")
+        elif agent_type == AgentType.memgpt_v2_agent and enable_sleeptime:
+            # NOTE: same as the chat one, since the chat one says that you "may" have the tools
+            system = gpt_system.get_system_text("memgpt_v2_chat")
+
+        # Sleeptime
         elif agent_type == AgentType.sleeptime_agent:
-            system = gpt_system.get_system_text("sleeptime")
+            # v2 drops references to specific blocks, and instead relies on the block description injections
+            system = gpt_system.get_system_text("sleeptime_v2")
+
         else:
             raise ValueError(f"Invalid agent type: {agent_type}")
 
@@ -115,7 +175,6 @@ def compile_memory_metadata_block(
     memory_edit_timestamp: datetime.datetime,
     previous_message_count: int = 0,
     archival_memory_size: int = 0,
-    recent_passages: List[PydanticPassage] = None,
 ) -> str:
     # Put the timestamp in the local timezone (mimicking get_local_time())
     timestamp_str = memory_edit_timestamp.astimezone().strftime("%Y-%m-%d %I:%M:%S %p %Z%z").strip()
@@ -123,15 +182,12 @@ def compile_memory_metadata_block(
     # Create a metadata block of info so the agent knows about the metadata of out-of-context memories
     memory_metadata_block = "\n".join(
         [
-            f"### Current Time: {get_local_time_fast()}" f"### Memory [last modified: {timestamp_str}]",
-            f"{previous_message_count} previous messages between you and the user are stored in recall memory (use functions to access them)",
-            f"{archival_memory_size} total memories you created are stored in archival memory (use functions to access them)",
-            (
-                f"Most recent archival passages {len(recent_passages)} recent passages: {[passage.text for passage in recent_passages]}"
-                if recent_passages is not None
-                else ""
-            ),
-            "\nCore memory shown below (limited in size, additional information stored in archival / recall memory):",
+            "<memory_metadata>",
+            f"- The current time is: {get_local_time_fast()}",
+            f"- Memory blocks were last modified: {timestamp_str}",
+            f"- {previous_message_count} previous messages between you and the user are stored in recall memory (use tools to access them)",
+            f"- {archival_memory_size} total memories you created are stored in archival memory (use tools to access them)",
+            "</memory_metadata>",
         ]
     )
     return memory_metadata_block
@@ -167,7 +223,6 @@ def compile_system_message(
     template_format: Literal["f-string", "mustache", "jinja2"] = "f-string",
     previous_message_count: int = 0,
     archival_memory_size: int = 0,
-    recent_passages: Optional[List[PydanticPassage]] = None,
 ) -> str:
     """Prepare the final/full system message that will be fed into the LLM API
 
@@ -192,9 +247,8 @@ def compile_system_message(
             memory_edit_timestamp=in_context_memory_last_edit,
             previous_message_count=previous_message_count,
             archival_memory_size=archival_memory_size,
-            recent_passages=recent_passages,
         )
-        full_memory_string = memory_metadata_string + "\n" + in_context_memory.compile()
+        full_memory_string = in_context_memory.compile() + "\n\n" + memory_metadata_string
 
         # Add to the variables list to inject
         variables[IN_CONTEXT_MEMORY_KEYWORD] = full_memory_string
@@ -206,7 +260,7 @@ def compile_system_message(
             if memory_variable_string not in system_prompt:
                 # In this case, append it to the end to make sure memory is still injected
                 # warnings.warn(f"{IN_CONTEXT_MEMORY_KEYWORD} variable was missing from system prompt, appending instead")
-                system_prompt += "\n" + memory_variable_string
+                system_prompt += "\n\n" + memory_variable_string
 
         # render the variables using the built-in templater
         try:
@@ -437,12 +491,13 @@ def _apply_tag_filter(query, tags: Optional[List[str]], match_all_tags: bool):
     Returns:
         The modified query with tag filters applied.
     """
+
     if tags:
         if match_all_tags:
             for tag in tags:
                 query = query.filter(exists().where((AgentsTags.agent_id == AgentModel.id) & (AgentsTags.tag == tag)))
-            else:
-                query = query.where(exists().where((AgentsTags.agent_id == AgentModel.id) & (AgentsTags.tag.in_(tags))))
+        else:
+            query = query.where(exists().where((AgentsTags.agent_id == AgentModel.id) & (AgentsTags.tag.in_(tags))))
     return query
 
 

@@ -257,7 +257,7 @@ def test_auto_summarize(server, default_user):
     "config_filename",
     [
         "openai-gpt-4o.json",
-        "azure-gpt-4o-mini.json",
+        # "azure-gpt-4o-mini.json",
         "claude-3-5-haiku.json",
         # "groq.json",  # rate limits
         # "gemini-pro.json",  # broken

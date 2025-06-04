@@ -172,6 +172,10 @@ class Settings(BaseSettings):
     debug: Optional[bool] = False
     cors_origins: Optional[list] = cors_origins
 
+    # default handles
+    default_llm_handle: Optional[str] = None
+    default_embedding_handle: Optional[str] = None
+
     # database configuration
     pg_db: Optional[str] = None
     pg_user: Optional[str] = None
@@ -204,15 +208,15 @@ class Settings(BaseSettings):
     uvicorn_reload: bool = False
     uvicorn_timeout_keep_alive: int = 5
 
+    use_uvloop: bool = False
+    use_granian: bool = False
+
     # event loop parallelism
     event_loop_threadpool_max_workers: int = 43
 
     # experimental toggle
     use_experimental: bool = False
     use_vertex_structured_outputs_experimental: bool = False
-    use_vertex_async_loop_experimental: bool = False
-    experimental_enable_async_db_engine: bool = False
-    experimental_skip_rebuild_memory: bool = False
 
     # LLM provider client settings
     httpx_max_retries: int = 5
@@ -230,6 +234,9 @@ class Settings(BaseSettings):
     poll_lock_retry_interval_seconds: int = 5 * 60
     batch_job_polling_lookback_weeks: int = 2
     batch_job_polling_batch_size: Optional[int] = None
+
+    # for OCR
+    mistral_api_key: Optional[str] = None
 
     @property
     def letta_pg_uri(self) -> str:

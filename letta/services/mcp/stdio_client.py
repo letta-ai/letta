@@ -1,5 +1,3 @@
-from contextlib import AsyncExitStack
-
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
@@ -12,8 +10,8 @@ logger = get_logger(__name__)
 
 # TODO: Get rid of Async prefix on this class name once we deprecate old sync code
 class AsyncStdioMCPClient(AsyncBaseMCPClient):
-    async def _initialize_connection(self, exit_stack: AsyncExitStack[bool | None], server_config: StdioServerConfig) -> None:
+    async def _initialize_connection(self, server_config: StdioServerConfig) -> None:
         server_params = StdioServerParameters(command=server_config.command, args=server_config.args)
-        stdio_transport = await exit_stack.enter_async_context(stdio_client(server_params))
+        stdio_transport = await self.exit_stack.enter_async_context(stdio_client(server_params))
         self.stdio, self.write = stdio_transport
-        self.session = await exit_stack.enter_async_context(ClientSession(self.stdio, self.write))
+        self.session = await self.exit_stack.enter_async_context(ClientSession(self.stdio, self.write))

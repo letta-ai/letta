@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timezone
 from enum import Enum
-from typing import AsyncGenerator, List, Union
+from typing import AsyncGenerator, List, Optional, Union
 
 from anthropic import AsyncStream
 from anthropic.types.beta import (
@@ -23,6 +23,7 @@ from anthropic.types.beta import (
 )
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.log import get_logger
 from letta.schemas.letta_message import (
@@ -115,12 +116,26 @@ class AnthropicStreamingInterface:
             logger.error("Error checking inner thoughts: %s", e)
             raise
 
-    async def process(self, stream: AsyncStream[BetaRawMessageStreamEvent]) -> AsyncGenerator[LettaMessage, None]:
+    async def process(
+        self,
+        stream: AsyncStream[BetaRawMessageStreamEvent],
+        ttft_span: Optional["Span"] = None,
+        provider_request_start_timestamp_ns: Optional[int] = None,
+    ) -> AsyncGenerator[LettaMessage, None]:
         prev_message_type = None
         message_index = 0
+        first_chunk = True
         try:
             async with stream:
                 async for event in stream:
+                    if first_chunk and ttft_span is not None and provider_request_start_timestamp_ns is not None:
+                        now = get_utc_timestamp_ns()
+                        ttft_ns = now - provider_request_start_timestamp_ns
+                        ttft_span.add_event(
+                            name="anthropic_time_to_first_token_ms", attributes={"anthropic_time_to_first_token_ms": ttft_ns // 1_000_000}
+                        )
+                        first_chunk = False
+
                     # TODO: Support BetaThinkingBlock, BetaRedactedThinkingBlock
                     if isinstance(event, BetaRawContentBlockStartEvent):
                         content = event.content_block

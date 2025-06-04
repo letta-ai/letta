@@ -199,7 +199,7 @@ async def list_run_steps(
 
 
 @router.delete("/{run_id}", response_model=Run, operation_id="delete_run")
-def delete_run(
+async def delete_run(
     run_id: str,
     actor_id: Optional[str] = Header(None, alias="user_id"),
     server: "SyncServer" = Depends(get_letta_server),
@@ -207,10 +207,10 @@ def delete_run(
     """
     Delete a run by its run_id.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
-        job = server.job_manager.delete_job_by_id(job_id=run_id, actor=actor)
+        job = await server.job_manager.delete_job_by_id_async(job_id=run_id, actor=actor)
         return Run.from_job(job)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Run not found")

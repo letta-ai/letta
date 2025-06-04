@@ -22,7 +22,7 @@ class StepManager:
 
     @enforce_types
     @trace_method
-    def list_steps(
+    async def list_steps_async(
         self,
         actor: PydanticUser,
         before: Optional[str] = None,
@@ -33,16 +33,19 @@ class StepManager:
         order: Optional[str] = None,
         model: Optional[str] = None,
         agent_id: Optional[str] = None,
+        trace_ids: Optional[list[str]] = None,
     ) -> List[PydanticStep]:
         """List all jobs with optional pagination and status filter."""
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             filter_kwargs = {"organization_id": actor.organization_id}
             if model:
                 filter_kwargs["model"] = model
             if agent_id:
                 filter_kwargs["agent_id"] = agent_id
+            if trace_ids:
+                filter_kwargs["trace_id"] = trace_ids
 
-            steps = StepModel.list(
+            steps = await StepModel.list_async(
                 db_session=session,
                 before=before,
                 after=after,
@@ -142,9 +145,9 @@ class StepManager:
 
     @enforce_types
     @trace_method
-    def get_step(self, step_id: str, actor: PydanticUser) -> PydanticStep:
-        with db_registry.session() as session:
-            step = StepModel.read(db_session=session, identifier=step_id, actor=actor)
+    async def get_step_async(self, step_id: str, actor: PydanticUser) -> PydanticStep:
+        async with db_registry.async_session() as session:
+            step = await StepModel.read_async(db_session=session, identifier=step_id, actor=actor)
             return step.to_pydantic()
 
     @enforce_types

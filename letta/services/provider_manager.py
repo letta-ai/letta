@@ -35,11 +35,32 @@ class ProviderManager:
 
     @enforce_types
     @trace_method
+    async def create_provider_async(self, request: ProviderCreate, actor: PydanticUser) -> PydanticProvider:
+        """Create a new provider if it doesn't already exist."""
+        async with db_registry.async_session() as session:
+            provider_create_args = {**request.model_dump(), "provider_category": ProviderCategory.byok}
+            provider = PydanticProvider(**provider_create_args)
+
+            if provider.name == provider.provider_type.value:
+                raise ValueError("Provider name must be unique and different from provider type")
+
+            # Assign the organization id based on the actor
+            provider.organization_id = actor.organization_id
+
+            # Lazily create the provider id prior to persistence
+            provider.resolve_identifier()
+
+            new_provider = ProviderModel(**provider.model_dump(to_orm=True, exclude_unset=True))
+            await new_provider.create_async(session, actor=actor)
+            return new_provider.to_pydantic()
+
+    @enforce_types
+    @trace_method
     def update_provider(self, provider_id: str, provider_update: ProviderUpdate, actor: PydanticUser) -> PydanticProvider:
         """Update provider details."""
         with db_registry.session() as session:
             # Retrieve the existing provider by ID
-            existing_provider = ProviderModel.read(db_session=session, identifier=provider_id, actor=actor)
+            existing_provider = ProviderModel.read(db_session=session, identifier=provider_id, actor=actor, check_is_deleted=True)
 
             # Update only the fields that are provided in ProviderUpdate
             update_data = provider_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
@@ -56,7 +77,7 @@ class ProviderManager:
         """Delete a provider."""
         with db_registry.session() as session:
             # Clear api key field
-            existing_provider = ProviderModel.read(db_session=session, identifier=provider_id, actor=actor)
+            existing_provider = ProviderModel.read(db_session=session, identifier=provider_id, actor=actor, check_is_deleted=True)
             existing_provider.api_key = None
             existing_provider.update(session, actor=actor)
 
@@ -64,6 +85,23 @@ class ProviderManager:
             existing_provider.delete(session, actor=actor)
 
             session.commit()
+
+    @enforce_types
+    @trace_method
+    async def delete_provider_by_id_async(self, provider_id: str, actor: PydanticUser):
+        """Delete a provider."""
+        async with db_registry.async_session() as session:
+            # Clear api key field
+            existing_provider = await ProviderModel.read_async(
+                db_session=session, identifier=provider_id, actor=actor, check_is_deleted=True
+            )
+            existing_provider.api_key = None
+            await existing_provider.update_async(session, actor=actor)
+
+            # Soft delete in provider table
+            await existing_provider.delete_async(session, actor=actor)
+
+            await session.commit()
 
     @enforce_types
     @trace_method
@@ -87,6 +125,7 @@ class ProviderManager:
                 after=after,
                 limit=limit,
                 actor=actor,
+                check_is_deleted=True,
                 **filter_kwargs,
             )
             return [provider.to_pydantic() for provider in providers]
@@ -113,6 +152,7 @@ class ProviderManager:
                 after=after,
                 limit=limit,
                 actor=actor,
+                check_is_deleted=True,
                 **filter_kwargs,
             )
             return [provider.to_pydantic() for provider in providers]
@@ -127,6 +167,12 @@ class ProviderManager:
     @trace_method
     def get_override_key(self, provider_name: Union[str, None], actor: PydanticUser) -> Optional[str]:
         providers = self.list_providers(name=provider_name, actor=actor)
+        return providers[0].api_key if providers else None
+
+    @enforce_types
+    @trace_method
+    async def get_override_key_async(self, provider_name: Union[str, None], actor: PydanticUser) -> Optional[str]:
+        providers = await self.list_providers_async(name=provider_name, actor=actor)
         return providers[0].api_key if providers else None
 
     @enforce_types

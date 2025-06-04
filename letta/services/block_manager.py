@@ -79,6 +79,30 @@ class BlockManager:
 
     @trace_method
     @enforce_types
+    async def batch_create_blocks_async(self, blocks: List[PydanticBlock], actor: PydanticUser) -> List[PydanticBlock]:
+        """
+        Batch-create multiple Blocks in one transaction for better performance.
+        Args:
+            blocks: List of PydanticBlock schemas to create
+            actor:    The user performing the operation
+        Returns:
+            List of created PydanticBlock instances (with IDs, timestamps, etc.)
+        """
+        if not blocks:
+            return []
+
+        async with db_registry.async_session() as session:
+            block_models = [
+                BlockModel(**block.model_dump(to_orm=True, exclude_none=True), organization_id=actor.organization_id) for block in blocks
+            ]
+
+            created_models = await BlockModel.batch_create_async(items=block_models, db_session=session, actor=actor)
+
+            # Convert back to Pydantic
+            return [m.to_pydantic() for m in created_models]
+
+    @trace_method
+    @enforce_types
     def update_block(self, block_id: str, block_update: BlockUpdate, actor: PydanticUser) -> PydanticBlock:
         """Update a block by its ID with the given BlockUpdate object."""
         # Safety check for block
@@ -238,9 +262,9 @@ class BlockManager:
             if actor:
                 query = BlockModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
 
-            # Add soft delete filter if applicable
-            if hasattr(BlockModel, "is_deleted"):
-                query = query.where(BlockModel.is_deleted == False)
+            # TODO: Add soft delete filter if applicable
+            # if hasattr(BlockModel, "is_deleted"):
+            #     query = query.where(BlockModel.is_deleted == False)
 
             # Execute the query
             result = await session.execute(query)
@@ -273,15 +297,12 @@ class BlockManager:
 
     @trace_method
     @enforce_types
-    def size(
-        self,
-        actor: PydanticUser,
-    ) -> int:
+    async def size_async(self, actor: PydanticUser) -> int:
         """
         Get the total count of blocks for the given user.
         """
-        with db_registry.session() as session:
-            return BlockModel.size(db_session=session, actor=actor)
+        async with db_registry.async_session() as session:
+            return await BlockModel.size_async(db_session=session, actor=actor)
 
     # Block History Functions
 

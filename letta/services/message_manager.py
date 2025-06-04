@@ -49,7 +49,7 @@ class MessageManager:
     def get_messages_by_ids(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
         """Fetch messages by ID and return them in the requested order."""
         with db_registry.session() as session:
-            results = MessageModel.list(db_session=session, id=message_ids, organization_id=actor.organization_id, limit=len(message_ids))
+            results = MessageModel.read_multiple(db_session=session, identifiers=message_ids, actor=actor)
         return self._get_messages_by_id_postprocess(results, message_ids)
 
     @enforce_types
@@ -57,10 +57,8 @@ class MessageManager:
     async def get_messages_by_ids_async(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
         """Fetch messages by ID and return them in the requested order. Async version of above function."""
         async with db_registry.async_session() as session:
-            results = await MessageModel.list_async(
-                db_session=session, id=message_ids, organization_id=actor.organization_id, limit=len(message_ids)
-            )
-        return self._get_messages_by_id_postprocess(results, message_ids)
+            results = await MessageModel.read_multiple_async(db_session=session, identifiers=message_ids, actor=actor)
+            return self._get_messages_by_id_postprocess(results, message_ids)
 
     def _get_messages_by_id_postprocess(
         self,
@@ -351,6 +349,29 @@ class MessageManager:
 
     @enforce_types
     @trace_method
+    async def list_user_messages_for_agent_async(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
+        query_text: Optional[str] = None,
+        limit: Optional[int] = 50,
+        ascending: bool = True,
+    ) -> List[PydanticMessage]:
+        return await self.list_messages_for_agent_async(
+            agent_id=agent_id,
+            actor=actor,
+            after=after,
+            before=before,
+            query_text=query_text,
+            roles=[MessageRole.user],
+            limit=limit,
+            ascending=ascending,
+        )
+
+    @enforce_types
+    @trace_method
     def list_messages_for_agent(
         self,
         agent_id: str,
@@ -400,24 +421,17 @@ class MessageManager:
             if group_id:
                 query = query.filter(MessageModel.group_id == group_id)
 
-            # If query_text is provided, filter messages by matching any "text" type content block
-            # whose text includes the query string (case-insensitive).
+            # If query_text is provided, filter messages using subquery + json_array_elements.
             if query_text:
-                dialect_name = session.bind.dialect.name
-
-                if dialect_name == "postgresql":  # using subquery + json_array_elements.
-                    content_element = func.json_array_elements(MessageModel.content).alias("content_element")
-                    subquery_sql = text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text")
-                    subquery = select(1).select_from(content_element).where(subquery_sql)
-
-                elif dialect_name == "sqlite":  # using `json_each` and JSON path expressions
-                    json_item = func.json_each(MessageModel.content).alias("json_item")
-                    subquery_sql = text(
-                        "json_extract(value, '$.type') = 'text' AND lower(json_extract(value, '$.text')) LIKE lower(:query_text)"
+                content_element = func.json_array_elements(MessageModel.content).alias("content_element")
+                query = query.filter(
+                    exists(
+                        select(1)
+                        .select_from(content_element)
+                        .where(text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text"))
+                        .params(query_text=f"%{query_text}%")
                     )
-                    subquery = select(1).select_from(json_item).where(subquery_sql)
-
-                query = query.filter(exists(subquery.params(query_text=f"%{query_text}%")))
+                )
 
             # If role(s) are provided, filter messages by those roles.
             if roles:
@@ -557,23 +571,23 @@ class MessageManager:
 
     @enforce_types
     @trace_method
-    def delete_all_messages_for_agent(self, agent_id: str, actor: PydanticUser) -> int:
+    async def delete_all_messages_for_agent_async(self, agent_id: str, actor: PydanticUser) -> int:
         """
         Efficiently deletes all messages associated with a given agent_id,
         while enforcing permission checks and avoiding any ORM‑level loads.
         """
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             # 1) verify the agent exists and the actor has access
-            AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+            await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
 
             # 2) issue a CORE DELETE against the mapped class
             stmt = (
                 delete(MessageModel).where(MessageModel.agent_id == agent_id).where(MessageModel.organization_id == actor.organization_id)
             )
-            result = session.execute(stmt)
+            result = await session.execute(stmt)
 
             # 3) commit once
-            session.commit()
+            await session.commit()
 
             # 4) return the number of rows deleted
             return result.rowcount

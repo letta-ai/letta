@@ -1,7 +1,7 @@
 import asyncio
 import importlib
 import warnings
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from letta.constants import (
     BASE_FUNCTION_RETURN_CHAR_LIMIT,
@@ -26,6 +26,7 @@ from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.services.mcp.types import SSEServerConfig, StdioServerConfig
 from letta.tracing import trace_method
 from letta.utils import enforce_types, printd
 
@@ -91,6 +92,12 @@ class ToolManager:
         return tool
 
     @enforce_types
+    async def create_mcp_server(
+        self, server_config: Union[StdioServerConfig, SSEServerConfig], actor: PydanticUser
+    ) -> List[Union[StdioServerConfig, SSEServerConfig]]:
+        pass
+
+    @enforce_types
     @trace_method
     def create_or_update_mcp_tool(self, tool_create: ToolCreate, mcp_server_name: str, actor: PydanticUser) -> PydanticTool:
         metadata = {MCP_TOOL_TAG_NAME_PREFIX: {"server_name": mcp_server_name}}
@@ -102,9 +109,26 @@ class ToolManager:
         )
 
     @enforce_types
+    async def create_mcp_tool_async(self, tool_create: ToolCreate, mcp_server_name: str, actor: PydanticUser) -> PydanticTool:
+        metadata = {MCP_TOOL_TAG_NAME_PREFIX: {"server_name": mcp_server_name}}
+        return await self.create_or_update_tool_async(
+            PydanticTool(
+                tool_type=ToolType.EXTERNAL_MCP, name=tool_create.json_schema["name"], metadata_=metadata, **tool_create.model_dump()
+            ),
+            actor,
+        )
+
+    @enforce_types
     @trace_method
     def create_or_update_composio_tool(self, tool_create: ToolCreate, actor: PydanticUser) -> PydanticTool:
         return self.create_or_update_tool(
+            PydanticTool(tool_type=ToolType.EXTERNAL_COMPOSIO, name=tool_create.json_schema["name"], **tool_create.model_dump()), actor
+        )
+
+    @enforce_types
+    @trace_method
+    async def create_or_update_composio_tool_async(self, tool_create: ToolCreate, actor: PydanticUser) -> PydanticTool:
+        return await self.create_or_update_tool_async(
             PydanticTool(tool_type=ToolType.EXTERNAL_COMPOSIO, name=tool_create.json_schema["name"], **tool_create.model_dump()), actor
         )
 
@@ -145,7 +169,7 @@ class ToolManager:
 
             tool = ToolModel(**tool_data)
             await tool.create_async(session, actor=actor)  # Re-raise other database-related errors
-        return tool.to_pydantic()
+            return tool.to_pydantic()
 
     @enforce_types
     @trace_method
@@ -215,6 +239,7 @@ class ToolManager:
     @trace_method
     async def list_tools_async(self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticTool]:
         """List all tools with optional pagination."""
+        tools_to_delete = []
         async with db_registry.async_session() as session:
             tools = await ToolModel.list_async(
                 db_session=session,
@@ -223,23 +248,26 @@ class ToolManager:
                 organization_id=actor.organization_id,
             )
 
-        # Remove any malformed tools
-        results = []
-        for tool in tools:
-            try:
-                pydantic_tool = tool.to_pydantic()
-                results.append(pydantic_tool)
-            except (ValueError, ModuleNotFoundError, AttributeError) as e:
-                logger.warning(f"Deleting malformed tool with id={tool.id} and name={tool.name}, error was:\n{e}")
-                logger.warning("Deleted tool: ")
-                logger.warning(tool.pretty_print_columns())
-                self.delete_tool_by_id(tool.id, actor=actor)
+            # Remove any malformed tools
+            results = []
+            for tool in tools:
+                try:
+                    pydantic_tool = tool.to_pydantic()
+                    results.append(pydantic_tool)
+                except (ValueError, ModuleNotFoundError, AttributeError) as e:
+                    tools_to_delete.append(tool)
+                    logger.warning(f"Deleting malformed tool with id={tool.id} and name={tool.name}, error was:\n{e}")
+                    logger.warning("Deleted tool: ")
+                    logger.warning(tool.pretty_print_columns())
+
+        for tool in tools_to_delete:
+            await self.delete_tool_by_id_async(tool.id, actor=actor)
 
         return results
 
     @enforce_types
     @trace_method
-    def size(
+    async def size_async(
         self,
         actor: PydanticUser,
         include_base_tools: bool,
@@ -249,10 +277,10 @@ class ToolManager:
 
         If include_builtin is True, it will also count the built-in tools.
         """
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             if include_base_tools:
-                return ToolModel.size(db_session=session, actor=actor)
-            return ToolModel.size(db_session=session, actor=actor, name=LETTA_TOOL_SET)
+                return await ToolModel.size_async(db_session=session, actor=actor)
+            return await ToolModel.size_async(db_session=session, actor=actor, name=LETTA_TOOL_SET)
 
     @enforce_types
     @trace_method
@@ -321,6 +349,17 @@ class ToolManager:
             try:
                 tool = ToolModel.read(db_session=session, identifier=tool_id, actor=actor)
                 tool.hard_delete(db_session=session, actor=actor)
+            except NoResultFound:
+                raise ValueError(f"Tool with id {tool_id} not found.")
+
+    @enforce_types
+    @trace_method
+    async def delete_tool_by_id_async(self, tool_id: str, actor: PydanticUser) -> None:
+        """Delete a tool by its ID."""
+        async with db_registry.async_session() as session:
+            try:
+                tool = await ToolModel.read_async(db_session=session, identifier=tool_id, actor=actor)
+                await tool.hard_delete_async(db_session=session, actor=actor)
             except NoResultFound:
                 raise ValueError(f"Tool with id {tool_id} not found.")
 

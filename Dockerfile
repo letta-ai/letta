@@ -70,6 +70,10 @@ ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT} \
     POSTGRES_DB=letta \
     COMPOSIO_DISABLE_VERSION_CHECK=true
 
+# Set for other builds
+ARG LETTA_VERSION
+ENV LETTA_VERSION=${LETTA_VERSION}
+
 WORKDIR /app
 
 # Copy virtual environment and app from builder

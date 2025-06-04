@@ -69,8 +69,6 @@ class CommonSqlalchemyMetaMixins(Base):
         """returns the user id for the specified property"""
         full_prop = f"_{prop}_by_id"
         prop_value = getattr(self, full_prop, None)
-        if not prop_value:
-            return
         return prop_value
 
     def _user_id_setter(self, prop: str, value: str) -> None:

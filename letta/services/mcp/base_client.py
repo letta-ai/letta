@@ -30,7 +30,7 @@ class AsyncBaseMCPClient:
             )
             raise e
 
-    async def _initialize_connection(self, exit_stack: AsyncExitStack[bool | None], server_config: BaseServerConfig) -> None:
+    async def _initialize_connection(self, server_config: BaseServerConfig) -> None:
         raise NotImplementedError("Subclasses must implement _initialize_connection")
 
     async def list_tools(self) -> list[MCPTool]:
@@ -55,7 +55,7 @@ class AsyncBaseMCPClient:
             # TODO move hardcoding to constants
             final_content = "Empty response from tool"
 
-        return final_content, result.isError
+        return final_content, not result.isError
 
     def _check_initialized(self):
         if not self.initialized:
@@ -65,3 +65,6 @@ class AsyncBaseMCPClient:
     async def cleanup(self):
         """Clean up resources"""
         await self.exit_stack.aclose()
+
+    def to_sync_client(self):
+        raise NotImplementedError("Subclasses must implement to_sync_client")

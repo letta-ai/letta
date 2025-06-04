@@ -31,7 +31,7 @@ class SourceManager:
                 source.organization_id = actor.organization_id
                 source = SourceModel(**source.model_dump(to_orm=True, exclude_none=True))
                 await source.create_async(session, actor=actor)
-            return source.to_pydantic()
+                return source.to_pydantic()
 
     @enforce_types
     @trace_method
@@ -48,7 +48,7 @@ class SourceManager:
             if update_data:
                 for key, value in update_data.items():
                     setattr(source, key, value)
-                source.update(db_session=session, actor=actor)
+                await source.update_async(db_session=session, actor=actor)
             else:
                 printd(
                     f"`update_source` was called with user_id={actor.id}, organization_id={actor.organization_id}, name={source.name}, but found existing source with nothing to update."
@@ -83,7 +83,7 @@ class SourceManager:
 
     @enforce_types
     @trace_method
-    async def size(self, actor: PydanticUser) -> int:
+    async def size_async(self, actor: PydanticUser) -> int:
         """
         Get the total count of sources for the given user.
         """
@@ -152,7 +152,7 @@ class SourceManager:
                 file_metadata.organization_id = actor.organization_id
                 file_metadata = FileMetadataModel(**file_metadata.model_dump(to_orm=True, exclude_none=True))
                 await file_metadata.create_async(session, actor=actor)
-            return file_metadata.to_pydantic()
+                return file_metadata.to_pydantic()
 
     # TODO: We make actor optional for now, but should most likely be enforced due to security reasons
     @enforce_types
@@ -173,7 +173,6 @@ class SourceManager:
     ) -> List[PydanticFileMetadata]:
         """List all files with optional pagination."""
         async with db_registry.async_session() as session:
-            files_all = await FileMetadataModel.list_async(db_session=session, organization_id=actor.organization_id, source_id=source_id)
             files = await FileMetadataModel.list_async(
                 db_session=session, after=after, limit=limit, organization_id=actor.organization_id, source_id=source_id
             )

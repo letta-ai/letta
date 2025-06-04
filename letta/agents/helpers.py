@@ -85,9 +85,7 @@ async def _prepare_in_context_messages_async(
 
     if agent_state.message_buffer_autoclear:
         # If autoclear is enabled, only include the most recent system message (usually at index 0)
-        current_in_context_messages = [
-            (await message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor))[0]
-        ]
+        current_in_context_messages = [await message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)]
     else:
         # Otherwise, include the full list of messages by ID for context
         current_in_context_messages = await message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor)
@@ -96,6 +94,40 @@ async def _prepare_in_context_messages_async(
     new_in_context_messages = await message_manager.create_many_messages_async(
         create_input_messages(input_messages=input_messages, agent_id=agent_state.id, actor=actor), actor=actor
     )
+
+    return current_in_context_messages, new_in_context_messages
+
+
+async def _prepare_in_context_messages_no_persist_async(
+    input_messages: List[MessageCreate],
+    agent_state: AgentState,
+    message_manager: MessageManager,
+    actor: User,
+) -> Tuple[List[Message], List[Message]]:
+    """
+    Prepares in-context messages for an agent, based on the current state and a new user input.
+
+    Args:
+        input_messages (List[MessageCreate]): The new user input messages to process.
+        agent_state (AgentState): The current state of the agent, including message buffer config.
+        message_manager (MessageManager): The manager used to retrieve and create messages.
+        actor (User): The user performing the action, used for access control and attribution.
+
+    Returns:
+        Tuple[List[Message], List[Message]]: A tuple containing:
+            - The current in-context messages (existing context for the agent).
+            - The new in-context messages (messages created from the new input).
+    """
+
+    if agent_state.message_buffer_autoclear:
+        # If autoclear is enabled, only include the most recent system message (usually at index 0)
+        current_in_context_messages = [await message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)]
+    else:
+        # Otherwise, include the full list of messages by ID for context
+        current_in_context_messages = await message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor)
+
+    # Create a new user message from the input but dont store it yet
+    new_in_context_messages = create_input_messages(input_messages=input_messages, agent_id=agent_state.id, actor=actor)
 
     return current_in_context_messages, new_in_context_messages
 

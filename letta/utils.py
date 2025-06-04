@@ -1018,7 +1018,7 @@ def sanitize_filename(filename: str) -> str:
         base = base[:max_base_length]
 
     # Append a unique UUID suffix for uniqueness
-    unique_suffix = uuid.uuid4().hex
+    unique_suffix = uuid.uuid4().hex[:4]
     sanitized_filename = f"{base}_{unique_suffix}{ext}"
 
     # Return the sanitized filename
@@ -1032,6 +1032,20 @@ def get_friendly_error_msg(function_name: str, exception_name: str, exception_me
     if len(error_msg) > MAX_ERROR_MESSAGE_CHAR_LIMIT:
         error_msg = error_msg[:MAX_ERROR_MESSAGE_CHAR_LIMIT]
     return error_msg
+
+
+def parse_stderr_error_msg(stderr_txt: str, last_n_lines: int = 3) -> tuple[str, str]:
+    """
+    Parses out from the last `last_n_line` of `stderr_txt` the Exception type and message.
+    """
+    index = -(last_n_lines + 1)
+    pattern = r"(\w+(?:Error|Exception)): (.+?)$"
+    for line in stderr_txt.split("\n")[:index:-1]:
+        if "Error" in line or "Exception" in line:
+            match = re.search(pattern, line)
+            if match:
+                return match.group(1), match.group(2)
+    return "", ""
 
 
 def run_async_task(coro: Coroutine[Any, Any, Any]) -> Any:
@@ -1074,3 +1088,13 @@ def log_telemetry(logger: Logger, event: str, **kwargs):
 
 def make_key(*args, **kwargs):
     return str((args, tuple(sorted(kwargs.items()))))
+
+
+def safe_create_task(coro, logger: Logger, label: str = "background task"):
+    async def wrapper():
+        try:
+            await coro
+        except Exception as e:
+            logger.exception(f"{label} failed with {type(e).__name__}: {e}")
+
+    return asyncio.create_task(wrapper())

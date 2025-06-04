@@ -1,0 +1,47 @@
+{{ 'from __future__ import annotations' if future_import else '' }}
+from typing import *
+import pickle
+import sys
+import base64
+import struct
+import hashlib
+
+{# Additional imports to support agent state #}
+{% if inject_agent_state %}
+import letta
+from letta import *
+{% endif %}
+
+{# Add schema code if available #}
+{{ schema_imports or ''}}
+
+{# Load agent state #}
+agent_state = {{ 'pickle.loads(' ~ agent_state_pickle ~ ')' if agent_state_pickle else 'None' }}
+
+{{ tool_args }}
+
+{# The tool's source code #}
+{{ tool_source_code }}
+
+{# Invoke the function and store the result in a global variable #}
+{{ local_sandbox_result_var_name }} = {
+    "results": {{ invoke_function_call }},
+    "agent_state": agent_state
+}
+
+{{ local_sandbox_result_var_name }}_pkl = pickle.dumps({{ local_sandbox_result_var_name }})
+
+{% if wrap_print_with_markers %}
+{# Combine everything to flush and write at once. #}
+data_checksum = hashlib.md5({{ local_sandbox_result_var_name }}_pkl).hexdigest().encode('ascii')
+{{ local_sandbox_result_var_name }}_msg = (
+  {{ start_marker }} +
+  struct.pack('>I', len({{ local_sandbox_result_var_name }}_pkl)) +
+  data_checksum +
+  {{ local_sandbox_result_var_name }}_pkl
+)
+sys.stdout.buffer.write({{ local_sandbox_result_var_name }}_msg)
+sys.stdout.buffer.flush()
+{% else %}
+base64.b64encode({{ local_sandbox_result_var_name }}_pkl).decode('utf-8')
+{% endif %}

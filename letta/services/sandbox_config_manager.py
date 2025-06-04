@@ -194,6 +194,15 @@ class SandboxConfigManager:
 
     @enforce_types
     @trace_method
+    async def delete_sandbox_config_async(self, sandbox_config_id: str, actor: PydanticUser) -> PydanticSandboxConfig:
+        """Delete a sandbox configuration by its ID."""
+        async with db_registry.async_session() as session:
+            sandbox = await SandboxConfigModel.read_async(db_session=session, identifier=sandbox_config_id, actor=actor)
+            await sandbox.hard_delete_async(db_session=session, actor=actor)
+            return sandbox.to_pydantic()
+
+    @enforce_types
+    @trace_method
     def list_sandbox_configs(
         self,
         actor: PydanticUser,
@@ -307,6 +316,34 @@ class SandboxConfigManager:
 
     @enforce_types
     @trace_method
+    async def create_sandbox_env_var_async(
+        self, env_var_create: SandboxEnvironmentVariableCreate, sandbox_config_id: str, actor: PydanticUser
+    ) -> PydanticEnvVar:
+        """Create a new sandbox environment variable."""
+        env_var = PydanticEnvVar(**env_var_create.model_dump(), sandbox_config_id=sandbox_config_id, organization_id=actor.organization_id)
+
+        db_env_var = await self.get_sandbox_env_var_by_key_and_sandbox_config_id_async(env_var.key, env_var.sandbox_config_id, actor=actor)
+        if db_env_var:
+            update_data = env_var.model_dump(exclude_unset=True, exclude_none=True)
+            update_data = {key: value for key, value in update_data.items() if getattr(db_env_var, key) != value}
+            # If there are changes, update the environment variable
+            if update_data:
+                db_env_var = await self.update_sandbox_env_var_async(db_env_var.id, SandboxEnvironmentVariableUpdate(**update_data), actor)
+            else:
+                printd(
+                    f"`create_or_update_sandbox_env_var` was called with user_id={actor.id}, organization_id={actor.organization_id}, "
+                    f"key={env_var.key}, but found existing variable with nothing to update."
+                )
+
+            return db_env_var
+        else:
+            async with db_registry.async_session() as session:
+                env_var = SandboxEnvVarModel(**env_var.model_dump(to_orm=True, exclude_none=True))
+                await env_var.create_async(session, actor=actor)
+                return env_var.to_pydantic()
+
+    @enforce_types
+    @trace_method
     def update_sandbox_env_var(
         self, env_var_id: str, env_var_update: SandboxEnvironmentVariableUpdate, actor: PydanticUser
     ) -> PydanticEnvVar:
@@ -329,11 +366,42 @@ class SandboxConfigManager:
 
     @enforce_types
     @trace_method
+    async def update_sandbox_env_var_async(
+        self, env_var_id: str, env_var_update: SandboxEnvironmentVariableUpdate, actor: PydanticUser
+    ) -> PydanticEnvVar:
+        """Update an existing sandbox environment variable."""
+        async with db_registry.async_session() as session:
+            env_var = await SandboxEnvVarModel.read_async(db_session=session, identifier=env_var_id, actor=actor)
+            update_data = env_var_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+            update_data = {key: value for key, value in update_data.items() if getattr(env_var, key) != value}
+
+            if update_data:
+                for key, value in update_data.items():
+                    setattr(env_var, key, value)
+                await env_var.update_async(db_session=session, actor=actor)
+            else:
+                printd(
+                    f"`update_sandbox_env_var` called with user_id={actor.id}, organization_id={actor.organization_id}, "
+                    f"key={env_var.key}, but nothing to update."
+                )
+            return env_var.to_pydantic()
+
+    @enforce_types
+    @trace_method
     def delete_sandbox_env_var(self, env_var_id: str, actor: PydanticUser) -> PydanticEnvVar:
         """Delete a sandbox environment variable by its ID."""
         with db_registry.session() as session:
             env_var = SandboxEnvVarModel.read(db_session=session, identifier=env_var_id, actor=actor)
             env_var.hard_delete(db_session=session, actor=actor)
+            return env_var.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def delete_sandbox_env_var_async(self, env_var_id: str, actor: PydanticUser) -> PydanticEnvVar:
+        """Delete a sandbox environment variable by its ID."""
+        async with db_registry.async_session() as session:
+            env_var = await SandboxEnvVarModel.read_async(db_session=session, identifier=env_var_id, actor=actor)
+            await env_var.hard_delete_async(db_session=session, actor=actor)
             return env_var.to_pydantic()
 
     @enforce_types
@@ -394,6 +462,22 @@ class SandboxConfigManager:
 
     @enforce_types
     @trace_method
+    async def list_sandbox_env_vars_by_key_async(
+        self, key: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50
+    ) -> List[PydanticEnvVar]:
+        """List all sandbox environment variables with optional pagination."""
+        async with db_registry.async_session() as session:
+            env_vars = await SandboxEnvVarModel.list_async(
+                db_session=session,
+                after=after,
+                limit=limit,
+                organization_id=actor.organization_id,
+                key=key,
+            )
+            return [env_var.to_pydantic() for env_var in env_vars]
+
+    @enforce_types
+    @trace_method
     def get_sandbox_env_vars_as_dict(
         self, sandbox_config_id: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50
     ) -> Dict[str, str]:
@@ -423,6 +507,27 @@ class SandboxConfigManager:
         with db_registry.session() as session:
             try:
                 env_var = SandboxEnvVarModel.list(
+                    db_session=session,
+                    key=key,
+                    sandbox_config_id=sandbox_config_id,
+                    organization_id=actor.organization_id,
+                    limit=1,
+                )
+                if env_var:
+                    return env_var[0].to_pydantic()
+                return None
+            except NoResultFound:
+                return None
+
+    @enforce_types
+    @trace_method
+    async def get_sandbox_env_var_by_key_and_sandbox_config_id_async(
+        self, key: str, sandbox_config_id: str, actor: Optional[PydanticUser] = None
+    ) -> Optional[PydanticEnvVar]:
+        """Retrieve a sandbox environment variable by its key and sandbox_config_id."""
+        async with db_registry.async_session() as session:
+            try:
+                env_var = await SandboxEnvVarModel.list_async(
                     db_session=session,
                     key=key,
                     sandbox_config_id=sandbox_config_id,

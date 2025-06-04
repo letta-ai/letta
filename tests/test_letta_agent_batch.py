@@ -505,6 +505,8 @@ async def test_partial_error_from_anthropic_batch(
                 assert len(new_batch_responses) == 1
                 post_resume_response = new_batch_responses[0]
 
+                print("POST", post_resume_response)
+                print("PRE", pre_resume_response)
                 assert (
                     post_resume_response.letta_batch_id == pre_resume_response.letta_batch_id
                 ), "resume_step_after_request is expected to have the same letta_batch_id"

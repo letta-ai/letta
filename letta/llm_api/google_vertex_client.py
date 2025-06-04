@@ -241,13 +241,14 @@ class GoogleVertexClient(LLMClientBase):
             )
             request_data["config"]["tool_config"] = tool_config.model_dump()
 
-        # Add thinking_config
+        # Add thinking_config for flash
         # If enable_reasoner is False, set thinking_budget to 0
         # Otherwise, use the value from max_reasoning_tokens
-        thinking_config = ThinkingConfig(
-            thinking_budget=llm_config.max_reasoning_tokens if llm_config.enable_reasoner else 0,
-        )
-        request_data["config"]["thinking_config"] = thinking_config.model_dump()
+        if "flash" in llm_config.model:
+            thinking_config = ThinkingConfig(
+                thinking_budget=llm_config.max_reasoning_tokens if llm_config.enable_reasoner else 0,
+            )
+            request_data["config"]["thinking_config"] = thinking_config.model_dump()
 
         return request_data
 

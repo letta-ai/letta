@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 
 from sqlalchemy import JSON
 from sqlalchemy import Enum as SqlEnum
-from sqlalchemy import String, UniqueConstraint
+from sqlalchemy import Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import AgentMixin, OrganizationMixin, SandboxConfigMixin
@@ -61,7 +61,10 @@ class AgentEnvironmentVariable(SqlalchemyBase, OrganizationMixin, AgentMixin):
 
     __tablename__ = "agent_environment_variables"
     # We cannot have duplicate key names for the same agent, the env var would get overwritten
-    __table_args__ = (UniqueConstraint("key", "agent_id", name="uix_key_agent"),)
+    __table_args__ = (
+        UniqueConstraint("key", "agent_id", name="uix_key_agent"),
+        Index("idx_agent_environment_variables_agent_id", "agent_id"),
+    )
 
     # agent_env_var generates its own id
     # TODO: We want to migrate all the ORM models to do this, so we will need to move this to the SqlalchemyBase

@@ -1,4 +1,3 @@
-import ast
 import base64
 import io
 import os
@@ -23,6 +22,7 @@ from letta.services.helpers.tool_execution_helper import (
     find_python_executable,
     install_pip_requirements_for_sandbox,
 )
+from letta.services.helpers.tool_parser_helper import convert_param_to_str_value, parse_function_arguments
 from letta.services.organization_manager import OrganizationManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_manager import ToolManager
@@ -52,7 +52,6 @@ class ToolExecutionSandbox:
         self.tool_name = tool_name
         self.args = args
         self.user = user
-        # get organization
         self.organization = OrganizationManager().get_organization_by_id(self.user.organization_id)
         self.privileged_tools = self.organization.privileged_tools
 
@@ -476,16 +475,6 @@ class ToolExecutionSandbox:
             agent_state = result["agent_state"]
         return result["results"], agent_state
 
-    def parse_function_arguments(self, source_code: str, tool_name: str):
-        """Get arguments of a function from its source code"""
-        tree = ast.parse(source_code)
-        args = []
-        for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef) and node.name == tool_name:
-                for arg in node.args.args:
-                    args.append(arg.arg)
-        return args
-
     def generate_execution_script(self, agent_state: AgentState, wrap_print_with_markers: bool = False) -> str:
         """
         Generate code to run inside of execution sandbox.
@@ -498,7 +487,7 @@ class ToolExecutionSandbox:
         Returns:
             code (str): The generated code strong
         """
-        if "agent_state" in self.parse_function_arguments(self.tool.source_code, self.tool.name):
+        if "agent_state" in parse_function_arguments(self.tool.source_code, self.tool.name):
             inject_agent_state = True
         else:
             inject_agent_state = False
@@ -546,7 +535,7 @@ class ToolExecutionSandbox:
         code += (
             self.LOCAL_SANDBOX_RESULT_VAR_NAME
             + ' = {"results": '
-            + self.invoke_function_call(inject_agent_state=inject_agent_state)
+            + self.invoke_function_call(inject_agent_state=inject_agent_state)  # this inject_agent_state is the main difference
             + ', "agent_state": agent_state}\n'
         )
         code += (
@@ -562,24 +551,6 @@ class ToolExecutionSandbox:
 
         return code
 
-    def _convert_param_to_value(self, param_type: str, raw_value: str) -> str:
-
-        if param_type == "string":
-            value = "pickle.loads(" + str(pickle.dumps(raw_value)) + ")"
-
-        elif param_type == "integer" or param_type == "boolean" or param_type == "number":
-            value = raw_value
-
-        elif param_type == "array":
-            value = raw_value
-
-        elif param_type == "object":
-            value = raw_value
-
-        else:
-            raise TypeError(f"Unsupported type: {param_type}, raw_value={raw_value}")
-        return str(value)
-
     def initialize_param(self, name: str, raw_value: str) -> str:
         params = self.tool.json_schema["parameters"]["properties"]
         spec = params.get(name)
@@ -591,8 +562,7 @@ class ToolExecutionSandbox:
         if param_type is None and spec.get("parameters"):
             param_type = spec["parameters"].get("type")
 
-        value = self._convert_param_to_value(param_type, raw_value)
-
+        value = convert_param_to_str_value(param_type, raw_value)
         return name + " = " + value + "\n"
 
     def invoke_function_call(self, inject_agent_state: bool) -> str:

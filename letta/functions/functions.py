@@ -12,6 +12,8 @@ from letta.functions.schema_generator import generate_schema
 def derive_openai_json_schema(source_code: str, name: Optional[str] = None) -> dict:
     """Derives the OpenAI JSON schema for a given function source code.
 
+    # TODO (cliandy): I don't think we need to or should execute here
+    # TODO (cliandy): CONFIRM THIS BEFORE MERGING.
     First, attempts to execute the source code in a custom environment with only the necessary imports.
     Then, it generates the schema from the function's docstring and signature.
     """

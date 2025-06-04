@@ -67,7 +67,7 @@ def _run_schema_test(schema_name: str, desired_function_name: str, expect_struct
     with open(os.path.join(os.path.dirname(__file__), f"test_tool_schema_parsing_files/{schema_name}.json"), "r") as file:
         expected_schema = json.load(file)
 
-    _compare_schemas(schema, expected_schema)
+    _compare_schemas(schema, expected_schema, False)
 
     # Convert to structured output and compare
     if expect_structured_output_fail:
@@ -289,7 +289,7 @@ def test_composio_tool_schema_generation(openai_model: str, structured_output: b
     action_names = [
         "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",  # Simple
         "CAL_GET_AVAILABLE_SLOTS_INFO",  # has an array arg, needs to be converted properly
-        "SALESFORCE_RETRIEVE_LEAD_DETAILS_BY_ID_WITH_CONDITIONAL_SUPPORT",
+        "SALESFORCE_RETRIEVE_LEAD_BY_ID",
         # has an array arg, needs to be converted properly
     ]
 

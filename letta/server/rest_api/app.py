@@ -1,5 +1,4 @@
-import asyncio
-import concurrent.futures
+import importlib.util
 import json
 import logging
 import os
@@ -17,7 +16,6 @@ from letta.__init__ import __version__
 from letta.agents.exceptions import IncompatibleAgentType
 from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
 from letta.errors import BedrockPermissionError, LettaAgentNotFoundError, LettaUserNotFoundError
-from letta.jobs.scheduler import shutdown_scheduler_and_release_lock, start_scheduler_with_leader_election
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.schemas.letta_message import create_letta_message_union_schema
@@ -100,7 +98,7 @@ class CheckPasswordMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
 
         # Exclude health check endpoint from password protection
-        if request.url.path == "/v1/health/" or request.url.path == "/latest/health/":
+        if request.url.path in {"/v1/health", "/v1/health/", "/latest/health/"}:
             return await call_next(request)
 
         if (
@@ -141,34 +139,6 @@ def create_application() -> "FastAPI":
         version="1.0.0",  # TODO wire this up to the version in the package
         debug=debug_mode,  # if True, the stack trace will be printed in the response
     )
-
-    @app.on_event("startup")
-    async def configure_executor():
-        print(f"INFO:     Configured event loop executor with {settings.event_loop_threadpool_max_workers} workers.")
-        loop = asyncio.get_running_loop()
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=settings.event_loop_threadpool_max_workers)
-        loop.set_default_executor(executor)
-
-    @app.on_event("startup")
-    async def on_startup():
-        global server
-
-        await start_scheduler_with_leader_election(server)
-
-    @app.on_event("shutdown")
-    def shutdown_mcp_clients():
-        global server
-        import threading
-
-        def cleanup_clients():
-            if hasattr(server, "mcp_clients"):
-                for client in server.mcp_clients.values():
-                    client.cleanup()
-                server.mcp_clients.clear()
-
-        t = threading.Thread(target=cleanup_clients)
-        t.start()
-        t.join()
 
     @app.exception_handler(IncompatibleAgentType)
     async def handle_incompatible_agent_type(request: Request, exc: IncompatibleAgentType):
@@ -320,12 +290,6 @@ def create_application() -> "FastAPI":
     # Generate OpenAPI schema after all routes are mounted
     generate_openapi_schema(app)
 
-    @app.on_event("shutdown")
-    async def on_shutdown():
-        global server
-        # server = None
-        await shutdown_scheduler_and_release_lock()
-
     return app
 
 
@@ -352,19 +316,53 @@ def start_server(
         # Add the handler to the logger
         server_logger.addHandler(stream_handler)
 
+    # Experimental UV Loop Support
+    try:
+        if importlib.util.find_spec("uvloop") is not None and settings.use_uvloop:
+            print("Running server on uvloop...")
+            import asyncio
+
+            import uvloop
+
+            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    except:
+        pass
+
     if (os.getenv("LOCAL_HTTPS") == "true") or "--localhttps" in sys.argv:
         print(f"▶ Server running at: https://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
         print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
-        uvicorn.run(
-            "letta.server.rest_api.app:app",
-            host=host or "localhost",
-            port=port or REST_DEFAULT_PORT,
-            workers=settings.uvicorn_workers,
-            reload=reload or settings.uvicorn_reload,
-            timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
-            ssl_keyfile="certs/localhost-key.pem",
-            ssl_certfile="certs/localhost.pem",
-        )
+        if importlib.util.find_spec("granian") is not None and settings.use_uvloop:
+            from granian import Granian
+
+            # Experimental Granian engine
+            Granian(
+                target="letta.server.rest_api.app:app",
+                # factory=True,
+                interface="asgi",
+                address=host or "localhost",
+                port=port or REST_DEFAULT_PORT,
+                workers=settings.uvicorn_workers,
+                # threads=
+                reload=reload or settings.uvicorn_reload,
+                reload_ignore_patterns=["openapi_letta.json"],
+                reload_ignore_worker_failure=True,
+                reload_tick=100,
+                # log_level="info"
+                ssl_keyfile="certs/localhost-key.pem",
+                ssl_cert="certs/localhost.pem",
+            ).serve()
+        else:
+            uvicorn.run(
+                "letta.server.rest_api.app:app",
+                host=host or "localhost",
+                port=port or REST_DEFAULT_PORT,
+                workers=settings.uvicorn_workers,
+                reload=reload or settings.uvicorn_reload,
+                timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
+                ssl_keyfile="certs/localhost-key.pem",
+                ssl_certfile="certs/localhost.pem",
+            )
+
     else:
         if is_windows:
             # Windows doesn't those the fancy unicode characters
@@ -374,11 +372,30 @@ def start_server(
             print(f"▶ Server running at: http://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
             print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
 
-        uvicorn.run(
-            "letta.server.rest_api.app:app",
-            host=host or "localhost",
-            port=port or REST_DEFAULT_PORT,
-            workers=settings.uvicorn_workers,
-            reload=reload or settings.uvicorn_reload,
-            timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
-        )
+        if importlib.util.find_spec("granian") is not None and settings.use_granian:
+            # Experimental Granian engine
+            from granian import Granian
+
+            Granian(
+                target="letta.server.rest_api.app:app",
+                # factory=True,
+                interface="asgi",
+                address=host or "localhost",
+                port=port or REST_DEFAULT_PORT,
+                workers=settings.uvicorn_workers,
+                # threads=
+                reload=reload or settings.uvicorn_reload,
+                reload_ignore_patterns=["openapi_letta.json"],
+                reload_ignore_worker_failure=True,
+                reload_tick=100,
+                # log_level="info"
+            ).serve()
+        else:
+            uvicorn.run(
+                "letta.server.rest_api.app:app",
+                host=host or "localhost",
+                port=port or REST_DEFAULT_PORT,
+                workers=settings.uvicorn_workers,
+                reload=reload or settings.uvicorn_reload,
+                timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
+            )

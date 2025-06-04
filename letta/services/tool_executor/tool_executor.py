@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Literal, Optional
 from letta.constants import (
     COMPOSIO_ENTITY_ENV_VAR_KEY,
     CORE_MEMORY_LINE_NUMBER_WARNING,
+    MCP_TOOL_TAG_NAME_PREFIX,
+    MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX,
     READ_ONLY_BLOCK_EDIT_ERROR,
     RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE,
     WEB_SEARCH_CLIP_CONTENT,
@@ -17,7 +19,7 @@ from letta.constants import (
 )
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
 from letta.functions.composio_helpers import execute_composio_action_async, generate_composio_action_from_func_name
-from letta.helpers.composio_helpers import get_composio_api_key
+from letta.helpers.composio_helpers import get_composio_api_key_async
 from letta.helpers.json_helpers import json_dumps
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
@@ -31,12 +33,14 @@ from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
+from letta.services.mcp_manager import MCPManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.tool_sandbox.e2b_sandbox import AsyncToolSandboxE2B
 from letta.services.tool_sandbox.local_sandbox import AsyncToolSandboxLocal
 from letta.settings import tool_settings
 from letta.tracing import trace_method
+from letta.types import JsonDict
 from letta.utils import get_friendly_error_msg
 
 logger = get_logger(__name__)
@@ -60,13 +64,13 @@ class ToolExecutor(ABC):
         self.actor = actor
 
     @abstractmethod
-    def execute(
+    async def execute(
         self,
         function_name: str,
         function_args: dict,
-        agent_state: AgentState,
         tool: Tool,
         actor: User,
+        agent_state: Optional[AgentState] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
@@ -76,17 +80,18 @@ class ToolExecutor(ABC):
 class LettaCoreToolExecutor(ToolExecutor):
     """Executor for LETTA core tools with direct implementation of functions."""
 
-    def execute(
+    async def execute(
         self,
         function_name: str,
         function_args: dict,
-        agent_state: AgentState,
         tool: Tool,
         actor: User,
+        agent_state: Optional[AgentState] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
         # Map function names to method calls
+        assert agent_state is not None, "Agent state is required for core tools"
         function_map = {
             "send_message": self.send_message,
             "conversation_search": self.conversation_search,
@@ -105,13 +110,22 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         # Execute the appropriate function
         function_args_copy = function_args.copy()  # Make a copy to avoid modifying the original
-        function_response = function_map[function_name](agent_state, actor, **function_args_copy)
-        return ToolExecutionResult(
-            status="success",
-            func_return=function_response,
-        )
+        try:
+            function_response = await function_map[function_name](agent_state, actor, **function_args_copy)
+            return ToolExecutionResult(
+                status="success",
+                func_return=function_response,
+                agent_state=agent_state,
+            )
+        except Exception as e:
+            return ToolExecutionResult(
+                status="error",
+                func_return=e,
+                agent_state=agent_state,
+                stderr=[get_friendly_error_msg(function_name=function_name, exception_name=type(e).__name__, exception_message=str(e))],
+            )
 
-    def send_message(self, agent_state: AgentState, actor: User, message: str) -> Optional[str]:
+    async def send_message(self, agent_state: AgentState, actor: User, message: str) -> Optional[str]:
         """
         Sends a message to the human user.
 
@@ -123,7 +137,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         """
         return "Sent message successfully."
 
-    def conversation_search(self, agent_state: AgentState, actor: User, query: str, page: Optional[int] = 0) -> Optional[str]:
+    async def conversation_search(self, agent_state: AgentState, actor: User, query: str, page: Optional[int] = 0) -> Optional[str]:
         """
         Search prior conversation history using case-insensitive string matching.
 
@@ -142,7 +156,7 @@ class LettaCoreToolExecutor(ToolExecutor):
             raise ValueError(f"'page' argument must be an integer")
 
         count = RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
-        messages = MessageManager().list_user_messages_for_agent(
+        messages = await MessageManager().list_user_messages_for_agent_async(
             agent_id=agent_state.id,
             actor=actor,
             query_text=query,
@@ -161,7 +175,7 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         return results_str
 
-    def archival_memory_search(
+    async def archival_memory_search(
         self, agent_state: AgentState, actor: User, query: str, page: Optional[int] = 0, start: Optional[int] = 0
     ) -> Optional[str]:
         """
@@ -186,7 +200,7 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         try:
             # Get results using passage manager
-            all_results = AgentManager().list_passages(
+            all_results = await AgentManager().list_passages_async(
                 actor=actor,
                 agent_id=agent_state.id,
                 query_text=query,
@@ -207,7 +221,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         except Exception as e:
             raise e
 
-    def archival_memory_insert(self, agent_state: AgentState, actor: User, content: str) -> Optional[str]:
+    async def archival_memory_insert(self, agent_state: AgentState, actor: User, content: str) -> Optional[str]:
         """
         Add to archival memory. Make sure to phrase the memory contents such that it can be easily queried later.
 
@@ -217,16 +231,16 @@ class LettaCoreToolExecutor(ToolExecutor):
         Returns:
             Optional[str]: None is always returned as this function does not produce a response.
         """
-        PassageManager().insert_passage(
+        await PassageManager().insert_passage_async(
             agent_state=agent_state,
             agent_id=agent_state.id,
             text=content,
             actor=actor,
         )
-        AgentManager().rebuild_system_prompt(agent_id=agent_state.id, actor=actor, force=True)
+        await AgentManager().rebuild_system_prompt_async(agent_id=agent_state.id, actor=actor, force=True)
         return None
 
-    def core_memory_append(self, agent_state: AgentState, actor: User, label: str, content: str) -> Optional[str]:
+    async def core_memory_append(self, agent_state: AgentState, actor: User, label: str, content: str) -> Optional[str]:
         """
         Append to the contents of core memory.
 
@@ -242,10 +256,10 @@ class LettaCoreToolExecutor(ToolExecutor):
         current_value = str(agent_state.memory.get_block(label).value)
         new_value = current_value + "\n" + str(content)
         agent_state.memory.update_block_value(label=label, value=new_value)
-        AgentManager().update_memory_if_changed(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
+        await AgentManager().update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
         return None
 
-    def core_memory_replace(
+    async def core_memory_replace(
         self,
         agent_state: AgentState,
         actor: User,
@@ -271,10 +285,10 @@ class LettaCoreToolExecutor(ToolExecutor):
             raise ValueError(f"Old content '{old_content}' not found in memory block '{label}'")
         new_value = current_value.replace(str(old_content), str(new_content))
         agent_state.memory.update_block_value(label=label, value=new_value)
-        AgentManager().update_memory_if_changed(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
+        await AgentManager().update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
         return None
 
-    def memory_replace(
+    async def memory_replace(
         self,
         agent_state: AgentState,
         actor: User,
@@ -289,19 +303,18 @@ class LettaCoreToolExecutor(ToolExecutor):
         Args:
             label (str): Section of the memory to be edited, identified by its label.
             old_str (str): The text to replace (must match exactly, including whitespace
-                and indentation).
+                and indentation). Do not include line number prefixes.
             new_str (Optional[str]): The new text to insert in place of the old text.
-                Omit this argument to delete the old_str.
+                Omit this argument to delete the old_str. Do not include line number prefixes.
 
         Returns:
             str: The success message
         """
-        import re
 
         if agent_state.memory.get_block(label).read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
 
-        if bool(re.search(r"\nLine \d+: ", old_str)):
+        if bool(MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX.search(old_str)):
             raise ValueError(
                 "old_str contains a line number prefix, which is not allowed. "
                 "Do not include line numbers when calling memory tools (line "
@@ -313,7 +326,7 @@ class LettaCoreToolExecutor(ToolExecutor):
                 "Do not include line number information when calling memory tools "
                 "(line numbers are for display purposes only)."
             )
-        if bool(re.search(r"\nLine \d+: ", new_str)):
+        if bool(MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX.search(new_str)):
             raise ValueError(
                 "new_str contains a line number prefix, which is not allowed. "
                 "Do not include line numbers when calling memory tools (line "
@@ -344,7 +357,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         # Write the new content to the block
         agent_state.memory.update_block_value(label=label, value=new_value)
 
-        AgentManager().update_memory_if_changed(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
+        await AgentManager().update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
 
         # Create a snippet of the edited section
         SNIPPET_LINES = 3
@@ -367,7 +380,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         # return None
         return success_msg
 
-    def memory_insert(
+    async def memory_insert(
         self,
         agent_state: AgentState,
         actor: User,
@@ -381,19 +394,18 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         Args:
             label (str): Section of the memory to be edited, identified by its label.
-            new_str (str): The text to insert.
+            new_str (str): The text to insert. Do not include line number prefixes.
             insert_line (int): The line number after which to insert the text (0 for
                 beginning of file). Defaults to -1 (end of the file).
 
         Returns:
             str: The success message
         """
-        import re
 
         if agent_state.memory.get_block(label).read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
 
-        if bool(re.search(r"\nLine \d+: ", new_str)):
+        if bool(MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX.search(new_str)):
             raise ValueError(
                 "new_str contains a line number prefix, which is not allowed. Do not "
                 "include line numbers when calling memory tools (line numbers are for "
@@ -412,7 +424,9 @@ class LettaCoreToolExecutor(ToolExecutor):
         n_lines = len(current_value_lines)
 
         # Check if we're in range, from 0 (pre-line), to 1 (first line), to n_lines (last line)
-        if insert_line < 0 or insert_line > n_lines:
+        if insert_line == -1:
+            insert_line = n_lines
+        elif insert_line < 0 or insert_line > n_lines:
             raise ValueError(
                 f"Invalid `insert_line` parameter: {insert_line}. It should be within "
                 f"the range of lines of the memory block: {[0, n_lines]}, or -1 to "
@@ -436,7 +450,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         # Write into the block
         agent_state.memory.update_block_value(label=label, value=new_value)
 
-        AgentManager().update_memory_if_changed(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
+        await AgentManager().update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
 
         # Prepare the success message
         success_msg = f"The core memory block with label `{label}` has been edited. "
@@ -453,7 +467,7 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         return success_msg
 
-    def memory_rethink(self, agent_state: AgentState, actor: User, label: str, new_memory: str) -> str:
+    async def memory_rethink(self, agent_state: AgentState, actor: User, label: str, new_memory: str) -> str:
         """
         The memory_rethink command allows you to completely rewrite the contents of a
         memory block. Use this tool to make large sweeping changes (e.g. when you want
@@ -463,17 +477,15 @@ class LettaCoreToolExecutor(ToolExecutor):
         Args:
             label (str): The memory block to be rewritten, identified by its label.
             new_memory (str): The new memory contents with information integrated from
-                existing memory blocks and the conversation context.
+                existing memory blocks and the conversation context. Do not include line number prefixes.
 
         Returns:
             str: The success message
         """
-        import re
-
         if agent_state.memory.get_block(label).read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
 
-        if bool(re.search(r"\nLine \d+: ", new_memory)):
+        if bool(MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX.search(new_memory)):
             raise ValueError(
                 "new_memory contains a line number prefix, which is not allowed. Do not "
                 "include line numbers when calling memory tools (line numbers are for "
@@ -491,7 +503,7 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         agent_state.memory.update_block_value(label=label, value=new_memory)
 
-        AgentManager().update_memory_if_changed(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
+        await AgentManager().update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
 
         # Prepare the success message
         success_msg = f"The core memory block with label `{label}` has been edited. "
@@ -507,7 +519,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         # return None
         return success_msg
 
-    def memory_finish_edits(self, agent_state: AgentState, actor: User) -> None:
+    async def memory_finish_edits(self, agent_state: AgentState, actor: User) -> None:
         """
         Call the memory_finish_edits command when you are finished making edits
         (integrating all new information) into the memory blocks. This function
@@ -526,16 +538,17 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
         self,
         function_name: str,
         function_args: dict,
-        agent_state: AgentState,
         tool: Tool,
         actor: User,
+        agent_state: Optional[AgentState] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
+        assert agent_state is not None, "Agent state is required for multi-agent tools"
         function_map = {
             "send_message_to_agent_and_wait_for_reply": self.send_message_to_agent_and_wait_for_reply,
             "send_message_to_agent_async": self.send_message_to_agent_async,
-            "send_message_to_agents_matching_tags": self.send_message_to_agents_matching_tags,
+            "send_message_to_agents_matching_tags": self.send_message_to_agents_matching_tags_async,
         }
 
         if function_name not in function_map:
@@ -573,11 +586,13 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
 
         return "Successfully sent message"
 
-    async def send_message_to_agents_matching_tags(
+    async def send_message_to_agents_matching_tags_async(
         self, agent_state: AgentState, message: str, match_all: List[str], match_some: List[str]
     ) -> str:
         # Find matching agents
-        matching_agents = self.agent_manager.list_agents_matching_tags(actor=self.actor, match_all=match_all, match_some=match_some)
+        matching_agents = await self.agent_manager.list_agents_matching_tags_async(
+            actor=self.actor, match_all=match_all, match_some=match_some
+        )
         if not matching_agents:
             return str([])
 
@@ -633,19 +648,20 @@ class ExternalComposioToolExecutor(ToolExecutor):
         self,
         function_name: str,
         function_args: dict,
-        agent_state: AgentState,
         tool: Tool,
         actor: User,
+        agent_state: Optional[AgentState] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
+        assert agent_state is not None, "Agent state is required for external Composio tools"
         action_name = generate_composio_action_from_func_name(tool.name)
 
         # Get entity ID from the agent_state
         entity_id = self._get_entity_id(agent_state)
 
         # Get composio_api_key
-        composio_api_key = get_composio_api_key(actor=actor)
+        composio_api_key = await get_composio_api_key_async(actor=actor)
 
         # TODO (matt): Roll in execute_composio_action into this class
         function_response = await execute_composio_action_async(
@@ -668,53 +684,35 @@ class ExternalComposioToolExecutor(ToolExecutor):
 class ExternalMCPToolExecutor(ToolExecutor):
     """Executor for external MCP tools."""
 
-    # TODO: Implement
-    #
-    # def execute(self, function_name: str, function_args: dict, agent_state: AgentState, tool: Tool, actor: User) -> ToolExecutionResult:
-    #     # Get the server name from the tool tag
-    #     server_name = self._extract_server_name(tool)
-    #
-    #     # Get the MCPClient
-    #     mcp_client = self._get_mcp_client(agent, server_name)
-    #
-    #     # Validate tool exists
-    #     self._validate_tool_exists(mcp_client, function_name, server_name)
-    #
-    #     # Execute the tool
-    #     function_response, is_error = mcp_client.execute_tool(tool_name=function_name, tool_args=function_args)
-    #
-    #     return ToolExecutionResult(
-    #         status="error" if is_error else "success",
-    #         func_return=function_response,
-    #     )
-    #
-    # def _extract_server_name(self, tool: Tool) -> str:
-    #     """Extract server name from tool tags."""
-    #     return tool.tags[0].split(":")[1]
-    #
-    # def _get_mcp_client(self, agent: "Agent", server_name: str):
-    #     """Get the MCP client for the given server name."""
-    #     if not agent.mcp_clients:
-    #         raise ValueError("No MCP client available to use")
-    #
-    #     if server_name not in agent.mcp_clients:
-    #         raise ValueError(f"Unknown MCP server name: {server_name}")
-    #
-    #     mcp_client = agent.mcp_clients[server_name]
-    #     if not isinstance(mcp_client, BaseMCPClient):
-    #         raise RuntimeError(f"Expected an MCPClient, but got: {type(mcp_client)}")
-    #
-    #     return mcp_client
-    #
-    # def _validate_tool_exists(self, mcp_client, function_name: str, server_name: str):
-    #     """Validate that the tool exists in the MCP server."""
-    #     available_tools = mcp_client.list_tools()
-    #     available_tool_names = [t.name for t in available_tools]
-    #
-    #     if function_name not in available_tool_names:
-    #         raise ValueError(
-    #             f"{function_name} is not available in MCP server {server_name}. " f"Please check your `~/.letta/mcp_config.json` file."
-    #         )
+    @trace_method
+    async def execute(
+        self,
+        function_name: str,
+        function_args: dict,
+        tool: Tool,
+        actor: User,
+        agent_state: Optional[AgentState] = None,
+        sandbox_config: Optional[SandboxConfig] = None,
+        sandbox_env_vars: Optional[Dict[str, Any]] = None,
+    ) -> ToolExecutionResult:
+
+        pass
+
+        mcp_server_tag = [tag for tag in tool.tags if tag.startswith(f"{MCP_TOOL_TAG_NAME_PREFIX}:")]
+        if not mcp_server_tag:
+            raise ValueError(f"Tool {tool.name} does not have a valid MCP server tag")
+        mcp_server_name = mcp_server_tag[0].split(":")[1]
+
+        mcp_manager = MCPManager()
+        # TODO: may need to have better client connection management
+        function_response, success = await mcp_manager.execute_mcp_server_tool(
+            mcp_server_name=mcp_server_name, tool_name=function_name, tool_args=function_args, actor=actor
+        )
+
+        return ToolExecutionResult(
+            status="success" if success else "error",
+            func_return=function_response,
+        )
 
 
 class SandboxToolExecutor(ToolExecutor):
@@ -724,22 +722,22 @@ class SandboxToolExecutor(ToolExecutor):
     async def execute(
         self,
         function_name: str,
-        function_args: dict,
-        agent_state: AgentState,
+        function_args: JsonDict,
         tool: Tool,
         actor: User,
+        agent_state: Optional[AgentState] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
 
         # Store original memory state
-        orig_memory_str = agent_state.memory.compile()
+        orig_memory_str = agent_state.memory.compile() if agent_state else None
 
         try:
             # Prepare function arguments
             function_args = self._prepare_function_args(function_args, tool, function_name)
 
-            agent_state_copy = self._create_agent_state_copy(agent_state)
+            agent_state_copy = self._create_agent_state_copy(agent_state) if agent_state else None
 
             # Execute in sandbox depending on API key
             if tool_settings.e2b_api_key:
@@ -754,18 +752,20 @@ class SandboxToolExecutor(ToolExecutor):
             tool_execution_result = await sandbox.run(agent_state=agent_state_copy)
 
             # Verify memory integrity
-            assert orig_memory_str == agent_state.memory.compile(), "Memory should not be modified in a sandbox tool"
+            if agent_state:
+                assert orig_memory_str == agent_state.memory.compile(), "Memory should not be modified in a sandbox tool"
 
             # Update agent memory if needed
             if tool_execution_result.agent_state is not None:
-                AgentManager().update_memory_if_changed(agent_state.id, tool_execution_result.agent_state.memory, actor)
+                await AgentManager().update_memory_if_changed_async(agent_state.id, tool_execution_result.agent_state.memory, actor)
 
             return tool_execution_result
 
         except Exception as e:
             return self._handle_execution_error(e, function_name, traceback.format_exc())
 
-    def _prepare_function_args(self, function_args: dict, tool: Tool, function_name: str) -> dict:
+    @staticmethod
+    def _prepare_function_args(function_args: JsonDict, tool: Tool, function_name: str) -> dict:
         """Prepare function arguments with proper type coercion."""
         try:
             # Parse the source code to extract function annotations
@@ -777,7 +777,8 @@ class SandboxToolExecutor(ToolExecutor):
             # This is defensive programming - we try to coerce but fall back if it fails
             return function_args
 
-    def _create_agent_state_copy(self, agent_state: AgentState):
+    @staticmethod
+    def _create_agent_state_copy(agent_state: AgentState):
         """Create a copy of agent state for sandbox execution."""
         agent_state_copy = agent_state.__deepcopy__()
         # Remove tools from copy to prevent nested tool execution
@@ -785,8 +786,8 @@ class SandboxToolExecutor(ToolExecutor):
         agent_state_copy.tool_rules = []
         return agent_state_copy
 
+    @staticmethod
     def _handle_execution_error(
-        self,
         exception: Exception,
         function_name: str,
         stderr: str,
@@ -810,9 +811,9 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         self,
         function_name: str,
         function_args: dict,
-        agent_state: AgentState,
         tool: Tool,
         actor: User,
+        agent_state: Optional[AgentState] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
@@ -828,6 +829,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         return ToolExecutionResult(
             status="success",
             func_return=function_response,
+            agent_state=agent_state,
         )
 
     async def run_code(self, code: str, language: Literal["python", "js", "ts", "r", "java"]) -> str:

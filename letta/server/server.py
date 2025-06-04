@@ -19,13 +19,11 @@ import letta.constants as constants
 import letta.server.utils as server_utils
 import letta.system as system
 from letta.agent import Agent, save_agent
+from letta.agents.letta_agent import LettaAgent
 from letta.config import LettaConfig
-from letta.constants import LETTA_TOOL_EXECUTION_DIR
+from letta.constants import CORE_MEMORY_SOURCE_CHAR_LIMIT, LETTA_TOOL_EXECUTION_DIR
 from letta.data_sources.connectors import DataConnector, load_data
 from letta.errors import HandleNotFoundError
-from letta.functions.mcp_client.base_client import BaseMCPClient
-from letta.functions.mcp_client.sse_client import MCP_CONFIG_TOPLEVEL_KEY, SSEMCPClient
-from letta.functions.mcp_client.stdio_client import StdioMCPClient
 from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig
 from letta.groups.helpers import load_multi_agent
 from letta.helpers.datetime_helpers import get_utc_time
@@ -52,7 +50,6 @@ from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
-from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage, PassageUpdate
 from letta.schemas.providers import (
     AnthropicBedrockProvider,
@@ -82,11 +79,16 @@ from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
+from letta.services.files_agents_manager import FileAgentManager
 from letta.services.group_manager import GroupManager
 from letta.services.helpers.tool_execution_helper import prepare_local_sandbox
 from letta.services.identity_manager import IdentityManager
 from letta.services.job_manager import JobManager
 from letta.services.llm_batch_manager import LLMBatchManager
+from letta.services.mcp.base_client import AsyncBaseMCPClient
+from letta.services.mcp.sse_client import MCP_CONFIG_TOPLEVEL_KEY, AsyncSSEMCPClient
+from letta.services.mcp.stdio_client import AsyncStdioMCPClient
+from letta.services.mcp_manager import MCPManager
 from letta.services.message_manager import MessageManager
 from letta.services.organization_manager import OrganizationManager
 from letta.services.passage_manager import PassageManager
@@ -94,8 +96,8 @@ from letta.services.provider_manager import ProviderManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.source_manager import SourceManager
 from letta.services.step_manager import StepManager
-from letta.services.telemetry_manager import TelemetryManager
-from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSandbox
+from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
+from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings, settings, tool_settings
@@ -203,6 +205,7 @@ class SyncServer(Server):
         self.passage_manager = PassageManager()
         self.user_manager = UserManager()
         self.tool_manager = ToolManager()
+        self.mcp_manager = MCPManager()
         self.block_manager = BlockManager()
         self.source_manager = SourceManager()
         self.sandbox_config_manager = SandboxConfigManager()
@@ -215,6 +218,7 @@ class SyncServer(Server):
         self.group_manager = GroupManager()
         self.batch_manager = LLMBatchManager()
         self.telemetry_manager = TelemetryManager()
+        self.file_agent_manager = FileAgentManager()
 
         # A resusable httpx client
         timeout = httpx.Timeout(connect=10.0, read=20.0, write=10.0, pool=10.0)
@@ -380,30 +384,9 @@ class SyncServer(Server):
             self._enabled_providers.append(XAIProvider(name="xai", api_key=model_settings.xai_api_key))
 
         # For MCP
+        # TODO: remove this
         """Initialize the MCP clients (there may be multiple)"""
-        mcp_server_configs = self.get_mcp_servers()
-        self.mcp_clients: Dict[str, BaseMCPClient] = {}
-
-        for server_name, server_config in mcp_server_configs.items():
-            if server_config.type == MCPServerType.SSE:
-                self.mcp_clients[server_name] = SSEMCPClient(server_config)
-            elif server_config.type == MCPServerType.STDIO:
-                self.mcp_clients[server_name] = StdioMCPClient(server_config)
-            else:
-                raise ValueError(f"Invalid MCP server config: {server_config}")
-
-            try:
-                self.mcp_clients[server_name].connect_to_server()
-            except Exception as e:
-                logger.error(e)
-                self.mcp_clients.pop(server_name)
-
-        # Print out the tools that are connected
-        for server_name, client in self.mcp_clients.items():
-            logger.info(f"Attempting to fetch tools from MCP server: {server_name}")
-            mcp_tools = client.list_tools()
-            logger.info(f"MCP tools connected: {', '.join([t.name for t in mcp_tools])}")
-            logger.debug(f"MCP tools: {', '.join([str(t) for t in mcp_tools])}")
+        self.mcp_clients: Dict[str, AsyncBaseMCPClient] = {}
 
         # TODO: Remove these in memory caches
         self._llm_config_cache = {}
@@ -411,6 +394,31 @@ class SyncServer(Server):
 
         # TODO: Replace this with the Anthropic client we have in house
         self.anthropic_async_client = AsyncAnthropic()
+
+    async def init_mcp_clients(self):
+        # TODO: remove this
+        mcp_server_configs = self.get_mcp_servers()
+
+        for server_name, server_config in mcp_server_configs.items():
+            if server_config.type == MCPServerType.SSE:
+                self.mcp_clients[server_name] = AsyncSSEMCPClient(server_config)
+            elif server_config.type == MCPServerType.STDIO:
+                self.mcp_clients[server_name] = AsyncStdioMCPClient(server_config)
+            else:
+                raise ValueError(f"Invalid MCP server config: {server_config}")
+
+            try:
+                await self.mcp_clients[server_name].connect_to_server()
+            except Exception as e:
+                logger.error(e)
+                self.mcp_clients.pop(server_name)
+
+        # Print out the tools that are connected
+        for server_name, client in self.mcp_clients.items():
+            logger.info(f"Attempting to fetch tools from MCP server: {server_name}")
+            mcp_tools = await client.list_tools()
+            logger.info(f"MCP tools connected: {', '.join([t.name for t in mcp_tools])}")
+            logger.debug(f"MCP tools: {', '.join([str(t) for t in mcp_tools])}")
 
     def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
         """Updated method to load agents from persisted storage"""
@@ -820,7 +828,10 @@ class SyncServer(Server):
     ) -> AgentState:
         if request.llm_config is None:
             if request.model is None:
-                raise ValueError("Must specify either model or llm_config in request")
+                if settings.default_llm_handle is None:
+                    raise ValueError("Must specify either model or llm_config in request")
+                else:
+                    request.model = settings.default_llm_handle
             config_params = {
                 "handle": request.model,
                 "context_window_limit": request.context_window_limit,
@@ -834,7 +845,10 @@ class SyncServer(Server):
 
         if request.embedding_config is None:
             if request.embedding is None:
-                raise ValueError("Must specify either embedding or embedding_config in request")
+                if settings.default_embedding_handle is None:
+                    raise ValueError("Must specify either embedding or embedding_config in request")
+                else:
+                    request.embedding = settings.default_embedding_handle
             embedding_config_params = {
                 "handle": request.embedding,
                 "embedding_chunk_size": request.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
@@ -852,9 +866,9 @@ class SyncServer(Server):
 
         if request.enable_sleeptime:
             if request.agent_type == AgentType.voice_convo_agent:
-                main_agent = self.create_voice_sleeptime_agent(main_agent=main_agent, actor=actor)
+                main_agent = await self.create_voice_sleeptime_agent_async(main_agent=main_agent, actor=actor)
             else:
-                main_agent = self.create_sleeptime_agent(main_agent=main_agent, actor=actor)
+                main_agent = await self.create_sleeptime_agent_async(main_agent=main_agent, actor=actor)
 
         return main_agent
 
@@ -897,12 +911,12 @@ class SyncServer(Server):
             request.embedding_config = await self.get_embedding_config_from_handle_async(handle=request.embedding, actor=actor)
 
         if request.enable_sleeptime:
-            agent = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
+            agent = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
             if agent.multi_agent_group is None:
                 if agent.agent_type == AgentType.voice_convo_agent:
-                    self.create_voice_sleeptime_agent(main_agent=agent, actor=actor)
+                    await self.create_voice_sleeptime_agent_async(main_agent=agent, actor=actor)
                 else:
-                    self.create_sleeptime_agent(main_agent=agent, actor=actor)
+                    await self.create_sleeptime_agent_async(main_agent=agent, actor=actor)
 
         return await self.agent_manager.update_agent_async(
             agent_id=agent_id,
@@ -942,6 +956,38 @@ class SyncServer(Server):
         )
         return self.agent_manager.get_agent_by_id(agent_id=main_agent.id, actor=actor)
 
+    async def create_sleeptime_agent_async(self, main_agent: AgentState, actor: User) -> AgentState:
+        request = CreateAgent(
+            name=main_agent.name + "-sleeptime",
+            agent_type=AgentType.sleeptime_agent,
+            block_ids=[block.id for block in main_agent.memory.blocks],
+            memory_blocks=[
+                CreateBlock(
+                    label="memory_persona",
+                    value=get_persona_text("sleeptime_memory_persona"),
+                ),
+            ],
+            llm_config=main_agent.llm_config,
+            embedding_config=main_agent.embedding_config,
+            project_id=main_agent.project_id,
+        )
+        sleeptime_agent = await self.agent_manager.create_agent_async(
+            agent_create=request,
+            actor=actor,
+        )
+        await self.group_manager.create_group_async(
+            group=GroupCreate(
+                description="",
+                agent_ids=[sleeptime_agent.id],
+                manager_config=SleeptimeManager(
+                    manager_agent_id=main_agent.id,
+                    sleeptime_agent_frequency=5,
+                ),
+            ),
+            actor=actor,
+        )
+        return await self.agent_manager.get_agent_by_id_async(agent_id=main_agent.id, actor=actor)
+
     def create_voice_sleeptime_agent(self, main_agent: AgentState, actor: User) -> AgentState:
         # TODO: Inject system
         request = CreateAgent(
@@ -975,6 +1021,40 @@ class SyncServer(Server):
             actor=actor,
         )
         return self.agent_manager.get_agent_by_id(agent_id=main_agent.id, actor=actor)
+
+    async def create_voice_sleeptime_agent_async(self, main_agent: AgentState, actor: User) -> AgentState:
+        # TODO: Inject system
+        request = CreateAgent(
+            name=main_agent.name + "-sleeptime",
+            agent_type=AgentType.voice_sleeptime_agent,
+            block_ids=[block.id for block in main_agent.memory.blocks],
+            memory_blocks=[
+                CreateBlock(
+                    label="memory_persona",
+                    value=get_persona_text("voice_memory_persona"),
+                ),
+            ],
+            llm_config=LLMConfig.default_config("gpt-4.1"),
+            embedding_config=main_agent.embedding_config,
+            project_id=main_agent.project_id,
+        )
+        voice_sleeptime_agent = await self.agent_manager.create_agent_async(
+            agent_create=request,
+            actor=actor,
+        )
+        await self.group_manager.create_group_async(
+            group=GroupCreate(
+                description="Low latency voice chat with async memory management.",
+                agent_ids=[voice_sleeptime_agent.id],
+                manager_config=VoiceSleeptimeManager(
+                    manager_agent_id=main_agent.id,
+                    max_message_buffer_length=constants.DEFAULT_MAX_MESSAGE_BUFFER_LENGTH,
+                    min_message_buffer_length=constants.DEFAULT_MIN_MESSAGE_BUFFER_LENGTH,
+                ),
+            ),
+            actor=actor,
+        )
+        return await self.agent_manager.get_agent_by_id_async(agent_id=main_agent.id, actor=actor)
 
     # convert name->id
 
@@ -1057,6 +1137,20 @@ class SyncServer(Server):
 
         return passages
 
+    async def insert_archival_memory_async(self, agent_id: str, memory_contents: str, actor: User) -> List[Passage]:
+        # Get the agent object (loaded in memory)
+        agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        # Insert into archival memory
+        # TODO: @mindy look at moving this to agent_manager to avoid above extra call
+        passages = await self.passage_manager.insert_passage_async(
+            agent_state=agent_state, agent_id=agent_id, text=memory_contents, actor=actor
+        )
+
+        # rebuild agent system prompt - force since no archival change
+        await self.agent_manager.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
+
+        return passages
+
     def modify_archival_memory(self, agent_id: str, memory_id: str, passage: PassageUpdate, actor: User) -> List[Passage]:
         passage = Passage(**passage.model_dump(exclude_unset=True, exclude_none=True))
         passages = self.passage_manager.update_passage_by_id(passage_id=memory_id, passage=passage, actor=actor)
@@ -1072,6 +1166,17 @@ class SyncServer(Server):
 
         # rebuild system prompt and force
         self.agent_manager.rebuild_system_prompt(agent_id=passage.agent_id, actor=actor, force=True)
+
+    async def delete_archival_memory_async(self, memory_id: str, actor: User):
+        # TODO check if it exists first, and throw error if not
+        # TODO: need to also rebuild the prompt here
+        passage = await self.passage_manager.get_passage_by_id_async(passage_id=memory_id, actor=actor)
+
+        # delete the passage
+        await self.passage_manager.delete_passage_by_id_async(passage_id=memory_id, actor=actor)
+
+        # rebuild system prompt and force
+        await self.agent_manager.rebuild_system_prompt_async(agent_id=passage.agent_id, actor=actor, force=True)
 
     def get_agent_recall(
         self,
@@ -1193,20 +1298,17 @@ class SyncServer(Server):
         await self.source_manager.delete_source(source_id=source_id, actor=actor)
 
         # delete data from passage store
-        # TODO: make async
-        passages_to_be_deleted = self.agent_manager.list_passages(actor=actor, source_id=source_id, limit=None)
-
-        # TODO: make this async
-        self.passage_manager.delete_passages(actor=actor, passages=passages_to_be_deleted)
+        passages_to_be_deleted = await self.agent_manager.list_passages_async(actor=actor, source_id=source_id, limit=None)
+        await self.passage_manager.delete_source_passages_async(actor=actor, passages=passages_to_be_deleted)
 
         # TODO: delete data from agent passage stores (?)
 
     async def load_file_to_source(self, source_id: str, file_path: str, job_id: str, actor: User) -> Job:
 
         # update job
-        job = self.job_manager.get_job_by_id(job_id, actor=actor)
+        job = await self.job_manager.get_job_by_id_async(job_id, actor=actor)
         job.status = JobStatus.running
-        self.job_manager.update_job_by_id(job_id=job_id, job_update=JobUpdate(**job.model_dump()), actor=actor)
+        await self.job_manager.update_job_by_id_async(job_id=job_id, job_update=JobUpdate(**job.model_dump()), actor=actor)
 
         # try:
         from letta.data_sources.connectors import DirectoryConnector
@@ -1225,43 +1327,137 @@ class SyncServer(Server):
 
             # Attach source to agent
             curr_passage_size = await self.agent_manager.passage_size_async(actor=actor, agent_id=agent_id)
-            agent_state = self.agent_manager.attach_source(agent_id=agent_state.id, source_id=source_id, actor=actor)
+            agent_state = await self.agent_manager.attach_source_async(agent_id=agent_state.id, source_id=source_id, actor=actor)
             new_passage_size = await self.agent_manager.passage_size_async(actor=actor, agent_id=agent_id)
             assert new_passage_size >= curr_passage_size  # in case empty files are added
 
             # rebuild system prompt and force
-            agent_state = self.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True)
+            agent_state = await self.agent_manager.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
 
         # update job status
         job.status = JobStatus.completed
         job.metadata["num_passages"] = num_passages
         job.metadata["num_documents"] = num_documents
-        self.job_manager.update_job_by_id(job_id=job_id, job_update=JobUpdate(**job.model_dump()), actor=actor)
+        await self.job_manager.update_job_by_id_async(job_id=job_id, job_update=JobUpdate(**job.model_dump()), actor=actor)
 
         return job
 
-    def sleeptime_document_ingest(self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False) -> None:
-        sleeptime_agent = self.create_document_sleeptime_agent(main_agent, source, actor, clear_history)
-        agent = self.load_agent(agent_id=sleeptime_agent.id, actor=actor)
-        for passage in self.list_data_source_passages(source_id=source.id, user_id=actor.id):
-            agent.step(
+    async def load_file_to_source_via_mistral(self):
+        pass
+
+    async def sleeptime_document_ingest_async(
+        self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False
+    ) -> None:
+        sleeptime_agent_state = await self.create_document_sleeptime_agent_async(main_agent, source, actor, clear_history)
+        sleeptime_agent = LettaAgent(
+            agent_id=sleeptime_agent_state.id,
+            message_manager=self.message_manager,
+            agent_manager=self.agent_manager,
+            block_manager=self.block_manager,
+            passage_manager=self.passage_manager,
+            actor=actor,
+            step_manager=self.step_manager,
+            telemetry_manager=self.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
+        )
+        passages = await self.agent_manager.list_passages_async(actor=actor, source_id=source.id)
+        for passage in passages:
+            await sleeptime_agent.step(
                 input_messages=[
                     MessageCreate(role="user", content=passage.text),
                 ]
             )
-        self.agent_manager.delete_agent(agent_id=sleeptime_agent.id, actor=actor)
+        await self.agent_manager.delete_agent_async(agent_id=sleeptime_agent_state.id, actor=actor)
 
-    def create_document_sleeptime_agent(
+    async def _upsert_file_to_agent(self, agent_id: str, text: str, file_id: str, actor: User) -> None:
+        """
+        Internal method to create or update a file <-> agent association
+        """
+        truncated_text = text[:CORE_MEMORY_SOURCE_CHAR_LIMIT]
+        await self.file_agent_manager.attach_file(agent_id=agent_id, file_id=file_id, actor=actor, visible_content=truncated_text)
+
+    async def _remove_file_from_agent(self, agent_id: str, file_id: str, actor: User) -> None:
+        """
+        Internal method to remove a document block for an agent.
+        """
+        try:
+            await self.file_agent_manager.detach_file(
+                agent_id=agent_id,
+                file_id=file_id,
+                actor=actor,
+            )
+        except NoResultFound:
+            logger.info(f"File {file_id} already removed from agent {agent_id}, skipping...")
+
+    async def insert_file_into_context_windows(
+        self, source_id: str, text: str, file_id: str, actor: User, agent_states: Optional[List[AgentState]] = None
+    ) -> List[AgentState]:
+        """
+        Insert the uploaded document into the context window of all agents
+        attached to the given source.
+        """
+        agent_states = agent_states or await self.source_manager.list_attached_agents(source_id=source_id, actor=actor)
+
+        # Return early
+        if not agent_states:
+            return []
+
+        logger.info(f"Inserting document into context window for source: {source_id}")
+        logger.info(f"Attached agents: {[a.id for a in agent_states]}")
+
+        await asyncio.gather(*(self._upsert_file_to_agent(agent_state.id, text, file_id, actor) for agent_state in agent_states))
+
+        return agent_states
+
+    async def insert_files_into_context_window(self, agent_state: AgentState, texts: List[str], file_ids: List[str], actor: User) -> None:
+        """
+        Insert the uploaded documents into the context window of an agent
+        attached to the given source.
+        """
+        logger.info(f"Inserting documents into context window for agent_state: {agent_state.id}")
+
+        if len(texts) != len(file_ids):
+            raise ValueError(f"Mismatch between number of texts ({len(texts)}) and file ids ({len(file_ids)})")
+
+        await asyncio.gather(*(self._upsert_file_to_agent(agent_state.id, text, file_id, actor) for text, file_id in zip(texts, file_ids)))
+
+    async def remove_file_from_context_windows(self, source_id: str, file_id: str, actor: User) -> None:
+        """
+        Remove the document from the context window of all agents
+        attached to the given source.
+        """
+        # TODO: We probably do NOT need to get the entire agent state, we can just get the IDs
+        agent_states = await self.source_manager.list_attached_agents(source_id=source_id, actor=actor)
+
+        # Return early
+        if not agent_states:
+            return
+
+        logger.info(f"Removing file from context window for source: {source_id}")
+        logger.info(f"Attached agents: {[a.id for a in agent_states]}")
+
+        await asyncio.gather(*(self._remove_file_from_agent(agent_state.id, file_id, actor) for agent_state in agent_states))
+
+    async def remove_files_from_context_window(self, agent_state: AgentState, file_ids: List[str], actor: User) -> None:
+        """
+        Remove multiple documents from the context window of an agent
+        attached to the given source.
+        """
+        logger.info(f"Removing files from context window for agent_state: {agent_state.id}")
+        logger.info(f"Files to remove: {file_ids}")
+
+        await asyncio.gather(*(self._remove_file_from_agent(agent_state.id, file_id, actor) for file_id in file_ids))
+
+    async def create_document_sleeptime_agent_async(
         self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False
     ) -> AgentState:
         try:
-            block = self.agent_manager.get_block_with_label(agent_id=main_agent.id, block_label=source.name, actor=actor)
+            block = await self.agent_manager.get_block_with_label_async(agent_id=main_agent.id, block_label=source.name, actor=actor)
         except:
-            block = self.block_manager.create_or_update_block(Block(label=source.name, value=""), actor=actor)
-            self.agent_manager.attach_block(agent_id=main_agent.id, block_id=block.id, actor=actor)
+            block = await self.block_manager.create_or_update_block_async(Block(label=source.name, value=""), actor=actor)
+            await self.agent_manager.attach_block_async(agent_id=main_agent.id, block_id=block.id, actor=actor)
 
         if clear_history and block.value != "":
-            block = self.block_manager.update_block(block_id=block.id, block=BlockUpdate(value=""))
+            block = await self.block_manager.update_block_async(block_id=block.id, block=BlockUpdate(value=""))
 
         request = CreateAgent(
             name=main_agent.name + "-doc-sleeptime",
@@ -1284,7 +1480,7 @@ class SyncServer(Server):
             include_base_tools=False,
             tools=constants.BASE_SLEEPTIME_TOOLS,
         )
-        return self.agent_manager.create_agent(
+        return await self.agent_manager.create_agent_async(
             agent_create=request,
             actor=actor,
         )
@@ -1299,13 +1495,13 @@ class SyncServer(Server):
         # TODO: this should be implemented as a batch job or at least async, since it may take a long time
 
         # load data from a data source into the document store
-        user = self.user_manager.get_user_by_id(user_id=user_id)
-        source = await self.source_manager.get_source_by_name(source_name=source_name, actor=user)
+        actor = await self.user_manager.get_actor_by_id_async(actor_id=user_id)
+        source = await self.source_manager.get_source_by_name(source_name=source_name, actor=actor)
         if source is None:
             raise ValueError(f"Data source {source_name} does not exist for user {user_id}")
 
         # load data into the document store
-        passage_count, document_count = await load_data(connector, source, self.passage_manager, self.source_manager, actor=user)
+        passage_count, document_count = await load_data(connector, source, self.passage_manager, self.source_manager, actor=actor)
         return passage_count, document_count
 
     def list_data_source_passages(self, user_id: str, source_id: str) -> List[Passage]:
@@ -1352,16 +1548,6 @@ class SyncServer(Server):
         # Get the current message
         return self.message_manager.update_message_by_id(message_id=message_id, message_update=request, actor=actor)
 
-    def get_organization_or_default(self, org_id: Optional[str]) -> Organization:
-        """Get the organization object for org_id if it exists, otherwise return the default organization object"""
-        if org_id is None:
-            org_id = self.organization_manager.DEFAULT_ORG_ID
-
-        try:
-            return self.organization_manager.get_organization_by_id(org_id=org_id)
-        except NoResultFound:
-            raise HTTPException(status_code=404, detail=f"Organization with id {org_id} not found")
-
     def list_llm_models(
         self,
         actor: User,
@@ -1407,7 +1593,7 @@ class SyncServer(Server):
             actor=actor,
         )
 
-        async def get_provider_models(provider):
+        async def get_provider_models(provider: Provider) -> list[LLMConfig]:
             try:
                 return await provider.list_llm_models_async()
             except Exception as e:
@@ -1763,7 +1949,7 @@ class SyncServer(Server):
     def add_embedding_model(self, request: EmbeddingConfig) -> EmbeddingConfig:
         """Add a new embedding model"""
 
-    def run_tool_from_source(
+    async def run_tool_from_source(
         self,
         actor: User,
         tool_args: Dict[str, str],
@@ -1796,8 +1982,20 @@ class SyncServer(Server):
 
         # Next, attempt to run the tool with the sandbox
         try:
-            tool_execution_result = ToolExecutionSandbox(tool.name, tool_args, actor, tool_object=tool).run(
-                agent_state=agent_state, additional_env_vars=tool_env_vars
+            tool_execution_manager = ToolExecutionManager(
+                agent_state=agent_state,
+                message_manager=self.message_manager,
+                agent_manager=self.agent_manager,
+                block_manager=self.block_manager,
+                passage_manager=self.passage_manager,
+                actor=actor,
+                sandbox_env_vars=tool_env_vars,
+            )
+            # TODO: Integrate sandbox result
+            tool_execution_result = await tool_execution_manager.execute_tool_async(
+                function_name=tool_name,
+                function_args=tool_args,
+                tool=tool,
             )
             return ToolReturnMessage(
                 id="null",
@@ -1852,7 +2050,8 @@ class SyncServer(Server):
 
         # TODO implement non-flatfile mechanism
         if not tool_settings.mcp_read_from_config:
-            raise RuntimeError("MCP config file disabled. Enable it in settings.")
+            return {}
+            # raise RuntimeError("MCP config file disabled. Enable it in settings.")
 
         mcp_server_list = {}
 
@@ -1906,14 +2105,14 @@ class SyncServer(Server):
         # If the file doesn't exist, return empty dictionary
         return mcp_server_list
 
-    def get_tools_from_mcp_server(self, mcp_server_name: str) -> List[MCPTool]:
+    async def get_tools_from_mcp_server(self, mcp_server_name: str) -> List[MCPTool]:
         """List the tools in an MCP server. Requires a client to be created."""
         if mcp_server_name not in self.mcp_clients:
             raise ValueError(f"No client was created for MCP server: {mcp_server_name}")
 
-        return self.mcp_clients[mcp_server_name].list_tools()
+        return await self.mcp_clients[mcp_server_name].list_tools()
 
-    def add_mcp_server_to_config(
+    async def add_mcp_server_to_config(
         self, server_config: Union[SSEServerConfig, StdioServerConfig], allow_upsert: bool = True
     ) -> List[Union[SSEServerConfig, StdioServerConfig]]:
         """Add a new server config to the MCP config file"""
@@ -1942,19 +2141,19 @@ class SyncServer(Server):
 
         # Attempt to initialize the connection to the server
         if server_config.type == MCPServerType.SSE:
-            new_mcp_client = SSEMCPClient(server_config)
+            new_mcp_client = AsyncSSEMCPClient(server_config)
         elif server_config.type == MCPServerType.STDIO:
-            new_mcp_client = StdioMCPClient(server_config)
+            new_mcp_client = AsyncStdioMCPClient(server_config)
         else:
             raise ValueError(f"Invalid MCP server config: {server_config}")
         try:
-            new_mcp_client.connect_to_server()
+            await new_mcp_client.connect_to_server()
         except:
             logger.exception(f"Failed to connect to MCP server: {server_config.server_name}")
             raise RuntimeError(f"Failed to connect to MCP server: {server_config.server_name}")
         # Print out the tools that are connected
         logger.info(f"Attempting to fetch tools from MCP server: {server_config.server_name}")
-        new_mcp_tools = new_mcp_client.list_tools()
+        new_mcp_tools = await new_mcp_client.list_tools()
         logger.info(f"MCP tools connected: {', '.join([t.name for t in new_mcp_tools])}")
         logger.debug(f"MCP tools: {', '.join([str(t) for t in new_mcp_tools])}")
 

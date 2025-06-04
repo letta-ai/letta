@@ -76,7 +76,7 @@ from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
 from letta.services.organization_manager import OrganizationManager
 from letta.settings import tool_settings
-from tests.helpers.utils import comprehensive_agent_checks
+from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
 from tests.utils import random_string
 
 DEFAULT_EMBEDDING_CONFIG = EmbeddingConfig(
@@ -105,14 +105,14 @@ async def _clear_tables():
 
 
 @pytest.fixture
-def default_organization(server: SyncServer):
+async def default_organization(server: SyncServer):
     """Fixture to create and return the default organization."""
     org = server.organization_manager.create_default_organization()
     yield org
 
 
 @pytest.fixture
-def other_organization(server: SyncServer):
+async def other_organization(server: SyncServer):
     """Fixture to create and return the default organization."""
     org = server.organization_manager.create_organization(pydantic_org=Organization(name="letta"))
     yield org
@@ -508,17 +508,17 @@ def server():
 
 @pytest.fixture
 @pytest.mark.asyncio
-async def agent_passages_setup(server, default_source, default_user, sarah_agent):
+async def agent_passages_setup(server, default_source, default_user, sarah_agent, event_loop):
     """Setup fixture for agent passages tests"""
     agent_id = sarah_agent.id
     actor = default_user
 
-    server.agent_manager.attach_source(agent_id=agent_id, source_id=default_source.id, actor=actor)
+    await server.agent_manager.attach_source_async(agent_id=agent_id, source_id=default_source.id, actor=actor)
 
     # Create some source passages
     source_passages = []
     for i in range(3):
-        passage = server.passage_manager.create_passage(
+        passage = await server.passage_manager.create_passage_async(
             PydanticPassage(
                 organization_id=actor.organization_id,
                 source_id=default_source.id,
@@ -533,7 +533,7 @@ async def agent_passages_setup(server, default_source, default_user, sarah_agent
     # Create some agent passages
     agent_passages = []
     for i in range(2):
-        passage = server.passage_manager.create_passage(
+        passage = await server.passage_manager.create_passage_async(
             PydanticPassage(
                 organization_id=actor.organization_id,
                 agent_id=agent_id,
@@ -548,7 +548,7 @@ async def agent_passages_setup(server, default_source, default_user, sarah_agent
     yield agent_passages, source_passages
 
     # Cleanup
-    server.source_manager.delete_source(default_source.id, actor=actor)
+    await server.source_manager.delete_source(default_source.id, actor=actor)
 
 
 @pytest.fixture
@@ -640,6 +640,27 @@ def event_loop(request):
     loop.close()
 
 
+@pytest.fixture
+async def file_attachment(server, default_user, sarah_agent, default_file):
+    assoc = await server.file_agent_manager.attach_file(
+        agent_id=sarah_agent.id,
+        file_id=default_file.id,
+        actor=default_user,
+        visible_content="initial",
+    )
+    yield assoc
+
+
+@pytest.fixture
+async def another_file(server, default_source, default_user, default_organization):
+    pf = PydanticFileMetadata(
+        file_name="another_file",
+        organization_id=default_organization.id,
+        source_id=default_source.id,
+    )
+    return await server.source_manager.create_file(pf, actor=default_user)
+
+
 # ======================================================================================================================
 # AgentManager Tests - Basic
 # ======================================================================================================================
@@ -669,6 +690,30 @@ async def test_create_get_list_agent(server: SyncServer, comprehensive_test_agen
 
 
 @pytest.mark.asyncio
+async def test_get_context_window_basic(server: SyncServer, comprehensive_test_agent_fixture, default_user, default_file, event_loop):
+    # Test agent creation
+    created_agent, create_agent_request = comprehensive_test_agent_fixture
+    comprehensive_agent_checks(created_agent, create_agent_request, actor=default_user)
+
+    # Attach a file
+    assoc = await server.file_agent_manager.attach_file(
+        agent_id=created_agent.id,
+        file_id=default_file.id,
+        actor=default_user,
+        visible_content="hello",
+    )
+
+    # Get context window and check for basic appearances
+    context_window_overview = await server.agent_manager.get_context_window(agent_id=created_agent.id, actor=default_user)
+    validate_context_window_overview(context_window_overview, assoc)
+
+    # Test deleting the agent
+    server.agent_manager.delete_agent(created_agent.id, default_user)
+    list_agents = await server.agent_manager.list_agents_async(actor=default_user)
+    assert len(list_agents) == 0
+
+
+@pytest.mark.asyncio
 async def test_create_agent_passed_in_initial_messages(server: SyncServer, default_user, default_block, event_loop):
     memory_blocks = [CreateBlock(label="human", value="BananaBoy"), CreateBlock(label="persona", value="I am a helpful assistant")]
     create_agent_request = CreateAgent(
@@ -687,7 +732,7 @@ async def test_create_agent_passed_in_initial_messages(server: SyncServer, defau
         actor=default_user,
     )
     assert await server.message_manager.size_async(agent_id=agent_state.id, actor=default_user) == 2
-    init_messages = await server.agent_manager.get_in_context_messages_async(agent_id=agent_state.id, actor=default_user)
+    init_messages = await server.message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=default_user)
 
     # Check that the system appears in the first initial message
     assert create_agent_request.system in init_messages[0].content[0].text
@@ -715,7 +760,7 @@ async def test_create_agent_default_initial_message(server: SyncServer, default_
         actor=default_user,
     )
     assert await server.message_manager.size_async(agent_id=agent_state.id, actor=default_user) == 4
-    init_messages = await server.agent_manager.get_in_context_messages_async(agent_id=agent_state.id, actor=default_user)
+    init_messages = await server.message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=default_user)
     # Check that the system appears in the first initial message
     assert create_agent_request.system in init_messages[0].content[0].text
     assert create_agent_request.memory_blocks[0].value in init_messages[0].content[0].text
@@ -1098,14 +1143,14 @@ async def test_list_attached_tools(server: SyncServer, sarah_agent, print_tool, 
 async def test_attach_source(server: SyncServer, sarah_agent, default_source, default_user, event_loop):
     """Test attaching a source to an agent."""
     # Attach the source
-    server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
 
     # Verify attachment through get_agent_by_id
     agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     assert default_source.id in [s.id for s in agent.sources]
 
     # Verify that attaching the same source again doesn't cause issues
-    server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
     agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     assert len([s for s in agent.sources if s.id == default_source.id]) == 1
 
@@ -1118,8 +1163,8 @@ async def test_list_attached_source_ids(server: SyncServer, sarah_agent, default
     assert len(sources) == 0
 
     # Attach sources
-    server.agent_manager.attach_source(sarah_agent.id, default_source.id, actor=default_user)
-    server.agent_manager.attach_source(sarah_agent.id, other_source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(sarah_agent.id, default_source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(sarah_agent.id, other_source.id, actor=default_user)
 
     # List sources and verify
     sources = await server.agent_manager.list_attached_sources_async(sarah_agent.id, actor=default_user)
@@ -1133,39 +1178,42 @@ async def test_list_attached_source_ids(server: SyncServer, sarah_agent, default
 async def test_detach_source(server: SyncServer, sarah_agent, default_source, default_user, event_loop):
     """Test detaching a source from an agent."""
     # Attach source
-    server.agent_manager.attach_source(sarah_agent.id, default_source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(sarah_agent.id, default_source.id, actor=default_user)
 
     # Verify it's attached
     agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     assert default_source.id in [s.id for s in agent.sources]
 
     # Detach source
-    server.agent_manager.detach_source(sarah_agent.id, default_source.id, actor=default_user)
+    await server.agent_manager.detach_source_async(sarah_agent.id, default_source.id, actor=default_user)
 
     # Verify it's detached
     agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
     assert default_source.id not in [s.id for s in agent.sources]
 
     # Verify that detaching an already detached source doesn't cause issues
-    server.agent_manager.detach_source(sarah_agent.id, default_source.id, actor=default_user)
+    await server.agent_manager.detach_source_async(sarah_agent.id, default_source.id, actor=default_user)
 
 
-def test_attach_source_nonexistent_agent(server: SyncServer, default_source, default_user):
+@pytest.mark.asyncio
+async def test_attach_source_nonexistent_agent(server: SyncServer, default_source, default_user, event_loop):
     """Test attaching a source to a nonexistent agent."""
     with pytest.raises(NoResultFound):
-        server.agent_manager.attach_source(agent_id="nonexistent-agent-id", source_id=default_source.id, actor=default_user)
+        await server.agent_manager.attach_source_async(agent_id="nonexistent-agent-id", source_id=default_source.id, actor=default_user)
 
 
-def test_attach_source_nonexistent_source(server: SyncServer, sarah_agent, default_user):
+@pytest.mark.asyncio
+async def test_attach_source_nonexistent_source(server: SyncServer, sarah_agent, default_user, event_loop):
     """Test attaching a nonexistent source to an agent."""
     with pytest.raises(NoResultFound):
-        server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id="nonexistent-source-id", actor=default_user)
+        await server.agent_manager.attach_source_async(agent_id=sarah_agent.id, source_id="nonexistent-source-id", actor=default_user)
 
 
-def test_detach_source_nonexistent_agent(server: SyncServer, default_source, default_user):
+@pytest.mark.asyncio
+async def test_detach_source_nonexistent_agent(server: SyncServer, default_source, default_user, event_loop):
     """Test detaching a source from a nonexistent agent."""
     with pytest.raises(NoResultFound):
-        server.agent_manager.detach_source(agent_id="nonexistent-agent-id", source_id=default_source.id, actor=default_user)
+        await server.agent_manager.detach_source_async(agent_id="nonexistent-agent-id", source_id=default_source.id, actor=default_user)
 
 
 @pytest.mark.asyncio
@@ -1183,7 +1231,7 @@ async def test_list_attached_agents(server: SyncServer, sarah_agent, charles_age
     assert len(attached_agents) == 0
 
     # Attach source to first agent
-    server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
 
     # Verify one agent is now attached
     attached_agents = await server.source_manager.list_attached_agents(source_id=default_source.id, actor=default_user)
@@ -1191,7 +1239,7 @@ async def test_list_attached_agents(server: SyncServer, sarah_agent, charles_age
     assert sarah_agent.id in [a.id for a in attached_agents]
 
     # Attach source to second agent
-    server.agent_manager.attach_source(agent_id=charles_agent.id, source_id=default_source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(agent_id=charles_agent.id, source_id=default_source.id, actor=default_user)
 
     # Verify both agents are now attached
     attached_agents = await server.source_manager.list_attached_agents(source_id=default_source.id, actor=default_user)
@@ -1201,7 +1249,7 @@ async def test_list_attached_agents(server: SyncServer, sarah_agent, charles_age
     assert charles_agent.id in attached_agent_ids
 
     # Detach source from first agent
-    server.agent_manager.detach_source(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
+    await server.agent_manager.detach_source_async(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
 
     # Verify only second agent remains attached
     attached_agents = await server.source_manager.list_attached_agents(source_id=default_source.id, actor=default_user)
@@ -1221,8 +1269,9 @@ async def test_list_attached_agents_nonexistent_source(server: SyncServer, defau
 # ======================================================================================================================
 
 
-def test_list_agents_matching_all_tags(server: SyncServer, default_user, agent_with_tags):
-    agents = server.agent_manager.list_agents_matching_tags(
+@pytest.mark.asyncio
+async def test_list_agents_matching_all_tags(server: SyncServer, default_user, agent_with_tags, event_loop):
+    agents = await server.agent_manager.list_agents_matching_tags_async(
         actor=default_user,
         match_all=["primary_agent", "benefit_1"],
         match_some=[],
@@ -1231,8 +1280,9 @@ def test_list_agents_matching_all_tags(server: SyncServer, default_user, agent_w
     assert {a.name for a in agents} == {"agent1", "agent3"}
 
 
-def test_list_agents_matching_some_tags(server: SyncServer, default_user, agent_with_tags):
-    agents = server.agent_manager.list_agents_matching_tags(
+@pytest.mark.asyncio
+async def test_list_agents_matching_some_tags(server: SyncServer, default_user, agent_with_tags, event_loop):
+    agents = await server.agent_manager.list_agents_matching_tags_async(
         actor=default_user,
         match_all=["primary_agent"],
         match_some=["benefit_1", "benefit_2"],
@@ -1241,8 +1291,9 @@ def test_list_agents_matching_some_tags(server: SyncServer, default_user, agent_
     assert {a.name for a in agents} == {"agent1", "agent2", "agent3"}
 
 
-def test_list_agents_matching_all_and_some_tags(server: SyncServer, default_user, agent_with_tags):
-    agents = server.agent_manager.list_agents_matching_tags(
+@pytest.mark.asyncio
+async def test_list_agents_matching_all_and_some_tags(server: SyncServer, default_user, agent_with_tags, event_loop):
+    agents = await server.agent_manager.list_agents_matching_tags_async(
         actor=default_user,
         match_all=["primary_agent", "benefit_1"],
         match_some=["benefit_2", "nonexistent"],
@@ -1251,8 +1302,9 @@ def test_list_agents_matching_all_and_some_tags(server: SyncServer, default_user
     assert agents[0].name == "agent3"
 
 
-def test_list_agents_matching_no_tags(server: SyncServer, default_user, agent_with_tags):
-    agents = server.agent_manager.list_agents_matching_tags(
+@pytest.mark.asyncio
+async def test_list_agents_matching_no_tags(server: SyncServer, default_user, agent_with_tags, event_loop):
+    agents = await server.agent_manager.list_agents_matching_tags_async(
         actor=default_user,
         match_all=["primary_agent", "nonexistent_tag"],
         match_some=["benefit_1", "benefit_2"],
@@ -1487,7 +1539,7 @@ async def test_reset_messages_no_messages(server: SyncServer, sarah_agent, defau
     assert updated_agent.message_ids == ["ghost-message-id"]
 
     # Reset messages
-    reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
+    reset_agent = await server.agent_manager.reset_messages_async(agent_id=sarah_agent.id, actor=default_user)
     assert len(reset_agent.message_ids) == 1
     # Double check that physically no messages exist
     assert await server.message_manager.size_async(agent_id=sarah_agent.id, actor=default_user) == 1
@@ -1505,7 +1557,9 @@ async def test_reset_messages_default_messages(server: SyncServer, sarah_agent, 
     assert updated_agent.message_ids == ["ghost-message-id"]
 
     # Reset messages
-    reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user, add_default_initial_messages=True)
+    reset_agent = await server.agent_manager.reset_messages_async(
+        agent_id=sarah_agent.id, actor=default_user, add_default_initial_messages=True
+    )
     assert len(reset_agent.message_ids) == 4
     # Double check that physically no messages exist
     assert await server.message_manager.size_async(agent_id=sarah_agent.id, actor=default_user) == 4
@@ -1544,7 +1598,7 @@ async def test_reset_messages_with_existing_messages(server: SyncServer, sarah_a
     assert await server.message_manager.size_async(agent_id=sarah_agent.id, actor=default_user) == 6
 
     # 2. Reset all messages
-    reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
+    reset_agent = await server.agent_manager.reset_messages_async(agent_id=sarah_agent.id, actor=default_user)
 
     # 3. Verify the agent now has zero message_ids
     assert len(reset_agent.message_ids) == 1
@@ -1569,12 +1623,12 @@ async def test_reset_messages_idempotency(server: SyncServer, sarah_agent, defau
         actor=default_user,
     )
     # First reset
-    reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
+    reset_agent = await server.agent_manager.reset_messages_async(agent_id=sarah_agent.id, actor=default_user)
     assert len(reset_agent.message_ids) == 1
     assert await server.message_manager.size_async(agent_id=sarah_agent.id, actor=default_user) == 1
 
     # Second reset should do nothing new
-    reset_agent_again = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
+    reset_agent_again = await server.agent_manager.reset_messages_async(agent_id=sarah_agent.id, actor=default_user)
     assert len(reset_agent.message_ids) == 1
     assert await server.message_manager.size_async(agent_id=sarah_agent.id, actor=default_user) == 1
 
@@ -1645,46 +1699,6 @@ async def test_modify_letta_message(server: SyncServer, sarah_agent, default_use
     assert parse_send_message(updated_assistant_message.tool_calls[0]) == update_assistant_message.content
 
     # TODO: tool calls/responses
-
-
-def test_list_messages_with_query_text_filter(server: SyncServer, sarah_agent, default_user):
-    """
-    Ensure that list_messages_for_agent correctly filters messages by query_text.
-    """
-    test_contents = [
-        "This is a message about unicorns and rainbows.",
-        "Another message discussing dragons in the sky.",
-        "Plain message with no magical beasts.",
-        "Mentioning unicorns again for good measure.",
-        "Something unrelated entirely.",
-    ]
-
-    created_messages = []
-    for content in test_contents:
-        message = PydanticMessage(
-            agent_id=sarah_agent.id,
-            role=MessageRole.user,
-            content=[{"type": "text", "text": content}],
-        )
-        created = server.message_manager.create_message(pydantic_msg=message, actor=default_user)
-        created_messages.append(created)
-
-    # Query messages that include "unicorns"
-    unicorn_messages = server.message_manager.list_messages_for_agent(agent_id=sarah_agent.id, actor=default_user, query_text="unicorns")
-    assert len(unicorn_messages) == 2
-    for msg in unicorn_messages:
-        assert any(chunk.type == "text" and "unicorns" in chunk.text.lower() for chunk in msg.content or [])
-
-    # Query messages that include "dragons"
-    dragon_messages = server.message_manager.list_messages_for_agent(agent_id=sarah_agent.id, actor=default_user, query_text="dragons")
-    assert len(dragon_messages) == 1
-    assert any(chunk.type == "text" and "dragons" in chunk.text.lower() for chunk in dragon_messages[0].content or [])
-
-    # Query with a word that shouldn't match any message
-    no_match_messages = server.message_manager.list_messages_for_agent(
-        agent_id=sarah_agent.id, actor=default_user, query_text="nonexistentcreature"
-    )
-    assert len(no_match_messages) == 0
 
 
 # ======================================================================================================================
@@ -1966,7 +1980,7 @@ async def test_agent_list_passages_vector_search(server, default_user, sarah_age
         "blue shoes",
     ]
 
-    server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
 
     for i, text in enumerate(test_passages):
         embedding = embed_model.get_text_embedding(text)
@@ -1986,7 +2000,7 @@ async def test_agent_list_passages_vector_search(server, default_user, sarah_age
                 embedding_config=DEFAULT_EMBEDDING_CONFIG,
                 embedding=embedding,
             )
-        created_passage = server.passage_manager.create_passage(passage, default_user)
+        created_passage = await server.passage_manager.create_passage_async(passage, default_user)
         passages.append(created_passage)
 
     # Query vector similar to "red" embedding
@@ -2042,55 +2056,61 @@ async def test_list_source_passages_only(server: SyncServer, default_user, defau
 # ======================================================================================================================
 # Organization Manager Tests
 # ======================================================================================================================
-def test_list_organizations(server: SyncServer):
+@pytest.mark.asyncio
+async def test_list_organizations(server: SyncServer, event_loop):
     # Create a new org and confirm that it is created correctly
     org_name = "test"
-    org = server.organization_manager.create_organization(pydantic_org=PydanticOrganization(name=org_name))
+    org = await server.organization_manager.create_organization_async(pydantic_org=PydanticOrganization(name=org_name))
 
-    orgs = server.organization_manager.list_organizations()
+    orgs = await server.organization_manager.list_organizations_async()
     assert len(orgs) == 1
     assert orgs[0].name == org_name
 
     # Delete it after
-    server.organization_manager.delete_organization_by_id(org.id)
-    assert len(server.organization_manager.list_organizations()) == 0
+    await server.organization_manager.delete_organization_by_id_async(org.id)
+    orgs = await server.organization_manager.list_organizations_async()
+    assert len(orgs) == 0
 
 
-def test_create_default_organization(server: SyncServer):
-    server.organization_manager.create_default_organization()
-    retrieved = server.organization_manager.get_default_organization()
+@pytest.mark.asyncio
+async def test_create_default_organization(server: SyncServer, event_loop):
+    await server.organization_manager.create_default_organization_async()
+    retrieved = await server.organization_manager.get_default_organization_async()
     assert retrieved.name == server.organization_manager.DEFAULT_ORG_NAME
 
 
-def test_update_organization_name(server: SyncServer):
+@pytest.mark.asyncio
+async def test_update_organization_name(server: SyncServer, event_loop):
     org_name_a = "a"
     org_name_b = "b"
-    org = server.organization_manager.create_organization(pydantic_org=PydanticOrganization(name=org_name_a))
+    org = await server.organization_manager.create_organization_async(pydantic_org=PydanticOrganization(name=org_name_a))
     assert org.name == org_name_a
-    org = server.organization_manager.update_organization_name_using_id(org_id=org.id, name=org_name_b)
+    org = await server.organization_manager.update_organization_name_using_id_async(org_id=org.id, name=org_name_b)
     assert org.name == org_name_b
 
 
-def test_update_organization_privileged_tools(server: SyncServer):
+@pytest.mark.asyncio
+async def test_update_organization_privileged_tools(server: SyncServer, event_loop):
     org_name = "test"
-    org = server.organization_manager.create_organization(pydantic_org=PydanticOrganization(name=org_name))
+    org = await server.organization_manager.create_organization_async(pydantic_org=PydanticOrganization(name=org_name))
     assert org.privileged_tools == False
-    org = server.organization_manager.update_organization(org_id=org.id, org_update=OrganizationUpdate(privileged_tools=True))
+    org = await server.organization_manager.update_organization_async(org_id=org.id, org_update=OrganizationUpdate(privileged_tools=True))
     assert org.privileged_tools == True
 
 
-def test_list_organizations_pagination(server: SyncServer):
-    server.organization_manager.create_organization(pydantic_org=PydanticOrganization(name="a"))
-    server.organization_manager.create_organization(pydantic_org=PydanticOrganization(name="b"))
+@pytest.mark.asyncio
+async def test_list_organizations_pagination(server: SyncServer, event_loop):
+    await server.organization_manager.create_organization_async(pydantic_org=PydanticOrganization(name="a"))
+    await server.organization_manager.create_organization_async(pydantic_org=PydanticOrganization(name="b"))
 
-    orgs_x = server.organization_manager.list_organizations(limit=1)
+    orgs_x = await server.organization_manager.list_organizations_async(limit=1)
     assert len(orgs_x) == 1
 
-    orgs_y = server.organization_manager.list_organizations(after=orgs_x[0].id, limit=1)
+    orgs_y = await server.organization_manager.list_organizations_async(after=orgs_x[0].id, limit=1)
     assert len(orgs_y) == 1
     assert orgs_y[0].name != orgs_x[0].name
 
-    orgs = server.organization_manager.list_organizations(after=orgs_y[0].id, limit=1)
+    orgs = await server.organization_manager.list_organizations_async(after=orgs_y[0].id, limit=1)
     assert len(orgs) == 0
 
 
@@ -2129,14 +2149,15 @@ def test_passage_create_source(server: SyncServer, source_passage_fixture, defau
     assert retrieved.text == source_passage_fixture.text
 
 
-def test_passage_create_invalid(server: SyncServer, agent_passage_fixture, default_user):
+@pytest.mark.asyncio
+async def test_passage_create_invalid(server: SyncServer, agent_passage_fixture, default_user, event_loop):
     """Test creating an agent passage."""
     assert agent_passage_fixture is not None
     assert agent_passage_fixture.text == "Hello, I am an agent passage"
 
     # Try to create an invalid passage (with both agent_id and source_id)
     with pytest.raises(AssertionError):
-        server.passage_manager.create_passage(
+        await server.passage_manager.create_passage_async(
             PydanticPassage(
                 text="Invalid passage",
                 agent_id="123",
@@ -2190,7 +2211,7 @@ async def test_passage_cascade_deletion(
 @pytest.mark.asyncio
 async def test_list_users(server: SyncServer, event_loop):
     # Create default organization
-    org = server.organization_manager.create_default_organization()
+    org = await server.organization_manager.create_default_organization_async()
 
     user_name = "user"
     user = await server.user_manager.create_actor_async(PydanticUser(name=user_name, organization_id=org.id))
@@ -2204,10 +2225,11 @@ async def test_list_users(server: SyncServer, event_loop):
     assert len(await server.user_manager.list_actors_async()) == 0
 
 
-def test_create_default_user(server: SyncServer):
-    org = server.organization_manager.create_default_organization()
-    server.user_manager.create_default_user(org_id=org.id)
-    retrieved = server.user_manager.get_default_user()
+@pytest.mark.asyncio
+async def test_create_default_user(server: SyncServer, event_loop):
+    org = await server.organization_manager.create_default_organization_async()
+    await server.user_manager.create_default_actor_async(org_id=org.id)
+    retrieved = await server.user_manager.get_default_actor_async()
     assert retrieved.name == server.user_manager.DEFAULT_USER_NAME
 
 
@@ -3578,7 +3600,7 @@ async def test_create_and_upsert_identity(server: SyncServer, default_user, even
     assert identity.identity_type == identity_create.identity_type
     assert identity.properties == identity_create.properties
     assert identity.agent_ids == []
-    assert identity.project_id == None
+    assert identity.project_id is None
 
     with pytest.raises(UniqueConstraintViolationError):
         await server.identity_manager.create_identity_async(
@@ -3935,7 +3957,7 @@ async def test_delete_attached_source(server: SyncServer, sarah_agent, default_u
     )
     source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
 
-    server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id=source.id, actor=default_user)
+    await server.agent_manager.attach_source_async(agent_id=sarah_agent.id, source_id=source.id, actor=default_user)
 
     # Delete the source
     deleted_source = await server.source_manager.delete_source(source_id=source.id, actor=default_user)
@@ -4110,11 +4132,12 @@ async def test_delete_file(server: SyncServer, default_user, default_source):
 # ======================================================================================================================
 
 
-def test_create_or_update_sandbox_config(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_create_or_update_sandbox_config(server: SyncServer, default_user, event_loop):
     sandbox_config_create = SandboxConfigCreate(
         config=E2BSandboxConfig(),
     )
-    created_config = server.sandbox_config_manager.create_or_update_sandbox_config(sandbox_config_create, actor=default_user)
+    created_config = await server.sandbox_config_manager.create_or_update_sandbox_config_async(sandbox_config_create, actor=default_user)
 
     # Assertions
     assert created_config.type == SandboxType.E2B
@@ -4122,11 +4145,12 @@ def test_create_or_update_sandbox_config(server: SyncServer, default_user):
     assert created_config.organization_id == default_user.organization_id
 
 
-def test_create_local_sandbox_config_defaults(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_create_local_sandbox_config_defaults(server: SyncServer, default_user, event_loop):
     sandbox_config_create = SandboxConfigCreate(
         config=LocalSandboxConfig(),
     )
-    created_config = server.sandbox_config_manager.create_or_update_sandbox_config(sandbox_config_create, actor=default_user)
+    created_config = await server.sandbox_config_manager.create_or_update_sandbox_config_async(sandbox_config_create, actor=default_user)
 
     # Assertions
     assert created_config.type == SandboxType.LOCAL
@@ -4135,8 +4159,11 @@ def test_create_local_sandbox_config_defaults(server: SyncServer, default_user):
     assert created_config.organization_id == default_user.organization_id
 
 
-def test_default_e2b_settings_sandbox_config(server: SyncServer, default_user):
-    created_config = server.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.E2B, actor=default_user)
+@pytest.mark.asyncio
+async def test_default_e2b_settings_sandbox_config(server: SyncServer, default_user, event_loop):
+    created_config = await server.sandbox_config_manager.get_or_create_default_sandbox_config_async(
+        sandbox_type=SandboxType.E2B, actor=default_user
+    )
     e2b_config = created_config.get_e2b_config()
 
     # Assertions
@@ -4144,35 +4171,41 @@ def test_default_e2b_settings_sandbox_config(server: SyncServer, default_user):
     assert e2b_config.template == tool_settings.e2b_sandbox_template_id
 
 
-def test_update_existing_sandbox_config(server: SyncServer, sandbox_config_fixture, default_user):
+@pytest.mark.asyncio
+async def test_update_existing_sandbox_config(server: SyncServer, sandbox_config_fixture, default_user, event_loop):
     update_data = SandboxConfigUpdate(config=E2BSandboxConfig(template="template_2", timeout=120))
-    updated_config = server.sandbox_config_manager.update_sandbox_config(sandbox_config_fixture.id, update_data, actor=default_user)
+    updated_config = await server.sandbox_config_manager.update_sandbox_config_async(
+        sandbox_config_fixture.id, update_data, actor=default_user
+    )
 
     # Assertions
     assert updated_config.config["template"] == "template_2"
     assert updated_config.config["timeout"] == 120
 
 
-def test_delete_sandbox_config(server: SyncServer, sandbox_config_fixture, default_user):
-    deleted_config = server.sandbox_config_manager.delete_sandbox_config(sandbox_config_fixture.id, actor=default_user)
+@pytest.mark.asyncio
+async def test_delete_sandbox_config(server: SyncServer, sandbox_config_fixture, default_user, event_loop):
+    deleted_config = await server.sandbox_config_manager.delete_sandbox_config_async(sandbox_config_fixture.id, actor=default_user)
 
     # Assertions to verify deletion
     assert deleted_config.id == sandbox_config_fixture.id
 
     # Verify it no longer exists
-    config_list = server.sandbox_config_manager.list_sandbox_configs(actor=default_user)
+    config_list = await server.sandbox_config_manager.list_sandbox_configs_async(actor=default_user)
     assert sandbox_config_fixture.id not in [config.id for config in config_list]
 
 
-def test_get_sandbox_config_by_type(server: SyncServer, sandbox_config_fixture, default_user):
-    retrieved_config = server.sandbox_config_manager.get_sandbox_config_by_type(sandbox_config_fixture.type, actor=default_user)
+@pytest.mark.asyncio
+async def test_get_sandbox_config_by_type(server: SyncServer, sandbox_config_fixture, default_user, event_loop):
+    retrieved_config = await server.sandbox_config_manager.get_sandbox_config_by_type_async(sandbox_config_fixture.type, actor=default_user)
 
     # Assertions to verify correct retrieval
     assert retrieved_config.id == sandbox_config_fixture.id
     assert retrieved_config.type == sandbox_config_fixture.type
 
 
-def test_list_sandbox_configs(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_list_sandbox_configs(server: SyncServer, default_user, event_loop):
     # Creating multiple sandbox configs
     config_e2b_create = SandboxConfigCreate(
         config=E2BSandboxConfig(),
@@ -4180,29 +4213,29 @@ def test_list_sandbox_configs(server: SyncServer, default_user):
     config_local_create = SandboxConfigCreate(
         config=LocalSandboxConfig(sandbox_dir=""),
     )
-    config_e2b = server.sandbox_config_manager.create_or_update_sandbox_config(config_e2b_create, actor=default_user)
+    config_e2b = await server.sandbox_config_manager.create_or_update_sandbox_config_async(config_e2b_create, actor=default_user)
     if USING_SQLITE:
         time.sleep(CREATE_DELAY_SQLITE)
-    config_local = server.sandbox_config_manager.create_or_update_sandbox_config(config_local_create, actor=default_user)
+    config_local = await server.sandbox_config_manager.create_or_update_sandbox_config_async(config_local_create, actor=default_user)
 
     # List configs without pagination
-    configs = server.sandbox_config_manager.list_sandbox_configs(actor=default_user)
+    configs = await server.sandbox_config_manager.list_sandbox_configs_async(actor=default_user)
     assert len(configs) >= 2
 
     # List configs with pagination
-    paginated_configs = server.sandbox_config_manager.list_sandbox_configs(actor=default_user, limit=1)
+    paginated_configs = await server.sandbox_config_manager.list_sandbox_configs_async(actor=default_user, limit=1)
     assert len(paginated_configs) == 1
 
-    next_page = server.sandbox_config_manager.list_sandbox_configs(actor=default_user, after=paginated_configs[-1].id, limit=1)
+    next_page = await server.sandbox_config_manager.list_sandbox_configs_async(actor=default_user, after=paginated_configs[-1].id, limit=1)
     assert len(next_page) == 1
     assert next_page[0].id != paginated_configs[0].id
 
     # List configs using sandbox_type filter
-    configs = server.sandbox_config_manager.list_sandbox_configs(actor=default_user, sandbox_type=SandboxType.E2B)
+    configs = await server.sandbox_config_manager.list_sandbox_configs_async(actor=default_user, sandbox_type=SandboxType.E2B)
     assert len(configs) == 1
     assert configs[0].id == config_e2b.id
 
-    configs = server.sandbox_config_manager.list_sandbox_configs(actor=default_user, sandbox_type=SandboxType.LOCAL)
+    configs = await server.sandbox_config_manager.list_sandbox_configs_async(actor=default_user, sandbox_type=SandboxType.LOCAL)
     assert len(configs) == 1
     assert configs[0].id == config_local.id
 
@@ -4212,9 +4245,10 @@ def test_list_sandbox_configs(server: SyncServer, default_user):
 # ======================================================================================================================
 
 
-def test_create_sandbox_env_var(server: SyncServer, sandbox_config_fixture, default_user):
+@pytest.mark.asyncio
+async def test_create_sandbox_env_var(server: SyncServer, sandbox_config_fixture, default_user, event_loop):
     env_var_create = SandboxEnvironmentVariableCreate(key="TEST_VAR", value="test_value", description="A test environment variable.")
-    created_env_var = server.sandbox_config_manager.create_sandbox_env_var(
+    created_env_var = await server.sandbox_config_manager.create_sandbox_env_var_async(
         env_var_create, sandbox_config_id=sandbox_config_fixture.id, actor=default_user
     )
 
@@ -4224,54 +4258,68 @@ def test_create_sandbox_env_var(server: SyncServer, sandbox_config_fixture, defa
     assert created_env_var.organization_id == default_user.organization_id
 
 
-def test_update_sandbox_env_var(server: SyncServer, sandbox_env_var_fixture, default_user):
+@pytest.mark.asyncio
+async def test_update_sandbox_env_var(server: SyncServer, sandbox_env_var_fixture, default_user, event_loop):
     update_data = SandboxEnvironmentVariableUpdate(value="updated_value")
-    updated_env_var = server.sandbox_config_manager.update_sandbox_env_var(sandbox_env_var_fixture.id, update_data, actor=default_user)
+    updated_env_var = await server.sandbox_config_manager.update_sandbox_env_var_async(
+        sandbox_env_var_fixture.id, update_data, actor=default_user
+    )
 
     # Assertions
     assert updated_env_var.value == "updated_value"
     assert updated_env_var.id == sandbox_env_var_fixture.id
 
 
-def test_delete_sandbox_env_var(server: SyncServer, sandbox_config_fixture, sandbox_env_var_fixture, default_user):
-    deleted_env_var = server.sandbox_config_manager.delete_sandbox_env_var(sandbox_env_var_fixture.id, actor=default_user)
+@pytest.mark.asyncio
+async def test_delete_sandbox_env_var(server: SyncServer, sandbox_config_fixture, sandbox_env_var_fixture, default_user, event_loop):
+    deleted_env_var = await server.sandbox_config_manager.delete_sandbox_env_var_async(sandbox_env_var_fixture.id, actor=default_user)
 
     # Assertions to verify deletion
     assert deleted_env_var.id == sandbox_env_var_fixture.id
 
     # Verify it no longer exists
-    env_vars = server.sandbox_config_manager.list_sandbox_env_vars(sandbox_config_id=sandbox_config_fixture.id, actor=default_user)
+    env_vars = await server.sandbox_config_manager.list_sandbox_env_vars_async(
+        sandbox_config_id=sandbox_config_fixture.id, actor=default_user
+    )
     assert sandbox_env_var_fixture.id not in [env_var.id for env_var in env_vars]
 
 
-def test_list_sandbox_env_vars(server: SyncServer, sandbox_config_fixture, default_user):
+@pytest.mark.asyncio
+async def test_list_sandbox_env_vars(server: SyncServer, sandbox_config_fixture, default_user, event_loop):
     # Creating multiple environment variables
     env_var_create_a = SandboxEnvironmentVariableCreate(key="VAR1", value="value1")
     env_var_create_b = SandboxEnvironmentVariableCreate(key="VAR2", value="value2")
-    server.sandbox_config_manager.create_sandbox_env_var(env_var_create_a, sandbox_config_id=sandbox_config_fixture.id, actor=default_user)
+    await server.sandbox_config_manager.create_sandbox_env_var_async(
+        env_var_create_a, sandbox_config_id=sandbox_config_fixture.id, actor=default_user
+    )
     if USING_SQLITE:
         time.sleep(CREATE_DELAY_SQLITE)
-    server.sandbox_config_manager.create_sandbox_env_var(env_var_create_b, sandbox_config_id=sandbox_config_fixture.id, actor=default_user)
+    await server.sandbox_config_manager.create_sandbox_env_var_async(
+        env_var_create_b, sandbox_config_id=sandbox_config_fixture.id, actor=default_user
+    )
 
     # List env vars without pagination
-    env_vars = server.sandbox_config_manager.list_sandbox_env_vars(sandbox_config_id=sandbox_config_fixture.id, actor=default_user)
+    env_vars = await server.sandbox_config_manager.list_sandbox_env_vars_async(
+        sandbox_config_id=sandbox_config_fixture.id, actor=default_user
+    )
     assert len(env_vars) >= 2
 
     # List env vars with pagination
-    paginated_env_vars = server.sandbox_config_manager.list_sandbox_env_vars(
+    paginated_env_vars = await server.sandbox_config_manager.list_sandbox_env_vars_async(
         sandbox_config_id=sandbox_config_fixture.id, actor=default_user, limit=1
     )
     assert len(paginated_env_vars) == 1
 
-    next_page = server.sandbox_config_manager.list_sandbox_env_vars(
+    next_page = await server.sandbox_config_manager.list_sandbox_env_vars_async(
         sandbox_config_id=sandbox_config_fixture.id, actor=default_user, after=paginated_env_vars[-1].id, limit=1
     )
     assert len(next_page) == 1
     assert next_page[0].id != paginated_env_vars[0].id
 
 
-def test_get_sandbox_env_var_by_key(server: SyncServer, sandbox_env_var_fixture, default_user):
-    retrieved_env_var = server.sandbox_config_manager.get_sandbox_env_var_by_key_and_sandbox_config_id(
+@pytest.mark.asyncio
+async def test_get_sandbox_env_var_by_key(server: SyncServer, sandbox_env_var_fixture, default_user, event_loop):
+    retrieved_env_var = await server.sandbox_config_manager.get_sandbox_env_var_by_key_and_sandbox_config_id_async(
         sandbox_env_var_fixture.key, sandbox_env_var_fixture.sandbox_config_id, actor=default_user
     )
 
@@ -4285,14 +4333,15 @@ def test_get_sandbox_env_var_by_key(server: SyncServer, sandbox_env_var_fixture,
 # ======================================================================================================================
 
 
-def test_create_job(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_create_job(server: SyncServer, default_user, event_loop):
     """Test creating a job."""
     job_data = PydanticJob(
         status=JobStatus.created,
         metadata={"type": "test"},
     )
 
-    created_job = server.job_manager.create_job(job_data, actor=default_user)
+    created_job = await server.job_manager.create_job_async(pydantic_job=job_data, actor=default_user)
 
     # Assertions to ensure the created job matches the expected values
     assert created_job.user_id == default_user.id
@@ -4300,17 +4349,18 @@ def test_create_job(server: SyncServer, default_user):
     assert created_job.metadata == {"type": "test"}
 
 
-def test_get_job_by_id(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_get_job_by_id(server: SyncServer, default_user, event_loop):
     """Test fetching a job by ID."""
     # Create a job
     job_data = PydanticJob(
         status=JobStatus.created,
         metadata={"type": "test"},
     )
-    created_job = server.job_manager.create_job(job_data, actor=default_user)
+    created_job = await server.job_manager.create_job_async(pydantic_job=job_data, actor=default_user)
 
     # Fetch the job by ID
-    fetched_job = server.job_manager.get_job_by_id(created_job.id, actor=default_user)
+    fetched_job = await server.job_manager.get_job_by_id_async(created_job.id, actor=default_user)
 
     # Assertions to ensure the fetched job matches the created job
     assert fetched_job.id == created_job.id
@@ -4318,7 +4368,8 @@ def test_get_job_by_id(server: SyncServer, default_user):
     assert fetched_job.metadata == {"type": "test"}
 
 
-def test_list_jobs(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_list_jobs(server: SyncServer, default_user, event_loop):
     """Test listing jobs."""
     # Create multiple jobs
     for i in range(3):
@@ -4326,10 +4377,10 @@ def test_list_jobs(server: SyncServer, default_user):
             status=JobStatus.created,
             metadata={"type": f"test-{i}"},
         )
-        server.job_manager.create_job(job_data, actor=default_user)
+        await server.job_manager.create_job_async(pydantic_job=job_data, actor=default_user)
 
     # List jobs
-    jobs = server.job_manager.list_jobs(actor=default_user)
+    jobs = await server.job_manager.list_jobs_async(actor=default_user)
 
     # Assertions to check that the created jobs are listed
     assert len(jobs) == 3
@@ -4337,19 +4388,29 @@ def test_list_jobs(server: SyncServer, default_user):
     assert all(job.metadata["type"].startswith("test") for job in jobs)
 
 
-def test_update_job_by_id(server: SyncServer, default_user):
+async def test_list_jobs_with_metadata(server: SyncServer, default_user, event_loop):
+    for i in range(3):
+        job_data = PydanticJob(status=JobStatus.created, metadata={"source_id": f"source-test-{i}"})
+        await server.job_manager.create_job_async(pydantic_job=job_data, actor=default_user)
+    jobs = await server.job_manager.list_jobs_async(actor=default_user, source_id="source-test-2")
+    assert len(jobs) == 1
+    assert jobs[0].metadata["source_id"] == "source-test-2"
+
+
+@pytest.mark.asyncio
+async def test_update_job_by_id(server: SyncServer, default_user, event_loop):
     """Test updating a job by its ID."""
     # Create a job
     job_data = PydanticJob(
         status=JobStatus.created,
         metadata={"type": "test"},
     )
-    created_job = server.job_manager.create_job(job_data, actor=default_user)
+    created_job = await server.job_manager.create_job_async(pydantic_job=job_data, actor=default_user)
     assert created_job.metadata == {"type": "test"}
 
     # Update the job
     update_data = JobUpdate(status=JobStatus.completed, metadata={"type": "updated"})
-    updated_job = server.job_manager.update_job_by_id(created_job.id, update_data, actor=default_user)
+    updated_job = await server.job_manager.update_job_by_id_async(created_job.id, update_data, actor=default_user)
 
     # Assertions to ensure the job was updated
     assert updated_job.status == JobStatus.completed
@@ -4357,56 +4418,61 @@ def test_update_job_by_id(server: SyncServer, default_user):
     assert updated_job.completed_at is not None
 
 
-def test_delete_job_by_id(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_delete_job_by_id(server: SyncServer, default_user, event_loop):
     """Test deleting a job by its ID."""
     # Create a job
     job_data = PydanticJob(
         status=JobStatus.created,
         metadata={"type": "test"},
     )
-    created_job = server.job_manager.create_job(job_data, actor=default_user)
+    created_job = await server.job_manager.create_job_async(pydantic_job=job_data, actor=default_user)
 
     # Delete the job
-    server.job_manager.delete_job_by_id(created_job.id, actor=default_user)
+    await server.job_manager.delete_job_by_id_async(created_job.id, actor=default_user)
 
     # List jobs to ensure the job was deleted
-    jobs = server.job_manager.list_jobs(actor=default_user)
+    jobs = await server.job_manager.list_jobs_async(actor=default_user)
     assert len(jobs) == 0
 
 
-def test_update_job_auto_complete(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_update_job_auto_complete(server: SyncServer, default_user, event_loop):
     """Test that updating a job's status to 'completed' automatically sets completed_at."""
     # Create a job
     job_data = PydanticJob(
         status=JobStatus.created,
         metadata={"type": "test"},
     )
-    created_job = server.job_manager.create_job(job_data, actor=default_user)
+    created_job = await server.job_manager.create_job_async(pydantic_job=job_data, actor=default_user)
 
     # Update the job's status to 'completed'
     update_data = JobUpdate(status=JobStatus.completed)
-    updated_job = server.job_manager.update_job_by_id(created_job.id, update_data, actor=default_user)
+    updated_job = await server.job_manager.update_job_by_id_async(created_job.id, update_data, actor=default_user)
 
     # Assertions to check that completed_at was set
     assert updated_job.status == JobStatus.completed
     assert updated_job.completed_at is not None
 
 
-def test_get_job_not_found(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_get_job_not_found(server: SyncServer, default_user, event_loop):
     """Test fetching a non-existent job."""
     non_existent_job_id = "nonexistent-id"
     with pytest.raises(NoResultFound):
-        server.job_manager.get_job_by_id(non_existent_job_id, actor=default_user)
+        await server.job_manager.get_job_by_id_async(non_existent_job_id, actor=default_user)
 
 
-def test_delete_job_not_found(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_delete_job_not_found(server: SyncServer, default_user, event_loop):
     """Test deleting a non-existent job."""
     non_existent_job_id = "nonexistent-id"
     with pytest.raises(NoResultFound):
-        server.job_manager.delete_job_by_id(non_existent_job_id, actor=default_user)
+        await server.job_manager.delete_job_by_id_async(non_existent_job_id, actor=default_user)
 
 
-def test_list_jobs_pagination(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_list_jobs_pagination(server: SyncServer, default_user, event_loop):
     """Test listing jobs with pagination."""
     # Create multiple jobs
     for i in range(10):
@@ -4414,19 +4480,19 @@ def test_list_jobs_pagination(server: SyncServer, default_user):
             status=JobStatus.created,
             metadata={"type": f"test-{i}"},
         )
-        server.job_manager.create_job(job_data, actor=default_user)
+        await server.job_manager.create_job_async(pydantic_job=job_data, actor=default_user)
 
     # List jobs with a limit
-    jobs = server.job_manager.list_jobs(actor=default_user, limit=5)
+    jobs = await server.job_manager.list_jobs_async(actor=default_user, limit=5)
     assert len(jobs) == 5
     assert all(job.user_id == default_user.id for job in jobs)
 
     # Test cursor-based pagination
-    first_page = server.job_manager.list_jobs(actor=default_user, limit=3, ascending=True)  # [J0, J1, J2]
+    first_page = await server.job_manager.list_jobs_async(actor=default_user, limit=3, ascending=True)  # [J0, J1, J2]
     assert len(first_page) == 3
     assert first_page[0].created_at <= first_page[1].created_at <= first_page[2].created_at
 
-    last_page = server.job_manager.list_jobs(actor=default_user, limit=3, ascending=False)  # [J9, J8, J7]
+    last_page = await server.job_manager.list_jobs_async(actor=default_user, limit=3, ascending=False)  # [J9, J8, J7]
     assert len(last_page) == 3
     assert last_page[0].created_at >= last_page[1].created_at >= last_page[2].created_at
     first_page_ids = set(job.id for job in first_page)
@@ -4434,7 +4500,7 @@ def test_list_jobs_pagination(server: SyncServer, default_user):
     assert first_page_ids.isdisjoint(last_page_ids)
 
     # Test middle page using both before and after
-    middle_page = server.job_manager.list_jobs(
+    middle_page = await server.job_manager.list_jobs_async(
         actor=default_user, before=last_page[-1].id, after=first_page[-1].id, ascending=True
     )  # [J3, J4, J5, J6]
     assert len(middle_page) == 4  # Should include jobs between first and second page
@@ -4442,7 +4508,7 @@ def test_list_jobs_pagination(server: SyncServer, default_user):
     assert all(job.id not in head_tail_jobs for job in middle_page)
 
     # Test descending order
-    middle_page_desc = server.job_manager.list_jobs(
+    middle_page_desc = await server.job_manager.list_jobs_async(
         actor=default_user, before=last_page[-1].id, after=first_page[-1].id, ascending=False
     )  # [J6, J5, J4, J3]
     assert len(middle_page_desc) == 4
@@ -4453,13 +4519,14 @@ def test_list_jobs_pagination(server: SyncServer, default_user):
 
     # BONUS
     job_7 = last_page[-1].id
-    earliest_jobs = server.job_manager.list_jobs(actor=default_user, ascending=False, before=job_7)
+    earliest_jobs = await server.job_manager.list_jobs_async(actor=default_user, ascending=False, before=job_7)
     assert len(earliest_jobs) == 7
     assert all(j.id not in last_page_ids for j in earliest_jobs)
     assert all(earliest_jobs[i].created_at >= earliest_jobs[i + 1].created_at for i in range(len(earliest_jobs) - 1))
 
 
-def test_list_jobs_by_status(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_list_jobs_by_status(server: SyncServer, default_user, event_loop):
     """Test listing jobs filtered by status."""
     # Create multiple jobs with different statuses
     job_data_created = PydanticJob(
@@ -4475,14 +4542,14 @@ def test_list_jobs_by_status(server: SyncServer, default_user):
         metadata={"type": "test-completed"},
     )
 
-    server.job_manager.create_job(job_data_created, actor=default_user)
-    server.job_manager.create_job(job_data_in_progress, actor=default_user)
-    server.job_manager.create_job(job_data_completed, actor=default_user)
+    await server.job_manager.create_job_async(pydantic_job=job_data_created, actor=default_user)
+    await server.job_manager.create_job_async(pydantic_job=job_data_in_progress, actor=default_user)
+    await server.job_manager.create_job_async(pydantic_job=job_data_completed, actor=default_user)
 
     # List jobs filtered by status
-    created_jobs = server.job_manager.list_jobs(actor=default_user, statuses=[JobStatus.created])
-    in_progress_jobs = server.job_manager.list_jobs(actor=default_user, statuses=[JobStatus.running])
-    completed_jobs = server.job_manager.list_jobs(actor=default_user, statuses=[JobStatus.completed])
+    created_jobs = await server.job_manager.list_jobs_async(actor=default_user, statuses=[JobStatus.created])
+    in_progress_jobs = await server.job_manager.list_jobs_async(actor=default_user, statuses=[JobStatus.running])
+    completed_jobs = await server.job_manager.list_jobs_async(actor=default_user, statuses=[JobStatus.completed])
 
     # Assertions
     assert len(created_jobs) == 1
@@ -4495,7 +4562,8 @@ def test_list_jobs_by_status(server: SyncServer, default_user):
     assert completed_jobs[0].metadata["type"] == job_data_completed.metadata["type"]
 
 
-def test_list_jobs_filter_by_type(server: SyncServer, default_user, default_job):
+@pytest.mark.asyncio
+async def test_list_jobs_filter_by_type(server: SyncServer, default_user, default_job, event_loop):
     """Test that list_jobs correctly filters by job_type."""
     # Create a run job
     run_pydantic = PydanticJob(
@@ -4503,48 +4571,62 @@ def test_list_jobs_filter_by_type(server: SyncServer, default_user, default_job)
         status=JobStatus.pending,
         job_type=JobType.RUN,
     )
-    run = server.job_manager.create_job(pydantic_job=run_pydantic, actor=default_user)
+    run = await server.job_manager.create_job_async(pydantic_job=run_pydantic, actor=default_user)
 
     # List only regular jobs
-    jobs = server.job_manager.list_jobs(actor=default_user)
+    jobs = await server.job_manager.list_jobs_async(actor=default_user)
     assert len(jobs) == 1
     assert jobs[0].id == default_job.id
 
     # List only run jobs
-    jobs = server.job_manager.list_jobs(actor=default_user, job_type=JobType.RUN)
+    jobs = await server.job_manager.list_jobs_async(actor=default_user, job_type=JobType.RUN)
     assert len(jobs) == 1
     assert jobs[0].id == run.id
 
 
-def test_e2e_job_callback(monkeypatch, server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_e2e_job_callback(monkeypatch, server: SyncServer, default_user):
+    """Test that job callbacks are properly dispatched when a job is completed."""
     captured = {}
 
-    def fake_post(url, json, timeout):
+    # Create a simple mock for the async HTTP client
+    class MockAsyncResponse:
+        status_code = 202
+
+    async def mock_post(url, json, timeout):
         captured["url"] = url
         captured["json"] = json
+        return MockAsyncResponse()
 
-        class FakeResponse:
-            status_code = 202
+    class MockAsyncClient:
+        async def __aenter__(self):
+            return self
 
-        return FakeResponse()
+        async def __aexit__(self, *args):
+            pass
 
-    monkeypatch.setattr(httpx, "post", fake_post)
+        async def post(self, url, json, timeout):
+            return await mock_post(url, json, timeout)
+
+    # Patch the AsyncClient
+    monkeypatch.setattr(httpx, "AsyncClient", MockAsyncClient)
 
     job_in = PydanticJob(status=JobStatus.created, metadata={"foo": "bar"}, callback_url="http://example.test/webhook/jobs")
-    created = server.job_manager.create_job(job_in, actor=default_user)
+    created = await server.job_manager.create_job_async(pydantic_job=job_in, actor=default_user)
     assert created.callback_url == "http://example.test/webhook/jobs"
 
+    # Update the job status to completed, which should trigger the callback
     update = JobUpdate(status=JobStatus.completed)
-    updated = server.job_manager.update_job_by_id(created.id, update, actor=default_user)
+    updated = await server.job_manager.update_job_by_id_async(created.id, update, actor=default_user)
 
-    assert captured["url"] == created.callback_url
-    assert captured["json"]["job_id"] == created.id
-    assert captured["json"]["status"] == JobStatus.completed.value
+    # Verify the callback was triggered with the correct parameters
+    assert captured["url"] == created.callback_url, "Callback URL doesn't match"
+    assert captured["json"]["job_id"] == created.id, "Job ID in callback doesn't match"
+    assert captured["json"]["status"] == JobStatus.completed.value, "Job status in callback doesn't match"
 
-    # Normalize the received completed_at to compare properly
+    # Verify the completed_at timestamp is reasonable
     actual_dt = datetime.fromisoformat(captured["json"]["completed_at"]).replace(tzinfo=None)
-    expected_dt = updated.completed_at.replace(tzinfo=None)
-    assert actual_dt == expected_dt
+    assert abs((actual_dt - updated.completed_at).total_seconds()) < 1, "Timestamp difference is too large"
 
     assert isinstance(updated.callback_sent_at, datetime)
     assert updated.callback_status_code == 202
@@ -4863,7 +4945,7 @@ def test_get_run_messages(server: SyncServer, default_user: PydanticUser, sarah_
         assert msg.tool_call.name == "custom_tool"
 
 
-def test_get_run_messages(server: SyncServer, default_user: PydanticUser, sarah_agent):
+def test_get_run_messages_with_assistant_message(server: SyncServer, default_user: PydanticUser, sarah_agent):
     """Test getting messages for a run with request config."""
     # Create a run with custom request config
     run = server.job_manager.create_job(
@@ -5027,7 +5109,7 @@ async def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, def
     assert len(steps) == 2
 
     # get agent steps
-    steps = step_manager.list_steps(agent_id=sarah_agent.id, actor=default_user)
+    steps = await step_manager.list_steps_async(agent_id=sarah_agent.id, actor=default_user)
     assert len(steps) == 2
 
 
@@ -5260,17 +5342,38 @@ async def test_delete_batch_item(
 
 @pytest.mark.asyncio
 async def test_list_running_batches(server, default_user, dummy_beta_message_batch, letta_batch_job, event_loop):
-    await server.batch_manager.create_llm_batch_job_async(
-        llm_provider=ProviderType.anthropic,
-        status=JobStatus.running,
-        create_batch_response=dummy_beta_message_batch,
-        actor=default_user,
-        letta_batch_job_id=letta_batch_job.id,
-    )
+    # Create recent running batches
+    num_running = 3
 
+    for _ in range(num_running):
+        await server.batch_manager.create_llm_batch_job_async(
+            llm_provider=ProviderType.anthropic,
+            status=JobStatus.running,
+            create_batch_response=dummy_beta_message_batch,
+            actor=default_user,
+            letta_batch_job_id=letta_batch_job.id,
+        )
+
+    # Should return at least one running batch (no time filter)
     running_batches = await server.batch_manager.list_running_llm_batches_async(actor=default_user)
-    assert len(running_batches) >= 1
+    assert len(running_batches) == num_running
     assert all(batch.status == JobStatus.running for batch in running_batches)
+
+    # Should return the same when filtering by recent 1 week
+    recent_batches = await server.batch_manager.list_running_llm_batches_async(actor=default_user, weeks=1)
+    assert len(recent_batches) == num_running
+    assert all(batch.status == JobStatus.running for batch in recent_batches)
+    assert all(batch.created_at >= datetime.now(timezone.utc) - timedelta(weeks=1) for batch in recent_batches)
+
+    # Filter by size
+    recent_batches = await server.batch_manager.list_running_llm_batches_async(actor=default_user, weeks=1, batch_size=2)
+    assert len(recent_batches) == 2
+    assert all(batch.status == JobStatus.running for batch in recent_batches)
+    assert all(batch.created_at >= datetime.now(timezone.utc) - timedelta(weeks=1) for batch in recent_batches)
+
+    # Should return nothing if filtering by a very small timeframe (e.g., 0 weeks)
+    future_batches = await server.batch_manager.list_running_llm_batches_async(actor=default_user, weeks=0)
+    assert len(future_batches) == 0
 
 
 @pytest.mark.asyncio
@@ -5638,3 +5741,220 @@ async def test_count_batch_items(
 
     # Assert that the count matches the expected number.
     assert count == num_items, f"Expected {num_items} items, got {count}"
+
+
+# ======================================================================================================================
+# MCPManager Tests
+# ======================================================================================================================
+
+
+@pytest.mark.asyncio
+async def test_create_mcp_server(server, default_user, event_loop):
+    from letta.schemas.mcp import MCPServer, MCPServerType, SSEServerConfig, StdioServerConfig
+    from letta.settings import tool_settings
+
+    if tool_settings.mcp_read_from_config:
+        return
+
+    # Test with a valid StdioServerConfig
+    server_config = StdioServerConfig(
+        server_name="test_server", type=MCPServerType.STDIO, command="echo 'test'", args=["arg1", "arg2"], env={"ENV1": "value1"}
+    )
+    mcp_server = MCPServer(server_name="test_server", server_type=MCPServerType.STDIO, stdio_config=server_config)
+    created_server = await server.mcp_manager.create_or_update_mcp_server(mcp_server, actor=default_user)
+    print(created_server)
+    assert created_server.server_name == server_config.server_name
+    assert created_server.server_type == server_config.type
+
+    # Test with a valid SSEServerConfig
+    mcp_server_name = "github_composio"
+    server_url = "https://mcp.composio.dev/composio/server/3c44733b-75ae-4ba8-9a68-7153265fadd8"
+    sse_mcp_config = SSEServerConfig(server_name=mcp_server_name, server_url=server_url)
+    mcp_sse_server = MCPServer(server_name=mcp_server_name, server_type=MCPServerType.SSE, server_url=server_url)
+    created_server = await server.mcp_manager.create_or_update_mcp_server(mcp_sse_server, actor=default_user)
+    print(created_server)
+    assert created_server.server_name == mcp_server_name
+    assert created_server.server_type == MCPServerType.SSE
+
+    # list mcp servers
+    servers = await server.mcp_manager.list_mcp_servers(actor=default_user)
+    print(servers)
+    assert len(servers) > 0, "No MCP servers found"
+
+    # list tools from sse server
+    tools = await server.mcp_manager.list_mcp_server_tools(created_server.server_name, actor=default_user)
+    print(tools)
+
+    # call a tool from the sse server
+    tool_name = "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"
+    tool_args = {"owner": "letta-ai", "repo": "letta"}
+    result = await server.mcp_manager.execute_mcp_server_tool(
+        created_server.server_name, tool_name=tool_name, tool_args=tool_args, actor=default_user
+    )
+    print(result)
+
+    # add a tool
+    tool = await server.mcp_manager.add_tool_from_mcp_server(created_server.server_name, tool_name, actor=default_user)
+    print(tool)
+    assert tool.name == tool_name
+    assert f"mcp:{created_server.server_name}" in tool.tags, f"Expected tag {f'mcp:{created_server.server_name}'}, got {tool.tags}"
+    print("TAGS", tool.tags)
+
+
+# ======================================================================================================================
+# FileAgent Tests
+# ======================================================================================================================
+
+
+@pytest.mark.asyncio
+async def test_attach_creates_association(server, default_user, sarah_agent, default_file):
+    assoc = await server.file_agent_manager.attach_file(
+        agent_id=sarah_agent.id,
+        file_id=default_file.id,
+        actor=default_user,
+        visible_content="hello",
+    )
+
+    assert assoc.agent_id == sarah_agent.id
+    assert assoc.file_id == default_file.id
+    assert assoc.is_open is True
+    assert assoc.visible_content == "hello"
+
+    sarah_agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    file_blocks = sarah_agent.memory.file_blocks
+    assert len(file_blocks) == 1
+    assert file_blocks[0].value == assoc.visible_content
+    assert file_blocks[0].label == default_file.file_name
+
+
+@pytest.mark.asyncio
+async def test_attach_is_idempotent(server, default_user, sarah_agent, default_file):
+    a1 = await server.file_agent_manager.attach_file(
+        agent_id=sarah_agent.id,
+        file_id=default_file.id,
+        actor=default_user,
+        visible_content="first",
+    )
+
+    # second attach with different params
+    a2 = await server.file_agent_manager.attach_file(
+        agent_id=sarah_agent.id,
+        file_id=default_file.id,
+        actor=default_user,
+        is_open=False,
+        visible_content="second",
+    )
+
+    assert a1.id == a2.id
+    assert a2.is_open is False
+    assert a2.visible_content == "second"
+
+    sarah_agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    file_blocks = sarah_agent.memory.file_blocks
+    assert len(file_blocks) == 1
+    assert file_blocks[0].value == ""  # not open
+    assert file_blocks[0].label == default_file.file_name
+
+
+@pytest.mark.asyncio
+async def test_update_file_agent(server, file_attachment, default_user):
+    updated = await server.file_agent_manager.update_file_agent(
+        agent_id=file_attachment.agent_id,
+        file_id=file_attachment.file_id,
+        actor=default_user,
+        is_open=False,
+        visible_content="updated",
+    )
+    assert updated.is_open is False
+    assert updated.visible_content == "updated"
+
+
+@pytest.mark.asyncio
+async def test_mark_access(server, file_attachment, default_user):
+    old_ts = file_attachment.last_accessed_at
+    if USING_SQLITE:
+        time.sleep(CREATE_DELAY_SQLITE)
+    else:
+        await asyncio.sleep(0.01)
+
+    await server.file_agent_manager.mark_access(
+        agent_id=file_attachment.agent_id,
+        file_id=file_attachment.file_id,
+        actor=default_user,
+    )
+    refreshed = await server.file_agent_manager.get_file_agent(
+        agent_id=file_attachment.agent_id,
+        file_id=file_attachment.file_id,
+        actor=default_user,
+    )
+    assert refreshed.last_accessed_at > old_ts
+
+
+@pytest.mark.asyncio
+async def test_list_files_and_agents(
+    server,
+    default_user,
+    sarah_agent,
+    charles_agent,
+    default_file,
+    another_file,
+):
+    # default_file ↔ charles  (open)
+    await server.file_agent_manager.attach_file(agent_id=charles_agent.id, file_id=default_file.id, actor=default_user)
+    # default_file ↔ sarah    (open)
+    await server.file_agent_manager.attach_file(agent_id=sarah_agent.id, file_id=default_file.id, actor=default_user)
+    # another_file ↔ sarah    (closed)
+    await server.file_agent_manager.attach_file(agent_id=sarah_agent.id, file_id=another_file.id, actor=default_user, is_open=False)
+
+    files_for_sarah = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
+    assert {f.file_id for f in files_for_sarah} == {default_file.id, another_file.id}
+
+    open_only = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
+    assert {f.file_id for f in open_only} == {default_file.id}
+
+    agents_for_default = await server.file_agent_manager.list_agents_for_file(default_file.id, actor=default_user)
+    assert {a.agent_id for a in agents_for_default} == {sarah_agent.id, charles_agent.id}
+
+    sarah_agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    file_blocks = sarah_agent.memory.file_blocks
+    assert len(file_blocks) == 2
+    charles_agent = await server.agent_manager.get_agent_by_id_async(agent_id=charles_agent.id, actor=default_user)
+    file_blocks = charles_agent.memory.file_blocks
+    assert len(file_blocks) == 1
+    assert file_blocks[0].value == ""
+    assert file_blocks[0].label == default_file.file_name
+
+
+@pytest.mark.asyncio
+async def test_detach_file(server, file_attachment, default_user):
+    await server.file_agent_manager.detach_file(
+        agent_id=file_attachment.agent_id,
+        file_id=file_attachment.file_id,
+        actor=default_user,
+    )
+    res = await server.file_agent_manager.get_file_agent(
+        agent_id=file_attachment.agent_id,
+        file_id=file_attachment.file_id,
+        actor=default_user,
+    )
+    assert res is None
+
+
+@pytest.mark.asyncio
+async def test_org_scoping(
+    server,
+    default_user,
+    other_user_different_org,
+    sarah_agent,
+    default_file,
+):
+    # attach as default_user
+    await server.file_agent_manager.attach_file(
+        agent_id=sarah_agent.id,
+        file_id=default_file.id,
+        actor=default_user,
+    )
+
+    # other org should see nothing
+    files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=other_user_different_org)
+    assert files == []

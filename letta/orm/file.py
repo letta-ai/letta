@@ -8,13 +8,14 @@ from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 
 if TYPE_CHECKING:
+    from letta.orm.files_agents import FileAgent
     from letta.orm.organization import Organization
     from letta.orm.passage import SourcePassage
     from letta.orm.source import Source
 
 
 class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin):
-    """Represents metadata for an uploaded file."""
+    """Represents an uploaded file."""
 
     __tablename__ = "files"
     __pydantic_model__ = PydanticFileMetadata
@@ -32,3 +33,4 @@ class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin):
     source_passages: Mapped[List["SourcePassage"]] = relationship(
         "SourcePassage", back_populates="file", lazy="selectin", cascade="all, delete-orphan"
     )
+    file_agents: Mapped[List["FileAgent"]] = relationship("FileAgent", back_populates="file", lazy="selectin")

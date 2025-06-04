@@ -60,6 +60,9 @@ def run_subprocess(command: list, env: Optional[Dict[str, str]] = None, fail_msg
     except subprocess.CalledProcessError as e:
         logger.error(f"{fail_msg}\nSTDOUT:\n{e.stdout}\nSTDERR:\n{e.stderr}")
         raise RuntimeError(f"{fail_msg}: {e.stderr.strip()}") from e
+    except Exception as e:
+        logger.error(f"{fail_msg}: {e}")
+        raise RuntimeError(f"{fail_msg}: {e}")
 
 
 def ensure_pip_is_up_to_date(python_exec: str, env: Optional[Dict[str, str]] = None):

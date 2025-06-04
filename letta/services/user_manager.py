@@ -1,5 +1,7 @@
 from typing import List, Optional
 
+from sqlalchemy import select, text
+
 from letta.orm.errors import NoResultFound
 from letta.orm.organization import Organization as OrganizationModel
 from letta.orm.user import User as UserModel
@@ -37,6 +39,27 @@ class UserManager:
                 user.create(session)
 
             return user.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def create_default_actor_async(self, org_id: str = OrganizationManager.DEFAULT_ORG_ID) -> PydanticUser:
+        """Create the default user."""
+        async with db_registry.async_session() as session:
+            # Make sure the org id exists
+            try:
+                await OrganizationModel.read_async(db_session=session, identifier=org_id)
+            except NoResultFound:
+                raise ValueError(f"No organization with {org_id} exists in the organization table.")
+
+            # Try to retrieve the user
+            try:
+                actor = await UserModel.read_async(db_session=session, identifier=self.DEFAULT_USER_ID)
+            except NoResultFound:
+                # If it doesn't exist, make it
+                actor = UserModel(id=self.DEFAULT_USER_ID, name=self.DEFAULT_USER_NAME, organization_id=org_id)
+                await actor.create_async(session)
+
+            return actor.to_pydantic()
 
     @enforce_types
     @trace_method
@@ -123,7 +146,18 @@ class UserManager:
     async def get_actor_by_id_async(self, actor_id: str) -> PydanticUser:
         """Fetch a user by ID asynchronously."""
         async with db_registry.async_session() as session:
-            user = await UserModel.read_async(db_session=session, identifier=actor_id)
+            # Turn off seqscan to force use pk index
+            await session.execute(text("SET LOCAL enable_seqscan = OFF"))
+            try:
+                stmt = select(UserModel).where(UserModel.id == actor_id)
+                result = await session.execute(stmt)
+                user = result.scalar_one_or_none()
+            finally:
+                await session.execute(text("SET LOCAL enable_seqscan = ON"))
+
+            if not user:
+                raise NoResultFound(f"User not found with id={actor_id}")
+
             return user.to_pydantic()
 
     @enforce_types
@@ -154,8 +188,7 @@ class UserManager:
         try:
             return await self.get_actor_by_id_async(self.DEFAULT_USER_ID)
         except NoResultFound:
-            # Fall back to synchronous version since create_default_user isn't async yet
-            return self.create_default_user(org_id=self.DEFAULT_ORG_ID)
+            return await self.create_default_actor_async(org_id=self.DEFAULT_ORG_ID)
 
     @enforce_types
     @trace_method

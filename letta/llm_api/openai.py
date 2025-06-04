@@ -226,7 +226,7 @@ def build_openai_chat_completions_request(
             tool_choice=tool_choice,
             user=str(user_id),
             max_completion_tokens=llm_config.max_tokens,
-            temperature=llm_config.temperature if supports_temperature_param(model) else None,
+            temperature=llm_config.temperature if supports_temperature_param(model) else 1.0,
             reasoning_effort=llm_config.reasoning_effort,
         )
     else:
@@ -237,7 +237,7 @@ def build_openai_chat_completions_request(
             function_call=function_call,
             user=str(user_id),
             max_completion_tokens=llm_config.max_tokens,
-            temperature=1.0 if llm_config.enable_reasoner else llm_config.temperature,
+            temperature=llm_config.temperature if supports_temperature_param(model) else 1.0,
             reasoning_effort=llm_config.reasoning_effort,
         )
         # https://platform.openai.com/docs/guides/text-generation/json-mode

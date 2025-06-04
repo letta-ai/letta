@@ -1,5 +1,6 @@
 import os
 import threading
+import uuid
 from contextlib import asynccontextmanager, contextmanager
 from typing import Any, AsyncGenerator, Generator
 
@@ -118,13 +119,11 @@ class DatabaseRegistry:
                 else:
                     async_pg_uri = f"postgresql+asyncpg://{pg_uri.split('://', 1)[1]}" if "://" in pg_uri else pg_uri
                 async_pg_uri = async_pg_uri.replace("sslmode=", "ssl=")
-
                 async_engine = create_async_engine(async_pg_uri, **self._build_sqlalchemy_engine_args(is_async=True))
-                self._initialized["async"] = True
             else:
-                self.logger.warning("Async SQLite is currently not supported. Please use PostgreSQL for async database operations.")
-                # TODO (cliandy): unclear around async sqlite support in sqlalchemy, we will not currently support this
-                self._initialized["async"] = True
+                # create sqlite async engine
+                self._initialized["async"] = False
+                # TODO: remove self.config
                 engine_path = "sqlite+aiosqlite:///" + os.path.join(self.config.recall_storage_path, "sqlite.db")
                 self.logger.info("Creating sqlite engine " + engine_path)
                 async_engine = create_async_engine(engine_path, **self._build_sqlalchemy_engine_args(is_async=True))
@@ -132,7 +131,7 @@ class DatabaseRegistry:
             # Create async session factory
             self._async_engines["default"] = async_engine
             self._async_session_factories["default"] = async_sessionmaker(
-                autocommit=False, autoflush=False, bind=self._async_engines["default"], class_=AsyncSession
+                close_resets_only=False, autocommit=False, autoflush=False, bind=self._async_engines["default"], class_=AsyncSession
             )
             self._initialized["async"] = True
 
@@ -165,8 +164,24 @@ class DatabaseRegistry:
                 }
             )
             if not is_async:
-                base_args["pool_use_lifo"] = settings.pool_use_lifo
+                base_args.update(
+                    {
+                        "pool_use_lifo": settings.pool_use_lifo,
+                    }
+                )
 
+        elif is_async:
+            # For asyncpg, statement_cache_size should be in connect_args
+            base_args.update(
+                {
+                    "connect_args": {
+                        "timeout": settings.pg_pool_timeout,
+                        "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4()}__",
+                        "statement_cache_size": 0,
+                        "prepared_statement_cache_size": 0,
+                    },
+                }
+            )
         return base_args
 
     def _wrap_sqlite_engine(self, engine: Engine) -> None:

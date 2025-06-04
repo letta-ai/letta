@@ -5,12 +5,12 @@ from typing import Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import sqlalchemy as sa
-from openai.types.beta.function_tool import FunctionTool as OpenAITool
 from sqlalchemy import Select, and_, delete, func, insert, literal, or_, select, union_all
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from letta.constants import (
     BASE_MEMORY_TOOLS,
+    BASE_MEMORY_TOOLS_V2,
     BASE_SLEEPTIME_CHAT_TOOLS,
     BASE_SLEEPTIME_TOOLS,
     BASE_TOOLS,
@@ -42,13 +42,13 @@ from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.sqlite_functions import adapt_array
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent, get_prompt_template_for_agent_type
+from letta.schemas.block import DEFAULT_BLOCKS
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import MessageRole, ProviderType
+from letta.schemas.enums import ProviderType
 from letta.schemas.group import Group as PydanticGroup
 from letta.schemas.group import ManagerType
-from letta.schemas.letta_message_content import TextContent
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message
 from letta.schemas.message import Message as PydanticMessage
@@ -64,6 +64,8 @@ from letta.serialize_schemas.marshmallow_tool import SerializedToolSchema
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.db import db_registry
 from letta.services.block_manager import BlockManager
+from letta.services.context_window_calculator.context_window_calculator import ContextWindowCalculator
+from letta.services.context_window_calculator.token_counter import AnthropicTokenCounter, TiktokenCounter
 from letta.services.helpers.agent_manager_helper import (
     _apply_filters,
     _apply_identity_filters,
@@ -71,6 +73,7 @@ from letta.services.helpers.agent_manager_helper import (
     _apply_pagination_async,
     _apply_tag_filter,
     _process_relationship,
+    _process_relationship_async,
     check_supports_structured_output,
     compile_system_message,
     derive_system_message,
@@ -84,7 +87,7 @@ from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import settings
 from letta.tracing import trace_method
-from letta.utils import count_tokens, enforce_types, united_diff
+from letta.utils import enforce_types, united_diff
 
 logger = get_logger(__name__)
 
@@ -255,6 +258,8 @@ class AgentManager:
                 tool_names |= set(BASE_SLEEPTIME_TOOLS)
             elif agent_create.enable_sleeptime:
                 tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
+            elif agent_create.agent_type == AgentType.memgpt_v2_agent:
+                tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS_V2)
             else:
                 tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS)
         if agent_create.include_multi_agent_tools:
@@ -386,8 +391,19 @@ class AgentManager:
         # blocks
         block_ids = list(agent_create.block_ids or [])
         if agent_create.memory_blocks:
+
             pydantic_blocks = [PydanticBlock(**b.model_dump(to_orm=True)) for b in agent_create.memory_blocks]
-            created_blocks = self.block_manager.batch_create_blocks(
+
+            # Inject a description for the default blocks if the user didn't specify them
+            # Used for `persona`, `human`, etc
+            default_blocks = {block.label: block for block in DEFAULT_BLOCKS}
+            for block in pydantic_blocks:
+                if block.label in default_blocks:
+                    if block.description is None:
+                        block.description = default_blocks[block.label].description
+
+            # Actually create the blocks
+            created_blocks = await self.block_manager.batch_create_blocks_async(
                 pydantic_blocks,
                 actor=actor,
             )
@@ -404,6 +420,8 @@ class AgentManager:
                 tool_names |= set(BASE_SLEEPTIME_TOOLS)
             elif agent_create.enable_sleeptime:
                 tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
+            elif agent_create.agent_type == AgentType.memgpt_v2_agent:
+                tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS_V2)
             else:
                 tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS)
         if agent_create.include_multi_agent_tools:
@@ -433,7 +451,7 @@ class AgentManager:
                     for tn in tool_names:
                         if tn in {"send_message", "send_message_to_agent_async", "memory_finish_edits"}:
                             tool_rules.append(TerminalToolRule(tool_name=tn))
-                        elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_SLEEPTIME_TOOLS):
+                        elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_MEMORY_TOOLS_V2 + BASE_SLEEPTIME_TOOLS):
                             tool_rules.append(ContinueToolRule(tool_name=tn))
 
                 if tool_rules:
@@ -520,11 +538,10 @@ class AgentManager:
                 new_agent.message_ids = [msg.id for msg in init_messages]
 
             await session.refresh(new_agent)
+            result = await new_agent.to_pydantic_async()
 
-        # Using the synchronous version since we don't have an async version yet
-        # If you implement an async version of create_many_messages, you can switch to that
         await self.message_manager.create_many_messages_async(pydantic_msgs=init_messages, actor=actor)
-        return await new_agent.to_pydantic_async()
+        return result
 
     @enforce_types
     def _generate_initial_message_sequence(
@@ -560,6 +577,14 @@ class AgentManager:
     ) -> PydanticAgentState:
         init_messages = self._generate_initial_message_sequence(actor, agent_state, initial_message_sequence)
         return self.append_to_in_context_messages(init_messages, agent_id=agent_state.id, actor=actor)
+
+    @trace_method
+    @enforce_types
+    async def append_initial_message_sequence_to_in_context_messages_async(
+        self, actor: PydanticUser, agent_state: PydanticAgentState, initial_message_sequence: Optional[List[MessageCreate]] = None
+    ) -> PydanticAgentState:
+        init_messages = self._generate_initial_message_sequence(actor, agent_state, initial_message_sequence)
+        return await self.append_to_in_context_messages_async(init_messages, agent_id=agent_state.id, actor=actor)
 
     @trace_method
     @enforce_types
@@ -962,6 +987,50 @@ class AgentManager:
 
             return list(session.execute(query).scalars())
 
+    @enforce_types
+    @trace_method
+    async def list_agents_matching_tags_async(
+        self,
+        actor: PydanticUser,
+        match_all: List[str],
+        match_some: List[str],
+        limit: Optional[int] = 50,
+    ) -> List[PydanticAgentState]:
+        """
+        Retrieves agents in the same organization that match all specified `match_all` tags
+        and at least one tag from `match_some`. The query is optimized for efficiency by
+        leveraging indexed filtering and aggregation.
+
+        Args:
+            actor (PydanticUser): The user requesting the agent list.
+            match_all (List[str]): Agents must have all these tags.
+            match_some (List[str]): Agents must have at least one of these tags.
+            limit (Optional[int]): Maximum number of agents to return.
+
+        Returns:
+            List[PydanticAgentState: The filtered list of matching agents.
+        """
+        async with db_registry.async_session() as session:
+            query = select(AgentModel).where(AgentModel.organization_id == actor.organization_id)
+
+            if match_all:
+                # Subquery to find agent IDs that contain all match_all tags
+                subquery = (
+                    select(AgentsTags.agent_id)
+                    .where(AgentsTags.tag.in_(match_all))
+                    .group_by(AgentsTags.agent_id)
+                    .having(func.count(AgentsTags.tag) == literal(len(match_all)))
+                )
+                query = query.where(AgentModel.id.in_(subquery))
+
+            if match_some:
+                # Ensures agents match at least one tag in match_some
+                query = query.join(AgentsTags).where(AgentsTags.tag.in_(match_some))
+
+            query = query.distinct(AgentModel.id).order_by(AgentModel.id).limit(limit)
+            result = await session.execute(query)
+            return await asyncio.gather(*[agent.to_pydantic_async() for agent in result.scalars()])
+
     @trace_method
     def size(
         self,
@@ -1288,12 +1357,6 @@ class AgentManager:
 
     @trace_method
     @enforce_types
-    async def get_in_context_messages_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticMessage]:
-        agent = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=[], actor=actor)
-        return await self.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=actor)
-
-    @trace_method
-    @enforce_types
     def get_system_message(self, agent_id: str, actor: PydanticUser) -> PydanticMessage:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         return self.message_manager.get_message_by_id(message_id=message_ids[0], actor=actor)
@@ -1349,7 +1412,6 @@ class AgentManager:
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
-            recent_passages=self.list_passages(actor=actor, agent_id=agent_id, ascending=False, limit=10),
             previous_message_count=num_messages,
             archival_memory_size=num_archival_memories,
         )
@@ -1417,7 +1479,6 @@ class AgentManager:
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
-            recent_passages=self.list_passages(actor=actor, agent_id=agent_id, ascending=False, limit=10),
             previous_message_count=num_messages,
             archival_memory_size=num_archival_memories,
         )
@@ -1484,7 +1545,20 @@ class AgentManager:
 
     @trace_method
     @enforce_types
-    def reset_messages(self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False) -> PydanticAgentState:
+    async def append_to_in_context_messages_async(
+        self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser
+    ) -> PydanticAgentState:
+        messages = await self.message_manager.create_many_messages_async(messages, actor=actor)
+        agent = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        message_ids = agent.message_ids or []
+        message_ids += [m.id for m in messages]
+        return await self.set_in_context_messages_async(agent_id=agent_id, message_ids=message_ids, actor=actor)
+
+    @trace_method
+    @enforce_types
+    async def reset_messages_async(
+        self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False
+    ) -> PydanticAgentState:
         """
         Removes all in-context messages for the specified agent by:
           1) Clearing the agent.messages relationship (which cascades delete-orphans).
@@ -1501,22 +1575,22 @@ class AgentManager:
         Returns:
             PydanticAgentState: The updated agent state with no linked messages.
         """
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             # Retrieve the existing agent (will raise NoResultFound if invalid)
-            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
 
             # Also clear out the message_ids field to keep in-context memory consistent
             agent.message_ids = []
 
             # Commit the update
-            agent.update(db_session=session, actor=actor)
+            await agent.update_async(db_session=session, actor=actor)
 
-            agent_state = agent.to_pydantic()
+            agent_state = await agent.to_pydantic_async()
 
-        self.message_manager.delete_all_messages_for_agent(agent_id=agent_id, actor=actor)
+        await self.message_manager.delete_all_messages_for_agent_async(agent_id=agent_id, actor=actor)
 
         if add_default_initial_messages:
-            return self.append_initial_message_sequence_to_in_context_messages(actor, agent_state)
+            return await self.append_initial_message_sequence_to_in_context_messages_async(actor, agent_state)
         else:
             # We still want to always have a system message
             init_messages = initialize_message_sequence(
@@ -1527,12 +1601,11 @@ class AgentManager:
                 model=agent_state.llm_config.model,
                 openai_message_dict=init_messages[0],
             )
-            return self.append_to_in_context_messages([system_message], agent_id=agent_state.id, actor=actor)
+            return await self.append_to_in_context_messages_async([system_message], agent_id=agent_state.id, actor=actor)
 
-    # TODO: I moved this from agent.py - replace all mentions of this with the agent_manager version
     @trace_method
     @enforce_types
-    def update_memory_if_changed(self, agent_id: str, new_memory: Memory, actor: PydanticUser) -> PydanticAgentState:
+    async def update_memory_if_changed_async(self, agent_id: str, new_memory: Memory, actor: PydanticUser) -> PydanticAgentState:
         """
         Update internal memory object and system prompt if there have been modifications.
 
@@ -1544,8 +1617,8 @@ class AgentManager:
         Returns:
             modified (bool): whether the memory was updated
         """
-        agent_state = self.get_agent_by_id(agent_id=agent_id, actor=actor)
-        system_message = self.message_manager.get_message_by_id(message_id=agent_state.message_ids[0], actor=actor)
+        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        system_message = await self.message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)
         if new_memory.compile() not in system_message.content[0].text:
             # update the blocks (LRW) in the DB
             for label in agent_state.memory.list_block_labels():
@@ -1553,18 +1626,24 @@ class AgentManager:
                 if updated_value != agent_state.memory.get_block(label).value:
                     # update the block if it's changed
                     block_id = agent_state.memory.get_block(label).id
-                    self.block_manager.update_block(block_id=block_id, block_update=BlockUpdate(value=updated_value), actor=actor)
+                    await self.block_manager.update_block_async(
+                        block_id=block_id, block_update=BlockUpdate(value=updated_value), actor=actor
+                    )
 
             # refresh memory from DB (using block ids)
+            blocks = await asyncio.gather(
+                *[self.block_manager.get_block_by_id_async(block.id, actor=actor) for block in agent_state.memory.get_blocks()]
+            )
             agent_state.memory = Memory(
-                blocks=[self.block_manager.get_block_by_id(block.id, actor=actor) for block in agent_state.memory.get_blocks()],
+                blocks=blocks,
+                file_blocks=agent_state.memory.file_blocks,
                 prompt_template=get_prompt_template_for_agent_type(agent_state.agent_type),
             )
 
             # NOTE: don't do this since re-buildin the memory is handled at the start of the step
             # rebuild memory - this records the last edited timestamp of the memory
             # TODO: pass in update timestamp from block edit time
-            agent_state = self.rebuild_system_prompt(agent_id=agent_id, actor=actor)
+            agent_state = await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor)
 
         return agent_state
 
@@ -1575,9 +1654,8 @@ class AgentManager:
         if not block_ids:
             return agent_state
 
-        agent_state.memory.blocks = await self.block_manager.get_all_blocks_by_ids_async(
-            block_ids=[b.id for b in agent_state.memory.blocks], actor=actor
-        )
+        blocks = await self.block_manager.get_all_blocks_by_ids_async(block_ids=[b.id for b in agent_state.memory.blocks], actor=actor)
+        agent_state.memory.blocks = [b for b in blocks if b is not None]
         return agent_state
 
     # ======================================================================================================================
@@ -1585,7 +1663,7 @@ class AgentManager:
     # ======================================================================================================================
     @trace_method
     @enforce_types
-    def attach_source(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
+    async def attach_source_async(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Attaches a source to an agent.
 
@@ -1599,12 +1677,12 @@ class AgentManager:
             IntegrityError: If the source is already attached to the agent
         """
 
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             # Verify both agent and source exist and user has permission to access them
-            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
 
             # The _process_relationship helper already handles duplicate checking via unique constraint
-            _process_relationship(
+            await _process_relationship_async(
                 session=session,
                 agent=agent,
                 relationship_name="sources",
@@ -1615,18 +1693,18 @@ class AgentManager:
             )
 
             # Commit the changes
-            agent.update(session, actor=actor)
+            await agent.update_async(session, actor=actor)
 
         # Force rebuild of system prompt so that the agent is updated with passage count
         # and recent passages and add system message alert to agent
-        self.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True)
-        self.append_system_message(
+        pydantic_agent = await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
+        await self.append_system_message_async(
             agent_id=agent_id,
             content=DATA_SOURCE_ATTACH_ALERT,
             actor=actor,
         )
 
-        return agent.to_pydantic()
+        return pydantic_agent
 
     @trace_method
     @enforce_types
@@ -1640,6 +1718,19 @@ class AgentManager:
 
         # update agent in-context message IDs
         self.append_to_in_context_messages(messages=[message], agent_id=agent_id, actor=actor)
+
+    @trace_method
+    @enforce_types
+    async def append_system_message_async(self, agent_id: str, content: str, actor: PydanticUser):
+
+        # get the agent
+        agent = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        message = PydanticMessage.dict_to_message(
+            agent_id=agent.id, model=agent.llm_config.model, openai_message_dict={"role": "system", "content": content}
+        )
+
+        # update agent in-context message IDs
+        await self.append_to_in_context_messages_async(messages=[message], agent_id=agent_id, actor=actor)
 
     @trace_method
     @enforce_types
@@ -1708,6 +1799,34 @@ class AgentManager:
             # Commit the changes
             agent.update(session, actor=actor)
             return agent.to_pydantic()
+
+    @trace_method
+    @enforce_types
+    async def detach_source_async(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
+        """
+        Detaches a source from an agent.
+
+        Args:
+            agent_id: ID of the agent to detach the source from
+            source_id: ID of the source to detach
+            actor: User performing the action
+        """
+        async with db_registry.async_session() as session:
+            # Verify agent exists and user has permission to access it
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+            # Remove the source from the relationship
+            remaining_sources = [s for s in agent.sources if s.id != source_id]
+
+            if len(remaining_sources) == len(agent.sources):  # Source ID was not in the relationship
+                logger.warning(f"Attempted to remove unattached source id={source_id} from agent id={agent_id} by actor={actor}")
+
+            # Update the sources relationship
+            agent.sources = remaining_sources
+
+            # Commit the changes
+            await agent.update_async(session, actor=actor)
+            return await agent.to_pydantic_async()
 
     # ======================================================================================================================
     # Block management
@@ -2305,6 +2424,42 @@ class AgentManager:
 
     @trace_method
     @enforce_types
+    async def attach_tool_async(self, agent_id: str, tool_id: str, actor: PydanticUser) -> PydanticAgentState:
+        """
+        Attaches a tool to an agent.
+
+        Args:
+            agent_id: ID of the agent to attach the tool to.
+            tool_id: ID of the tool to attach.
+            actor: User performing the action.
+
+        Raises:
+            NoResultFound: If the agent or tool is not found.
+
+        Returns:
+            PydanticAgentState: The updated agent state.
+        """
+        async with db_registry.async_session() as session:
+            # Verify the agent exists and user has permission to access it
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+            # Use the _process_relationship helper to attach the tool
+            await _process_relationship_async(
+                session=session,
+                agent=agent,
+                relationship_name="tools",
+                model_class=ToolModel,
+                item_ids=[tool_id],
+                allow_partial=False,  # Ensure the tool exists
+                replace=False,  # Extend the existing tools
+            )
+
+            # Commit and refresh the agent
+            await agent.update_async(session, actor=actor)
+            return await agent.to_pydantic_async()
+
+    @trace_method
+    @enforce_types
     def detach_tool(self, agent_id: str, tool_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Detaches a tool from an agent.
@@ -2336,6 +2491,40 @@ class AgentManager:
             # Commit and refresh the agent
             agent.update(session, actor=actor)
             return agent.to_pydantic()
+
+    @trace_method
+    @enforce_types
+    async def detach_tool_async(self, agent_id: str, tool_id: str, actor: PydanticUser) -> PydanticAgentState:
+        """
+        Detaches a tool from an agent.
+
+        Args:
+            agent_id: ID of the agent to detach the tool from.
+            tool_id: ID of the tool to detach.
+            actor: User performing the action.
+
+        Raises:
+            NoResultFound: If the agent or tool is not found.
+
+        Returns:
+            PydanticAgentState: The updated agent state.
+        """
+        async with db_registry.async_session() as session:
+            # Verify the agent exists and user has permission to access it
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+            # Filter out the tool to be detached
+            remaining_tools = [tool for tool in agent.tools if tool.id != tool_id]
+
+            if len(remaining_tools) == len(agent.tools):  # Tool ID was not in the relationship
+                logger.warning(f"Attempted to remove unattached tool id={tool_id} from agent id={agent_id} by actor={actor}")
+
+            # Update the tools relationship
+            agent.tools = remaining_tools
+
+            # Commit and refresh the agent
+            await agent.update_async(session, actor=actor)
+            return await agent.to_pydantic_async()
 
     @trace_method
     @enforce_types
@@ -2430,280 +2619,24 @@ class AgentManager:
             result = await session.execute(query)
             # Extract the tag values from the result
             results = [row[0] for row in result.all()]
-        return results
+            return results
 
     async def get_context_window(self, agent_id: str, actor: PydanticUser) -> ContextWindowOverview:
-        if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
-            return await self.get_context_window_from_anthropic_async(agent_id=agent_id, actor=actor)
-        return await self.get_context_window_from_tiktoken_async(agent_id=agent_id, actor=actor)
+        agent_state = await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
+        calculator = ContextWindowCalculator()
 
-    async def get_context_window_from_anthropic_async(self, agent_id: str, actor: PydanticUser) -> ContextWindowOverview:
-        """Get the context window of the agent"""
-        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
-        anthropic_client = LLMClient.create(provider_type=ProviderType.anthropic, actor=actor)
-        model = agent_state.llm_config.model if agent_state.llm_config.model_endpoint_type == "anthropic" else None
+        if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" or agent_state.llm_config.model_endpoint_type == "anthropic":
+            anthropic_client = LLMClient.create(provider_type=ProviderType.anthropic, actor=actor)
+            model = agent_state.llm_config.model if agent_state.llm_config.model_endpoint_type == "anthropic" else None
 
-        # Grab the in-context messages
-        # conversion of messages to anthropic dict format, which is passed to the token counter
-        (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
-            self.get_in_context_messages_async(agent_id=agent_id, actor=actor),
-            self.passage_manager.size_async(actor=actor, agent_id=agent_id),
-            self.message_manager.size_async(actor=actor, agent_id=agent_id),
-        )
-        in_context_messages_anthropic = [m.to_anthropic_dict() for m in in_context_messages]
-
-        # Extract system, memory and external summary
-        if (
-            len(in_context_messages) > 0
-            and in_context_messages[0].role == MessageRole.system
-            and in_context_messages[0].content
-            and len(in_context_messages[0].content) == 1
-            and isinstance(in_context_messages[0].content[0], TextContent)
-        ):
-            system_message = in_context_messages[0].content[0].text
-
-            external_memory_marker_pos = system_message.find("###")
-            core_memory_marker_pos = system_message.find("<", external_memory_marker_pos)
-            if external_memory_marker_pos != -1 and core_memory_marker_pos != -1:
-                system_prompt = system_message[:external_memory_marker_pos].strip()
-                external_memory_summary = system_message[external_memory_marker_pos:core_memory_marker_pos].strip()
-                core_memory = system_message[core_memory_marker_pos:].strip()
-            else:
-                # if no markers found, put everything in system message
-                system_prompt = system_message
-                external_memory_summary = None
-                core_memory = None
+            token_counter = AnthropicTokenCounter(anthropic_client, model)  # noqa
         else:
-            # if no system message, fall back on agent's system prompt
-            system_prompt = agent_state.system
-            external_memory_summary = None
-            core_memory = None
+            token_counter = TiktokenCounter(agent_state.llm_config.model)
 
-        num_tokens_system_coroutine = anthropic_client.count_tokens(model=model, messages=[{"role": "user", "content": system_prompt}])
-        num_tokens_core_memory_coroutine = (
-            anthropic_client.count_tokens(model=model, messages=[{"role": "user", "content": core_memory}])
-            if core_memory
-            else asyncio.sleep(0, result=0)
-        )
-        num_tokens_external_memory_summary_coroutine = (
-            anthropic_client.count_tokens(model=model, messages=[{"role": "user", "content": external_memory_summary}])
-            if external_memory_summary
-            else asyncio.sleep(0, result=0)
-        )
-
-        # Check if there's a summary message in the message queue
-        if (
-            len(in_context_messages) > 1
-            and in_context_messages[1].role == MessageRole.user
-            and in_context_messages[1].content
-            and len(in_context_messages[1].content) == 1
-            and isinstance(in_context_messages[1].content[0], TextContent)
-            # TODO remove hardcoding
-            and "The following is a summary of the previous " in in_context_messages[1].content[0].text
-        ):
-            # Summary message exists
-            text_content = in_context_messages[1].content[0].text
-            assert text_content is not None
-            summary_memory = text_content
-            num_tokens_summary_memory_coroutine = anthropic_client.count_tokens(
-                model=model, messages=[{"role": "user", "content": summary_memory}]
-            )
-            # with a summary message, the real messages start at index 2
-            num_tokens_messages_coroutine = (
-                anthropic_client.count_tokens(model=model, messages=in_context_messages_anthropic[2:])
-                if len(in_context_messages_anthropic) > 2
-                else asyncio.sleep(0, result=0)
-            )
-
-        else:
-            summary_memory = None
-            num_tokens_summary_memory_coroutine = asyncio.sleep(0, result=0)
-            # with no summary message, the real messages start at index 1
-            num_tokens_messages_coroutine = (
-                anthropic_client.count_tokens(model=model, messages=in_context_messages_anthropic[1:])
-                if len(in_context_messages_anthropic) > 1
-                else asyncio.sleep(0, result=0)
-            )
-
-        # tokens taken up by function definitions
-        if agent_state.tools and len(agent_state.tools) > 0:
-            available_functions_definitions = [OpenAITool(type="function", function=f.json_schema) for f in agent_state.tools]
-            num_tokens_available_functions_definitions_coroutine = anthropic_client.count_tokens(
-                model=model,
-                tools=available_functions_definitions,
-            )
-        else:
-            available_functions_definitions = []
-            num_tokens_available_functions_definitions_coroutine = asyncio.sleep(0, result=0)
-
-        (
-            num_tokens_system,
-            num_tokens_core_memory,
-            num_tokens_external_memory_summary,
-            num_tokens_summary_memory,
-            num_tokens_messages,
-            num_tokens_available_functions_definitions,
-        ) = await asyncio.gather(
-            num_tokens_system_coroutine,
-            num_tokens_core_memory_coroutine,
-            num_tokens_external_memory_summary_coroutine,
-            num_tokens_summary_memory_coroutine,
-            num_tokens_messages_coroutine,
-            num_tokens_available_functions_definitions_coroutine,
-        )
-
-        num_tokens_used_total = (
-            num_tokens_system  # system prompt
-            + num_tokens_available_functions_definitions  # function definitions
-            + num_tokens_core_memory  # core memory
-            + num_tokens_external_memory_summary  # metadata (statistics) about recall/archival
-            + num_tokens_summary_memory  # summary of ongoing conversation
-            + num_tokens_messages  # tokens taken by messages
-        )
-        assert isinstance(num_tokens_used_total, int)
-
-        return ContextWindowOverview(
-            # context window breakdown (in messages)
-            num_messages=len(in_context_messages),
-            num_archival_memory=passage_manager_size,
-            num_recall_memory=message_manager_size,
-            num_tokens_external_memory_summary=num_tokens_external_memory_summary,
-            external_memory_summary=external_memory_summary,
-            # top-level information
-            context_window_size_max=agent_state.llm_config.context_window,
-            context_window_size_current=num_tokens_used_total,
-            # context window breakdown (in tokens)
-            num_tokens_system=num_tokens_system,
-            system_prompt=system_prompt,
-            num_tokens_core_memory=num_tokens_core_memory,
-            core_memory=core_memory,
-            num_tokens_summary_memory=num_tokens_summary_memory,
-            summary_memory=summary_memory,
-            num_tokens_messages=num_tokens_messages,
-            messages=in_context_messages,
-            # related to functions
-            num_tokens_functions_definitions=num_tokens_available_functions_definitions,
-            functions_definitions=available_functions_definitions,
-        )
-
-    async def get_context_window_from_tiktoken_async(self, agent_id: str, actor: PydanticUser) -> ContextWindowOverview:
-        """Get the context window of the agent"""
-        from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
-
-        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
-        # Grab the in-context messages
-        # conversion of messages to OpenAI dict format, which is passed to the token counter
-        (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
-            self.get_in_context_messages_async(agent_id=agent_id, actor=actor),
-            self.passage_manager.size_async(actor=actor, agent_id=agent_id),
-            self.message_manager.size_async(actor=actor, agent_id=agent_id),
-        )
-        in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
-
-        # Extract system, memory and external summary
-        if (
-            len(in_context_messages) > 0
-            and in_context_messages[0].role == MessageRole.system
-            and in_context_messages[0].content
-            and len(in_context_messages[0].content) == 1
-            and isinstance(in_context_messages[0].content[0], TextContent)
-        ):
-            system_message = in_context_messages[0].content[0].text
-
-            external_memory_marker_pos = system_message.find("###")
-            core_memory_marker_pos = system_message.find("<", external_memory_marker_pos)
-            if external_memory_marker_pos != -1 and core_memory_marker_pos != -1:
-                system_prompt = system_message[:external_memory_marker_pos].strip()
-                external_memory_summary = system_message[external_memory_marker_pos:core_memory_marker_pos].strip()
-                core_memory = system_message[core_memory_marker_pos:].strip()
-            else:
-                # if no markers found, put everything in system message
-                system_prompt = system_message
-                external_memory_summary = ""
-                core_memory = ""
-        else:
-            # if no system message, fall back on agent's system prompt
-            system_prompt = agent_state.system
-            external_memory_summary = ""
-            core_memory = ""
-
-        num_tokens_system = count_tokens(system_prompt)
-        num_tokens_core_memory = count_tokens(core_memory)
-        num_tokens_external_memory_summary = count_tokens(external_memory_summary)
-
-        # Check if there's a summary message in the message queue
-        if (
-            len(in_context_messages) > 1
-            and in_context_messages[1].role == MessageRole.user
-            and in_context_messages[1].content
-            and len(in_context_messages[1].content) == 1
-            and isinstance(in_context_messages[1].content[0], TextContent)
-            # TODO remove hardcoding
-            and "The following is a summary of the previous " in in_context_messages[1].content[0].text
-        ):
-            # Summary message exists
-            text_content = in_context_messages[1].content[0].text
-            assert text_content is not None
-            summary_memory = text_content
-            num_tokens_summary_memory = count_tokens(text_content)
-            # with a summary message, the real messages start at index 2
-            num_tokens_messages = (
-                num_tokens_from_messages(messages=in_context_messages_openai[2:], model=agent_state.llm_config.model)
-                if len(in_context_messages_openai) > 2
-                else 0
-            )
-
-        else:
-            summary_memory = None
-            num_tokens_summary_memory = 0
-            # with no summary message, the real messages start at index 1
-            num_tokens_messages = (
-                num_tokens_from_messages(messages=in_context_messages_openai[1:], model=agent_state.llm_config.model)
-                if len(in_context_messages_openai) > 1
-                else 0
-            )
-
-        # tokens taken up by function definitions
-        agent_state_tool_jsons = [t.json_schema for t in agent_state.tools]
-        if agent_state_tool_jsons:
-            available_functions_definitions = [OpenAITool(type="function", function=f) for f in agent_state_tool_jsons]
-            num_tokens_available_functions_definitions = num_tokens_from_functions(
-                functions=agent_state_tool_jsons, model=agent_state.llm_config.model
-            )
-        else:
-            available_functions_definitions = []
-            num_tokens_available_functions_definitions = 0
-
-        num_tokens_used_total = (
-            num_tokens_system  # system prompt
-            + num_tokens_available_functions_definitions  # function definitions
-            + num_tokens_core_memory  # core memory
-            + num_tokens_external_memory_summary  # metadata (statistics) about recall/archival
-            + num_tokens_summary_memory  # summary of ongoing conversation
-            + num_tokens_messages  # tokens taken by messages
-        )
-        assert isinstance(num_tokens_used_total, int)
-
-        return ContextWindowOverview(
-            # context window breakdown (in messages)
-            num_messages=len(in_context_messages),
-            num_archival_memory=passage_manager_size,
-            num_recall_memory=message_manager_size,
-            num_tokens_external_memory_summary=num_tokens_external_memory_summary,
-            external_memory_summary=external_memory_summary,
-            # top-level information
-            context_window_size_max=agent_state.llm_config.context_window,
-            context_window_size_current=num_tokens_used_total,
-            # context window breakdown (in tokens)
-            num_tokens_system=num_tokens_system,
-            system_prompt=system_prompt,
-            num_tokens_core_memory=num_tokens_core_memory,
-            core_memory=core_memory,
-            num_tokens_summary_memory=num_tokens_summary_memory,
-            summary_memory=summary_memory,
-            num_tokens_messages=num_tokens_messages,
-            messages=in_context_messages,
-            # related to functions
-            num_tokens_functions_definitions=num_tokens_available_functions_definitions,
-            functions_definitions=available_functions_definitions,
+        return await calculator.calculate_context_window(
+            agent_state=agent_state,
+            actor=actor,
+            token_counter=token_counter,
+            message_manager=self.message_manager,
+            passage_manager=self.passage_manager,
         )
