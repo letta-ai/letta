@@ -1384,6 +1384,11 @@ class AgentManager:
         curr_system_message = self.get_system_message(
             agent_id=agent_id, actor=actor
         )  # this is the system + memory bank, not just the system prompt
+
+        if curr_system_message is None:
+            logger.warning(f"No system message found for agent {agent_state.id} and user {actor}")
+            return agent_state
+
         curr_system_message_openai = curr_system_message.to_openai_dict()
 
         # note: we only update the system prompt if the core memory is changed
@@ -1451,6 +1456,11 @@ class AgentManager:
         curr_system_message = await self.get_system_message_async(
             agent_id=agent_id, actor=actor
         )  # this is the system + memory bank, not just the system prompt
+
+        if curr_system_message is None:
+            logger.warning(f"No system message found for agent {agent_state.id} and user {actor}")
+            return agent_state
+
         curr_system_message_openai = curr_system_message.to_openai_dict()
 
         # note: we only update the system prompt if the core memory is changed
