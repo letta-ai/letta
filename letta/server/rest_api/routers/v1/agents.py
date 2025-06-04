@@ -660,7 +660,7 @@ async def send_message(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     request_start_timestamp_ns = get_utc_timestamp_ns()
-    user_eligible = actor.organization_id not in ["org-4a3af5dd-4c6a-48cb-ac13-3f73ecaaa4bf", "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6"]
+    user_eligible = True
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
