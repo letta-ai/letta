@@ -64,6 +64,7 @@
       }
     },
     "CoreMemoryEditorHeader": {
+      "preserved": "This memory block is preserved across agent versions, if you edit it, changes will not be applied to existing agents",
       "limit": {
         "label": "{value} Chars",
         "tooltip": {
@@ -96,6 +97,10 @@
       "rule": "Rule {index}"
     },
     "MemoryBlockViewer": {
+      "noDescription": "No description",
+      "noValue": "No value",
+      "readOnly": "Read only",
+      "preserved": "Preserved on migration",
       "title": "Memory Blocks",
       "noMemoryBlocks": "No memory blocks in this agent",
       "limit": "<limit></limit> chars"

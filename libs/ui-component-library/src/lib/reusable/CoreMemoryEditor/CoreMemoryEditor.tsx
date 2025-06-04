@@ -146,7 +146,7 @@ function CoreMemoryEditorHeader(props: CoreMemoryEditorHeaderProps) {
     onLockChange,
     sharedAgents,
   } = props;
-  const { label, limit, read_only } = memoryBlock;
+  const { label, limit, read_only, preserve_on_migration } = memoryBlock;
 
   const t = useTranslations('components/CoreMemoryEditor');
 
@@ -187,6 +187,12 @@ function CoreMemoryEditorHeader(props: CoreMemoryEditorHeaderProps) {
           {read_only && (
             <InfoChip
               label={t('CoreMemoryEditorHeader.readOnly')}
+              icon={<VisibilityLockIcon />}
+            />
+          )}
+          {preserve_on_migration && (
+            <InfoChip
+              label={t('CoreMemoryEditorHeader.preserved')}
               icon={<VisibilityLockIcon />}
             />
           )}

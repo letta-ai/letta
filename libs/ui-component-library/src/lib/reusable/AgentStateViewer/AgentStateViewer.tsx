@@ -253,7 +253,10 @@ function MemoryBlockViewer(props: MemoryBlockViewerProps) {
   const t = useTranslations('components/AgentStateViewer');
   const { memoryBlocks, comparedMemoryBlocks } = props;
 
-  if (!memoryBlocks || memoryBlocks.length === 0) {
+  if (
+    !memoryBlocks ||
+    (memoryBlocks.length === 0 && comparedMemoryBlocks?.length === 0)
+  ) {
     return (
       <Typography variant="body3">
         {t('MemoryBlockViewer.noMemoryBlocks')}
@@ -272,14 +275,25 @@ function MemoryBlockViewer(props: MemoryBlockViewerProps) {
           <VStack
             padding="small"
             className={cn(
-              comparedBlock &&
-                getChangeClass({
-                  isChanged: !comparedBlock,
-                }),
+              comparedMemoryBlocks
+                ? getChangeClass({
+                    isChanged: !comparedBlock,
+                    isAdditive: false,
+                  })
+                : '',
+              'border border-background-grey2',
             )}
             key={block.label || ''}
           >
-            <HStack>
+            <HStack align="center">
+              {block.read_only && (
+                <Badge content={t('MemoryBlockViewer.readOnly')} />
+              )}
+              {block.preserve_on_migration && (
+                <Badge content={t('MemoryBlockViewer.preserved')} />
+              )}
+            </HStack>
+            <HStack align="center">
               <Typography bold variant="body">
                 {block.label || ''}
               </Typography>
@@ -294,19 +308,46 @@ function MemoryBlockViewer(props: MemoryBlockViewerProps) {
                 })}
               </Typography>
             </HStack>
-            <VStack className="p1">
-              <span
-                className="text-base
+
+            {block.description ? (
+              <VStack className="p1">
+                <span
+                  className="text-base
                leading-7 "
-              >
-                <span className="bg-background-grey p-[1px] border border-background-grey2">
-                  <InlineTextDiff
-                    text={block.value}
-                    comparedText={comparedBlock?.value}
-                  />
+                >
+                  <span className="bg-background-grey p-[1px] border border-background-grey2">
+                    <InlineTextDiff
+                      text={block.description}
+                      comparedText={comparedBlock?.description}
+                    />
+                  </span>
                 </span>
-              </span>
-            </VStack>
+              </VStack>
+            ) : (
+              <Typography italic variant="body3" color="muted">
+                {t('MemoryBlockViewer.noDescription')}
+              </Typography>
+            )}
+
+            {block.value ? (
+              <VStack className="p1">
+                <span
+                  className="text-base
+               leading-7 "
+                >
+                  <span className="bg-background-grey p-[1px] border border-background-grey2">
+                    <InlineTextDiff
+                      text={block.value}
+                      comparedText={comparedBlock?.value}
+                    />
+                  </span>
+                </span>
+              </VStack>
+            ) : (
+              <Typography italic variant="body3" color="muted">
+                {t('MemoryBlockViewer.noValue')}
+              </Typography>
+            )}
           </VStack>
         );
       })}
@@ -620,12 +661,17 @@ function StateViewer(props: StateViewerProps) {
         <SectionWrapper
           hasDifference={hasMemoryBlocksDifference}
           title={t('MemoryBlockViewer.title')}
-          base={<MemoryBlockViewer memoryBlocks={state.memoryBlocks} />}
+          base={
+            <MemoryBlockViewer
+              comparedMemoryBlocks={toCompare?.memoryBlocks}
+              memoryBlocks={state.memoryBlocks}
+            />
+          }
           compared={
             toCompare && (
               <MemoryBlockViewer
-                memoryBlocks={state.memoryBlocks}
-                comparedMemoryBlocks={toCompare?.memoryBlocks}
+                memoryBlocks={toCompare.memoryBlocks}
+                comparedMemoryBlocks={state?.memoryBlocks}
               />
             )
           }

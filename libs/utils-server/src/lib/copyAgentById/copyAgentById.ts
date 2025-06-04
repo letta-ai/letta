@@ -90,6 +90,9 @@ export async function copyAgentById(
             limit: block.limit,
             label: block.label || '',
             value: block.value,
+            preserve_on_migration: block.preserve_on_migration || false,
+            description: block.description || '',
+            read_only: block.read_only || false,
           };
         }),
       },

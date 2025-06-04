@@ -686,6 +686,10 @@
       "id": {
         "label": "Block ID"
       },
+      "preserveOnMigration": {
+        "label": "Preserve on migration",
+        "tooltip": "If enabled, this memory block will be preserved when migrating the agent to a new version. This is useful for memories that could be updated by the agent."
+      },
       "description": {
         "label": "Description",
         "tooltip": "An optional description for your memory block, used by the agent to understand the memory block's purpose."

@@ -9,6 +9,9 @@ interface CleanedMemoryBlock {
   value: string;
   label: string;
   limit: number;
+  read_only: boolean;
+  preserve_on_migration: boolean;
+  description: string;
 }
 
 export interface CleanedAgentState {
@@ -63,6 +66,9 @@ export function stateCleaner(state: AgentState): CleanedAgentState {
           .map((block) => ({
             value: block.value || '',
             label: block.label || '',
+            read_only: block.read_only || false,
+            preserve_on_migration: block.preserve_on_migration || false,
+            description: block.description || '',
             limit: block.limit || 0,
           }))
           .toSorted((a, b) => (a.label || '').localeCompare(b.label || ''))

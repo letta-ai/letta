@@ -157,6 +157,21 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
             return;
           }
 
+          if (block.preserve_on_migration) {
+            return AgentsService.modifyCoreMemoryBlock(
+              {
+                agentId: agentToUpdateId,
+                blockLabel: block.label,
+                requestBody: {
+                  preserve_on_migration: block.preserve_on_migration || false,
+                },
+              },
+              {
+                user_id: lettaAgentsUserId,
+              },
+            );
+          }
+
           return AgentsService.modifyCoreMemoryBlock(
             {
               agentId: agentToUpdateId,
@@ -164,6 +179,9 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
               requestBody: {
                 value: block.value,
                 limit: block.limit,
+                preserve_on_migration: block.preserve_on_migration || false,
+                description: block.description || '',
+                read_only: block.read_only || false,
               },
             },
             {
