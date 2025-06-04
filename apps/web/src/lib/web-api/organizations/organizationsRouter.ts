@@ -713,17 +713,8 @@ type GetCurrentOrganizationBillingInfo = ServerInferResponses<
 >;
 
 async function getCurrentOrganizationBillingInfo(): Promise<GetCurrentOrganizationBillingInfo> {
-  const { activeOrganizationId, permissions } =
+  const { activeOrganizationId } =
     await getUserWithActiveOrganizationIdOrThrow();
-
-  if (!permissions.has(ApplicationServices.MANAGE_BILLING)) {
-    return {
-      status: 403,
-      body: {
-        message: 'Permission denied',
-      },
-    };
-  }
 
   const [organization, credits] = await Promise.all([
     db.query.organizationBillingDetails.findFirst({

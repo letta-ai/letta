@@ -445,8 +445,9 @@
       "support": "Support",
       "supportPopover": {
         "bugReport": {
-          "title": "Report an issue",
-          "description": "Fill out the form below:"
+          "title": "Send us a message",
+          "description": "Press the button below to send us a message, we will get back to you as soon as possible.",
+          "start": "Start a conversation"
         },
         "discord": {
           "title": "Get support via Discord",

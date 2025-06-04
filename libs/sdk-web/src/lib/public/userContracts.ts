@@ -342,6 +342,16 @@ const getUserVerifiedContactsContract = c.query({
   },
 });
 
+const getIntercomTokenContract = c.query({
+  path: '/user/self/intercom-token',
+  method: 'GET',
+  responses: {
+    200: z.object({
+      token: z.string().nullable(),
+    }),
+  },
+});
+
 export const userContract = c.router({
   getCurrentUser: getUserContract,
   updateCurrentUser: updateCurrentUserContract,
@@ -351,6 +361,7 @@ export const userContract = c.router({
   updateActiveOrganization: updateActiveOrganizationContract,
   deleteCurrentUser: deleteCurrentUserCurrent,
   setUserAsOnboarded: setUserAsOnboardedContract,
+  getIntercomToken: getIntercomTokenContract,
   createAccountWithPasswordAndInviteCode:
     createAccountWithPasswordAndInviteCodeContract,
   createAccountWithPassword: createAccountWithPasswordContract,
@@ -369,4 +380,5 @@ export const userQueryClientKeys = {
   getCurrentUser: ['user', 'self'],
   getUserVerifiedContacts: ['user', 'self', 'verified-contacts'],
   listUserOrganizations: ['user', 'self', 'organizations'],
+  getIntercomToken: ['user', 'self', 'intercom-token'],
 };

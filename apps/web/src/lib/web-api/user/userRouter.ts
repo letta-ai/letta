@@ -46,6 +46,86 @@ import {
   verifySMSVerificationMessage,
 } from 'service-sms';
 import { swapUserOrganization } from '$web/server/auth/lib/swapUserOrganization/swapUserOrganization';
+import jwt from 'jsonwebtoken';
+import { getCustomerSubscription } from '@letta-cloud/service-payments';
+
+type GetIntercomTokenResponse = ServerInferResponses<
+  typeof contracts.user.getIntercomToken
+>;
+
+async function getIntercomToken(): Promise<GetIntercomTokenResponse> {
+  const user = await getUser();
+
+  if (!user) {
+    return {
+      status: 401,
+      body: {
+        message: 'User not found',
+      },
+    };
+  }
+  if (!environment.INTERCOM_SECRET) {
+    return {
+      status: 200,
+      body: {
+        token: null,
+      },
+    };
+  }
+
+  const activeOrganizationId = user.activeOrganizationId || '';
+
+  if (!activeOrganizationId) {
+    return {
+      status: 200,
+      body: {
+        token: null,
+      },
+    };
+  }
+
+  const [company, subscription] = await Promise.all([
+    db.query.organizations.findFirst({
+      where: eq(organizations.id, activeOrganizationId),
+      columns: {
+        name: true,
+        createdAt: true,
+      },
+    }),
+    getCustomerSubscription(activeOrganizationId),
+  ]);
+
+  if (!company || !subscription) {
+    return {
+      status: 200,
+      body: {
+        token: null,
+      },
+    };
+  }
+
+  const token = jwt.sign(
+    {
+      user_id: user.id,
+      email: user.email,
+      company: {
+        company_id: user.activeOrganizationId || '',
+        name: company.name,
+        created_at: company.createdAt,
+        plan: subscription.tier,
+      },
+    },
+    environment.INTERCOM_SECRET,
+    { expiresIn: '1h' },
+  );
+
+  return {
+    status: 200,
+    body: {
+      token,
+    },
+  };
+}
 
 type ResponseShapes = ServerInferResponses<typeof userContract>;
 
@@ -1209,6 +1289,7 @@ async function getUserVerifiedContacts(): Promise<GetUserVerifiedContacts> {
 
 export const userRouter = {
   getCurrentUser,
+  getIntercomToken,
   updateCurrentUser,
   listUserOrganizations,
   updateActiveOrganization,

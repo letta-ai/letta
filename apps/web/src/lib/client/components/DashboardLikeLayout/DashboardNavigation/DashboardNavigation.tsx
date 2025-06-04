@@ -3,15 +3,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import Link from 'next/link';
 import {
-  Alert,
   DiscordLogoMarkDynamic,
-  Form,
-  FormField,
-  FormProvider,
   ProjectsIcon,
   isSubNavigationGroup,
-  TextArea,
-  useForm,
   Breadcrumb,
   ExternalLinkIcon,
   isSubNavigationOverride,
@@ -52,14 +46,12 @@ import { useTranslations } from '@letta-cloud/translations';
 import { ThemeSelector } from '$web/client/components/ThemeSelector/ThemeSelector';
 import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentProject';
 import { LocaleSelector } from '$web/client/components/LocaleSelector/LocaleSelector';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as Sentry from '@sentry/browser';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { CloudAccessCodeDialog } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/CloudAccessCodeDialog/CloudAccessCodeDialog';
 import './DashboardNavigation.scss';
 import { OrganizationUsageBlock } from '$web/client/components/OrganizationUsageBlock/OrganizationUsageBlock';
 import { useGlobalSystemWarning } from '$web/client/hooks/useGlobalSystemWarning/useGlobalSystemWarning';
+import { show as startIntercom } from '@intercom/messenger-js-sdk';
 
 interface NavButtonProps {
   href: string;
@@ -703,65 +695,19 @@ function NavigationOverlay() {
   );
 }
 
-const reportAnIssueFormSchema = z.object({
-  error: z.string(),
-});
-
-function ReportAnIssueForm() {
+function ShowIntercom() {
   const t = useTranslations(
     'components/DashboardLikeLayout/DashboardNavigation',
   );
-  const [submitted, setSubmitted] = useState(false);
-  const user = useCurrentUser();
-  const form = useForm<z.infer<typeof reportAnIssueFormSchema>>({
-    resolver: zodResolver(reportAnIssueFormSchema),
-    defaultValues: {
-      error: '',
-    },
-  });
-
-  const handleReportIssue = useCallback(
-    (values: z.infer<typeof reportAnIssueFormSchema>) => {
-      Sentry.captureFeedback({
-        email: user?.email,
-        name: user?.name,
-        message: values.error,
-      });
-
-      setSubmitted(true);
-    },
-    [user?.email, user?.name],
-  );
-
-  if (submitted) {
-    return (
-      <Alert variant="info" title={t('ReportAnIssueForm.submitted')}></Alert>
-    );
-  }
 
   return (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(handleReportIssue)}>
-        <VStack gap="form">
-          <FormField
-            name="error"
-            render={({ field }) => (
-              <TextArea
-                fullWidth
-                hideLabel
-                label={t('ReportAnIssueForm.yourMessage')}
-                {...field}
-              />
-            )}
-          />
-          <Button
-            fullWidth
-            type="submit"
-            label={t('ReportAnIssueForm.submit')}
-          />
-        </VStack>
-      </Form>
-    </FormProvider>
+    <Button
+      label={t('DashboardHeaderNavigation.supportPopover.bugReport.start')}
+      onClick={startIntercom}
+      color="secondary"
+      align="center"
+      fullWidth
+    />
   );
 }
 
@@ -795,7 +741,7 @@ export function DashboardHeaderNavigation(
             />
           }
         >
-          <VStack borderBottom padding>
+          <VStack gap="large" borderBottom padding>
             <Typography variant="heading5">
               {t('DashboardHeaderNavigation.supportPopover.bugReport.title')}
             </Typography>
@@ -804,9 +750,9 @@ export function DashboardHeaderNavigation(
                 'DashboardHeaderNavigation.supportPopover.bugReport.description',
               )}
             </Typography>
-            <ReportAnIssueForm />
+            <ShowIntercom />
           </VStack>
-          <VStack borderBottom padding>
+          <VStack gap="large" borderBottom padding>
             <Typography variant="heading5">
               {t('DashboardHeaderNavigation.supportPopover.discord.title')}
             </Typography>

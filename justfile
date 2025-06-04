@@ -96,6 +96,7 @@ configure-kubectl cluster-name="letta":
         --set env.TEMPORAL_LETTUCE_NAMESPACE="${TEMPORAL_LETTUCE_NAMESPACE:-lettuce.tmhou}" \
         --set env.TWILIO_SID="${TWILIO_SID}" \
         --set env.TWILIO_SECRET="${TWILIO_SECRET}" \
+        --set env.INTERCOM_SECRET="${INTERCOM_SECRET}" \
         --set env.CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT} \
         --set env.CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
         --set env.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \

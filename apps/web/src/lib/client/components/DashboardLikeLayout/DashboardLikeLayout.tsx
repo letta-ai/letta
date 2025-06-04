@@ -13,6 +13,7 @@ import {
   SIDEBAR_OVERLAY_MOUNT_POINT_ID,
 } from './DashboardNavigation/DashboardNavigation';
 import { DashboardTransition } from './DashboardTransition/DashboardTransition';
+import { IntercomSetup } from '$web/client/components/IntercomSetup/IntercomSetup';
 
 interface DashboardLikeLayoutProps {
   children: ReactNode;
@@ -24,6 +25,7 @@ export async function DashboardLikeLayout(props: DashboardLikeLayoutProps) {
 
   return (
     <UseDashboardNavigationItemsProvider>
+      <IntercomSetup showLauncher={true} />
       <div className="pageFadeIn overflow-x-hidden">
         <div className="dashboard h-full fixed z-[-1]"></div>
         <VStack gap="small" fullHeight fullWidth>

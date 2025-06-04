@@ -44,6 +44,7 @@ export const environment = createEnv({
     WORKOS_API_KEY: z.string().optional(),
     TWILIO_SID: z.string().optional(),
     TWILIO_SECRET: z.string().optional(),
+    INTERCOM_SECRET: z.string().optional(),
   },
   client: {
     NEXT_PUBLIC_CURRENT_HOST: z.string().optional(),
@@ -79,6 +80,7 @@ export const environment = createEnv({
     WORKOS_API_KEY: process.env.WORKOS_API_KEY,
     TWILIO_SID: process.env.TWILIO_SID,
     TWILIO_SECRET: process.env.TWILIO_SECRET,
+    INTERCOM_SECRET: process.env.INTERCOM_SECRET,
     CLOUD_API_ENDPOINT:
       process.env.CLOUD_API_ENDPOINT || 'http://localhost:3006',
     CORE_DATABASE_URL: `postgresql://${process.env.LETTA_PG_USER}:${process.env.LETTA_PG_PASSWORD}@${process.env.LETTA_PG_HOST}:${process.env.LETTA_PG_PORT}/${process.env.LETTA_PG_DB}`,
