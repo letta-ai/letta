@@ -1,6 +1,7 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/sdk-web';
-import { db } from '@letta-cloud/service-database';
+import { db, contentModerationViolations } from '@letta-cloud/service-database';
+import { desc } from 'drizzle-orm';
 
 type AdminGetContentViolationsRequest = ServerInferRequest<
   typeof contracts.admin.contentViolations.adminGetContentViolations
@@ -25,6 +26,7 @@ async function adminGetContentViolations(
         },
       },
     },
+    orderBy: desc(contentModerationViolations.createdAt),
   });
 
   const hasNextPage = violations.length > limit;
