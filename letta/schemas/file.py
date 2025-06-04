@@ -40,6 +40,11 @@ class FileMetadata(FileMetadataBase):
     updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow, description="The update date of the file.")
     is_deleted: bool = Field(False, description="Whether this file is deleted or not.")
 
+    # This is optional, and only occasionally pulled in since it can be very large
+    content: Optional[str] = Field(
+        default=None, description="Optional full-text content of the file; only populated on demand due to its size."
+    )
+
 
 class FileAgentBase(LettaBase):
     """Base class for the FileMetadata-⇄-Agent association schemas"""

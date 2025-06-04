@@ -1368,12 +1368,14 @@ class SyncServer(Server):
             )
         await self.agent_manager.delete_agent_async(agent_id=sleeptime_agent_state.id, actor=actor)
 
-    async def _upsert_file_to_agent(self, agent_id: str, text: str, file_id: str, actor: User) -> None:
+    async def _upsert_file_to_agent(self, agent_id: str, text: str, file_id: str, file_name: str, actor: User) -> None:
         """
         Internal method to create or update a file <-> agent association
         """
         truncated_text = text[:CORE_MEMORY_SOURCE_CHAR_LIMIT]
-        await self.file_agent_manager.attach_file(agent_id=agent_id, file_id=file_id, actor=actor, visible_content=truncated_text)
+        await self.file_agent_manager.attach_file(
+            agent_id=agent_id, file_id=file_id, file_name=file_name, actor=actor, visible_content=truncated_text
+        )
 
     async def _remove_file_from_agent(self, agent_id: str, file_id: str, actor: User) -> None:
         """
@@ -1389,7 +1391,7 @@ class SyncServer(Server):
             logger.info(f"File {file_id} already removed from agent {agent_id}, skipping...")
 
     async def insert_file_into_context_windows(
-        self, source_id: str, text: str, file_id: str, actor: User, agent_states: Optional[List[AgentState]] = None
+        self, source_id: str, text: str, file_id: str, file_name: str, actor: User, agent_states: Optional[List[AgentState]] = None
     ) -> List[AgentState]:
         """
         Insert the uploaded document into the context window of all agents
@@ -1404,11 +1406,13 @@ class SyncServer(Server):
         logger.info(f"Inserting document into context window for source: {source_id}")
         logger.info(f"Attached agents: {[a.id for a in agent_states]}")
 
-        await asyncio.gather(*(self._upsert_file_to_agent(agent_state.id, text, file_id, actor) for agent_state in agent_states))
+        await asyncio.gather(*(self._upsert_file_to_agent(agent_state.id, text, file_id, file_name, actor) for agent_state in agent_states))
 
         return agent_states
 
-    async def insert_files_into_context_window(self, agent_state: AgentState, texts: List[str], file_ids: List[str], actor: User) -> None:
+    async def insert_files_into_context_window(
+        self, agent_state: AgentState, texts: List[str], file_ids: List[str], file_names: List[str], actor: User
+    ) -> None:
         """
         Insert the uploaded documents into the context window of an agent
         attached to the given source.
@@ -1418,7 +1422,12 @@ class SyncServer(Server):
         if len(texts) != len(file_ids):
             raise ValueError(f"Mismatch between number of texts ({len(texts)}) and file ids ({len(file_ids)})")
 
-        await asyncio.gather(*(self._upsert_file_to_agent(agent_state.id, text, file_id, actor) for text, file_id in zip(texts, file_ids)))
+        await asyncio.gather(
+            *(
+                self._upsert_file_to_agent(agent_state.id, text, file_id, file_name, actor)
+                for text, file_id, file_name in zip(texts, file_ids, file_names)
+            )
+        )
 
     async def remove_file_from_context_windows(self, source_id: str, file_id: str, actor: User) -> None:
         """

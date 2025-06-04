@@ -22,6 +22,7 @@ class FileAgentManager:
         *,
         agent_id: str,
         file_id: str,
+        file_name: str,
         actor: PydanticUser,
         is_open: bool = True,
         visible_content: Optional[str] = None,
@@ -38,6 +39,7 @@ class FileAgentManager:
                 and_(
                     FileAgentModel.agent_id == agent_id,
                     FileAgentModel.file_id == file_id,
+                    FileAgentModel.file_name == file_name,
                     FileAgentModel.organization_id == actor.organization_id,
                 )
             )
@@ -61,6 +63,7 @@ class FileAgentManager:
             assoc = FileAgentModel(
                 agent_id=agent_id,
                 file_id=file_id,
+                file_name=file_name,
                 organization_id=actor.organization_id,
                 is_open=is_open,
                 visible_content=visible_content,

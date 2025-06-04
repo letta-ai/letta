@@ -9,12 +9,15 @@ from datetime import datetime, timedelta, timezone
 from typing import List
 
 import httpx
+
+# tests/test_file_content_flow.py
 import pytest
 from anthropic.types.beta import BetaMessage
 from anthropic.types.beta.messages import BetaMessageBatchIndividualResponse, BetaMessageBatchSucceededResult
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.orm.exc import StaleDataError
 
 from letta.config import LettaConfig
@@ -39,6 +42,8 @@ from letta.orm import Base, Block
 from letta.orm.block_history import BlockHistory
 from letta.orm.enums import ActorType, JobType, ToolType
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
+from letta.orm.file import FileContent as FileContentModel
+from letta.orm.file import FileMetadata as FileMetadataModel
 from letta.schemas.agent import AgentStepState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate, CreateBlock
@@ -93,15 +98,26 @@ CREATE_DELAY_SQLITE = 1
 USING_SQLITE = not bool(os.getenv("LETTA_PG_URI"))
 
 
-@pytest.fixture(autouse=True)
-async def _clear_tables():
+async def _count_file_content_rows(session, file_id: str) -> int:
+    q = select(func.count()).select_from(FileContentModel).where(FileContentModel.file_id == file_id)
+    result = await session.execute(q)
+    return result.scalar_one()
+
+
+@pytest.fixture
+async def async_session():
     async with db_registry.async_session() as session:
-        for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
-            # If this is the block_history table, skip it
-            if table.name == "block_history":
-                continue
-            await session.execute(table.delete())  # Truncate table
-        await session.commit()
+        yield session
+
+
+@pytest.fixture(autouse=True)
+async def _clear_tables(async_session):
+    for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
+        # If this is the block_history table, skip it
+        if table.name == "block_history":
+            continue
+        await async_session.execute(table.delete())  # Truncate table
+    await async_session.commit()
 
 
 @pytest.fixture
@@ -645,6 +661,7 @@ async def file_attachment(server, default_user, sarah_agent, default_file):
     assoc = await server.file_agent_manager.attach_file(
         agent_id=sarah_agent.id,
         file_id=default_file.id,
+        file_name=default_file.file_name,
         actor=default_user,
         visible_content="initial",
     )
@@ -699,6 +716,7 @@ async def test_get_context_window_basic(server: SyncServer, comprehensive_test_a
     assoc = await server.file_agent_manager.attach_file(
         agent_id=created_agent.id,
         file_id=default_file.id,
+        file_name=default_file.file_name,
         actor=default_user,
         visible_content="hello",
     )
@@ -4078,6 +4096,103 @@ async def test_get_file_by_id(server: SyncServer, default_user, default_source):
 
 
 @pytest.mark.asyncio
+async def test_create_and_retrieve_file_with_content(server, default_user, default_source, async_session):
+    text_body = "Line 1\nLine 2\nLine 3"
+
+    meta = PydanticFileMetadata(
+        file_name="with_body.txt",
+        file_path="/tmp/with_body.txt",
+        file_type="text/plain",
+        file_size=len(text_body),
+        source_id=default_source.id,
+    )
+
+    created = await server.source_manager.create_file(
+        file_metadata=meta,
+        actor=default_user,
+        text=text_body,
+    )
+
+    # -- metadata-only return: content is NOT present
+    assert created.content is None
+
+    # body row exists
+    assert await _count_file_content_rows(async_session, created.id) == 1
+
+    # -- now fetch WITH the body
+    loaded = await server.source_manager.get_file_by_id(created.id, actor=default_user, include_content=True)
+    assert loaded.content == text_body
+
+
+@pytest.mark.asyncio
+async def test_create_file_without_content(server, default_user, default_source, async_session):
+    meta = PydanticFileMetadata(
+        file_name="no_body.txt",
+        file_path="/tmp/no_body.txt",
+        file_type="text/plain",
+        file_size=123,
+        source_id=default_source.id,
+    )
+    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user)
+
+    # no content row
+    assert await _count_file_content_rows(async_session, created.id) == 0
+
+    # include_content=True still works, returns None
+    loaded = await server.source_manager.get_file_by_id(created.id, actor=default_user, include_content=True)
+    assert loaded.content is None
+
+
+@pytest.mark.asyncio
+async def test_lazy_raise_guard(server, default_user, default_source, async_session):
+    text_body = "lazy-raise"
+
+    meta = PydanticFileMetadata(
+        file_name="lazy_raise.txt",
+        file_path="/tmp/lazy_raise.txt",
+        file_type="text/plain",
+        file_size=len(text_body),
+        source_id=default_source.id,
+    )
+    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user, text=text_body)
+
+    # Grab ORM instance WITHOUT selectinload(FileMetadata.content)
+    orm = await async_session.get(FileMetadataModel, created.id)
+
+    # to_pydantic(include_content=True) should raise – guard works
+    with pytest.raises(InvalidRequestError):
+        await orm.to_pydantic_async(include_content=True)
+
+
+@pytest.mark.asyncio
+async def test_list_files_content_none(server, default_user, default_source):
+    files = await server.source_manager.list_files(source_id=default_source.id, actor=default_user)
+    assert all(f.content is None for f in files)
+
+
+@pytest.mark.asyncio
+async def test_delete_cascades_to_content(server, default_user, default_source, async_session):
+    text_body = "to be deleted"
+    meta = PydanticFileMetadata(
+        file_name="delete_me.txt",
+        file_path="/tmp/delete_me.txt",
+        file_type="text/plain",
+        file_size=len(text_body),
+        source_id=default_source.id,
+    )
+    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user, text=text_body)
+
+    # ensure row exists first
+    assert await _count_file_content_rows(async_session, created.id) == 1
+
+    # delete
+    await server.source_manager.delete_file(created.id, actor=default_user)
+
+    # content row gone
+    assert await _count_file_content_rows(async_session, created.id) == 0
+
+
+@pytest.mark.asyncio
 async def test_list_files(server: SyncServer, default_user, default_source):
     """Test listing files with pagination."""
     # Create multiple files
@@ -5811,6 +5926,7 @@ async def test_attach_creates_association(server, default_user, sarah_agent, def
     assoc = await server.file_agent_manager.attach_file(
         agent_id=sarah_agent.id,
         file_id=default_file.id,
+        file_name=default_file.file_name,
         actor=default_user,
         visible_content="hello",
     )
@@ -5832,6 +5948,7 @@ async def test_attach_is_idempotent(server, default_user, sarah_agent, default_f
     a1 = await server.file_agent_manager.attach_file(
         agent_id=sarah_agent.id,
         file_id=default_file.id,
+        file_name=default_file.file_name,
         actor=default_user,
         visible_content="first",
     )
@@ -5840,6 +5957,7 @@ async def test_attach_is_idempotent(server, default_user, sarah_agent, default_f
     a2 = await server.file_agent_manager.attach_file(
         agent_id=sarah_agent.id,
         file_id=default_file.id,
+        file_name=default_file.file_name,
         actor=default_user,
         is_open=False,
         visible_content="second",
@@ -5900,11 +6018,17 @@ async def test_list_files_and_agents(
     another_file,
 ):
     # default_file ↔ charles  (open)
-    await server.file_agent_manager.attach_file(agent_id=charles_agent.id, file_id=default_file.id, actor=default_user)
+    await server.file_agent_manager.attach_file(
+        agent_id=charles_agent.id, file_id=default_file.id, file_name=default_file.file_name, actor=default_user
+    )
     # default_file ↔ sarah    (open)
-    await server.file_agent_manager.attach_file(agent_id=sarah_agent.id, file_id=default_file.id, actor=default_user)
+    await server.file_agent_manager.attach_file(
+        agent_id=sarah_agent.id, file_id=default_file.id, file_name=default_file.file_name, actor=default_user
+    )
     # another_file ↔ sarah    (closed)
-    await server.file_agent_manager.attach_file(agent_id=sarah_agent.id, file_id=another_file.id, actor=default_user, is_open=False)
+    await server.file_agent_manager.attach_file(
+        agent_id=sarah_agent.id, file_id=another_file.id, file_name=another_file.file_name, actor=default_user, is_open=False
+    )
 
     files_for_sarah = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
     assert {f.file_id for f in files_for_sarah} == {default_file.id, another_file.id}
@@ -5952,6 +6076,7 @@ async def test_org_scoping(
     await server.file_agent_manager.attach_file(
         agent_id=sarah_agent.id,
         file_id=default_file.id,
+        file_name=default_file.file_name,
         actor=default_user,
     )
 
