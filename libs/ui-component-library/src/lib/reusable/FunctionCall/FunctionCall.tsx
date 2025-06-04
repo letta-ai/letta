@@ -23,6 +23,7 @@ import { functionCallOpenStatusAtom } from './functionCallOpenStatusAtom';
 import { Dialog } from '../../core/Dialog/Dialog';
 import { VirtualizedCodeViewer } from '../../core/VirtualizedCodeViewer/VirtualizedCodeViewer';
 import { Button } from '../../core/Button/Button';
+import { useCopyToClipboard } from '../../hooks';
 
 interface FunctionCallDataViewerDialogProps {
   content: string;
@@ -36,8 +37,18 @@ function FunctionCallDataViewerDialog(
 
   const t = useTranslations('ui-component-library/FunctionCall');
 
+  const { copyToClipboard } = useCopyToClipboard({
+    textToCopy: content,
+  });
+
   return (
-    <Dialog hideConfirm size="xlarge" trigger={trigger} title={t('response')}>
+    <Dialog
+      onConfirm={copyToClipboard}
+      confirmText={t('FunctionCallDataViewerDialog.copy')}
+      size="xlarge"
+      trigger={trigger}
+      title={t('response')}
+    >
       <div className="min-h-[300px] h-[300px] w-full border">
         <VirtualizedCodeViewer content={content} fontSize="small" />
       </div>

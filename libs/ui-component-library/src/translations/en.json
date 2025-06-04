@@ -32,7 +32,8 @@
     "seeMore": "Tool output truncated, click to view all",
     "response": "Tool output",
     "FunctionCallDataViewerDialog": {
-      "title": "View response"
+      "title": "View response",
+      "copy": "Copy to clipboard"
     }
   },
   "components/MessageReplay/ExecuteToolEvent": {
