@@ -1,3 +1,5 @@
+import os
+
 __version__ = "0.7.30"
 
 if os.environ.get("LETTA_VERSION"):
