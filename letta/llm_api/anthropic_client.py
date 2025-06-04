@@ -30,7 +30,7 @@ from letta.log import get_logger
 from letta.schemas.enums import ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
-from letta.schemas.openai.chat_completion_request import Tool
+from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall
 from letta.schemas.openai.chat_completion_response import Message as ChoiceMessage
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
@@ -199,10 +199,10 @@ class AnthropicClient(LLMClientBase):
         elif llm_config.enable_reasoner:
             # NOTE: reasoning models currently do not allow for `any`
             tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
-            tools_for_request = [Tool(function=f) for f in tools]
+            tools_for_request = [OpenAITool(function=f) for f in tools]
         elif force_tool_call is not None:
             tool_choice = {"type": "tool", "name": force_tool_call}
-            tools_for_request = [Tool(function=f) for f in tools if f["name"] == force_tool_call]
+            tools_for_request = [OpenAITool(function=f) for f in tools if f["name"] == force_tool_call]
 
             # need to have this setting to be able to put inner thoughts in kwargs
             if not llm_config.put_inner_thoughts_in_kwargs:
@@ -216,7 +216,7 @@ class AnthropicClient(LLMClientBase):
                 tool_choice = {"type": "any", "disable_parallel_tool_use": True}
             else:
                 tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
-            tools_for_request = [Tool(function=f) for f in tools] if tools is not None else None
+            tools_for_request = [OpenAITool(function=f) for f in tools] if tools is not None else None
 
         # Add tool choice
         if tool_choice:
@@ -230,7 +230,7 @@ class AnthropicClient(LLMClientBase):
                 inner_thoughts_key=INNER_THOUGHTS_KWARG,
                 inner_thoughts_description=INNER_THOUGHTS_KWARG_DESCRIPTION,
             )
-            tools_for_request = [Tool(function=f) for f in tools_with_inner_thoughts]
+            tools_for_request = [OpenAITool(function=f) for f in tools_with_inner_thoughts]
 
         if tools_for_request and len(tools_for_request) > 0:
             # TODO eventually enable parallel tool use
@@ -270,7 +270,7 @@ class AnthropicClient(LLMClientBase):
 
         return data
 
-    async def count_tokens(self, messages: List[dict] = None, model: str = None, tools: List[Tool] = None) -> int:
+    async def count_tokens(self, messages: List[dict] = None, model: str = None, tools: List[OpenAITool] = None) -> int:
         client = anthropic.AsyncAnthropic()
         if messages and len(messages) == 0:
             messages = None
@@ -278,11 +278,19 @@ class AnthropicClient(LLMClientBase):
             anthropic_tools = convert_tools_to_anthropic_format(tools)
         else:
             anthropic_tools = None
-        result = await client.beta.messages.count_tokens(
-            model=model or "claude-3-7-sonnet-20250219",
-            messages=messages or [{"role": "user", "content": "hi"}],
-            tools=anthropic_tools or [],
-        )
+
+        try:
+            result = await client.beta.messages.count_tokens(
+                model=model or "claude-3-7-sonnet-20250219",
+                messages=messages or [{"role": "user", "content": "hi"}],
+                tools=anthropic_tools or [],
+            )
+        except:
+            import ipdb
+
+            ipdb.set_trace()
+            raise
+
         token_count = result.input_tokens
         if messages is None:
             token_count -= 8
@@ -477,7 +485,7 @@ class AnthropicClient(LLMClientBase):
         return chat_completion_response
 
 
-def convert_tools_to_anthropic_format(tools: List[Tool]) -> List[dict]:
+def convert_tools_to_anthropic_format(tools: List[OpenAITool]) -> List[dict]:
     """See: https://docs.anthropic.com/claude/docs/tool-use
 
     OpenAI style:
@@ -527,7 +535,7 @@ def convert_tools_to_anthropic_format(tools: List[Tool]) -> List[dict]:
     for tool in tools:
         formatted_tool = {
             "name": tool.function.name,
-            "description": tool.function.description,
+            "description": tool.function.description if tool.function.description else "",
             "input_schema": tool.function.parameters or {"type": "object", "properties": {}, "required": []},
         }
         formatted_tools.append(formatted_tool)
