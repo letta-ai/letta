@@ -182,6 +182,9 @@ async def test_pinecone_tool(client: AsyncLetta) -> None:
         stream_message = response_messages_from_stream[idx]
         db_message = response_messages_from_db[idx]
         assert stream_message.message_type == db_message.message_type
+        print("message type:", stream_message.message_type)
+        print("stream message:", stream_message.model_dump_json(indent=4))
+        print("db message:", db_message.model_dump_json(indent=4))
         assert stream_message.id == db_message.id
         assert stream_message.otid == db_message.otid
 

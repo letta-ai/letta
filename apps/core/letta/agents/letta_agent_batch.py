@@ -551,7 +551,6 @@ class LettaAgentBatch(BaseAgent):
             add_heartbeat_request_system_message=False,
             reasoning_content=reasoning_content,
             pre_computed_assistant_message_id=None,
-            pre_computed_tool_message_id=None,
             llm_batch_item_id=llm_batch_item_id,
         )
 
