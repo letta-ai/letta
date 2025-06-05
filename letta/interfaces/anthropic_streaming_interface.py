@@ -248,10 +248,28 @@ class AnthropicStreamingInterface:
                                 if len(self.tool_call_buffer) > 0:
                                     if prev_message_type and prev_message_type != "tool_call_message":
                                         message_index += 1
+
+                                    # Strip out the inner thoughts from the buffered tool call arguments before streaming
+                                    tool_call_args = ""
                                     for buffered_msg in self.tool_call_buffer:
-                                        buffered_msg.otid = Message.generate_otid_from_id(self.letta_message_id, message_index)
-                                        prev_message_type = buffered_msg.message_type
-                                        yield buffered_msg
+                                        tool_call_args += buffered_msg.tool_call.arguments
+                                    tool_call_args = tool_call_args.replace(f'"{INNER_THOUGHTS_KWARG}": "{current_inner_thoughts}"', "")
+
+                                    tool_call_msg = ToolCallMessage(
+                                        id=self.tool_call_buffer[0].id,
+                                        otid=Message.generate_otid_from_id(self.tool_call_buffer[0].id, message_index),
+                                        date=self.tool_call_buffer[0].date,
+                                        name=self.tool_call_buffer[0].name,
+                                        sender_id=self.tool_call_buffer[0].sender_id,
+                                        step_id=self.tool_call_buffer[0].step_id,
+                                        tool_call=ToolCallDelta(
+                                            name=self.tool_call_name,
+                                            tool_call_id=self.tool_call_id,
+                                            arguments=tool_call_args,
+                                        ),
+                                    )
+                                    prev_message_type = tool_call_msg.message_type
+                                    yield tool_call_msg
                                     self.tool_call_buffer = []
 
                             # Start detecting special case of "send_message"
