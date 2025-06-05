@@ -23,6 +23,7 @@ import { fileSizeRateLimitMiddleware } from './libs/fileSizeRateLimitMiddlware/f
 import { updateAgentMiddleware } from './libs/updateAgentMiddleware/updateAgentMiddleware';
 import { contentModerationMiddleware } from './libs/contentModerationMiddleware/contentModerationMiddleware';
 import { stripeWebhook } from './webhooks/stripeWebhook/stripeWebhook';
+import { trackingMiddleware } from './libs/trackingMiddleware/trackingMiddleware';
 
 interface ExpressMeta {
   req: {
@@ -146,6 +147,7 @@ export function startServer() {
   app.use(requireProjectMiddleware);
   app.use(projectHeaderMiddleware);
   app.use(updateAgentMiddleware);
+  app.use(trackingMiddleware);
 
   /* tsRestMiddleware needs to be last */
   const s = initServer();

@@ -17,6 +17,7 @@ export enum AnalyticsEvent {
   CLOUD_AGENT_MESSAGE_CREATED = 'Cloud Agent Message Created',
   CLOUD_AGENT_MODEL_CHANGED = 'Cloud Agent Model Changed',
   CLOUD_AGENT_DELETED = 'Cloud Agent Deleted',
+  CLOUD_AGENT_MESSAGE_CREATED_IN_API = 'API Cloud Agent Message Created',
   AGENT_CREATED = 'Agent Created',
   AGENT_STAGED = 'Agent Staged',
   AGENT_DEPLOYED = 'Agent Deployed',
@@ -25,6 +26,7 @@ export enum AnalyticsEvent {
   CREATED_TEMPLATE = 'Created Template',
   ANSWERED_ONBOARDING_SURVEY = 'Answered Onboarding Survey',
   MOVED_ONBOARDING_STEP = 'Moved Onboarding Step',
+  COMPLETED_ONBOARDING = 'Completed Onboarding',
   PAUSED_ONBOARDING = 'Paused Onboarding',
   ATTEMPTED_UPGRADE = 'Upgrade Attempted',
   UPGRADE_SELECTED_PLAN = 'Selected Plan to Upgrade',
@@ -58,6 +60,10 @@ interface UpgradePlanProperty extends BaseProperty {
   plan: string;
 }
 
+interface CloutAgentMessageCreatedInApiProperty {
+  organizationId: string;
+}
+
 export interface AnalyticsEventProperties {
   [AnalyticsEvent.AGENT_CREATED]: BaseProperty;
   [AnalyticsEvent.USER_LOGGED_IN]: BaseProperty;
@@ -81,6 +87,7 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.APP_ERROR]: BaseProperty;
   [AnalyticsEvent.ANSWERED_ONBOARDING_SURVEY]: AnsweredOnboardingSurveyProperty;
   [AnalyticsEvent.MOVED_ONBOARDING_STEP]: MovedOnboardingStepProperty;
+  [AnalyticsEvent.COMPLETED_ONBOARDING]: BaseProperty;
   [AnalyticsEvent.PAUSED_ONBOARDING]: BaseProperty;
   [AnalyticsEvent.ATTEMPTED_UPGRADE]: BaseProperty;
   [AnalyticsEvent.UPGRADE_SELECTED_PLAN]: UpgradePlanProperty;
@@ -88,4 +95,5 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.CREATED_TEMPLATE]: BaseProperty;
   [AnalyticsEvent.ADDED_OWN_EXTERNAL_KEY]: BaseProperty;
   [AnalyticsEvent.CREATED_API_KEY]: BaseProperty;
+  [AnalyticsEvent.CLOUD_AGENT_MESSAGE_CREATED_IN_API]: CloutAgentMessageCreatedInApiProperty;
 }

@@ -58,10 +58,6 @@ export async function listComposioActions(
   // queryParameters.set('page', page.toString());
   queryParameters.set('apps', app);
 
-  console.log(
-    `https://backend.composio.dev/api/v2/actions/list/all?${queryParameters.toString()}`,
-  );
-
   const response = await axios
     .get(
       `https://backend.composio.dev/api/v2/actions/list/all?${queryParameters.toString()}`,

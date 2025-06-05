@@ -250,7 +250,6 @@ export async function getProjectDeployedAgentTemplates(
   if (search) {
     const [name, version] = search.split(':');
 
-    console.log(name, version);
     if (name) {
       where.push(ilike(agentTemplates.name, `%${name}%`));
     }

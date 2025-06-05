@@ -708,6 +708,12 @@ async function updateUserOnboardingStep(
     });
   }
 
+  if (stepToClaim === 'completed') {
+    trackServerSideEvent(AnalyticsEvent.COMPLETED_ONBOARDING, {
+      userId: user.id,
+    });
+  }
+
   await goToNextOnboardingStep({
     userId: user.id,
     nextStep: onboardingStep,
