@@ -14,3 +14,4 @@ export * from './lib/DeleteAgentDialog/DeleteAgentDialog';
 export * from './lib/ExportAgentButton/ExportAgentButton';
 export * from './lib/StarterKitSelector/StarterKitSelector';
 export * from './lib/hooks/useOrderedTraces/useOrderedTraces';
+export * from './lib/SummerizerDialog/SummerizerDialog';

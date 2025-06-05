@@ -3,8 +3,10 @@ import React, { useEffect, useMemo } from 'react';
 import { useCoreMemorySummaryWorker } from './hooks/useCoreMemorySummaryWorker/useCoreMemorySummaryWorker';
 import type { WorkerResponse } from './types';
 import {
+  Button,
   Chart,
   Code,
+  CompressIcon,
   HStack,
   makeFormattedTooltip,
   Typography,
@@ -20,6 +22,7 @@ import './ContextEditorPanel.scss';
 import { useCurrentAgent } from '../../hooks';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useTikTokenEncoder } from '@letta-cloud/utils-client';
+import { SummerizerDialog } from '../../SummerizerDialog/SummerizerDialog';
 
 const computedMemoryStringAtom = atom<string | null>(null);
 
@@ -422,13 +425,27 @@ export function ContextWindowPanel() {
           </HStack>
         </div>
       </HStack>
-      {/* eslint-disable-next-line react/forbid-component-props */}
-      <div className="relative">
-        <div className="relative z-[1] px-[1px]">
-          <Chart height={25} options={standardChartOptions} />
+      {}
+      <HStack fullWidth>
+        <div className="w-full relative">
+          <div className="w-full relative z-[1] px-[1px]">
+            <Chart height={25} options={standardChartOptions} />
+          </div>
+          <div className="h-[19px] mt-[3px] w-full absolute z-[0] pointer-events-none top-0 bg-panel-input-background border border-input" />
         </div>
-        <div className="h-[19px] mt-[3px] w-full absolute z-[0] pointer-events-none top-0 bg-panel-input-background border border-input" />
-      </div>
+        <SummerizerDialog
+          trigger={
+            <Button
+              size="xsmall"
+              hideLabel
+              square
+              color="tertiary"
+              preIcon={<CompressIcon />}
+              label={t('ContextWindowPreview.summarize')}
+            />
+          }
+        />
+      </HStack>
     </VStack>
   );
 }

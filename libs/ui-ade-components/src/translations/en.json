@@ -1568,6 +1568,7 @@
     "title": "Context Window",
     "mobileTitle": "Context Window",
     "ContextWindowPreview": {
+      "summarize": "Summarize",
       "usage": "{used}/{total} TOKENS",
       "systemPrompt": "System instructions",
       "toolPrompt": "Tools descriptions",
@@ -1857,5 +1858,23 @@
     },
     "memgpt": "Default",
     "sleepTime": "Sleep-time"
+  },
+  "SummerizerDialog": {
+    "title": "Summarize Conversation",
+    "description": {
+      "title": "Summarize Conversation",
+      "content": "Summarize the agent's conversation history to reduce the number of messages. This is an automatic operation, but can be manually triggered below if needed. It can also be programmatically triggered, <link>click here</link> to learn more."
+    },
+    "confirmText": "Summarize",
+    "maxMessageLength": {
+      "label": "Maximum Message Length",
+      "description": "The target number of messages to retain after summarization."
+    },
+    "warning": "This will modify the agent's conversation history. This action cannot be undone.",
+    "errors": {
+      "minLength": "Message length must be at least 1",
+      "maxLength": "Message length cannot exceed 1000",
+      "default": "There was an error summarizing the conversation. Please try again."
+    }
   }
 }
