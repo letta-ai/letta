@@ -456,7 +456,7 @@ async def list_blocks(
     """
     Retrieve the core memory blocks of a specific agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     try:
         agent = await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory"], actor=actor)
         return agent.memory.blocks
