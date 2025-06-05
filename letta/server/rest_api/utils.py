@@ -190,7 +190,6 @@ def create_letta_messages_from_llm_response(
     add_heartbeat_request_system_message: bool = False,
     reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
     pre_computed_assistant_message_id: Optional[str] = None,
-    pre_computed_tool_message_id: Optional[str] = None,
     llm_batch_item_id: Optional[str] = None,
     step_id: str | None = None,
 ) -> List[Message]:
@@ -245,8 +244,6 @@ def create_letta_messages_from_llm_response(
             )
         ],
     )
-    if pre_computed_tool_message_id:
-        tool_message.id = pre_computed_tool_message_id
     messages.append(tool_message)
 
     if add_heartbeat_request_system_message:

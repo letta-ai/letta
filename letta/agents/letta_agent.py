@@ -515,8 +515,7 @@ class LettaAgent(BaseAgent):
                     total_tokens=interface.input_tokens + interface.output_tokens,
                 ),
                 reasoning_content=reasoning_content,
-                pre_computed_assistant_message_id=interface.letta_assistant_message_id,
-                pre_computed_tool_message_id=interface.letta_tool_message_id,
+                pre_computed_assistant_message_id=interface.letta_message_id,
                 step_id=step_id,
                 agent_step_span=agent_step_span,
             )
@@ -811,7 +810,6 @@ class LettaAgent(BaseAgent):
         usage: UsageStatistics,
         reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
         pre_computed_assistant_message_id: Optional[str] = None,
-        pre_computed_tool_message_id: Optional[str] = None,
         step_id: str | None = None,
         new_in_context_messages: Optional[List[Message]] = None,
         agent_step_span: Optional["Span"] = None,
@@ -927,7 +925,6 @@ class LettaAgent(BaseAgent):
             add_heartbeat_request_system_message=continue_stepping,
             reasoning_content=reasoning_content,
             pre_computed_assistant_message_id=pre_computed_assistant_message_id,
-            pre_computed_tool_message_id=pre_computed_tool_message_id,
             step_id=logged_step.id if logged_step else None,  # TODO (cliandy): eventually move over other agent loops
         )
 
