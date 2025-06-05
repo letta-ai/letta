@@ -556,8 +556,8 @@ class LettaAgent(BaseAgent):
                 ),
             )
 
-            if not use_assistant_message or should_continue:
-                tool_return = [msg for msg in persisted_messages if msg.role == "tool"][-1].to_letta_messages()[0]
+            tool_return = [msg for msg in persisted_messages if msg.role == "tool"][-1].to_letta_messages()[0]
+            if not (use_assistant_message and tool_return.name == "send_message"):
                 yield f"data: {tool_return.model_dump_json()}\n\n"
 
             if not should_continue:
