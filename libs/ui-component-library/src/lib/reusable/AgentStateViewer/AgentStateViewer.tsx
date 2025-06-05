@@ -9,7 +9,6 @@ import { cn } from '@letta-cloud/ui-styles';
 import { useCallback, useMemo, useState } from 'react';
 import { stateCleaner } from '@letta-cloud/utils-shared';
 import type { CleanedAgentState } from '@letta-cloud/utils-shared';
-import { diffWords } from 'diff';
 import { ChevronDownIcon, ChevronUpIcon } from '../../icons';
 import { isEqual } from 'lodash';
 import { Alert } from '../../core/Alert/Alert';
@@ -773,8 +772,8 @@ function StateViewer(props: StateViewerProps) {
             toCompare && (
               <GenericCompare>
                 <InlineTextDiff
-                  text={toCompare.system}
-                  comparedText={state?.system}
+                  text={state.system}
+                  comparedText={toCompare.system}
                 />
               </GenericCompare>
             )
