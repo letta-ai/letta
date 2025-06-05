@@ -473,6 +473,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             NoResultFound: if the object is not found
         """
         from letta.settings import settings
+
         identifiers = [] if identifier is None else [identifier]
         query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, check_is_deleted, **kwargs)
 
