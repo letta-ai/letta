@@ -1909,6 +1909,12 @@ async def test_agent_list_passages_basic(server, default_user, sarah_agent, agen
     all_passages = await server.agent_manager.list_passages_async(actor=default_user, agent_id=sarah_agent.id)
     assert len(all_passages) == 5  # 3 source + 2 agent passages
 
+    source_passages = await server.agent_manager.list_source_passages_async(actor=default_user, agent_id=sarah_agent.id)
+    assert len(source_passages) == 3  # 3 source + 2 agent passages
+
+    agent_passages = await server.agent_manager.list_agent_passages_async(actor=default_user, agent_id=sarah_agent.id)
+    assert len(agent_passages) == 2  # 3 source + 2 agent passages
+
 
 @pytest.mark.asyncio
 async def test_agent_list_passages_ordering(server, default_user, sarah_agent, agent_passages_setup, event_loop):

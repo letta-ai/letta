@@ -125,6 +125,8 @@ class LettaFileToolExecutor(ToolExecutor):
         """Stub for grep tool."""
         raise NotImplementedError
 
-    async def search_files(self, agent_state: AgentState, query: str) -> List[Any]:
+    # TODO: Make this paginated?
+    async def search_files(self, agent_state: AgentState, query: str) -> List[str]:
         """Stub for search_files tool."""
-        raise NotImplementedError
+        passages = await self.agent_manager.list_source_passages_async(actor=self.actor, agent_id=agent_state.id, query_text=query)
+        return [p.text for p in passages]

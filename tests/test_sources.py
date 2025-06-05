@@ -45,6 +45,7 @@ def client() -> LettaSDKClient:
 def agent_state(client: LettaSDKClient):
     open_file_tool = client.tools.list(name="open_file")[0]
     close_file_tool = client.tools.list(name="close_file")[0]
+    search_files_tool = client.tools.list(name="search_files")[0]
 
     agent_state = client.agents.create(
         memory_blocks=[
@@ -55,7 +56,7 @@ def agent_state(client: LettaSDKClient):
         ],
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-ada-002",
-        tool_ids=[open_file_tool.id, close_file_tool.id],
+        tool_ids=[open_file_tool.id, close_file_tool.id, search_files_tool.id],
     )
     yield agent_state
 
@@ -367,3 +368,95 @@ def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_stat
 
     assert new_value != old_value, f"Different view ranges should have different content. New: '{new_value}', Old: '{old_value}'"
     print("✓ File successfully opened with different range - content differs as expected")
+
+
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
+def test_agent_uses_search_files_correctly(client: LettaSDKClient, agent_state: AgentState):
+    print(f"Starting test with agent ID: {agent_state.id}")
+
+    # Clear existing sources
+    existing_sources = client.sources.list()
+    print(f"Found {len(existing_sources)} existing sources, clearing...")
+    for source in existing_sources:
+        print(f"  Deleting source: {source.id}")
+        client.sources.delete(source_id=source.id)
+
+    # Clear existing jobs
+    existing_jobs = client.jobs.list()
+    print(f"Found {len(existing_jobs)} existing jobs, clearing...")
+    for job in existing_jobs:
+        print(f"  Deleting job: {job.id}")
+        client.jobs.delete(job_id=job.id)
+
+    # Create a new source
+    print("Creating new source...")
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
+    print(f"Created source with ID: {source.id}")
+
+    sources_list = client.sources.list()
+    assert len(sources_list) == 1
+    print(f"✓ Verified source creation - found {len(sources_list)} source(s)")
+
+    # Attach source to agent
+    print(f"Attaching source {source.id} to agent {agent_state.id}...")
+    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+    print("✓ Source attached to agent")
+
+    # Load files into the source
+    file_path = "tests/data/long_test.txt"
+    print(f"Uploading file: {file_path}")
+
+    # Upload the files
+    with open(file_path, "rb") as f:
+        job = client.sources.files.upload(source_id=source.id, file=f)
+
+    print(f"File upload job created with ID: {job.id}, initial status: {job.status}")
+
+    # Wait for the jobs to complete
+    while job.status != "completed":
+        print(f"Waiting for job {job.id} to complete... Current status: {job.status}")
+        time.sleep(1)
+        job = client.jobs.retrieve(job_id=job.id)
+
+    print(f"✓ Job completed successfully with status: {job.status}")
+
+    # Get uploaded files
+    print("Retrieving uploaded files...")
+    files = client.sources.files.list(source_id=source.id, limit=1)
+    assert len(files) == 1
+    assert files[0].source_id == source.id
+    file = files[0]
+    print(f"✓ Found uploaded file: {file.file_name} (ID: {file.id})")
+
+    # Check that file is opened initially
+    print("Checking initial agent state...")
+    agent_state = client.agents.retrieve(agent_id=agent_state.id)
+    blocks = agent_state.memory.file_blocks
+    print(f"Agent has {len(blocks)} file block(s)")
+    if blocks:
+        initial_content_length = len(blocks[0].value)
+        print(f"Initial file content length: {initial_content_length} characters")
+        print(f"First 100 chars of content: {blocks[0].value[:100]}...")
+        assert initial_content_length > 10, f"Expected file content > 10 chars, got {initial_content_length}"
+        print("✓ File appears to be initially loaded")
+
+    # Ask agent to use the search_files tool
+    print(f"Requesting agent to search_files")
+    search_files_response = client.agents.messages.create(
+        agent_id=agent_state.id,
+        messages=[
+            MessageCreate(role="user", content=f"Use ONLY the search_files tool to search for details regarding the electoral history.")
+        ],
+    )
+    print(f"Search file request sent, got {len(search_files_response.messages)} message(s) in response")
+    print(search_files_response.messages)
+
+    # Check that archival_memory_search was called
+    tool_calls = [msg for msg in search_files_response.messages if msg.message_type == "tool_call_message"]
+    assert len(tool_calls) > 0, "No tool calls found"
+    assert any(tc.tool_call.name == "search_files" for tc in tool_calls), "search_files not called"
+
+    # Check it returned successfully
+    tool_returns = [msg for msg in search_files_response.messages if msg.message_type == "tool_return_message"]
+    assert len(tool_returns) > 0, "No tool returns found"
+    assert all(tr.status == "success" for tr in tool_returns), "Tool call failed"
