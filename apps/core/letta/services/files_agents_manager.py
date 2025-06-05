@@ -74,7 +74,7 @@ class FileAgentManager:
 
     @enforce_types
     @trace_method
-    async def update_file_agent(
+    async def update_file_agent_by_id(
         self,
         *,
         agent_id: str,
@@ -85,7 +85,33 @@ class FileAgentManager:
     ) -> PydanticFileAgent:
         """Patch an existing association row."""
         async with db_registry.async_session() as session:
-            assoc = await self._get_association(session, agent_id, file_id, actor)
+            assoc = await self._get_association_by_file_id(session, agent_id, file_id, actor)
+
+            if is_open is not None:
+                assoc.is_open = is_open
+            if visible_content is not None:
+                assoc.visible_content = visible_content
+
+            # touch timestamp
+            assoc.last_accessed_at = datetime.now(timezone.utc)
+
+            await assoc.update_async(session, actor=actor)
+            return assoc.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def update_file_agent_by_name(
+        self,
+        *,
+        agent_id: str,
+        file_name: str,
+        actor: PydanticUser,
+        is_open: Optional[bool] = None,
+        visible_content: Optional[str] = None,
+    ) -> PydanticFileAgent:
+        """Patch an existing association row."""
+        async with db_registry.async_session() as session:
+            assoc = await self._get_association_by_file_name(session, agent_id, file_name, actor)
 
             if is_open is not None:
                 assoc.is_open = is_open
@@ -103,15 +129,25 @@ class FileAgentManager:
     async def detach_file(self, *, agent_id: str, file_id: str, actor: PydanticUser) -> None:
         """Hard-delete the association."""
         async with db_registry.async_session() as session:
-            assoc = await self._get_association(session, agent_id, file_id, actor)
+            assoc = await self._get_association_by_file_id(session, agent_id, file_id, actor)
             await assoc.hard_delete_async(session, actor=actor)
 
     @enforce_types
     @trace_method
-    async def get_file_agent(self, *, agent_id: str, file_id: str, actor: PydanticUser) -> Optional[PydanticFileAgent]:
+    async def get_file_agent_by_id(self, *, agent_id: str, file_id: str, actor: PydanticUser) -> Optional[PydanticFileAgent]:
         async with db_registry.async_session() as session:
             try:
-                assoc = await self._get_association(session, agent_id, file_id, actor)
+                assoc = await self._get_association_by_file_id(session, agent_id, file_id, actor)
+                return assoc.to_pydantic()
+            except NoResultFound:
+                return None
+
+    @enforce_types
+    @trace_method
+    async def get_file_agent_by_file_name(self, *, agent_id: str, file_name: str, actor: PydanticUser) -> Optional[PydanticFileAgent]:
+        async with db_registry.async_session() as session:
+            try:
+                assoc = await self._get_association_by_file_name(session, agent_id, file_name, actor)
                 return assoc.to_pydantic()
             except NoResultFound:
                 return None
@@ -173,7 +209,7 @@ class FileAgentManager:
             await session.execute(stmt)
             await session.commit()
 
-    async def _get_association(self, session, agent_id: str, file_id: str, actor: PydanticUser) -> FileAgentModel:
+    async def _get_association_by_file_id(self, session, agent_id: str, file_id: str, actor: PydanticUser) -> FileAgentModel:
         q = select(FileAgentModel).where(
             and_(
                 FileAgentModel.agent_id == agent_id,
@@ -184,4 +220,17 @@ class FileAgentManager:
         assoc = await session.scalar(q)
         if not assoc:
             raise NoResultFound(f"FileAgent(agent_id={agent_id}, file_id={file_id}) not found in org {actor.organization_id}")
+        return assoc
+
+    async def _get_association_by_file_name(self, session, agent_id: str, file_name: str, actor: PydanticUser) -> FileAgentModel:
+        q = select(FileAgentModel).where(
+            and_(
+                FileAgentModel.agent_id == agent_id,
+                FileAgentModel.file_name == file_name,
+                FileAgentModel.organization_id == actor.organization_id,
+            )
+        )
+        assoc = await session.scalar(q)
+        if not assoc:
+            raise NoResultFound(f"FileAgent(agent_id={agent_id}, file_name={file_name}) not found in org {actor.organization_id}")
         return assoc

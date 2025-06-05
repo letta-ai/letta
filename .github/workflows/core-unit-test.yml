@@ -157,7 +157,7 @@ jobs:
           E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
           LETTA_MISTRAL_API_KEY: ${{ secrets.LETTA_MISTRAL_API_KEY }}
           LETTA_ENABLE_BATCH_JOB_POLLING: true
-          LETTA_USE_EXPERIMENTAL: ${{ matrix.use_experimental || 'false' }}
+          LETTA_USE_EXPERIMENTAL: true
         run: |
           set -o xtrace
           poetry run pip show letta-client

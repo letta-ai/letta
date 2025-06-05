@@ -11,6 +11,8 @@ from letta.constants import (
     BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
     BASE_VOICE_SLEEPTIME_TOOLS,
     BUILTIN_TOOLS,
+    FILES_TOOLS,
+    LETTA_TOOL_MODULE_NAMES,
     LETTA_TOOL_SET,
     MCP_TOOL_TAG_NAME_PREFIX,
     MULTI_AGENT_TOOLS,
@@ -368,12 +370,10 @@ class ToolManager:
     def upsert_base_tools(self, actor: PydanticUser) -> List[PydanticTool]:
         """Add default tools in base.py and multi_agent.py"""
         functions_to_schema = {}
-        module_names = ["base", "multi_agent", "voice", "builtin"]
 
-        for module_name in module_names:
-            full_module_name = f"letta.functions.function_sets.{module_name}"
+        for module_name in LETTA_TOOL_MODULE_NAMES:
             try:
-                module = importlib.import_module(full_module_name)
+                module = importlib.import_module(module_name)
             except Exception as e:
                 # Handle other general exceptions
                 raise e
@@ -406,6 +406,9 @@ class ToolManager:
                     tags = [tool_type.value]
                 elif name in BUILTIN_TOOLS:
                     tool_type = ToolType.LETTA_BUILTIN
+                    tags = [tool_type.value]
+                elif name in FILES_TOOLS:
+                    tool_type = ToolType.LETTA_FILES_CORE
                     tags = [tool_type.value]
                 else:
                     raise ValueError(
@@ -434,12 +437,9 @@ class ToolManager:
     async def upsert_base_tools_async(self, actor: PydanticUser) -> List[PydanticTool]:
         """Add default tools in base.py and multi_agent.py"""
         functions_to_schema = {}
-        module_names = ["base", "multi_agent", "voice", "builtin"]
-
-        for module_name in module_names:
-            full_module_name = f"letta.functions.function_sets.{module_name}"
+        for module_name in LETTA_TOOL_MODULE_NAMES:
             try:
-                module = importlib.import_module(full_module_name)
+                module = importlib.import_module(module_name)
             except Exception as e:
                 # Handle other general exceptions
                 raise e
@@ -472,6 +472,9 @@ class ToolManager:
                     tags = [tool_type.value]
                 elif name in BUILTIN_TOOLS:
                     tool_type = ToolType.LETTA_BUILTIN
+                    tags = [tool_type.value]
+                elif name in FILES_TOOLS:
+                    tool_type = ToolType.LETTA_FILES_CORE
                     tags = [tool_type.value]
                 else:
                     raise ValueError(

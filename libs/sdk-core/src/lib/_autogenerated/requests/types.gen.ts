@@ -3685,6 +3685,7 @@ export type ToolType =
   | 'letta_sleeptime_core'
   | 'letta_voice_sleeptime_core'
   | 'letta_builtin'
+  | 'letta_files_core'
   | 'external_composio'
   | 'external_langchain'
   | 'external_mcp';

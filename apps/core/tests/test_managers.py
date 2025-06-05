@@ -28,6 +28,7 @@ from letta.constants import (
     BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
     BASE_VOICE_SLEEPTIME_TOOLS,
     BUILTIN_TOOLS,
+    FILES_TOOLS,
     LETTA_TOOL_EXECUTION_DIR,
     LETTA_TOOL_SET,
     MCP_TOOL_TAG_NAME_PREFIX,
@@ -2535,6 +2536,8 @@ async def test_upsert_base_tools(server: SyncServer, default_user, event_loop):
             assert t.tool_type == ToolType.LETTA_VOICE_SLEEPTIME_CORE
         elif t.name in BUILTIN_TOOLS:
             assert t.tool_type == ToolType.LETTA_BUILTIN
+        elif t.name in FILES_TOOLS:
+            assert t.tool_type == ToolType.LETTA_FILES_CORE
         else:
             pytest.fail(f"The tool name is unrecognized as a base tool: {t.name}")
         assert t.source_code is None
@@ -6007,9 +6010,22 @@ async def test_attach_is_idempotent(server, default_user, sarah_agent, default_f
 
 @pytest.mark.asyncio
 async def test_update_file_agent(server, file_attachment, default_user):
-    updated = await server.file_agent_manager.update_file_agent(
+    updated = await server.file_agent_manager.update_file_agent_by_id(
         agent_id=file_attachment.agent_id,
         file_id=file_attachment.file_id,
+        actor=default_user,
+        is_open=False,
+        visible_content="updated",
+    )
+    assert updated.is_open is False
+    assert updated.visible_content == "updated"
+
+
+@pytest.mark.asyncio
+async def test_update_file_agent_by_file_name(server, file_attachment, default_user):
+    updated = await server.file_agent_manager.update_file_agent_by_name(
+        agent_id=file_attachment.agent_id,
+        file_name=file_attachment.file_name,
         actor=default_user,
         is_open=False,
         visible_content="updated",
@@ -6031,7 +6047,7 @@ async def test_mark_access(server, file_attachment, default_user):
         file_id=file_attachment.file_id,
         actor=default_user,
     )
-    refreshed = await server.file_agent_manager.get_file_agent(
+    refreshed = await server.file_agent_manager.get_file_agent_by_id(
         agent_id=file_attachment.agent_id,
         file_id=file_attachment.file_id,
         actor=default_user,
@@ -6087,7 +6103,7 @@ async def test_detach_file(server, file_attachment, default_user):
         file_id=file_attachment.file_id,
         actor=default_user,
     )
-    res = await server.file_agent_manager.get_file_agent(
+    res = await server.file_agent_manager.get_file_agent_by_id(
         agent_id=file_attachment.agent_id,
         file_id=file_attachment.file_id,
         actor=default_user,

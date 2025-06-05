@@ -13,15 +13,14 @@ from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
-from letta.services.tool_executor.tool_executor import (
-    ExternalComposioToolExecutor,
-    ExternalMCPToolExecutor,
-    LettaBuiltinToolExecutor,
-    LettaCoreToolExecutor,
-    LettaMultiAgentToolExecutor,
-    SandboxToolExecutor,
-    ToolExecutor,
-)
+from letta.services.tool_executor.builtin_tool_executor import LettaBuiltinToolExecutor
+from letta.services.tool_executor.composio_tool_executor import ExternalComposioToolExecutor
+from letta.services.tool_executor.core_tool_executor import LettaCoreToolExecutor
+from letta.services.tool_executor.files_tool_executor import LettaFileToolExecutor
+from letta.services.tool_executor.mcp_tool_executor import ExternalMCPToolExecutor
+from letta.services.tool_executor.multi_agent_tool_executor import LettaMultiAgentToolExecutor
+from letta.services.tool_executor.tool_executor import SandboxToolExecutor
+from letta.services.tool_executor.tool_executor_base import ToolExecutor
 from letta.tracing import trace_method
 from letta.utils import get_friendly_error_msg
 
@@ -35,6 +34,7 @@ class ToolExecutorFactory:
         ToolType.LETTA_SLEEPTIME_CORE: LettaCoreToolExecutor,
         ToolType.LETTA_MULTI_AGENT_CORE: LettaMultiAgentToolExecutor,
         ToolType.LETTA_BUILTIN: LettaBuiltinToolExecutor,
+        ToolType.LETTA_FILES_CORE: LettaFileToolExecutor,
         ToolType.EXTERNAL_COMPOSIO: ExternalComposioToolExecutor,
         ToolType.EXTERNAL_MCP: ExternalMCPToolExecutor,
     }
