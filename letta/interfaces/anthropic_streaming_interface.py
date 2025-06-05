@@ -277,7 +277,9 @@ class AnthropicStreamingInterface:
                                 # Otherwise, it is a normal tool call - buffer or yield based on inner thoughts status
                                 tool_call_msg = ToolCallMessage(
                                     id=self.letta_tool_message_id,
-                                    tool_call=ToolCallDelta(arguments=delta.partial_json),
+                                    tool_call=ToolCallDelta(
+                                        name=self.tool_call_name, tool_call_id=self.tool_call_id, arguments=delta.partial_json
+                                    ),
                                     date=datetime.now(timezone.utc).isoformat(),
                                 )
                                 if self.inner_thoughts_complete:
