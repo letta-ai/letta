@@ -379,7 +379,7 @@ class AnthropicStreamingInterface:
             group: List[Union[ReasoningMessage, HiddenReasoningMessage]], group_type: str
         ) -> Union[TextContent, ReasoningContent, RedactedReasoningContent]:
             if group_type == "reasoning":
-                reasoning_text = "".join(chunk.reasoning for chunk in group)
+                reasoning_text = "".join(chunk.reasoning for chunk in group).strip()
                 is_native = any(chunk.source == "reasoner_model" for chunk in group)
                 signature = next((chunk.signature for chunk in group if chunk.signature is not None), None)
                 if is_native:

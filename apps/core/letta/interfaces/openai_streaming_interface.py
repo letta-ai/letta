@@ -32,6 +32,7 @@ class OpenAIStreamingInterface:
         self.function_args_buffer = None
         self.function_id_buffer = None
         self.last_flushed_function_name = None
+        self.last_flushed_function_id = None
 
         # Buffer to hold function arguments until inner thoughts are complete
         self.current_function_arguments = ""
@@ -53,14 +54,14 @@ class OpenAIStreamingInterface:
         self.reasoning_messages = []
 
     def get_reasoning_content(self) -> List[TextContent]:
-        content = "".join(self.reasoning_messages)
+        content = "".join(self.reasoning_messages).strip()
         return [TextContent(text=content)]
 
     def get_tool_call_object(self) -> ToolCall:
         """Useful for agent loop"""
         function_name = self.last_flushed_function_name if self.last_flushed_function_name else self.function_name_buffer
         return ToolCall(
-            id=self.letta_message_id,
+            id=self.last_flushed_function_id,
             function=FunctionCall(arguments=self.current_function_arguments, name=function_name),
         )
 
@@ -184,6 +185,8 @@ class OpenAIStreamingInterface:
 
                                     # Record what the last function name we flushed was
                                     self.last_flushed_function_name = self.function_name_buffer
+                                    if self.last_flushed_function_id is None:
+                                        self.last_flushed_function_id = self.function_id_buffer
                                     # Clear the buffer
                                     self.function_name_buffer = None
                                     self.function_id_buffer = None

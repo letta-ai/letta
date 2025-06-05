@@ -821,6 +821,9 @@ class LettaAgent(BaseAgent):
         """
         tool_call_name = tool_call.function.name
         tool_call_args_str = tool_call.function.arguments
+        # Temp hack to gracefully handle parallel tool calling attempt, only take first one
+        if "}{" in tool_call_args_str:
+            tool_call_args_str = tool_call_args_str.split("}{", 1)[0] + "}"
 
         try:
             tool_args = json.loads(tool_call_args_str)
