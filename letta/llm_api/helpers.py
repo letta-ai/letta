@@ -63,11 +63,11 @@ def _convert_to_structured_output_helper(property: dict) -> dict:
 
 
 def convert_to_structured_output(openai_function: dict, allow_optional: bool = False) -> dict:
-    """Convert function call objects to structured output objects
+    """Convert function call objects to structured output objects.
 
     See: https://platform.openai.com/docs/guides/structured-outputs/supported-schemas
     """
-    description = openai_function["description"] if "description" in openai_function else ""
+    description = openai_function.get("description", "")
 
     structured_output = {
         "name": openai_function["name"],
@@ -81,54 +81,58 @@ def convert_to_structured_output(openai_function: dict, allow_optional: bool = F
         },
     }
 
-    # This code needs to be able to handle nested properties
-    # For example, the param details may have "type" + "description",
-    # but if "type" is "object" we expected "properties", where each property has details
-    # and if "type" is "array" we expect "items": <type>
     for param, details in openai_function["parameters"]["properties"].items():
         param_type = details["type"]
-        description = details.get("description", "")
+        param_description = details.get("description", "")
 
         if param_type == "object":
             if "properties" not in details:
-                # Structured outputs requires the properties on dicts be specified ahead of time
-                raise ValueError(f"Property {param} of type object is missing properties")
+                raise ValueError(f"Property {param} of type object is missing 'properties'")
             structured_output["parameters"]["properties"][param] = {
                 "type": "object",
-                "description": description,
+                "description": param_description,
                 "properties": {k: _convert_to_structured_output_helper(v) for k, v in details["properties"].items()},
                 "additionalProperties": False,
                 "required": list(details["properties"].keys()),
             }
 
         elif param_type == "array":
-            structured_output["parameters"]["properties"][param] = {
-                "type": "array",
-                "description": description,
-                "items": _convert_to_structured_output_helper(details["items"]),
-            }
+            items_schema = details.get("items")
+            prefix_items_schema = details.get("prefixItems")
+
+            if prefix_items_schema:
+                # assume fixed-length tuple — safe fallback to use first type for items
+                fallback_item = prefix_items_schema[0] if isinstance(prefix_items_schema, list) else prefix_items_schema
+                structured_output["parameters"]["properties"][param] = {
+                    "type": "array",
+                    "description": param_description,
+                    "prefixItems": [_convert_to_structured_output_helper(item) for item in prefix_items_schema],
+                    "items": _convert_to_structured_output_helper(fallback_item),
+                    "minItems": details.get("minItems", len(prefix_items_schema)),
+                    "maxItems": details.get("maxItems", len(prefix_items_schema)),
+                }
+            elif items_schema:
+                structured_output["parameters"]["properties"][param] = {
+                    "type": "array",
+                    "description": param_description,
+                    "items": _convert_to_structured_output_helper(items_schema),
+                }
+            else:
+                raise ValueError(f"Array param '{param}' is missing both 'items' and 'prefixItems'")
 
         else:
-            structured_output["parameters"]["properties"][param] = {
-                "type": param_type,  # simple type
-                "description": description,
+            prop = {
+                "type": param_type,
+                "description": param_description,
             }
-
-        if "enum" in details:
-            structured_output["parameters"]["properties"][param]["enum"] = details["enum"]
+            if "enum" in details:
+                prop["enum"] = details["enum"]
+            structured_output["parameters"]["properties"][param] = prop
 
     if not allow_optional:
-        # Add all properties to required list
         structured_output["parameters"]["required"] = list(structured_output["parameters"]["properties"].keys())
-
     else:
-        # See what parameters exist that aren't required
-        # Those are implied "optional" types
-        # For those types, turn each of them into a union type with "null"
-        # e.g.
-        # "type": "string" -> "type": ["string", "null"]
-        # TODO
-        raise NotImplementedError
+        raise NotImplementedError("Optional parameter handling is not implemented.")
 
     return structured_output
 

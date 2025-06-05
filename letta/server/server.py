@@ -21,7 +21,7 @@ import letta.system as system
 from letta.agent import Agent, save_agent
 from letta.agents.letta_agent import LettaAgent
 from letta.config import LettaConfig
-from letta.constants import CORE_MEMORY_SOURCE_CHAR_LIMIT, LETTA_TOOL_EXECUTION_DIR
+from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.data_sources.connectors import DataConnector, load_data
 from letta.errors import HandleNotFoundError
 from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig
@@ -1372,9 +1372,8 @@ class SyncServer(Server):
         """
         Internal method to create or update a file <-> agent association
         """
-        truncated_text = text[:CORE_MEMORY_SOURCE_CHAR_LIMIT]
         await self.file_agent_manager.attach_file(
-            agent_id=agent_id, file_id=file_id, file_name=file_name, actor=actor, visible_content=truncated_text
+            agent_id=agent_id, file_id=file_id, file_name=file_name, actor=actor, visible_content=text
         )
 
     async def _remove_file_from_agent(self, agent_id: str, file_id: str, actor: User) -> None:

@@ -21,6 +21,15 @@ LETTA_CORE_TOOL_MODULE_NAME = "letta.functions.function_sets.base"
 LETTA_MULTI_AGENT_TOOL_MODULE_NAME = "letta.functions.function_sets.multi_agent"
 LETTA_VOICE_TOOL_MODULE_NAME = "letta.functions.function_sets.voice"
 LETTA_BUILTIN_TOOL_MODULE_NAME = "letta.functions.function_sets.builtin"
+LETTA_FILES_TOOL_MODULE_NAME = "letta.functions.function_sets.files"
+
+LETTA_TOOL_MODULE_NAMES = [
+    LETTA_CORE_TOOL_MODULE_NAME,
+    LETTA_MULTI_AGENT_TOOL_MODULE_NAME,
+    LETTA_VOICE_TOOL_MODULE_NAME,
+    LETTA_BUILTIN_TOOL_MODULE_NAME,
+    LETTA_FILES_TOOL_MODULE_NAME,
+]
 
 
 # String in the error message for when the context window is too large
@@ -112,6 +121,9 @@ MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX = re.compile(
 # Built in tools
 BUILTIN_TOOLS = ["run_code", "web_search"]
 
+# Built in tools
+FILES_TOOLS = ["web_search", "run_code", "open_file", "close_file", "grep", "search_files"]
+
 # Set of all built-in Letta tools
 LETTA_TOOL_SET = set(
     BASE_TOOLS
@@ -121,6 +133,7 @@ LETTA_TOOL_SET = set(
     + BASE_VOICE_SLEEPTIME_TOOLS
     + BASE_VOICE_SLEEPTIME_CHAT_TOOLS
     + BUILTIN_TOOLS
+    + FILES_TOOLS
 )
 
 
@@ -294,6 +307,7 @@ CORE_MEMORY_SOURCE_CHAR_LIMIT: int = 5000
 # Function return limits
 FUNCTION_RETURN_CHAR_LIMIT = 6000  # ~300 words
 BASE_FUNCTION_RETURN_CHAR_LIMIT = 1000000  # very high (we rely on implementation)
+FILE_IS_TRUNCATED_WARNING = "# NOTE: This block is truncated, use functions to view the full content."
 
 MAX_PAUSE_HEARTBEATS = 360  # in min
 
