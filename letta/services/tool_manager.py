@@ -1,7 +1,7 @@
 import asyncio
 import importlib
 import warnings
-from typing import List, Optional, Union
+from typing import List, Optional, Set, Union
 
 from letta.constants import (
     BASE_FUNCTION_RETURN_CHAR_LIMIT,
@@ -434,66 +434,59 @@ class ToolManager:
 
     @enforce_types
     @trace_method
-    async def upsert_base_tools_async(self, actor: PydanticUser) -> List[PydanticTool]:
-        """Add default tools in base.py and multi_agent.py"""
+    async def upsert_base_tools_async(
+        self,
+        actor: PydanticUser,
+        allowed_types: Optional[Set[ToolType]] = None,
+    ) -> List[PydanticTool]:
+        """Add default tools defined in the various function_sets modules, optionally filtered by ToolType."""
+
         functions_to_schema = {}
         for module_name in LETTA_TOOL_MODULE_NAMES:
             try:
                 module = importlib.import_module(module_name)
-            except Exception as e:
-                # Handle other general exceptions
-                raise e
-
-            try:
-                # Load the function set
                 functions_to_schema.update(load_function_set(module))
             except ValueError as e:
-                err = f"Error loading function set '{module_name}': {e}"
-                warnings.warn(err)
+                warnings.warn(f"Error loading function set '{module_name}': {e}")
+            except Exception as e:
+                raise e
 
-        # create tool in db
         tools = []
         for name, schema in functions_to_schema.items():
-            if name in LETTA_TOOL_SET:
-                if name in BASE_TOOLS:
-                    tool_type = ToolType.LETTA_CORE
-                    tags = [tool_type.value]
-                elif name in BASE_MEMORY_TOOLS:
-                    tool_type = ToolType.LETTA_MEMORY_CORE
-                    tags = [tool_type.value]
-                elif name in MULTI_AGENT_TOOLS:
-                    tool_type = ToolType.LETTA_MULTI_AGENT_CORE
-                    tags = [tool_type.value]
-                elif name in BASE_SLEEPTIME_TOOLS:
-                    tool_type = ToolType.LETTA_SLEEPTIME_CORE
-                    tags = [tool_type.value]
-                elif name in BASE_VOICE_SLEEPTIME_TOOLS or name in BASE_VOICE_SLEEPTIME_CHAT_TOOLS:
-                    tool_type = ToolType.LETTA_VOICE_SLEEPTIME_CORE
-                    tags = [tool_type.value]
-                elif name in BUILTIN_TOOLS:
-                    tool_type = ToolType.LETTA_BUILTIN
-                    tags = [tool_type.value]
-                elif name in FILES_TOOLS:
-                    tool_type = ToolType.LETTA_FILES_CORE
-                    tags = [tool_type.value]
-                else:
-                    raise ValueError(
-                        f"Tool name {name} is not in the list of base tool names: {BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS + BASE_SLEEPTIME_TOOLS + BASE_VOICE_SLEEPTIME_TOOLS + BASE_VOICE_SLEEPTIME_CHAT_TOOLS}"
-                    )
+            if name not in LETTA_TOOL_SET:
+                continue
 
-                # create to tool
-                tools.append(
-                    self.create_or_update_tool_async(
-                        PydanticTool(
-                            name=name,
-                            tags=tags,
-                            source_type="python",
-                            tool_type=tool_type,
-                            return_char_limit=BASE_FUNCTION_RETURN_CHAR_LIMIT,
-                        ),
-                        actor=actor,
-                    )
+            if name in BASE_TOOLS:
+                tool_type = ToolType.LETTA_CORE
+            elif name in BASE_MEMORY_TOOLS:
+                tool_type = ToolType.LETTA_MEMORY_CORE
+            elif name in BASE_SLEEPTIME_TOOLS:
+                tool_type = ToolType.LETTA_SLEEPTIME_CORE
+            elif name in MULTI_AGENT_TOOLS:
+                tool_type = ToolType.LETTA_MULTI_AGENT_CORE
+            elif name in BASE_VOICE_SLEEPTIME_TOOLS or name in BASE_VOICE_SLEEPTIME_CHAT_TOOLS:
+                tool_type = ToolType.LETTA_VOICE_SLEEPTIME_CORE
+            elif name in BUILTIN_TOOLS:
+                tool_type = ToolType.LETTA_BUILTIN
+            elif name in FILES_TOOLS:
+                tool_type = ToolType.LETTA_FILES_CORE
+            else:
+                raise ValueError(f"Tool name {name} is not recognized in any known base tool set.")
+
+            if allowed_types is not None and tool_type not in allowed_types:
+                continue
+
+            tools.append(
+                self.create_or_update_tool_async(
+                    PydanticTool(
+                        name=name,
+                        tags=[tool_type.value],
+                        source_type="python",
+                        tool_type=tool_type,
+                        return_char_limit=BASE_FUNCTION_RETURN_CHAR_LIMIT,
+                    ),
+                    actor=actor,
                 )
+            )
 
-        # TODO: Delete any base tools that are stale
         return await asyncio.gather(*tools)

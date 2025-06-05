@@ -122,7 +122,7 @@ MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX = re.compile(
 BUILTIN_TOOLS = ["run_code", "web_search"]
 
 # Built in tools
-FILES_TOOLS = ["web_search", "run_code", "open_file", "close_file", "grep", "search_files"]
+FILES_TOOLS = ["open_file", "close_file", "grep", "search_files"]
 
 # Set of all built-in Letta tools
 LETTA_TOOL_SET = set(
