@@ -16,6 +16,7 @@ from letta.constants import (
     BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
     BASE_VOICE_SLEEPTIME_TOOLS,
     DATA_SOURCE_ATTACH_ALERT,
+    FILES_TOOLS,
     MULTI_AGENT_TOOLS,
 )
 from letta.helpers.datetime_helpers import get_utc_time
@@ -2381,6 +2382,65 @@ class AgentManager:
             # Commit and refresh the agent
             await agent.update_async(session, actor=actor)
             return await agent.to_pydantic_async()
+
+    @trace_method
+    @enforce_types
+    async def attach_missing_files_tools_async(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
+        """
+        Attaches missing core file tools to an agent.
+
+        Args:
+            agent_id: ID of the agent to attach the tools to.
+            actor: User performing the action.
+
+        Raises:
+            NoResultFound: If the agent or tool is not found.
+
+        Returns:
+            PydanticAgentState: The updated agent state.
+        """
+        # Check if the agent is missing any files tools
+        core_tool_names = {tool.name for tool in agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
+        missing_tool_names = set(FILES_TOOLS).difference(core_tool_names)
+
+        for tool_name in missing_tool_names:
+            tool_id = self.tool_manager.get_tool_id_by_name(tool_name=tool_name, actor=actor)
+
+            # TODO: This is hacky and deserves a rethink - how do we keep all the base tools available in every org always?
+            if not tool_id:
+                await self.tool_manager.upsert_base_tools_async(actor=actor, allowed_types={ToolType.LETTA_FILES_CORE})
+
+            # TODO: Inefficient - I think this re-retrieves the agent_state?
+            agent_state = await self.attach_tool_async(agent_id=agent_state.id, tool_id=tool_id, actor=actor)
+
+        return agent_state
+
+    @trace_method
+    @enforce_types
+    async def detach_all_files_tools_async(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
+        """
+        Detach all core file tools from an agent.
+
+        Args:
+            agent_id: ID of the agent to detach the tools from.
+            actor: User performing the action.
+
+        Raises:
+            NoResultFound: If the agent or tool is not found.
+
+        Returns:
+            PydanticAgentState: The updated agent state.
+        """
+        # Check if the agent is missing any files tools
+        core_tool_names = {tool.name for tool in agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
+
+        for tool_name in core_tool_names:
+            tool_id = self.tool_manager.get_tool_id_by_name(tool_name=tool_name, actor=actor)
+
+            # TODO: Inefficient - I think this re-retrieves the agent_state?
+            agent_state = await self.detach_tool_async(agent_id=agent_state.id, tool_id=tool_id, actor=actor)
+
+        return agent_state
 
     @trace_method
     @enforce_types

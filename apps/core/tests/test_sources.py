@@ -9,12 +9,25 @@ from letta_client import CreateBlock
 from letta_client import Letta as LettaSDKClient
 from letta_client.types import AgentState
 
+from letta.constants import FILES_TOOLS
+from letta.orm.enums import ToolType
 from letta.schemas.message import MessageCreate
 from tests.helpers.utils import retry_until_success
 from tests.utils import wait_for_server
 
 # Constants
 SERVER_PORT = 8283
+
+
+@pytest.fixture(autouse=True)
+def clear_sources_jobs(client: LettaSDKClient):
+    # Clear existing sources
+    for source in client.sources.list():
+        client.sources.delete(source_id=source.id)
+
+    # Clear existing jobs
+    for job in client.jobs.list():
+        client.jobs.delete(job_id=job.id)
 
 
 def run_server():
@@ -61,6 +74,61 @@ def agent_state(client: LettaSDKClient):
     yield agent_state
 
 
+# Tests
+
+
+def test_auto_attach_detach_files_tools(client: LettaSDKClient):
+    """Test automatic attachment and detachment of file tools when managing agent sources."""
+    # Create agent with basic configuration
+    agent = client.agents.create(
+        memory_blocks=[
+            CreateBlock(label="human", value="username: sarah"),
+        ],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-ada-002",
+    )
+
+    # Helper function to get file tools from agent
+    def get_file_tools(agent_state):
+        return {tool.name for tool in agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
+
+    # Helper function to assert file tools presence
+    def assert_file_tools_present(agent_state, expected_tools):
+        actual_tools = get_file_tools(agent_state)
+        assert actual_tools == expected_tools, f"File tools mismatch.\nExpected: {expected_tools}\nFound: {actual_tools}"
+
+    # Helper function to assert no file tools
+    def assert_no_file_tools(agent_state):
+        has_file_tools = any(tool.tool_type == ToolType.LETTA_FILES_CORE for tool in agent_state.tools)
+        assert not has_file_tools, "File tools should not be present"
+
+    # Initial state: no file tools
+    assert_no_file_tools(agent)
+
+    # Create and attach first source
+    source_1 = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
+    assert len(client.sources.list()) == 1
+
+    agent = client.agents.sources.attach(source_id=source_1.id, agent_id=agent.id)
+    assert_file_tools_present(agent, set(FILES_TOOLS))
+
+    # Create and attach second source
+    source_2 = client.sources.create(name="another_test_source", embedding="openai/text-embedding-ada-002")
+    assert len(client.sources.list()) == 2
+
+    agent = client.agents.sources.attach(source_id=source_2.id, agent_id=agent.id)
+    # File tools should remain after attaching second source
+    assert_file_tools_present(agent, set(FILES_TOOLS))
+
+    # Detach second source - tools should remain (first source still attached)
+    agent = client.agents.sources.detach(source_id=source_2.id, agent_id=agent.id)
+    assert_file_tools_present(agent, set(FILES_TOOLS))
+
+    # Detach first source - all file tools should be removed
+    agent = client.agents.sources.detach(source_id=source_1.id, agent_id=agent.id)
+    assert_no_file_tools(agent)
+
+
 @pytest.mark.parametrize(
     "file_path, expected_value, expected_label_regex",
     [
@@ -78,14 +146,6 @@ def test_file_upload_creates_source_blocks_correctly(
     expected_value: str,
     expected_label_regex: str,
 ):
-    # Clear existing sources
-    for source in client.sources.list():
-        client.sources.delete(source_id=source.id)
-
-    # Clear existing jobs
-    for job in client.jobs.list():
-        client.jobs.delete(job_id=job.id)
-
     # Create a new source
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
     assert len(client.sources.list()) == 1
@@ -127,14 +187,6 @@ def test_file_upload_creates_source_blocks_correctly(
 
 
 def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKClient, agent_state: AgentState):
-    # Clear existing sources
-    for source in client.sources.list():
-        client.sources.delete(source_id=source.id)
-
-    # Clear existing jobs
-    for job in client.jobs.list():
-        client.jobs.delete(job_id=job.id)
-
     # Create a new source
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
     assert len(client.sources.list()) == 1
@@ -179,14 +231,6 @@ def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKC
 
 
 def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, agent_state: AgentState):
-    # Clear existing sources
-    for source in client.sources.list():
-        client.sources.delete(source_id=source.id)
-
-    # Clear existing jobs
-    for job in client.jobs.list():
-        client.jobs.delete(job_id=job.id)
-
     # Create a new source
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
     assert len(client.sources.list()) == 1
@@ -227,22 +271,6 @@ def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, a
 
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_state: AgentState):
-    print(f"Starting test with agent ID: {agent_state.id}")
-
-    # Clear existing sources
-    existing_sources = client.sources.list()
-    print(f"Found {len(existing_sources)} existing sources, clearing...")
-    for source in existing_sources:
-        print(f"  Deleting source: {source.id}")
-        client.sources.delete(source_id=source.id)
-
-    # Clear existing jobs
-    existing_jobs = client.jobs.list()
-    print(f"Found {len(existing_jobs)} existing jobs, clearing...")
-    for job in existing_jobs:
-        print(f"  Deleting job: {job.id}")
-        client.jobs.delete(job_id=job.id)
-
     # Create a new source
     print("Creating new source...")
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
@@ -372,22 +400,6 @@ def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_stat
 
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_agent_uses_search_files_correctly(client: LettaSDKClient, agent_state: AgentState):
-    print(f"Starting test with agent ID: {agent_state.id}")
-
-    # Clear existing sources
-    existing_sources = client.sources.list()
-    print(f"Found {len(existing_sources)} existing sources, clearing...")
-    for source in existing_sources:
-        print(f"  Deleting source: {source.id}")
-        client.sources.delete(source_id=source.id)
-
-    # Clear existing jobs
-    existing_jobs = client.jobs.list()
-    print(f"Found {len(existing_jobs)} existing jobs, clearing...")
-    for job in existing_jobs:
-        print(f"  Deleting job: {job.id}")
-        client.jobs.delete(job_id=job.id)
-
     # Create a new source
     print("Creating new source...")
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")

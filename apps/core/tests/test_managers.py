@@ -2550,6 +2550,45 @@ async def test_upsert_base_tools(server: SyncServer, default_user, event_loop):
         assert t.json_schema
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "tool_type,expected_names",
+    [
+        (ToolType.LETTA_CORE, BASE_TOOLS),
+        (ToolType.LETTA_MEMORY_CORE, BASE_MEMORY_TOOLS),
+        (ToolType.LETTA_MULTI_AGENT_CORE, MULTI_AGENT_TOOLS),
+        (ToolType.LETTA_SLEEPTIME_CORE, BASE_SLEEPTIME_TOOLS),
+        (ToolType.LETTA_VOICE_SLEEPTIME_CORE, sorted(set(BASE_VOICE_SLEEPTIME_TOOLS + BASE_VOICE_SLEEPTIME_CHAT_TOOLS) - {"send_message"})),
+        (ToolType.LETTA_BUILTIN, BUILTIN_TOOLS),
+        (ToolType.LETTA_FILES_CORE, FILES_TOOLS),
+    ],
+)
+async def test_upsert_filtered_base_tools(server: SyncServer, default_user, tool_type, expected_names):
+    tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={tool_type})
+    tool_names = sorted([t.name for t in tools])
+    expected_sorted = sorted(expected_names)
+
+    assert tool_names == expected_sorted
+    assert all(t.tool_type == tool_type for t in tools)
+
+
+@pytest.mark.asyncio
+async def test_upsert_multiple_tool_types(server: SyncServer, default_user):
+    allowed = {ToolType.LETTA_CORE, ToolType.LETTA_BUILTIN, ToolType.LETTA_FILES_CORE}
+    tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types=allowed)
+    tool_names = {t.name for t in tools}
+    expected = set(BASE_TOOLS + BUILTIN_TOOLS + FILES_TOOLS)
+
+    assert tool_names == expected
+    assert all(t.tool_type in allowed for t in tools)
+
+
+@pytest.mark.asyncio
+async def test_upsert_base_tools_with_empty_type_filter(server: SyncServer, default_user):
+    tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types=set())
+    assert tools == []
+
+
 # ======================================================================================================================
 # Message Manager Tests
 # ======================================================================================================================
