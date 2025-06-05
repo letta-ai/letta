@@ -61,6 +61,9 @@ RUN apt-get update && \
 COPY otel/otel-collector-config-file.yaml /etc/otel/config-file.yaml
 COPY otel/otel-collector-config-clickhouse.yaml /etc/otel/config-clickhouse.yaml
 
+# set experimental flag
+ARG LETTA_USE_EXPERIMENTAL=1
+
 ARG LETTA_ENVIRONMENT=PRODUCTION
 ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT} \
     VIRTUAL_ENV="/app/.venv" \

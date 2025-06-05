@@ -11,6 +11,7 @@ from letta.server.db import db_registry
 from letta.services.organization_manager import OrganizationManager
 from letta.tracing import trace_method
 from letta.utils import enforce_types
+from letta.settings import settings
 
 
 class UserManager:
@@ -147,13 +148,15 @@ class UserManager:
         """Fetch a user by ID asynchronously."""
         async with db_registry.async_session() as session:
             # Turn off seqscan to force use pk index
-            await session.execute(text("SET LOCAL enable_seqscan = OFF"))
+            if settings.letta_pg_uri_no_default:
+                await session.execute(text("SET LOCAL enable_seqscan = OFF"))
             try:
                 stmt = select(UserModel).where(UserModel.id == actor_id)
                 result = await session.execute(stmt)
                 user = result.scalar_one_or_none()
             finally:
-                await session.execute(text("SET LOCAL enable_seqscan = ON"))
+                if settings.letta_pg_uri_no_default:
+                    await session.execute(text("SET LOCAL enable_seqscan = ON"))
 
             if not user:
                 raise NoResultFound(f"User not found with id={actor_id}")
