@@ -38,8 +38,7 @@ class OpenAIStreamingInterface:
         self.current_json_parse_result = {}
 
         # Premake IDs for database writes
-        self.letta_assistant_message_id = Message.generate_id()
-        self.letta_tool_message_id = Message.generate_id()
+        self.letta_message_id = Message.generate_id()
 
         self.message_id = None
         self.model = None
@@ -61,7 +60,7 @@ class OpenAIStreamingInterface:
         """Useful for agent loop"""
         function_name = self.last_flushed_function_name if self.last_flushed_function_name else self.function_name_buffer
         return ToolCall(
-            id=self.letta_tool_message_id,
+            id=self.letta_message_id,
             function=FunctionCall(arguments=self.current_function_arguments, name=function_name),
         )
 
@@ -133,11 +132,11 @@ class OpenAIStreamingInterface:
                                     message_index += 1
                                 self.reasoning_messages.append(updates_inner_thoughts)
                                 reasoning_message = ReasoningMessage(
-                                    id=self.letta_tool_message_id,
+                                    id=self.letta_message_id,
                                     date=datetime.now(timezone.utc),
                                     reasoning=updates_inner_thoughts,
                                     # name=name,
-                                    otid=Message.generate_otid_from_id(self.letta_tool_message_id, message_index),
+                                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                 )
                                 prev_message_type = reasoning_message.message_type
                                 yield reasoning_message
@@ -171,14 +170,14 @@ class OpenAIStreamingInterface:
                                             message_index += 1
                                         self.tool_call_name = str(self.function_name_buffer)
                                         tool_call_msg = ToolCallMessage(
-                                            id=self.letta_tool_message_id,
+                                            id=self.letta_message_id,
                                             date=datetime.now(timezone.utc),
                                             tool_call=ToolCallDelta(
                                                 name=self.function_name_buffer,
                                                 arguments=None,
                                                 tool_call_id=self.function_id_buffer,
                                             ),
-                                            otid=Message.generate_otid_from_id(self.letta_tool_message_id, message_index),
+                                            otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                         )
                                         prev_message_type = tool_call_msg.message_type
                                         yield tool_call_msg
@@ -236,10 +235,10 @@ class OpenAIStreamingInterface:
                                             if prev_message_type and prev_message_type != "assistant_message":
                                                 message_index += 1
                                             assistant_message = AssistantMessage(
-                                                id=self.letta_assistant_message_id,
+                                                id=self.letta_message_id,
                                                 date=datetime.now(timezone.utc),
                                                 content=combined_chunk,
-                                                otid=Message.generate_otid_from_id(self.letta_assistant_message_id, message_index),
+                                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                             )
                                             prev_message_type = assistant_message.message_type
                                             yield assistant_message
@@ -268,11 +267,11 @@ class OpenAIStreamingInterface:
                                                 if prev_message_type and prev_message_type != "assistant_message":
                                                     message_index += 1
                                                 assistant_message = AssistantMessage(
-                                                    id=self.letta_assistant_message_id,
+                                                    id=self.letta_message_id,
                                                     date=datetime.now(timezone.utc),
                                                     content=diff,
                                                     # name=name,
-                                                    otid=Message.generate_otid_from_id(self.letta_assistant_message_id, message_index),
+                                                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                                 )
                                                 prev_message_type = assistant_message.message_type
                                                 yield assistant_message
@@ -292,7 +291,7 @@ class OpenAIStreamingInterface:
                                             if prev_message_type and prev_message_type != "tool_call_message":
                                                 message_index += 1
                                             tool_call_msg = ToolCallMessage(
-                                                id=self.letta_tool_message_id,
+                                                id=self.letta_message_id,
                                                 date=datetime.now(timezone.utc),
                                                 tool_call=ToolCallDelta(
                                                     name=self.function_name_buffer,
@@ -300,7 +299,7 @@ class OpenAIStreamingInterface:
                                                     tool_call_id=self.function_id_buffer,
                                                 ),
                                                 # name=name,
-                                                otid=Message.generate_otid_from_id(self.letta_tool_message_id, message_index),
+                                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                             )
                                             prev_message_type = tool_call_msg.message_type
                                             yield tool_call_msg
@@ -312,7 +311,7 @@ class OpenAIStreamingInterface:
                                             if prev_message_type and prev_message_type != "tool_call_message":
                                                 message_index += 1
                                             tool_call_msg = ToolCallMessage(
-                                                id=self.letta_tool_message_id,
+                                                id=self.letta_message_id,
                                                 date=datetime.now(timezone.utc),
                                                 tool_call=ToolCallDelta(
                                                     name=None,
@@ -320,7 +319,7 @@ class OpenAIStreamingInterface:
                                                     tool_call_id=self.function_id_buffer,
                                                 ),
                                                 # name=name,
-                                                otid=Message.generate_otid_from_id(self.letta_tool_message_id, message_index),
+                                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                             )
                                             prev_message_type = tool_call_msg.message_type
                                             yield tool_call_msg
