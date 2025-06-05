@@ -295,7 +295,7 @@ class OpenAIStreamingInterface:
                                                 id=self.letta_tool_message_id,
                                                 date=datetime.now(timezone.utc),
                                                 tool_call=ToolCallDelta(
-                                                    name=None,
+                                                    name=self.function_name_buffer,
                                                     arguments=combined_chunk,
                                                     tool_call_id=self.function_id_buffer,
                                                 ),
