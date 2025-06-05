@@ -590,7 +590,7 @@ redirects:
   - source: "/api-changelog"
     destination: "/api-reference/changelog"
   - source: "/quickstart/cloud"
-    destination: "/cloud/quickstart"
+    destination: "/quickstart"
   - source: "/guides/cloud"
     destination: "/guides/cloud/overview"
   - source: "/guides/ade"
