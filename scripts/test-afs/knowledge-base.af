@@ -45,7 +45,7 @@
     "provider_category": null,
     "model_wrapper": null,
     "context_window": 32000,
-    "put_inner_thoughts_in_kwargs": true,
+    "put_inner_thoughts_in_kwargs": false,
     "handle": "anthropic/claude-3.5-sonnet",
     "temperature": 0.7,
     "max_tokens": 8192,
