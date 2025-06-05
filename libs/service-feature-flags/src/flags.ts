@@ -51,11 +51,6 @@ export const featureFlags = {
     expiryDate: '2024-07-01',
     flagValue: z.boolean(),
   },
-  EXPERIMENTAL_ASYNC_LOOP: {
-    description: 'Enable experimental async loop for streaming messages',
-    expiryDate: '2025-07-01',
-    flagValue: z.boolean(),
-  },
   EMAIL_SIGNUP: {
     description: 'Email signup',
     expiryDate: '2024-07-01',

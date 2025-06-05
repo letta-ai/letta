@@ -65,7 +65,6 @@ import { z } from 'zod';
 import { useTranslations } from '@letta-cloud/translations';
 import { useDebouncedCallback, useLocalStorage } from '@mantine/hooks';
 import {
-  useFeatureFlag,
   useSetOnboardingStep,
   webApi,
   webApiQueryKeys,
@@ -108,7 +107,6 @@ export type SendMessageType = (payload: SendMessagePayload) => void;
 
 interface UseSendMessageOptions {
   onFailedToSendMessage?: (existingMessage: string) => void;
-  experimental?: boolean;
 }
 
 function errorHasResponseAndStatus(e: unknown): e is {
@@ -130,7 +128,6 @@ export function useSendMessage(
   const { isLocal } = useCurrentAgentMetaData();
   const [failedToSendMessage, setFailedToSendMessage] = useState(false);
   const [errorCode, setErrorCode] = useState<ErrorCode | undefined>(undefined);
-  const experimental = options.experimental === true;
 
   const { baseUrl, password } = useLettaAgentsAPI();
 
@@ -252,7 +249,6 @@ export function useSendMessage(
           disableRetry: true,
           keepalive: false,
           headers: {
-            ...(experimental ? { 'X-EXPERIMENTAL': 'true' } : {}),
             'X-SOURCE-CLIENT': window.location.pathname,
             'Content-Type': 'application/json',
             Accept: 'text/event-stream',
@@ -449,16 +445,7 @@ export function useSendMessage(
         setIsPending(false);
       };
     },
-    [
-      agentId,
-      baseUrl,
-      isLocal,
-      options,
-      password,
-      queryClient,
-      setIsPending,
-      experimental,
-    ],
+    [agentId, baseUrl, isLocal, options, password, queryClient, setIsPending],
   );
 
   return { isPending, isError: failedToSendMessage, sendMessage, errorCode };
@@ -821,9 +808,6 @@ export function AgentSimulator() {
     defaultValue: 'interactive',
     key: 'chatroom-render-mode',
   });
-  const { data: experimentalAsyncLoopEnabled } = useFeatureFlag(
-    'EXPERIMENTAL_ASYNC_LOOP',
-  );
 
   const billingTier = useBillingTier();
 
@@ -923,7 +907,6 @@ export function AgentSimulator() {
     onFailedToSendMessage: (message) => {
       ref.current?.setChatMessage(message);
     },
-    experimental: experimentalAsyncLoopEnabled,
   });
 
   const hasVariableIssue = useMemo(() => {
