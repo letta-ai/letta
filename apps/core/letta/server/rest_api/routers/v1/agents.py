@@ -665,17 +665,14 @@ async def send_message(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     request_start_timestamp_ns = get_utc_timestamp_ns()
-    user_eligible = actor.organization_id not in ["org-4a3af5dd-4c6a-48cb-ac13-3f73ecaaa4bf", "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6"]
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
-    experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
-    feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
 
-    if user_eligible and agent_eligible and feature_enabled and model_compatible:
+    if agent_eligible and model_compatible:
         if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
-            experimental_agent = SleeptimeMultiAgentV2(
+            agent_loop = SleeptimeMultiAgentV2(
                 agent_id=agent_id,
                 message_manager=server.message_manager,
                 agent_manager=server.agent_manager,
@@ -687,7 +684,7 @@ async def send_message(
                 group=agent.multi_agent_group,
             )
         else:
-            experimental_agent = LettaAgent(
+            agent_loop = LettaAgent(
                 agent_id=agent_id,
                 message_manager=server.message_manager,
                 agent_manager=server.agent_manager,
@@ -698,7 +695,7 @@ async def send_message(
                 telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
             )
 
-        result = await experimental_agent.step(
+        result = await agent_loop.step(
             request.messages,
             max_steps=10,
             use_assistant_message=request.use_assistant_message,
@@ -746,20 +743,17 @@ async def send_message_streaming(
     """
     request_start_timestamp_ns = get_utc_timestamp_ns()
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    user_eligible = actor.organization_id not in ["org-4a3af5dd-4c6a-48cb-ac13-3f73ecaaa4bf", "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6"]
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
-    experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
-    feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
     not_letta_endpoint = not ("inference.letta.com" in agent.llm_config.model_endpoint)
     request_start_timestamp_ns = get_utc_timestamp_ns()
 
-    if user_eligible and agent_eligible and feature_enabled and model_compatible:
+    if agent_eligible and model_compatible:
         if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
-            experimental_agent = SleeptimeMultiAgentV2(
+            agent_loop = SleeptimeMultiAgentV2(
                 agent_id=agent_id,
                 message_manager=server.message_manager,
                 agent_manager=server.agent_manager,
@@ -773,7 +767,7 @@ async def send_message_streaming(
                 group=agent.multi_agent_group,
             )
         else:
-            experimental_agent = LettaAgent(
+            agent_loop = LettaAgent(
                 agent_id=agent_id,
                 message_manager=server.message_manager,
                 agent_manager=server.agent_manager,
@@ -787,7 +781,7 @@ async def send_message_streaming(
 
         if request.stream_tokens and model_compatible_token_streaming and not_letta_endpoint:
             result = StreamingResponseWithStatusCode(
-                experimental_agent.step_stream(
+                agent_loop.step_stream(
                     input_messages=request.messages,
                     max_steps=10,
                     use_assistant_message=request.use_assistant_message,
@@ -797,7 +791,7 @@ async def send_message_streaming(
             )
         else:
             result = StreamingResponseWithStatusCode(
-                experimental_agent.step_stream_no_tokens(
+                agent_loop.step_stream_no_tokens(
                     request.messages,
                     max_steps=10,
                     use_assistant_message=request.use_assistant_message,
@@ -964,11 +958,9 @@ async def summarize_agent_conversation(
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
-    experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
-    feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
 
-    if agent_eligible and feature_enabled and model_compatible:
+    if agent_eligible and model_compatible:
         agent = LettaAgent(
             agent_id=agent_id,
             message_manager=server.message_manager,
