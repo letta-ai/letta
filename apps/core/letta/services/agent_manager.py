@@ -3,9 +3,8 @@ import os
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Set, Tuple
 
-import numpy as np
 import sqlalchemy as sa
-from sqlalchemy import Select, and_, delete, func, insert, literal, or_, select, union_all
+from sqlalchemy import delete, func, insert, literal, or_, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from letta.constants import (
@@ -17,10 +16,8 @@ from letta.constants import (
     BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
     BASE_VOICE_SLEEPTIME_TOOLS,
     DATA_SOURCE_ATTACH_ALERT,
-    MAX_EMBEDDING_DIM,
     MULTI_AGENT_TOOLS,
 )
-from letta.embeddings import embedding_model
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
@@ -39,7 +36,6 @@ from letta.orm.errors import NoResultFound
 from letta.orm.sandbox_config import AgentEnvironmentVariable
 from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
 from letta.orm.sqlalchemy_base import AccessType
-from letta.orm.sqlite_functions import adapt_array
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent, get_prompt_template_for_agent_type
 from letta.schemas.block import DEFAULT_BLOCKS
@@ -74,6 +70,9 @@ from letta.services.helpers.agent_manager_helper import (
     _apply_tag_filter,
     _process_relationship,
     _process_relationship_async,
+    build_agent_passage_query,
+    build_passage_query,
+    build_source_passage_query,
     check_supports_structured_output,
     compile_system_message,
     derive_system_message,
@@ -85,7 +84,6 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
-from letta.settings import settings
 from letta.tracing import trace_method
 from letta.utils import enforce_types, united_diff
 
@@ -2016,184 +2014,6 @@ class AgentManager:
     # ======================================================================================================================
     # Passage Management
     # ======================================================================================================================
-    def _build_passage_query(
-        self,
-        actor: PydanticUser,
-        agent_id: Optional[str] = None,
-        file_id: Optional[str] = None,
-        query_text: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-        before: Optional[str] = None,
-        after: Optional[str] = None,
-        source_id: Optional[str] = None,
-        embed_query: bool = False,
-        ascending: bool = True,
-        embedding_config: Optional[EmbeddingConfig] = None,
-        agent_only: bool = False,
-    ) -> Select:
-        """Helper function to build the base passage query with all filters applied.
-        Supports both before and after pagination across merged source and agent passages.
-
-        Returns the query before any limit or count operations are applied.
-        """
-        embedded_text = None
-        if embed_query:
-            assert embedding_config is not None, "embedding_config must be specified for vector search"
-            assert query_text is not None, "query_text must be specified for vector search"
-            embedded_text = embedding_model(embedding_config).get_text_embedding(query_text)
-            embedded_text = np.array(embedded_text)
-            embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
-
-        # Start with base query for source passages
-        source_passages = None
-        if not agent_only:  # Include source passages
-            if agent_id is not None:
-                source_passages = (
-                    select(SourcePassage, literal(None).label("agent_id"))
-                    .join(SourcesAgents, SourcesAgents.source_id == SourcePassage.source_id)
-                    .where(SourcesAgents.agent_id == agent_id)
-                    .where(SourcePassage.organization_id == actor.organization_id)
-                )
-            else:
-                source_passages = select(SourcePassage, literal(None).label("agent_id")).where(
-                    SourcePassage.organization_id == actor.organization_id
-                )
-
-            if source_id:
-                source_passages = source_passages.where(SourcePassage.source_id == source_id)
-            if file_id:
-                source_passages = source_passages.where(SourcePassage.file_id == file_id)
-
-        # Add agent passages query
-        agent_passages = None
-        if agent_id is not None:
-            agent_passages = (
-                select(
-                    AgentPassage.id,
-                    AgentPassage.text,
-                    AgentPassage.embedding_config,
-                    AgentPassage.metadata_,
-                    AgentPassage.embedding,
-                    AgentPassage.created_at,
-                    AgentPassage.updated_at,
-                    AgentPassage.is_deleted,
-                    AgentPassage._created_by_id,
-                    AgentPassage._last_updated_by_id,
-                    AgentPassage.organization_id,
-                    literal(None).label("file_id"),
-                    literal(None).label("source_id"),
-                    AgentPassage.agent_id,
-                )
-                .where(AgentPassage.agent_id == agent_id)
-                .where(AgentPassage.organization_id == actor.organization_id)
-            )
-
-        # Combine queries
-        if source_passages is not None and agent_passages is not None:
-            combined_query = union_all(source_passages, agent_passages).cte("combined_passages")
-        elif agent_passages is not None:
-            combined_query = agent_passages.cte("combined_passages")
-        elif source_passages is not None:
-            combined_query = source_passages.cte("combined_passages")
-        else:
-            raise ValueError("No passages found")
-
-        # Build main query from combined CTE
-        main_query = select(combined_query)
-
-        # Apply filters
-        if start_date:
-            main_query = main_query.where(combined_query.c.created_at >= start_date)
-        if end_date:
-            main_query = main_query.where(combined_query.c.created_at <= end_date)
-        if source_id:
-            main_query = main_query.where(combined_query.c.source_id == source_id)
-        if file_id:
-            main_query = main_query.where(combined_query.c.file_id == file_id)
-
-        # Vector search
-        if embedded_text:
-            if settings.letta_pg_uri_no_default:
-                # PostgreSQL with pgvector
-                main_query = main_query.order_by(combined_query.c.embedding.cosine_distance(embedded_text).asc())
-            else:
-                # SQLite with custom vector type
-                query_embedding_binary = adapt_array(embedded_text)
-                main_query = main_query.order_by(
-                    func.cosine_distance(combined_query.c.embedding, query_embedding_binary).asc(),
-                    combined_query.c.created_at.asc() if ascending else combined_query.c.created_at.desc(),
-                    combined_query.c.id.asc(),
-                )
-        else:
-            if query_text:
-                main_query = main_query.where(func.lower(combined_query.c.text).contains(func.lower(query_text)))
-
-        # Handle pagination
-        if before or after:
-            # Create reference CTEs
-            if before:
-                before_ref = select(combined_query.c.created_at, combined_query.c.id).where(combined_query.c.id == before).cte("before_ref")
-            if after:
-                after_ref = select(combined_query.c.created_at, combined_query.c.id).where(combined_query.c.id == after).cte("after_ref")
-
-            if before and after:
-                # Window-based query (get records between before and after)
-                main_query = main_query.where(
-                    or_(
-                        combined_query.c.created_at < select(before_ref.c.created_at).scalar_subquery(),
-                        and_(
-                            combined_query.c.created_at == select(before_ref.c.created_at).scalar_subquery(),
-                            combined_query.c.id < select(before_ref.c.id).scalar_subquery(),
-                        ),
-                    )
-                )
-                main_query = main_query.where(
-                    or_(
-                        combined_query.c.created_at > select(after_ref.c.created_at).scalar_subquery(),
-                        and_(
-                            combined_query.c.created_at == select(after_ref.c.created_at).scalar_subquery(),
-                            combined_query.c.id > select(after_ref.c.id).scalar_subquery(),
-                        ),
-                    )
-                )
-            else:
-                # Pure pagination (only before or only after)
-                if before:
-                    main_query = main_query.where(
-                        or_(
-                            combined_query.c.created_at < select(before_ref.c.created_at).scalar_subquery(),
-                            and_(
-                                combined_query.c.created_at == select(before_ref.c.created_at).scalar_subquery(),
-                                combined_query.c.id < select(before_ref.c.id).scalar_subquery(),
-                            ),
-                        )
-                    )
-                if after:
-                    main_query = main_query.where(
-                        or_(
-                            combined_query.c.created_at > select(after_ref.c.created_at).scalar_subquery(),
-                            and_(
-                                combined_query.c.created_at == select(after_ref.c.created_at).scalar_subquery(),
-                                combined_query.c.id > select(after_ref.c.id).scalar_subquery(),
-                            ),
-                        )
-                    )
-
-        # Add ordering if not already ordered by similarity
-        if not embed_query:
-            if ascending:
-                main_query = main_query.order_by(
-                    combined_query.c.created_at.asc(),
-                    combined_query.c.id.asc(),
-                )
-            else:
-                main_query = main_query.order_by(
-                    combined_query.c.created_at.desc(),
-                    combined_query.c.id.asc(),
-                )
-
-        return main_query
 
     @trace_method
     @enforce_types
@@ -2216,7 +2036,7 @@ class AgentManager:
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
         with db_registry.session() as session:
-            main_query = self._build_passage_query(
+            main_query = build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
@@ -2276,7 +2096,7 @@ class AgentManager:
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
         async with db_registry.async_session() as session:
-            main_query = self._build_passage_query(
+            main_query = build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
@@ -2317,6 +2137,100 @@ class AgentManager:
 
     @trace_method
     @enforce_types
+    async def list_source_passages_async(
+        self,
+        actor: PydanticUser,
+        agent_id: Optional[str] = None,
+        file_id: Optional[str] = None,
+        limit: Optional[int] = 50,
+        query_text: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        source_id: Optional[str] = None,
+        embed_query: bool = False,
+        ascending: bool = True,
+        embedding_config: Optional[EmbeddingConfig] = None,
+    ) -> List[PydanticPassage]:
+        """Lists all passages attached to an agent."""
+        async with db_registry.async_session() as session:
+            main_query = build_source_passage_query(
+                actor=actor,
+                agent_id=agent_id,
+                file_id=file_id,
+                query_text=query_text,
+                start_date=start_date,
+                end_date=end_date,
+                before=before,
+                after=after,
+                source_id=source_id,
+                embed_query=embed_query,
+                ascending=ascending,
+                embedding_config=embedding_config,
+            )
+
+            # Add limit
+            if limit:
+                main_query = main_query.limit(limit)
+
+            # Execute query
+            result = await session.execute(main_query)
+
+            # Get ORM objects directly using scalars()
+            passages = result.scalars().all()
+
+            # Convert to Pydantic models
+            return [p.to_pydantic() for p in passages]
+
+    @trace_method
+    @enforce_types
+    async def list_agent_passages_async(
+        self,
+        actor: PydanticUser,
+        agent_id: Optional[str] = None,
+        file_id: Optional[str] = None,
+        limit: Optional[int] = 50,
+        query_text: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        source_id: Optional[str] = None,
+        embed_query: bool = False,
+        ascending: bool = True,
+        embedding_config: Optional[EmbeddingConfig] = None,
+    ) -> List[PydanticPassage]:
+        """Lists all passages attached to an agent."""
+        async with db_registry.async_session() as session:
+            main_query = build_agent_passage_query(
+                actor=actor,
+                agent_id=agent_id,
+                query_text=query_text,
+                start_date=start_date,
+                end_date=end_date,
+                before=before,
+                after=after,
+                embed_query=embed_query,
+                ascending=ascending,
+                embedding_config=embedding_config,
+            )
+
+            # Add limit
+            if limit:
+                main_query = main_query.limit(limit)
+
+            # Execute query
+            result = await session.execute(main_query)
+
+            # Get ORM objects directly using scalars()
+            passages = result.scalars().all()
+
+            # Convert to Pydantic models
+            return [p.to_pydantic() for p in passages]
+
+    @trace_method
+    @enforce_types
     def passage_size(
         self,
         actor: PydanticUser,
@@ -2335,7 +2249,7 @@ class AgentManager:
     ) -> int:
         """Returns the count of passages matching the given criteria."""
         with db_registry.session() as session:
-            main_query = self._build_passage_query(
+            main_query = build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
@@ -2373,7 +2287,7 @@ class AgentManager:
         agent_only: bool = False,
     ) -> int:
         async with db_registry.async_session() as session:
-            main_query = self._build_passage_query(
+            main_query = build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
