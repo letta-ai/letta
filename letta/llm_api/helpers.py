@@ -296,6 +296,8 @@ def unpack_inner_thoughts_from_kwargs(choice: Choice, inner_thoughts_key: str) -
 
         except json.JSONDecodeError as e:
             warnings.warn(f"Failed to strip inner thoughts from kwargs: {e}")
+            print(f"\nFailed to strip inner thoughts from kwargs: {e}")
+            print(f"\nTool call arguments: {tool_call.function.arguments}")
             raise e
     else:
         warnings.warn(f"Did not find tool call in message: {str(message)}")

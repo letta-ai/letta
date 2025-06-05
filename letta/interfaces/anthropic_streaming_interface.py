@@ -252,7 +252,7 @@ class AnthropicStreamingInterface:
                                     # Strip out the inner thoughts from the buffered tool call arguments before streaming
                                     tool_call_args = ""
                                     for buffered_msg in self.tool_call_buffer:
-                                        tool_call_args += buffered_msg.tool_call.arguments
+                                        tool_call_args += buffered_msg.tool_call.arguments if buffered_msg.tool_call.arguments else ""
                                     tool_call_args = tool_call_args.replace(f'"{INNER_THOUGHTS_KWARG}": "{current_inner_thoughts}"', "")
 
                                     tool_call_msg = ToolCallMessage(
