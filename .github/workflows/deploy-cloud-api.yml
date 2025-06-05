@@ -7,6 +7,9 @@ on:
       - completed
     branches:
       - main
+    paths:
+      - apps/cloud-api/**
+      - libs/**
   workflow_dispatch:
 
 env:

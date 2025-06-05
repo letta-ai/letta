@@ -7,6 +7,9 @@ on:
         - completed
       branches:
         - main
+      paths:
+        - apps/web/**
+        - libs/**
     workflow_dispatch:
 env:
   PROJECT_ID: memgpt-428419
