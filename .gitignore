@@ -84,3 +84,6 @@ vitest.config.*.timestamp*
 # terraform state files
 .terraform
 .terraform.*
+
+# cloud plugins
+/apps/core/letta/plugins/production.py

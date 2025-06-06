@@ -809,3 +809,7 @@ alert message="" actor="":
 
 	# Send the message with Slack username if available
 	npm run slack-bot-says "{{message}} ${SLACK_USERNAME}"
+
+core-copy-plugins:
+    @echo "🚧 Copying letta-cloud plugins to core for development..."
+    cp -R scripts/cloud-plugins/* apps/core/letta/plugins/

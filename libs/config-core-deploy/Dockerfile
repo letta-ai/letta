@@ -25,6 +25,9 @@ ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT}
 ENV VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH"
 
+# TODO (cliandy): remove this when implemented in secrets v2
+ENV REDIS_HOST="10.167.199.148" 
+
 # Copy OpenTelemetry Collector from collector stage
 COPY --from=collector /otelcol-contrib /usr/local/bin/otelcol-contrib
 RUN mkdir -p /etc/otel
@@ -44,6 +47,7 @@ COPY ../apps/core/alembic /alembic
 COPY ./libs/config-core-deploy/scripts /scripts
 COPY ../apps/core/scripts /letta-scripts
 COPY ../apps/core/otel/otel-collector-config-clickhouse-prod.yaml /etc/otel/config-clickhouse.yaml
+COPY ../scripts/cloud-plugins /letta/plugins
 
 EXPOSE 8283 4317 4318
 

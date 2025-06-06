@@ -958,10 +958,8 @@ async def summarize_agent_conversation(
     This endpoint summarizes the current message history for a given agent,
     truncating and compressing it down to the specified `max_message_length`.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    # user_eligible = actor.organization_id not in ["org-4a3af5dd-4c6a-48cb-ac13-3f73ecaaa4bf", "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6"]
-    # TODO: This is redundant, remove soon
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
