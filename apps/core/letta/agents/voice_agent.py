@@ -1,3 +1,4 @@
+import asyncio
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -81,8 +82,8 @@ class VoiceAgent(BaseAgent):
         self.summary_block_label = "human"
 
         # Cached archival memory/message size
-        self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_id)
-        self.num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_id)
+        self.num_messages = None
+        self.num_archival_memories = None
 
     def init_summarizer(self, agent_state: AgentState) -> Summarizer:
         if not agent_state.multi_agent_group:
@@ -118,13 +119,12 @@ class VoiceAgent(BaseAgent):
         Main streaming loop that yields partial tokens.
         Whenever we detect a tool call, we yield from _handle_ai_response as well.
         """
-        print("CALL STREAM")
         if len(input_messages) != 1 or input_messages[0].role != MessageRole.user:
             raise ValueError(f"Voice Agent was invoked with multiple input messages or message did not have role `user`: {input_messages}")
 
         user_query = input_messages[0].content[0].text
 
-        agent_state = self.agent_manager.get_agent_by_id(self.agent_id, actor=self.actor)
+        agent_state = await self.agent_manager.get_agent_by_id_async(self.agent_id, actor=self.actor)
 
         # TODO: Refactor this so it uses our in-house clients
         # TODO: For now, piggyback off of OpenAI client for ease
@@ -140,7 +140,7 @@ class VoiceAgent(BaseAgent):
 
         summarizer = self.init_summarizer(agent_state=agent_state)
 
-        in_context_messages = self.message_manager.get_messages_by_ids(message_ids=agent_state.message_ids, actor=self.actor)
+        in_context_messages = await self.message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=self.actor)
         memory_edit_timestamp = get_utc_time()
         in_context_messages[0].content[0].text = compile_system_message(
             system_prompt=agent_state.system,
@@ -182,10 +182,6 @@ class VoiceAgent(BaseAgent):
 
         # Rebuild context window if desired
         await self._rebuild_context_window(summarizer, in_context_messages, letta_message_db_queue)
-
-        # TODO: This may be out of sync, if in between steps users add files
-        self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_state.id)
-        self.num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_state.id)
 
         yield "data: [DONE]\n\n"
 
@@ -286,14 +282,14 @@ class VoiceAgent(BaseAgent):
     async def _rebuild_context_window(
         self, summarizer: Summarizer, in_context_messages: List[Message], letta_message_db_queue: List[Message]
     ) -> None:
-        new_letta_messages = self.message_manager.create_many_messages(letta_message_db_queue, actor=self.actor)
+        new_letta_messages = await self.message_manager.create_many_messages_async(letta_message_db_queue, actor=self.actor)
 
         # TODO: Make this more general and configurable, less brittle
         new_in_context_messages, updated = summarizer.summarize(
             in_context_messages=in_context_messages, new_letta_messages=new_letta_messages
         )
 
-        self.agent_manager.set_in_context_messages(
+        await self.agent_manager.set_in_context_messages_async(
             agent_id=self.agent_id, message_ids=[m.id for m in new_in_context_messages], actor=self.actor
         )
 
@@ -301,9 +297,19 @@ class VoiceAgent(BaseAgent):
         self,
         in_context_messages: List[Message],
         agent_state: AgentState,
-        num_messages: int | None = None,
-        num_archival_memories: int | None = None,
     ) -> List[Message]:
+        self.num_messages, self.num_archival_memories = await asyncio.gather(
+            (
+                self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id)
+                if self.num_messages is None
+                else asyncio.sleep(0, result=self.num_messages)
+            ),
+            (
+                self.passage_manager.size_async(actor=self.actor, agent_id=agent_state.id)
+                if self.num_archival_memories is None
+                else asyncio.sleep(0, result=self.num_archival_memories)
+            ),
+        )
         return await super()._rebuild_memory_async(
             in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
         )
