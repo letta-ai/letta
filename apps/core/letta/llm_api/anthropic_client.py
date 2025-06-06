@@ -427,10 +427,16 @@ class AnthropicClient(LLMClientBase):
                 if content_part.type == "text":
                     content = strip_xml_tags(string=content_part.text, tag="thinking")
                 if content_part.type == "tool_use":
-                    # hack for tool rules
+                    # hack for incorrect tool format
                     tool_input = json.loads(json.dumps(content_part.input))
                     if "id" in tool_input and tool_input["id"].startswith("toolu_") and "function" in tool_input:
-                        arguments = str(tool_input["function"]["arguments"])
+                        arguments = json.dumps(tool_input["function"]["arguments"], indent=2)
+                        try:
+                            args_json = json.loads(arguments)
+                            if not isinstance(args_json, dict):
+                                raise ValueError("Expected parseable json object for arguments")
+                        except:
+                            arguments = str(tool_input["function"]["arguments"])
                     else:
                         arguments = json.dumps(tool_input, indent=2)
                     tool_calls = [
