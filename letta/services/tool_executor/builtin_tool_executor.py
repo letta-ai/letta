@@ -3,6 +3,7 @@ from textwrap import shorten
 from typing import Any, Dict, Literal, Optional
 
 from letta.constants import WEB_SEARCH_CLIP_CONTENT, WEB_SEARCH_INCLUDE_SCORE, WEB_SEARCH_SEPARATOR
+from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
@@ -10,7 +11,6 @@ from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.services.tool_executor.tool_executor_base import ToolExecutor
 from letta.settings import tool_settings
-from letta.tracing import trace_method
 
 
 class LettaBuiltinToolExecutor(ToolExecutor):

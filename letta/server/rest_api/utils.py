@@ -15,9 +15,12 @@ from pydantic import BaseModel
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE
 from letta.errors import ContextWindowExceededError, RateLimitExceededError
-from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
+from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns, ns_to_ms
 from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.log import get_logger
+from letta.otel.context import get_ctx_attributes
+from letta.otel.metric_registry import MetricRegistry
+from letta.otel.tracing import tracer
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.llm_config import LLMConfig
@@ -27,7 +30,6 @@ from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.system import get_heartbeat, package_function_response
-from letta.tracing import tracer
 
 if TYPE_CHECKING:
     from letta.server.server import SyncServer
@@ -81,8 +83,12 @@ async def sse_async_generator(
             if first_chunk and ttft_span is not None:
                 now = get_utc_timestamp_ns()
                 ttft_ns = now - request_start_timestamp_ns
-                ttft_span.add_event(name="time_to_first_token_ms", attributes={"ttft_ms": ttft_ns // 1_000_000})
+                ttft_span.add_event(name="time_to_first_token_ms", attributes={"ttft_ms": ns_to_ms(ttft_ns)})
                 ttft_span.end()
+                metric_attributes = get_ctx_attributes()
+                if llm_config:
+                    metric_attributes["model.name"] = llm_config.model
+                    MetricRegistry().ttft_ms_histogram.record(ns_to_ms(ttft_ns), metric_attributes)
                 first_chunk = False
 
             # yield f"data: {json.dumps(chunk)}\n\n"

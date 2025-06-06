@@ -5,11 +5,11 @@ from sqlalchemy import and_, func, select, update
 
 from letta.orm.errors import NoResultFound
 from letta.orm.files_agents import FileAgent as FileAgentModel
+from letta.otel.tracing import trace_method
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.file import FileAgent as PydanticFileAgent
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.tracing import trace_method
 from letta.utils import enforce_types
 
 

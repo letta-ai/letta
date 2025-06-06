@@ -13,8 +13,8 @@ from sqlalchemy.orm import sessionmaker
 
 from letta.config import LettaConfig
 from letta.log import get_logger
+from letta.otel.tracing import trace_method
 from letta.settings import settings
-from letta.tracing import trace_method
 
 logger = get_logger(__name__)
 

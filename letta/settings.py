@@ -210,6 +210,7 @@ class Settings(BaseSettings):
 
     use_uvloop: bool = False
     use_granian: bool = False
+    sqlalchemy_tracing: bool = False
 
     # event loop parallelism
     event_loop_threadpool_max_workers: int = 43

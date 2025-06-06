@@ -3,13 +3,13 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 from e2b_code_interpreter import AsyncSandbox
 
 from letta.log import get_logger
+from letta.otel.tracing import log_event, trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.sandbox_config import SandboxConfig, SandboxType
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.services.helpers.tool_parser_helper import parse_stdout_best_effort
 from letta.services.tool_sandbox.base import AsyncToolSandboxBase
-from letta.tracing import log_event, trace_method
 from letta.types import JsonDict
 from letta.utils import get_friendly_error_msg
 
