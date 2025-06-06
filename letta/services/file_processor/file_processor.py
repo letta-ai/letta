@@ -11,6 +11,7 @@ from letta.schemas.job import Job, JobUpdate
 from letta.schemas.passage import Passage
 from letta.schemas.user import User
 from letta.server.server import SyncServer
+from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.file_processor.chunker.llama_index_chunker import LlamaIndexChunker
 from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
 from letta.services.file_processor.parser.mistral_parser import MistralFileParser
@@ -34,6 +35,7 @@ class FileProcessor:
     ):
         self.file_parser = file_parser
         self.text_chunker = text_chunker
+        self.line_chunker = LineChunker()
         self.embedder = embedder
         self.max_file_size = max_file_size
         self.source_manager = SourceManager()
@@ -90,9 +92,13 @@ class FileProcessor:
 
             logger.info(f"Successfully processed {filename}: {len(all_passages)} passages")
 
+            # TODO: Rethink this line chunking mechanism
+            content_lines = self.line_chunker.chunk_text(text=raw_markdown_text)
+            visible_content = "\n".join(content_lines)
+
             await server.insert_file_into_context_windows(
                 source_id=source_id,
-                text=raw_markdown_text,
+                text=visible_content,
                 file_id=file_metadata.id,
                 file_name=file_metadata.file_name,
                 actor=self.actor,

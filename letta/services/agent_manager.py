@@ -63,6 +63,7 @@ from letta.server.db import db_registry
 from letta.services.block_manager import BlockManager
 from letta.services.context_window_calculator.context_window_calculator import ContextWindowCalculator
 from letta.services.context_window_calculator.token_counter import AnthropicTokenCounter, TiktokenCounter
+from letta.services.files_agents_manager import FileAgentManager
 from letta.services.helpers.agent_manager_helper import (
     _apply_filters,
     _apply_identity_filters,
@@ -101,6 +102,7 @@ class AgentManager:
         self.message_manager = MessageManager()
         self.passage_manager = PassageManager()
         self.identity_manager = IdentityManager()
+        self.file_agent_manager = FileAgentManager()
 
     @staticmethod
     def _resolve_tools(session, names: Set[str], ids: Set[str], org_id: str) -> Tuple[Dict[str, str], Dict[str, str]]:
@@ -1659,12 +1661,18 @@ class AgentManager:
     @trace_method
     @enforce_types
     async def refresh_memory_async(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
+        # TODO: This will NOT work for new blocks/file blocks added intra-step
         block_ids = [b.id for b in agent_state.memory.blocks]
-        if not block_ids:
-            return agent_state
+        file_block_names = [b.label for b in agent_state.memory.file_blocks]
 
-        blocks = await self.block_manager.get_all_blocks_by_ids_async(block_ids=[b.id for b in agent_state.memory.blocks], actor=actor)
-        agent_state.memory.blocks = [b for b in blocks if b is not None]
+        if block_ids:
+            blocks = await self.block_manager.get_all_blocks_by_ids_async(block_ids=[b.id for b in agent_state.memory.blocks], actor=actor)
+            agent_state.memory.blocks = [b for b in blocks if b is not None]
+
+        if file_block_names:
+            file_blocks = await self.file_agent_manager.get_all_file_blocks_by_name(file_names=file_block_names, actor=actor)
+            agent_state.memory.file_blocks = [b for b in file_blocks if b is not None]
+
         return agent_state
 
     # ======================================================================================================================
