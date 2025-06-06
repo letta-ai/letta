@@ -12,11 +12,13 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
-from letta.constants import CORE_MEMORY_SOURCE_CHAR_LIMIT, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
+from letta.otel.context import get_ctx_attributes
+from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.group import Group
@@ -149,7 +151,7 @@ def export_agent_serialized(
 
 
 @router.post("/import", response_model=AgentState, operation_id="import_agent_serialized")
-async def import_agent_serialized(
+def import_agent_serialized(
     file: UploadFile = File(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
@@ -167,10 +169,10 @@ async def import_agent_serialized(
     """
     Import a serialized agent file and recreate the agent in the system.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
-        serialized_data = await file.read()
+        serialized_data = file.file.read()
         agent_json = json.loads(serialized_data)
 
         # Validate the JSON against AgentSchema before passing it to deserialize
@@ -311,20 +313,21 @@ async def attach_source(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     agent_state = await server.agent_manager.attach_source_async(agent_id=agent_id, source_id=source_id, actor=actor)
 
-    files = await server.source_manager.list_files(source_id, actor)
+    # Check if the agent is missing any files tools
+    agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=actor)
+
+    files = await server.source_manager.list_files(source_id, actor, include_content=True)
     texts = []
     file_ids = []
+    file_names = []
     for f in files:
-        passages = await server.passage_manager.list_passages_by_file_id_async(file_id=f.id, actor=actor)
-        passage_text = ""
-        for p in passages:
-            if len(passage_text) <= CORE_MEMORY_SOURCE_CHAR_LIMIT:
-                passage_text += p.text
-
-        texts.append(passage_text)
+        texts.append(f.content if f.content else "")
         file_ids.append(f.id)
+        file_names.append(f.file_name)
 
-    await server.insert_files_into_context_window(agent_state=agent_state, texts=texts, file_ids=file_ids, actor=actor)
+    await server.insert_files_into_context_window(
+        agent_state=agent_state, texts=texts, file_ids=file_ids, file_names=file_names, actor=actor
+    )
 
     if agent_state.enable_sleeptime:
         source = await server.source_manager.get_source_by_id(source_id=source_id)
@@ -347,6 +350,10 @@ async def detach_source(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     agent_state = await server.agent_manager.detach_source_async(agent_id=agent_id, source_id=source_id, actor=actor)
+
+    if not agent_state.sources:
+        agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=actor)
+
     files = await server.source_manager.list_files(source_id, actor)
     file_ids = [f.id for f in files]
     await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
@@ -451,7 +458,7 @@ async def list_blocks(
     """
     Retrieve the core memory blocks of a specific agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     try:
         agent = await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory"], actor=actor)
         return agent.memory.blocks
@@ -658,19 +665,18 @@ async def send_message(
     Process a user message and return the agent's response.
     This endpoint accepts a message from a user and processes it through the agent.
     """
+    MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
+
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     request_start_timestamp_ns = get_utc_timestamp_ns()
-    user_eligible = True
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
-    experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
-    feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
 
-    if user_eligible and agent_eligible and feature_enabled and model_compatible:
+    if agent_eligible and model_compatible:
         if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
-            experimental_agent = SleeptimeMultiAgentV2(
+            agent_loop = SleeptimeMultiAgentV2(
                 agent_id=agent_id,
                 message_manager=server.message_manager,
                 agent_manager=server.agent_manager,
@@ -682,7 +688,7 @@ async def send_message(
                 group=agent.multi_agent_group,
             )
         else:
-            experimental_agent = LettaAgent(
+            agent_loop = LettaAgent(
                 agent_id=agent_id,
                 message_manager=server.message_manager,
                 agent_manager=server.agent_manager,
@@ -693,7 +699,7 @@ async def send_message(
                 telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
             )
 
-        result = await experimental_agent.step(
+        result = await agent_loop.step(
             request.messages,
             max_steps=10,
             use_assistant_message=request.use_assistant_message,
@@ -739,22 +745,20 @@ async def send_message_streaming(
     This endpoint accepts a message from a user and processes it through the agent.
     It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
     """
-    request_start_timestamp_ns = get_utc_timestamp_ns()
+    MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
+
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    user_eligible = actor.organization_id not in ["org-4a3af5dd-4c6a-48cb-ac13-3f73ecaaa4bf", "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6"]
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
-    experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
-    feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
     not_letta_endpoint = not ("inference.letta.com" in agent.llm_config.model_endpoint)
     request_start_timestamp_ns = get_utc_timestamp_ns()
 
-    if user_eligible and agent_eligible and feature_enabled and model_compatible:
+    if agent_eligible and model_compatible:
         if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
-            experimental_agent = SleeptimeMultiAgentV2(
+            agent_loop = SleeptimeMultiAgentV2(
                 agent_id=agent_id,
                 message_manager=server.message_manager,
                 agent_manager=server.agent_manager,
@@ -768,7 +772,7 @@ async def send_message_streaming(
                 group=agent.multi_agent_group,
             )
         else:
-            experimental_agent = LettaAgent(
+            agent_loop = LettaAgent(
                 agent_id=agent_id,
                 message_manager=server.message_manager,
                 agent_manager=server.agent_manager,
@@ -782,7 +786,7 @@ async def send_message_streaming(
 
         if request.stream_tokens and model_compatible_token_streaming and not_letta_endpoint:
             result = StreamingResponseWithStatusCode(
-                experimental_agent.step_stream(
+                agent_loop.step_stream(
                     input_messages=request.messages,
                     max_steps=10,
                     use_assistant_message=request.use_assistant_message,
@@ -792,7 +796,7 @@ async def send_message_streaming(
             )
         else:
             result = StreamingResponseWithStatusCode(
-                experimental_agent.step_stream_no_tokens(
+                agent_loop.step_stream_no_tokens(
                     request.messages,
                     max_steps=10,
                     use_assistant_message=request.use_assistant_message,
@@ -878,6 +882,7 @@ async def send_message_async(
     Asynchronously process a user message and return a run object.
     The actual processing happens in the background, and the status can be checked using the run ID.
     """
+    MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     # Create a new job
@@ -953,17 +958,13 @@ async def summarize_agent_conversation(
     This endpoint summarizes the current message history for a given agent,
     truncating and compressing it down to the specified `max_message_length`.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    # user_eligible = actor.organization_id not in ["org-4a3af5dd-4c6a-48cb-ac13-3f73ecaaa4bf", "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6"]
-    # TODO: This is redundant, remove soon
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
-    experimental_header = request_obj.headers.get("X-EXPERIMENTAL") or "false"
-    feature_enabled = settings.use_experimental or experimental_header.lower() == "true"
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
 
-    if agent_eligible and feature_enabled and model_compatible:
+    if agent_eligible and model_compatible:
         agent = LettaAgent(
             agent_id=agent_id,
             message_manager=server.message_manager,

@@ -3,6 +3,7 @@ from typing import AsyncGenerator, List, Optional, Tuple, Union
 from letta.agents.helpers import _create_letta_response, serialize_message_history
 from letta.agents.letta_agent import LettaAgent
 from letta.orm.enums import ToolType
+from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.block import BlockUpdate
 from letta.schemas.enums import MessageStreamStatus
@@ -17,7 +18,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
-from letta.tracing import trace_method
+from letta.types import JsonDict
 
 
 class VoiceSleeptimeAgent(LettaAgent):
@@ -89,9 +90,16 @@ class VoiceSleeptimeAgent(LettaAgent):
         )
 
     @trace_method
-    async def _execute_tool(self, tool_name: str, tool_args: dict, agent_state: AgentState, agent_step_span: Optional["Span"] = None):
+    async def _execute_tool(
+        self,
+        tool_name: str,
+        tool_args: JsonDict,
+        agent_state: AgentState,
+        agent_step_span: Optional["Span"] = None,
+        step_id: str | None = None,
+    ) -> "ToolExecutionResult":
         """
-        Executes a tool and returns (result, success_flag).
+        Executes a tool and returns the ToolExecutionResult
         """
         from letta.schemas.tool_execution_result import ToolExecutionResult
 

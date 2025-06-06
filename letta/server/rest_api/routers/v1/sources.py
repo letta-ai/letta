@@ -27,6 +27,11 @@ from letta.utils import safe_create_task, sanitize_filename
 
 logger = get_logger(__name__)
 
+mimetypes.add_type("text/markdown", ".md")
+mimetypes.add_type("text/markdown", ".markdown")
+mimetypes.add_type("application/jsonl", ".jsonl")
+mimetypes.add_type("application/x-jsonlines", ".jsonl")
+
 
 router = APIRouter(prefix="/sources", tags=["sources"])
 
@@ -174,7 +179,15 @@ async def upload_file_to_source(
     """
     Upload a file to a data source.
     """
-    allowed_media_types = {"application/pdf", "text/plain", "application/json"}
+    allowed_media_types = {
+        "application/pdf",
+        "text/plain",
+        "text/markdown",
+        "text/x-markdown",
+        "application/json",
+        "application/jsonl",
+        "application/x-jsonlines",
+    }
 
     # Normalize incoming Content-Type header (strip charset or any parameters).
     raw_ct = file.content_type or ""
@@ -192,6 +205,9 @@ async def upload_file_to_source(
                 ".pdf": "application/pdf",
                 ".txt": "text/plain",
                 ".json": "application/json",
+                ".md": "text/markdown",
+                ".markdown": "text/markdown",
+                ".jsonl": "application/jsonl",
             }
             media_type = ext_map.get(ext, media_type)
 
@@ -270,14 +286,21 @@ async def list_source_files(
     source_id: str,
     limit: int = Query(1000, description="Number of files to return"),
     after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
+    include_content: bool = Query(False, description="Whether to include full file content"),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     List paginated files associated with a data source.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    return await server.source_manager.list_files(source_id=source_id, limit=limit, after=after, actor=actor)
+    return await server.source_manager.list_files(
+        source_id=source_id,
+        limit=limit,
+        after=after,
+        actor=actor,
+        include_content=include_content,
+    )
 
 
 # it's redundant to include /delete in the URL path. The HTTP verb DELETE already implies that action.

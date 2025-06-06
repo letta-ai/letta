@@ -5,6 +5,7 @@ from typing import AsyncGenerator, List, Optional
 from letta.agents.base_agent import BaseAgent
 from letta.agents.letta_agent import LettaAgent
 from letta.groups.helpers import stringify_message
+from letta.otel.tracing import trace_method
 from letta.schemas.enums import JobStatus
 from letta.schemas.group import Group, ManagerType
 from letta.schemas.job import JobUpdate
@@ -21,7 +22,6 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.step_manager import NoopStepManager, StepManager
 from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
-from letta.tracing import trace_method
 
 
 class SleeptimeMultiAgentV2(BaseAgent):

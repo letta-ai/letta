@@ -26,6 +26,7 @@ from letta.local_llm.chat_completion_proxy import get_chat_completion
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.orm.user import User
+from letta.otel.tracing import log_event, trace_method
 from letta.schemas.enums import ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
@@ -35,7 +36,6 @@ from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.services.telemetry_manager import TelemetryManager
 from letta.settings import ModelSettings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
-from letta.tracing import log_event, trace_method
 
 LLM_API_PROVIDER_OPTIONS = ["openai", "azure", "anthropic", "google_ai", "cohere", "local", "groq", "deepseek"]
 

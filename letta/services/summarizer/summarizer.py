@@ -6,11 +6,11 @@ from typing import List, Optional, Tuple, Union
 from letta.agents.ephemeral_summary_agent import EphemeralSummaryAgent
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
+from letta.otel.tracing import trace_method
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message, MessageCreate
 from letta.services.summarizer.enums import SummarizationMode
-from letta.tracing import trace_method
 
 logger = get_logger(__name__)
 

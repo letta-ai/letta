@@ -5,16 +5,16 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+from letta.helpers.singleton import singleton
 from letta.orm.errors import NoResultFound
 from letta.orm.job import Job as JobModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step as StepModel
+from letta.otel.tracing import get_trace_id, trace_method
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.step import Step as PydanticStep
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.services.helpers.noop_helper import singleton
-from letta.tracing import get_trace_id, trace_method
 from letta.utils import enforce_types
 
 

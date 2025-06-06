@@ -11,6 +11,7 @@ from typing import Any, Dict, Optional
 
 from letta.functions.helpers import generate_model_from_args_json_schema
 from letta.log import get_logger
+from letta.otel.tracing import log_event, trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.sandbox_config import SandboxConfig, SandboxType
 from letta.schemas.tool import Tool
@@ -27,7 +28,6 @@ from letta.services.organization_manager import OrganizationManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import tool_settings
-from letta.tracing import log_event, trace_method
 from letta.utils import get_friendly_error_msg
 
 logger = get_logger(__name__)

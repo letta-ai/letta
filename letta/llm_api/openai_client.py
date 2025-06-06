@@ -8,11 +8,11 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from letta.constants import LETTA_MODEL_ENDPOINT
 from letta.errors import (
+    ContextWindowExceededError,
     ErrorCode,
     LLMAuthenticationError,
     LLMBadRequestError,
     LLMConnectionError,
-    LLMContextWindowExceededError,
     LLMNotFoundError,
     LLMPermissionDeniedError,
     LLMRateLimitError,
@@ -23,6 +23,7 @@ from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_st
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
 from letta.log import get_logger
+from letta.otel.tracing import trace_method
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.llm_config import LLMConfig
@@ -34,7 +35,6 @@ from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
 from letta.schemas.openai.chat_completion_request import ToolFunctionChoice, cast_message_to_subtype
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.settings import model_settings
-from letta.tracing import trace_method
 
 logger = get_logger(__name__)
 
@@ -280,7 +280,7 @@ class OpenAIClient(LLMClientBase):
         # OpenAI's response structure directly maps to ChatCompletionResponse
         # We just need to instantiate the Pydantic model for validation and type safety.
         chat_completion_response = ChatCompletionResponse(**response_data)
-
+        chat_completion_response = self._fix_truncated_json_response(chat_completion_response)
         # Unpack inner thoughts if they were embedded in function arguments
         if llm_config.put_inner_thoughts_in_kwargs:
             chat_completion_response = unpack_all_inner_thoughts_from_kwargs(
@@ -342,11 +342,9 @@ class OpenAIClient(LLMClientBase):
             # Check message content if finer-grained errors are needed
             # Example: if "context_length_exceeded" in str(e): return LLMContextLengthExceededError(...)
             # TODO: This is a super soft check. Not sure if we can do better, needs more investigation.
-            if "context" in str(e):
-                return LLMContextWindowExceededError(
-                    message=f"Bad request to OpenAI (context length exceeded): {str(e)}",
-                    code=ErrorCode.INVALID_ARGUMENT,  # Or more specific if detectable
-                    details=e.body,
+            if "This model's maximum context length is" in str(e):
+                return ContextWindowExceededError(
+                    message=f"Bad request to OpenAI (context window exceeded): {str(e)}",
                 )
             else:
                 return LLMBadRequestError(

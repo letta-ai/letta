@@ -19,6 +19,10 @@ ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT} \
     POETRY_VIRTUALENVS_CREATE=1 \
     POETRY_CACHE_DIR=/tmp/poetry_cache
 
+# Set for other builds
+ARG LETTA_VERSION
+ENV LETTA_VERSION=${LETTA_VERSION}
+
 WORKDIR /app
 
 # Create and activate virtual environment
@@ -61,9 +65,6 @@ RUN apt-get update && \
 COPY otel/otel-collector-config-file.yaml /etc/otel/config-file.yaml
 COPY otel/otel-collector-config-clickhouse.yaml /etc/otel/config-clickhouse.yaml
 
-# set experimental flag
-ARG LETTA_USE_EXPERIMENTAL=1
-
 ARG LETTA_ENVIRONMENT=PRODUCTION
 ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT} \
     VIRTUAL_ENV="/app/.venv" \
@@ -73,7 +74,6 @@ ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT} \
     POSTGRES_DB=letta \
     COMPOSIO_DISABLE_VERSION_CHECK=true
 
-# Set for other builds
 ARG LETTA_VERSION
 ENV LETTA_VERSION=${LETTA_VERSION}
 

@@ -147,7 +147,7 @@ def manager_agent(server, actor):
     server.agent_manager.delete_agent(agent_scooby.id, actor=actor)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_empty_group(server, actor):
     group = server.group_manager.create_group(
         group=GroupCreate(
@@ -172,7 +172,7 @@ async def test_empty_group(server, actor):
     server.group_manager.delete_group(group_id=group.id, actor=actor)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_modify_group_pattern(server, actor, participant_agents, manager_agent):
     group = server.group_manager.create_group(
         group=GroupCreate(
@@ -182,7 +182,7 @@ async def test_modify_group_pattern(server, actor, participant_agents, manager_a
         actor=actor,
     )
     with pytest.raises(ValueError, match="Cannot change group pattern"):
-        server.group_manager.modify_group(
+        await server.group_manager.modify_group_async(
             group_id=group.id,
             group_update=GroupUpdate(
                 manager_config=DynamicManagerUpdate(
@@ -196,7 +196,7 @@ async def test_modify_group_pattern(server, actor, participant_agents, manager_a
     server.group_manager.delete_group(group_id=group.id, actor=actor)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_list_agent_groups(server, actor, participant_agents):
     group_a = server.group_manager.create_group(
         group=GroupCreate(
@@ -222,7 +222,7 @@ async def test_list_agent_groups(server, actor, participant_agents):
     server.group_manager.delete_group(group_id=group_b.id, actor=actor)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_round_robin(server, actor, participant_agents):
     description = (
         "This is a group chat between best friends all like to hang out together. In their free time they like to solve mysteries."
@@ -281,7 +281,7 @@ async def test_round_robin(server, actor, participant_agents):
         assert len(messages) == (len(group.agent_ids) + 2) * len(group.agent_ids)
 
         max_turns = 3
-        group = server.group_manager.modify_group(
+        group = await server.group_manager.modify_group_async(
             group_id=group.id,
             group_update=GroupUpdate(
                 agent_ids=[agent.id for agent in participant_agents][::-1],
@@ -334,7 +334,7 @@ async def test_round_robin(server, actor, participant_agents):
         server.group_manager.delete_group(group_id=group.id, actor=actor)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_supervisor(server, actor, participant_agents):
     agent_scrappy = server.create_agent(
         request=CreateAgent(
@@ -398,7 +398,7 @@ async def test_supervisor(server, actor, participant_agents):
         server.agent_manager.delete_agent(agent_id=agent_scrappy.id, actor=actor)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_dynamic_group_chat(server, actor, manager_agent, participant_agents):
     description = (
         "This is a group chat between best friends all like to hang out together. In their free time they like to solve mysteries."

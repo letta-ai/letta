@@ -1,27 +1,33 @@
 import datetime
 from typing import List, Literal, Optional
 
-from sqlalchemy import and_, asc, desc, or_, select
+import numpy as np
+from sqlalchemy import Select, and_, asc, desc, func, literal, or_, select, union_all
 from sqlalchemy.sql.expression import exists
 
 from letta import system
-from letta.constants import IN_CONTEXT_MEMORY_KEYWORD, STRUCTURED_OUTPUT_MODELS
+from letta.constants import IN_CONTEXT_MEMORY_KEYWORD, MAX_EMBEDDING_DIM, STRUCTURED_OUTPUT_MODELS
+from letta.embeddings import embedding_model
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_local_time, get_local_time_fast
+from letta.orm import AgentPassage, SourcePassage, SourcesAgents
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.agents_tags import AgentsTags
 from letta.orm.errors import NoResultFound
 from letta.orm.identity import Identity
+from letta.orm.sqlite_functions import adapt_array
+from letta.otel.tracing import trace_method
 from letta.prompts import gpt_system
 from letta.schemas.agent import AgentState, AgentType
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.tool_rule import ToolRule
 from letta.schemas.user import User
+from letta.settings import settings
 from letta.system import get_initial_boot_messages, get_login_event, package_function_response
-from letta.tracing import trace_method
 
 
 # Static methods
@@ -565,4 +571,368 @@ def _apply_filters(
     # Filter agents by base template ID.
     if base_template_id:
         query = query.where(AgentModel.base_template_id == base_template_id)
+    return query
+
+
+def build_passage_query(
+    actor: User,
+    agent_id: Optional[str] = None,
+    file_id: Optional[str] = None,
+    query_text: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    before: Optional[str] = None,
+    after: Optional[str] = None,
+    source_id: Optional[str] = None,
+    embed_query: bool = False,
+    ascending: bool = True,
+    embedding_config: Optional[EmbeddingConfig] = None,
+    agent_only: bool = False,
+) -> Select:
+    """Helper function to build the base passage query with all filters applied.
+    Supports both before and after pagination across merged source and agent passages.
+
+    Returns the query before any limit or count operations are applied.
+    """
+    embedded_text = None
+    if embed_query:
+        assert embedding_config is not None, "embedding_config must be specified for vector search"
+        assert query_text is not None, "query_text must be specified for vector search"
+        embedded_text = embedding_model(embedding_config).get_text_embedding(query_text)
+        embedded_text = np.array(embedded_text)
+        embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
+
+    # Start with base query for source passages
+    source_passages = None
+    if not agent_only:  # Include source passages
+        if agent_id is not None:
+            source_passages = (
+                select(SourcePassage, literal(None).label("agent_id"))
+                .join(SourcesAgents, SourcesAgents.source_id == SourcePassage.source_id)
+                .where(SourcesAgents.agent_id == agent_id)
+                .where(SourcePassage.organization_id == actor.organization_id)
+            )
+        else:
+            source_passages = select(SourcePassage, literal(None).label("agent_id")).where(
+                SourcePassage.organization_id == actor.organization_id
+            )
+
+        if source_id:
+            source_passages = source_passages.where(SourcePassage.source_id == source_id)
+        if file_id:
+            source_passages = source_passages.where(SourcePassage.file_id == file_id)
+
+    # Add agent passages query
+    agent_passages = None
+    if agent_id is not None:
+        agent_passages = (
+            select(
+                AgentPassage.id,
+                AgentPassage.text,
+                AgentPassage.embedding_config,
+                AgentPassage.metadata_,
+                AgentPassage.embedding,
+                AgentPassage.created_at,
+                AgentPassage.updated_at,
+                AgentPassage.is_deleted,
+                AgentPassage._created_by_id,
+                AgentPassage._last_updated_by_id,
+                AgentPassage.organization_id,
+                literal(None).label("file_id"),
+                literal(None).label("source_id"),
+                AgentPassage.agent_id,
+            )
+            .where(AgentPassage.agent_id == agent_id)
+            .where(AgentPassage.organization_id == actor.organization_id)
+        )
+
+    # Combine queries
+    if source_passages is not None and agent_passages is not None:
+        combined_query = union_all(source_passages, agent_passages).cte("combined_passages")
+    elif agent_passages is not None:
+        combined_query = agent_passages.cte("combined_passages")
+    elif source_passages is not None:
+        combined_query = source_passages.cte("combined_passages")
+    else:
+        raise ValueError("No passages found")
+
+    # Build main query from combined CTE
+    main_query = select(combined_query)
+
+    # Apply filters
+    if start_date:
+        main_query = main_query.where(combined_query.c.created_at >= start_date)
+    if end_date:
+        main_query = main_query.where(combined_query.c.created_at <= end_date)
+    if source_id:
+        main_query = main_query.where(combined_query.c.source_id == source_id)
+    if file_id:
+        main_query = main_query.where(combined_query.c.file_id == file_id)
+
+    # Vector search
+    if embedded_text:
+        if settings.letta_pg_uri_no_default:
+            # PostgreSQL with pgvector
+            main_query = main_query.order_by(combined_query.c.embedding.cosine_distance(embedded_text).asc())
+        else:
+            # SQLite with custom vector type
+            query_embedding_binary = adapt_array(embedded_text)
+            main_query = main_query.order_by(
+                func.cosine_distance(combined_query.c.embedding, query_embedding_binary).asc(),
+                combined_query.c.created_at.asc() if ascending else combined_query.c.created_at.desc(),
+                combined_query.c.id.asc(),
+            )
+    else:
+        if query_text:
+            main_query = main_query.where(func.lower(combined_query.c.text).contains(func.lower(query_text)))
+
+    # Handle pagination
+    if before or after:
+        # Create reference CTEs
+        if before:
+            before_ref = select(combined_query.c.created_at, combined_query.c.id).where(combined_query.c.id == before).cte("before_ref")
+        if after:
+            after_ref = select(combined_query.c.created_at, combined_query.c.id).where(combined_query.c.id == after).cte("after_ref")
+
+        if before and after:
+            # Window-based query (get records between before and after)
+            main_query = main_query.where(
+                or_(
+                    combined_query.c.created_at < select(before_ref.c.created_at).scalar_subquery(),
+                    and_(
+                        combined_query.c.created_at == select(before_ref.c.created_at).scalar_subquery(),
+                        combined_query.c.id < select(before_ref.c.id).scalar_subquery(),
+                    ),
+                )
+            )
+            main_query = main_query.where(
+                or_(
+                    combined_query.c.created_at > select(after_ref.c.created_at).scalar_subquery(),
+                    and_(
+                        combined_query.c.created_at == select(after_ref.c.created_at).scalar_subquery(),
+                        combined_query.c.id > select(after_ref.c.id).scalar_subquery(),
+                    ),
+                )
+            )
+        else:
+            # Pure pagination (only before or only after)
+            if before:
+                main_query = main_query.where(
+                    or_(
+                        combined_query.c.created_at < select(before_ref.c.created_at).scalar_subquery(),
+                        and_(
+                            combined_query.c.created_at == select(before_ref.c.created_at).scalar_subquery(),
+                            combined_query.c.id < select(before_ref.c.id).scalar_subquery(),
+                        ),
+                    )
+                )
+            if after:
+                main_query = main_query.where(
+                    or_(
+                        combined_query.c.created_at > select(after_ref.c.created_at).scalar_subquery(),
+                        and_(
+                            combined_query.c.created_at == select(after_ref.c.created_at).scalar_subquery(),
+                            combined_query.c.id > select(after_ref.c.id).scalar_subquery(),
+                        ),
+                    )
+                )
+
+    # Add ordering if not already ordered by similarity
+    if not embed_query:
+        if ascending:
+            main_query = main_query.order_by(
+                combined_query.c.created_at.asc(),
+                combined_query.c.id.asc(),
+            )
+        else:
+            main_query = main_query.order_by(
+                combined_query.c.created_at.desc(),
+                combined_query.c.id.asc(),
+            )
+
+    return main_query
+
+
+def build_source_passage_query(
+    actor: User,
+    agent_id: Optional[str] = None,
+    file_id: Optional[str] = None,
+    query_text: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    before: Optional[str] = None,
+    after: Optional[str] = None,
+    source_id: Optional[str] = None,
+    embed_query: bool = False,
+    ascending: bool = True,
+    embedding_config: Optional[EmbeddingConfig] = None,
+) -> Select:
+    """Build query for source passages with all filters applied."""
+
+    # Handle embedding for vector search
+    embedded_text = None
+    if embed_query:
+        assert embedding_config is not None, "embedding_config must be specified for vector search"
+        assert query_text is not None, "query_text must be specified for vector search"
+        embedded_text = embedding_model(embedding_config).get_text_embedding(query_text)
+        embedded_text = np.array(embedded_text)
+        embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
+
+    # Base query for source passages
+    query = select(SourcePassage).where(SourcePassage.organization_id == actor.organization_id)
+
+    # If agent_id is specified, join with SourcesAgents to get only passages linked to that agent
+    if agent_id is not None:
+        query = query.join(SourcesAgents, SourcesAgents.source_id == SourcePassage.source_id)
+        query = query.where(SourcesAgents.agent_id == agent_id)
+
+    # Apply filters
+    if source_id:
+        query = query.where(SourcePassage.source_id == source_id)
+    if file_id:
+        query = query.where(SourcePassage.file_id == file_id)
+    if start_date:
+        query = query.where(SourcePassage.created_at >= start_date)
+    if end_date:
+        query = query.where(SourcePassage.created_at <= end_date)
+
+    # Handle text search or vector search
+    if embedded_text:
+        if settings.letta_pg_uri_no_default:
+            # PostgreSQL with pgvector
+            query = query.order_by(SourcePassage.embedding.cosine_distance(embedded_text).asc())
+        else:
+            # SQLite with custom vector type
+            query_embedding_binary = adapt_array(embedded_text)
+            query = query.order_by(
+                func.cosine_distance(SourcePassage.embedding, query_embedding_binary).asc(),
+                SourcePassage.created_at.asc() if ascending else SourcePassage.created_at.desc(),
+                SourcePassage.id.asc(),
+            )
+    else:
+        if query_text:
+            query = query.where(func.lower(SourcePassage.text).contains(func.lower(query_text)))
+
+    # Handle pagination
+    if before or after:
+        if before:
+            # Get the reference record
+            before_subq = select(SourcePassage.created_at, SourcePassage.id).where(SourcePassage.id == before).subquery()
+            query = query.where(
+                or_(
+                    SourcePassage.created_at < before_subq.c.created_at,
+                    and_(
+                        SourcePassage.created_at == before_subq.c.created_at,
+                        SourcePassage.id < before_subq.c.id,
+                    ),
+                )
+            )
+
+        if after:
+            # Get the reference record
+            after_subq = select(SourcePassage.created_at, SourcePassage.id).where(SourcePassage.id == after).subquery()
+            query = query.where(
+                or_(
+                    SourcePassage.created_at > after_subq.c.created_at,
+                    and_(
+                        SourcePassage.created_at == after_subq.c.created_at,
+                        SourcePassage.id > after_subq.c.id,
+                    ),
+                )
+            )
+
+    # Apply ordering if not already ordered by similarity
+    if not embed_query:
+        if ascending:
+            query = query.order_by(SourcePassage.created_at.asc(), SourcePassage.id.asc())
+        else:
+            query = query.order_by(SourcePassage.created_at.desc(), SourcePassage.id.asc())
+
+    return query
+
+
+def build_agent_passage_query(
+    actor: User,
+    agent_id: str,  # Required for agent passages
+    query_text: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    before: Optional[str] = None,
+    after: Optional[str] = None,
+    embed_query: bool = False,
+    ascending: bool = True,
+    embedding_config: Optional[EmbeddingConfig] = None,
+) -> Select:
+    """Build query for agent passages with all filters applied."""
+
+    # Handle embedding for vector search
+    embedded_text = None
+    if embed_query:
+        assert embedding_config is not None, "embedding_config must be specified for vector search"
+        assert query_text is not None, "query_text must be specified for vector search"
+        embedded_text = embedding_model(embedding_config).get_text_embedding(query_text)
+        embedded_text = np.array(embedded_text)
+        embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
+
+    # Base query for agent passages
+    query = select(AgentPassage).where(AgentPassage.agent_id == agent_id, AgentPassage.organization_id == actor.organization_id)
+
+    # Apply filters
+    if start_date:
+        query = query.where(AgentPassage.created_at >= start_date)
+    if end_date:
+        query = query.where(AgentPassage.created_at <= end_date)
+
+    # Handle text search or vector search
+    if embedded_text:
+        if settings.letta_pg_uri_no_default:
+            # PostgreSQL with pgvector
+            query = query.order_by(AgentPassage.embedding.cosine_distance(embedded_text).asc())
+        else:
+            # SQLite with custom vector type
+            query_embedding_binary = adapt_array(embedded_text)
+            query = query.order_by(
+                func.cosine_distance(AgentPassage.embedding, query_embedding_binary).asc(),
+                AgentPassage.created_at.asc() if ascending else AgentPassage.created_at.desc(),
+                AgentPassage.id.asc(),
+            )
+    else:
+        if query_text:
+            query = query.where(func.lower(AgentPassage.text).contains(func.lower(query_text)))
+
+    # Handle pagination
+    if before or after:
+        if before:
+            # Get the reference record
+            before_subq = select(AgentPassage.created_at, AgentPassage.id).where(AgentPassage.id == before).subquery()
+            query = query.where(
+                or_(
+                    AgentPassage.created_at < before_subq.c.created_at,
+                    and_(
+                        AgentPassage.created_at == before_subq.c.created_at,
+                        AgentPassage.id < before_subq.c.id,
+                    ),
+                )
+            )
+
+        if after:
+            # Get the reference record
+            after_subq = select(AgentPassage.created_at, AgentPassage.id).where(AgentPassage.id == after).subquery()
+            query = query.where(
+                or_(
+                    AgentPassage.created_at > after_subq.c.created_at,
+                    and_(
+                        AgentPassage.created_at == after_subq.c.created_at,
+                        AgentPassage.id > after_subq.c.id,
+                    ),
+                )
+            )
+
+    # Apply ordering if not already ordered by similarity
+    if not embed_query:
+        if ascending:
+            query = query.order_by(AgentPassage.created_at.asc(), AgentPassage.id.asc())
+        else:
+            query = query.order_by(AgentPassage.created_at.desc(), AgentPassage.id.asc())
+
     return query
