@@ -21,7 +21,7 @@ import letta.system as system
 from letta.agent import Agent, save_agent
 from letta.agents.letta_agent import LettaAgent
 from letta.config import LettaConfig
-from letta.constants import CORE_MEMORY_SOURCE_CHAR_LIMIT, LETTA_TOOL_EXECUTION_DIR
+from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.data_sources.connectors import DataConnector, load_data
 from letta.errors import HandleNotFoundError
 from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig
@@ -34,6 +34,7 @@ from letta.interface import AgentInterface  # abstract
 from letta.interface import CLIInterface  # for printing to terminal
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
+from letta.otel.tracing import log_event, trace_method
 from letta.prompts.gpt_system import get_system_text
 from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.block import Block, BlockUpdate, CreateBlock
@@ -101,7 +102,6 @@ from letta.services.tool_executor.tool_execution_manager import ToolExecutionMan
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings, settings, tool_settings
-from letta.tracing import log_event, trace_method
 from letta.utils import get_friendly_error_msg, get_persona_text, make_key
 
 config = LettaConfig.load()
@@ -1108,13 +1108,11 @@ class SyncServer(Server):
         after: Optional[str] = None,
         before: Optional[str] = None,
         limit: Optional[int] = 100,
-        order_by: Optional[str] = "created_at",
-        reverse: Optional[bool] = False,
         query_text: Optional[str] = None,
         ascending: Optional[bool] = True,
     ) -> List[Passage]:
         # iterate over records
-        records = await self.agent_manager.list_passages_async(
+        records = await self.agent_manager.list_agent_passages_async(
             actor=actor,
             agent_id=agent_id,
             after=after,
@@ -1368,12 +1366,13 @@ class SyncServer(Server):
             )
         await self.agent_manager.delete_agent_async(agent_id=sleeptime_agent_state.id, actor=actor)
 
-    async def _upsert_file_to_agent(self, agent_id: str, text: str, file_id: str, actor: User) -> None:
+    async def _upsert_file_to_agent(self, agent_id: str, text: str, file_id: str, file_name: str, actor: User) -> None:
         """
         Internal method to create or update a file <-> agent association
         """
-        truncated_text = text[:CORE_MEMORY_SOURCE_CHAR_LIMIT]
-        await self.file_agent_manager.attach_file(agent_id=agent_id, file_id=file_id, actor=actor, visible_content=truncated_text)
+        await self.file_agent_manager.attach_file(
+            agent_id=agent_id, file_id=file_id, file_name=file_name, actor=actor, visible_content=text
+        )
 
     async def _remove_file_from_agent(self, agent_id: str, file_id: str, actor: User) -> None:
         """
@@ -1389,7 +1388,7 @@ class SyncServer(Server):
             logger.info(f"File {file_id} already removed from agent {agent_id}, skipping...")
 
     async def insert_file_into_context_windows(
-        self, source_id: str, text: str, file_id: str, actor: User, agent_states: Optional[List[AgentState]] = None
+        self, source_id: str, text: str, file_id: str, file_name: str, actor: User, agent_states: Optional[List[AgentState]] = None
     ) -> List[AgentState]:
         """
         Insert the uploaded document into the context window of all agents
@@ -1404,11 +1403,13 @@ class SyncServer(Server):
         logger.info(f"Inserting document into context window for source: {source_id}")
         logger.info(f"Attached agents: {[a.id for a in agent_states]}")
 
-        await asyncio.gather(*(self._upsert_file_to_agent(agent_state.id, text, file_id, actor) for agent_state in agent_states))
+        await asyncio.gather(*(self._upsert_file_to_agent(agent_state.id, text, file_id, file_name, actor) for agent_state in agent_states))
 
         return agent_states
 
-    async def insert_files_into_context_window(self, agent_state: AgentState, texts: List[str], file_ids: List[str], actor: User) -> None:
+    async def insert_files_into_context_window(
+        self, agent_state: AgentState, texts: List[str], file_ids: List[str], file_names: List[str], actor: User
+    ) -> None:
         """
         Insert the uploaded documents into the context window of an agent
         attached to the given source.
@@ -1418,7 +1419,12 @@ class SyncServer(Server):
         if len(texts) != len(file_ids):
             raise ValueError(f"Mismatch between number of texts ({len(texts)}) and file ids ({len(file_ids)})")
 
-        await asyncio.gather(*(self._upsert_file_to_agent(agent_state.id, text, file_id, actor) for text, file_id in zip(texts, file_ids)))
+        await asyncio.gather(
+            *(
+                self._upsert_file_to_agent(agent_state.id, text, file_id, file_name, actor)
+                for text, file_id, file_name in zip(texts, file_ids, file_names)
+            )
+        )
 
     async def remove_file_from_context_windows(self, source_id: str, file_id: str, actor: User) -> None:
         """

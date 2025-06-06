@@ -23,7 +23,7 @@ from anthropic.types.beta import (
 )
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
-from letta.helpers.datetime_helpers import get_utc_timestamp_ns
+from letta.helpers.datetime_helpers import get_utc_timestamp_ns, ns_to_ms
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.log import get_logger
 from letta.schemas.letta_message import (
@@ -62,8 +62,7 @@ class AnthropicStreamingInterface:
         self.use_assistant_message = use_assistant_message
 
         # Premake IDs for database writes
-        self.letta_assistant_message_id = Message.generate_id()
-        self.letta_tool_message_id = Message.generate_id()
+        self.letta_message_id = Message.generate_id()
 
         self.anthropic_mode = None
         self.message_id = None
@@ -132,7 +131,7 @@ class AnthropicStreamingInterface:
                         now = get_utc_timestamp_ns()
                         ttft_ns = now - provider_request_start_timestamp_ns
                         ttft_span.add_event(
-                            name="anthropic_time_to_first_token_ms", attributes={"anthropic_time_to_first_token_ms": ttft_ns // 1_000_000}
+                            name="anthropic_time_to_first_token_ms", attributes={"anthropic_time_to_first_token_ms": ns_to_ms(ttft_ns)}
                         )
                         first_chunk = False
 
@@ -152,7 +151,7 @@ class AnthropicStreamingInterface:
                             if not self.use_assistant_message:
                                 # Buffer the initial tool call message instead of yielding immediately
                                 tool_call_msg = ToolCallMessage(
-                                    id=self.letta_tool_message_id,
+                                    id=self.letta_message_id,
                                     tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id),
                                     date=datetime.now(timezone.utc).isoformat(),
                                 )
@@ -165,11 +164,11 @@ class AnthropicStreamingInterface:
                             if prev_message_type and prev_message_type != "hidden_reasoning_message":
                                 message_index += 1
                             hidden_reasoning_message = HiddenReasoningMessage(
-                                id=self.letta_assistant_message_id,
+                                id=self.letta_message_id,
                                 state="redacted",
                                 hidden_reasoning=content.data,
                                 date=datetime.now(timezone.utc).isoformat(),
-                                otid=Message.generate_otid_from_id(self.letta_assistant_message_id, message_index),
+                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                             )
                             self.reasoning_messages.append(hidden_reasoning_message)
                             prev_message_type = hidden_reasoning_message.message_type
@@ -206,10 +205,10 @@ class AnthropicStreamingInterface:
                             if prev_message_type and prev_message_type != "reasoning_message":
                                 message_index += 1
                             reasoning_message = ReasoningMessage(
-                                id=self.letta_assistant_message_id,
+                                id=self.letta_message_id,
                                 reasoning=self.accumulated_inner_thoughts[-1],
                                 date=datetime.now(timezone.utc).isoformat(),
-                                otid=Message.generate_otid_from_id(self.letta_assistant_message_id, message_index),
+                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                             )
                             self.reasoning_messages.append(reasoning_message)
                             prev_message_type = reasoning_message.message_type
@@ -233,10 +232,10 @@ class AnthropicStreamingInterface:
                                 if prev_message_type and prev_message_type != "reasoning_message":
                                     message_index += 1
                                 reasoning_message = ReasoningMessage(
-                                    id=self.letta_assistant_message_id,
+                                    id=self.letta_message_id,
                                     reasoning=inner_thoughts_diff,
                                     date=datetime.now(timezone.utc).isoformat(),
-                                    otid=Message.generate_otid_from_id(self.letta_assistant_message_id, message_index),
+                                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                 )
                                 self.reasoning_messages.append(reasoning_message)
                                 prev_message_type = reasoning_message.message_type
@@ -249,10 +248,28 @@ class AnthropicStreamingInterface:
                                 if len(self.tool_call_buffer) > 0:
                                     if prev_message_type and prev_message_type != "tool_call_message":
                                         message_index += 1
+
+                                    # Strip out the inner thoughts from the buffered tool call arguments before streaming
+                                    tool_call_args = ""
                                     for buffered_msg in self.tool_call_buffer:
-                                        buffered_msg.otid = Message.generate_otid_from_id(self.letta_tool_message_id, message_index)
-                                        prev_message_type = buffered_msg.message_type
-                                        yield buffered_msg
+                                        tool_call_args += buffered_msg.tool_call.arguments if buffered_msg.tool_call.arguments else ""
+                                    tool_call_args = tool_call_args.replace(f'"{INNER_THOUGHTS_KWARG}": "{current_inner_thoughts}"', "")
+
+                                    tool_call_msg = ToolCallMessage(
+                                        id=self.tool_call_buffer[0].id,
+                                        otid=Message.generate_otid_from_id(self.tool_call_buffer[0].id, message_index),
+                                        date=self.tool_call_buffer[0].date,
+                                        name=self.tool_call_buffer[0].name,
+                                        sender_id=self.tool_call_buffer[0].sender_id,
+                                        step_id=self.tool_call_buffer[0].step_id,
+                                        tool_call=ToolCallDelta(
+                                            name=self.tool_call_name,
+                                            tool_call_id=self.tool_call_id,
+                                            arguments=tool_call_args,
+                                        ),
+                                    )
+                                    prev_message_type = tool_call_msg.message_type
+                                    yield tool_call_msg
                                     self.tool_call_buffer = []
 
                             # Start detecting special case of "send_message"
@@ -266,24 +283,26 @@ class AnthropicStreamingInterface:
                                     if prev_message_type and prev_message_type != "assistant_message":
                                         message_index += 1
                                     assistant_msg = AssistantMessage(
-                                        id=self.letta_assistant_message_id,
+                                        id=self.letta_message_id,
                                         content=[TextContent(text=send_message_diff)],
                                         date=datetime.now(timezone.utc).isoformat(),
-                                        otid=Message.generate_otid_from_id(self.letta_assistant_message_id, message_index),
+                                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                     )
                                     prev_message_type = assistant_msg.message_type
                                     yield assistant_msg
                             else:
                                 # Otherwise, it is a normal tool call - buffer or yield based on inner thoughts status
                                 tool_call_msg = ToolCallMessage(
-                                    id=self.letta_tool_message_id,
-                                    tool_call=ToolCallDelta(arguments=delta.partial_json),
+                                    id=self.letta_message_id,
+                                    tool_call=ToolCallDelta(
+                                        name=self.tool_call_name, tool_call_id=self.tool_call_id, arguments=delta.partial_json
+                                    ),
                                     date=datetime.now(timezone.utc).isoformat(),
                                 )
                                 if self.inner_thoughts_complete:
                                     if prev_message_type and prev_message_type != "tool_call_message":
                                         message_index += 1
-                                    tool_call_msg.otid = Message.generate_otid_from_id(self.letta_tool_message_id, message_index)
+                                    tool_call_msg.otid = Message.generate_otid_from_id(self.letta_message_id, message_index)
                                     prev_message_type = tool_call_msg.message_type
                                     yield tool_call_msg
                                 else:
@@ -301,11 +320,11 @@ class AnthropicStreamingInterface:
                             if prev_message_type and prev_message_type != "reasoning_message":
                                 message_index += 1
                             reasoning_message = ReasoningMessage(
-                                id=self.letta_assistant_message_id,
+                                id=self.letta_message_id,
                                 source="reasoner_model",
                                 reasoning=delta.thinking,
                                 date=datetime.now(timezone.utc).isoformat(),
-                                otid=Message.generate_otid_from_id(self.letta_assistant_message_id, message_index),
+                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                             )
                             self.reasoning_messages.append(reasoning_message)
                             prev_message_type = reasoning_message.message_type
@@ -320,12 +339,12 @@ class AnthropicStreamingInterface:
                             if prev_message_type and prev_message_type != "reasoning_message":
                                 message_index += 1
                             reasoning_message = ReasoningMessage(
-                                id=self.letta_assistant_message_id,
+                                id=self.letta_message_id,
                                 source="reasoner_model",
                                 reasoning="",
                                 date=datetime.now(timezone.utc).isoformat(),
                                 signature=delta.signature,
-                                otid=Message.generate_otid_from_id(self.letta_assistant_message_id, message_index),
+                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                             )
                             self.reasoning_messages.append(reasoning_message)
                             prev_message_type = reasoning_message.message_type
@@ -360,7 +379,7 @@ class AnthropicStreamingInterface:
             group: List[Union[ReasoningMessage, HiddenReasoningMessage]], group_type: str
         ) -> Union[TextContent, ReasoningContent, RedactedReasoningContent]:
             if group_type == "reasoning":
-                reasoning_text = "".join(chunk.reasoning for chunk in group)
+                reasoning_text = "".join(chunk.reasoning for chunk in group).strip()
                 is_native = any(chunk.source == "reasoner_model" for chunk in group)
                 signature = next((chunk.signature for chunk in group if chunk.signature is not None), None)
                 if is_native:

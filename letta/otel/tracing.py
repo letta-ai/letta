@@ -1,6 +1,5 @@
 import inspect
 import re
-import sys
 import time
 from functools import wraps
 from typing import Any, Dict, List, Optional
@@ -11,15 +10,18 @@ from fastapi.responses import JSONResponse
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.trace import Status, StatusCode
 
-from letta import __version__ as letta_version
+from letta.log import get_logger
+from letta.otel.resource import get_resource, is_pytest_environment
+from letta.settings import settings
 
+logger = get_logger(__name__)  # TODO: set up logger config for this
 tracer = trace.get_tracer(__name__)
 _is_tracing_initialized = False
+
 _excluded_v1_endpoints_regex: List[str] = [
     # "^GET /v1/agents/(?P<agent_id>[^/]+)/messages$",
     # "^GET /v1/agents/(?P<agent_id>[^/]+)/context$",
@@ -30,11 +32,7 @@ _excluded_v1_endpoints_regex: List[str] = [
 ]
 
 
-def is_pytest_environment():
-    return "pytest" in sys.modules
-
-
-async def trace_request_middleware(request: Request, call_next):
+async def _trace_request_middleware(request: Request, call_next):
     if not _is_tracing_initialized:
         return await call_next(request)
     initial_span_name = f"{request.method} {request.url.path}"
@@ -56,7 +54,7 @@ async def trace_request_middleware(request: Request, call_next):
             raise
 
 
-async def update_trace_attributes(request: Request):
+async def _update_trace_attributes(request: Request):
     """Dependency to update trace attributes after FastAPI has processed the request"""
     if not _is_tracing_initialized:
         return
@@ -78,35 +76,19 @@ async def update_trace_attributes(request: Request):
     for key, value in request.path_params.items():
         span.set_attribute(f"http.{key}", value)
 
-    # Add user ID if available
-    user_id = request.headers.get("user_id")
-    if user_id:
-        span.set_attribute("user.id", user_id)
-
-    # Add organization_id if available
-    organization_id = request.headers.get("x-organization-id")
-    if organization_id:
-        span.set_attribute("organization.id", organization_id)
-
-    # Add project_id if available
-    project_id = request.headers.get("x-project-id")
-    if project_id:
-        span.set_attribute("project.id", project_id)
-
-    # Add agent_id if available
-    agent_id = request.headers.get("x-agent-id")
-    if agent_id:
-        span.set_attribute("agent.id", agent_id)
-
-    # Add template_id if available
-    template_id = request.headers.get("x-template-id")
-    if template_id:
-        span.set_attribute("template.id", template_id)
-
-    # Add base_template_id if available
-    base_template_id = request.headers.get("x-base-template-id")
-    if base_template_id:
-        span.set_attribute("base_template.id", base_template_id)
+    # Add the following headers to span if available
+    header_attributes = {
+        "user_id": "user.id",
+        "x-organization-id": "organization.id",
+        "x-project-id": "project.id",
+        "x-agent-id": "agent.id",
+        "x-template-id": "template.id",
+        "x-base-template-id": "base_template.id",
+    }
+    for header_key, span_key in header_attributes.items():
+        header_value = request.headers.get(header_key)
+        if header_value:
+            span.set_attribute(span_key, header_value)
 
     # Add request body if available
     try:
@@ -117,7 +99,7 @@ async def update_trace_attributes(request: Request):
         pass
 
 
-async def trace_error_handler(_request: Request, exc: Exception) -> JSONResponse:
+async def _trace_error_handler(_request: Request, exc: Exception) -> JSONResponse:
     status_code = getattr(exc, "status_code", 500)
     error_msg = str(exc)
 
@@ -142,49 +124,44 @@ def setup_tracing(
 ) -> None:
     if is_pytest_environment():
         return
+    assert endpoint
 
     global _is_tracing_initialized
 
-    provider = TracerProvider(resource=Resource.create({"service.name": service_name}))
-    import uuid
+    tracer_provider = TracerProvider(resource=get_resource(service_name))
+    tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint)))
+    _is_tracing_initialized = True
+    trace.set_tracer_provider(tracer_provider)
 
-    provider = TracerProvider(
-        resource=Resource.create(
-            {
-                "service.name": service_name,
-                "device.id": uuid.getnode(),  # MAC address as unique device identifier,
-                "letta.version": letta_version,
-            }
-        )
-    )
-    if endpoint:
-        provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint)))
-        _is_tracing_initialized = True
-        trace.set_tracer_provider(provider)
+    # Instrumentors (e.g., RequestsInstrumentor)
+    def requests_callback(span: trace.Span, _: Any, response: Any) -> None:
+        if hasattr(response, "status_code"):
+            span.set_status(Status(StatusCode.OK if response.status_code < 400 else StatusCode.ERROR))
 
-        def requests_callback(span: trace.Span, _: Any, response: Any) -> None:
-            if hasattr(response, "status_code"):
-                span.set_status(Status(StatusCode.OK if response.status_code < 400 else StatusCode.ERROR))
+    RequestsInstrumentor().instrument(response_hook=requests_callback)
 
-        RequestsInstrumentor().instrument(response_hook=requests_callback)
+    if settings.sqlalchemy_tracing:
+        from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
-        if app:
-            # Add middleware first
-            app.middleware("http")(trace_request_middleware)
+        SQLAlchemyInstrumentor().instrument()
 
-            # Add dependency to v1 routes
-            from letta.server.rest_api.routers.v1 import ROUTERS as v1_routes
+    if app:
+        # Add middleware first
+        app.middleware("http")(_trace_request_middleware)
 
-            for router in v1_routes:
-                for route in router.routes:
-                    full_path = ((next(iter(route.methods)) + " ") if route.methods else "") + "/v1" + route.path
-                    if not any(re.match(regex, full_path) for regex in _excluded_v1_endpoints_regex):
-                        route.dependencies.append(Depends(update_trace_attributes))
+        # Add dependency to v1 routes
+        from letta.server.rest_api.routers.v1 import ROUTERS as V1_ROUTES
 
-            # Register exception handlers
-            app.exception_handler(HTTPException)(trace_error_handler)
-            app.exception_handler(RequestValidationError)(trace_error_handler)
-            app.exception_handler(Exception)(trace_error_handler)
+        for router in V1_ROUTES:
+            for route in router.routes:
+                full_path = ((next(iter(route.methods)) + " ") if route.methods else "") + "/v1" + route.path
+                if not any(re.match(regex, full_path) for regex in _excluded_v1_endpoints_regex):
+                    route.dependencies.append(Depends(_update_trace_attributes))
+
+        # Register exception handlers for tracing
+        app.exception_handler(HTTPException)(_trace_error_handler)
+        app.exception_handler(RequestValidationError)(_trace_error_handler)
+        app.exception_handler(Exception)(_trace_error_handler)
 
 
 def trace_method(func):

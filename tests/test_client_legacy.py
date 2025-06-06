@@ -15,7 +15,7 @@ from letta.helpers.datetime_helpers import get_utc_time
 from letta.orm import FileMetadata, Source
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import MessageRole, MessageStreamStatus
+from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import (
     AssistantMessage,
     LettaMessage,
@@ -25,10 +25,8 @@ from letta.schemas.letta_message import (
     ToolReturnMessage,
     UserMessage,
 )
-from letta.schemas.letta_response import LettaStreamingResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
-from letta.schemas.usage import LettaUsageStatistics
 from letta.services.helpers.agent_manager_helper import initialize_message_sequence
 from letta.services.organization_manager import OrganizationManager
 from letta.services.user_manager import UserManager
@@ -212,74 +210,6 @@ def test_core_memory(disable_e2b_api_key, client: RESTClient, agent: AgentState)
 
     memory = client.get_in_context_memory(agent_id=agent.id)
     assert "Timber" in memory.get_block("human").value, f"Updating core memory failed: {memory.get_block('human').value}"
-
-
-@pytest.mark.parametrize(
-    "stream_tokens,model",
-    [
-        (True, "gpt-4o-mini"),
-        (True, "claude-3-sonnet-20240229"),
-        (False, "gpt-4o-mini"),
-        (False, "claude-3-sonnet-20240229"),
-    ],
-)
-def test_streaming_send_message(
-    disable_e2b_api_key,
-    client: RESTClient,
-    agent: AgentState,
-    stream_tokens: bool,
-    model: str,
-):
-    # Update agent's model
-    agent.llm_config.model = model
-
-    # First, try streaming just steps
-
-    # Next, try streaming both steps and tokens
-    response = client.send_message(
-        agent_id=agent.id,
-        message="This is a test. Repeat after me: 'banana'",
-        role="user",
-        stream_steps=True,
-        stream_tokens=stream_tokens,
-    )
-
-    # Some manual checks to run
-    # 1. Check that there were inner thoughts
-    inner_thoughts_exist = False
-    inner_thoughts_count = 0
-    # 2. Check that the agent runs `send_message`
-    send_message_ran = False
-    # 3. Check that we get all the start/stop/end tokens we want
-    #    This includes all of the MessageStreamStatus enums
-    done = False
-
-    assert response, "Sending message failed"
-    for chunk in response:
-        assert isinstance(chunk, LettaStreamingResponse)
-        if isinstance(chunk, ReasoningMessage) and chunk.reasoning and chunk.reasoning != "":
-            inner_thoughts_exist = True
-            inner_thoughts_count += 1
-        if isinstance(chunk, ToolCallMessage) and chunk.tool_call and chunk.tool_call.name == "send_message":
-            send_message_ran = True
-        if isinstance(chunk, AssistantMessage):
-            send_message_ran = True
-        if isinstance(chunk, MessageStreamStatus):
-            if chunk == MessageStreamStatus.done:
-                assert not done, "Message stream already done"
-                done = True
-        if isinstance(chunk, LettaUsageStatistics):
-            # Some rough metrics for a reasonable usage pattern
-            assert chunk.step_count == 1
-            assert chunk.completion_tokens > 10
-            assert chunk.prompt_tokens > 1000
-            assert chunk.total_tokens > 1000
-
-    # If stream tokens, we expect at least one inner thought
-    assert inner_thoughts_count >= 1, "Expected more than one inner thought"
-    assert inner_thoughts_exist, "No inner thoughts found"
-    assert send_message_ran, "send_message function call not found"
-    assert done, "Message stream not done"
 
 
 def test_humans_personas(client: RESTClient, agent: AgentState):

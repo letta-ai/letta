@@ -1,13 +1,15 @@
+import inspect
 from datetime import datetime
 from enum import Enum
 from functools import wraps
 from pprint import pformat
 from typing import TYPE_CHECKING, List, Literal, Optional, Tuple, Union
 
-from sqlalchemy import String, and_, delete, func, or_, select, text
+from sqlalchemy import Sequence, String, and_, delete, func, or_, select, text
 from sqlalchemy.exc import DBAPIError, IntegrityError, TimeoutError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, Session, mapped_column
+from sqlalchemy.orm.interfaces import ORMOption
 
 from letta.log import get_logger
 from letta.orm.base import Base, CommonSqlalchemyMetaMixins
@@ -23,16 +25,28 @@ logger = get_logger(__name__)
 
 def handle_db_timeout(func):
     """Decorator to handle SQLAlchemy TimeoutError and wrap it in a custom exception."""
+    if not inspect.iscoroutinefunction(func):
 
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except TimeoutError as e:
-            logger.error(f"Timeout while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}")
-            raise DatabaseTimeoutError(message=f"Timeout occurred in {func.__name__}.", original_exception=e)
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except TimeoutError as e:
+                logger.error(f"Timeout while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}")
+                raise DatabaseTimeoutError(message=f"Timeout occurred in {func.__name__}.", original_exception=e)
 
-    return wrapper
+        return wrapper
+    else:
+
+        @wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            try:
+                return await func(*args, **kwargs)
+            except TimeoutError as e:
+                logger.error(f"Timeout while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}")
+                raise DatabaseTimeoutError(message=f"Timeout occurred in {func.__name__}.", original_exception=e)
+
+        return async_wrapper
 
 
 class AccessType(str, Enum):
@@ -163,6 +177,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         join_conditions: Optional[Union[Tuple, List]] = None,
         identifier_keys: Optional[List[str]] = None,
         identity_id: Optional[str] = None,
+        query_options: Sequence[ORMOption] | None = None,  # ← new
         **kwargs,
     ) -> List["SqlalchemyBase"]:
         """
@@ -224,6 +239,9 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             identity_id=identity_id,
             **kwargs,
         )
+        if query_options:
+            for opt in query_options:
+                query = query.options(opt)
 
         # Execute the query
         results = await db_session.execute(query)

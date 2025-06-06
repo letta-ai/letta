@@ -1,7 +1,7 @@
 import threading
 from collections import defaultdict
 
-from letta.tracing import trace_method
+from letta.otel.tracing import trace_method
 
 
 class PerAgentLockManager:

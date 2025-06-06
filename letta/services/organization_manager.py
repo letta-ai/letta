@@ -2,10 +2,10 @@ from typing import List, Optional
 
 from letta.orm.errors import NoResultFound
 from letta.orm.organization import Organization as OrganizationModel
+from letta.otel.tracing import trace_method
 from letta.schemas.organization import Organization as PydanticOrganization
 from letta.schemas.organization import OrganizationUpdate
 from letta.server.db import db_registry
-from letta.tracing import trace_method
 from letta.utils import enforce_types
 
 

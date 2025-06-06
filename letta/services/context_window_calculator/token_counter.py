@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
 from letta.llm_api.anthropic_client import AnthropicClient
+from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
 from letta.utils import count_tokens
 
 
@@ -42,7 +43,7 @@ class AnthropicTokenCounter(TokenCounter):
             return 0
         return await self.client.count_tokens(model=self.model, messages=messages)
 
-    async def count_tool_tokens(self, tools: List[Any]) -> int:
+    async def count_tool_tokens(self, tools: List[OpenAITool]) -> int:
         if not tools:
             return 0
         return await self.client.count_tokens(model=self.model, tools=tools)
@@ -69,7 +70,7 @@ class TiktokenCounter(TokenCounter):
 
         return num_tokens_from_messages(messages=messages, model=self.model)
 
-    async def count_tool_tokens(self, tools: List[Any]) -> int:
+    async def count_tool_tokens(self, tools: List[OpenAITool]) -> int:
         if not tools:
             return 0
         from letta.local_llm.utils import num_tokens_from_functions
