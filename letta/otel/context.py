@@ -22,5 +22,4 @@ def add_ctx_attribute(key: str, value: Any):
 
 def get_ctx_attributes() -> Dict[str, Any]:
     """Get all attributes from current context"""
-    print(request_attributes.get())
     return request_attributes.get()
