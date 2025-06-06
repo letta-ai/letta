@@ -4,6 +4,12 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/fern/openapi.json'
+      - 'apps/fern/openapi-overrides.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
