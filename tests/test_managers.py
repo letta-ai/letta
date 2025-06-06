@@ -9,12 +9,15 @@ from datetime import datetime, timedelta, timezone
 from typing import List
 
 import httpx
+
+# tests/test_file_content_flow.py
 import pytest
 from anthropic.types.beta import BetaMessage
 from anthropic.types.beta.messages import BetaMessageBatchIndividualResponse, BetaMessageBatchSucceededResult
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.orm.exc import StaleDataError
 
 from letta.config import LettaConfig
@@ -25,6 +28,7 @@ from letta.constants import (
     BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
     BASE_VOICE_SLEEPTIME_TOOLS,
     BUILTIN_TOOLS,
+    FILES_TOOLS,
     LETTA_TOOL_EXECUTION_DIR,
     LETTA_TOOL_SET,
     MCP_TOOL_TAG_NAME_PREFIX,
@@ -39,11 +43,13 @@ from letta.orm import Base, Block
 from letta.orm.block_history import BlockHistory
 from letta.orm.enums import ActorType, JobType, ToolType
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
+from letta.orm.file import FileContent as FileContentModel
+from letta.orm.file import FileMetadata as FileMetadataModel
 from letta.schemas.agent import AgentStepState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import AgentStepStatus, JobStatus, MessageRole, ProviderType
+from letta.schemas.enums import AgentStepStatus, FileProcessingStatus, JobStatus, MessageRole, ProviderType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate, IdentityUpsert
@@ -93,15 +99,26 @@ CREATE_DELAY_SQLITE = 1
 USING_SQLITE = not bool(os.getenv("LETTA_PG_URI"))
 
 
-@pytest.fixture(autouse=True)
-async def _clear_tables():
+async def _count_file_content_rows(session, file_id: str) -> int:
+    q = select(func.count()).select_from(FileContentModel).where(FileContentModel.file_id == file_id)
+    result = await session.execute(q)
+    return result.scalar_one()
+
+
+@pytest.fixture
+async def async_session():
     async with db_registry.async_session() as session:
-        for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
-            # If this is the block_history table, skip it
-            if table.name == "block_history":
-                continue
-            await session.execute(table.delete())  # Truncate table
-        await session.commit()
+        yield session
+
+
+@pytest.fixture(autouse=True)
+async def _clear_tables(async_session):
+    for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
+        # If this is the block_history table, skip it
+        if table.name == "block_history":
+            continue
+        await async_session.execute(table.delete())  # Truncate table
+    await async_session.commit()
 
 
 @pytest.fixture
@@ -645,6 +662,7 @@ async def file_attachment(server, default_user, sarah_agent, default_file):
     assoc = await server.file_agent_manager.attach_file(
         agent_id=sarah_agent.id,
         file_id=default_file.id,
+        file_name=default_file.file_name,
         actor=default_user,
         visible_content="initial",
     )
@@ -689,28 +707,60 @@ async def test_create_get_list_agent(server: SyncServer, comprehensive_test_agen
     assert len(list_agents) == 0
 
 
+@pytest.fixture(params=["", "PRODUCTION"])
+def set_letta_environment(request):
+    original = os.environ.get("LETTA_ENVIRONMENT")
+    os.environ["LETTA_ENVIRONMENT"] = request.param
+    yield request.param
+    # Restore original environment variable
+    if original is not None:
+        os.environ["LETTA_ENVIRONMENT"] = original
+    else:
+        os.environ.pop("LETTA_ENVIRONMENT", None)
+
+
 @pytest.mark.asyncio
-async def test_get_context_window_basic(server: SyncServer, comprehensive_test_agent_fixture, default_user, default_file, event_loop):
+async def test_get_context_window_basic(
+    server: SyncServer, comprehensive_test_agent_fixture, default_user, default_file, event_loop, set_letta_environment
+):
     # Test agent creation
     created_agent, create_agent_request = comprehensive_test_agent_fixture
-    comprehensive_agent_checks(created_agent, create_agent_request, actor=default_user)
 
     # Attach a file
     assoc = await server.file_agent_manager.attach_file(
         agent_id=created_agent.id,
         file_id=default_file.id,
+        file_name=default_file.file_name,
         actor=default_user,
         visible_content="hello",
     )
 
     # Get context window and check for basic appearances
     context_window_overview = await server.agent_manager.get_context_window(agent_id=created_agent.id, actor=default_user)
-    validate_context_window_overview(context_window_overview, assoc)
+    validate_context_window_overview(created_agent, context_window_overview, assoc)
 
     # Test deleting the agent
     server.agent_manager.delete_agent(created_agent.id, default_user)
     list_agents = await server.agent_manager.list_agents_async(actor=default_user)
     assert len(list_agents) == 0
+
+
+@pytest.mark.asyncio
+async def test_get_context_window_composio_tool(
+    server: SyncServer, comprehensive_test_agent_fixture, default_user, default_file, event_loop, set_letta_environment
+):
+    # Test agent creation
+    created_agent, create_agent_request = comprehensive_test_agent_fixture
+
+    # Attach a composio tool
+    tool_create = ToolCreate.from_composio(action_name="GITHUB_GET_EMOJIS")
+    tool = server.tool_manager.create_or_update_composio_tool(tool_create=tool_create, actor=default_user)
+
+    created_agent = server.agent_manager.attach_tool(agent_id=created_agent.id, tool_id=tool.id, actor=default_user)
+
+    # Get context window and check for basic appearances
+    context_window_overview = await server.agent_manager.get_context_window(agent_id=created_agent.id, actor=default_user)
+    validate_context_window_overview(created_agent, context_window_overview)
 
 
 @pytest.mark.asyncio
@@ -1859,6 +1909,12 @@ async def test_agent_list_passages_basic(server, default_user, sarah_agent, agen
     all_passages = await server.agent_manager.list_passages_async(actor=default_user, agent_id=sarah_agent.id)
     assert len(all_passages) == 5  # 3 source + 2 agent passages
 
+    source_passages = await server.agent_manager.list_source_passages_async(actor=default_user, agent_id=sarah_agent.id)
+    assert len(source_passages) == 3  # 3 source + 2 agent passages
+
+    agent_passages = await server.agent_manager.list_agent_passages_async(actor=default_user, agent_id=sarah_agent.id)
+    assert len(agent_passages) == 2  # 3 source + 2 agent passages
+
 
 @pytest.mark.asyncio
 async def test_agent_list_passages_ordering(server, default_user, sarah_agent, agent_passages_setup, event_loop):
@@ -2486,10 +2542,51 @@ async def test_upsert_base_tools(server: SyncServer, default_user, event_loop):
             assert t.tool_type == ToolType.LETTA_VOICE_SLEEPTIME_CORE
         elif t.name in BUILTIN_TOOLS:
             assert t.tool_type == ToolType.LETTA_BUILTIN
+        elif t.name in FILES_TOOLS:
+            assert t.tool_type == ToolType.LETTA_FILES_CORE
         else:
             pytest.fail(f"The tool name is unrecognized as a base tool: {t.name}")
         assert t.source_code is None
         assert t.json_schema
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "tool_type,expected_names",
+    [
+        (ToolType.LETTA_CORE, BASE_TOOLS),
+        (ToolType.LETTA_MEMORY_CORE, BASE_MEMORY_TOOLS),
+        (ToolType.LETTA_MULTI_AGENT_CORE, MULTI_AGENT_TOOLS),
+        (ToolType.LETTA_SLEEPTIME_CORE, BASE_SLEEPTIME_TOOLS),
+        (ToolType.LETTA_VOICE_SLEEPTIME_CORE, sorted(set(BASE_VOICE_SLEEPTIME_TOOLS + BASE_VOICE_SLEEPTIME_CHAT_TOOLS) - {"send_message"})),
+        (ToolType.LETTA_BUILTIN, BUILTIN_TOOLS),
+        (ToolType.LETTA_FILES_CORE, FILES_TOOLS),
+    ],
+)
+async def test_upsert_filtered_base_tools(server: SyncServer, default_user, tool_type, expected_names):
+    tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={tool_type})
+    tool_names = sorted([t.name for t in tools])
+    expected_sorted = sorted(expected_names)
+
+    assert tool_names == expected_sorted
+    assert all(t.tool_type == tool_type for t in tools)
+
+
+@pytest.mark.asyncio
+async def test_upsert_multiple_tool_types(server: SyncServer, default_user):
+    allowed = {ToolType.LETTA_CORE, ToolType.LETTA_BUILTIN, ToolType.LETTA_FILES_CORE}
+    tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types=allowed)
+    tool_names = {t.name for t in tools}
+    expected = set(BASE_TOOLS + BUILTIN_TOOLS + FILES_TOOLS)
+
+    assert tool_names == expected
+    assert all(t.tool_type in allowed for t in tools)
+
+
+@pytest.mark.asyncio
+async def test_upsert_base_tools_with_empty_type_filter(server: SyncServer, default_user):
+    tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types=set())
+    assert tools == []
 
 
 # ======================================================================================================================
@@ -4078,6 +4175,103 @@ async def test_get_file_by_id(server: SyncServer, default_user, default_source):
 
 
 @pytest.mark.asyncio
+async def test_create_and_retrieve_file_with_content(server, default_user, default_source, async_session):
+    text_body = "Line 1\nLine 2\nLine 3"
+
+    meta = PydanticFileMetadata(
+        file_name="with_body.txt",
+        file_path="/tmp/with_body.txt",
+        file_type="text/plain",
+        file_size=len(text_body),
+        source_id=default_source.id,
+    )
+
+    created = await server.source_manager.create_file(
+        file_metadata=meta,
+        actor=default_user,
+        text=text_body,
+    )
+
+    # -- metadata-only return: content is NOT present
+    assert created.content is None
+
+    # body row exists
+    assert await _count_file_content_rows(async_session, created.id) == 1
+
+    # -- now fetch WITH the body
+    loaded = await server.source_manager.get_file_by_id(created.id, actor=default_user, include_content=True)
+    assert loaded.content == text_body
+
+
+@pytest.mark.asyncio
+async def test_create_file_without_content(server, default_user, default_source, async_session):
+    meta = PydanticFileMetadata(
+        file_name="no_body.txt",
+        file_path="/tmp/no_body.txt",
+        file_type="text/plain",
+        file_size=123,
+        source_id=default_source.id,
+    )
+    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user)
+
+    # no content row
+    assert await _count_file_content_rows(async_session, created.id) == 0
+
+    # include_content=True still works, returns None
+    loaded = await server.source_manager.get_file_by_id(created.id, actor=default_user, include_content=True)
+    assert loaded.content is None
+
+
+@pytest.mark.asyncio
+async def test_lazy_raise_guard(server, default_user, default_source, async_session):
+    text_body = "lazy-raise"
+
+    meta = PydanticFileMetadata(
+        file_name="lazy_raise.txt",
+        file_path="/tmp/lazy_raise.txt",
+        file_type="text/plain",
+        file_size=len(text_body),
+        source_id=default_source.id,
+    )
+    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user, text=text_body)
+
+    # Grab ORM instance WITHOUT selectinload(FileMetadata.content)
+    orm = await async_session.get(FileMetadataModel, created.id)
+
+    # to_pydantic(include_content=True) should raise – guard works
+    with pytest.raises(InvalidRequestError):
+        await orm.to_pydantic_async(include_content=True)
+
+
+@pytest.mark.asyncio
+async def test_list_files_content_none(server, default_user, default_source):
+    files = await server.source_manager.list_files(source_id=default_source.id, actor=default_user)
+    assert all(f.content is None for f in files)
+
+
+@pytest.mark.asyncio
+async def test_delete_cascades_to_content(server, default_user, default_source, async_session):
+    text_body = "to be deleted"
+    meta = PydanticFileMetadata(
+        file_name="delete_me.txt",
+        file_path="/tmp/delete_me.txt",
+        file_type="text/plain",
+        file_size=len(text_body),
+        source_id=default_source.id,
+    )
+    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user, text=text_body)
+
+    # ensure row exists first
+    assert await _count_file_content_rows(async_session, created.id) == 1
+
+    # delete
+    await server.source_manager.delete_file(created.id, actor=default_user)
+
+    # content row gone
+    assert await _count_file_content_rows(async_session, created.id) == 0
+
+
+@pytest.mark.asyncio
 async def test_list_files(server: SyncServer, default_user, default_source):
     """Test listing files with pagination."""
     # Create multiple files
@@ -4125,6 +4319,105 @@ async def test_delete_file(server: SyncServer, default_user, default_source):
     # Verify that the file no longer appears in list_files
     files = await server.source_manager.list_files(source_id=default_source.id, actor=default_user)
     assert len(files) == 0
+
+
+@pytest.mark.asyncio
+async def test_update_file_status_basic(server, default_user, default_source):
+    """Update processing status and error message for a file."""
+    meta = PydanticFileMetadata(
+        file_name="status_test.txt",
+        file_path="/tmp/status_test.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user)
+
+    # Update status only
+    updated = await server.source_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.PARSING,
+    )
+    assert updated.processing_status == FileProcessingStatus.PARSING
+    assert updated.error_message is None
+
+    # Update both status and error message
+    updated = await server.source_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.ERROR,
+        error_message="Parse failed",
+    )
+    assert updated.processing_status == FileProcessingStatus.ERROR
+    assert updated.error_message == "Parse failed"
+
+
+@pytest.mark.asyncio
+async def test_update_file_status_error_only(server, default_user, default_source):
+    """Update just the error message, leave status unchanged."""
+    meta = PydanticFileMetadata(
+        file_name="error_only.txt",
+        file_path="/tmp/error_only.txt",
+        file_type="text/plain",
+        file_size=123,
+        source_id=default_source.id,
+    )
+    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user)
+
+    updated = await server.source_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        error_message="Timeout while embedding",
+    )
+    assert updated.error_message == "Timeout while embedding"
+    assert updated.processing_status == FileProcessingStatus.PENDING  # default from creation
+
+
+@pytest.mark.asyncio
+async def test_upsert_file_content_basic(server: SyncServer, default_user, default_source, async_session):
+    """Test creating and updating file content with upsert_file_content()."""
+    initial_text = "Initial content"
+    updated_text = "Updated content"
+
+    # Step 1: Create file with no content
+    meta = PydanticFileMetadata(
+        file_name="upsert_body.txt",
+        file_path="/tmp/upsert_body.txt",
+        file_type="text/plain",
+        file_size=len(initial_text),
+        source_id=default_source.id,
+    )
+    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user)
+    assert created.content is None
+
+    # Step 2: Insert new content
+    file_with_content = await server.source_manager.upsert_file_content(
+        file_id=created.id,
+        text=initial_text,
+        actor=default_user,
+    )
+    assert file_with_content.content == initial_text
+
+    # Verify body row exists
+    count = await _count_file_content_rows(async_session, created.id)
+    assert count == 1
+
+    # Step 3: Update existing content
+    file_with_updated_content = await server.source_manager.upsert_file_content(
+        file_id=created.id,
+        text=updated_text,
+        actor=default_user,
+    )
+    assert file_with_updated_content.content == updated_text
+
+    # Ensure still only 1 row in content table
+    count = await _count_file_content_rows(async_session, created.id)
+    assert count == 1
+
+    # Ensure `updated_at` is bumped
+    orm_file = await async_session.get(FileMetadataModel, created.id)
+    assert orm_file.updated_at > orm_file.created_at
 
 
 # ======================================================================================================================
@@ -5811,6 +6104,7 @@ async def test_attach_creates_association(server, default_user, sarah_agent, def
     assoc = await server.file_agent_manager.attach_file(
         agent_id=sarah_agent.id,
         file_id=default_file.id,
+        file_name=default_file.file_name,
         actor=default_user,
         visible_content="hello",
     )
@@ -5832,6 +6126,7 @@ async def test_attach_is_idempotent(server, default_user, sarah_agent, default_f
     a1 = await server.file_agent_manager.attach_file(
         agent_id=sarah_agent.id,
         file_id=default_file.id,
+        file_name=default_file.file_name,
         actor=default_user,
         visible_content="first",
     )
@@ -5840,6 +6135,7 @@ async def test_attach_is_idempotent(server, default_user, sarah_agent, default_f
     a2 = await server.file_agent_manager.attach_file(
         agent_id=sarah_agent.id,
         file_id=default_file.id,
+        file_name=default_file.file_name,
         actor=default_user,
         is_open=False,
         visible_content="second",
@@ -5858,9 +6154,22 @@ async def test_attach_is_idempotent(server, default_user, sarah_agent, default_f
 
 @pytest.mark.asyncio
 async def test_update_file_agent(server, file_attachment, default_user):
-    updated = await server.file_agent_manager.update_file_agent(
+    updated = await server.file_agent_manager.update_file_agent_by_id(
         agent_id=file_attachment.agent_id,
         file_id=file_attachment.file_id,
+        actor=default_user,
+        is_open=False,
+        visible_content="updated",
+    )
+    assert updated.is_open is False
+    assert updated.visible_content == "updated"
+
+
+@pytest.mark.asyncio
+async def test_update_file_agent_by_file_name(server, file_attachment, default_user):
+    updated = await server.file_agent_manager.update_file_agent_by_name(
+        agent_id=file_attachment.agent_id,
+        file_name=file_attachment.file_name,
         actor=default_user,
         is_open=False,
         visible_content="updated",
@@ -5882,7 +6191,7 @@ async def test_mark_access(server, file_attachment, default_user):
         file_id=file_attachment.file_id,
         actor=default_user,
     )
-    refreshed = await server.file_agent_manager.get_file_agent(
+    refreshed = await server.file_agent_manager.get_file_agent_by_id(
         agent_id=file_attachment.agent_id,
         file_id=file_attachment.file_id,
         actor=default_user,
@@ -5900,11 +6209,17 @@ async def test_list_files_and_agents(
     another_file,
 ):
     # default_file ↔ charles  (open)
-    await server.file_agent_manager.attach_file(agent_id=charles_agent.id, file_id=default_file.id, actor=default_user)
+    await server.file_agent_manager.attach_file(
+        agent_id=charles_agent.id, file_id=default_file.id, file_name=default_file.file_name, actor=default_user
+    )
     # default_file ↔ sarah    (open)
-    await server.file_agent_manager.attach_file(agent_id=sarah_agent.id, file_id=default_file.id, actor=default_user)
+    await server.file_agent_manager.attach_file(
+        agent_id=sarah_agent.id, file_id=default_file.id, file_name=default_file.file_name, actor=default_user
+    )
     # another_file ↔ sarah    (closed)
-    await server.file_agent_manager.attach_file(agent_id=sarah_agent.id, file_id=another_file.id, actor=default_user, is_open=False)
+    await server.file_agent_manager.attach_file(
+        agent_id=sarah_agent.id, file_id=another_file.id, file_name=another_file.file_name, actor=default_user, is_open=False
+    )
 
     files_for_sarah = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
     assert {f.file_id for f in files_for_sarah} == {default_file.id, another_file.id}
@@ -5932,7 +6247,7 @@ async def test_detach_file(server, file_attachment, default_user):
         file_id=file_attachment.file_id,
         actor=default_user,
     )
-    res = await server.file_agent_manager.get_file_agent(
+    res = await server.file_agent_manager.get_file_agent_by_id(
         agent_id=file_attachment.agent_id,
         file_id=file_attachment.file_id,
         actor=default_user,
@@ -5952,6 +6267,7 @@ async def test_org_scoping(
     await server.file_agent_manager.attach_file(
         agent_id=sarah_agent.id,
         file_id=default_file.id,
+        file_name=default_file.file_name,
         actor=default_user,
     )
 

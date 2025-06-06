@@ -11,11 +11,11 @@ from letta.constants import MAX_EMBEDDING_DIM
 from letta.embeddings import embedding_model, parse_and_chunk_text
 from letta.orm.errors import NoResultFound
 from letta.orm.passage import AgentPassage, SourcePassage
+from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.tracing import trace_method
 from letta.utils import enforce_types
 
 

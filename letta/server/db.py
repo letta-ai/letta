@@ -13,8 +13,8 @@ from sqlalchemy.orm import sessionmaker
 
 from letta.config import LettaConfig
 from letta.log import get_logger
+from letta.otel.tracing import trace_method
 from letta.settings import settings
-from letta.tracing import trace_method
 
 logger = get_logger(__name__)
 
@@ -131,7 +131,12 @@ class DatabaseRegistry:
             # Create async session factory
             self._async_engines["default"] = async_engine
             self._async_session_factories["default"] = async_sessionmaker(
-                close_resets_only=False, autocommit=False, autoflush=False, bind=self._async_engines["default"], class_=AsyncSession
+                expire_on_commit=True,
+                close_resets_only=False,
+                autocommit=False,
+                autoflush=False,
+                bind=self._async_engines["default"],
+                class_=AsyncSession,
             )
             self._initialized["async"] = True
 
@@ -206,11 +211,6 @@ class DatabaseRegistry:
         """Get a database engine by name."""
         self.initialize_sync()
         return self._engines.get(name)
-
-    def get_async_engine(self, name: str = "default") -> AsyncEngine:
-        """Get an async database engine by name."""
-        self.initialize_async()
-        return self._async_engines.get(name)
 
     def get_session_factory(self, name: str = "default") -> sessionmaker:
         """Get a session factory by name."""

@@ -4,6 +4,7 @@ from typing import Optional
 
 from pydantic import Field
 
+from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.letta_base import LettaBase
 
 
@@ -34,11 +35,21 @@ class FileMetadata(FileMetadataBase):
     file_size: Optional[int] = Field(None, description="The size of the file in bytes.")
     file_creation_date: Optional[str] = Field(None, description="The creation date of the file.")
     file_last_modified_date: Optional[str] = Field(None, description="The last modified date of the file.")
+    processing_status: FileProcessingStatus = Field(
+        default=FileProcessingStatus.PENDING,
+        description="The current processing status of the file (e.g. pending, parsing, embedding, completed, error).",
+    )
+    error_message: Optional[str] = Field(default=None, description="Optional error message if the file failed processing.")
 
     # orm metadata, optional fields
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow, description="The creation date of the file.")
     updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow, description="The update date of the file.")
     is_deleted: bool = Field(False, description="Whether this file is deleted or not.")
+
+    # This is optional, and only occasionally pulled in since it can be very large
+    content: Optional[str] = Field(
+        default=None, description="Optional full-text content of the file; only populated on demand due to its size."
+    )
 
 
 class FileAgentBase(LettaBase):
@@ -67,6 +78,7 @@ class FileAgent(FileAgentBase):
     )
     agent_id: str = Field(..., description="Unique identifier of the agent.")
     file_id: str = Field(..., description="Unique identifier of the file.")
+    file_name: str = Field(..., description="Name of the file.")
     is_open: bool = Field(True, description="True if the agent currently has the file open.")
     visible_content: Optional[str] = Field(
         None,

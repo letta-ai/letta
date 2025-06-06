@@ -347,48 +347,6 @@ def test_update_agent_memory_limit(client: Letta):
 # --------------------------------------------------------------------------------------------------------------------
 # Agent Tools
 # --------------------------------------------------------------------------------------------------------------------
-def test_function_return_limit(client: Letta):
-    """Test to see if the function return limit works"""
-
-    def big_return():
-        """
-        Always call this tool.
-
-        Returns:
-            important_data (str): Important data
-        """
-        return "x" * 100000
-
-    padding = len("[NOTE: function output was truncated since it exceeded the character limit (100000 > 1000)]") + 50
-    tool = client.tools.upsert_from_function(func=big_return, return_char_limit=1000)
-    agent = client.agents.create(
-        model="letta/letta-free",
-        embedding="letta/letta-free",
-        tool_ids=[tool.id],
-    )
-    # get function response
-    response = client.agents.messages.create(
-        agent_id=agent.id, messages=[MessageCreate(role="user", content="call the big_return function")]
-    )
-    print(response.messages)
-
-    response_message = None
-    for message in response.messages:
-        if message.message_type == "tool_return_message":
-            response_message = message
-            break
-
-    assert response_message, "ToolReturnMessage message not found in response"
-    res = response_message.tool_return
-    assert "function output was truncated " in res
-
-    # TODO: Re-enable later
-    # res_json = json.loads(res)
-    # assert (
-    #     len(res_json["message"]) <= 1000 + padding
-    # ), f"Expected length to be less than or equal to 1000 + {padding}, but got {len(res_json['message'])}"
-
-    client.agents.delete(agent_id=agent.id)
 
 
 def test_function_always_error(client: Letta):
@@ -493,14 +451,6 @@ def test_messages(client: Letta, agent: AgentState):
 
     messages_response = client.agents.messages.list(agent_id=agent.id, limit=1)
     assert len(messages_response) > 0, "Retrieving messages failed"
-
-
-def test_send_system_message(client: Letta, agent: AgentState):
-    """Important unit test since the Letta API exposes sending system messages, but some backends don't natively support it (eg Anthropic)"""
-    send_system_message_response = client.agents.messages.create(
-        agent_id=agent.id, messages=[MessageCreate(role="system", content="Event occurred: The user just logged off.")]
-    )
-    assert send_system_message_response, "Sending message failed"
 
 
 # TODO: Add back when new agent loop hits

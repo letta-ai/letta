@@ -89,7 +89,7 @@ async def test_sleeptime_group_chat(server, actor):
     assert "archival_memory_insert" not in main_agent_tools
 
     # 2. Override frequency for test
-    group = server.group_manager.modify_group(
+    group = await server.group_manager.modify_group_async(
         group_id=main_agent.multi_agent_group.id,
         group_update=GroupUpdate(
             manager_config=SleeptimeManagerUpdate(
@@ -204,7 +204,7 @@ async def test_sleeptime_group_chat_v2(server, actor):
     assert "archival_memory_insert" not in main_agent_tools
 
     # 2. Override frequency for test
-    group = server.group_manager.modify_group(
+    group = await server.group_manager.modify_group_async(
         group_id=main_agent.multi_agent_group.id,
         group_update=GroupUpdate(
             manager_config=SleeptimeManagerUpdate(
@@ -317,7 +317,7 @@ async def test_sleeptime_removes_redundant_information(server, actor):
         actor=actor,
     )
 
-    group = server.group_manager.modify_group(
+    group = await server.group_manager.modify_group_async(
         group_id=main_agent.multi_agent_group.id,
         group_update=GroupUpdate(
             manager_config=SleeptimeManagerUpdate(
