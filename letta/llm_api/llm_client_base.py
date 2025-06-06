@@ -1,3 +1,4 @@
+import json
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
@@ -186,3 +187,30 @@ class LLMClientBase:
             An LLMError subclass that represents the error in a provider-agnostic way
         """
         return LLMError(f"Unhandled LLM error: {str(e)}")
+
+    def _fix_truncated_json_response(self, response: ChatCompletionResponse) -> ChatCompletionResponse:
+        """
+        Fixes truncated JSON responses by ensuring the content is properly formatted.
+        This is a workaround for some providers that may return incomplete JSON.
+        """
+        if response.choices and response.choices[0].message and response.choices[0].message.tool_calls:
+            tool_call_args_str = response.choices[0].message.tool_calls[0].function.arguments
+            try:
+                json.loads(tool_call_args_str)
+            except json.JSONDecodeError:
+                try:
+                    json_str_end = ""
+                    quote_count = tool_call_args_str.count('"')
+                    if quote_count % 2 != 0:
+                        json_str_end = json_str_end + '"'
+
+                    open_braces = tool_call_args_str.count("{")
+                    close_braces = tool_call_args_str.count("}")
+                    missing_braces = open_braces - close_braces
+                    json_str_end += "}" * missing_braces
+                    fixed_tool_call_args_str = tool_call_args_str[: -len(json_str_end)] + json_str_end
+                    json.loads(fixed_tool_call_args_str)
+                    response.choices[0].message.tool_calls[0].function.arguments = fixed_tool_call_args_str
+                except json.JSONDecodeError:
+                    pass
+        return response
