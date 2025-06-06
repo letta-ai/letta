@@ -42,6 +42,8 @@ describe('letta', () => {
     });
 
     cy.importModels();
+    cy.visit('/projects');
+
     cy.get('h1').contains(/Projects/);
 
     // creates a project

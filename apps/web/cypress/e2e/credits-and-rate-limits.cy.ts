@@ -38,7 +38,7 @@ describe('credit usage', () => {
 
     cy.googleLogin();
 
-    cy.visit('/');
+    cy.visit('/projects');
 
     cy.get('h1').contains(/Projects/);
 
