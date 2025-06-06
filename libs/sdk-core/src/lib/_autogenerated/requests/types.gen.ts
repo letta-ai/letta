@@ -1464,6 +1464,14 @@ export type FileMetadata = {
    */
   file_last_modified_date?: string | null;
   /**
+   * The current processing status of the file (e.g. pending, parsing, embedding, completed, error).
+   */
+  processing_status?: FileProcessingStatus;
+  /**
+   * Optional error message if the file failed processing.
+   */
+  error_message?: string | null;
+  /**
    * The creation date of the file.
    */
   created_at?: string | null;
@@ -1480,6 +1488,13 @@ export type FileMetadata = {
    */
   content?: string | null;
 };
+
+export type FileProcessingStatus =
+  | 'pending'
+  | 'parsing'
+  | 'embedding'
+  | 'completed'
+  | 'error';
 
 export type Function_Output = {
   arguments: string;

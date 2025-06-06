@@ -3321,6 +3321,15 @@ export const E2BSandboxConfig = z.object({
     .optional(),
 });
 
+export type FileProcessingStatus = z.infer<typeof FileProcessingStatus>;
+export const FileProcessingStatus = z.union([
+  z.literal('pending'),
+  z.literal('parsing'),
+  z.literal('embedding'),
+  z.literal('completed'),
+  z.literal('error'),
+]);
+
 export type FileMetadata = z.infer<typeof FileMetadata>;
 export const FileMetadata = z.object({
   id: z.union([z.string(), z.undefined()]).optional(),
@@ -3374,6 +3383,15 @@ export const FileMetadata = z.object({
     ])
     .optional(),
   file_last_modified_date: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  processing_status: z.union([FileProcessingStatus, z.undefined()]).optional(),
+  error_message: z
     .union([
       z.string(),
       z.null(),

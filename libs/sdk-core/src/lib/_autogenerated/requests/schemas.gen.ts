@@ -4422,6 +4422,24 @@ export const $FileMetadata = {
       title: 'File Last Modified Date',
       description: 'The last modified date of the file.',
     },
+    processing_status: {
+      $ref: '#/components/schemas/FileProcessingStatus',
+      description:
+        'The current processing status of the file (e.g. pending, parsing, embedding, completed, error).',
+      default: 'pending',
+    },
+    error_message: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Error Message',
+      description: 'Optional error message if the file failed processing.',
+    },
     created_at: {
       anyOf: [
         {
@@ -4473,6 +4491,12 @@ export const $FileMetadata = {
   required: ['source_id'],
   title: 'FileMetadata',
   description: 'Representation of a single FileMetadata',
+} as const;
+
+export const $FileProcessingStatus = {
+  type: 'string',
+  enum: ['pending', 'parsing', 'embedding', 'completed', 'error'],
+  title: 'FileProcessingStatus',
 } as const;
 
 export const $Function_Output = {

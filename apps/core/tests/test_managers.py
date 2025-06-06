@@ -49,7 +49,7 @@ from letta.schemas.agent import AgentStepState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import AgentStepStatus, JobStatus, MessageRole, ProviderType
+from letta.schemas.enums import AgentStepStatus, FileProcessingStatus, JobStatus, MessageRole, ProviderType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate, IdentityUpsert
@@ -4319,6 +4319,105 @@ async def test_delete_file(server: SyncServer, default_user, default_source):
     # Verify that the file no longer appears in list_files
     files = await server.source_manager.list_files(source_id=default_source.id, actor=default_user)
     assert len(files) == 0
+
+
+@pytest.mark.asyncio
+async def test_update_file_status_basic(server, default_user, default_source):
+    """Update processing status and error message for a file."""
+    meta = PydanticFileMetadata(
+        file_name="status_test.txt",
+        file_path="/tmp/status_test.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user)
+
+    # Update status only
+    updated = await server.source_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.PARSING,
+    )
+    assert updated.processing_status == FileProcessingStatus.PARSING
+    assert updated.error_message is None
+
+    # Update both status and error message
+    updated = await server.source_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.ERROR,
+        error_message="Parse failed",
+    )
+    assert updated.processing_status == FileProcessingStatus.ERROR
+    assert updated.error_message == "Parse failed"
+
+
+@pytest.mark.asyncio
+async def test_update_file_status_error_only(server, default_user, default_source):
+    """Update just the error message, leave status unchanged."""
+    meta = PydanticFileMetadata(
+        file_name="error_only.txt",
+        file_path="/tmp/error_only.txt",
+        file_type="text/plain",
+        file_size=123,
+        source_id=default_source.id,
+    )
+    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user)
+
+    updated = await server.source_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        error_message="Timeout while embedding",
+    )
+    assert updated.error_message == "Timeout while embedding"
+    assert updated.processing_status == FileProcessingStatus.PENDING  # default from creation
+
+
+@pytest.mark.asyncio
+async def test_upsert_file_content_basic(server: SyncServer, default_user, default_source, async_session):
+    """Test creating and updating file content with upsert_file_content()."""
+    initial_text = "Initial content"
+    updated_text = "Updated content"
+
+    # Step 1: Create file with no content
+    meta = PydanticFileMetadata(
+        file_name="upsert_body.txt",
+        file_path="/tmp/upsert_body.txt",
+        file_type="text/plain",
+        file_size=len(initial_text),
+        source_id=default_source.id,
+    )
+    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user)
+    assert created.content is None
+
+    # Step 2: Insert new content
+    file_with_content = await server.source_manager.upsert_file_content(
+        file_id=created.id,
+        text=initial_text,
+        actor=default_user,
+    )
+    assert file_with_content.content == initial_text
+
+    # Verify body row exists
+    count = await _count_file_content_rows(async_session, created.id)
+    assert count == 1
+
+    # Step 3: Update existing content
+    file_with_updated_content = await server.source_manager.upsert_file_content(
+        file_id=created.id,
+        text=updated_text,
+        actor=default_user,
+    )
+    assert file_with_updated_content.content == updated_text
+
+    # Ensure still only 1 row in content table
+    count = await _count_file_content_rows(async_session, created.id)
+    assert count == 1
+
+    # Ensure `updated_at` is bumped
+    orm_file = await async_session.get(FileMetadataModel, created.id)
+    assert orm_file.updated_at > orm_file.created_at
 
 
 # ======================================================================================================================

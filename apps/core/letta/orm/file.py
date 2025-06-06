@@ -1,12 +1,13 @@
 import uuid
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy import ForeignKey, Index, Integer, String, Text, UniqueConstraint, desc
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import OrganizationMixin, SourceMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
+from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 
 if TYPE_CHECKING:
@@ -23,13 +24,13 @@ class FileContent(SqlalchemyBase):
     """Holds the full text content of a file (potentially large)."""
 
     __tablename__ = "file_contents"
+    __table_args__ = (UniqueConstraint("file_id", name="uq_file_contents_file_id"),)
 
     # TODO: We want to migrate all the ORM models to do this, so we will need to move this to the SqlalchemyBase
     # TODO: Some still rely on the Pydantic object to do this
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: f"file_content-{uuid.uuid4()}")
-    file_id: Mapped[str] = mapped_column(
-        ForeignKey("files.id", ondelete="CASCADE"), primary_key=True, doc="Foreign key to files table; also serves as primary key."
-    )
+    file_id: Mapped[str] = mapped_column(ForeignKey("files.id", ondelete="CASCADE"), nullable=False, doc="Foreign key to files table.")
+
     text: Mapped[str] = mapped_column(Text, nullable=False, doc="Full plain-text content of the file (e.g., extracted from a PDF).")
 
     # back-reference to FileMetadata
@@ -41,6 +42,11 @@ class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin, AsyncAttrs):
 
     __tablename__ = "files"
     __pydantic_model__ = PydanticFileMetadata
+    __table_args__ = (
+        Index("ix_files_org_created", "organization_id", desc("created_at")),
+        Index("ix_files_source_created", "source_id", desc("created_at")),
+        Index("ix_files_processing_status", "processing_status"),
+    )
 
     file_name: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The name of the file.")
     file_path: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The file path on the system.")
@@ -48,6 +54,11 @@ class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin, AsyncAttrs):
     file_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, doc="The size of the file in bytes.")
     file_creation_date: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The creation date of the file.")
     file_last_modified_date: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The last modified date of the file.")
+    processing_status: Mapped[FileProcessingStatus] = mapped_column(
+        String, default=FileProcessingStatus.PENDING, nullable=False, doc="The current processing status of the file."
+    )
+
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="Any error message encountered during processing.")
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="files", lazy="selectin")
@@ -93,6 +104,8 @@ class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin, AsyncAttrs):
             file_size=self.file_size,
             file_creation_date=self.file_creation_date,
             file_last_modified_date=self.file_last_modified_date,
+            processing_status=self.processing_status,
+            error_message=self.error_message,
             created_at=self.created_at,
             updated_at=self.updated_at,
             is_deleted=self.is_deleted,
