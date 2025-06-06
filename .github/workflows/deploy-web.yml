@@ -8,8 +8,8 @@ on:
       branches:
         - main
       paths:
-        - apps/web/**
-        - libs/**
+        - 'apps/web/**'
+        - 'libs/**'
     workflow_dispatch:
 env:
   PROJECT_ID: memgpt-428419

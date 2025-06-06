@@ -8,8 +8,8 @@ on:
     branches:
       - main
     paths:
-      - apps/lettuce/**
-      - libs/**
+      - 'apps/lettuce/**'
+      - 'libs/**'
   workflow_dispatch:
 
 env:

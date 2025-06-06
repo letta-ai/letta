@@ -8,8 +8,8 @@ on:
     branches:
       - main
     paths:
-      - apps/cloud-api/**
-      - libs/**
+      - 'apps/cloud-api/**'
+      - 'libs/**'
   workflow_dispatch:
 
 env:

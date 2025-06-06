@@ -8,8 +8,8 @@ on:
     branches:
       - main
     paths:
-      - apps/undertaker/**
-      - libs/**
+      - 'apps/undertaker/**'
+      - 'libs/**'
   workflow_dispatch:
 
 env:
