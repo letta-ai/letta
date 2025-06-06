@@ -2555,6 +2555,10 @@ export type Passage = {
    */
   file_id?: string | null;
   /**
+   * The name of the file (only for source passages).
+   */
+  file_name?: string | null;
+  /**
    * The metadata of the passage.
    */
   metadata?: {
@@ -2615,6 +2619,10 @@ export type PassageUpdate = {
    * The unique identifier of the file associated with the passage.
    */
   file_id?: string | null;
+  /**
+   * The name of the file (only for source passages).
+   */
+  file_name?: string | null;
   /**
    * The metadata of the passage.
    */

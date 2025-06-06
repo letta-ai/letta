@@ -126,6 +126,13 @@ class LettaFileToolExecutor(ToolExecutor):
 
     # TODO: Make this paginated?
     async def search_files(self, agent_state: AgentState, query: str) -> List[str]:
-        """Stub for search_files tool."""
+        """Search for text within attached files and return passages with their source filenames."""
         passages = await self.agent_manager.list_source_passages_async(actor=self.actor, agent_id=agent_state.id, query_text=query)
-        return [p.text for p in passages]
+        formatted_results = []
+        for p in passages:
+            if p.file_name:
+                formatted_result = f"[{p.file_name}]:\n{p.text}"
+            else:
+                formatted_result = p.text
+            formatted_results.append(formatted_result)
+        return formatted_results

@@ -4331,6 +4331,14 @@ export const Passage = z.object({
       z.undefined(),
     ])
     .optional(),
+  file_name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   metadata: z
     .union([
       z.unknown(),
@@ -4413,6 +4421,14 @@ export const PassageUpdate = z.object({
     ])
     .optional(),
   file_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  file_name: z
     .union([
       z.string(),
       z.null(),

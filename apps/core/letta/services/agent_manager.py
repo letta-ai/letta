@@ -1483,7 +1483,7 @@ class AgentManager:
             memory_edit_timestamp = curr_system_message.created_at
 
         num_messages = await self.message_manager.size_async(actor=actor, agent_id=agent_id)
-        num_archival_memories = await self.passage_manager.size_async(actor=actor, agent_id=agent_id)
+        num_archival_memories = await self.passage_manager.agent_passage_size_async(actor=actor, agent_id=agent_id)
 
         # update memory (TODO: potentially update recall/archival stats separately)
         new_system_message_str = compile_system_message(
@@ -2075,6 +2075,7 @@ class AgentManager:
                     # This is an AgentPassage - remove source fields
                     data.pop("source_id", None)
                     data.pop("file_id", None)
+                    data.pop("file_name", None)
                     passage = AgentPassage(**data)
                 else:
                     # This is a SourcePassage - remove agent field
@@ -2135,6 +2136,7 @@ class AgentManager:
                     # This is an AgentPassage - remove source fields
                     data.pop("source_id", None)
                     data.pop("file_id", None)
+                    data.pop("file_name", None)
                     passage = AgentPassage(**data)
                 else:
                     # This is a SourcePassage - remove agent field
@@ -2198,14 +2200,12 @@ class AgentManager:
         self,
         actor: PydanticUser,
         agent_id: Optional[str] = None,
-        file_id: Optional[str] = None,
         limit: Optional[int] = 50,
         query_text: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
-        source_id: Optional[str] = None,
         embed_query: bool = False,
         ascending: bool = True,
         embedding_config: Optional[EmbeddingConfig] = None,

@@ -305,7 +305,7 @@ class VoiceAgent(BaseAgent):
                 else asyncio.sleep(0, result=self.num_messages)
             ),
             (
-                self.passage_manager.size_async(actor=self.actor, agent_id=agent_state.id)
+                self.passage_manager.agent_passage_size_async(actor=self.actor, agent_id=agent_state.id)
                 if self.num_archival_memories is None
                 else asyncio.sleep(0, result=self.num_archival_memories)
             ),

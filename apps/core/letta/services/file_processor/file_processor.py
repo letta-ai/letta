@@ -111,7 +111,9 @@ class FileProcessor:
                 )
                 all_passages.extend(passages)
 
-            all_passages = await self.passage_manager.create_many_passages_async(all_passages, self.actor)
+            all_passages = await self.passage_manager.create_many_source_passages_async(
+                passages=all_passages, file_metadata=file_metadata, actor=self.actor
+            )
 
             logger.info(f"Successfully processed {filename}: {len(all_passages)} passages")
 

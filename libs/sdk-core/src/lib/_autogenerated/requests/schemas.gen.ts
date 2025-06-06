@@ -7143,6 +7143,18 @@ export const $Passage = {
       description:
         'The unique identifier of the file associated with the passage.',
     },
+    file_name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'File Name',
+      description: 'The name of the file (only for source passages).',
+    },
     metadata: {
       anyOf: [
         {
@@ -7321,6 +7333,18 @@ export const $PassageUpdate = {
       title: 'File Id',
       description:
         'The unique identifier of the file associated with the passage.',
+    },
+    file_name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'File Name',
+      description: 'The name of the file (only for source passages).',
     },
     metadata_: {
       anyOf: [
