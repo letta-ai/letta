@@ -80,6 +80,10 @@ export function StarterKitSelector(props: StarterKitSelectorProps) {
   const [currentArchitecture, setCurrentArchitecture] =
     useState<StarterKitArchitecture>(architectures[0] || 'memgpt');
 
+  const { data: isVoiceSleeptimeAgentEnabled } = useFeatureFlag(
+    'VOICE_SLEEPTIME_AGENT',
+  );
+
   const entryMapToArchitecture = useMemo(() => {
     const map: Record<string, Array<[string, StarterKit]>> = {};
 
@@ -104,8 +108,6 @@ export function StarterKitSelector(props: StarterKitSelectorProps) {
     }
     return starterKits;
   }, [entryMapToArchitecture, currentArchitecture]);
-
-  const isVoiceSleeptimeAgentEnabled = useFeatureFlag('VOICE_SLEEPTIME_AGENT');
 
   return (
     <VStack className="min-h-[610px]">
