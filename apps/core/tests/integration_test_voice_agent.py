@@ -587,6 +587,7 @@ async def _modify(group_id, server, actor, max_val, min_val):
     )
 
 
+@pytest.mark.asyncio(loop_scope="module")
 async def test_valid_buffer_lengths_above_four(group_id, server, actor):
     # both > 4 and max > min
     updated = await _modify(group_id, server, actor, max_val=10, min_val=5)
@@ -594,6 +595,7 @@ async def test_valid_buffer_lengths_above_four(group_id, server, actor):
     assert updated.min_message_buffer_length == 5
 
 
+@pytest.mark.asyncio(loop_scope="module")
 async def test_valid_buffer_lengths_only_max(group_id, server, actor):
     # both > 4 and max > min
     updated = await _modify(group_id, server, actor, max_val=DEFAULT_MAX_MESSAGE_BUFFER_LENGTH + 1, min_val=None)
@@ -601,6 +603,7 @@ async def test_valid_buffer_lengths_only_max(group_id, server, actor):
     assert updated.min_message_buffer_length == DEFAULT_MIN_MESSAGE_BUFFER_LENGTH
 
 
+@pytest.mark.asyncio(loop_scope="module")
 async def test_valid_buffer_lengths_only_min(group_id, server, actor):
     # both > 4 and max > min
     updated = await _modify(group_id, server, actor, max_val=None, min_val=DEFAULT_MIN_MESSAGE_BUFFER_LENGTH + 1)
@@ -608,6 +611,7 @@ async def test_valid_buffer_lengths_only_min(group_id, server, actor):
     assert updated.min_message_buffer_length == DEFAULT_MIN_MESSAGE_BUFFER_LENGTH + 1
 
 
+@pytest.mark.asyncio(loop_scope="module")
 @pytest.mark.parametrize(
     "max_val,min_val,err_part",
     [
