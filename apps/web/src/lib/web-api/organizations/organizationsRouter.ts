@@ -105,33 +105,36 @@ async function getCurrentOrganizationTeamMembers(
     throw new Error('Organization not found');
   }
 
-  const where = [eq(organizationUsers.organizationId, organizationId)];
+  // Build the query using select with join for proper filtering
+  const query = db
+    .select()
+    .from(organizationUsers)
+    .innerJoin(users, eq(organizationUsers.userId, users.id))
+    .where(
+      and(
+        ...[
+          eq(organizationUsers.organizationId, organizationId),
+          ...(search ? [ilike(users.name, `%${search}%`)] : []),
+        ],
+      ),
+    );
 
-  if (search) {
-    where.push(ilike(users.name, `%${search}%`));
-  }
-
-  const members = await db.query.organizationUsers.findMany({
-    where: and(...where),
-    offset,
-    limit: limit + 1,
-    with: {
-      user: true,
-    },
-  });
+  const members = await query.offset(offset || 0).limit(limit + 1);
 
   return {
     status: 200,
     body: {
       nextCursor:
-        members.length > limit ? members[limit - 1].userId : undefined,
+        members.length > limit
+          ? members[limit - 1].organization_users.userId
+          : undefined,
       members: members.slice(0, limit).map((member) => ({
-        id: member.userId,
-        role: member.role,
-        name: member.user.name,
-        email: member.user.email,
-        createdAt: member.createdAt.toISOString(),
-        updatedAt: member.updatedAt.toISOString(),
+        id: member.organization_users.userId,
+        role: member.organization_users.role,
+        name: member.users.name,
+        email: member.users.email,
+        createdAt: member.organization_users.createdAt.toISOString(),
+        updatedAt: member.organization_users.updatedAt.toISOString(),
       })),
     },
   };

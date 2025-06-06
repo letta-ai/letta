@@ -6,7 +6,7 @@ import scratch from './scratch.webp';
 import customerSupport from './customer_support.webp';
 import sleeptime from './sleeptime_card.webp';
 import { useTranslations } from '@letta-cloud/translations';
-import type { AgentState, CreateAgentRequest } from '@letta-cloud/sdk-core';
+import type { CreateAgentRequest } from '@letta-cloud/sdk-core';
 import type { StaticImport } from 'next/dist/shared/lib/get-img-props';
 
 export interface StarterKitTool {

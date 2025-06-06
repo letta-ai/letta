@@ -19,7 +19,6 @@ import {
   HStack,
   Input,
   isMultiValue,
-  LoadingEmptyStatusComponent,
   NiceGridDisplay,
   RawInput,
   SearchIcon,
@@ -60,6 +59,7 @@ import {
   useGetLabelForRole,
 } from '$web/client/components/RoleSelect/RoleSelect';
 import { useOrganizationBillingTier } from '$web/client/hooks/useOrganizationBillingTier/useOrganizationBillingTier';
+import { useDebouncedValue } from '@mantine/hooks';
 
 const inviteMemberDialogFormSchema = z.object({
   email: z.string().email(),
@@ -611,24 +611,25 @@ function ExistingMembers() {
   const t = useTranslations('organization/members');
   const [offset, setOffset] = useState<number>(0);
 
+  const [debouncedSearch] = useDebouncedValue(search, 300);
   const getLabelForRole = useGetLabelForRole();
 
   const [limit, setLimit] = useState<number>(30);
-  const { data, isFetching, isError } =
+  const { data, isLoading } =
     webApi.organizations.getCurrentOrganizationTeamMembers.useQuery({
       queryKey:
         webApiQueryKeys.organizations.getCurrentOrganizationTeamMembersWithSearch(
           {
             offset,
             limit,
-            search,
+            search: debouncedSearch,
           },
         ),
       queryData: {
         query: {
           offset,
           limit,
-          search,
+          search: debouncedSearch,
         },
       },
     });
@@ -712,30 +713,20 @@ function ExistingMembers() {
 
   return (
     <DashboardPageSection fullHeight>
-      {(!members || members.length === 0) && !offset ? (
-        <LoadingEmptyStatusComponent
-          emptyMessage={t('table.emptyError')}
-          isLoading={!data?.body}
-          errorMessage={t('table.error')}
-          loadingMessage={t('table.loading')}
-          isError={isError}
-        />
-      ) : (
-        <DataTable
-          searchValue={search}
-          onSearch={setSearch}
-          isLoading={isFetching}
-          limit={limit}
-          offset={offset}
-          onSetOffset={setOffset}
-          hasNextPage={!!data?.body.nextCursor}
-          autofitHeight
-          onLimitChange={setLimit}
-          showPagination
-          columns={membersColumns}
-          data={members || []}
-        />
-      )}
+      <DataTable
+        searchValue={search}
+        onSearch={setSearch}
+        isLoading={isLoading}
+        limit={limit}
+        offset={offset}
+        onSetOffset={setOffset}
+        hasNextPage={!!data?.body.nextCursor}
+        autofitHeight
+        onLimitChange={setLimit}
+        showPagination
+        columns={membersColumns}
+        data={members || []}
+      />
     </DashboardPageSection>
   );
 }
