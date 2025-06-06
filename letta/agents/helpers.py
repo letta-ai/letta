@@ -1,8 +1,9 @@
 import uuid
 import xml.etree.ElementTree as ET
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from letta.schemas.agent import AgentState
+from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.usage import LettaUsageStatistics
@@ -12,16 +13,26 @@ from letta.services.message_manager import MessageManager
 
 
 def _create_letta_response(
-    new_in_context_messages: list[Message], use_assistant_message: bool, usage: LettaUsageStatistics
+    new_in_context_messages: list[Message],
+    use_assistant_message: bool,
+    usage: LettaUsageStatistics,
+    include_return_message_types: Optional[List[MessageType]] = None,
 ) -> LettaResponse:
     """
     Converts the newly created/persisted messages into a LettaResponse.
     """
     # NOTE: hacky solution to avoid returning heartbeat messages and the original user message
     filter_user_messages = [m for m in new_in_context_messages if m.role != "user"]
+
+    # Convert to Letta messages first
     response_messages = Message.to_letta_messages_from_list(
         messages=filter_user_messages, use_assistant_message=use_assistant_message, reverse=False
     )
+
+    # Apply message type filtering if specified
+    if include_return_message_types is not None:
+        response_messages = [msg for msg in response_messages if msg.message_type in include_return_message_types]
+
     return LettaResponse(messages=response_messages, usage=usage)
 
 

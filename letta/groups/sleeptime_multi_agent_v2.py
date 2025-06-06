@@ -9,6 +9,7 @@ from letta.otel.tracing import trace_method
 from letta.schemas.enums import JobStatus
 from letta.schemas.group import Group, ManagerType
 from letta.schemas.job import JobUpdate
+from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.message import Message, MessageCreate
@@ -63,6 +64,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
         max_steps: int = 10,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: Optional[int] = None,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ) -> LettaResponse:
         run_ids = []
 
@@ -87,7 +89,10 @@ class SleeptimeMultiAgentV2(BaseAgent):
         )
         # Perform foreground agent step
         response = await foreground_agent.step(
-            input_messages=new_messages, max_steps=max_steps, use_assistant_message=use_assistant_message
+            input_messages=new_messages,
+            max_steps=max_steps,
+            use_assistant_message=use_assistant_message,
+            include_return_message_types=include_return_message_types,
         )
 
         # Get last response messages
@@ -129,8 +134,11 @@ class SleeptimeMultiAgentV2(BaseAgent):
         max_steps: int = 10,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: Optional[int] = None,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ):
-        response = await self.step(input_messages, max_steps, use_assistant_message)
+        response = await self.step(
+            input_messages, max_steps, use_assistant_message, request_start_timestamp_ns, include_return_message_types
+        )
 
         for message in response.messages:
             yield f"data: {message.model_dump_json()}\n\n"
@@ -144,6 +152,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
         max_steps: int = 10,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: Optional[int] = None,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ) -> AsyncGenerator[str, None]:
         # Prepare new messages
         new_messages = []
@@ -170,6 +179,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
             max_steps=max_steps,
             use_assistant_message=use_assistant_message,
             request_start_timestamp_ns=request_start_timestamp_ns,
+            include_return_message_types=include_return_message_types,
         ):
             yield chunk
 

@@ -7,7 +7,7 @@ from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.block import BlockUpdate
 from letta.schemas.enums import MessageStreamStatus
-from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage
+from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, MessageType
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.message import MessageCreate
 from letta.schemas.tool_rule import ChildToolRule, ContinueToolRule, InitToolRule, TerminalToolRule
@@ -59,7 +59,13 @@ class VoiceSleeptimeAgent(LettaAgent):
     def update_message_transcript(self, message_transcripts: List[str]):
         self.message_transcripts = message_transcripts
 
-    async def step(self, input_messages: List[MessageCreate], max_steps: int = 20, use_assistant_message: bool = True) -> LettaResponse:
+    async def step(
+        self,
+        input_messages: List[MessageCreate],
+        max_steps: int = 20,
+        use_assistant_message: bool = True,
+        include_return_message_types: Optional[List[MessageType]] = None,
+    ) -> LettaResponse:
         """
         Process the user's input message, allowing the model to call memory-related tools
         until it decides to stop and provide a final response.
@@ -86,7 +92,10 @@ class VoiceSleeptimeAgent(LettaAgent):
         )
 
         return _create_letta_response(
-            new_in_context_messages=new_in_context_messages, use_assistant_message=use_assistant_message, usage=usage
+            new_in_context_messages=new_in_context_messages,
+            use_assistant_message=use_assistant_message,
+            usage=usage,
+            include_return_message_types=include_return_message_types,
         )
 
     @trace_method
