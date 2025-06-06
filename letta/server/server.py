@@ -1108,13 +1108,11 @@ class SyncServer(Server):
         after: Optional[str] = None,
         before: Optional[str] = None,
         limit: Optional[int] = 100,
-        order_by: Optional[str] = "created_at",
-        reverse: Optional[bool] = False,
         query_text: Optional[str] = None,
         ascending: Optional[bool] = True,
     ) -> List[Passage]:
         # iterate over records
-        records = await self.agent_manager.list_passages_async(
+        records = await self.agent_manager.list_agent_passages_async(
             actor=actor,
             agent_id=agent_id,
             after=after,
