@@ -6479,8 +6479,8 @@ async def test_create_mcp_server(server, default_user, event_loop):
     assert created_server.server_type == server_config.type
 
     # Test with a valid SSEServerConfig
-    mcp_server_name = "github_composio"
-    server_url = "https://mcp.composio.dev/composio/server/3c44733b-75ae-4ba8-9a68-7153265fadd8"
+    mcp_server_name = "devin"
+    server_url = "https://mcp.deepwiki.com/sse"
     sse_mcp_config = SSEServerConfig(server_name=mcp_server_name, server_url=server_url)
     mcp_sse_server = MCPServer(server_name=mcp_server_name, server_type=MCPServerType.SSE, server_url=server_url)
     created_server = await server.mcp_manager.create_or_update_mcp_server(mcp_sse_server, actor=default_user)
@@ -6498,8 +6498,8 @@ async def test_create_mcp_server(server, default_user, event_loop):
     print(tools)
 
     # call a tool from the sse server
-    tool_name = "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"
-    tool_args = {"owner": "letta-ai", "repo": "letta"}
+    tool_name = "ask_question"
+    tool_args = {"repoName": "letta-ai/letta", "question": "What is the primary programming language of this repository?"}
     result = await server.mcp_manager.execute_mcp_server_tool(
         created_server.server_name, tool_name=tool_name, tool_args=tool_args, actor=default_user
     )

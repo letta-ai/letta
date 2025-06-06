@@ -28,7 +28,8 @@ class ToolSettings(BaseSettings):
     mcp_connect_to_server_timeout: float = 30.0
     mcp_list_tools_timeout: float = 30.0
     mcp_execute_tool_timeout: float = 60.0
-    mcp_read_from_config: bool = True  # if False, will throw if attempting to read/write from file
+    mcp_read_from_config: bool = False  # if False, will throw if attempting to read/write from file
+    mcp_disable_stdio: bool = False
 
 
 class SummarizerSettings(BaseSettings):
