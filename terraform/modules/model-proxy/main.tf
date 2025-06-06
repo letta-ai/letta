@@ -1,24 +1,8 @@
-# Create a dedicated GCP service account for model-proxy
-resource "google_service_account" "model_proxy_sa" {
-  account_id   = "model-proxy-${var.env}-sa"
-  display_name = "Model Proxy Service Account in ${var.env}"
-  description  = "Service account for model-proxy in ${var.env} environment"
-}
-
-# Allow the Kubernetes service account to impersonate the GCP service account
-resource "google_service_account_iam_binding" "workload_identity_binding" {
-  service_account_id = google_service_account.model_proxy_sa.name
-  role               = "roles/iam.workloadIdentityUser"
-  members = [
-    "serviceAccount:${var.project_id}.svc.id.goog[default/model-proxy]"
-  ]
-}
 resource "google_project_iam_member" "model_proxy_pubsub" {
   project = var.project_id
   role    = "roles/pubsub.publisher"
-  member  = "serviceAccount:${google_service_account.model_proxy_sa.email}"
+  member  = "serviceAccount:${var.model_proxy_sa_email}"
 }
-
 resource "google_storage_bucket" "bucket" {
   name     = "model-proxy-subscription-${var.env}"
   location = var.region

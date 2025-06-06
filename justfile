@@ -8,10 +8,13 @@ CLUSTER_CONTEXT := if HAS_KUBECTL=="" { "letta-dev-us-central1" } else { `kubect
 REGISTRY_NAME := if CLUSTER_CONTEXT == "letta-dev-us-central1" { "letta-dev-us-central1" } else { "letta" }
 DOCKER_REGISTRY := REGION + "-docker.pkg.dev/" + PROJECT_NAME + "/" + REGISTRY_NAME
 SYSTEM_ARCH := `uname -m`
-BUILD_ARCH := if SYSTEM_ARCH == "x86_64" { "amd64" } else { "arm64" }
+BUILD_ARCH := "amd64" # if SYSTEM_ARCH == "x86_64" { "amd64" } else { "arm64" } <-- this was stupid. all our images run on amd64
+USES_SECRETS_V2 := if CLUSTER_CONTEXT == "letta-dev-us-central1" { "true" } else { "false" }
 HELM_CHARTS_DIR := if CLUSTER_CONTEXT == "letta-dev-us-central1" { "helm/dev" } else { "helm" }
 WEB_HELM_CHART_NAME := "letta-web"
 CORE_HELM_CHART_NAME := "memgpt-server"
+VOICE_HELM_CHART_NAME := "memgpt-server-voice"
+CLOUD_API_VOICE_HELM_CHART_NAME := "cloud-api-voice"
 REDIS_HOST := "10.167.199.148"
 TAG := env_var_or_default("TAG", "latest")
 
@@ -62,6 +65,7 @@ configure-kubectl cluster-name="letta":
     @echo "🚧 Deploying Helm chart..."
     kubectl delete job {{WEB_HELM_CHART_NAME}}-migration --ignore-not-found
     npm run slack-bot-says "Deploying web service Helm chart with tag: {{TAG}}..."
+    if [[ $USES_SECRETS_V2 == false ]]; then
     helm upgrade --install {{WEB_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{WEB_HELM_CHART_NAME}} \
         --force \
         --set image.repository={{DOCKER_REGISTRY}}/web \
@@ -101,6 +105,11 @@ configure-kubectl cluster-name="letta":
         --set env.CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
         --set env.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
         --set env.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
+    else
+    helm upgrade --install {{WEB_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{WEB_HELM_CHART_NAME}} \
+        --force \
+        --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    fi
 
     npm run slack-bot-says "Successfully deployed web service Helm chart with tag: {{TAG}}."
 
@@ -143,46 +152,91 @@ describe-web:
     echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
     docker push {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}}
 
+# TODO: add the rest of these keys in memgpt secrets
 # Deploy the Helm chart
 @deploy-core deploy_message="": push-core
     echo "🚧 Deploying Helm chart..."
-    helm upgrade --install {{CORE_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{CORE_HELM_CHART_NAME}} \
-        --set deployMessage='{{deploy_message}}' \
-        --set image.repository={{DOCKER_REGISTRY}}/memgpt-server \
-        --set image.tag={{TAG}} \
-        --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-        --set secrets.OPENAI_API_KEY=${OPENAI_API_KEY} \
-        --set secrets.COMPOSIO_API_KEY=${COMPOSIO_API_KEY} \
-        --set secrets.LETTA_PG_PASSWORD=${LETTA_PG_PASSWORD} \
-        --set secrets.LETTA_PG_USER=${LETTA_PG_USER} \
-        --set secrets.LETTA_PG_DB=${LETTA_PG_DB} \
-        --set secrets.LETTA_PG_HOST=${LETTA_PG_HOST} \
-        --set secrets.LETTA_PG_PORT=${LETTA_PG_PORT} \
-        --set secrets.MEMGPT_SERVER_PASS=${MEMGPT_SERVER_PASS} \
-        --set secrets.TOGETHER_API_KEY=${TOGETHER_API_KEY} \
-        --set secrets.ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY} \
-        --set secrets.GROK_API_KEY=${GROK_API_KEY} \
-        --set secrets.GEMINI_API_KEY=${GEMINI_API_KEY} \
-        --set secrets.SENTRY_DSN=${SENTRY_DSN} \
-        --set secrets.E2B_API_KEY=${E2B_API_KEY} \
-        --set secrets.E2B_SANDBOX_TEMPLATE_ID=${E2B_SANDBOX_TEMPLATE_ID} \
-        --set secrets.TAVILY_API_KEY=${TAVILY_API_KEY} \
-        --set secrets.LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS=True \
-        --set secrets.LETTA_OTEL_EXPORTER_OTLP_ENDPOINT=${LETTA_OTEL_EXPORTER_OTLP_ENDPOINT} \
-        --set secrets.CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT} \
-        --set secrets.CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
-        --set secrets.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
-        --set secrets.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} \
-        --set secrets.LETTA_USE_EXPERIMENTAL=${LETTA_USE_EXPERIMENTAL} \
-        --set secrets.LETTA_DISABLE_SQLALCHEMY_POOLING=${LETTA_DISABLE_SQLALCHEMY_POOLING} \
-        --set secrets.LETTA_UVICORN_WORKERS=${LETTA_UVICORN_WORKERS} \
-        --set secrets.LETTA_PG_POOL_SIZE=${LETTA_PG_POOL_SIZE} \
-        --set secrets.LETTA_PG_MAX_OVERFLOW=${LETTA_PG_MAX_OVERFLOW} \
-        --set env.LETTA_DEFAULT_LLM_HANDLE=${LETTA_DEFAULT_LLM_HANDLE} \
-        --set env.LETTA_DEFAULT_EMBEDDING_HANDLE=${LETTA_DEFAULT_EMBEDDING_HANDLE} \
-        --set secrets.LETTA_MISTRAL_API_KEY=${LETTA_MISTRAL_API_KEY} \
-        --set secrets.MCP_READ_FROM_CONFIG=false
 
+    if [[ $USES_SECRETS_V2 == false ]]; then
+    helm upgrade --install {{CORE_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{CORE_HELM_CHART_NAME}} \
+    --set image.repository={{DOCKER_REGISTRY}}/memgpt-server \
+    --set image.tag={{TAG}} \
+    --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --set secrets.OPENAI_API_KEY=${OPENAI_API_KEY} \
+    --set secrets.COMPOSIO_API_KEY=${COMPOSIO_API_KEY} \
+    --set secrets.LETTA_PG_PASSWORD=${LETTA_PG_PASSWORD} \
+    --set secrets.LETTA_PG_USER=${LETTA_PG_USER} \
+    --set secrets.LETTA_PG_DB=${LETTA_PG_DB} \
+    --set secrets.LETTA_PG_HOST=${LETTA_PG_HOST} \
+    --set secrets.LETTA_PG_PORT=${LETTA_PG_PORT} \
+    --set secrets.MEMGPT_SERVER_PASS=${MEMGPT_SERVER_PASS} \
+    --set secrets.TOGETHER_API_KEY=${TOGETHER_API_KEY} \
+    --set secrets.ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY} \
+    --set secrets.GROK_API_KEY=${GROK_API_KEY} \
+    --set secrets.GEMINI_API_KEY=${GEMINI_API_KEY} \
+    --set secrets.SENTRY_DSN=${SENTRY_DSN} \
+    --set secrets.E2B_API_KEY=${E2B_API_KEY} \
+    --set secrets.E2B_SANDBOX_TEMPLATE_ID=${E2B_SANDBOX_TEMPLATE_ID} \
+    --set secrets.TAVILY_API_KEY=${TAVILY_API_KEY} \
+    --set secrets.LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS=True \
+    --set secrets.LETTA_OTEL_EXPORTER_OTLP_ENDPOINT=${LETTA_OTEL_EXPORTER_OTLP_ENDPOINT} \
+    --set secrets.CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT} \
+    --set secrets.CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
+    --set secrets.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
+    --set secrets.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} \
+    --set secrets.LETTA_USE_EXPERIMENTAL=${LETTA_USE_EXPERIMENTAL} \
+    --set secrets.LETTA_DISABLE_SQLALCHEMY_POOLING=${LETTA_DISABLE_SQLALCHEMY_POOLING} \
+    --set secrets.LETTA_UVICORN_WORKERS=${LETTA_UVICORN_WORKERS} \
+    --set secrets.LETTA_PG_POOL_SIZE=${LETTA_PG_POOL_SIZE} \
+    --set secrets.LETTA_PG_MAX_OVERFLOW=${LETTA_PG_MAX_OVERFLOW} \
+    --set env.LETTA_DEFAULT_LLM_HANDLE=${LETTA_DEFAULT_LLM_HANDLE} \
+    --set env.LETTA_DEFAULT_EMBEDDING_HANDLE=${LETTA_DEFAULT_EMBEDDING_HANDLE} \
+    --set secrets.LETTA_MISTRAL_API_KEY=${LETTA_MISTRAL_API_KEY} \
+    --set secrets.MCP_READ_FROM_CONFIG=false \
+    --set secrets.TAVILY_API_KEY=${TAVILY_API_KEY}
+    else
+    helm upgrade --install {{CORE_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{CORE_HELM_CHART_NAME}} \
+    --set deployMessage='{{deploy_message}}' \
+    --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    fi
+
+@build-voice:
+    echo "🚧 Building multi-architecture Docker images with tag: {{TAG}}..."
+    docker buildx build --platform linux/{{ BUILD_ARCH }} -t {{DOCKER_REGISTRY}}/memgpt-server-voice:{{TAG}} . --load --file libs/config-core-deploy/Dockerfile
+
+# Push the Docker images to the registry
+@push-voice:
+    echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
+    docker push {{DOCKER_REGISTRY}}/memgpt-server-voice:{{TAG}}
+
+# TODO: add the rest of these keys in memgpt secrets
+# Note: Only supports v2 so no need for check
+# Deploy the Helm chart
+@deploy-voice deploy_message="": push-voice
+    echo "🚧 Deploying Helm chart..."
+    helm upgrade --install {{VOICE_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{VOICE_HELM_CHART_NAME}} \
+    --set deployMessage='{{deploy_message}}' \
+    --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+@build-cloud-api-voice:
+    echo "🚧 Building multi-architecture Docker images with tag: {{TAG}}..."
+    docker buildx build --platform linux/{{ BUILD_ARCH }} --target cloud-api -t {{DOCKER_REGISTRY}}/cloud-api-voice:{{TAG}} . --load --file apps/cloud-api/Dockerfile
+
+# Push the Docker images to the registry
+@push-cloud-api-voice:
+    echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
+    docker push {{DOCKER_REGISTRY}}/cloud-api-voice:{{TAG}}
+
+# TODO: add the rest of these keys in memgpt secrets
+# Note: Only supports v2 so no need for check
+# Deploy the Helm chart
+@deploy-cloud-api-voice deploy_message="": push-cloud-api-voice
+    echo "🚧 Deploying Helm chart..."
+    helm upgrade --install {{CLOUD_API_VOICE_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{CLOUD_API_VOICE_HELM_CHART_NAME}} \
+    --set deployMessage='{{deploy_message}}' \
+    --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# TODO: Migrate grafana to secrets v2
 # Deploy Grafana
 deploy-grafana:
     echo "🚧 Deploying Grafana..."
@@ -207,7 +261,6 @@ grafana:
 dev:
     @echo "🚧 Starting up dev environment..."
     tmuxinator start
-
 
 check-github-status:
     @echo "🚧 Checking GitHub status..."
@@ -265,40 +318,42 @@ deploy-cloud-api: push-cloud-api
     @echo "🚧 Deploying cloud API Helm chart..."
     kubectl delete job cloud-api-migrations --ignore-not-found || true
     npm run slack-bot-says "Deploying cloud API service with tag: {{TAG}}..."
-    helm upgrade --install cloud-api {{HELM_CHARTS_DIR}}/cloud-api \
-        --set image.repository={{DOCKER_REGISTRY}}/cloud-api \
-        --set image.tag={{TAG}} \
-        --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-        --set env.LETTA_AGENTS_ENDPOINT="${LETTA_AGENTS_ENDPOINT}" \
-        --set env.HOST="0.0.0.0" \
-        --set env.PORT="8080" \
-        --set service.port=80 \
-        --set service.type=LoadBalancer \
-        --set ingress.enabled=true \
-        --set ingress.hosts[0].host=api.letta.com \
-        --set "ingress.hosts[0].paths[0].path=/(.*)" \
-        --set livenessProbe.httpGet.path="/" \
-        --set livenessProbe.httpGet.port=8080 \
-        --set readinessProbe.httpGet.path="/" \
-        --set readinessProbe.httpGet.port=8080 \
-        --set env.DATABASE_URL="${DATABASE_URL}" \
-        --set env.LAUNCH_DARKLY_SDK_KEY="${LAUNCH_DARKLY_SDK_KEY}" \
-        --set env.REDIS_HOST="${REDIS_HOST}" \
-        --set env.TEMPORAL_LETTUCE_API_HOST="${TEMPORAL_LETTUCE_API_HOST}" \
-        --set env.TEMPORAL_LETTUCE_CA_PEM="${TEMPORAL_LETTUCE_CA_PEM}" \
-        --set env.TEMPORAL_LETTUCE_CA_KEY="${TEMPORAL_LETTUCE_CA_KEY}" \
-        --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
-        --set env.OPENAI_API_KEY="${OPENAI_API_KEY}" \
-        --set env.STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET}" \
-        --set env.CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT} \
-        --set env.CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
-        --set env.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
-        --set env.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} \
-        --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}"
-
-
+    if [[ "{{USES_SECRETS_V2}}" = "false" ]]; then \
+        helm upgrade --install cloud-api {{HELM_CHARTS_DIR}}/cloud-api \
+            --set image.repository={{DOCKER_REGISTRY}}/cloud-api \
+            --set image.tag={{TAG}} \
+            --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --set env.LETTA_AGENTS_ENDPOINT="${LETTA_AGENTS_ENDPOINT}" \
+            --set env.HOST="0.0.0.0" \
+            --set env.PORT="8080" \
+            --set service.port=80 \
+            --set service.type=LoadBalancer \
+            --set ingress.enabled=true \
+            --set ingress.hosts[0].host=api.letta.com \
+            --set "ingress.hosts[0].paths[0].path=/(.*)" \
+            --set livenessProbe.httpGet.path="/" \
+            --set livenessProbe.httpGet.port=8080 \
+            --set readinessProbe.httpGet.path="/" \
+            --set readinessProbe.httpGet.port=8080 \
+            --set env.DATABASE_URL="${DATABASE_URL}" \
+            --set env.LAUNCH_DARKLY_SDK_KEY="${LAUNCH_DARKLY_SDK_KEY}" \
+            --set env.REDIS_HOST="${REDIS_HOST}" \
+            --set env.TEMPORAL_LETTUCE_API_HOST="${TEMPORAL_LETTUCE_API_HOST}" \
+            --set env.TEMPORAL_LETTUCE_CA_PEM="${TEMPORAL_LETTUCE_CA_PEM}" \
+            --set env.TEMPORAL_LETTUCE_CA_KEY="${TEMPORAL_LETTUCE_CA_KEY}" \
+            --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
+            --set env.OPENAI_API_KEY="${OPENAI_API_KEY}" \
+            --set env.STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET}" \
+            --set env.CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT} \
+            --set env.CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
+            --set env.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
+            --set env.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} \
+            --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}"; \
+    else \
+        helm upgrade --install cloud-api {{HELM_CHARTS_DIR}}/cloud-api \
+            --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)"; \
+    fi
     npm run slack-bot-says "Successfully deployed cloud API service with tag: {{TAG}}."
-
 
 undertaker:
     @echo "🚧 Running the undertaker..."
@@ -316,15 +371,15 @@ trigger-undertaker-deploy branch="" deploy_message="":
     gh workflow run "🕸🚀 Deploy Undertaker" --ref $BRANCH
 
 build-undertaker:
-  @echo "🚧 Building web Docker image with tag: {{TAG}}..."
-  @mkdir -p /tmp/.buildx-cache
-  docker buildx build --platform linux/{{ BUILD_ARCH }} --target undertaker \
-      --cache-from type=local,src=/tmp/.buildx-cache \
-      --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-      -t {{DOCKER_REGISTRY}}/undertaker:{{TAG}} . --load --file apps/credit-undertaker/Dockerfile
-  @echo "🚧 Moving cache..."
-  @rm -rf /tmp/.buildx-cache
-  @mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+    @echo "🚧 Building web Docker image with tag: {{TAG}}..."
+    @mkdir -p /tmp/.buildx-cache
+    docker buildx build --platform linux/{{ BUILD_ARCH }} --target undertaker \
+        --cache-from type=local,src=/tmp/.buildx-cache \
+        --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
+        -t {{DOCKER_REGISTRY}}/undertaker:{{TAG}} . --load --file apps/credit-undertaker/Dockerfile
+    @echo "🚧 Moving cache..."
+    @rm -rf /tmp/.buildx-cache
+    @mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
 @push-undertaker:
     @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
@@ -332,6 +387,8 @@ build-undertaker:
 
 @deploy-undertaker: push-undertaker
     @echo "🚧 Deploying Helm chart..."
+
+    if [[ $USES_SECRETS_V2 == false ]]; then
     helm upgrade --install credit-undertaker {{HELM_CHARTS_DIR}}/credit-undertaker \
         --set image.repository={{DOCKER_REGISTRY}}/undertaker \
         --set image.tag={{TAG}} \
@@ -345,6 +402,10 @@ build-undertaker:
         --set env.RESEND_API_KEY="${RESEND_API_KEY}" \
         --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
         --set env.DATABASE_URL="${DATABASE_URL}"
+    else
+    helm upgrade --install credit-undertaker {{HELM_CHARTS_DIR}}/credit-undertaker \
+        --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    fi
 
     npm run slack-bot-says "Successfully deployed credit undertaker service with tag: {{TAG}}."
 
@@ -401,23 +462,22 @@ web-slow:
     npm run web:dev:slow
 
 setup-desktop:
-  @echo "🚧 Setting up the desktop app..."
-  cd apps/desktop-electron && npm install
-  npm i --no-save nx-electron@^20.0.2
-  cd apps/desktop-electron && npm run desktop:deps
-
+    @echo "🚧 Setting up the desktop app..."
+    cd apps/desktop-electron && npm install
+    npm i --no-save nx-electron@^20.0.2
+    cd apps/desktop-electron && npm run desktop:deps
 
 ready:
-  @echo "🚧 Updating your local environment..."
-  source ~/.nvm/nvm.sh && nvm use || true
-  npm install
-  npx nx reset
-  npm run core:install
-  just setup-cloud-api
-  just setup-desktop
-  @echo "Migrating the database..."
-  npm run web:database:migrate
-  npm run core:database:migrate
+    @echo "🚧 Updating your local environment..."
+    source ~/.nvm/nvm.sh && nvm use || true
+    npm install
+    npx nx reset
+    npm run core:install
+    just setup-cloud-api
+    just setup-desktop
+    @echo "Migrating the database..."
+    npm run web:database:migrate
+    npm run core:database:migrate
 
 start-services:
     @echo "🚧 Starting up postgres, redis..."
@@ -431,7 +491,6 @@ test-build-local-env:
     @echo "Attaching environment variables..."
     op inject -i .env.template -o .env.test
 
-
 setup:
     @echo "🚧 Setting up the project..."
     just build-local-env
@@ -444,7 +503,6 @@ setup:
 
     echo "{}" > apps/web/flag.overrides.json
     @echo "✅ Project setup complete. You should be able to run your services, just run 'just web' or 'just core'."
-
 
 lettuce:
     # Check if temporal server is running at localhost:8088
@@ -464,7 +522,6 @@ build-lettuce:
 push-lettuce:
     @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
     docker push {{DOCKER_REGISTRY}}/lettuce:{{TAG}}
-
 
 start-temporal:
     @echo "🚧 Starting Temporal server..."
@@ -554,7 +611,6 @@ package-desktop-test:
     @echo "Packaging the desktop app..."
     npx nx package-smoke desktop-electron
 
-
 docs:
     @echo "🚧 Startings docs page..."
     npx nx dev docs
@@ -562,7 +618,6 @@ docs:
 setup-pg-vector:
     @echo "Setting up pg-vector..."
     apps/desktop-electron/scripts/install-pgvector.sh
-
 
 # Trigger the OSS sync workflow (defaults to current branch if none specified)
 trigger-sync branch="":
@@ -584,7 +639,6 @@ push-core-to-oss name="":
     fi
     echo "🚀 Pushing core to OSS..."
     git subtree push --prefix apps/core git@github.com:letta-ai/letta.git $BRANCH
-
 
 pull-oss-to-core:
     @echo "🚀 Pulling OSS into core..."
@@ -631,7 +685,6 @@ env:
     @echo "🚧 Setting up the environment..."
     op inject -i .env.template -o .env
 
-
 emails:
     @echo "🚧 Running the email viewer..."
     npm run emails:dev
@@ -639,6 +692,7 @@ emails:
 @deploy-lettuce: push-lettuce
     @echo "🚧 Deploying lettuce Helm chart..."
     npm run slack-bot-says "Deploying lettuce service with tag: {{TAG}}..."
+    if [[ $USES_SECRETS_V2 == false ]]; then
     helm upgrade --install lettuce {{HELM_CHARTS_DIR}}/lettuce \
         --set image.repository={{DOCKER_REGISTRY}}/lettuce \
         --set image.tag={{TAG}} \
@@ -654,7 +708,10 @@ emails:
         --set env.TEMPORAL_LETTUCE_CA_PEM="${TEMPORAL_LETTUCE_CA_PEM}" \
         --set env.TEMPORAL_LETTUCE_CA_KEY="${TEMPORAL_LETTUCE_CA_KEY}" \
         --set env.TEMPORAL_LETTUCE_NAMESPACE="${TEMPORAL_LETTUCE_NAMESPACE:-lettuce.tmhou}"
-
+    else
+    helm upgrade --install lettuce {{HELM_CHARTS_DIR}}/lettuce \
+        --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    fi
     npm run slack-bot-says "Successfully deployed lettuce service with tag: {{TAG}}."
 
 # Trigger the lettuce deployment workflow (defaults to current branch if none specified)
@@ -679,6 +736,7 @@ push-model-proxy:
 @deploy-model-proxy: push-model-proxy
     @echo "🚧 Deploying model-proxy Helm chart..."
     npm run slack-bot-says "Deploying model-proxy service with tag: {{TAG}}..."
+    if [[ $USES_SECRETS_V2 == false ]]; then
     helm upgrade --install model-proxy {{HELM_CHARTS_DIR}}/model-proxy \
         --set image.repository={{DOCKER_REGISTRY}}/model-proxy \
         --set image.tag={{TAG}} \
@@ -686,6 +744,10 @@ push-model-proxy:
         --set env.GCP_PUBSUB_PROJECT_ID="${GCP_PUBSUB_PROJECT_ID}" \
         --set env.GCP_PUBSUB_TOPIC_ID="${GCP_PUBSUB_TOPIC_ID}" \
         --set env.OPENAI_API_KEY="${OPENAI_API_KEY}"
+    else
+    helm upgrade --install model-proxy {{HELM_CHARTS_DIR}}/model-proxy \
+        --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    fi
 
     npm run slack-bot-says "Successfully deployed model-proxy service with tag: {{TAG}}."
 
@@ -699,6 +761,7 @@ trigger-model-proxy-deploy branch="" deploy_message="":
     fi
     echo "🚀 Triggering model-proxy deployment workflow on branch: $BRANCH"
     gh workflow run "🕸️🚀 Deploy model-proxy" --ref $BRANCH
+
 
 # Send an alert to Slack with optional mention of a GitHub user
 alert message="" actor="":

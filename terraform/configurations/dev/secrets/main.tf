@@ -37,6 +37,57 @@ locals {
     "dev_ci_OPENAI_API_KEY"      = var.dev_ci_OPENAI_API_KEY
     "dev_ci_SERPAPI_API_KEY"     = var.dev_ci_SERPAPI_API_KEY
     "dev_ci_TOGETHER_API_KEY"    = var.dev_ci_TOGETHER_API_KEY
+
+    # model-proxy secrets
+    "dev_model-proxy_OPENAI_API_KEY" = var.dev_model_proxy_OPENAI_API_KEY
+
+    # cloud-api secrets
+    "dev_cloud-api_OPENAI_API_KEY" = var.dev_cloud_api_OPENAI_API_KEY
+    "dev_cloud-api_COMPOSIO_API_KEY" = var.dev_cloud_api_COMPOSIO_API_KEY
+    "dev_cloud-api_TEMPORAL_LETTUCE_CA_PEM" = var.dev_cloud_api_TEMPORAL_LETTUCE_CA_PEM
+    "dev_cloud-api_TEMPORAL_LETTUCE_CA_KEY" = var.dev_cloud_api_TEMPORAL_LETTUCE_CA_KEY
+    "dev_cloud-api_LAUNCH_DARKLY_SDK_KEY" = var.dev_cloud_api_LAUNCH_DARKLY_SDK_KEY
+    "dev_cloud-api_STRIPE_WEBHOOK_SECRET" = var.dev_cloud_api_STRIPE_WEBHOOK_SECRET
+    "dev_cloud-api_STRIPE_SECRET_KEY" = var.dev_cloud_api_STRIPE_SECRET_KEY
+    "dev_cloud-api_SENTRY_DSN" = var.dev_cloud_api_SENTRY_DSN
+    "dev_cloud-api_CLICKHOUSE_PASSWORD" = var.dev_cloud_api_CLICKHOUSE_PASSWORD
+    "dev_cloud-api_LETTA_PG_PASSWORD" = var.dev_cloud_api_LETTA_PG_PASSWORD
+
+    # # credit-undertaker secrets
+    # "dev_credit-undertaker_LETTA_PG_USER" = var.dev_credit_undertaker_LETTA_PG_USER
+    # "dev_credit-undertaker_LETTA_PG_PASSWORD" = var.dev_credit_undertaker_LETTA_PG_PASSWORD
+    # "dev_credit-undertaker_LETTA_PG_DB" = var.dev_credit_undertaker_LETTA_PG_DB
+    # "dev_credit-undertaker_DATABASE_URL" = var.dev_credit_undertaker_DATABASE_URL
+    # "dev_credit-undertaker_STRIPE_SECRET_KEY" = var.dev_credit_undertaker_STRIPE_SECRET_KEY
+    # "dev_credit-undertaker_RESEND_API_KEY" = var.dev_credit_undertaker_RESEND_API_KEY
+
+    # # letta-web secrets
+    # "dev_letta-web_DATABASE_URL" = var.dev_letta_web_DATABASE_URL
+    # "dev_letta-web_GOOGLE_CLIENT_ID" = var.dev_letta_web_GOOGLE_CLIENT_ID
+    # "dev_letta-web_GOOGLE_CLIENT_SECRET" = var.dev_letta_web_GOOGLE_CLIENT_SECRET
+    # "dev_letta-web_E2B_SANDBOX_TEMPLATE_ID" = var.dev_letta_web_E2B_SANDBOX_TEMPLATE_ID
+    # "dev_letta-web_E2B_API_KEY" = var.dev_letta_web_E2B_API_KEY
+    # "dev_letta-web_HUBSPOT_API_KEY" = var.dev_letta_web_HUBSPOT_API_KEY
+    # "dev_letta-web_RESEND_API_KEY" = var.dev_letta_web_RESEND_API_KEY
+    # "dev_letta-web_COMPOSIO_API_KEY" = var.dev_letta_web_COMPOSIO_API_KEY
+
+    # # lettuce secrets
+    # "dev_lettuce_DATABASE_URL" = var.dev_lettuce_DATABASE_URL
+    # "dev_lettuce_TEMPORAL_LETTUCE_API_HOST" = var.dev_lettuce_TEMPORAL_LETTUCE_API_HOST
+    # "dev_lettuce_TEMPORAL_LETTUCE_CA_PEM" = var.dev_lettuce_TEMPORAL_LETTUCE_CA_PEM
+    # "dev_lettuce_TEMPORAL_LETTUCE_CA_KEY" = var.dev_lettuce_TEMPORAL_LETTUCE_CA_KEY
+    # "dev_lettuce_RESEND_API_KEY" = var.dev_lettuce_RESEND_API_KEY
+
+    # memgpt-server secrets
+    "dev_memgpt-server_LETTA_SERVER_PASS" = var.dev_memgpt_server_LETTA_SERVER_PASS
+    "dev_memgpt-server_LETTA_PG_PASSWORD" = var.dev_memgpt_server_LETTA_PG_PASSWORD
+    "dev_memgpt-server_OPENAI_API_KEY" = var.dev_memgpt_server_OPENAI_API_KEY
+    "dev_memgpt-server_TOGETHER_API_KEY" = var.dev_memgpt_server_TOGETHER_API_KEY
+    "dev_memgpt-server_ANTHROPIC_API_KEY" = var.dev_memgpt_server_ANTHROPIC_API_KEY
+    "dev_memgpt-server_E2B_API_KEY" = var.dev_memgpt_server_E2B_API_KEY
+    "dev_memgpt-server_E2B_SANDBOX_TEMPLATE_ID" = var.dev_memgpt_server_E2B_SANDBOX_TEMPLATE_ID
+    "dev_memgpt-server_SENTRY_DSN" = var.dev_memgpt_server_SENTRY_DSN
+    "dev_memgpt-server_CLICKHOUSE_PASSWORD" = var.dev_memgpt_server_CLICKHOUSE_PASSWORD
   }
   # create the secret but leave the value empty
   create_only_secrets = [

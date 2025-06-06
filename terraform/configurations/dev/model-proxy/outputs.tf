@@ -13,3 +13,7 @@ output "gcs_bucket_url" {
 output "subscription_name" {
   value = module.model-proxy.subscription_name
 }
+
+output "secrets_accessible" {
+  value = module.k8s-iam.secrets_accessible
+}

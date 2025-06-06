@@ -31,3 +31,8 @@ variable "subscription_name" {
   type        = string
   default     = "gcs-subscription"
 }
+
+variable "model_proxy_sa_email" {
+  description = "Model Proxy Service Account email"
+  type        = string
+}

@@ -31,6 +31,12 @@ resource "google_container_cluster" "primary" {
 
   # Enable VPC-native cluster
   ip_allocation_policy {}
+
+  # Enables the Secret Manager add-on for this cluster.
+  secret_manager_config {
+    enabled = true
+  }
+
 }
 
 resource "google_container_node_pool" "default_pool" {
