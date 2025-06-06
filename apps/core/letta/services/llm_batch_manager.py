@@ -9,6 +9,7 @@ from letta.log import get_logger
 from letta.orm import Message as MessageModel
 from letta.orm.llm_batch_items import LLMBatchItem
 from letta.orm.llm_batch_job import LLMBatchJob
+from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentStepState
 from letta.schemas.enums import AgentStepStatus, JobStatus, ProviderType
 from letta.schemas.llm_batch_job import LLMBatchItem as PydanticLLMBatchItem
@@ -17,7 +18,6 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.tracing import trace_method
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)

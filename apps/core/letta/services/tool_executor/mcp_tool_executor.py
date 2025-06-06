@@ -1,6 +1,7 @@
 from typing import Any, Dict, Optional
 
 from letta.constants import MCP_TOOL_TAG_NAME_PREFIX
+from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
@@ -8,7 +9,6 @@ from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.services.mcp_manager import MCPManager
 from letta.services.tool_executor.tool_executor_base import ToolExecutor
-from letta.tracing import trace_method
 
 
 class ExternalMCPToolExecutor(ToolExecutor):

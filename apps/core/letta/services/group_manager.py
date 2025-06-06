@@ -7,13 +7,13 @@ from letta.orm.agent import Agent as AgentModel
 from letta.orm.errors import NoResultFound
 from letta.orm.group import Group as GroupModel
 from letta.orm.message import Message as MessageModel
+from letta.otel.tracing import trace_method
 from letta.schemas.group import Group as PydanticGroup
 from letta.schemas.group import GroupCreate, GroupUpdate, ManagerType
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.tracing import trace_method
 from letta.utils import enforce_types
 
 

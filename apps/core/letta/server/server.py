@@ -34,6 +34,7 @@ from letta.interface import AgentInterface  # abstract
 from letta.interface import CLIInterface  # for printing to terminal
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
+from letta.otel.tracing import log_event, trace_method
 from letta.prompts.gpt_system import get_system_text
 from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.block import Block, BlockUpdate, CreateBlock
@@ -101,7 +102,6 @@ from letta.services.tool_executor.tool_execution_manager import ToolExecutionMan
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings, settings, tool_settings
-from letta.tracing import log_event, trace_method
 from letta.utils import get_friendly_error_msg, get_persona_text, make_key
 
 config = LettaConfig.load()

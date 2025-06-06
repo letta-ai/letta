@@ -256,13 +256,15 @@ def create_application() -> "FastAPI":
         print(f"▶ Using OTLP tracing with endpoint: {otlp_endpoint}")
         env_name_suffix = os.getenv("ENV_NAME")
         service_name = f"letta-server-{env_name_suffix.lower()}" if env_name_suffix else "letta-server"
-        from letta.tracing import setup_tracing
+        from letta.otel.metrics import setup_metrics
+        from letta.otel.tracing import setup_tracing
 
         setup_tracing(
             endpoint=otlp_endpoint,
             app=app,
             service_name=service_name,
         )
+        setup_metrics(endpoint=otlp_endpoint, app=app, service_name=service_name)
 
     for route in v1_routes:
         app.include_router(route, prefix=API_PREFIX)
@@ -339,14 +341,14 @@ def start_server(
                 target="letta.server.rest_api.app:app",
                 # factory=True,
                 interface="asgi",
-                address=host or "localhost",
+                address=host or "127.0.0.1",  # Note granian address must be an ip address
                 port=port or REST_DEFAULT_PORT,
                 workers=settings.uvicorn_workers,
                 # threads=
                 reload=reload or settings.uvicorn_reload,
                 reload_ignore_patterns=["openapi_letta.json"],
                 reload_ignore_worker_failure=True,
-                reload_tick=100,
+                reload_tick=4000,  # set to 4s to prevent crashing on weird state
                 # log_level="info"
                 ssl_keyfile="certs/localhost-key.pem",
                 ssl_cert="certs/localhost.pem",
@@ -380,14 +382,14 @@ def start_server(
                 target="letta.server.rest_api.app:app",
                 # factory=True,
                 interface="asgi",
-                address=host or "localhost",
+                address=host or "127.0.0.1",  # Note granian address must be an ip address
                 port=port or REST_DEFAULT_PORT,
                 workers=settings.uvicorn_workers,
                 # threads=
                 reload=reload or settings.uvicorn_reload,
                 reload_ignore_patterns=["openapi_letta.json"],
                 reload_ignore_worker_failure=True,
-                reload_tick=100,
+                reload_tick=4000,  # set to 4s to prevent crashing on weird state
                 # log_level="info"
             ).serve()
         else:

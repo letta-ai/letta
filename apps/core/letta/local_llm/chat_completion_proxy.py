@@ -20,9 +20,9 @@ from letta.local_llm.utils import count_tokens, get_available_wrappers
 from letta.local_llm.vllm.api import get_vllm_completion
 from letta.local_llm.webui.api import get_webui_completion
 from letta.local_llm.webui.legacy_api import get_webui_completion as get_webui_completion_legacy
+from letta.otel.tracing import log_event
 from letta.prompts.gpt_summarize import SYSTEM as SUMMARIZE_SYSTEM_MESSAGE
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, Message, ToolCall, UsageStatistics
-from letta.tracing import log_event
 from letta.utils import get_tool_call_id
 
 has_shown_warning = False

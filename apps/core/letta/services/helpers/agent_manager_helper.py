@@ -16,6 +16,7 @@ from letta.orm.agents_tags import AgentsTags
 from letta.orm.errors import NoResultFound
 from letta.orm.identity import Identity
 from letta.orm.sqlite_functions import adapt_array
+from letta.otel.tracing import trace_method
 from letta.prompts import gpt_system
 from letta.schemas.agent import AgentState, AgentType
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -27,7 +28,6 @@ from letta.schemas.tool_rule import ToolRule
 from letta.schemas.user import User
 from letta.settings import settings
 from letta.system import get_initial_boot_messages, get_login_event, package_function_response
-from letta.tracing import trace_method
 
 
 # Static methods

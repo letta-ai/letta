@@ -23,7 +23,7 @@ from anthropic.types.beta import (
 )
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
-from letta.helpers.datetime_helpers import get_utc_timestamp_ns
+from letta.helpers.datetime_helpers import get_utc_timestamp_ns, ns_to_ms
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.log import get_logger
 from letta.schemas.letta_message import (
@@ -131,7 +131,7 @@ class AnthropicStreamingInterface:
                         now = get_utc_timestamp_ns()
                         ttft_ns = now - provider_request_start_timestamp_ns
                         ttft_span.add_event(
-                            name="anthropic_time_to_first_token_ms", attributes={"anthropic_time_to_first_token_ms": ttft_ns // 1_000_000}
+                            name="anthropic_time_to_first_token_ms", attributes={"anthropic_time_to_first_token_ms": ns_to_ms(ttft_ns)}
                         )
                         first_chunk = False
 

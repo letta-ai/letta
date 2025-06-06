@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
 from letta.log import get_logger
+from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
@@ -13,7 +14,6 @@ from letta.services.tool_executor.tool_executor_base import ToolExecutor
 from letta.services.tool_sandbox.e2b_sandbox import AsyncToolSandboxE2B
 from letta.services.tool_sandbox.local_sandbox import AsyncToolSandboxLocal
 from letta.settings import tool_settings
-from letta.tracing import trace_method
 from letta.types import JsonDict
 from letta.utils import get_friendly_error_msg
 
