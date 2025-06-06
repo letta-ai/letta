@@ -1,0 +1,155 @@
+name: Send Message SDK Tests
+on:
+  pull_request_target:
+    # branches: [main] # TODO: uncomment before merge
+    types: [labeled]
+    paths:
+      - 'letta/**'
+
+jobs:
+  send-messages:
+    # Only run when the "safe to test" label is applied
+    if: contains(github.event.pull_request.labels.*.name, 'safe to test')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        config_file:
+          - "openai-gpt-4o-mini.json"
+          - "azure-gpt-4o-mini.json"
+          - "claude-3-5-sonnet.json"
+          - "claude-3-7-sonnet.json"
+          - "claude-3-7-sonnet-extended.json"
+          - "gemini-pro.json"
+          - "gemini-vertex.json"
+    services:
+      qdrant:
+        image: qdrant/qdrant
+        ports:
+          - 6333:6333
+      postgres:
+        image: pgvector/pgvector:pg17
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      # Ensure secrets don't leak
+      - name: Configure git to hide secrets
+        run: |
+          git config --global core.logAllRefUpdates false
+          git config --global log.hideCredentials true
+      - name: Set up secret masking
+        run: |
+          # Automatically mask any environment variable ending with _KEY
+          for var in $(env | grep '_KEY=' | cut -d= -f1); do
+            value="${!var}"
+            if [[ -n "$value" ]]; then
+              # Mask the full value
+              echo "::add-mask::$value"
+              
+              # Also mask partial values (first and last several characters)
+              # This helps when only parts of keys appear in logs
+              if [[ ${#value} -gt 8 ]]; then
+                echo "::add-mask::${value:0:8}"
+                echo "::add-mask::${value:(-8)}"
+              fi
+              
+              # Also mask with common formatting changes
+              # Some logs might add quotes or other characters
+              echo "::add-mask::\"$value\""
+              echo "::add-mask::$value\""
+              echo "::add-mask::\"$value"
+              
+              echo "Masked secret: $var (length: ${#value})"
+            fi
+          done
+
+      # Check out base repository code, not the PR's code (for security)
+      - name: Checkout base repository
+        uses: actions/checkout@v4 # No ref specified means it uses base branch
+      
+      # Only extract relevant files from the PR (for security, specifically prevent modification of workflow files)
+      - name: Extract PR schema files
+        run: |
+          # Fetch PR without checking it out
+          git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }}
+          
+          # Extract ONLY the schema files
+          git checkout pr-${{ github.event.pull_request.number }} -- letta/
+      - name: Set up python 3.12
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: Load cached Poetry Binary
+        id: cached-poetry-binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.local
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-1.8.3
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.3
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+          # Restore cache with this prefix if not exact match with key
+          # Note cache-hit returns false in this case, so the below step will run
+          restore-keys: |
+            venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        shell: bash
+        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google' }}
+      - name: Install letta packages via Poetry
+        run: |
+          poetry run pip install --upgrade letta-client letta
+      - name: Migrate database
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+        run: |
+          psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
+          poetry run alembic upgrade head
+      - name: Run integration tests for ${{ matrix.config_file }}
+        env:
+          LLM_CONFIG_FILE: ${{ matrix.config_file }}
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+          LETTA_SERVER_PASS: test_server_token
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
+          AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
+          GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}
+        run: |
+          poetry run pytest \
+            -s -vv \
+            tests/integration_test_send_message.py \
+            --maxfail=1 --durations=10
