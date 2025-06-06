@@ -2070,6 +2070,10 @@ export type LettaBatchRequest = {
    */
   assistant_message_tool_kwarg?: string;
   /**
+   * Only return specified message types in the response. If `None` (default) returns all messages.
+   */
+  include_return_message_types?: Array<MessageType> | null;
+  /**
    * The ID of the agent to send this batch request for
    */
   agent_id: string;
@@ -2092,6 +2096,10 @@ export type LettaRequest = {
    * The name of the message argument in the designated message tool.
    */
   assistant_message_tool_kwarg?: string;
+  /**
+   * Only return specified message types in the response. If `None` (default) returns all messages.
+   */
+  include_return_message_types?: Array<MessageType> | null;
 };
 
 export type LettaRequestConfig = {
@@ -2145,6 +2153,10 @@ export type LettaStreamingRequest = {
    * The name of the message argument in the designated message tool.
    */
   assistant_message_tool_kwarg?: string;
+  /**
+   * Only return specified message types in the response. If `None` (default) returns all messages.
+   */
+  include_return_message_types?: Array<MessageType> | null;
   /**
    * Flag to determine if individual tokens should be streamed. Set to True for token streaming (requires stream_steps = True).
    */
@@ -2427,6 +2439,15 @@ export type MessageSchema = {
   tool_returns: Array<unknown>;
   updated_at: string;
 };
+
+export type MessageType =
+  | 'system_message'
+  | 'user_message'
+  | 'assistant_message'
+  | 'reasoning_message'
+  | 'hidden_reasoning_message'
+  | 'tool_call_message'
+  | 'tool_return_message';
 
 export type OmittedReasoningContent = {
   /**

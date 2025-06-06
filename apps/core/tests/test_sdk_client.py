@@ -679,3 +679,86 @@ def test_many_blocks(client: LettaSDKClient):
 
     client.agents.delete(agent1.id)
     client.agents.delete(agent2.id)
+
+
+# cases: steam, async, token stream, sync
+@pytest.mark.parametrize("message_create", ["stream_step", "token_stream", "sync"])
+def test_include_return_message_types(client: LettaSDKClient, agent: AgentState, message_create: str):
+    """Test that the include_return_message_types parameter works"""
+
+    def verify_message_types(messages, message_types):
+        for message in messages:
+            assert message.message_type in message_types
+
+    message = "My name is actually Sarah"
+    message_types = ["reasoning_message", "tool_call_message"]
+    agent = client.agents.create(
+        memory_blocks=[
+            CreateBlock(label="user", value="Name: Charles"),
+        ],
+        model="letta/letta-free",
+        embedding="letta/letta-free",
+    )
+
+    if message_create == "stream_step":
+        response = client.agents.messages.create_stream(
+            agent_id=agent.id,
+            messages=[
+                MessageCreate(
+                    role="user",
+                    content=message,
+                ),
+            ],
+            include_return_message_types=message_types,
+        )
+        messages = [message for message in list(response) if message.message_type != "usage_statistics"]
+        verify_message_types(messages, message_types)
+
+    elif message_create == "async":
+        response = client.agents.messages.create_async(
+            agent_id=agent.id,
+            messages=[
+                MessageCreate(
+                    role="user",
+                    content=message,
+                )
+            ],
+            include_return_message_types=message_types,
+        )
+        # wait to finish
+        while response.status != "completed":
+            time.sleep(1)
+            response = client.runs.retrieve(run_id=response.id)
+        messages = client.runs.messages.list(run_id=response.id)
+        verify_message_types(messages, message_types)
+
+    elif message_create == "token_stream":
+        response = client.agents.messages.create_stream(
+            agent_id=agent.id,
+            messages=[
+                MessageCreate(
+                    role="user",
+                    content=message,
+                ),
+            ],
+            include_return_message_types=message_types,
+        )
+        messages = [message for message in list(response) if message.message_type != "usage_statistics"]
+        verify_message_types(messages, message_types)
+
+    elif message_create == "sync":
+        response = client.agents.messages.create(
+            agent_id=agent.id,
+            messages=[
+                MessageCreate(
+                    role="user",
+                    content=message,
+                ),
+            ],
+            include_return_message_types=message_types,
+        )
+        messages = response.messages
+        verify_message_types(messages, message_types)
+
+    # cleanup
+    client.agents.delete(agent.id)

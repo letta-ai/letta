@@ -5961,6 +5961,22 @@ export const $LettaBatchRequest = {
         'The name of the message argument in the designated message tool.',
       default: 'message',
     },
+    include_return_message_types: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/MessageType',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Include Return Message Types',
+      description:
+        'Only return specified message types in the response. If `None` (default) returns all messages.',
+    },
     agent_id: {
       type: 'string',
       title: 'Agent Id',
@@ -6001,6 +6017,22 @@ export const $LettaRequest = {
       description:
         'The name of the message argument in the designated message tool.',
       default: 'message',
+    },
+    include_return_message_types: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/MessageType',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Include Return Message Types',
+      description:
+        'Only return specified message types in the response. If `None` (default) returns all messages.',
     },
   },
   type: 'object',
@@ -6090,6 +6122,22 @@ export const $LettaStreamingRequest = {
       description:
         'The name of the message argument in the designated message tool.',
       default: 'message',
+    },
+    include_return_message_types: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/MessageType',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Include Return Message Types',
+      description:
+        'Only return specified message types in the response. If `None` (default) returns all messages.',
     },
     stream_tokens: {
       type: 'boolean',
@@ -6831,6 +6879,20 @@ export const $MessageSchema = {
     'updated_at',
   ],
   title: 'MessageSchema',
+} as const;
+
+export const $MessageType = {
+  type: 'string',
+  enum: [
+    'system_message',
+    'user_message',
+    'assistant_message',
+    'reasoning_message',
+    'hidden_reasoning_message',
+    'tool_call_message',
+    'tool_return_message',
+  ],
+  title: 'MessageType',
 } as const;
 
 export const $OmittedReasoningContent = {

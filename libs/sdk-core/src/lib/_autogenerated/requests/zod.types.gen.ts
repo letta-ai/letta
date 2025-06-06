@@ -3248,12 +3248,31 @@ export const CreateArchivalMemory = z.object({
   text: z.string(),
 });
 
+export type MessageType = z.infer<typeof MessageType>;
+export const MessageType = z.union([
+  z.literal('system_message'),
+  z.literal('user_message'),
+  z.literal('assistant_message'),
+  z.literal('reasoning_message'),
+  z.literal('hidden_reasoning_message'),
+  z.literal('tool_call_message'),
+  z.literal('tool_return_message'),
+]);
+
 export type LettaBatchRequest = z.infer<typeof LettaBatchRequest>;
 export const LettaBatchRequest = z.object({
   messages: z.array(MessageCreate),
   use_assistant_message: z.union([z.boolean(), z.undefined()]).optional(),
   assistant_message_tool_name: z.union([z.string(), z.undefined()]).optional(),
   assistant_message_tool_kwarg: z.union([z.string(), z.undefined()]).optional(),
+  include_return_message_types: z
+    .union([
+      z.array(MessageType),
+      z.null(),
+      z.array(z.union([z.array(MessageType), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   agent_id: z.string(),
 });
 
@@ -3869,6 +3888,14 @@ export const LettaRequest = z.object({
   use_assistant_message: z.union([z.boolean(), z.undefined()]).optional(),
   assistant_message_tool_name: z.union([z.string(), z.undefined()]).optional(),
   assistant_message_tool_kwarg: z.union([z.string(), z.undefined()]).optional(),
+  include_return_message_types: z
+    .union([
+      z.array(MessageType),
+      z.null(),
+      z.array(z.union([z.array(MessageType), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type LettaRequestConfig = z.infer<typeof LettaRequestConfig>;
@@ -4193,6 +4220,14 @@ export const LettaStreamingRequest = z.object({
   use_assistant_message: z.union([z.boolean(), z.undefined()]).optional(),
   assistant_message_tool_name: z.union([z.string(), z.undefined()]).optional(),
   assistant_message_tool_kwarg: z.union([z.string(), z.undefined()]).optional(),
+  include_return_message_types: z
+    .union([
+      z.array(MessageType),
+      z.null(),
+      z.array(z.union([z.array(MessageType), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   stream_tokens: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
