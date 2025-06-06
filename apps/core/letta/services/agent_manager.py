@@ -2412,7 +2412,7 @@ class AgentManager:
         missing_tool_names = set(FILES_TOOLS).difference(core_tool_names)
 
         for tool_name in missing_tool_names:
-            tool_id = self.tool_manager.get_tool_id_by_name(tool_name=tool_name, actor=actor)
+            tool_id = await self.tool_manager.get_tool_id_by_name_async(tool_name=tool_name, actor=actor)
 
             # TODO: This is hacky and deserves a rethink - how do we keep all the base tools available in every org always?
             if not tool_id:
@@ -2443,7 +2443,7 @@ class AgentManager:
         core_tool_names = {tool.name for tool in agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
 
         for tool_name in core_tool_names:
-            tool_id = self.tool_manager.get_tool_id_by_name(tool_name=tool_name, actor=actor)
+            tool_id = await self.tool_manager.get_tool_id_by_name_async(tool_name=tool_name, actor=actor)
 
             # TODO: Inefficient - I think this re-retrieves the agent_state?
             agent_state = await self.detach_tool_async(agent_id=agent_state.id, tool_id=tool_id, actor=actor)
