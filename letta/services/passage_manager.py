@@ -13,6 +13,7 @@ from letta.orm.errors import NoResultFound
 from letta.orm.passage import AgentPassage, SourcePassage
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
+from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
@@ -42,10 +43,65 @@ async def get_openai_embedding_async(text: str, model: str, endpoint: str) -> Li
 class PassageManager:
     """Manager class to handle business logic related to Passages."""
 
+    # AGENT PASSAGE METHODS
+    @enforce_types
+    @trace_method
+    def get_agent_passage_by_id(self, passage_id: str, actor: PydanticUser) -> Optional[PydanticPassage]:
+        """Fetch an agent passage by ID."""
+        with db_registry.session() as session:
+            try:
+                passage = AgentPassage.read(db_session=session, identifier=passage_id, actor=actor)
+                return passage.to_pydantic()
+            except NoResultFound:
+                raise NoResultFound(f"Agent passage with id {passage_id} not found in database.")
+
+    @enforce_types
+    @trace_method
+    async def get_agent_passage_by_id_async(self, passage_id: str, actor: PydanticUser) -> Optional[PydanticPassage]:
+        """Fetch an agent passage by ID."""
+        async with db_registry.async_session() as session:
+            try:
+                passage = await AgentPassage.read_async(db_session=session, identifier=passage_id, actor=actor)
+                return passage.to_pydantic()
+            except NoResultFound:
+                raise NoResultFound(f"Agent passage with id {passage_id} not found in database.")
+
+    # SOURCE PASSAGE METHODS
+    @enforce_types
+    @trace_method
+    def get_source_passage_by_id(self, passage_id: str, actor: PydanticUser) -> Optional[PydanticPassage]:
+        """Fetch a source passage by ID."""
+        with db_registry.session() as session:
+            try:
+                passage = SourcePassage.read(db_session=session, identifier=passage_id, actor=actor)
+                return passage.to_pydantic()
+            except NoResultFound:
+                raise NoResultFound(f"Source passage with id {passage_id} not found in database.")
+
+    @enforce_types
+    @trace_method
+    async def get_source_passage_by_id_async(self, passage_id: str, actor: PydanticUser) -> Optional[PydanticPassage]:
+        """Fetch a source passage by ID."""
+        async with db_registry.async_session() as session:
+            try:
+                passage = await SourcePassage.read_async(db_session=session, identifier=passage_id, actor=actor)
+                return passage.to_pydantic()
+            except NoResultFound:
+                raise NoResultFound(f"Source passage with id {passage_id} not found in database.")
+
+    # DEPRECATED - Use specific methods above
     @enforce_types
     @trace_method
     def get_passage_by_id(self, passage_id: str, actor: PydanticUser) -> Optional[PydanticPassage]:
-        """Fetch a passage by ID."""
+        """DEPRECATED: Use get_agent_passage_by_id() or get_source_passage_by_id() instead."""
+        import warnings
+
+        warnings.warn(
+            "get_passage_by_id is deprecated. Use get_agent_passage_by_id() or get_source_passage_by_id() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         with db_registry.session() as session:
             # Try source passages first
             try:
@@ -62,7 +118,15 @@ class PassageManager:
     @enforce_types
     @trace_method
     async def get_passage_by_id_async(self, passage_id: str, actor: PydanticUser) -> Optional[PydanticPassage]:
-        """Fetch a passage by ID."""
+        """DEPRECATED: Use get_agent_passage_by_id_async() or get_source_passage_by_id_async() instead."""
+        import warnings
+
+        warnings.warn(
+            "get_passage_by_id_async is deprecated. Use get_agent_passage_by_id_async() or get_source_passage_by_id_async() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         async with db_registry.async_session() as session:
             # Try source passages first
             try:
@@ -78,8 +142,135 @@ class PassageManager:
 
     @enforce_types
     @trace_method
+    def create_agent_passage(self, pydantic_passage: PydanticPassage, actor: PydanticUser) -> PydanticPassage:
+        """Create a new agent passage."""
+        if not pydantic_passage.agent_id:
+            raise ValueError("Agent passage must have agent_id")
+        if pydantic_passage.source_id:
+            raise ValueError("Agent passage cannot have source_id")
+
+        data = pydantic_passage.model_dump(to_orm=True)
+        common_fields = {
+            "id": data.get("id"),
+            "text": data["text"],
+            "embedding": data["embedding"],
+            "embedding_config": data["embedding_config"],
+            "organization_id": data["organization_id"],
+            "metadata_": data.get("metadata", {}),
+            "is_deleted": data.get("is_deleted", False),
+            "created_at": data.get("created_at", datetime.now(timezone.utc)),
+        }
+        agent_fields = {"agent_id": data["agent_id"]}
+        passage = AgentPassage(**common_fields, **agent_fields)
+
+        with db_registry.session() as session:
+            passage.create(session, actor=actor)
+            return passage.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def create_agent_passage_async(self, pydantic_passage: PydanticPassage, actor: PydanticUser) -> PydanticPassage:
+        """Create a new agent passage."""
+        if not pydantic_passage.agent_id:
+            raise ValueError("Agent passage must have agent_id")
+        if pydantic_passage.source_id:
+            raise ValueError("Agent passage cannot have source_id")
+
+        data = pydantic_passage.model_dump(to_orm=True)
+        common_fields = {
+            "id": data.get("id"),
+            "text": data["text"],
+            "embedding": data["embedding"],
+            "embedding_config": data["embedding_config"],
+            "organization_id": data["organization_id"],
+            "metadata_": data.get("metadata", {}),
+            "is_deleted": data.get("is_deleted", False),
+            "created_at": data.get("created_at", datetime.now(timezone.utc)),
+        }
+        agent_fields = {"agent_id": data["agent_id"]}
+        passage = AgentPassage(**common_fields, **agent_fields)
+
+        async with db_registry.async_session() as session:
+            passage = await passage.create_async(session, actor=actor)
+            return passage.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    def create_source_passage(
+        self, pydantic_passage: PydanticPassage, file_metadata: PydanticFileMetadata, actor: PydanticUser
+    ) -> PydanticPassage:
+        """Create a new source passage."""
+        if not pydantic_passage.source_id:
+            raise ValueError("Source passage must have source_id")
+        if pydantic_passage.agent_id:
+            raise ValueError("Source passage cannot have agent_id")
+
+        data = pydantic_passage.model_dump(to_orm=True)
+        common_fields = {
+            "id": data.get("id"),
+            "text": data["text"],
+            "embedding": data["embedding"],
+            "embedding_config": data["embedding_config"],
+            "organization_id": data["organization_id"],
+            "metadata_": data.get("metadata", {}),
+            "is_deleted": data.get("is_deleted", False),
+            "created_at": data.get("created_at", datetime.now(timezone.utc)),
+        }
+        source_fields = {
+            "source_id": data["source_id"],
+            "file_id": data.get("file_id"),
+            "file_name": file_metadata.file_name,
+        }
+        passage = SourcePassage(**common_fields, **source_fields)
+
+        with db_registry.session() as session:
+            passage.create(session, actor=actor)
+            return passage.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def create_source_passage_async(
+        self, pydantic_passage: PydanticPassage, file_metadata: PydanticFileMetadata, actor: PydanticUser
+    ) -> PydanticPassage:
+        """Create a new source passage."""
+        if not pydantic_passage.source_id:
+            raise ValueError("Source passage must have source_id")
+        if pydantic_passage.agent_id:
+            raise ValueError("Source passage cannot have agent_id")
+
+        data = pydantic_passage.model_dump(to_orm=True)
+        common_fields = {
+            "id": data.get("id"),
+            "text": data["text"],
+            "embedding": data["embedding"],
+            "embedding_config": data["embedding_config"],
+            "organization_id": data["organization_id"],
+            "metadata_": data.get("metadata", {}),
+            "is_deleted": data.get("is_deleted", False),
+            "created_at": data.get("created_at", datetime.now(timezone.utc)),
+        }
+        source_fields = {
+            "source_id": data["source_id"],
+            "file_id": data.get("file_id"),
+            "file_name": file_metadata.file_name,
+        }
+        passage = SourcePassage(**common_fields, **source_fields)
+
+        async with db_registry.async_session() as session:
+            passage = await passage.create_async(session, actor=actor)
+            return passage.to_pydantic()
+
+    # DEPRECATED - Use specific methods above
+    @enforce_types
+    @trace_method
     def create_passage(self, pydantic_passage: PydanticPassage, actor: PydanticUser) -> PydanticPassage:
-        """Create a new passage in the appropriate table based on whether it has agent_id or source_id."""
+        """DEPRECATED: Use create_agent_passage() or create_source_passage() instead."""
+        import warnings
+
+        warnings.warn(
+            "create_passage is deprecated. Use create_agent_passage() or create_source_passage() instead.", DeprecationWarning, stacklevel=2
+        )
+
         passage = self._preprocess_passage_for_creation(pydantic_passage=pydantic_passage)
 
         with db_registry.session() as session:
@@ -89,7 +280,15 @@ class PassageManager:
     @enforce_types
     @trace_method
     async def create_passage_async(self, pydantic_passage: PydanticPassage, actor: PydanticUser) -> PydanticPassage:
-        """Create a new passage in the appropriate table based on whether it has agent_id or source_id."""
+        """DEPRECATED: Use create_agent_passage_async() or create_source_passage_async() instead."""
+        import warnings
+
+        warnings.warn(
+            "create_passage_async is deprecated. Use create_agent_passage_async() or create_source_passage_async() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         # Common fields for both passage types
         passage = self._preprocess_passage_for_creation(pydantic_passage=pydantic_passage)
         async with db_registry.async_session() as session:
@@ -130,14 +329,108 @@ class PassageManager:
 
     @enforce_types
     @trace_method
+    def create_many_agent_passages(self, passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
+        """Create multiple agent passages."""
+        return [self.create_agent_passage(p, actor) for p in passages]
+
+    @enforce_types
+    @trace_method
+    async def create_many_agent_passages_async(self, passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
+        """Create multiple agent passages."""
+        agent_passages = []
+        for p in passages:
+            if not p.agent_id:
+                raise ValueError("Agent passage must have agent_id")
+            if p.source_id:
+                raise ValueError("Agent passage cannot have source_id")
+
+            data = p.model_dump(to_orm=True)
+            common_fields = {
+                "id": data.get("id"),
+                "text": data["text"],
+                "embedding": data["embedding"],
+                "embedding_config": data["embedding_config"],
+                "organization_id": data["organization_id"],
+                "metadata_": data.get("metadata", {}),
+                "is_deleted": data.get("is_deleted", False),
+                "created_at": data.get("created_at", datetime.now(timezone.utc)),
+            }
+            agent_fields = {"agent_id": data["agent_id"]}
+            agent_passages.append(AgentPassage(**common_fields, **agent_fields))
+
+        async with db_registry.async_session() as session:
+            agent_created = await AgentPassage.batch_create_async(items=agent_passages, db_session=session, actor=actor)
+            return [p.to_pydantic() for p in agent_created]
+
+    @enforce_types
+    @trace_method
+    def create_many_source_passages(
+        self, passages: List[PydanticPassage], file_metadata: PydanticFileMetadata, actor: PydanticUser
+    ) -> List[PydanticPassage]:
+        """Create multiple source passages."""
+        return [self.create_source_passage(p, file_metadata, actor) for p in passages]
+
+    @enforce_types
+    @trace_method
+    async def create_many_source_passages_async(
+        self, passages: List[PydanticPassage], file_metadata: PydanticFileMetadata, actor: PydanticUser
+    ) -> List[PydanticPassage]:
+        """Create multiple source passages."""
+        source_passages = []
+        for p in passages:
+            if not p.source_id:
+                raise ValueError("Source passage must have source_id")
+            if p.agent_id:
+                raise ValueError("Source passage cannot have agent_id")
+
+            data = p.model_dump(to_orm=True)
+            common_fields = {
+                "id": data.get("id"),
+                "text": data["text"],
+                "embedding": data["embedding"],
+                "embedding_config": data["embedding_config"],
+                "organization_id": data["organization_id"],
+                "metadata_": data.get("metadata", {}),
+                "is_deleted": data.get("is_deleted", False),
+                "created_at": data.get("created_at", datetime.now(timezone.utc)),
+            }
+            source_fields = {
+                "source_id": data["source_id"],
+                "file_id": data.get("file_id"),
+                "file_name": file_metadata.file_name,
+            }
+            source_passages.append(SourcePassage(**common_fields, **source_fields))
+
+        async with db_registry.async_session() as session:
+            source_created = await SourcePassage.batch_create_async(items=source_passages, db_session=session, actor=actor)
+            return [p.to_pydantic() for p in source_created]
+
+    # DEPRECATED - Use specific methods above
+    @enforce_types
+    @trace_method
     def create_many_passages(self, passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
-        """Create multiple passages."""
+        """DEPRECATED: Use create_many_agent_passages() or create_many_source_passages() instead."""
+        import warnings
+
+        warnings.warn(
+            "create_many_passages is deprecated. Use create_many_agent_passages() or create_many_source_passages() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return [self.create_passage(p, actor) for p in passages]
 
     @enforce_types
     @trace_method
     async def create_many_passages_async(self, passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
-        """Create multiple passages."""
+        """DEPRECATED: Use create_many_agent_passages_async() or create_many_source_passages_async() instead."""
+        import warnings
+
+        warnings.warn(
+            "create_many_passages_async is deprecated. Use create_many_agent_passages_async() or create_many_source_passages_async() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         async with db_registry.async_session() as session:
             agent_passages = []
             source_passages = []
@@ -203,7 +496,7 @@ class PassageManager:
                         raise TypeError(
                             f"Got back an unexpected payload from text embedding function, type={type(embedding)}, value={embedding}"
                         )
-                passage = self.create_passage(
+                passage = self.create_agent_passage(
                     PydanticPassage(
                         organization_id=actor.organization_id,
                         agent_id=agent_id,
@@ -251,7 +544,7 @@ class PassageManager:
                 for chunk_text, embedding in zip(text_chunks, embeddings)
             ]
 
-            passages = await self.create_many_passages_async(passages=passages, actor=actor)
+            passages = await self.create_many_agent_passages_async(passages=passages, actor=actor)
 
             return passages
 
@@ -294,8 +587,189 @@ class PassageManager:
 
     @enforce_types
     @trace_method
+    def update_agent_passage_by_id(
+        self, passage_id: str, passage: PydanticPassage, actor: PydanticUser, **kwargs
+    ) -> Optional[PydanticPassage]:
+        """Update an agent passage."""
+        if not passage_id:
+            raise ValueError("Passage ID must be provided.")
+
+        with db_registry.session() as session:
+            try:
+                curr_passage = AgentPassage.read(
+                    db_session=session,
+                    identifier=passage_id,
+                    actor=actor,
+                )
+            except NoResultFound:
+                raise ValueError(f"Agent passage with id {passage_id} does not exist.")
+
+            # Update the database record with values from the provided record
+            update_data = passage.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+            for key, value in update_data.items():
+                setattr(curr_passage, key, value)
+
+            # Commit changes
+            curr_passage.update(session, actor=actor)
+            return curr_passage.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def update_agent_passage_by_id_async(
+        self, passage_id: str, passage: PydanticPassage, actor: PydanticUser, **kwargs
+    ) -> Optional[PydanticPassage]:
+        """Update an agent passage."""
+        if not passage_id:
+            raise ValueError("Passage ID must be provided.")
+
+        async with db_registry.async_session() as session:
+            try:
+                curr_passage = await AgentPassage.read_async(
+                    db_session=session,
+                    identifier=passage_id,
+                    actor=actor,
+                )
+            except NoResultFound:
+                raise ValueError(f"Agent passage with id {passage_id} does not exist.")
+
+            # Update the database record with values from the provided record
+            update_data = passage.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+            for key, value in update_data.items():
+                setattr(curr_passage, key, value)
+
+            # Commit changes
+            await curr_passage.update_async(session, actor=actor)
+            return curr_passage.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    def update_source_passage_by_id(
+        self, passage_id: str, passage: PydanticPassage, actor: PydanticUser, **kwargs
+    ) -> Optional[PydanticPassage]:
+        """Update a source passage."""
+        if not passage_id:
+            raise ValueError("Passage ID must be provided.")
+
+        with db_registry.session() as session:
+            try:
+                curr_passage = SourcePassage.read(
+                    db_session=session,
+                    identifier=passage_id,
+                    actor=actor,
+                )
+            except NoResultFound:
+                raise ValueError(f"Source passage with id {passage_id} does not exist.")
+
+            # Update the database record with values from the provided record
+            update_data = passage.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+            for key, value in update_data.items():
+                setattr(curr_passage, key, value)
+
+            # Commit changes
+            curr_passage.update(session, actor=actor)
+            return curr_passage.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def update_source_passage_by_id_async(
+        self, passage_id: str, passage: PydanticPassage, actor: PydanticUser, **kwargs
+    ) -> Optional[PydanticPassage]:
+        """Update a source passage."""
+        if not passage_id:
+            raise ValueError("Passage ID must be provided.")
+
+        async with db_registry.async_session() as session:
+            try:
+                curr_passage = await SourcePassage.read_async(
+                    db_session=session,
+                    identifier=passage_id,
+                    actor=actor,
+                )
+            except NoResultFound:
+                raise ValueError(f"Source passage with id {passage_id} does not exist.")
+
+            # Update the database record with values from the provided record
+            update_data = passage.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+            for key, value in update_data.items():
+                setattr(curr_passage, key, value)
+
+            # Commit changes
+            await curr_passage.update_async(session, actor=actor)
+            return curr_passage.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    def delete_agent_passage_by_id(self, passage_id: str, actor: PydanticUser) -> bool:
+        """Delete an agent passage."""
+        if not passage_id:
+            raise ValueError("Passage ID must be provided.")
+
+        with db_registry.session() as session:
+            try:
+                passage = AgentPassage.read(db_session=session, identifier=passage_id, actor=actor)
+                passage.hard_delete(session, actor=actor)
+                return True
+            except NoResultFound:
+                raise NoResultFound(f"Agent passage with id {passage_id} not found.")
+
+    @enforce_types
+    @trace_method
+    async def delete_agent_passage_by_id_async(self, passage_id: str, actor: PydanticUser) -> bool:
+        """Delete an agent passage."""
+        if not passage_id:
+            raise ValueError("Passage ID must be provided.")
+
+        async with db_registry.async_session() as session:
+            try:
+                passage = await AgentPassage.read_async(db_session=session, identifier=passage_id, actor=actor)
+                await passage.hard_delete_async(session, actor=actor)
+                return True
+            except NoResultFound:
+                raise NoResultFound(f"Agent passage with id {passage_id} not found.")
+
+    @enforce_types
+    @trace_method
+    def delete_source_passage_by_id(self, passage_id: str, actor: PydanticUser) -> bool:
+        """Delete a source passage."""
+        if not passage_id:
+            raise ValueError("Passage ID must be provided.")
+
+        with db_registry.session() as session:
+            try:
+                passage = SourcePassage.read(db_session=session, identifier=passage_id, actor=actor)
+                passage.hard_delete(session, actor=actor)
+                return True
+            except NoResultFound:
+                raise NoResultFound(f"Source passage with id {passage_id} not found.")
+
+    @enforce_types
+    @trace_method
+    async def delete_source_passage_by_id_async(self, passage_id: str, actor: PydanticUser) -> bool:
+        """Delete a source passage."""
+        if not passage_id:
+            raise ValueError("Passage ID must be provided.")
+
+        async with db_registry.async_session() as session:
+            try:
+                passage = await SourcePassage.read_async(db_session=session, identifier=passage_id, actor=actor)
+                await passage.hard_delete_async(session, actor=actor)
+                return True
+            except NoResultFound:
+                raise NoResultFound(f"Source passage with id {passage_id} not found.")
+
+    # DEPRECATED - Use specific methods above
+    @enforce_types
+    @trace_method
     def update_passage_by_id(self, passage_id: str, passage: PydanticPassage, actor: PydanticUser, **kwargs) -> Optional[PydanticPassage]:
-        """Update a passage."""
+        """DEPRECATED: Use update_agent_passage_by_id() or update_source_passage_by_id() instead."""
+        import warnings
+
+        warnings.warn(
+            "update_passage_by_id is deprecated. Use update_agent_passage_by_id() or update_source_passage_by_id() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         if not passage_id:
             raise ValueError("Passage ID must be provided.")
 
@@ -330,7 +804,15 @@ class PassageManager:
     @enforce_types
     @trace_method
     def delete_passage_by_id(self, passage_id: str, actor: PydanticUser) -> bool:
-        """Delete a passage from either source or archival passages."""
+        """DEPRECATED: Use delete_agent_passage_by_id() or delete_source_passage_by_id() instead."""
+        import warnings
+
+        warnings.warn(
+            "delete_passage_by_id is deprecated. Use delete_agent_passage_by_id() or delete_source_passage_by_id() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         if not passage_id:
             raise ValueError("Passage ID must be provided.")
 
@@ -352,7 +834,15 @@ class PassageManager:
     @enforce_types
     @trace_method
     async def delete_passage_by_id_async(self, passage_id: str, actor: PydanticUser) -> bool:
-        """Delete a passage from either source or archival passages."""
+        """DEPRECATED: Use delete_agent_passage_by_id_async() or delete_source_passage_by_id_async() instead."""
+        import warnings
+
+        warnings.warn(
+            "delete_passage_by_id_async is deprecated. Use delete_agent_passage_by_id_async() or delete_source_passage_by_id_async() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         if not passage_id:
             raise ValueError("Passage ID must be provided.")
 
@@ -373,15 +863,42 @@ class PassageManager:
 
     @enforce_types
     @trace_method
-    def delete_passages(
+    def delete_agent_passages(
         self,
         actor: PydanticUser,
         passages: List[PydanticPassage],
     ) -> bool:
+        """Delete multiple agent passages."""
         # TODO: This is very inefficient
         # TODO: We should have a base `delete_all_matching_filters`-esque function
         for passage in passages:
-            self.delete_passage_by_id(passage_id=passage.id, actor=actor)
+            self.delete_agent_passage_by_id(passage_id=passage.id, actor=actor)
+        return True
+
+    @enforce_types
+    @trace_method
+    async def delete_agent_passages_async(
+        self,
+        actor: PydanticUser,
+        passages: List[PydanticPassage],
+    ) -> bool:
+        """Delete multiple agent passages."""
+        async with db_registry.async_session() as session:
+            await AgentPassage.bulk_hard_delete_async(db_session=session, identifiers=[p.id for p in passages], actor=actor)
+            return True
+
+    @enforce_types
+    @trace_method
+    def delete_source_passages(
+        self,
+        actor: PydanticUser,
+        passages: List[PydanticPassage],
+    ) -> bool:
+        """Delete multiple source passages."""
+        # TODO: This is very inefficient
+        # TODO: We should have a base `delete_all_matching_filters`-esque function
+        for passage in passages:
+            self.delete_source_passage_by_id(passage_id=passage.id, actor=actor)
         return True
 
     @enforce_types
@@ -395,14 +912,36 @@ class PassageManager:
             await SourcePassage.bulk_hard_delete_async(db_session=session, identifiers=[p.id for p in passages], actor=actor)
             return True
 
+    # DEPRECATED - Use specific methods above
     @enforce_types
     @trace_method
-    def size(
+    def delete_passages(
+        self,
+        actor: PydanticUser,
+        passages: List[PydanticPassage],
+    ) -> bool:
+        """DEPRECATED: Use delete_agent_passages() or delete_source_passages() instead."""
+        import warnings
+
+        warnings.warn(
+            "delete_passages is deprecated. Use delete_agent_passages() or delete_source_passages() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        # TODO: This is very inefficient
+        # TODO: We should have a base `delete_all_matching_filters`-esque function
+        for passage in passages:
+            self.delete_passage_by_id(passage_id=passage.id, actor=actor)
+        return True
+
+    @enforce_types
+    @trace_method
+    def agent_passage_size(
         self,
         actor: PydanticUser,
         agent_id: Optional[str] = None,
     ) -> int:
-        """Get the total count of messages with optional filters.
+        """Get the total count of agent passages with optional filters.
 
         Args:
             actor: The user requesting the count
@@ -411,20 +950,66 @@ class PassageManager:
         with db_registry.session() as session:
             return AgentPassage.size(db_session=session, actor=actor, agent_id=agent_id)
 
+    # DEPRECATED - Use agent_passage_size() instead since this only counted agent passages anyway
     @enforce_types
     @trace_method
-    async def size_async(
+    def size(
         self,
         actor: PydanticUser,
         agent_id: Optional[str] = None,
     ) -> int:
-        """Get the total count of messages with optional filters.
+        """DEPRECATED: Use agent_passage_size() instead (this only counted agent passages anyway)."""
+        import warnings
+
+        warnings.warn("size is deprecated. Use agent_passage_size() instead.", DeprecationWarning, stacklevel=2)
+        with db_registry.session() as session:
+            return AgentPassage.size(db_session=session, actor=actor, agent_id=agent_id)
+
+    @enforce_types
+    @trace_method
+    async def agent_passage_size_async(
+        self,
+        actor: PydanticUser,
+        agent_id: Optional[str] = None,
+    ) -> int:
+        """Get the total count of agent passages with optional filters.
         Args:
             actor: The user requesting the count
             agent_id: The agent ID of the messages
         """
         async with db_registry.async_session() as session:
             return await AgentPassage.size_async(db_session=session, actor=actor, agent_id=agent_id)
+
+    @enforce_types
+    @trace_method
+    def source_passage_size(
+        self,
+        actor: PydanticUser,
+        source_id: Optional[str] = None,
+    ) -> int:
+        """Get the total count of source passages with optional filters.
+
+        Args:
+            actor: The user requesting the count
+            source_id: The source ID of the passages
+        """
+        with db_registry.session() as session:
+            return SourcePassage.size(db_session=session, actor=actor, source_id=source_id)
+
+    @enforce_types
+    @trace_method
+    async def source_passage_size_async(
+        self,
+        actor: PydanticUser,
+        source_id: Optional[str] = None,
+    ) -> int:
+        """Get the total count of source passages with optional filters.
+        Args:
+            actor: The user requesting the count
+            source_id: The source ID of the passages
+        """
+        async with db_registry.async_session() as session:
+            return await SourcePassage.size_async(db_session=session, actor=actor, source_id=source_id)
 
     @enforce_types
     @trace_method
@@ -448,7 +1033,7 @@ class PassageManager:
             raise ValueError(f"Invalid storage unit: {storage_unit}. Must be one of {list(BYTES_PER_STORAGE_UNIT.keys())}.")
         BYTES_PER_EMBEDDING_DIM = 4
         GB_PER_EMBEDDING = BYTES_PER_EMBEDDING_DIM / BYTES_PER_STORAGE_UNIT[storage_unit] * MAX_EMBEDDING_DIM
-        return await self.size_async(actor=actor, agent_id=agent_id) * GB_PER_EMBEDDING
+        return await self.agent_passage_size_async(actor=actor, agent_id=agent_id) * GB_PER_EMBEDDING
 
     @enforce_types
     @trace_method

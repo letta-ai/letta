@@ -1292,7 +1292,7 @@ class Agent(BaseAgent):
         # conversion of messages to OpenAI dict format, which is passed to the token counter
         (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
             self.message_manager.get_messages_by_ids_async(message_ids=self.agent_state.message_ids, actor=self.user),
-            self.passage_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
+            self.passage_manager.agent_passage_size_async(actor=self.user, agent_id=self.agent_state.id),
             self.message_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
         )
         in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
@@ -1414,7 +1414,7 @@ class Agent(BaseAgent):
         # conversion of messages to anthropic dict format, which is passed to the token counter
         (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
             self.message_manager.get_messages_by_ids_async(message_ids=self.agent_state.message_ids, actor=self.user),
-            self.passage_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
+            self.passage_manager.agent_passage_size_async(actor=self.user, agent_id=self.agent_state.id),
             self.message_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
         )
         in_context_messages_anthropic = [m.to_anthropic_dict() for m in in_context_messages]

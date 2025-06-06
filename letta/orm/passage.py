@@ -47,6 +47,8 @@ class SourcePassage(BasePassage, FileMixin, SourceMixin):
 
     __tablename__ = "source_passages"
 
+    file_name: Mapped[str] = mapped_column(doc="The name of the file that this passage was derived from")
+
     @declared_attr
     def file(cls) -> Mapped["FileMetadata"]:
         """Relationship to file"""

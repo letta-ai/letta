@@ -12,6 +12,7 @@ import httpx
 
 # tests/test_file_content_flow.py
 import pytest
+from _pytest.python_api import approx
 from anthropic.types.beta import BetaMessage
 from anthropic.types.beta.messages import BetaMessageBatchIndividualResponse, BetaMessageBatchSucceededResult
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
@@ -280,7 +281,7 @@ async def default_run(server: SyncServer, default_user):
 @pytest.fixture
 def agent_passage_fixture(server: SyncServer, default_user, sarah_agent):
     """Fixture to create an agent passage."""
-    passage = server.passage_manager.create_passage(
+    passage = server.passage_manager.create_agent_passage(
         PydanticPassage(
             text="Hello, I am an agent passage",
             agent_id=sarah_agent.id,
@@ -297,7 +298,7 @@ def agent_passage_fixture(server: SyncServer, default_user, sarah_agent):
 @pytest.fixture
 def source_passage_fixture(server: SyncServer, default_user, default_file, default_source):
     """Fixture to create a source passage."""
-    passage = server.passage_manager.create_passage(
+    passage = server.passage_manager.create_source_passage(
         PydanticPassage(
             text="Hello, I am a source passage",
             source_id=default_source.id,
@@ -307,6 +308,7 @@ def source_passage_fixture(server: SyncServer, default_user, default_file, defau
             embedding_config=DEFAULT_EMBEDDING_CONFIG,
             metadata={"type": "test"},
         ),
+        file_metadata=default_file,
         actor=default_user,
     )
     yield passage
@@ -318,7 +320,7 @@ def create_test_passages(server: SyncServer, default_file, default_user, sarah_a
     # Create agent passages
     passages = []
     for i in range(5):
-        passage = server.passage_manager.create_passage(
+        passage = server.passage_manager.create_agent_passage(
             PydanticPassage(
                 text=f"Agent passage {i}",
                 agent_id=sarah_agent.id,
@@ -335,7 +337,7 @@ def create_test_passages(server: SyncServer, default_file, default_user, sarah_a
 
     # Create source passages
     for i in range(5):
-        passage = server.passage_manager.create_passage(
+        passage = server.passage_manager.create_source_passage(
             PydanticPassage(
                 text=f"Source passage {i}",
                 source_id=default_source.id,
@@ -345,6 +347,7 @@ def create_test_passages(server: SyncServer, default_file, default_user, sarah_a
                 embedding_config=DEFAULT_EMBEDDING_CONFIG,
                 metadata={"type": "test"},
             ),
+            file_metadata=default_file,
             actor=default_user,
         )
         passages.append(passage)
@@ -525,7 +528,7 @@ def server():
 
 @pytest.fixture
 @pytest.mark.asyncio
-async def agent_passages_setup(server, default_source, default_user, sarah_agent, event_loop):
+async def agent_passages_setup(server, default_source, default_file, default_user, sarah_agent, event_loop):
     """Setup fixture for agent passages tests"""
     agent_id = sarah_agent.id
     actor = default_user
@@ -535,14 +538,16 @@ async def agent_passages_setup(server, default_source, default_user, sarah_agent
     # Create some source passages
     source_passages = []
     for i in range(3):
-        passage = await server.passage_manager.create_passage_async(
+        passage = await server.passage_manager.create_source_passage_async(
             PydanticPassage(
                 organization_id=actor.organization_id,
                 source_id=default_source.id,
+                file_id=default_file.id,
                 text=f"Source passage {i}",
                 embedding=[0.1],  # Default OpenAI embedding size
                 embedding_config=DEFAULT_EMBEDDING_CONFIG,
             ),
+            file_metadata=default_file,
             actor=actor,
         )
         source_passages.append(passage)
@@ -550,7 +555,7 @@ async def agent_passages_setup(server, default_source, default_user, sarah_agent
     # Create some agent passages
     agent_passages = []
     for i in range(2):
-        passage = await server.passage_manager.create_passage_async(
+        passage = await server.passage_manager.create_agent_passage_async(
             PydanticPassage(
                 organization_id=actor.organization_id,
                 agent_id=agent_id,
@@ -2022,7 +2027,7 @@ async def test_agent_list_passages_filtering(server, default_user, sarah_agent, 
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_vector_search(server, default_user, sarah_agent, default_source, event_loop):
+async def test_agent_list_passages_vector_search(server, default_user, sarah_agent, default_source, default_file, event_loop):
     """Test vector search functionality of agent passages"""
     embed_model = embedding_model(DEFAULT_EMBEDDING_CONFIG)
 
@@ -2041,6 +2046,7 @@ async def test_agent_list_passages_vector_search(server, default_user, sarah_age
     for i, text in enumerate(test_passages):
         embedding = embed_model.get_text_embedding(text)
         if i % 2 == 0:
+            # Create agent passage
             passage = PydanticPassage(
                 text=text,
                 organization_id=default_user.organization_id,
@@ -2048,15 +2054,18 @@ async def test_agent_list_passages_vector_search(server, default_user, sarah_age
                 embedding_config=DEFAULT_EMBEDDING_CONFIG,
                 embedding=embedding,
             )
+            created_passage = await server.passage_manager.create_agent_passage_async(passage, default_user)
         else:
+            # Create source passage
             passage = PydanticPassage(
                 text=text,
                 organization_id=default_user.organization_id,
                 source_id=default_source.id,
+                file_id=default_file.id,
                 embedding_config=DEFAULT_EMBEDDING_CONFIG,
                 embedding=embedding,
             )
-        created_passage = await server.passage_manager.create_passage_async(passage, default_user)
+            created_passage = await server.passage_manager.create_source_passage_async(passage, default_file, default_user)
         passages.append(created_passage)
 
     # Query vector similar to "red" embedding
@@ -2259,6 +2268,416 @@ async def test_passage_cascade_deletion(
     await server.source_manager.delete_source(default_source.id, default_user)
     with pytest.raises(NoResultFound):
         server.passage_manager.get_passage_by_id(source_passage_fixture.id, default_user)
+
+
+def test_create_agent_passage_specific(server: SyncServer, default_user, sarah_agent):
+    """Test creating an agent passage using the new agent-specific method."""
+    passage = server.passage_manager.create_agent_passage(
+        PydanticPassage(
+            text="Test agent passage via specific method",
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+            metadata={"type": "test_specific"},
+        ),
+        actor=default_user,
+    )
+
+    assert passage.id is not None
+    assert passage.text == "Test agent passage via specific method"
+    assert passage.agent_id == sarah_agent.id
+    assert passage.source_id is None
+
+
+def test_create_source_passage_specific(server: SyncServer, default_user, default_file, default_source):
+    """Test creating a source passage using the new source-specific method."""
+    passage = server.passage_manager.create_source_passage(
+        PydanticPassage(
+            text="Test source passage via specific method",
+            source_id=default_source.id,
+            file_id=default_file.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+            metadata={"type": "test_specific"},
+        ),
+        file_metadata=default_file,
+        actor=default_user,
+    )
+
+    assert passage.id is not None
+    assert passage.text == "Test source passage via specific method"
+    assert passage.source_id == default_source.id
+    assert passage.agent_id is None
+
+
+def test_create_agent_passage_validation(server: SyncServer, default_user, default_source, sarah_agent):
+    """Test that agent passage creation validates inputs correctly."""
+    # Should fail if agent_id is missing
+    with pytest.raises(ValueError, match="Agent passage must have agent_id"):
+        server.passage_manager.create_agent_passage(
+            PydanticPassage(
+                text="Invalid agent passage",
+                organization_id=default_user.organization_id,
+                embedding=[0.1],
+                embedding_config=DEFAULT_EMBEDDING_CONFIG,
+            ),
+            actor=default_user,
+        )
+
+    # Should fail if source_id is present
+    with pytest.raises(ValueError, match="Agent passage cannot have source_id"):
+        server.passage_manager.create_agent_passage(
+            PydanticPassage(
+                text="Invalid agent passage",
+                agent_id=sarah_agent.id,
+                source_id=default_source.id,
+                organization_id=default_user.organization_id,
+                embedding=[0.1],
+                embedding_config=DEFAULT_EMBEDDING_CONFIG,
+            ),
+            actor=default_user,
+        )
+
+
+def test_create_source_passage_validation(server: SyncServer, default_user, default_file, default_source, sarah_agent):
+    """Test that source passage creation validates inputs correctly."""
+    # Should fail if source_id is missing
+    with pytest.raises(ValueError, match="Source passage must have source_id"):
+        server.passage_manager.create_source_passage(
+            PydanticPassage(
+                text="Invalid source passage",
+                organization_id=default_user.organization_id,
+                embedding=[0.1],
+                embedding_config=DEFAULT_EMBEDDING_CONFIG,
+            ),
+            file_metadata=default_file,
+            actor=default_user,
+        )
+
+    # Should fail if agent_id is present
+    with pytest.raises(ValueError, match="Source passage cannot have agent_id"):
+        server.passage_manager.create_source_passage(
+            PydanticPassage(
+                text="Invalid source passage",
+                source_id=default_source.id,
+                agent_id=sarah_agent.id,
+                organization_id=default_user.organization_id,
+                embedding=[0.1],
+                embedding_config=DEFAULT_EMBEDDING_CONFIG,
+            ),
+            file_metadata=default_file,
+            actor=default_user,
+        )
+
+
+def test_get_agent_passage_by_id_specific(server: SyncServer, default_user, sarah_agent):
+    """Test retrieving an agent passage using the new agent-specific method."""
+    # Create an agent passage
+    passage = server.passage_manager.create_agent_passage(
+        PydanticPassage(
+            text="Agent passage for retrieval test",
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        actor=default_user,
+    )
+
+    # Retrieve it using the specific method
+    retrieved = server.passage_manager.get_agent_passage_by_id(passage.id, actor=default_user)
+    assert retrieved is not None
+    assert retrieved.id == passage.id
+    assert retrieved.text == passage.text
+    assert retrieved.agent_id == sarah_agent.id
+
+
+def test_get_source_passage_by_id_specific(server: SyncServer, default_user, default_file, default_source):
+    """Test retrieving a source passage using the new source-specific method."""
+    # Create a source passage
+    passage = server.passage_manager.create_source_passage(
+        PydanticPassage(
+            text="Source passage for retrieval test",
+            source_id=default_source.id,
+            file_id=default_file.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        file_metadata=default_file,
+        actor=default_user,
+    )
+
+    # Retrieve it using the specific method
+    retrieved = server.passage_manager.get_source_passage_by_id(passage.id, actor=default_user)
+    assert retrieved is not None
+    assert retrieved.id == passage.id
+    assert retrieved.text == passage.text
+    assert retrieved.source_id == default_source.id
+
+
+def test_get_wrong_passage_type_fails(server: SyncServer, default_user, sarah_agent, default_file, default_source):
+    """Test that trying to get the wrong passage type with specific methods fails."""
+    # Create an agent passage
+    agent_passage = server.passage_manager.create_agent_passage(
+        PydanticPassage(
+            text="Agent passage",
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        actor=default_user,
+    )
+
+    # Create a source passage
+    source_passage = server.passage_manager.create_source_passage(
+        PydanticPassage(
+            text="Source passage",
+            source_id=default_source.id,
+            file_id=default_file.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        file_metadata=default_file,
+        actor=default_user,
+    )
+
+    # Trying to get agent passage with source method should fail
+    with pytest.raises(NoResultFound):
+        server.passage_manager.get_source_passage_by_id(agent_passage.id, actor=default_user)
+
+    # Trying to get source passage with agent method should fail
+    with pytest.raises(NoResultFound):
+        server.passage_manager.get_agent_passage_by_id(source_passage.id, actor=default_user)
+
+
+def test_update_agent_passage_specific(server: SyncServer, default_user, sarah_agent):
+    """Test updating an agent passage using the new agent-specific method."""
+    # Create an agent passage
+    passage = server.passage_manager.create_agent_passage(
+        PydanticPassage(
+            text="Original agent passage text",
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        actor=default_user,
+    )
+
+    # Update it
+    updated_passage = server.passage_manager.update_agent_passage_by_id(
+        passage.id,
+        PydanticPassage(
+            text="Updated agent passage text",
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.2],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        actor=default_user,
+    )
+
+    assert updated_passage.text == "Updated agent passage text"
+    assert updated_passage.embedding[0] == approx(0.2)
+    assert updated_passage.id == passage.id
+
+
+def test_update_source_passage_specific(server: SyncServer, default_user, default_file, default_source):
+    """Test updating a source passage using the new source-specific method."""
+    # Create a source passage
+    passage = server.passage_manager.create_source_passage(
+        PydanticPassage(
+            text="Original source passage text",
+            source_id=default_source.id,
+            file_id=default_file.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        file_metadata=default_file,
+        actor=default_user,
+    )
+
+    # Update it
+    updated_passage = server.passage_manager.update_source_passage_by_id(
+        passage.id,
+        PydanticPassage(
+            text="Updated source passage text",
+            source_id=default_source.id,
+            file_id=default_file.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.2],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        actor=default_user,
+    )
+
+    assert updated_passage.text == "Updated source passage text"
+    assert updated_passage.embedding[0] == approx(0.2)
+    assert updated_passage.id == passage.id
+
+
+def test_delete_agent_passage_specific(server: SyncServer, default_user, sarah_agent):
+    """Test deleting an agent passage using the new agent-specific method."""
+    # Create an agent passage
+    passage = server.passage_manager.create_agent_passage(
+        PydanticPassage(
+            text="Agent passage to delete",
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        actor=default_user,
+    )
+
+    # Verify it exists
+    retrieved = server.passage_manager.get_agent_passage_by_id(passage.id, actor=default_user)
+    assert retrieved is not None
+
+    # Delete it
+    result = server.passage_manager.delete_agent_passage_by_id(passage.id, actor=default_user)
+    assert result is True
+
+    # Verify it's gone
+    with pytest.raises(NoResultFound):
+        server.passage_manager.get_agent_passage_by_id(passage.id, actor=default_user)
+
+
+def test_delete_source_passage_specific(server: SyncServer, default_user, default_file, default_source):
+    """Test deleting a source passage using the new source-specific method."""
+    # Create a source passage
+    passage = server.passage_manager.create_source_passage(
+        PydanticPassage(
+            text="Source passage to delete",
+            source_id=default_source.id,
+            file_id=default_file.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        file_metadata=default_file,
+        actor=default_user,
+    )
+
+    # Verify it exists
+    retrieved = server.passage_manager.get_source_passage_by_id(passage.id, actor=default_user)
+    assert retrieved is not None
+
+    # Delete it
+    result = server.passage_manager.delete_source_passage_by_id(passage.id, actor=default_user)
+    assert result is True
+
+    # Verify it's gone
+    with pytest.raises(NoResultFound):
+        server.passage_manager.get_source_passage_by_id(passage.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_create_many_agent_passages_async(server: SyncServer, default_user, sarah_agent, event_loop):
+    """Test creating multiple agent passages using the new batch method."""
+    passages = [
+        PydanticPassage(
+            text=f"Batch agent passage {i}",
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1 * i],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        )
+        for i in range(3)
+    ]
+
+    created_passages = await server.passage_manager.create_many_agent_passages_async(passages, actor=default_user)
+
+    assert len(created_passages) == 3
+    for i, passage in enumerate(created_passages):
+        assert passage.text == f"Batch agent passage {i}"
+        assert passage.agent_id == sarah_agent.id
+        assert passage.source_id is None
+
+
+@pytest.mark.asyncio
+async def test_create_many_source_passages_async(server: SyncServer, default_user, default_file, default_source, event_loop):
+    """Test creating multiple source passages using the new batch method."""
+    passages = [
+        PydanticPassage(
+            text=f"Batch source passage {i}",
+            source_id=default_source.id,
+            file_id=default_file.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1 * i],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        )
+        for i in range(3)
+    ]
+
+    created_passages = await server.passage_manager.create_many_source_passages_async(
+        passages, file_metadata=default_file, actor=default_user
+    )
+
+    assert len(created_passages) == 3
+    for i, passage in enumerate(created_passages):
+        assert passage.text == f"Batch source passage {i}"
+        assert passage.source_id == default_source.id
+        assert passage.agent_id is None
+
+
+def test_agent_passage_size(server: SyncServer, default_user, sarah_agent):
+    """Test counting agent passages using the new agent-specific size method."""
+    initial_size = server.passage_manager.agent_passage_size(actor=default_user, agent_id=sarah_agent.id)
+
+    # Create some agent passages
+    for i in range(3):
+        server.passage_manager.create_agent_passage(
+            PydanticPassage(
+                text=f"Agent passage {i} for size test",
+                agent_id=sarah_agent.id,
+                organization_id=default_user.organization_id,
+                embedding=[0.1],
+                embedding_config=DEFAULT_EMBEDDING_CONFIG,
+            ),
+            actor=default_user,
+        )
+
+    final_size = server.passage_manager.agent_passage_size(actor=default_user, agent_id=sarah_agent.id)
+    assert final_size == initial_size + 3
+
+
+def test_deprecated_methods_show_warnings(server: SyncServer, default_user, sarah_agent):
+    """Test that deprecated methods show deprecation warnings."""
+    import warnings
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+
+        # Test deprecated create_passage
+        passage = server.passage_manager.create_passage(
+            PydanticPassage(
+                text="Test deprecated method",
+                agent_id=sarah_agent.id,
+                organization_id=default_user.organization_id,
+                embedding=[0.1],
+                embedding_config=DEFAULT_EMBEDDING_CONFIG,
+            ),
+            actor=default_user,
+        )
+
+        # Test deprecated get_passage_by_id
+        server.passage_manager.get_passage_by_id(passage.id, actor=default_user)
+
+        # Test deprecated size
+        server.passage_manager.size(actor=default_user, agent_id=sarah_agent.id)
+
+        # Check that deprecation warnings were issued
+        assert len(w) >= 3
+        assert any("create_passage is deprecated" in str(warning.message) for warning in w)
+        assert any("get_passage_by_id is deprecated" in str(warning.message) for warning in w)
+        assert any("size is deprecated" in str(warning.message) for warning in w)
 
 
 # ======================================================================================================================
