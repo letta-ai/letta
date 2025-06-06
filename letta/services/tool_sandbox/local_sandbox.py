@@ -152,8 +152,11 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
             print(f"Auto-generated code for debugging:\n\n{code}")
             raise e
         finally:
-            # Clean up the temp file
-            os.remove(temp_file_path)
+            # Clean up the temp file if not debugging
+            from letta.settings import settings
+
+            if not settings.debug:
+                os.remove(temp_file_path)
 
     async def _prepare_venv(self, local_configs, venv_path: str, env: Dict[str, str]):
         """

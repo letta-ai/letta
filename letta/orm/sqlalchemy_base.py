@@ -1,3 +1,4 @@
+import inspect
 from datetime import datetime
 from enum import Enum
 from functools import wraps
@@ -24,16 +25,28 @@ logger = get_logger(__name__)
 
 def handle_db_timeout(func):
     """Decorator to handle SQLAlchemy TimeoutError and wrap it in a custom exception."""
+    if not inspect.iscoroutinefunction(func):
 
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except TimeoutError as e:
-            logger.error(f"Timeout while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}")
-            raise DatabaseTimeoutError(message=f"Timeout occurred in {func.__name__}.", original_exception=e)
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except TimeoutError as e:
+                logger.error(f"Timeout while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}")
+                raise DatabaseTimeoutError(message=f"Timeout occurred in {func.__name__}.", original_exception=e)
 
-    return wrapper
+        return wrapper
+    else:
+
+        @wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            try:
+                return await func(*args, **kwargs)
+            except TimeoutError as e:
+                logger.error(f"Timeout while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}")
+                raise DatabaseTimeoutError(message=f"Timeout occurred in {func.__name__}.", original_exception=e)
+
+        return async_wrapper
 
 
 class AccessType(str, Enum):
