@@ -7,6 +7,9 @@ import {
 import { db, organizationBillingDetails } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 import { downgradeActiveAgents } from './downgradeActiveAgents/downgradeActiveAgents';
+import { getCustomerSubscription } from '../getCustomerSubscription/getCustomerSubscription';
+import { trackServerSideEvent } from '@letta-cloud/service-analytics/server';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 export async function clearCustomerSubscriptionCache(
   organizationId: string,
@@ -39,6 +42,15 @@ async function getOrganizationIdFromPaymentCustomerId(
   return billingDetails.organizationId;
 }
 
+async function trackSubscriptionChange(organizationId: string) {
+  const subscriptionTier = await getCustomerSubscription(organizationId);
+
+  trackServerSideEvent(AnalyticsEvent.SUBSCRIPTION_CHANGED, {
+    tier: subscriptionTier.tier,
+    organizationId,
+  });
+}
+
 export async function handleStripeCustomerChange(customerId: string) {
   const organizationId =
     await getOrganizationIdFromPaymentCustomerId(customerId);
@@ -62,6 +74,7 @@ export async function handleStripeEvents(event: Stripe.Event) {
       const customerId = event.data.object.customer as string;
 
       await handleStripeCustomerChange(customerId);
+      await trackSubscriptionChange(customerId);
     }
   }
 }

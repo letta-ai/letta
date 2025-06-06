@@ -18,6 +18,7 @@ export enum AnalyticsEvent {
   CLOUD_AGENT_MODEL_CHANGED = 'Cloud Agent Model Changed',
   CLOUD_AGENT_DELETED = 'Cloud Agent Deleted',
   CLOUD_AGENT_MESSAGE_CREATED_IN_API = 'API Cloud Agent Message Created',
+  SUBSCRIPTION_CHANGED = 'Subscription Changed',
   AGENT_CREATED = 'Agent Created',
   AGENT_STAGED = 'Agent Staged',
   AGENT_DEPLOYED = 'Agent Deployed',
@@ -64,6 +65,11 @@ interface CloutAgentMessageCreatedInApiProperty {
   organizationId: string;
 }
 
+interface SubscriptionChangedProperty {
+  tier: string;
+  organizationId: string;
+}
+
 export interface AnalyticsEventProperties {
   [AnalyticsEvent.AGENT_CREATED]: BaseProperty;
   [AnalyticsEvent.USER_LOGGED_IN]: BaseProperty;
@@ -96,4 +102,5 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.ADDED_OWN_EXTERNAL_KEY]: BaseProperty;
   [AnalyticsEvent.CREATED_API_KEY]: BaseProperty;
   [AnalyticsEvent.CLOUD_AGENT_MESSAGE_CREATED_IN_API]: CloutAgentMessageCreatedInApiProperty;
+  [AnalyticsEvent.SUBSCRIPTION_CHANGED]: SubscriptionChangedProperty;
 }

@@ -350,6 +350,7 @@ deploy-cloud-api: push-cloud-api
             --set env.CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
             --set env.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
             --set env.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} \
+            --set env.MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
             --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}"
     else
         helm upgrade --install cloud-api {{HELM_CHARTS_DIR}}/cloud-api \
