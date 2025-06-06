@@ -7,6 +7,7 @@ from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
+from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.files_agents_manager import FileAgentManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
@@ -101,17 +102,15 @@ class LettaFileToolExecutor(ToolExecutor):
         file = await self.source_manager.get_file_by_id(file_id=file_id, actor=self.actor, include_content=True)
 
         # TODO: Inefficient, maybe we can pre-compute this
-        content_lines = [
-            line.strip() for line in file.content.split("\n") if line.strip()  # remove leading/trailing whitespace  # skip empty lines
-        ]
-
-        if start and end:
-            content_lines = content_lines[start:end]
-
+        # TODO: This is also not the best way to split things - would be cool to have "content aware" splitting
+        # TODO: Split code differently from large text blurbs
+        content_lines = LineChunker().chunk_text(text=file.content, start=start, end=end)
         visible_content = "\n".join(content_lines)
+
         await self.files_agents_manager.update_file_agent_by_id(
             agent_id=agent_state.id, file_id=file_id, actor=self.actor, is_open=True, visible_content=visible_content
         )
+
         return "Success"
 
     async def close_file(self, agent_state: AgentState, file_name: str) -> str:

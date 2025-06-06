@@ -12,7 +12,6 @@ from letta_client.types import AgentState
 from letta.constants import FILES_TOOLS
 from letta.orm.enums import ToolType
 from letta.schemas.message import MessageCreate
-from tests.helpers.utils import retry_until_success
 from tests.utils import wait_for_server
 
 # Constants
@@ -269,31 +268,22 @@ def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, a
     assert not any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
 
-@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
-    print("Creating new source...")
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
-    print(f"Created source with ID: {source.id}")
 
     sources_list = client.sources.list()
     assert len(sources_list) == 1
-    print(f"✓ Verified source creation - found {len(sources_list)} source(s)")
 
     # Attach source to agent
-    print(f"Attaching source {source.id} to agent {agent_state.id}...")
     client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
-    print("✓ Source attached to agent")
 
     # Load files into the source
     file_path = "tests/data/long_test.txt"
-    print(f"Uploading file: {file_path}")
 
     # Upload the files
     with open(file_path, "rb") as f:
         job = client.sources.files.upload(source_id=source.id, file=f)
-
-    print(f"File upload job created with ID: {job.id}, initial status: {job.status}")
 
     # Wait for the jobs to complete
     while job.status != "completed":
@@ -301,18 +291,13 @@ def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_stat
         time.sleep(1)
         job = client.jobs.retrieve(job_id=job.id)
 
-    print(f"✓ Job completed successfully with status: {job.status}")
-
     # Get uploaded files
-    print("Retrieving uploaded files...")
     files = client.sources.files.list(source_id=source.id, limit=1)
     assert len(files) == 1
     assert files[0].source_id == source.id
     file = files[0]
-    print(f"✓ Found uploaded file: {file.file_name} (ID: {file.id})")
 
     # Check that file is opened initially
-    print("Checking initial agent state...")
     agent_state = client.agents.retrieve(agent_id=agent_state.id)
     blocks = agent_state.memory.file_blocks
     print(f"Agent has {len(blocks)} file block(s)")
@@ -321,7 +306,6 @@ def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_stat
         print(f"Initial file content length: {initial_content_length} characters")
         print(f"First 100 chars of content: {blocks[0].value[:100]}...")
         assert initial_content_length > 10, f"Expected file content > 10 chars, got {initial_content_length}"
-        print("✓ File appears to be initially loaded")
 
     # Ask agent to close the file
     print(f"Requesting agent to close file: {file.file_name}")
@@ -333,13 +317,11 @@ def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_stat
     print(close_response.messages)
 
     # Check that file is closed
-    print("Verifying file is closed...")
     agent_state = client.agents.retrieve(agent_id=agent_state.id)
     blocks = agent_state.memory.file_blocks
     closed_content_length = len(blocks[0].value) if blocks else 0
     print(f"File content length after close: {closed_content_length} characters")
     assert closed_content_length == 0, f"Expected empty content after close, got {closed_content_length} chars"
-    print("✓ File successfully closed")
 
     # Ask agent to open the file for a specific range
     start, end = 0, 5
@@ -356,7 +338,6 @@ def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_stat
     print(open_response1.messages)
 
     # Check that file is opened
-    print("Verifying file is opened with first range...")
     agent_state = client.agents.retrieve(agent_id=agent_state.id)
     blocks = agent_state.memory.file_blocks
     old_value = blocks[0].value
@@ -364,11 +345,9 @@ def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_stat
     print(f"File content length after first open: {old_content_length} characters")
     print(f"First range content: '{old_value}'")
     assert old_content_length > 10, f"Expected content > 10 chars for range [{start}, {end}], got {old_content_length}"
-    print("✓ File successfully opened with first range")
 
     # Ask agent to open the file for a different range
     start, end = 5, 10
-    print(f"Requesting agent to open file for different range [{start}, {end}]")
     open_response2 = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[
@@ -398,21 +377,15 @@ def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_stat
     print("✓ File successfully opened with different range - content differs as expected")
 
 
-@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_agent_uses_search_files_correctly(client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
-    print("Creating new source...")
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
-    print(f"Created source with ID: {source.id}")
 
     sources_list = client.sources.list()
     assert len(sources_list) == 1
-    print(f"✓ Verified source creation - found {len(sources_list)} source(s)")
 
     # Attach source to agent
-    print(f"Attaching source {source.id} to agent {agent_state.id}...")
     client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
-    print("✓ Source attached to agent")
 
     # Load files into the source
     file_path = "tests/data/long_test.txt"
@@ -430,18 +403,13 @@ def test_agent_uses_search_files_correctly(client: LettaSDKClient, agent_state: 
         time.sleep(1)
         job = client.jobs.retrieve(job_id=job.id)
 
-    print(f"✓ Job completed successfully with status: {job.status}")
-
     # Get uploaded files
-    print("Retrieving uploaded files...")
     files = client.sources.files.list(source_id=source.id, limit=1)
     assert len(files) == 1
     assert files[0].source_id == source.id
-    file = files[0]
-    print(f"✓ Found uploaded file: {file.file_name} (ID: {file.id})")
+    files[0]
 
     # Check that file is opened initially
-    print("Checking initial agent state...")
     agent_state = client.agents.retrieve(agent_id=agent_state.id)
     blocks = agent_state.memory.file_blocks
     print(f"Agent has {len(blocks)} file block(s)")
@@ -453,7 +421,6 @@ def test_agent_uses_search_files_correctly(client: LettaSDKClient, agent_state: 
         print("✓ File appears to be initially loaded")
 
     # Ask agent to use the search_files tool
-    print(f"Requesting agent to search_files")
     search_files_response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[
@@ -472,3 +439,72 @@ def test_agent_uses_search_files_correctly(client: LettaSDKClient, agent_state: 
     tool_returns = [msg for msg in search_files_response.messages if msg.message_type == "tool_return_message"]
     assert len(tool_returns) > 0, "No tool returns found"
     assert all(tr.status == "success" for tr in tool_returns), "Tool call failed"
+
+
+def test_view_ranges_have_metadata(client: LettaSDKClient, agent_state: AgentState):
+    # Create a new source
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
+
+    sources_list = client.sources.list()
+    assert len(sources_list) == 1
+
+    # Attach source to agent
+    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+
+    # Load files into the source
+    file_path = "tests/data/lines_1_to_100.txt"
+
+    # Upload the files
+    with open(file_path, "rb") as f:
+        job = client.sources.files.upload(source_id=source.id, file=f)
+
+    # Wait for the jobs to complete
+    while job.status != "completed":
+        print(f"Waiting for job {job.id} to complete... Current status: {job.status}")
+        time.sleep(1)
+        job = client.jobs.retrieve(job_id=job.id)
+
+    # Get uploaded files
+    files = client.sources.files.list(source_id=source.id, limit=1)
+    assert len(files) == 1
+    assert files[0].source_id == source.id
+    file = files[0]
+
+    # Check that file is opened initially
+    agent_state = client.agents.retrieve(agent_id=agent_state.id)
+    blocks = agent_state.memory.file_blocks
+    assert len(blocks) == 1
+    block = blocks[0]
+    assert block.value.startswith("[Viewing file start (out of 100 lines)]")
+
+    # Open a specific range
+    start = 50
+    end = 55
+    open_response = client.agents.messages.create(
+        agent_id=agent_state.id,
+        messages=[
+            MessageCreate(
+                role="user", content=f"Use ONLY the open_file tool to open the file named {file.file_name} for view range [{start}, {end}]"
+            )
+        ],
+    )
+    print(f"Open request sent, got {len(open_response.messages)} message(s) in response")
+    print(open_response.messages)
+
+    # Check that file is opened correctly
+    agent_state = client.agents.retrieve(agent_id=agent_state.id)
+    blocks = agent_state.memory.file_blocks
+    assert len(blocks) == 1
+    block = blocks[0]
+    print(block.value)
+    assert (
+        block.value
+        == """
+    [Viewing lines 50 to 55 (out of 100 lines)]
+Line 50: Line 51
+Line 51: Line 52
+Line 52: Line 53
+Line 53: Line 54
+Line 54: Line 55
+    """.strip()
+    )

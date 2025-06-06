@@ -69,7 +69,7 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
 
         # Truncate content and add warnings here when converting from FileAgent to Block
         if len(visible_content) > CORE_MEMORY_SOURCE_CHAR_LIMIT:
-            truncated_warning = f"\n{FILE_IS_TRUNCATED_WARNING}"
+            truncated_warning = f"...[TRUNCATED]\n{FILE_IS_TRUNCATED_WARNING}"
             visible_content = visible_content[: CORE_MEMORY_SOURCE_CHAR_LIMIT - len(truncated_warning)]
             visible_content += truncated_warning
 

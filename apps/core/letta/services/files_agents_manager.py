@@ -5,6 +5,7 @@ from sqlalchemy import and_, func, select, update
 
 from letta.orm.errors import NoResultFound
 from letta.orm.files_agents import FileAgent as FileAgentModel
+from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.file import FileAgent as PydanticFileAgent
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
@@ -141,6 +142,42 @@ class FileAgentManager:
                 return assoc.to_pydantic()
             except NoResultFound:
                 return None
+
+    @enforce_types
+    @trace_method
+    async def get_all_file_blocks_by_name(
+        self,
+        *,
+        file_names: List[str],
+        actor: PydanticUser,
+    ) -> List[PydanticBlock]:
+        """
+        Retrieve multiple FileAgent associations by their IDs in a single query.
+
+        Args:
+            file_names: List of file names to retrieve
+            actor: The user making the request
+
+        Returns:
+            List of PydanticFileAgent objects found (may be fewer than requested if some IDs don't exist)
+        """
+        if not file_names:
+            return []
+
+        async with db_registry.async_session() as session:
+            # Use IN clause for efficient bulk retrieval
+            query = select(FileAgentModel).where(
+                and_(
+                    FileAgentModel.file_name.in_(file_names),
+                    FileAgentModel.organization_id == actor.organization_id,
+                )
+            )
+
+            # Execute query and get all results
+            rows = (await session.execute(query)).scalars().all()
+
+            # Convert to Pydantic models
+            return [row.to_pydantic_block() for row in rows]
 
     @enforce_types
     @trace_method
