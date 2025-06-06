@@ -421,7 +421,7 @@ export function CoreMemoryEditor(props: CoreMemoryEditorProps) {
   return (
     <VStack
       gap="small"
-      className={cn(!isCollapsed ? 'min-h-[150px]' : '')}
+      className={cn(!isCollapsed ? 'min-h-[150px]' : 'min-h-[30px]')}
       fullWidth
       overflow="hidden"
       fullHeight={!isCollapsed}

@@ -3,7 +3,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import { useMemo, useState } from 'react';
 import { get } from 'lodash-es';
 import { Typography } from '../../Typography/Typography';
-import { MessageEvent } from '../MessageEvent/MessageEvent';
+import { EventItem } from '../../EventItem/EventItem';
 import { LettaAlienChatIcon } from '../../../icons';
 
 interface SendMessageEventProps {
@@ -33,7 +33,7 @@ export function SendMessageEvent(props: SendMessageEventProps) {
   }, [message]);
 
   return (
-    <MessageEvent
+    <EventItem
       icon={<LettaAlienChatIcon size="small" />}
       name={t('events.sendMessage.title')}
     >
@@ -55,6 +55,6 @@ export function SendMessageEvent(props: SendMessageEventProps) {
           )}
         </Typography>
       </div>
-    </MessageEvent>
+    </EventItem>
   );
 }

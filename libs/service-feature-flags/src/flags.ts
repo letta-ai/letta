@@ -31,11 +31,6 @@ export const featureFlags = {
     expiryDate: '2024-04-01',
     flagValue: z.boolean(),
   },
-  DETAILED_MESSAGE_VIEW: {
-    description: 'See detailed message view from the agent chat page',
-    expiryDate: '2024-06-01',
-    flagValue: z.boolean(),
-  },
   VOICE_SLEEPTIME_AGENT: {
     description: 'Voice sleep time agent starter kit',
     expiryDate: '2024-07-01',
@@ -71,6 +66,16 @@ export const featureFlags = {
       title: z.string(),
     }),
     description: 'System warning',
+  },
+  DETAILED_MESSAGE_VIEW: {
+    description: 'See detailed message view from the agent chat page',
+    expiryDate: '2024-06-01',
+    flagValue: z.boolean(),
+  },
+  ADVANCED_MESSAGE_DEBUG: {
+    description: 'Advanced message debug features',
+    expiryDate: '9999-99-99',
+    flagValue: z.boolean(),
   },
 } satisfies Record<string, FlagProperties>;
 

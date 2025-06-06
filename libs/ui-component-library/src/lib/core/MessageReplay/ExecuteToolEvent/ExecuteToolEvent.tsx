@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { get } from 'lodash-es';
 import { FunctionCall } from '../../../reusable/FunctionCall/FunctionCall';
 import { VStack } from '../../../framing/VStack/VStack';
-import { MessageEvent } from '../MessageEvent/MessageEvent';
+import { EventItem } from '../../EventItem/EventItem';
 import { LettaInvaderOutlineIcon } from '../../../icons';
 
 interface SendMessageEventProps {
@@ -62,7 +62,7 @@ export function ExecuteToolEvent(props: SendMessageEventProps) {
   }, [trace]);
 
   return (
-    <MessageEvent
+    <EventItem
       icon={<LettaInvaderOutlineIcon size="small" />}
       name={t('title')}
     >
@@ -83,6 +83,6 @@ export function ExecuteToolEvent(props: SendMessageEventProps) {
           inputs={inputs}
         />
       </VStack>
-    </MessageEvent>
+    </EventItem>
   );
 }

@@ -756,6 +756,11 @@
   },
   "components/Messages": {
     "reasoning": "Reasoning",
+    "traceViewer": "Trace debug",
+    "details": {
+      "show": "Show details",
+      "hide": "Hide details"
+    },
     "loadingMessages": "Connecting to agent...",
     "noMessages": "There are no messages for this agent, chat below",
     "toolReturn": "Tool response",
@@ -791,20 +796,31 @@
       "hide": "Hide child spans"
     }
   },
-  "ADE/AgentSimulator/DetailedMessageView": {
-    "trigger": "View details",
-    "title": "Message Details",
-    "loading": "Loading message details...",
-    "tabs": {
-      "general": "General",
-      "replay": "Replay",
-      "raw": "Debug"
-    },
-    "TransactionDetails": {
-      "title": "Transaction details",
-      "transactionId": "Transaction ID",
-      "transactionIdTooltip": "This is the ID of the transaction that was executed, this is used for managing balances and costs",
-      "cost": "Cost"
+  "ADE/AgentSimulator/DetailedMessageView/TelemetryDetailsViewer/RequestEvent": {
+    "name": "Step input",
+    "attributes": {
+      "model": "Model",
+      "inputTokens": "Input tokens",
+      "messages": {
+        "label": "Messages",
+        "value": "{count} messages",
+        "tooltip": "The messages that were sent to the LLM for this step"
+      },
+      "tools": {
+        "label": "Tools",
+        "value": "{count} tools"
+      },
+      "temperature": "Temperature",
+      "toolChoice": "Tool choice"
+    }
+  },
+  "ADE/AgentSimulator/DetailedMessageView/TelemetryDetailsViewer/ResponseEvent": {
+    "name": "Step output",
+    "attributes": {
+      "raw": "Raw response",
+      "outputTokens": "Output tokens",
+      "cost": "Cost",
+      "timeToFirstSecond": "Time to first token"
     },
     "TransactionCost": {
       "standard": {
@@ -815,6 +831,26 @@
         "badge": "Premium",
         "tooltip": "This transaction had a cost as it was not part of your standard inference allowance"
       }
+    }
+  },
+  "ADE/AgentSimulator/DetailedMessageView/TelemetryDetailsViewer": {
+    "title": "Step details",
+    "description": "The breakdown of the step input and output, including the LLM request and response"
+  },
+  "ADE/AgentSimulator/DetailedMessageView": {
+    "title": "Message Details",
+    "loading": "Loading message details...",
+    "tabs": {
+      "general": "General",
+      "replay": "Replay",
+      "raw": "Debug"
+    },
+    "TransactionDetails": {
+      "title": "Transaction details",
+      "description": " ",
+      "transactionId": "Transaction ID",
+      "transactionIdTooltip": "This is the ID of the transaction that was executed, this is used for managing balances and costs",
+      "cost": "Cost"
     },
     "StepBasicDetails": {
       "llmProviderDetails": "LLM Provider",
@@ -826,13 +862,6 @@
       "promptTokens": "Prompt tokens",
       "totalTokens": "Total tokens",
       "completionTokens": "Completion tokens"
-    }
-  },
-  "ADE/AgentSimulator/TraceMetricsViewer": {
-    "title": "Metrics",
-    "timeToFirstToken": {
-      "label": "Time to first token",
-      "time": "{time} s"
     }
   },
   "ADE/AgentSimulator": {

@@ -184,7 +184,7 @@ function MemoryWrapper(props: MemoryWrapperProps) {
   }
 
   return (
-    <VStack fullHeight gap="large">
+    <VStack fullHeight gap="medium">
       {children}
     </VStack>
   );

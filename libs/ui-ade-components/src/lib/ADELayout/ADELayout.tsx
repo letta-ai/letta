@@ -159,7 +159,7 @@ function DesktopLayout() {
               items={[
                 {
                   badge: !isTemplate && !isLocal && (
-                    <Tooltip content={t('liveAgentWarning.tooltip')}>
+                    <Tooltip asChild content={t('liveAgentWarning.tooltip')}>
                       <Badge
                         border
                         preIcon={<WarningIcon />}

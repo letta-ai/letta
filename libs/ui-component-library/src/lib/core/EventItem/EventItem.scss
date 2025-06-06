@@ -5,7 +5,7 @@
 
   background-color: hsl(var(--border));
   margin-left: 1rem;
-  z-index: -1;
+  z-index: 0;
 
   height: 100%;
 
@@ -18,6 +18,10 @@
 }
 
 .message-replay:last-child .message-replay-event-bar {
-  height: calc(100% - 0.75rem);
-  bottom: -0.75rem;
+  top: 0;
+  height: 1rem;
+}
+
+.message-replay:only-child .message-replay-event-bar {
+  display: none;
 }

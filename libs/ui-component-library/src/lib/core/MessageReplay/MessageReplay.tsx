@@ -7,9 +7,8 @@ import type {
 import { useMemo } from 'react';
 import { VStack } from '../../framing/VStack/VStack';
 import { useTranslations } from '@letta-cloud/translations';
-import './MessageReplay.scss';
 import { SendMessageEvent } from './SendMessageEvent/SendMessageEvent';
-import { MessageEvent } from './MessageEvent/MessageEvent';
+import { EventItem } from '../EventItem/EventItem';
 import { ExecuteToolEvent } from './ExecuteToolEvent/ExecuteToolEvent';
 import { LettaInvaderSleeptimeIcon } from '../../icons';
 import { StartEvent } from './StartEvent/StartEvent';
@@ -68,10 +67,10 @@ export function MessageReplay(props: MessageReplayProps) {
       {steps.map((step, index) => {
         return <StepEvent key={index} trace={step} />;
       })}
-      <MessageEvent
+      <EventItem
         icon={<LettaInvaderSleeptimeIcon size="small" />}
         name={t('events.end.title')}
-      ></MessageEvent>
+      ></EventItem>
     </VStack>
   );
 }

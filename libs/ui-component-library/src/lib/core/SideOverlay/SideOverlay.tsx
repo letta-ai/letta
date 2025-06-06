@@ -15,6 +15,7 @@ interface SideOverlayProps {
   position?: 'left' | 'right';
   confirmOnClose?: boolean;
   title: string;
+  width?: number | string;
   overlay?: boolean;
   __use_rarely_className?: string;
 }
@@ -37,6 +38,8 @@ export function SideOverlayHeader(props: SideOverlayHeaderProps) {
       justify="spaceBetween"
       paddingX="small"
       paddingY="small"
+      fullWidth
+      overflow="hidden"
       borderBottom
     >
       {props.children}
@@ -53,6 +56,7 @@ export function SideOverlay(props: SideOverlayProps) {
     overlay = true,
     children,
     title,
+    width,
     defaultOpen,
     position = 'right',
     __use_rarely_className,
@@ -81,6 +85,9 @@ export function SideOverlay(props: SideOverlayProps) {
           <DialogPrimitive.Content>
             <div id="dialog-dropdown-content" className="z-dropdown" />
             <div
+              style={{
+                width: typeof width === 'number' ? `${width}px` : width,
+              }}
               className={cn(
                 'fixed border flex flex-col max-h-[100dvh] max-w-[650px] w-full  h-full text-base  top-[50%] z-miniapp translate-x-[0] translate-y-[-50%] gap-2 shadow-lg duration-200  bg-background',
                 position === 'left' ? 'left-0' : 'right-0',

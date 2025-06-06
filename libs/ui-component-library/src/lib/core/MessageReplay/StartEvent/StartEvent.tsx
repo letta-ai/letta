@@ -1,7 +1,7 @@
 import type { RootTraceType } from '@letta-cloud/types';
 import { useTranslations } from '@letta-cloud/translations';
 import { Typography } from '../../Typography/Typography';
-import { MessageEvent } from '../MessageEvent/MessageEvent';
+import { EventItem } from '../../EventItem/EventItem';
 import { LettaInvaderIcon } from '../../../icons';
 import { useMemo } from 'react';
 import type { MessageCreate } from '@letta-cloud/sdk-core';
@@ -27,7 +27,7 @@ export function StartEvent(props: StartEventProps) {
   }, [trace]);
 
   return (
-    <MessageEvent icon={<LettaInvaderIcon size="small" />} name={t('title')}>
+    <EventItem icon={<LettaInvaderIcon size="small" />} name={t('title')}>
       <div className="bg-background-grey flex flex-col gap-2 w-full p-2 line-clamp-2">
         <Typography variant="body2" bold>
           {trace.SpanName}
@@ -39,6 +39,6 @@ export function StartEvent(props: StartEventProps) {
           showLineNumbers={false}
         />
       </div>
-    </MessageEvent>
+    </EventItem>
   );
 }

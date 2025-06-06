@@ -28,6 +28,8 @@ import {
   InnerMonologueIcon,
   AnthropicLogoMarkDynamic,
   InteractiveSystemMessage,
+  CaretRightIcon,
+  CaretUpIcon,
 } from '@letta-cloud/ui-component-library';
 import type {
   AgentMessage,
@@ -53,6 +55,8 @@ import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import { DetailedMessageView } from './DetailedMessageView/DetailedMessageView';
+import { cn } from '@letta-cloud/ui-styles';
+import { DebugTraceSidebar } from './DebugTraceSidebar/DebugTraceSidebar';
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty
@@ -75,19 +79,64 @@ interface MessageProps {
 }
 
 function Message({ message }: MessageProps) {
-  const { data: isEnabledDetailedMessageView } = useFeatureFlag(
+  const [showDetails, setShowDetails] = useState(false);
+  const t = useTranslations('components/Messages');
+
+  const { data: isAdvancedDebugView } = useFeatureFlag(
+    'ADVANCED_MESSAGE_DEBUG',
+  );
+
+  const { data: isDetailedMessagesViewable } = useFeatureFlag(
     'DETAILED_MESSAGE_VIEW',
   );
 
   return (
-    <HStack fullWidth position="relative">
-      {isEnabledDetailedMessageView && message.stepId && (
-        <div style={{ left: -28 }} className="absolute top-0">
-          <DetailedMessageView stepId={message.stepId} />
+    <VStack gap={false} fullWidth position="relative">
+      {isDetailedMessagesViewable && message.stepId && (
+        <div
+          style={{ left: -28, top: 4 }}
+          className="absolute top-0 flex flex-col gap-1 transition-all duration-500"
+        >
+          <Button
+            preIcon={!showDetails ? <CaretRightIcon /> : <CaretUpIcon />}
+            onClick={() => {
+              setShowDetails((prev) => !prev);
+            }}
+            size="xsmall"
+            hideLabel
+            square
+            label={showDetails ? t('details.hide') : t('details.show')}
+            color="tertiary"
+          />
+          {isAdvancedDebugView && (
+            <DebugTraceSidebar
+              stepId={message.stepId}
+              trigger={
+                <Button
+                  label={t('traceViewer')}
+                  size="xsmall"
+                  preIcon={<SystemIcon />}
+                  hideLabel
+                  square
+                  color="tertiary"
+                />
+              }
+            />
+          )}
         </div>
       )}
-      {message.content}
-    </HStack>
+      <div
+        className={cn(
+          'w-full rounded-t-md',
+          showDetails ? 'bg-background-grey border-t border-x p-2.5' : '',
+        )}
+      >
+        {message.content}
+      </div>
+      {message.stepId && showDetails && (
+        <DetailedMessageView stepId={message.stepId} />
+      )}
+    </VStack>
   );
 }
 
@@ -568,7 +617,6 @@ export function Messages(props: MessagesProps) {
 
           if (mode === 'interactive') {
             return {
-              stepId: agentMessage.step_id,
               id: `${agentMessage.id}-${agentMessage.message_type}`,
               content: (
                 <BlockQuote fullWidth>

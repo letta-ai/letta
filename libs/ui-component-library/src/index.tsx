@@ -244,3 +244,7 @@ export * from './lib/reusable/DashboardChartWrapper/DashboardChartWrapper';
 export * from './lib/core/VR/VR';
 
 export * from './lib/core/MessageReplay/MessageReplay';
+
+export * from './lib/core/EventItem/EventItem';
+
+export * from './lib/core/EventDetailRow/EventDetailRow';
