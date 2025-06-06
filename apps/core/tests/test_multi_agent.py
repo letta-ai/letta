@@ -182,7 +182,7 @@ async def test_modify_group_pattern(server, actor, participant_agents, manager_a
         actor=actor,
     )
     with pytest.raises(ValueError, match="Cannot change group pattern"):
-        server.group_manager.modify_group(
+        await server.group_manager.modify_group_async(
             group_id=group.id,
             group_update=GroupUpdate(
                 manager_config=DynamicManagerUpdate(
@@ -281,7 +281,7 @@ async def test_round_robin(server, actor, participant_agents):
         assert len(messages) == (len(group.agent_ids) + 2) * len(group.agent_ids)
 
         max_turns = 3
-        group = server.group_manager.modify_group(
+        group = await server.group_manager.modify_group_async(
             group_id=group.id,
             group_update=GroupUpdate(
                 agent_ids=[agent.id for agent in participant_agents][::-1],
