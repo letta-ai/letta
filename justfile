@@ -193,6 +193,7 @@ describe-web:
         --set env.LETTA_DEFAULT_EMBEDDING_HANDLE=${LETTA_DEFAULT_EMBEDDING_HANDLE} \
         --set secrets.LETTA_MISTRAL_API_KEY=${LETTA_MISTRAL_API_KEY} \
         --set secrets.MCP_READ_FROM_CONFIG=false \
+        --set secrets.MCP_DISABLE_STDIO=true \
         --set secrets.TAVILY_API_KEY=${TAVILY_API_KEY}
     else
         helm upgrade --install {{CORE_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{CORE_HELM_CHART_NAME}} \

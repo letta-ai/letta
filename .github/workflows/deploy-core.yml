@@ -107,6 +107,7 @@ jobs:
           LETTA_MISTRAL_API_KEY: ${{ secrets.LETTA_MISTRAL_API_KEY }}
           LETTA_PG_MAX_OVERFLOW: ${{ secrets.LETTA_PG_MAX_OVERFLOW }}
           MCP_READ_FROM_CONFIG: false
+          MCP_DISABLE_STDIO: true
         run: |
           just build-core deploy-core "${DEPLOY_MESSAGE}"
 
