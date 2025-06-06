@@ -3,9 +3,8 @@ import os
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Set, Tuple
 
-import numpy as np
 import sqlalchemy as sa
-from sqlalchemy import Select, and_, delete, func, insert, literal, or_, select, union_all
+from sqlalchemy import delete, func, insert, literal, or_, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from letta.constants import (
@@ -17,10 +16,9 @@ from letta.constants import (
     BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
     BASE_VOICE_SLEEPTIME_TOOLS,
     DATA_SOURCE_ATTACH_ALERT,
-    MAX_EMBEDDING_DIM,
+    FILES_TOOLS,
     MULTI_AGENT_TOOLS,
 )
-from letta.embeddings import embedding_model
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
@@ -39,7 +37,7 @@ from letta.orm.errors import NoResultFound
 from letta.orm.sandbox_config import AgentEnvironmentVariable
 from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
 from letta.orm.sqlalchemy_base import AccessType
-from letta.orm.sqlite_functions import adapt_array
+from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent, get_prompt_template_for_agent_type
 from letta.schemas.block import DEFAULT_BLOCKS
@@ -66,6 +64,7 @@ from letta.server.db import db_registry
 from letta.services.block_manager import BlockManager
 from letta.services.context_window_calculator.context_window_calculator import ContextWindowCalculator
 from letta.services.context_window_calculator.token_counter import AnthropicTokenCounter, TiktokenCounter
+from letta.services.files_agents_manager import FileAgentManager
 from letta.services.helpers.agent_manager_helper import (
     _apply_filters,
     _apply_identity_filters,
@@ -74,6 +73,9 @@ from letta.services.helpers.agent_manager_helper import (
     _apply_tag_filter,
     _process_relationship,
     _process_relationship_async,
+    build_agent_passage_query,
+    build_passage_query,
+    build_source_passage_query,
     check_supports_structured_output,
     compile_system_message,
     derive_system_message,
@@ -85,8 +87,6 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
-from letta.settings import settings
-from letta.tracing import trace_method
 from letta.utils import enforce_types, united_diff
 
 logger = get_logger(__name__)
@@ -102,6 +102,7 @@ class AgentManager:
         self.message_manager = MessageManager()
         self.passage_manager = PassageManager()
         self.identity_manager = IdentityManager()
+        self.file_agent_manager = FileAgentManager()
 
     @staticmethod
     def _resolve_tools(session, names: Set[str], ids: Set[str], org_id: str) -> Tuple[Dict[str, str], Dict[str, str]]:
@@ -1384,6 +1385,11 @@ class AgentManager:
         curr_system_message = self.get_system_message(
             agent_id=agent_id, actor=actor
         )  # this is the system + memory bank, not just the system prompt
+
+        if curr_system_message is None:
+            logger.warning(f"No system message found for agent {agent_state.id} and user {actor}")
+            return agent_state
+
         curr_system_message_openai = curr_system_message.to_openai_dict()
 
         # note: we only update the system prompt if the core memory is changed
@@ -1451,6 +1457,11 @@ class AgentManager:
         curr_system_message = await self.get_system_message_async(
             agent_id=agent_id, actor=actor
         )  # this is the system + memory bank, not just the system prompt
+
+        if curr_system_message is None:
+            logger.warning(f"No system message found for agent {agent_state.id} and user {actor}")
+            return agent_state
+
         curr_system_message_openai = curr_system_message.to_openai_dict()
 
         # note: we only update the system prompt if the core memory is changed
@@ -1650,12 +1661,18 @@ class AgentManager:
     @trace_method
     @enforce_types
     async def refresh_memory_async(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
+        # TODO: This will NOT work for new blocks/file blocks added intra-step
         block_ids = [b.id for b in agent_state.memory.blocks]
-        if not block_ids:
-            return agent_state
+        file_block_names = [b.label for b in agent_state.memory.file_blocks]
 
-        blocks = await self.block_manager.get_all_blocks_by_ids_async(block_ids=[b.id for b in agent_state.memory.blocks], actor=actor)
-        agent_state.memory.blocks = [b for b in blocks if b is not None]
+        if block_ids:
+            blocks = await self.block_manager.get_all_blocks_by_ids_async(block_ids=[b.id for b in agent_state.memory.blocks], actor=actor)
+            agent_state.memory.blocks = [b for b in blocks if b is not None]
+
+        if file_block_names:
+            file_blocks = await self.file_agent_manager.get_all_file_blocks_by_name(file_names=file_block_names, actor=actor)
+            agent_state.memory.file_blocks = [b for b in file_blocks if b is not None]
+
         return agent_state
 
     # ======================================================================================================================
@@ -2006,184 +2023,6 @@ class AgentManager:
     # ======================================================================================================================
     # Passage Management
     # ======================================================================================================================
-    def _build_passage_query(
-        self,
-        actor: PydanticUser,
-        agent_id: Optional[str] = None,
-        file_id: Optional[str] = None,
-        query_text: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-        before: Optional[str] = None,
-        after: Optional[str] = None,
-        source_id: Optional[str] = None,
-        embed_query: bool = False,
-        ascending: bool = True,
-        embedding_config: Optional[EmbeddingConfig] = None,
-        agent_only: bool = False,
-    ) -> Select:
-        """Helper function to build the base passage query with all filters applied.
-        Supports both before and after pagination across merged source and agent passages.
-
-        Returns the query before any limit or count operations are applied.
-        """
-        embedded_text = None
-        if embed_query:
-            assert embedding_config is not None, "embedding_config must be specified for vector search"
-            assert query_text is not None, "query_text must be specified for vector search"
-            embedded_text = embedding_model(embedding_config).get_text_embedding(query_text)
-            embedded_text = np.array(embedded_text)
-            embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
-
-        # Start with base query for source passages
-        source_passages = None
-        if not agent_only:  # Include source passages
-            if agent_id is not None:
-                source_passages = (
-                    select(SourcePassage, literal(None).label("agent_id"))
-                    .join(SourcesAgents, SourcesAgents.source_id == SourcePassage.source_id)
-                    .where(SourcesAgents.agent_id == agent_id)
-                    .where(SourcePassage.organization_id == actor.organization_id)
-                )
-            else:
-                source_passages = select(SourcePassage, literal(None).label("agent_id")).where(
-                    SourcePassage.organization_id == actor.organization_id
-                )
-
-            if source_id:
-                source_passages = source_passages.where(SourcePassage.source_id == source_id)
-            if file_id:
-                source_passages = source_passages.where(SourcePassage.file_id == file_id)
-
-        # Add agent passages query
-        agent_passages = None
-        if agent_id is not None:
-            agent_passages = (
-                select(
-                    AgentPassage.id,
-                    AgentPassage.text,
-                    AgentPassage.embedding_config,
-                    AgentPassage.metadata_,
-                    AgentPassage.embedding,
-                    AgentPassage.created_at,
-                    AgentPassage.updated_at,
-                    AgentPassage.is_deleted,
-                    AgentPassage._created_by_id,
-                    AgentPassage._last_updated_by_id,
-                    AgentPassage.organization_id,
-                    literal(None).label("file_id"),
-                    literal(None).label("source_id"),
-                    AgentPassage.agent_id,
-                )
-                .where(AgentPassage.agent_id == agent_id)
-                .where(AgentPassage.organization_id == actor.organization_id)
-            )
-
-        # Combine queries
-        if source_passages is not None and agent_passages is not None:
-            combined_query = union_all(source_passages, agent_passages).cte("combined_passages")
-        elif agent_passages is not None:
-            combined_query = agent_passages.cte("combined_passages")
-        elif source_passages is not None:
-            combined_query = source_passages.cte("combined_passages")
-        else:
-            raise ValueError("No passages found")
-
-        # Build main query from combined CTE
-        main_query = select(combined_query)
-
-        # Apply filters
-        if start_date:
-            main_query = main_query.where(combined_query.c.created_at >= start_date)
-        if end_date:
-            main_query = main_query.where(combined_query.c.created_at <= end_date)
-        if source_id:
-            main_query = main_query.where(combined_query.c.source_id == source_id)
-        if file_id:
-            main_query = main_query.where(combined_query.c.file_id == file_id)
-
-        # Vector search
-        if embedded_text:
-            if settings.letta_pg_uri_no_default:
-                # PostgreSQL with pgvector
-                main_query = main_query.order_by(combined_query.c.embedding.cosine_distance(embedded_text).asc())
-            else:
-                # SQLite with custom vector type
-                query_embedding_binary = adapt_array(embedded_text)
-                main_query = main_query.order_by(
-                    func.cosine_distance(combined_query.c.embedding, query_embedding_binary).asc(),
-                    combined_query.c.created_at.asc() if ascending else combined_query.c.created_at.desc(),
-                    combined_query.c.id.asc(),
-                )
-        else:
-            if query_text:
-                main_query = main_query.where(func.lower(combined_query.c.text).contains(func.lower(query_text)))
-
-        # Handle pagination
-        if before or after:
-            # Create reference CTEs
-            if before:
-                before_ref = select(combined_query.c.created_at, combined_query.c.id).where(combined_query.c.id == before).cte("before_ref")
-            if after:
-                after_ref = select(combined_query.c.created_at, combined_query.c.id).where(combined_query.c.id == after).cte("after_ref")
-
-            if before and after:
-                # Window-based query (get records between before and after)
-                main_query = main_query.where(
-                    or_(
-                        combined_query.c.created_at < select(before_ref.c.created_at).scalar_subquery(),
-                        and_(
-                            combined_query.c.created_at == select(before_ref.c.created_at).scalar_subquery(),
-                            combined_query.c.id < select(before_ref.c.id).scalar_subquery(),
-                        ),
-                    )
-                )
-                main_query = main_query.where(
-                    or_(
-                        combined_query.c.created_at > select(after_ref.c.created_at).scalar_subquery(),
-                        and_(
-                            combined_query.c.created_at == select(after_ref.c.created_at).scalar_subquery(),
-                            combined_query.c.id > select(after_ref.c.id).scalar_subquery(),
-                        ),
-                    )
-                )
-            else:
-                # Pure pagination (only before or only after)
-                if before:
-                    main_query = main_query.where(
-                        or_(
-                            combined_query.c.created_at < select(before_ref.c.created_at).scalar_subquery(),
-                            and_(
-                                combined_query.c.created_at == select(before_ref.c.created_at).scalar_subquery(),
-                                combined_query.c.id < select(before_ref.c.id).scalar_subquery(),
-                            ),
-                        )
-                    )
-                if after:
-                    main_query = main_query.where(
-                        or_(
-                            combined_query.c.created_at > select(after_ref.c.created_at).scalar_subquery(),
-                            and_(
-                                combined_query.c.created_at == select(after_ref.c.created_at).scalar_subquery(),
-                                combined_query.c.id > select(after_ref.c.id).scalar_subquery(),
-                            ),
-                        )
-                    )
-
-        # Add ordering if not already ordered by similarity
-        if not embed_query:
-            if ascending:
-                main_query = main_query.order_by(
-                    combined_query.c.created_at.asc(),
-                    combined_query.c.id.asc(),
-                )
-            else:
-                main_query = main_query.order_by(
-                    combined_query.c.created_at.desc(),
-                    combined_query.c.id.asc(),
-                )
-
-        return main_query
 
     @trace_method
     @enforce_types
@@ -2206,7 +2045,7 @@ class AgentManager:
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
         with db_registry.session() as session:
-            main_query = self._build_passage_query(
+            main_query = build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
@@ -2266,7 +2105,7 @@ class AgentManager:
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
         async with db_registry.async_session() as session:
-            main_query = self._build_passage_query(
+            main_query = build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
@@ -2307,6 +2146,100 @@ class AgentManager:
 
     @trace_method
     @enforce_types
+    async def list_source_passages_async(
+        self,
+        actor: PydanticUser,
+        agent_id: Optional[str] = None,
+        file_id: Optional[str] = None,
+        limit: Optional[int] = 50,
+        query_text: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        source_id: Optional[str] = None,
+        embed_query: bool = False,
+        ascending: bool = True,
+        embedding_config: Optional[EmbeddingConfig] = None,
+    ) -> List[PydanticPassage]:
+        """Lists all passages attached to an agent."""
+        async with db_registry.async_session() as session:
+            main_query = build_source_passage_query(
+                actor=actor,
+                agent_id=agent_id,
+                file_id=file_id,
+                query_text=query_text,
+                start_date=start_date,
+                end_date=end_date,
+                before=before,
+                after=after,
+                source_id=source_id,
+                embed_query=embed_query,
+                ascending=ascending,
+                embedding_config=embedding_config,
+            )
+
+            # Add limit
+            if limit:
+                main_query = main_query.limit(limit)
+
+            # Execute query
+            result = await session.execute(main_query)
+
+            # Get ORM objects directly using scalars()
+            passages = result.scalars().all()
+
+            # Convert to Pydantic models
+            return [p.to_pydantic() for p in passages]
+
+    @trace_method
+    @enforce_types
+    async def list_agent_passages_async(
+        self,
+        actor: PydanticUser,
+        agent_id: Optional[str] = None,
+        file_id: Optional[str] = None,
+        limit: Optional[int] = 50,
+        query_text: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        source_id: Optional[str] = None,
+        embed_query: bool = False,
+        ascending: bool = True,
+        embedding_config: Optional[EmbeddingConfig] = None,
+    ) -> List[PydanticPassage]:
+        """Lists all passages attached to an agent."""
+        async with db_registry.async_session() as session:
+            main_query = build_agent_passage_query(
+                actor=actor,
+                agent_id=agent_id,
+                query_text=query_text,
+                start_date=start_date,
+                end_date=end_date,
+                before=before,
+                after=after,
+                embed_query=embed_query,
+                ascending=ascending,
+                embedding_config=embedding_config,
+            )
+
+            # Add limit
+            if limit:
+                main_query = main_query.limit(limit)
+
+            # Execute query
+            result = await session.execute(main_query)
+
+            # Get ORM objects directly using scalars()
+            passages = result.scalars().all()
+
+            # Convert to Pydantic models
+            return [p.to_pydantic() for p in passages]
+
+    @trace_method
+    @enforce_types
     def passage_size(
         self,
         actor: PydanticUser,
@@ -2325,7 +2258,7 @@ class AgentManager:
     ) -> int:
         """Returns the count of passages matching the given criteria."""
         with db_registry.session() as session:
-            main_query = self._build_passage_query(
+            main_query = build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
@@ -2363,7 +2296,7 @@ class AgentManager:
         agent_only: bool = False,
     ) -> int:
         async with db_registry.async_session() as session:
-            main_query = self._build_passage_query(
+            main_query = build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
@@ -2457,6 +2390,65 @@ class AgentManager:
             # Commit and refresh the agent
             await agent.update_async(session, actor=actor)
             return await agent.to_pydantic_async()
+
+    @trace_method
+    @enforce_types
+    async def attach_missing_files_tools_async(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
+        """
+        Attaches missing core file tools to an agent.
+
+        Args:
+            agent_id: ID of the agent to attach the tools to.
+            actor: User performing the action.
+
+        Raises:
+            NoResultFound: If the agent or tool is not found.
+
+        Returns:
+            PydanticAgentState: The updated agent state.
+        """
+        # Check if the agent is missing any files tools
+        core_tool_names = {tool.name for tool in agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
+        missing_tool_names = set(FILES_TOOLS).difference(core_tool_names)
+
+        for tool_name in missing_tool_names:
+            tool_id = await self.tool_manager.get_tool_id_by_name_async(tool_name=tool_name, actor=actor)
+
+            # TODO: This is hacky and deserves a rethink - how do we keep all the base tools available in every org always?
+            if not tool_id:
+                await self.tool_manager.upsert_base_tools_async(actor=actor, allowed_types={ToolType.LETTA_FILES_CORE})
+
+            # TODO: Inefficient - I think this re-retrieves the agent_state?
+            agent_state = await self.attach_tool_async(agent_id=agent_state.id, tool_id=tool_id, actor=actor)
+
+        return agent_state
+
+    @trace_method
+    @enforce_types
+    async def detach_all_files_tools_async(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
+        """
+        Detach all core file tools from an agent.
+
+        Args:
+            agent_id: ID of the agent to detach the tools from.
+            actor: User performing the action.
+
+        Raises:
+            NoResultFound: If the agent or tool is not found.
+
+        Returns:
+            PydanticAgentState: The updated agent state.
+        """
+        # Check if the agent is missing any files tools
+        core_tool_names = {tool.name for tool in agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
+
+        for tool_name in core_tool_names:
+            tool_id = await self.tool_manager.get_tool_id_by_name_async(tool_name=tool_name, actor=actor)
+
+            # TODO: Inefficient - I think this re-retrieves the agent_state?
+            agent_state = await self.detach_tool_async(agent_id=agent_state.id, tool_id=tool_id, actor=actor)
+
+        return agent_state
 
     @trace_method
     @enforce_types

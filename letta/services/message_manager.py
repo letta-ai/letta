@@ -7,13 +7,13 @@ from letta.log import get_logger
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.errors import NoResultFound
 from letta.orm.message import Message as MessageModel
+from letta.otel.tracing import trace_method
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import LettaMessageUpdateUnion
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.tracing import trace_method
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)

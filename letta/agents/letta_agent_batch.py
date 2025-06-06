@@ -16,6 +16,7 @@ from letta.llm_api.llm_client import LLMClient
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.log import get_logger
 from letta.orm.enums import ToolType
+from letta.otel.tracing import log_event, trace_method
 from letta.schemas.agent import AgentState, AgentStepState
 from letta.schemas.enums import AgentStepStatus, JobStatus, MessageStreamStatus, ProviderType
 from letta.schemas.job import JobUpdate
@@ -39,7 +40,6 @@ from letta.services.passage_manager import PassageManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
 from letta.settings import tool_settings
-from letta.tracing import log_event, trace_method
 
 logger = get_logger(__name__)
 
@@ -551,7 +551,6 @@ class LettaAgentBatch(BaseAgent):
             add_heartbeat_request_system_message=False,
             reasoning_content=reasoning_content,
             pre_computed_assistant_message_id=None,
-            pre_computed_tool_message_id=None,
             llm_batch_item_id=llm_batch_item_id,
         )
 

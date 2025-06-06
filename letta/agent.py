@@ -41,6 +41,7 @@ from letta.log import get_logger
 from letta.memory import summarize_messages
 from letta.orm import User
 from letta.orm.enums import ToolType
+from letta.otel.tracing import log_event, trace_method
 from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent, get_prompt_template_for_agent_type
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -72,7 +73,6 @@ from letta.services.tool_manager import ToolManager
 from letta.settings import settings, summarizer_settings, model_settings
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from letta.system import get_heartbeat, get_token_limit_warning, package_function_response, package_summarize_message, package_user_message
-from letta.tracing import log_event, trace_method
 from letta.utils import count_tokens, get_friendly_error_msg, get_tool_call_id, log_telemetry, parse_json, validate_function_response
 
 logger = get_logger(__name__)

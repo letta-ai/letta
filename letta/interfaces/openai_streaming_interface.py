@@ -5,7 +5,7 @@ from openai import AsyncStream
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
-from letta.helpers.datetime_helpers import get_utc_timestamp_ns
+from letta.helpers.datetime_helpers import get_utc_timestamp_ns, ns_to_ms
 from letta.schemas.letta_message import AssistantMessage, LettaMessage, ReasoningMessage, ToolCallDelta, ToolCallMessage
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message
@@ -32,14 +32,14 @@ class OpenAIStreamingInterface:
         self.function_args_buffer = None
         self.function_id_buffer = None
         self.last_flushed_function_name = None
+        self.last_flushed_function_id = None
 
         # Buffer to hold function arguments until inner thoughts are complete
         self.current_function_arguments = ""
         self.current_json_parse_result = {}
 
         # Premake IDs for database writes
-        self.letta_assistant_message_id = Message.generate_id()
-        self.letta_tool_message_id = Message.generate_id()
+        self.letta_message_id = Message.generate_id()
 
         self.message_id = None
         self.model = None
@@ -54,14 +54,14 @@ class OpenAIStreamingInterface:
         self.reasoning_messages = []
 
     def get_reasoning_content(self) -> List[TextContent]:
-        content = "".join(self.reasoning_messages)
+        content = "".join(self.reasoning_messages).strip()
         return [TextContent(text=content)]
 
     def get_tool_call_object(self) -> ToolCall:
         """Useful for agent loop"""
         function_name = self.last_flushed_function_name if self.last_flushed_function_name else self.function_name_buffer
         return ToolCall(
-            id=self.letta_tool_message_id,
+            id=self.last_flushed_function_id,
             function=FunctionCall(arguments=self.current_function_arguments, name=function_name),
         )
 
@@ -85,7 +85,7 @@ class OpenAIStreamingInterface:
                     now = get_utc_timestamp_ns()
                     ttft_ns = now - provider_request_start_timestamp_ns
                     ttft_span.add_event(
-                        name="openai_time_to_first_token_ms", attributes={"openai_time_to_first_token_ms": ttft_ns // 1_000_000}
+                        name="openai_time_to_first_token_ms", attributes={"openai_time_to_first_token_ms": ns_to_ms(ttft_ns)}
                     )
                     first_chunk = False
 
@@ -133,11 +133,11 @@ class OpenAIStreamingInterface:
                                     message_index += 1
                                 self.reasoning_messages.append(updates_inner_thoughts)
                                 reasoning_message = ReasoningMessage(
-                                    id=self.letta_tool_message_id,
+                                    id=self.letta_message_id,
                                     date=datetime.now(timezone.utc),
                                     reasoning=updates_inner_thoughts,
                                     # name=name,
-                                    otid=Message.generate_otid_from_id(self.letta_tool_message_id, message_index),
+                                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                 )
                                 prev_message_type = reasoning_message.message_type
                                 yield reasoning_message
@@ -171,20 +171,22 @@ class OpenAIStreamingInterface:
                                             message_index += 1
                                         self.tool_call_name = str(self.function_name_buffer)
                                         tool_call_msg = ToolCallMessage(
-                                            id=self.letta_tool_message_id,
+                                            id=self.letta_message_id,
                                             date=datetime.now(timezone.utc),
                                             tool_call=ToolCallDelta(
                                                 name=self.function_name_buffer,
                                                 arguments=None,
                                                 tool_call_id=self.function_id_buffer,
                                             ),
-                                            otid=Message.generate_otid_from_id(self.letta_tool_message_id, message_index),
+                                            otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                         )
                                         prev_message_type = tool_call_msg.message_type
                                         yield tool_call_msg
 
                                     # Record what the last function name we flushed was
                                     self.last_flushed_function_name = self.function_name_buffer
+                                    if self.last_flushed_function_id is None:
+                                        self.last_flushed_function_id = self.function_id_buffer
                                     # Clear the buffer
                                     self.function_name_buffer = None
                                     self.function_id_buffer = None
@@ -236,10 +238,10 @@ class OpenAIStreamingInterface:
                                             if prev_message_type and prev_message_type != "assistant_message":
                                                 message_index += 1
                                             assistant_message = AssistantMessage(
-                                                id=self.letta_assistant_message_id,
+                                                id=self.letta_message_id,
                                                 date=datetime.now(timezone.utc),
                                                 content=combined_chunk,
-                                                otid=Message.generate_otid_from_id(self.letta_assistant_message_id, message_index),
+                                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                             )
                                             prev_message_type = assistant_message.message_type
                                             yield assistant_message
@@ -268,11 +270,11 @@ class OpenAIStreamingInterface:
                                                 if prev_message_type and prev_message_type != "assistant_message":
                                                     message_index += 1
                                                 assistant_message = AssistantMessage(
-                                                    id=self.letta_assistant_message_id,
+                                                    id=self.letta_message_id,
                                                     date=datetime.now(timezone.utc),
                                                     content=diff,
                                                     # name=name,
-                                                    otid=Message.generate_otid_from_id(self.letta_assistant_message_id, message_index),
+                                                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                                 )
                                                 prev_message_type = assistant_message.message_type
                                                 yield assistant_message
@@ -292,15 +294,15 @@ class OpenAIStreamingInterface:
                                             if prev_message_type and prev_message_type != "tool_call_message":
                                                 message_index += 1
                                             tool_call_msg = ToolCallMessage(
-                                                id=self.letta_tool_message_id,
+                                                id=self.letta_message_id,
                                                 date=datetime.now(timezone.utc),
                                                 tool_call=ToolCallDelta(
-                                                    name=None,
+                                                    name=self.function_name_buffer,
                                                     arguments=combined_chunk,
                                                     tool_call_id=self.function_id_buffer,
                                                 ),
                                                 # name=name,
-                                                otid=Message.generate_otid_from_id(self.letta_tool_message_id, message_index),
+                                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                             )
                                             prev_message_type = tool_call_msg.message_type
                                             yield tool_call_msg
@@ -312,7 +314,7 @@ class OpenAIStreamingInterface:
                                             if prev_message_type and prev_message_type != "tool_call_message":
                                                 message_index += 1
                                             tool_call_msg = ToolCallMessage(
-                                                id=self.letta_tool_message_id,
+                                                id=self.letta_message_id,
                                                 date=datetime.now(timezone.utc),
                                                 tool_call=ToolCallDelta(
                                                     name=None,
@@ -320,7 +322,7 @@ class OpenAIStreamingInterface:
                                                     tool_call_id=self.function_id_buffer,
                                                 ),
                                                 # name=name,
-                                                otid=Message.generate_otid_from_id(self.letta_tool_message_id, message_index),
+                                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                             )
                                             prev_message_type = tool_call_msg.message_type
                                             yield tool_call_msg

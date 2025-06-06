@@ -150,10 +150,9 @@ async def test_sse_mcp_server(client, agent_state):
     assert tr.status == "success", f"Bad status: {tr.status}"
     # parse JSON payload
     full_payload = json.loads(tr.tool_return)
-    payload = json.loads(full_payload["message"])
 
-    assert payload.get("successful", False), f"Tool returned failure payload: {payload}"
-    assert payload["data"]["details"] == "Action executed successfully", f"Unexpected details: {payload}"
+    assert full_payload.get("successful", False), f"Tool returned failure payload: {full_payload}"
+    assert full_payload["data"]["details"] == "Action executed successfully", f"Unexpected details: {full_payload}"
 
 
 def test_stdio_mcp_server(client, agent_state):

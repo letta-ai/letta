@@ -164,7 +164,9 @@ def comprehensive_agent_checks(agent: AgentState, request: Union[CreateAgent, Up
         assert agent.message_buffer_autoclear == request.message_buffer_autoclear
 
 
-def validate_context_window_overview(overview: ContextWindowOverview, attached_file: Optional[FileAgent] = None) -> None:
+def validate_context_window_overview(
+    agent_state: AgentState, overview: ContextWindowOverview, attached_file: Optional[FileAgent] = None
+) -> None:
     """Validate common sense assertions for ContextWindowOverview"""
 
     # 1. Current context size should not exceed maximum
@@ -238,3 +240,7 @@ def validate_context_window_overview(overview: ContextWindowOverview, attached_f
         assert attached_file.visible_content in overview.core_memory
         assert '<file status="open">' in overview.core_memory
         assert "</file>" in overview.core_memory
+
+    # Check for tools
+    assert overview.num_tokens_functions_definitions > 0
+    assert len(overview.functions_definitions) > 0

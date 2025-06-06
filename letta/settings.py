@@ -192,13 +192,17 @@ class Settings(BaseSettings):
     pool_use_lifo: bool = True
     disable_sqlalchemy_pooling: bool = False
 
+    redis_host: Optional[str] = None
+    redis_port: Optional[int] = None
+
+    plugin_register: Optional[str] = None
+
     # multi agent settings
     multi_agent_send_message_max_retries: int = 3
     multi_agent_send_message_timeout: int = 20 * 60
     multi_agent_concurrent_sends: int = 50
 
     # telemetry logging
-    verbose_telemetry_logging: bool = False
     otel_exporter_otlp_endpoint: Optional[str] = None  # otel default: "http://localhost:4317"
     disable_tracing: bool = False
     llm_api_logging: bool = True
@@ -210,6 +214,7 @@ class Settings(BaseSettings):
 
     use_uvloop: bool = False
     use_granian: bool = False
+    sqlalchemy_tracing: bool = False
 
     # event loop parallelism
     event_loop_threadpool_max_workers: int = 43
@@ -258,11 +263,25 @@ class Settings(BaseSettings):
         else:
             return None
 
+    @property
+    def plugin_register_dict(self) -> dict:
+        plugins = {}
+        if self.plugin_register:
+            for plugin in self.plugin_register.split(";"):
+                name, target = plugin.split("=")
+                plugins[name] = {"target": target}
+        return plugins
+
 
 class TestSettings(Settings):
     model_config = SettingsConfigDict(env_prefix="letta_test_", extra="ignore")
 
     letta_dir: Optional[Path] = Field(Path.home() / ".letta/test", env="LETTA_TEST_DIR")
+
+
+class LogSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="letta_logging_", extra="ignore")
+    verbose_telemetry_logging: bool = False
 
 
 # singleton
@@ -271,3 +290,4 @@ test_settings = TestSettings()
 model_settings = ModelSettings()
 tool_settings = ToolSettings()
 summarizer_settings = SummarizerSettings()
+log_settings = LogSettings()

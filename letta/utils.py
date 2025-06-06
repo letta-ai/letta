@@ -515,6 +515,11 @@ def is_optional_type(hint):
 
 
 def enforce_types(func):
+    """Enforces that values passed in match the expected types.
+
+    Technically will handle coroutines as well.
+    """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         # Get type hints, excluding the return type hint
@@ -1078,9 +1083,9 @@ def log_telemetry(logger: Logger, event: str, **kwargs):
     :param event: A string describing the event.
     :param kwargs: Additional key-value pairs for logging metadata.
     """
-    from letta.settings import settings
+    from letta.settings import log_settings
 
-    if settings.verbose_telemetry_logging:
+    if log_settings.verbose_telemetry_logging:
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S,%f UTC")  # More readable timestamp
         extra_data = " | ".join(f"{key}={value}" for key, value in kwargs.items() if value is not None)
         logger.info(f"[{timestamp}] EVENT: {event} | {extra_data}")

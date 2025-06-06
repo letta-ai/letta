@@ -1,6 +1,6 @@
 import inspect
 import warnings
-from typing import Any, Dict, List, Optional, Type, Union, get_args, get_origin
+from typing import Any, Dict, List, Optional, Tuple, Type, Union, get_args, get_origin
 
 from composio.client.collections import ActionParametersModel
 from docstring_parser import parse
@@ -75,6 +75,23 @@ def type_to_json_schema_type(py_type) -> dict:
     # Handle literals
     if get_origin(py_type) is Literal:
         return {"type": "string", "enum": get_args(py_type)}
+
+    # Handle tuple types (specifically fixed-length like Tuple[int, int])
+    if origin in (tuple, Tuple):
+        args = get_args(py_type)
+        if len(args) == 0:
+            raise ValueError("Tuple type must have at least one element")
+
+        # Support only fixed-length tuples like Tuple[int, int], not variable-length like Tuple[int, ...]
+        if len(args) == 2 and args[1] is Ellipsis:
+            raise NotImplementedError("Variable-length tuples (e.g., Tuple[int, ...]) are not supported")
+
+        return {
+            "type": "array",
+            "prefixItems": [type_to_json_schema_type(arg) for arg in args],
+            "minItems": len(args),
+            "maxItems": len(args),
+        }
 
     # Handle object types
     if py_type == dict or origin in (dict, Dict):

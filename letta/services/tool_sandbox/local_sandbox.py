@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 
 from pydantic.config import JsonDict
 
+from letta.otel.tracing import log_event, trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.sandbox_config import SandboxConfig, SandboxType
 from letta.schemas.tool import Tool
@@ -20,7 +21,6 @@ from letta.services.helpers.tool_execution_helper import (
 from letta.services.helpers.tool_parser_helper import parse_stdout_best_effort
 from letta.services.tool_sandbox.base import AsyncToolSandboxBase
 from letta.settings import tool_settings
-from letta.tracing import log_event, trace_method
 from letta.utils import get_friendly_error_msg, parse_stderr_error_msg
 
 
@@ -152,8 +152,11 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
             print(f"Auto-generated code for debugging:\n\n{code}")
             raise e
         finally:
-            # Clean up the temp file
-            os.remove(temp_file_path)
+            # Clean up the temp file if not debugging
+            from letta.settings import settings
+
+            if not settings.debug:
+                os.remove(temp_file_path)
 
     async def _prepare_venv(self, local_configs, venv_path: str, env: Dict[str, str]):
         """
