@@ -151,7 +151,7 @@ def export_agent_serialized(
 
 
 @router.post("/import", response_model=AgentState, operation_id="import_agent_serialized")
-async def import_agent_serialized(
+def import_agent_serialized(
     file: UploadFile = File(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
@@ -169,10 +169,10 @@ async def import_agent_serialized(
     """
     Import a serialized agent file and recreate the agent in the system.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
-        serialized_data = await file.read()
+        serialized_data = file.file.read()
         agent_json = json.loads(serialized_data)
 
         # Validate the JSON against AgentSchema before passing it to deserialize
