@@ -343,7 +343,7 @@ async def test_voice_recall_memory(disable_e2b_api_key, voice_agent, message, en
 @pytest.mark.asyncio(loop_scope="module")
 @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
 async def test_trigger_summarization(disable_e2b_api_key, server, voice_agent, group_id, endpoint, actor, server_url):
-    server.group_manager.modify_group(
+    await server.group_manager.modify_group_async(
         group_id=group_id,
         group_update=GroupUpdate(
             manager_config=VoiceSleeptimeManagerUpdate(
@@ -572,9 +572,9 @@ async def test_init_voice_convo_agent(voice_agent, server, actor, server_url):
         server.agent_manager.get_agent_by_id(agent_id=sleeptime_agent_id, actor=actor)
 
 
-def _modify(group_id, server, actor, max_val, min_val):
+async def _modify(group_id, server, actor, max_val, min_val):
     """Helper to invoke modify_group with voice_sleeptime config."""
-    return server.group_manager.modify_group(
+    return await server.group_manager.modify_group_async(
         group_id=group_id,
         group_update=GroupUpdate(
             manager_config=VoiceSleeptimeManagerUpdate(
@@ -587,23 +587,23 @@ def _modify(group_id, server, actor, max_val, min_val):
     )
 
 
-def test_valid_buffer_lengths_above_four(group_id, server, actor):
+async def test_valid_buffer_lengths_above_four(group_id, server, actor):
     # both > 4 and max > min
-    updated = _modify(group_id, server, actor, max_val=10, min_val=5)
+    updated = await _modify(group_id, server, actor, max_val=10, min_val=5)
     assert updated.max_message_buffer_length == 10
     assert updated.min_message_buffer_length == 5
 
 
-def test_valid_buffer_lengths_only_max(group_id, server, actor):
+async def test_valid_buffer_lengths_only_max(group_id, server, actor):
     # both > 4 and max > min
-    updated = _modify(group_id, server, actor, max_val=DEFAULT_MAX_MESSAGE_BUFFER_LENGTH + 1, min_val=None)
+    updated = await _modify(group_id, server, actor, max_val=DEFAULT_MAX_MESSAGE_BUFFER_LENGTH + 1, min_val=None)
     assert updated.max_message_buffer_length == DEFAULT_MAX_MESSAGE_BUFFER_LENGTH + 1
     assert updated.min_message_buffer_length == DEFAULT_MIN_MESSAGE_BUFFER_LENGTH
 
 
-def test_valid_buffer_lengths_only_min(group_id, server, actor):
+async def test_valid_buffer_lengths_only_min(group_id, server, actor):
     # both > 4 and max > min
-    updated = _modify(group_id, server, actor, max_val=None, min_val=DEFAULT_MIN_MESSAGE_BUFFER_LENGTH + 1)
+    updated = await _modify(group_id, server, actor, max_val=None, min_val=DEFAULT_MIN_MESSAGE_BUFFER_LENGTH + 1)
     assert updated.max_message_buffer_length == DEFAULT_MAX_MESSAGE_BUFFER_LENGTH
     assert updated.min_message_buffer_length == DEFAULT_MIN_MESSAGE_BUFFER_LENGTH + 1
 
@@ -624,7 +624,7 @@ def test_valid_buffer_lengths_only_min(group_id, server, actor):
         (10, 1, "greater than 4"),
     ],
 )
-def test_invalid_buffer_lengths(group_id, server, actor, max_val, min_val, err_part):
+async def test_invalid_buffer_lengths(group_id, server, actor, max_val, min_val, err_part):
     with pytest.raises(ValueError) as exc:
-        _modify(group_id, server, actor, max_val, min_val)
+        await _modify(group_id, server, actor, max_val, min_val)
     assert err_part in str(exc.value)

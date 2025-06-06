@@ -152,9 +152,9 @@ class GroupManager:
 
     @trace_method
     @enforce_types
-    def modify_group(self, group_id: str, group_update: GroupUpdate, actor: PydanticUser) -> PydanticGroup:
-        with db_registry.session() as session:
-            group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
+    async def modify_group_async(self, group_id: str, group_update: GroupUpdate, actor: PydanticUser) -> PydanticGroup:
+        async with db_registry.async_session() as session:
+            group = await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
 
             sleeptime_agent_frequency = None
             max_message_buffer_length = None
@@ -206,11 +206,11 @@ class GroupManager:
             if group_update.description:
                 group.description = group_update.description
             if group_update.agent_ids:
-                self._process_agent_relationship(
+                await self._process_agent_relationship_async(
                     session=session, group=group, agent_ids=group_update.agent_ids, allow_partial=False, replace=True
                 )
 
-            group.update(session, actor=actor)
+            await group.update_async(session, actor=actor)
             return group.to_pydantic()
 
     @trace_method
