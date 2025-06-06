@@ -215,7 +215,7 @@ def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKC
     agent_state = client.agents.retrieve(agent_id=agent_state.id)
     blocks = agent_state.memory.file_blocks
     assert len(blocks) == 1
-    assert "test" in [b.value for b in blocks]
+    assert any("test" in b.value for b in blocks)
     assert any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
     # Detach the source
@@ -225,7 +225,7 @@ def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKC
     agent_state = client.agents.retrieve(agent_id=agent_state.id)
     blocks = agent_state.memory.file_blocks
     assert len(blocks) == 0
-    assert "test" not in [b.value for b in blocks]
+    assert not any("test" in b.value for b in blocks)
     assert not any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
 
@@ -254,7 +254,7 @@ def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, a
     agent_state = client.agents.retrieve(agent_id=agent_state.id)
     blocks = agent_state.memory.file_blocks
     assert len(blocks) == 1
-    assert "test" in [b.value for b in blocks]
+    assert any("test" in b.value for b in blocks)
     assert any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
     # Remove file from source
@@ -264,7 +264,7 @@ def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, a
     agent_state = client.agents.retrieve(agent_id=agent_state.id)
     blocks = agent_state.memory.file_blocks
     assert len(blocks) == 0
-    assert "test" not in [b.value for b in blocks]
+    assert not any("test" in b.value for b in blocks)
     assert not any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
 

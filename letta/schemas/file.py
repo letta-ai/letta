@@ -4,6 +4,7 @@ from typing import Optional
 
 from pydantic import Field
 
+from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.letta_base import LettaBase
 
 
@@ -34,6 +35,11 @@ class FileMetadata(FileMetadataBase):
     file_size: Optional[int] = Field(None, description="The size of the file in bytes.")
     file_creation_date: Optional[str] = Field(None, description="The creation date of the file.")
     file_last_modified_date: Optional[str] = Field(None, description="The last modified date of the file.")
+    processing_status: FileProcessingStatus = Field(
+        default=FileProcessingStatus.PENDING,
+        description="The current processing status of the file (e.g. pending, parsing, embedding, completed, error).",
+    )
+    error_message: Optional[str] = Field(default=None, description="Optional error message if the file failed processing.")
 
     # orm metadata, optional fields
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow, description="The creation date of the file.")

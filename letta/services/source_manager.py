@@ -1,7 +1,9 @@
 import asyncio
+from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
@@ -12,6 +14,7 @@ from letta.orm.source import Source as SourceModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState as PydanticAgentState
+from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.source import SourceUpdate
@@ -225,6 +228,95 @@ class SourceManager:
 
             except NoResultFound:
                 return None
+
+    @enforce_types
+    @trace_method
+    async def update_file_status(
+        self,
+        *,
+        file_id: str,
+        actor: PydanticUser,
+        processing_status: Optional[FileProcessingStatus] = None,
+        error_message: Optional[str] = None,
+    ) -> PydanticFileMetadata:
+        """
+        Update processing_status and/or error_message on a FileMetadata row.
+
+        * 1st round-trip → UPDATE
+        * 2nd round-trip → SELECT fresh row (same as read_async)
+        """
+
+        if processing_status is None and error_message is None:
+            raise ValueError("Nothing to update")
+
+        values: dict[str, object] = {"updated_at": datetime.utcnow()}
+        if processing_status is not None:
+            values["processing_status"] = processing_status
+        if error_message is not None:
+            values["error_message"] = error_message
+
+        async with db_registry.async_session() as session:
+            # Fast in-place update – no ORM hydration
+            stmt = (
+                update(FileMetadataModel)
+                .where(
+                    FileMetadataModel.id == file_id,
+                    FileMetadataModel.organization_id == actor.organization_id,
+                )
+                .values(**values)
+            )
+            await session.execute(stmt)
+            await session.commit()
+
+            # Reload via normal accessor so we return a fully-attached object
+            file_orm = await FileMetadataModel.read_async(
+                db_session=session,
+                identifier=file_id,
+                actor=actor,
+            )
+            return await file_orm.to_pydantic_async()
+
+    @enforce_types
+    @trace_method
+    async def upsert_file_content(
+        self,
+        *,
+        file_id: str,
+        text: str,
+        actor: PydanticUser,
+    ) -> PydanticFileMetadata:
+        async with db_registry.async_session() as session:
+            await FileMetadataModel.read_async(session, file_id, actor)
+
+            dialect_name = session.bind.dialect.name
+
+            if dialect_name == "postgresql":
+                stmt = (
+                    pg_insert(FileContentModel)
+                    .values(file_id=file_id, text=text)
+                    .on_conflict_do_update(
+                        index_elements=[FileContentModel.file_id],
+                        set_={"text": text},
+                    )
+                )
+                await session.execute(stmt)
+            else:
+                # Emulate upsert for SQLite and others
+                stmt = select(FileContentModel).where(FileContentModel.file_id == file_id)
+                result = await session.execute(stmt)
+                existing = result.scalar_one_or_none()
+
+                if existing:
+                    await session.execute(update(FileContentModel).where(FileContentModel.file_id == file_id).values(text=text))
+                else:
+                    session.add(FileContentModel(file_id=file_id, text=text))
+
+            await session.commit()
+
+            # Reload with content
+            query = select(FileMetadataModel).options(selectinload(FileMetadataModel.content)).where(FileMetadataModel.id == file_id)
+            result = await session.execute(query)
+            return await result.scalar_one().to_pydantic_async(include_content=True)
 
     @enforce_types
     @trace_method
