@@ -13,9 +13,6 @@ from letta.settings import tool_settings
 def pytest_configure(config):
     logging.basicConfig(level=logging.DEBUG)
 
-    # Register custom markers
-    config.addinivalue_line("markers", "async_client_test: mark test as an async client test that is skipped by default")
-
 
 @pytest.fixture
 def disable_e2b_api_key() -> Generator[None, None, None]:
