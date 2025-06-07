@@ -9,6 +9,7 @@ import pytest
 import requests
 from dotenv import load_dotenv
 from letta_client import AsyncLetta, Letta, MessageCreate, Run
+from letta_client.core.api_error import ApiError
 from letta_client.types import AssistantMessage, LettaUsageStatistics, ReasoningMessage, ToolCallMessage, ToolReturnMessage, UserMessage
 
 from letta.schemas.agent import AgentState
@@ -425,6 +426,34 @@ def test_tool_call(
     TESTED_LLM_CONFIGS,
     ids=[c.model for c in TESTED_LLM_CONFIGS],
 )
+def test_agent_loop_error(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending a message with a synchronous client.
+    Verifies that no new messages are persisted on error.
+    """
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    tools = agent_state.tools
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config, tool_ids=[])
+    with pytest.raises(ApiError):
+        client.agents.messages.create(
+            agent_id=agent_state.id,
+            messages=USER_MESSAGE_FORCE_REPLY,
+        )
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert len(messages_from_db) == 0
+    client.agents.modify(agent_id=agent_state.id, tool_ids=[t.id for t in tools])
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
 def test_step_streaming_greeting_with_assistant_message(
     disable_e2b_api_key: Any,
     client: Letta,
@@ -505,6 +534,36 @@ def test_step_streaming_tool_call(
     assert_tool_call_response(messages, streaming=True)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_tool_call_response(messages_from_db, from_db=True)
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_step_stream_agent_loop_error(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending a message with a synchronous client.
+    Verifies that no new messages are persisted on error.
+    """
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    tools = agent_state.tools
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config, tool_ids=[])
+    with pytest.raises(ApiError):
+        response = client.agents.messages.create_stream(
+            agent_id=agent_state.id,
+            messages=USER_MESSAGE_FORCE_REPLY,
+        )
+        list(response)
+
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert len(messages_from_db) == 0
+    client.agents.modify(agent_id=agent_state.id, tool_ids=[t.id for t in tools])
 
 
 @pytest.mark.parametrize(
@@ -595,6 +654,39 @@ def test_token_streaming_tool_call(
     assert_tool_call_response(messages, streaming=True)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_tool_call_response(messages_from_db, from_db=True)
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_token_streaming_agent_loop_error(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending a message with a synchronous client.
+    Verifies that no new messages are persisted on error.
+    """
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    tools = agent_state.tools
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config, tool_ids=[])
+    try:
+        response = client.agents.messages.create_stream(
+            agent_id=agent_state.id,
+            messages=USER_MESSAGE_FORCE_REPLY,
+            stream_tokens=True,
+        )
+        list(response)
+    except:
+        pass  # only some models throw an error TODO: make this consistent
+
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert len(messages_from_db) == 0
+    client.agents.modify(agent_id=agent_state.id, tool_ids=[t.id for t in tools])
 
 
 @pytest.mark.parametrize(

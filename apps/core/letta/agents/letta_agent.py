@@ -8,12 +8,7 @@ from openai.types.chat import ChatCompletionChunk
 
 from letta.agents.base_agent import BaseAgent
 from letta.agents.ephemeral_summary_agent import EphemeralSummaryAgent
-from letta.agents.helpers import (
-    _create_letta_response,
-    _prepare_in_context_messages_async,
-    _prepare_in_context_messages_no_persist_async,
-    generate_step_id,
-)
+from letta.agents.helpers import _create_letta_response, _prepare_in_context_messages_no_persist_async, generate_step_id
 from letta.errors import ContextWindowExceededError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import AsyncTimer, get_utc_timestamp_ns, ns_to_ms
@@ -152,9 +147,10 @@ class LettaAgent(BaseAgent):
         agent_state = await self.agent_manager.get_agent_by_id_async(
             agent_id=self.agent_id, include_relationships=["tools", "memory", "tool_exec_environment_variables"], actor=self.actor
         )
-        current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_async(
+        current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_no_persist_async(
             input_messages, agent_state, self.message_manager, self.actor
         )
+        initial_messages = new_in_context_messages
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
         llm_client = LLMClient.create(
             provider_type=agent_state.llm_config.model_endpoint_type,
@@ -227,10 +223,12 @@ class LettaAgent(BaseAgent):
                 tool_rules_solver,
                 response.usage,
                 reasoning_content=reasoning,
+                initial_messages=initial_messages,
                 agent_step_span=agent_step_span,
             )
             self.response_messages.extend(persisted_messages)
             new_in_context_messages.extend(persisted_messages)
+            initial_messages = None
             log_event("agent.stream_no_tokens.llm_response.processed")  # [4^]
 
             # log step time
@@ -301,9 +299,10 @@ class LettaAgent(BaseAgent):
             3. Fetches a response from the LLM
             4. Processes the response
         """
-        current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_async(
+        current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_no_persist_async(
             input_messages, agent_state, self.message_manager, self.actor
         )
+        initial_messages = new_in_context_messages
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
         llm_client = LLMClient.create(
             provider_type=agent_state.llm_config.model_endpoint_type,
@@ -367,10 +366,12 @@ class LettaAgent(BaseAgent):
                 response.usage,
                 reasoning_content=reasoning,
                 step_id=step_id,
+                initial_messages=initial_messages,
                 agent_step_span=agent_step_span,
             )
             self.response_messages.extend(persisted_messages)
             new_in_context_messages.extend(persisted_messages)
+            initial_messages = None
             log_event("agent.step.llm_response.processed")  # [4^]
 
             # log step time
@@ -435,10 +436,6 @@ class LettaAgent(BaseAgent):
         current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_no_persist_async(
             input_messages, agent_state, self.message_manager, self.actor
         )
-
-        # Special strategy to lower TTFT
-        # Delay persistence of the initial input message as much as possible
-        persisted_input_messages = False
         initial_messages = new_in_context_messages
 
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
@@ -513,12 +510,6 @@ class LettaAgent(BaseAgent):
                 interface.output_tokens, dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model})
             )
 
-            # Persist input messages if not already
-            # Special strategy to lower TTFT
-            if not persisted_input_messages:
-                await self.message_manager.create_many_messages_async(initial_messages, actor=self.actor)
-                persisted_input_messages = True
-
             # log LLM request time
             now = get_utc_timestamp_ns()
             llm_request_ns = now - step_start
@@ -539,10 +530,12 @@ class LettaAgent(BaseAgent):
                 reasoning_content=reasoning_content,
                 pre_computed_assistant_message_id=interface.letta_message_id,
                 step_id=step_id,
+                initial_messages=initial_messages,
                 agent_step_span=agent_step_span,
             )
             self.response_messages.extend(persisted_messages)
             new_in_context_messages.extend(persisted_messages)
+            initial_messages = None
 
             # log total step time
             now = get_utc_timestamp_ns()
@@ -839,7 +832,7 @@ class LettaAgent(BaseAgent):
         reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
         pre_computed_assistant_message_id: Optional[str] = None,
         step_id: str | None = None,
-        new_in_context_messages: Optional[List[Message]] = None,
+        initial_messages: Optional[List[Message]] = None,
         agent_step_span: Optional["Span"] = None,
     ) -> Tuple[List[Message], bool]:
         """
@@ -960,7 +953,9 @@ class LettaAgent(BaseAgent):
             step_id=logged_step.id if logged_step else None,  # TODO (cliandy): eventually move over other agent loops
         )
 
-        persisted_messages = await self.message_manager.create_many_messages_async(tool_call_messages, actor=self.actor)
+        persisted_messages = await self.message_manager.create_many_messages_async(
+            (initial_messages or []) + tool_call_messages, actor=self.actor
+        )
         self.last_function_response = function_response
 
         return persisted_messages, continue_stepping
