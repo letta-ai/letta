@@ -607,15 +607,45 @@ def build_passage_query(
     if not agent_only:  # Include source passages
         if agent_id is not None:
             source_passages = (
-                select(SourcePassage, literal(None).label("agent_id"))
+                select(
+                    SourcePassage.file_name,
+                    SourcePassage.id,
+                    SourcePassage.text,
+                    SourcePassage.embedding_config,
+                    SourcePassage.metadata_,
+                    SourcePassage.embedding,
+                    SourcePassage.created_at,
+                    SourcePassage.updated_at,
+                    SourcePassage.is_deleted,
+                    SourcePassage._created_by_id,
+                    SourcePassage._last_updated_by_id,
+                    SourcePassage.organization_id,
+                    SourcePassage.file_id,
+                    SourcePassage.source_id,
+                    literal(None).label("agent_id"),
+                )
                 .join(SourcesAgents, SourcesAgents.source_id == SourcePassage.source_id)
                 .where(SourcesAgents.agent_id == agent_id)
                 .where(SourcePassage.organization_id == actor.organization_id)
             )
         else:
-            source_passages = select(SourcePassage, literal(None).label("agent_id")).where(
-                SourcePassage.organization_id == actor.organization_id
-            )
+            source_passages = select(
+                SourcePassage.file_name,
+                SourcePassage.id,
+                SourcePassage.text,
+                SourcePassage.embedding_config,
+                SourcePassage.metadata_,
+                SourcePassage.embedding,
+                SourcePassage.created_at,
+                SourcePassage.updated_at,
+                SourcePassage.is_deleted,
+                SourcePassage._created_by_id,
+                SourcePassage._last_updated_by_id,
+                SourcePassage.organization_id,
+                SourcePassage.file_id,
+                SourcePassage.source_id,
+                literal(None).label("agent_id"),
+            ).where(SourcePassage.organization_id == actor.organization_id)
 
         if source_id:
             source_passages = source_passages.where(SourcePassage.source_id == source_id)
@@ -627,6 +657,7 @@ def build_passage_query(
     if agent_id is not None:
         agent_passages = (
             select(
+                literal(None).label("file_name"),
                 AgentPassage.id,
                 AgentPassage.text,
                 AgentPassage.embedding_config,

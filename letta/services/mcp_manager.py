@@ -220,12 +220,12 @@ class MCPManager:
     #        mcp_server.delete(session, actor=actor)  # Re-raise other database-related errors
 
     @enforce_types
-    def delete_mcp_server_by_id(self, mcp_server_id: str, actor: PydanticUser) -> None:
+    async def delete_mcp_server_by_id(self, mcp_server_id: str, actor: PydanticUser) -> None:
         """Delete a tool by its ID."""
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             try:
-                mcp_server = MCPServerModel.read(db_session=session, identifier=mcp_server_id, actor=actor)
-                mcp_server.hard_delete(db_session=session, actor=actor)
+                mcp_server = await MCPServerModel.read_async(db_session=session, identifier=mcp_server_id, actor=actor)
+                await mcp_server.hard_delete_async(db_session=session, actor=actor)
             except NoResultFound:
                 raise ValueError(f"MCP server with id {mcp_server_id} not found.")
 

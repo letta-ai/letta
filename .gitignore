@@ -5,6 +5,8 @@
 openapi_letta.json
 openapi_openai.json
 
+CLAUDE.md
+
 ### Eclipse ###
 .metadata
 bin/

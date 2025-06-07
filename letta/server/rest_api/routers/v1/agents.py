@@ -23,7 +23,7 @@ from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.group import Group
 from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
-from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion
+from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
@@ -704,6 +704,7 @@ async def send_message(
             max_steps=10,
             use_assistant_message=request.use_assistant_message,
             request_start_timestamp_ns=request_start_timestamp_ns,
+            include_return_message_types=request.include_return_message_types,
         )
     else:
         result = await server.send_message_to_agent(
@@ -716,6 +717,7 @@ async def send_message(
             use_assistant_message=request.use_assistant_message,
             assistant_message_tool_name=request.assistant_message_tool_name,
             assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+            include_return_message_types=request.include_return_message_types,
         )
     return result
 
@@ -791,6 +793,7 @@ async def send_message_streaming(
                     max_steps=10,
                     use_assistant_message=request.use_assistant_message,
                     request_start_timestamp_ns=request_start_timestamp_ns,
+                    include_return_message_types=request.include_return_message_types,
                 ),
                 media_type="text/event-stream",
             )
@@ -801,6 +804,7 @@ async def send_message_streaming(
                     max_steps=10,
                     use_assistant_message=request.use_assistant_message,
                     request_start_timestamp_ns=request_start_timestamp_ns,
+                    include_return_message_types=request.include_return_message_types,
                 ),
                 media_type="text/event-stream",
             )
@@ -816,6 +820,7 @@ async def send_message_streaming(
             assistant_message_tool_name=request.assistant_message_tool_name,
             assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
             request_start_timestamp_ns=request_start_timestamp_ns,
+            include_return_message_types=request.include_return_message_types,
         )
 
     return result
@@ -830,6 +835,7 @@ async def process_message_background(
     use_assistant_message: bool,
     assistant_message_tool_name: str,
     assistant_message_tool_kwarg: str,
+    include_return_message_types: Optional[List[MessageType]] = None,
 ) -> None:
     """Background task to process the message and update job status."""
     try:
@@ -845,6 +851,7 @@ async def process_message_background(
             assistant_message_tool_kwarg=assistant_message_tool_kwarg,
             metadata={"job_id": job_id},  # Pass job_id through metadata
             request_start_timestamp_ns=request_start_timestamp_ns,
+            include_return_message_types=include_return_message_types,
         )
 
         # Update job status to completed
@@ -912,6 +919,7 @@ async def send_message_async(
         use_assistant_message=request.use_assistant_message,
         assistant_message_tool_name=request.assistant_message_tool_name,
         assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+        include_return_message_types=request.include_return_message_types,
     )
 
     return run

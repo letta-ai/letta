@@ -45,7 +45,7 @@ from letta.schemas.enums import JobStatus, MessageStreamStatus, ProviderCategory
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
 from letta.schemas.group import GroupCreate, ManagerType, SleeptimeManager, VoiceSleeptimeManager
 from letta.schemas.job import Job, JobUpdate
-from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, ToolReturnMessage
+from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, MessageType, ToolReturnMessage
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
@@ -2237,6 +2237,7 @@ class SyncServer(Server):
         assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
         metadata: Optional[dict] = None,
         request_start_timestamp_ns: Optional[int] = None,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ) -> Union[StreamingResponse, LettaResponse]:
         """Split off into a separate function so that it can be imported in the /chat/completion proxy."""
         # TODO: @charles is this the correct way to handle?
@@ -2342,6 +2343,11 @@ class SyncServer(Server):
 
                 # Get rid of the stream status messages
                 filtered_stream = [d for d in generated_stream if not isinstance(d, MessageStreamStatus)]
+
+                # Apply message type filtering if specified
+                if include_return_message_types is not None:
+                    filtered_stream = [msg for msg in filtered_stream if msg.message_type in include_return_message_types]
+
                 usage = await task
 
                 # By default the stream will be messages of type LettaMessage or LettaLegacyMessage

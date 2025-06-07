@@ -30,6 +30,7 @@ from letta.otel.metric_registry import MetricRegistry
 from letta.otel.tracing import log_event, trace_method, tracer
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole, MessageStreamStatus
+from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
@@ -121,6 +122,7 @@ class LettaAgent(BaseAgent):
         max_steps: int = 10,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: Optional[int] = None,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ) -> LettaResponse:
         agent_state = await self.agent_manager.get_agent_by_id_async(
             agent_id=self.agent_id, include_relationships=["tools", "memory", "tool_exec_environment_variables"], actor=self.actor
@@ -132,7 +134,10 @@ class LettaAgent(BaseAgent):
             request_start_timestamp_ns=request_start_timestamp_ns,
         )
         return _create_letta_response(
-            new_in_context_messages=new_in_context_messages, use_assistant_message=use_assistant_message, usage=usage
+            new_in_context_messages=new_in_context_messages,
+            use_assistant_message=use_assistant_message,
+            usage=usage,
+            include_return_message_types=include_return_message_types,
         )
 
     @trace_method
@@ -142,6 +147,7 @@ class LettaAgent(BaseAgent):
         max_steps: int = 10,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: Optional[int] = None,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ):
         agent_state = await self.agent_manager.get_agent_by_id_async(
             agent_id=self.agent_id, include_relationships=["tools", "memory", "tool_exec_environment_variables"], actor=self.actor
@@ -250,8 +256,12 @@ class LettaAgent(BaseAgent):
             letta_messages = Message.to_letta_messages_from_list(
                 filter_user_messages, use_assistant_message=use_assistant_message, reverse=False
             )
+
             for message in letta_messages:
-                yield f"data: {message.model_dump_json()}\n\n"
+                if not include_return_message_types:
+                    yield f"data: {message.model_dump_json()}\n\n"
+                elif include_return_message_types and message.message_type in include_return_message_types:
+                    yield f"data: {message.model_dump_json()}\n\n"
 
             if not should_continue:
                 break
@@ -409,6 +419,7 @@ class LettaAgent(BaseAgent):
         max_steps: int = 10,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: Optional[int] = None,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ) -> AsyncGenerator[str, None]:
         """
         Carries out an invocation of the agent loop in a streaming fashion that yields partial tokens.
@@ -486,7 +497,12 @@ class LettaAgent(BaseAgent):
                     request_span.add_event(name="time_to_first_token_ms", attributes={"ttft_ms": ns_to_ms(ttft_ns)})
                     first_chunk = False
 
-                yield f"data: {chunk.model_dump_json()}\n\n"
+                if include_return_message_types is None:
+                    # return all data
+                    yield f"data: {chunk.model_dump_json()}\n\n"
+                elif include_return_message_types and chunk.message_type in include_return_message_types:
+                    # filter down returned data
+                    yield f"data: {chunk.model_dump_json()}\n\n"
 
             # update usage
             usage.step_count += 1
@@ -563,7 +579,9 @@ class LettaAgent(BaseAgent):
 
             tool_return = [msg for msg in persisted_messages if msg.role == "tool"][-1].to_letta_messages()[0]
             if not (use_assistant_message and tool_return.name == "send_message"):
-                yield f"data: {tool_return.model_dump_json()}\n\n"
+                # Apply message type filtering if specified
+                if include_return_message_types is None or tool_return.message_type in include_return_message_types:
+                    yield f"data: {tool_return.model_dump_json()}\n\n"
 
             if not should_continue:
                 break
@@ -763,7 +781,7 @@ class LettaAgent(BaseAgent):
                 else asyncio.sleep(0, result=self.num_messages)
             ),
             (
-                self.passage_manager.size_async(actor=self.actor, agent_id=agent_state.id)
+                self.passage_manager.agent_passage_size_async(actor=self.actor, agent_id=agent_state.id)
                 if self.num_archival_memories is None
                 else asyncio.sleep(0, result=self.num_archival_memories)
             ),

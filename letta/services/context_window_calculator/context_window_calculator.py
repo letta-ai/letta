@@ -63,7 +63,7 @@ class ContextWindowCalculator:
         # Fetch data concurrently
         (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
             message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor),
-            passage_manager.size_async(actor=actor, agent_id=agent_state.id),
+            passage_manager.agent_passage_size_async(actor=actor, agent_id=agent_state.id),
             message_manager.size_async(actor=actor, agent_id=agent_state.id),
         )
 

@@ -501,7 +501,8 @@ async def add_mcp_server_to_config(
         if isinstance(request, StdioServerConfig):
             mapped_request = MCPServer(server_name=request.server_name, server_type=request.type, stdio_config=request)
             # don't allow stdio servers
-            raise HTTPException(status_code=400, detail="StdioServerConfig is not supported")
+            if tool_settings.mcp_disable_stdio:  # protected server
+                raise HTTPException(status_code=400, detail="StdioServerConfig is not supported")
         elif isinstance(request, SSEServerConfig):
             mapped_request = MCPServer(server_name=request.server_name, server_type=request.type, server_url=request.server_url)
         # TODO: add HTTP streaming
@@ -530,4 +531,8 @@ async def delete_mcp_server_from_config(
         # log to DB
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
         mcp_server_id = await server.mcp_manager.get_mcp_server_id_by_name(mcp_server_name, actor)
-        return server.mcp_manager.delete_mcp_server_by_id(mcp_server_id, actor=actor)
+        await server.mcp_manager.delete_mcp_server_by_id(mcp_server_id, actor=actor)
+
+        # TODO: don't do this in the future (just return MCPServer)
+        all_servers = await server.mcp_manager.list_mcp_servers(actor=actor)
+        return [server.to_config() for server in all_servers]

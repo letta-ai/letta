@@ -70,7 +70,7 @@ from letta.services.step_manager import StepManager
 from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
 from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
-from letta.settings import settings, summarizer_settings, model_settings
+from letta.settings import settings, summarizer_settings
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from letta.system import get_heartbeat, get_token_limit_warning, package_function_response, package_summarize_message, package_user_message
 from letta.utils import count_tokens, get_friendly_error_msg, get_tool_call_id, log_telemetry, parse_json, validate_function_response
@@ -503,7 +503,7 @@ class Agent(BaseAgent):
                 response_message.function_call if response_message.function_call is not None else response_message.tool_calls[0].function
             )
             function_name = function_call.name
-            self.logger.debug(f"Request to call function {function_name} with tool_call_id: {tool_call_id}")
+            self.logger.info(f"Request to call function {function_name} with tool_call_id: {tool_call_id}")
 
             # Failure case 1: function name is wrong (not in agent_state.tools)
             target_letta_tool = None
@@ -1282,7 +1282,7 @@ class Agent(BaseAgent):
         )
 
     async def get_context_window_async(self) -> ContextWindowOverview:
-        if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" and model_settings.anthropic_api_key is not None:
+        if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
             return await self.get_context_window_from_anthropic_async()
         return await self.get_context_window_from_tiktoken_async()
 
@@ -1291,8 +1291,8 @@ class Agent(BaseAgent):
         # Grab the in-context messages
         # conversion of messages to OpenAI dict format, which is passed to the token counter
         (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
-            self.agent_manager.get_in_context_messages_async(agent_id=self.agent_state.id, actor=self.user),
-            self.passage_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
+            self.message_manager.get_messages_by_ids_async(message_ids=self.agent_state.message_ids, actor=self.user),
+            self.passage_manager.agent_passage_size_async(actor=self.user, agent_id=self.agent_state.id),
             self.message_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
         )
         in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
@@ -1315,11 +1315,13 @@ class Agent(BaseAgent):
                 core_memory = system_message[core_memory_marker_pos:].strip()
             else:
                 # if no markers found, put everything in system message
+                self.logger.info("No markers found in system message, core_memory and external_memory_summary will not be loaded")
                 system_prompt = system_message
                 external_memory_summary = ""
                 core_memory = ""
         else:
             # if no system message, fall back on agent's system prompt
+            self.logger.info("No system message found in history, core_memory and external_memory_summary will not be loaded")
             system_prompt = self.agent_state.system
             external_memory_summary = ""
             core_memory = ""
@@ -1411,8 +1413,8 @@ class Agent(BaseAgent):
         # Grab the in-context messages
         # conversion of messages to anthropic dict format, which is passed to the token counter
         (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
-            self.agent_manager.get_in_context_messages_async(agent_id=self.agent_state.id, actor=self.user),
-            self.passage_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
+            self.message_manager.get_messages_by_ids_async(message_ids=self.agent_state.message_ids, actor=self.user),
+            self.passage_manager.agent_passage_size_async(actor=self.user, agent_id=self.agent_state.id),
             self.message_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
         )
         in_context_messages_anthropic = [m.to_anthropic_dict() for m in in_context_messages]
@@ -1435,14 +1437,16 @@ class Agent(BaseAgent):
                 core_memory = system_message[core_memory_marker_pos:].strip()
             else:
                 # if no markers found, put everything in system message
+                self.logger.info("No markers found in system message, core_memory and external_memory_summary will not be loaded")
                 system_prompt = system_message
-                external_memory_summary = None
-                core_memory = None
+                external_memory_summary = ""
+                core_memory = ""
         else:
             # if no system message, fall back on agent's system prompt
+            self.logger.info("No system message found in history, core_memory and external_memory_summary will not be loaded")
             system_prompt = self.agent_state.system
-            external_memory_summary = None
-            core_memory = None
+            external_memory_summary = ""
+            core_memory = ""
 
         num_tokens_system_coroutine = anthropic_client.count_tokens(model=model, messages=[{"role": "user", "content": system_prompt}])
         num_tokens_core_memory_coroutine = (
