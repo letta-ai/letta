@@ -154,7 +154,7 @@ async def delete_source(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     agent_states = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
-    files = await server.source_manager.list_files(source_id, actor)
+    files = await server.file_manager.list_files(source_id, actor)
     file_ids = [f.id for f in files]
 
     for agent_state in agent_states:
@@ -294,7 +294,7 @@ async def list_source_files(
     List paginated files associated with a data source.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    return await server.source_manager.list_files(
+    return await server.file_manager.list_files(
         source_id=source_id,
         limit=limit,
         after=after,
@@ -317,7 +317,7 @@ async def delete_file_from_source(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    deleted_file = await server.source_manager.delete_file(file_id=file_id, actor=actor)
+    deleted_file = await server.file_manager.delete_file(file_id=file_id, actor=actor)
 
     await server.remove_file_from_context_windows(source_id=source_id, file_id=deleted_file.id, actor=actor)
 

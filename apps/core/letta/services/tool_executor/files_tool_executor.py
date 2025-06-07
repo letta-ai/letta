@@ -10,6 +10,7 @@ from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
+from letta.services.file_manager import FileManager
 from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.files_agents_manager import FileAgentManager
 from letta.services.message_manager import MessageManager
@@ -49,6 +50,7 @@ class LettaFileToolExecutor(ToolExecutor):
 
         # TODO: This should be passed in to for testing purposes
         self.files_agents_manager = FileAgentManager()
+        self.file_manager = FileManager()
         self.source_manager = SourceManager()
         self.logger = get_logger(__name__)
 
@@ -112,7 +114,7 @@ class LettaFileToolExecutor(ToolExecutor):
             )
 
         file_id = file_agent.file_id
-        file = await self.source_manager.get_file_by_id(file_id=file_id, actor=self.actor, include_content=True)
+        file = await self.file_manager.get_file_by_id(file_id=file_id, actor=self.actor, include_content=True)
 
         # TODO: Inefficient, maybe we can pre-compute this
         # TODO: This is also not the best way to split things - would be cool to have "content aware" splitting
@@ -234,7 +236,7 @@ class LettaFileToolExecutor(ToolExecutor):
 
             for file_agent in file_agents:
                 # Load file content
-                file = await self.source_manager.get_file_by_id(file_id=file_agent.file_id, actor=self.actor, include_content=True)
+                file = await self.file_manager.get_file_by_id(file_id=file_agent.file_id, actor=self.actor, include_content=True)
 
                 if not file or not file.content:
                     files_skipped += 1

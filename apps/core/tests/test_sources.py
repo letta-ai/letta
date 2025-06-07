@@ -58,6 +58,7 @@ def agent_state(client: LettaSDKClient):
     open_file_tool = client.tools.list(name="open_file")[0]
     close_file_tool = client.tools.list(name="close_file")[0]
     search_files_tool = client.tools.list(name="search_files")[0]
+    grep_tool = client.tools.list(name="grep")[0]
 
     agent_state = client.agents.create(
         memory_blocks=[
@@ -68,7 +69,7 @@ def agent_state(client: LettaSDKClient):
         ],
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-ada-002",
-        tool_ids=[open_file_tool.id, close_file_tool.id, search_files_tool.id],
+        tool_ids=[open_file_tool.id, close_file_tool.id, search_files_tool.id, grep_tool.id],
     )
     yield agent_state
 
