@@ -442,23 +442,31 @@ build-undertaker:
 
 # Build all Docker images for GitHub Actions with cache management
 build-web-images:
-    npm run slack-bot-says "Building Docker images for GitHub Actions with tag: {{TAG}}..."
+    npm run slack-bot-says "Building web Docker image with tag: {{TAG}}..."
     @echo "🚧 Building web Docker image with tag: {{TAG}}..."
-    @mkdir -p /tmp/.buildx-cache
-    docker buildx build --platform linux/{{ BUILD_ARCH }} --target web \
-        --cache-from type=local,src=/tmp/.buildx-cache \
-        --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-        -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN --file apps/web/Dockerfile
+    docker buildx create --use
+    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build \
+    --platform linux/{{ BUILD_ARCH }} \
+    --secret id=SENTRY_AUTH_TOKEN \
+    --cache-from type=registry,ref={{DOCKER_REGISTRY}}/web:latest \
+    --cache-to type=registry,ref={{DOCKER_REGISTRY}}/web:latest,mode=max \
+    --file apps/web/Dockerfile \
+    -t {{DOCKER_REGISTRY}}/web:{{TAG}} \
+    --target web \
+    --load .
 
+    npm run slack-bot-says "Building migrations Docker image with tag: {{TAG}}..."
     @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
-    docker buildx build --platform linux/{{ BUILD_ARCH }} --target migrations \
-        --cache-from type=local,src=/tmp/.buildx-cache \
-        --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-        -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load --file apps/web/Dockerfile
-
-    @echo "🚧 Moving cache..."
-    @rm -rf /tmp/.buildx-cache
-    @mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+    docker buildx create --use
+    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build \
+    --platform linux/{{ BUILD_ARCH }} \
+    --secret id=SENTRY_AUTH_TOKEN \
+    --cache-from type=registry,ref={{DOCKER_REGISTRY}}/web-migrations:latest \
+    --cache-to type=registry,ref={{DOCKER_REGISTRY}}/web-migrations:latest,mode=max \
+    --file apps/web/Dockerfile \
+    -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} \
+    --target migrations \
+    --load .
 
     @echo "✅ All Docker images built successfully."
     npm run slack-bot-says "Docker images with tag: {{TAG}} built successfully."
