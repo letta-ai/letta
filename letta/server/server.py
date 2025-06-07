@@ -80,6 +80,7 @@ from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
+from letta.services.file_manager import FileManager
 from letta.services.files_agents_manager import FileAgentManager
 from letta.services.group_manager import GroupManager
 from letta.services.helpers.tool_execution_helper import prepare_local_sandbox
@@ -219,6 +220,7 @@ class SyncServer(Server):
         self.batch_manager = LLMBatchManager()
         self.telemetry_manager = TelemetryManager()
         self.file_agent_manager = FileAgentManager()
+        self.file_manager = FileManager()
 
         # A resusable httpx client
         timeout = httpx.Timeout(connect=10.0, read=20.0, write=10.0, pool=10.0)
@@ -1507,7 +1509,7 @@ class SyncServer(Server):
             raise ValueError(f"Data source {source_name} does not exist for user {user_id}")
 
         # load data into the document store
-        passage_count, document_count = await load_data(connector, source, self.passage_manager, self.source_manager, actor=actor)
+        passage_count, document_count = await load_data(connector, source, self.passage_manager, self.file_manager, actor=actor)
         return passage_count, document_count
 
     def list_data_source_passages(self, user_id: str, source_id: str) -> List[Passage]:

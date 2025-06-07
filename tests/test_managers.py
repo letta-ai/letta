@@ -183,7 +183,7 @@ async def other_source(server: SyncServer, default_user):
 
 @pytest.fixture
 async def default_file(server: SyncServer, default_source, default_user, default_organization):
-    file = await server.source_manager.create_file(
+    file = await server.file_manager.create_file(
         PydanticFileMetadata(file_name="test_file", organization_id=default_organization.id, source_id=default_source.id),
         actor=default_user,
     )
@@ -681,7 +681,7 @@ async def another_file(server, default_source, default_user, default_organizatio
         organization_id=default_organization.id,
         source_id=default_source.id,
     )
-    return await server.source_manager.create_file(pf, actor=default_user)
+    return await server.file_manager.create_file(pf, actor=default_user)
 
 
 # ======================================================================================================================
@@ -4581,10 +4581,10 @@ async def test_get_file_by_id(server: SyncServer, default_user, default_source):
         file_size=2048,
         source_id=default_source.id,
     )
-    created_file = await server.source_manager.create_file(file_metadata=file_metadata, actor=default_user)
+    created_file = await server.file_manager.create_file(file_metadata=file_metadata, actor=default_user)
 
     # Retrieve the file by ID
-    retrieved_file = await server.source_manager.get_file_by_id(file_id=created_file.id, actor=default_user)
+    retrieved_file = await server.file_manager.get_file_by_id(file_id=created_file.id, actor=default_user)
 
     # Assertions to verify the retrieved file matches the created one
     assert retrieved_file.id == created_file.id
@@ -4605,7 +4605,7 @@ async def test_create_and_retrieve_file_with_content(server, default_user, defau
         source_id=default_source.id,
     )
 
-    created = await server.source_manager.create_file(
+    created = await server.file_manager.create_file(
         file_metadata=meta,
         actor=default_user,
         text=text_body,
@@ -4618,7 +4618,7 @@ async def test_create_and_retrieve_file_with_content(server, default_user, defau
     assert await _count_file_content_rows(async_session, created.id) == 1
 
     # -- now fetch WITH the body
-    loaded = await server.source_manager.get_file_by_id(created.id, actor=default_user, include_content=True)
+    loaded = await server.file_manager.get_file_by_id(created.id, actor=default_user, include_content=True)
     assert loaded.content == text_body
 
 
@@ -4631,13 +4631,13 @@ async def test_create_file_without_content(server, default_user, default_source,
         file_size=123,
         source_id=default_source.id,
     )
-    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user)
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
 
     # no content row
     assert await _count_file_content_rows(async_session, created.id) == 0
 
     # include_content=True still works, returns None
-    loaded = await server.source_manager.get_file_by_id(created.id, actor=default_user, include_content=True)
+    loaded = await server.file_manager.get_file_by_id(created.id, actor=default_user, include_content=True)
     assert loaded.content is None
 
 
@@ -4652,7 +4652,7 @@ async def test_lazy_raise_guard(server, default_user, default_source, async_sess
         file_size=len(text_body),
         source_id=default_source.id,
     )
-    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user, text=text_body)
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user, text=text_body)
 
     # Grab ORM instance WITHOUT selectinload(FileMetadata.content)
     orm = await async_session.get(FileMetadataModel, created.id)
@@ -4664,7 +4664,7 @@ async def test_lazy_raise_guard(server, default_user, default_source, async_sess
 
 @pytest.mark.asyncio
 async def test_list_files_content_none(server, default_user, default_source):
-    files = await server.source_manager.list_files(source_id=default_source.id, actor=default_user)
+    files = await server.file_manager.list_files(source_id=default_source.id, actor=default_user)
     assert all(f.content is None for f in files)
 
 
@@ -4678,13 +4678,13 @@ async def test_delete_cascades_to_content(server, default_user, default_source, 
         file_size=len(text_body),
         source_id=default_source.id,
     )
-    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user, text=text_body)
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user, text=text_body)
 
     # ensure row exists first
     assert await _count_file_content_rows(async_session, created.id) == 1
 
     # delete
-    await server.source_manager.delete_file(created.id, actor=default_user)
+    await server.file_manager.delete_file(created.id, actor=default_user)
 
     # content row gone
     assert await _count_file_content_rows(async_session, created.id) == 0
@@ -4694,29 +4694,27 @@ async def test_delete_cascades_to_content(server, default_user, default_source, 
 async def test_list_files(server: SyncServer, default_user, default_source):
     """Test listing files with pagination."""
     # Create multiple files
-    await server.source_manager.create_file(
+    await server.file_manager.create_file(
         PydanticFileMetadata(file_name="File 1", file_path="/path/to/file1.txt", file_type="text/plain", source_id=default_source.id),
         actor=default_user,
     )
     if USING_SQLITE:
         time.sleep(CREATE_DELAY_SQLITE)
-    await server.source_manager.create_file(
+    await server.file_manager.create_file(
         PydanticFileMetadata(file_name="File 2", file_path="/path/to/file2.txt", file_type="text/plain", source_id=default_source.id),
         actor=default_user,
     )
 
     # List files without pagination
-    files = await server.source_manager.list_files(source_id=default_source.id, actor=default_user)
+    files = await server.file_manager.list_files(source_id=default_source.id, actor=default_user)
     assert len(files) == 2
 
     # List files with pagination
-    paginated_files = await server.source_manager.list_files(source_id=default_source.id, actor=default_user, limit=1)
+    paginated_files = await server.file_manager.list_files(source_id=default_source.id, actor=default_user, limit=1)
     assert len(paginated_files) == 1
 
     # Ensure cursor-based pagination works
-    next_page = await server.source_manager.list_files(
-        source_id=default_source.id, actor=default_user, after=paginated_files[-1].id, limit=1
-    )
+    next_page = await server.file_manager.list_files(source_id=default_source.id, actor=default_user, after=paginated_files[-1].id, limit=1)
     assert len(next_page) == 1
     assert next_page[0].file_name != paginated_files[0].file_name
 
@@ -4727,16 +4725,16 @@ async def test_delete_file(server: SyncServer, default_user, default_source):
     file_metadata = PydanticFileMetadata(
         file_name="Delete File", file_path="/path/to/delete_file.txt", file_type="text/plain", source_id=default_source.id
     )
-    created_file = await server.source_manager.create_file(file_metadata=file_metadata, actor=default_user)
+    created_file = await server.file_manager.create_file(file_metadata=file_metadata, actor=default_user)
 
     # Delete the file
-    deleted_file = await server.source_manager.delete_file(file_id=created_file.id, actor=default_user)
+    deleted_file = await server.file_manager.delete_file(file_id=created_file.id, actor=default_user)
 
     # Assertions to verify deletion
     assert deleted_file.id == created_file.id
 
     # Verify that the file no longer appears in list_files
-    files = await server.source_manager.list_files(source_id=default_source.id, actor=default_user)
+    files = await server.file_manager.list_files(source_id=default_source.id, actor=default_user)
     assert len(files) == 0
 
 
@@ -4750,10 +4748,10 @@ async def test_update_file_status_basic(server, default_user, default_source):
         file_size=100,
         source_id=default_source.id,
     )
-    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user)
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
 
     # Update status only
-    updated = await server.source_manager.update_file_status(
+    updated = await server.file_manager.update_file_status(
         file_id=created.id,
         actor=default_user,
         processing_status=FileProcessingStatus.PARSING,
@@ -4762,7 +4760,7 @@ async def test_update_file_status_basic(server, default_user, default_source):
     assert updated.error_message is None
 
     # Update both status and error message
-    updated = await server.source_manager.update_file_status(
+    updated = await server.file_manager.update_file_status(
         file_id=created.id,
         actor=default_user,
         processing_status=FileProcessingStatus.ERROR,
@@ -4782,9 +4780,9 @@ async def test_update_file_status_error_only(server, default_user, default_sourc
         file_size=123,
         source_id=default_source.id,
     )
-    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user)
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
 
-    updated = await server.source_manager.update_file_status(
+    updated = await server.file_manager.update_file_status(
         file_id=created.id,
         actor=default_user,
         error_message="Timeout while embedding",
@@ -4807,11 +4805,11 @@ async def test_upsert_file_content_basic(server: SyncServer, default_user, defau
         file_size=len(initial_text),
         source_id=default_source.id,
     )
-    created = await server.source_manager.create_file(file_metadata=meta, actor=default_user)
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
     assert created.content is None
 
     # Step 2: Insert new content
-    file_with_content = await server.source_manager.upsert_file_content(
+    file_with_content = await server.file_manager.upsert_file_content(
         file_id=created.id,
         text=initial_text,
         actor=default_user,
@@ -4823,7 +4821,7 @@ async def test_upsert_file_content_basic(server: SyncServer, default_user, defau
     assert count == 1
 
     # Step 3: Update existing content
-    file_with_updated_content = await server.source_manager.upsert_file_content(
+    file_with_updated_content = await server.file_manager.upsert_file_content(
         file_id=created.id,
         text=updated_text,
         actor=default_user,

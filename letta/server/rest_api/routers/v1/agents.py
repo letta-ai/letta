@@ -316,7 +316,7 @@ async def attach_source(
     # Check if the agent is missing any files tools
     agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=actor)
 
-    files = await server.source_manager.list_files(source_id, actor, include_content=True)
+    files = await server.file_manager.list_files(source_id, actor, include_content=True)
     texts = []
     file_ids = []
     file_names = []
@@ -354,7 +354,7 @@ async def detach_source(
     if not agent_state.sources:
         agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=actor)
 
-    files = await server.source_manager.list_files(source_id, actor)
+    files = await server.file_manager.list_files(source_id, actor)
     file_ids = [f.id for f in files]
     await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
 
