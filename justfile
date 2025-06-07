@@ -42,12 +42,30 @@ configure-kubectl cluster-name="letta":
 @build-web-ui:
     npm run slack-bot-says "Building web Docker image with tag: {{TAG}}..."
     @echo "🚧 Building web Docker image with tag: {{TAG}}..."
-    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build --cache-to type=gha --cache-from type=gha --platform linux/{{ BUILD_ARCH }} --target web -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN --file apps/web/Dockerfile
+    docker buildx create --use
+    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build \
+    --platform linux/{{ BUILD_ARCH }} \
+    --secret id=SENTRY_AUTH_TOKEN \
+    --cache-from type=registry,ref={{DOCKER_REGISTRY}}/web:latest \
+    --cache-to type=registry,ref={{DOCKER_REGISTRY}}/web:latest,mode=max \
+    --file apps/web/Dockerfile \
+    -t {{DOCKER_REGISTRY}}/web:{{TAG}} \
+    --target web \
+    --load .
 
 # Build the migrations Docker image
 @build-web-migrations:
     @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
-    docker buildx build --cache-to type=gha --cache-from type=gha --platform linux/{{ BUILD_ARCH }} --target migrations -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load --file apps/web/Dockerfile
+    docker buildx create --use
+    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build \
+    --platform linux/{{ BUILD_ARCH }} \
+    --secret id=SENTRY_AUTH_TOKEN \
+    --cache-from type=registry,ref={{DOCKER_REGISTRY}}/web-migrations:latest \
+    --cache-to type=registry,ref={{DOCKER_REGISTRY}}/web-migrations:latest,mode=max \
+    --file apps/web/Dockerfile \
+    -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} \
+    --target migrations \
+    --load .
 
 # Build all Docker images synchronously
 @build-web: build-web-ui build-web-migrations
@@ -144,8 +162,16 @@ describe-web:
 # Core stuff
 @build-core:
     echo "🚧 Building multi-architecture Docker images with tag: {{TAG}}..."
+    # Single command that handles both cases
+    # For when we move to self-hosted: docker buildx create --name ci-builder --driver docker-container --use 2>/dev/null || docker buildx use ci-builder
     docker buildx create --use
-    docker buildx build --platform linux/{{ BUILD_ARCH }} -t {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}} . --load --file libs/config-core-deploy/Dockerfile
+    docker buildx build \
+    --platform linux/{{ BUILD_ARCH }} \
+    --cache-from type=registry,ref={{DOCKER_REGISTRY}}/memgpt-server:latest \
+    --cache-to type=registry,ref={{DOCKER_REGISTRY}}/memgpt-server:latest,mode=max \
+    -f libs/config-core-deploy/Dockerfile \
+    -t {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}} \
+    --load .
 
 # Push the Docker images to the registry
 @push-core:
@@ -189,6 +215,7 @@ describe-web:
         --set secrets.LETTA_UVICORN_WORKERS=${LETTA_UVICORN_WORKERS} \
         --set secrets.LETTA_PG_POOL_SIZE=${LETTA_PG_POOL_SIZE} \
         --set secrets.LETTA_PG_MAX_OVERFLOW=${LETTA_PG_MAX_OVERFLOW} \
+        --set env.REDIS_HOST={{REDIS_HOST}} \
         --set env.LETTA_DEFAULT_LLM_HANDLE=${LETTA_DEFAULT_LLM_HANDLE} \
         --set env.LETTA_DEFAULT_EMBEDDING_HANDLE=${LETTA_DEFAULT_EMBEDDING_HANDLE} \
         --set secrets.LETTA_MISTRAL_API_KEY=${LETTA_MISTRAL_API_KEY} \
