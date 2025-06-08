@@ -21,16 +21,15 @@ from letta.server.server import SyncServer
 from letta.services.file_processor.chunker.llama_index_chunker import LlamaIndexChunker
 from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
 from letta.services.file_processor.file_processor import FileProcessor
+from letta.services.file_processor.file_types import get_allowed_media_types, get_extension_to_mime_type_map, register_mime_types
 from letta.services.file_processor.parser.mistral_parser import MistralFileParser
 from letta.settings import model_settings, settings
 from letta.utils import safe_create_task, sanitize_filename
 
 logger = get_logger(__name__)
 
-mimetypes.add_type("text/markdown", ".md")
-mimetypes.add_type("text/markdown", ".markdown")
-mimetypes.add_type("application/jsonl", ".jsonl")
-mimetypes.add_type("application/x-jsonlines", ".jsonl")
+# Register all supported file types with Python's mimetypes module
+register_mime_types()
 
 
 router = APIRouter(prefix="/sources", tags=["sources"])
@@ -179,15 +178,7 @@ async def upload_file_to_source(
     """
     Upload a file to a data source.
     """
-    allowed_media_types = {
-        "application/pdf",
-        "text/plain",
-        "text/markdown",
-        "text/x-markdown",
-        "application/json",
-        "application/jsonl",
-        "application/x-jsonlines",
-    }
+    allowed_media_types = get_allowed_media_types()
 
     # Normalize incoming Content-Type header (strip charset or any parameters).
     raw_ct = file.content_type or ""
@@ -201,21 +192,18 @@ async def upload_file_to_source(
 
         if media_type not in allowed_media_types:
             ext = Path(file.filename).suffix.lower()
-            ext_map = {
-                ".pdf": "application/pdf",
-                ".txt": "text/plain",
-                ".json": "application/json",
-                ".md": "text/markdown",
-                ".markdown": "text/markdown",
-                ".jsonl": "application/jsonl",
-            }
+            ext_map = get_extension_to_mime_type_map()
             media_type = ext_map.get(ext, media_type)
 
     # If still not allowed, reject with 415.
     if media_type not in allowed_media_types:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=(f"Unsupported file type: {media_type or 'unknown'} " f"(filename: {file.filename}). Only PDF, .txt, or .json allowed."),
+            detail=(
+                f"Unsupported file type: {media_type or 'unknown'} "
+                f"(filename: {file.filename}). "
+                f"Supported types: PDF, text files (.txt, .md), JSON, and code files (.py, .js, .java, etc.)."
+            ),
         )
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)

@@ -137,6 +137,11 @@ def test_auto_attach_detach_files_tools(client: LettaSDKClient):
         ("tests/data/toy_chat_fine_tuning.jsonl", '{"messages"', r"toy_chat_fine_tuning_[a-z0-9]+\.jsonl"),
         ("tests/data/test.md", "h2 Heading", r"test_[a-z0-9]+\.md"),
         ("tests/data/test.json", "glossary", r"test_[a-z0-9]+\.json"),
+        ("tests/data/react_component.jsx", "UserProfile", r"react_component_[a-z0-9]+\.jsx"),
+        ("tests/data/task_manager.java", "TaskManager", r"task_manager_[a-z0-9]+\.java"),
+        ("tests/data/data_structures.cpp", "BinarySearchTree", r"data_structures_[a-z0-9]+\.cpp"),
+        ("tests/data/api_server.go", "UserService", r"api_server_[a-z0-9]+\.go"),
+        ("tests/data/data_analysis.py", "StatisticalAnalyzer", r"data_analysis_[a-z0-9]+\.py"),
     ],
 )
 def test_file_upload_creates_source_blocks_correctly(
@@ -158,10 +163,13 @@ def test_file_upload_creates_source_blocks_correctly(
         job = client.sources.files.upload(source_id=source.id, file=f)
 
     # Wait for the job to complete
-    while job.status != "completed":
+    while job.status != "completed" and job.status != "failed":
         time.sleep(1)
         job = client.jobs.retrieve(job_id=job.id)
         print("Waiting for jobs to complete...", job.status)
+
+    if job.status == "failed":
+        pytest.fail("Job failed. Check error logs.")
 
     # Get uploaded files
     files = client.sources.files.list(source_id=source.id, limit=1)
