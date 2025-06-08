@@ -3,20 +3,11 @@ import base64
 from mistralai import Mistral, OCRPageObject, OCRResponse, OCRUsageInfo
 
 from letta.log import get_logger
+from letta.services.file_processor.file_types import is_simple_text_mime_type
 from letta.services.file_processor.parser.base_parser import FileParser
 from letta.settings import settings
 
 logger = get_logger(__name__)
-
-
-SIMPLE_TEXT_MIME_TYPES = {
-    "text/plain",
-    "text/markdown",
-    "text/x-markdown",
-    "application/json",
-    "application/jsonl",
-    "application/x-jsonlines",
-}
 
 
 class MistralFileParser(FileParser):
@@ -33,7 +24,7 @@ class MistralFileParser(FileParser):
 
             # TODO: Kind of hacky...we try to exit early here?
             # TODO: Create our internal file parser representation we return instead of OCRResponse
-            if mime_type in SIMPLE_TEXT_MIME_TYPES or mime_type.startswith("text/"):
+            if is_simple_text_mime_type(mime_type):
                 text = content.decode("utf-8", errors="replace")
                 return OCRResponse(
                     model=self.model,
