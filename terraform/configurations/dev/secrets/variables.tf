@@ -322,3 +322,77 @@ variable "dev_memgpt_server_CLICKHOUSE_PASSWORD" {
   type        = string
   sensitive   = true
 }
+
+# memgpt-server-voice secrets
+
+variable "dev_memgpt_server_voice_OPENAI_API_KEY" {
+  description = "OpenAI API Key for memgpt-server-voice service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_memgpt_server_voice_COMPOSIO_API_KEY" {
+  description = "Composio API Key for memgpt-server-voice service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_memgpt_server_voice_GEMINI_API_KEY" {
+  description = "Gemini API Key for memgpt-server-voice service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_memgpt_server_voice_TAVILY_API_KEY" {
+  description = "Tavily API Key for memgpt-server-voice service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_memgpt_server_voice_TOGETHER_API_KEY" {
+  description = "Together API Key for memgpt-server-voice service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_memgpt_server_voice_ANTHROPIC_API_KEY" {
+  description = "Anthropic API Key for memgpt-server-voice service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_memgpt_server_voice_E2B_API_KEY" {
+  description = "E2B API Key for memgpt-server-voice service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_memgpt_server_voice_E2B_SANDBOX_TEMPLATE_ID" {
+  description = "E2B Sandbox Template ID for memgpt-server-voice service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_memgpt_server_voice_SENTRY_DSN" {
+  description = "Sentry DSN for memgpt-server-voice service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_memgpt_server_voice_CLICKHOUSE_PASSWORD" {
+  description = "Clickhouse Password for memgpt-server-voice service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_memgpt_server_voice_LETTA_PG_PASSWORD" {
+  description = "Postgres password for memgpt-server-voice service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_memgpt_server_voice_LETTA_SERVER_PASS" {
+  description = "MemGPT Server Password for memgpt-server-voice service"
+  type        = string
+  sensitive   = true
+}

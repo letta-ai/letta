@@ -88,6 +88,17 @@ locals {
     "dev_memgpt-server_E2B_SANDBOX_TEMPLATE_ID" = var.dev_memgpt_server_E2B_SANDBOX_TEMPLATE_ID
     "dev_memgpt-server_SENTRY_DSN" = var.dev_memgpt_server_SENTRY_DSN
     "dev_memgpt-server_CLICKHOUSE_PASSWORD" = var.dev_memgpt_server_CLICKHOUSE_PASSWORD
+
+    # memgpt-server-voice secrets
+    "dev_memgpt-server-voice_LETTA_SERVER_PASS" = var.dev_memgpt_server_voice_LETTA_SERVER_PASS
+    "dev_memgpt-server-voice_LETTA_PG_PASSWORD" = var.dev_memgpt_server_voice_LETTA_PG_PASSWORD
+    "dev_memgpt-server-voice_OPENAI_API_KEY" = var.dev_memgpt_server_voice_OPENAI_API_KEY
+    "dev_memgpt-server-voice_TOGETHER_API_KEY" = var.dev_memgpt_server_voice_TOGETHER_API_KEY
+    "dev_memgpt-server-voice_ANTHROPIC_API_KEY" = var.dev_memgpt_server_voice_ANTHROPIC_API_KEY
+    "dev_memgpt-server-voice_E2B_API_KEY" = var.dev_memgpt_server_voice_E2B_API_KEY
+    "dev_memgpt-server-voice_E2B_SANDBOX_TEMPLATE_ID" = var.dev_memgpt_server_voice_E2B_SANDBOX_TEMPLATE_ID
+    "dev_memgpt-server-voice_SENTRY_DSN" = var.dev_memgpt_server_voice_SENTRY_DSN
+    "dev_memgpt-server-voice_CLICKHOUSE_PASSWORD" = var.dev_memgpt_server_voice_CLICKHOUSE_PASSWORD
   }
   # create the secret but leave the value empty
   create_only_secrets = [
