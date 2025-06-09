@@ -15,3 +15,5 @@ export * from './lib/ExportAgentButton/ExportAgentButton';
 export * from './lib/StarterKitSelector/StarterKitSelector';
 export * from './lib/hooks/useOrderedTraces/useOrderedTraces';
 export * from './lib/SummerizerDialog/SummerizerDialog';
+export * from './lib/adeKeyMap';
+export * from './lib/hooks/useNetworkInspectorVisibility/useNetworkInspectorVisibility';

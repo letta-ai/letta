@@ -43,6 +43,21 @@
     "more": "More panels",
     "less": "Less panels"
   },
+  "ADE/NetworkInspector": {
+    "title": "Network Inspector",
+    "request": "Payload",
+    "copyCurl": "Copy cURL request",
+    "viewInDocs": "View in docs",
+    "response": "Response",
+    "copyText": "Copy {type} to clipboard",
+    "close": "Close",
+    "description": "The network inspector allows you to inspect how the ADE interfaces with the agent's backend. This will not show GET requests, only POST/PUT/PATCH/DELETE requests, it will also not show message requests, as these are handled by the agent simulator.",
+    "noRequestsInfo": {
+      "title": "No requests made yet",
+      "description": "This view shows any POST/PUT/PATCH/DELETE requests made in the ADE, it does not show GET requests or message requests. It will only show requests made while the Network Inspector is open and will clear requests when this is closed."
+    },
+    "noRequests": "No"
+  },
   "ADE/ToolRules": {
     "appName": "Tool Rules",
     "title": "Tool Rule Editor",

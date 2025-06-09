@@ -89,6 +89,10 @@ import { Slot } from '@radix-ui/react-slot';
 import { createPortal } from 'react-dom';
 import { useADETour } from '../hooks/useADETour/useADETour';
 import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
+import { NetworkInspector } from '../NetworkInspector/NetworkInspector';
+import { useNetworkInspectorVisibility } from '../hooks/useNetworkInspectorVisibility/useNetworkInspectorVisibility';
+import { useHotkeys } from '@mantine/hooks';
+import { adeKeyMap } from '../adeKeyMap';
 
 function DesktopLayout() {
   const t = useTranslations('ADELayout');
@@ -101,6 +105,17 @@ function DesktopLayout() {
   } = useADETitleTranslations();
 
   const { isTemplate, isLocal } = useCurrentAgentMetaData();
+
+  const [networkInspectorOpen, setNetworkInspectorOpen] =
+    useNetworkInspectorVisibility();
+  useHotkeys([
+    [
+      adeKeyMap.OPEN_NETWORK_INSPECTOR.command,
+      () => {
+        setNetworkInspectorOpen((prev) => !prev);
+      },
+    ],
+  ]);
 
   return (
     <HStack border color="background-grey" fullWidth fullHeight>
@@ -210,6 +225,19 @@ function DesktopLayout() {
             />
           </VStack>
         </Panel>
+        {networkInspectorOpen && (
+          <>
+            <PanelResizeHandle className="w-[1px] bg-border" />
+            <Panel
+              defaultSize={20}
+              defaultValue={20}
+              className="h-full"
+              minSize={10}
+            >
+              <NetworkInspector />
+            </Panel>
+          </>
+        )}
       </PanelGroup>
     </HStack>
   );

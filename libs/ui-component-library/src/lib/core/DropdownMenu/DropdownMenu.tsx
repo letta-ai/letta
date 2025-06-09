@@ -85,6 +85,7 @@ interface DropdownMenuItemProps
   doNotCloseOnSelect?: boolean;
   href?: string;
   target?: string;
+  badge?: React.ReactNode;
   preIcon?: React.ReactNode;
 }
 
@@ -164,7 +165,16 @@ const DropdownMenuItem = React.forwardRef<
   DropdownMenuItemProps
 >(
   (
-    { className, inset, href, label, doNotCloseOnSelect, preIcon, ...props },
+    {
+      className,
+      inset,
+      href,
+      label,
+      doNotCloseOnSelect,
+      badge,
+      preIcon,
+      ...props
+    },
     ref,
   ) => {
     return (
@@ -186,6 +196,7 @@ const DropdownMenuItem = React.forwardRef<
           <HStack align="center">
             {preIcon && <Slot className="w-3">{preIcon}</Slot>}
             <Typography variant="body2">{label}</Typography>
+            {badge}
           </HStack>
         </MaybeLink>
       </DropdownMenuPrimitive.Item>

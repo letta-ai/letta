@@ -20,12 +20,15 @@ import {
   WarningIcon,
   Tooltip,
   BetaTag,
+  TroubleshootIcon,
+  HotKey,
 } from '@letta-cloud/ui-component-library';
 import type { QueryBuilderQuery } from '@letta-cloud/ui-component-library';
 import { ProjectSelector } from '$web/client/components';
 import React, { useCallback, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import {
+  adeKeyMap,
   DeleteAgentDialog,
   ExportAgentButton,
   useCurrentAgentMetaData,
@@ -42,6 +45,7 @@ import {
   ProfilePopover,
 } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
 import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
+import { useNetworkInspectorVisibility } from '@letta-cloud/ui-ade-components';
 
 interface DesktopADEHeaderProps {
   name: string;
@@ -190,6 +194,7 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
           />
         }
       >
+        <NetworkInspectorButton />
         {!isTemplate && (
           <ExportAgentButton
             trigger={
@@ -257,6 +262,24 @@ function LogoContainer() {
     >
       <Logo size="medium" color="background" />
     </HStack>
+  );
+}
+
+function NetworkInspectorButton() {
+  const [_, setNetworkInspectorOpen] = useNetworkInspectorVisibility();
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
+  );
+
+  return (
+    <DropdownMenuItem
+      preIcon={<TroubleshootIcon />}
+      label={t('AgentSettingsDropdown.networkInspector')}
+      badge={<HotKey command={adeKeyMap.OPEN_NETWORK_INSPECTOR.command} />}
+      onClick={() => {
+        setNetworkInspectorOpen((prev) => !prev);
+      }}
+    />
   );
 }
 

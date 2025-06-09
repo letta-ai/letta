@@ -4,7 +4,7 @@ import { HStack, Typography, VStack } from '@letta-cloud/ui-component-library';
 
 interface ADEItem {
   content: React.ReactNode;
-  title: string;
+  title: React.ReactNode;
   id: string;
   badge?: React.ReactNode;
 }

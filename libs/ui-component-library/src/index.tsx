@@ -248,3 +248,6 @@ export * from './lib/core/MessageReplay/MessageReplay';
 export * from './lib/core/EventItem/EventItem';
 
 export * from './lib/core/EventDetailRow/EventDetailRow';
+
+export * from './lib/core/HotKey/HotKey';
+export * from './lib/core/JSONViewer/JSONViewer';

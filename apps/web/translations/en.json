@@ -2019,7 +2019,8 @@
       "trigger": "{agentBaseType} settings",
       "returnToProject": "Return to project",
       "delete": "Delete {agentBaseType}",
-      "download": "Export Agent"
+      "download": "Export Agent",
+      "networkInspector": "Network Inspector"
     },
     "DeployAgentDialog": {
       "trigger": "Create an agent from template",

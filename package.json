@@ -154,6 +154,7 @@
     "react-hook-form": "^7.54.2",
     "react-hot-toast": "^2.4.1",
     "react-i18next": "^15.2.0",
+    "react-json-pretty": "^2.2.0",
     "react-markdown": "^9.0.1",
     "react-phone-number-input": "^3.4.12",
     "react-resizable-panels": "^2.1.7",

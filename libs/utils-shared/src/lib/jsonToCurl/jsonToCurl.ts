@@ -2,7 +2,7 @@ interface JsonToCurlArgs {
   url: string;
   headers: Record<string, string>;
   body?: Record<string, any>;
-  method?: 'DELETE' | 'GET' | 'POST' | 'PUT';
+  method?: string;
 }
 
 export function jsonToCurl(args: JsonToCurlArgs) {
