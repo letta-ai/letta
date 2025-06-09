@@ -732,6 +732,7 @@ export const useAgentsServiceRetrieveAgentContextWindow = <
  * Get the state of the agent.
  * @param data The data for the request.
  * @param data.agentId
+ * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
  * @param data.userId
  * @returns AgentState Successful Response
  * @throws ApiError
@@ -743,9 +744,11 @@ export const useAgentsServiceRetrieveAgent = <
 >(
   {
     agentId,
+    includeRelationships,
     userId,
   }: {
     agentId: string;
+    includeRelationships?: string[];
     userId?: string;
   },
   queryKey?: TQueryKey,
@@ -753,10 +756,15 @@ export const useAgentsServiceRetrieveAgent = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceRetrieveAgentKeyFn(
-      { agentId, userId },
+      { agentId, includeRelationships, userId },
       queryKey,
     ),
-    queryFn: () => AgentsService.retrieveAgent({ agentId, userId }) as TData,
+    queryFn: () =>
+      AgentsService.retrieveAgent({
+        agentId,
+        includeRelationships,
+        userId,
+      }) as TData,
     ...options,
   });
 /**

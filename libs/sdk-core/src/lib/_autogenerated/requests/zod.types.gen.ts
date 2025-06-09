@@ -6187,6 +6187,15 @@ export const get_Retrieve_agent = {
   path: z.literal('/v1/agents/{agent_id}'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    query: z.object({
+      include_relationships: z
+        .union([
+          z.array(z.string()),
+          z.null(),
+          z.array(z.union([z.array(z.string()), z.null()])),
+        ])
+        .optional(),
+    }),
     path: z.object({
       agent_id: z.string(),
     }),

@@ -446,13 +446,18 @@ export const useAgentsServiceRetrieveAgentKey = 'AgentsServiceRetrieveAgent';
 export const UseAgentsServiceRetrieveAgentKeyFn = (
   {
     agentId,
+    includeRelationships,
     userId,
   }: {
     agentId: string;
+    includeRelationships?: string[];
     userId?: string;
   },
   queryKey?: Array<unknown>,
-) => [useAgentsServiceRetrieveAgentKey, ...(queryKey ?? [{ agentId, userId }])];
+) => [
+  useAgentsServiceRetrieveAgentKey,
+  ...(queryKey ?? [{ agentId, includeRelationships, userId }]),
+];
 export type AgentsServiceListAgentToolsDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgentTools>
 >;

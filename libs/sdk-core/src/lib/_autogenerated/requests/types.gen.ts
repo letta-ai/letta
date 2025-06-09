@@ -4518,6 +4518,10 @@ export type ModifyAgentResponse = AgentState;
 
 export type RetrieveAgentData = {
   agentId: string;
+  /**
+   * Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
+   */
+  includeRelationships?: Array<string> | null;
   userId?: string | null;
 };
 

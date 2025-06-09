@@ -371,6 +371,14 @@ async def detach_source(
 @router.get("/{agent_id}", response_model=AgentState, operation_id="retrieve_agent")
 async def retrieve_agent(
     agent_id: str,
+    include_relationships: Optional[List[str]] = Query(
+        None,
+        description=(
+            "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. "
+            "If not provided, all relationships are loaded by default. "
+            "Using this can optimize performance by reducing unnecessary joins."
+        ),
+    ),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -380,7 +388,7 @@ async def retrieve_agent(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
-        return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, include_relationships=include_relationships, actor=actor)
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
 

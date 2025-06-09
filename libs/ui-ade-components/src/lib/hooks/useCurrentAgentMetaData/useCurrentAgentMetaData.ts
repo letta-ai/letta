@@ -100,6 +100,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
       queryData: {
         params: {
           agent_id: agentId,
+          include_relationships: [],
         },
       },
       refetchOnWindowFocus: false,

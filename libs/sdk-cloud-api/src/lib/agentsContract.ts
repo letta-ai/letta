@@ -124,6 +124,7 @@ const getAgentByIdContract = c.query({
   description: 'Get an agent by its ID',
   pathParams: z.object({
     agent_id: z.string(),
+    include_relationships: z.array(z.string()).optional().nullable(),
   }),
   responses: {
     200: GetAgentByIdResponseSchema,

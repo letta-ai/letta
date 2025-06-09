@@ -16,6 +16,7 @@ export async function verifyUpdateAgent(options: VerifyUpdateAgentProps) {
     AgentsService.retrieveAgent(
       {
         agentId,
+        includeRelationships: [],
       },
       {
         user_id: coreUserId,

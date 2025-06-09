@@ -48,6 +48,7 @@ async function getTrace(req: GetTraceRequest): Promise<GetTraceResponse> {
     await AgentsService.retrieveAgent(
       {
         agentId,
+        includeRelationships: [],
       },
       {
         user_id: user.lettaAgentsId,

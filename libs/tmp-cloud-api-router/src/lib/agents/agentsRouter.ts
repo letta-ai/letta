@@ -250,12 +250,14 @@ async function getAgentById(
   req: GetAgentByIdRequest,
   context: SDKContext,
 ): Promise<GetAgentByIdResponse> {
-  const { agent_id: agentId } = req.params;
+  const { agent_id: agentId, include_relationships: includeRelationships } =
+    req.params;
 
   const [agent, agentTemplate] = await Promise.all([
     AgentsService.retrieveAgent(
       {
         agentId,
+        includeRelationships,
       },
       {
         user_id: getContextDataHack(req, context).lettaAgentsUserId,
@@ -304,6 +306,7 @@ async function deleteAgent(
     AgentsService.retrieveAgent(
       {
         agentId,
+        includeRelationships: [],
       },
       {
         user_id: getContextDataHack(req, context).lettaAgentsUserId,
@@ -612,6 +615,7 @@ async function getAgentVariables(
   const agent = await AgentsService.retrieveAgent(
     {
       agentId,
+      includeRelationships: [],
     },
     {
       user_id: getContextDataHack(req, context).lettaAgentsUserId,

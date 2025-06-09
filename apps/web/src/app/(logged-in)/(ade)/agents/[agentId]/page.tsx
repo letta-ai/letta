@@ -28,6 +28,7 @@ export default async function AgentSearchPage(context: AgentsAgentPageProps) {
       {
         params: {
           agent_id: agentId,
+          include_relationships: [],
         },
       },
       {

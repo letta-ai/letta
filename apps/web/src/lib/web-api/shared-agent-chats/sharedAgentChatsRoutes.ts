@@ -191,6 +191,7 @@ async function getSharedAgentFromChatId(
     const agent = await AgentsService.retrieveAgent(
       {
         agentId: configuration.agentId,
+        includeRelationships: [],
       },
       {
         user_id: serviceAccountId,

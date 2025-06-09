@@ -188,6 +188,7 @@ export async function handleMessageRateLimiting(
   const agent = await AgentsService.retrieveAgent(
     {
       agentId,
+      includeRelationships: [],
     },
     {
       user_id: lettaAgentsUserId,
