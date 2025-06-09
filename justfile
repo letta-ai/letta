@@ -215,9 +215,9 @@ describe-web:
         --set secrets.LETTA_UVICORN_WORKERS=${LETTA_UVICORN_WORKERS} \
         --set secrets.LETTA_PG_POOL_SIZE=${LETTA_PG_POOL_SIZE} \
         --set secrets.LETTA_PG_MAX_OVERFLOW=${LETTA_PG_MAX_OVERFLOW} \
-        --set env.REDIS_HOST={{REDIS_HOST}} \
-        --set env.LETTA_DEFAULT_LLM_HANDLE=${LETTA_DEFAULT_LLM_HANDLE} \
-        --set env.LETTA_DEFAULT_EMBEDDING_HANDLE=${LETTA_DEFAULT_EMBEDDING_HANDLE} \
+        --set secrets.REDIS_HOST={{REDIS_HOST}} \
+        --set secrets.LETTA_DEFAULT_LLM_HANDLE=${LETTA_DEFAULT_LLM_HANDLE} \
+        --set secrets.LETTA_DEFAULT_EMBEDDING_HANDLE=${LETTA_DEFAULT_EMBEDDING_HANDLE} \
         --set secrets.LETTA_MISTRAL_API_KEY=${LETTA_MISTRAL_API_KEY} \
         --set secrets.MCP_READ_FROM_CONFIG=false \
         --set secrets.MCP_DISABLE_STDIO=true \
