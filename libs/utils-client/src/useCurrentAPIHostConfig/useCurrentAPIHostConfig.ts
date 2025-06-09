@@ -53,7 +53,7 @@ export function useCurrentAPIHostConfig(
   }
 
   return {
-    url: environment.NEXT_PUBLIC_CURRENT_HOST || '',
+    url: 'https://api.letta.com',
     headers: {
       Authorization: `Bearer ${apiKey}`,
     },

@@ -1,4 +1,4 @@
-import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
+import { useCurrentAPIHostConfig } from '@letta-cloud/utils-client';
 import React, { useCallback } from 'react';
 import axios from 'axios';
 import { Slot } from '@radix-ui/react-slot';
@@ -17,7 +17,7 @@ export function ExportAgentButton(props: ExportAgentButtonProps) {
   const t = useTranslations('ExportAgentButton');
   const { isLocal } = useCurrentAgentMetaData();
   const { id: agentId, name } = useCurrentAgent();
-  const config = useCurrentDevelopmentServerConfig();
+  const config = useCurrentAPIHostConfig();
   const handleAsyncDownload = useCallback(async () => {
     const downloadURL = isLocal
       ? `${config?.url}/v1/agents/${agentId}/export`
@@ -26,6 +26,7 @@ export function ExportAgentButton(props: ExportAgentButtonProps) {
     try {
       const response = await axios.get(downloadURL, {
         responseType: 'blob',
+        ...(isLocal ? { headers: config.headers } : {}),
       });
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -38,7 +39,8 @@ export function ExportAgentButton(props: ExportAgentButtonProps) {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (_) {
+    } catch (e) {
+      console.error(e);
       toast.error(t('error'));
     }
   }, [agentId, t, name, isLocal, config]);
