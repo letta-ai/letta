@@ -1,6 +1,8 @@
 from fastapi import HTTPException
 
 
+# TODO (cliandy): this is actually a ChatCompletionRequest not a dict, and needs to be validated with the matching openai schema
+# https://linear.app/letta/issue/LET-2440/openai-endpoint-fails-on-forced-function-call
 def validate_request(request: dict):
     """Check that the message request coming into the proxy is OK
 
