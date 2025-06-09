@@ -499,7 +499,7 @@ def test_view_ranges_have_metadata(client: LettaSDKClient, agent_state: AgentSta
     client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
 
     # Load files into the source
-    file_path = "tests/data/lines_1_to_100.txt"
+    file_path = "tests/data/0_to_99.py"
 
     # Upload the files
     with open(file_path, "rb") as f:
@@ -548,10 +548,10 @@ def test_view_ranges_have_metadata(client: LettaSDKClient, agent_state: AgentSta
         block.value
         == """
     [Viewing lines 50 to 54 (out of 100 lines)]
-50: Line 51
-51: Line 52
-52: Line 53
-53: Line 54
-54: Line 55
+50: x50 = 50
+51: x51 = 51
+52: x52 = 52
+53: x53 = 53
+54: x54 = 54
     """.strip()
     )

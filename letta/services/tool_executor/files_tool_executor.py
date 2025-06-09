@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
+from letta.schemas.file import FileMetadata
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
@@ -119,7 +120,7 @@ class LettaFileToolExecutor(ToolExecutor):
         # TODO: Inefficient, maybe we can pre-compute this
         # TODO: This is also not the best way to split things - would be cool to have "content aware" splitting
         # TODO: Split code differently from large text blurbs
-        content_lines = LineChunker().chunk_text(text=file.content, start=start, end=end)
+        content_lines = LineChunker().chunk_text(text=file.content, file_metadata=file, start=start, end=end)
         visible_content = "\n".join(content_lines)
 
         await self.files_agents_manager.update_file_agent_by_id(
@@ -146,14 +147,14 @@ class LettaFileToolExecutor(ToolExecutor):
         except re.error as e:
             raise ValueError(f"Invalid regex pattern: {e}")
 
-    def _get_context_lines(self, text: str, match_line_idx: int, total_lines: int) -> List[str]:
+    def _get_context_lines(self, text: str, file_metadata: FileMetadata, match_line_idx: int, total_lines: int) -> List[str]:
         """Get context lines around a match using LineChunker."""
         start_idx = max(0, match_line_idx - self.MAX_CONTEXT_LINES)
         end_idx = min(total_lines, match_line_idx + self.MAX_CONTEXT_LINES + 1)
 
         # Use LineChunker to get formatted lines with numbers
         chunker = LineChunker()
-        context_lines = chunker.chunk_text(text, start=start_idx, end=end_idx, add_metadata=False)
+        context_lines = chunker.chunk_text(text, file_metadata=file_metadata, start=start_idx, end=end_idx, add_metadata=False)
 
         # Add match indicator
         formatted_lines = []
@@ -268,7 +269,7 @@ class LettaFileToolExecutor(ToolExecutor):
 
                 # Use LineChunker to get all lines with proper formatting
                 chunker = LineChunker()
-                formatted_lines = chunker.chunk_text(file.content)
+                formatted_lines = chunker.chunk_text(file.content, file_metadata=file)
 
                 # Remove metadata header
                 if formatted_lines and formatted_lines[0].startswith("[Viewing"):
@@ -295,7 +296,7 @@ class LettaFileToolExecutor(ToolExecutor):
 
                         if pattern_regex.search(line_content):
                             # Get context around the match (convert back to 0-based indexing)
-                            context_lines = self._get_context_lines(file.content, line_num - 1, len(file.content.splitlines()))
+                            context_lines = self._get_context_lines(file.content, file, line_num - 1, len(file.content.splitlines()))
 
                             # Format the match result
                             match_header = f"\n=== {file.file_name}:{line_num} ==="
