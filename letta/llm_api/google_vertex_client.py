@@ -3,7 +3,7 @@ import uuid
 from typing import List, Optional
 
 from google import genai
-from google.genai.types import FunctionCallingConfig, FunctionCallingConfigMode, GenerateContentResponse, ThinkingConfig, ToolConfig
+from google.genai.types import FunctionCallingConfig, FunctionCallingConfigMode, GenerateContentResponse, Part, ThinkingConfig, ToolConfig
 
 from letta.constants import NON_USER_MSG_PREFIX
 from letta.helpers.datetime_helpers import get_utc_time_int
@@ -13,6 +13,7 @@ from letta.local_llm.json_parser import clean_json_string_extra_backslash
 from letta.local_llm.utils import count_tokens
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
+from letta.schemas.letta_message_content import MessageContentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool
@@ -218,7 +219,7 @@ class GoogleVertexClient(LLMClientBase):
         )
 
         request_data = {
-            "contents": contents,
+            "contents": fill_image_content_in_messages(contents, messages),
             "config": {
                 "temperature": llm_config.temperature,
                 "max_output_tokens": llm_config.max_tokens,
@@ -484,3 +485,43 @@ class GoogleVertexClient(LLMClientBase):
             "propertyOrdering": ["name", "args"],
             "required": ["name", "args"],
         }
+
+
+def fill_image_content_in_messages(google_ai_message_list: List[dict], pydantic_message_list: List[PydanticMessage]) -> List[dict]:
+    """
+    Converts image content to openai format.
+    """
+
+    if len(google_ai_message_list) != len(pydantic_message_list):
+        return google_ai_message_list
+
+    new_message_list = []
+    for idx in range(len(google_ai_message_list)):
+        google_ai_message, pydantic_message = google_ai_message_list[idx], pydantic_message_list[idx]
+        if pydantic_message.role != "user":
+            new_message_list.append(google_ai_message)
+            continue
+
+        if not isinstance(pydantic_message.content, list) or (
+            len(pydantic_message.content) == 1 and pydantic_message.content[0].type == MessageContentType.text
+        ):
+            new_message_list.append(google_ai_message)
+            continue
+
+        message_content = []
+        for content in pydantic_message.content:
+            if content.type == MessageContentType.text:
+                message_content.append({"text": content.text})
+            elif content.type == MessageContentType.image:
+                message_content.append(
+                    Part.from_bytes(
+                        mime_type=content.source.media_type,
+                        data=content.source.data,
+                    )
+                )
+            else:
+                raise ValueError(f"Unsupported content type {content.type}")
+
+        new_message_list.append({"role": "user", "input": message_content})
+
+    return new_message_list
