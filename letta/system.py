@@ -218,11 +218,13 @@ def get_token_limit_warning():
     return json_dumps(packaged_message)
 
 
-def unpack_message(packed_message) -> str:
+def unpack_message(packed_message: str) -> str:
     """Take a packed message string and attempt to extract the inner message content"""
 
     try:
         message_json = json.loads(packed_message)
+        if type(message_json) is not dict:
+            return packed_message
     except:
         return packed_message
 
