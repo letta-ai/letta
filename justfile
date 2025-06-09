@@ -86,48 +86,48 @@ configure-kubectl cluster-name="letta":
     npm run slack-bot-says "Deploying web service Helm chart with tag: {{TAG}}..."
     if [[ "{{USES_SECRETS_V2}}" = "false" ]]; then
         helm upgrade --install {{WEB_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{WEB_HELM_CHART_NAME}} \
-          --force \
-          --set image.repository={{DOCKER_REGISTRY}}/web \
-          --set image.tag={{TAG}} \
-          --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-          --set env.DATABASE_URL="${DATABASE_URL}" \
-          --set env.GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}" \
-          --set env.GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET}" \
-          --set env.GOOGLE_REDIRECT_URI="${GOOGLE_REDIRECT_URI}" \
-          --set env.LETTA_AGENTS_ENDPOINT="${LETTA_AGENTS_ENDPOINT}" \
-          --set env.MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
-          --set env.NEXT_PUBLIC_MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
-          --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
-          --set env.WORKOS_CLIENT_ID="${WORKOS_CLIENT_ID}" \
-          --set env.WORKOS_API_KEY="${WORKOS_API_KEY}" \
-          --set env.NEXT_PUBLIC_STRIPE_PUBLISH_KEY="${NEXT_PUBLIC_STRIPE_PUBLISH_KEY}" \
-          --set env.LAUNCH_DARKLY_SDK_KEY="${LAUNCH_DARKLY_SDK_KEY}" \
-          --set env.SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
-          --set env.NEXT_PUBLIC_CURRENT_HOST="${NEXT_PUBLIC_CURRENT_HOST}" \
-          --set env.REDIS_HOST="${REDIS_HOST}" \
-          --set env.HUBSPOT_API_KEY="${HUBSPOT_API_KEY}" \
-          --set env.RESEND_API_KEY="${RESEND_API_KEY}" \
-          --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}" \
-          --set env.E2B_API_KEY="${E2B_API_KEY}" \
-          --set env.E2B_SANDBOX_TEMPLATE_ID="${E2B_SANDBOX_TEMPLATE_ID}" \
-          --set env.AUTH_GITHUB_CLIENT_ID="${AUTH_GITHUB_CLIENT_ID}" \
-          --set env.AUTH_GITHUB_CLIENT_SECRET="${AUTH_GITHUB_CLIENT_SECRET}" \
-          --set env.AUTH_GITHUB_REDIRECT_URI="${AUTH_GITHUB_REDIRECT_URI}" \
-          --set env.TEMPORAL_LETTUCE_API_HOST="${TEMPORAL_LETTUCE_API_HOST}" \
-          --set env.TEMPORAL_LETTUCE_CA_PEM="${TEMPORAL_LETTUCE_CA_PEM}" \
-          --set env.TEMPORAL_LETTUCE_CA_KEY="${TEMPORAL_LETTUCE_CA_KEY}" \
-          --set env.TEMPORAL_LETTUCE_NAMESPACE="${TEMPORAL_LETTUCE_NAMESPACE:-lettuce.tmhou}" \
-          --set env.TWILIO_SID="${TWILIO_SID}" \
-          --set env.TWILIO_SECRET="${TWILIO_SECRET}" \
-          --set env.INTERCOM_SECRET="${INTERCOM_SECRET}" \
-          --set env.CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT} \
-          --set env.CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
-          --set env.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
-          --set env.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
+            --force \
+            --set image.repository={{DOCKER_REGISTRY}}/web \
+            --set image.tag={{TAG}} \
+            --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --set env.DATABASE_URL="${DATABASE_URL}" \
+            --set env.GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}" \
+            --set env.GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET}" \
+            --set env.GOOGLE_REDIRECT_URI="${GOOGLE_REDIRECT_URI}" \
+            --set env.LETTA_AGENTS_ENDPOINT="${LETTA_AGENTS_ENDPOINT}" \
+            --set env.MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
+            --set env.NEXT_PUBLIC_MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
+            --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
+            --set env.WORKOS_CLIENT_ID="${WORKOS_CLIENT_ID}" \
+            --set env.WORKOS_API_KEY="${WORKOS_API_KEY}" \
+            --set env.NEXT_PUBLIC_STRIPE_PUBLISH_KEY="${NEXT_PUBLIC_STRIPE_PUBLISH_KEY}" \
+            --set env.LAUNCH_DARKLY_SDK_KEY="${LAUNCH_DARKLY_SDK_KEY}" \
+            --set env.SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
+            --set env.NEXT_PUBLIC_CURRENT_HOST="${NEXT_PUBLIC_CURRENT_HOST}" \
+            --set env.REDIS_HOST="${REDIS_HOST}" \
+            --set env.HUBSPOT_API_KEY="${HUBSPOT_API_KEY}" \
+            --set env.RESEND_API_KEY="${RESEND_API_KEY}" \
+            --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}" \
+            --set env.E2B_API_KEY="${E2B_API_KEY}" \
+            --set env.E2B_SANDBOX_TEMPLATE_ID="${E2B_SANDBOX_TEMPLATE_ID}" \
+            --set env.AUTH_GITHUB_CLIENT_ID="${AUTH_GITHUB_CLIENT_ID}" \
+            --set env.AUTH_GITHUB_CLIENT_SECRET="${AUTH_GITHUB_CLIENT_SECRET}" \
+            --set env.AUTH_GITHUB_REDIRECT_URI="${AUTH_GITHUB_REDIRECT_URI}" \
+            --set env.TEMPORAL_LETTUCE_API_HOST="${TEMPORAL_LETTUCE_API_HOST}" \
+            --set env.TEMPORAL_LETTUCE_CA_PEM="${TEMPORAL_LETTUCE_CA_PEM}" \
+            --set env.TEMPORAL_LETTUCE_CA_KEY="${TEMPORAL_LETTUCE_CA_KEY}" \
+            --set env.TEMPORAL_LETTUCE_NAMESPACE="${TEMPORAL_LETTUCE_NAMESPACE:-lettuce.tmhou}" \
+            --set env.TWILIO_SID="${TWILIO_SID}" \
+            --set env.TWILIO_SECRET="${TWILIO_SECRET}" \
+            --set env.INTERCOM_SECRET="${INTERCOM_SECRET}" \
+            --set env.CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT} \
+            --set env.CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
+            --set env.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
+            --set env.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
     else
         helm upgrade --install {{WEB_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{WEB_HELM_CHART_NAME}} \
-          --force \
-          --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)";
+            --force \
+            --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)";
     fi
     npm run slack-bot-says "Successfully deployed web service Helm chart with tag: {{TAG}}."
 
@@ -421,21 +421,21 @@ build-undertaker:
 
     if [[ "{{USES_SECRETS_V2}}" = "false" ]]; then
         helm upgrade --install credit-undertaker {{HELM_CHARTS_DIR}}/credit-undertaker \
-          --set image.repository={{DOCKER_REGISTRY}}/undertaker \
-          --set image.tag={{TAG}} \
-          --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-          --set env.LETTA_PG_PASSWORD=${LETTA_PG_PASSWORD} \
-          --set env.LETTA_PG_USER=${LETTA_PG_USER} \
-          --set env.LETTA_PG_DB=${LETTA_PG_DB} \
-          --set env.LETTA_PG_HOST=${LETTA_PG_HOST} \
-          --set env.LETTA_PG_PORT=${LETTA_PG_PORT} \
-          --set env.REDIS_HOST="${REDIS_HOST}" \
-          --set env.RESEND_API_KEY="${RESEND_API_KEY}" \
-          --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
-          --set env.DATABASE_URL="${DATABASE_URL}"
+            --set image.repository={{DOCKER_REGISTRY}}/undertaker \
+            --set image.tag={{TAG}} \
+            --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --set env.LETTA_PG_PASSWORD=${LETTA_PG_PASSWORD} \
+            --set env.LETTA_PG_USER=${LETTA_PG_USER} \
+            --set env.LETTA_PG_DB=${LETTA_PG_DB} \
+            --set env.LETTA_PG_HOST=${LETTA_PG_HOST} \
+            --set env.LETTA_PG_PORT=${LETTA_PG_PORT} \
+            --set env.REDIS_HOST="${REDIS_HOST}" \
+            --set env.RESEND_API_KEY="${RESEND_API_KEY}" \
+            --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
+            --set env.DATABASE_URL="${DATABASE_URL}"
     else
         helm upgrade --install credit-undertaker {{HELM_CHARTS_DIR}}/credit-undertaker \
-          --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)";
+            --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)";
     fi
 
     npm run slack-bot-says "Successfully deployed credit undertaker service with tag: {{TAG}}."
