@@ -6017,6 +6017,13 @@ export const $LettaBatchRequest = {
       title: 'Messages',
       description: 'The messages to be sent to the agent.',
     },
+    max_steps: {
+      type: 'integer',
+      title: 'Max Steps',
+      description:
+        'Maximum number of steps the agent should take to process the request.',
+      default: 10,
+    },
     use_assistant_message: {
       type: 'boolean',
       title: 'Use Assistant Message',
@@ -6132,6 +6139,13 @@ export const $LettaRequest = {
       title: 'Messages',
       description: 'The messages to be sent to the agent.',
     },
+    max_steps: {
+      type: 'integer',
+      title: 'Max Steps',
+      description:
+        'Maximum number of steps the agent should take to process the request.',
+      default: 10,
+    },
     use_assistant_message: {
       type: 'boolean',
       title: 'Use Assistant Message',
@@ -6236,6 +6250,13 @@ export const $LettaStreamingRequest = {
       type: 'array',
       title: 'Messages',
       description: 'The messages to be sent to the agent.',
+    },
+    max_steps: {
+      type: 'integer',
+      title: 'Max Steps',
+      description:
+        'Maximum number of steps the agent should take to process the request.',
+      default: 10,
     },
     use_assistant_message: {
       type: 'boolean',

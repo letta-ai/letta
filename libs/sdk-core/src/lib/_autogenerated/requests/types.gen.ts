@@ -2088,6 +2088,10 @@ export type LettaBatchRequest = {
    */
   messages: Array<MessageCreate>;
   /**
+   * Maximum number of steps the agent should take to process the request.
+   */
+  max_steps?: number;
+  /**
    * Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.
    */
   use_assistant_message?: boolean;
@@ -2137,6 +2141,10 @@ export type LettaRequest = {
    * The messages to be sent to the agent.
    */
   messages: Array<MessageCreate>;
+  /**
+   * Maximum number of steps the agent should take to process the request.
+   */
+  max_steps?: number;
   /**
    * Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.
    */
@@ -2194,6 +2202,10 @@ export type LettaStreamingRequest = {
    * The messages to be sent to the agent.
    */
   messages: Array<MessageCreate>;
+  /**
+   * Maximum number of steps the agent should take to process the request.
+   */
+  max_steps?: number;
   /**
    * Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.
    */

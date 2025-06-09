@@ -3322,6 +3322,7 @@ export const MessageType = z.union([
 export type LettaBatchRequest = z.infer<typeof LettaBatchRequest>;
 export const LettaBatchRequest = z.object({
   messages: z.array(MessageCreate),
+  max_steps: z.union([z.number(), z.undefined()]).optional(),
   use_assistant_message: z.union([z.boolean(), z.undefined()]).optional(),
   assistant_message_tool_name: z.union([z.string(), z.undefined()]).optional(),
   assistant_message_tool_kwarg: z.union([z.string(), z.undefined()]).optional(),
@@ -3945,6 +3946,7 @@ export const LettaBatchMessages = z.object({
 export type LettaRequest = z.infer<typeof LettaRequest>;
 export const LettaRequest = z.object({
   messages: z.array(MessageCreate),
+  max_steps: z.union([z.number(), z.undefined()]).optional(),
   use_assistant_message: z.union([z.boolean(), z.undefined()]).optional(),
   assistant_message_tool_name: z.union([z.string(), z.undefined()]).optional(),
   assistant_message_tool_kwarg: z.union([z.string(), z.undefined()]).optional(),
@@ -4277,6 +4279,7 @@ export const LettaResponse = z.object({
 export type LettaStreamingRequest = z.infer<typeof LettaStreamingRequest>;
 export const LettaStreamingRequest = z.object({
   messages: z.array(MessageCreate),
+  max_steps: z.union([z.number(), z.undefined()]).optional(),
   use_assistant_message: z.union([z.boolean(), z.undefined()]).optional(),
   assistant_message_tool_name: z.union([z.string(), z.undefined()]).optional(),
   assistant_message_tool_kwarg: z.union([z.string(), z.undefined()]).optional(),

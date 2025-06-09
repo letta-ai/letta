@@ -709,7 +709,7 @@ async def send_message(
 
         result = await agent_loop.step(
             request.messages,
-            max_steps=10,
+            max_steps=request.max_steps,
             use_assistant_message=request.use_assistant_message,
             request_start_timestamp_ns=request_start_timestamp_ns,
             include_return_message_types=request.include_return_message_types,
@@ -798,7 +798,7 @@ async def send_message_streaming(
             result = StreamingResponseWithStatusCode(
                 agent_loop.step_stream(
                     input_messages=request.messages,
-                    max_steps=10,
+                    max_steps=request.max_steps,
                     use_assistant_message=request.use_assistant_message,
                     request_start_timestamp_ns=request_start_timestamp_ns,
                     include_return_message_types=request.include_return_message_types,
@@ -809,7 +809,7 @@ async def send_message_streaming(
             result = StreamingResponseWithStatusCode(
                 agent_loop.step_stream_no_tokens(
                     request.messages,
-                    max_steps=10,
+                    max_steps=request.max_steps,
                     use_assistant_message=request.use_assistant_message,
                     request_start_timestamp_ns=request_start_timestamp_ns,
                     include_return_message_types=request.include_return_message_types,
@@ -843,6 +843,7 @@ async def process_message_background(
     use_assistant_message: bool,
     assistant_message_tool_name: str,
     assistant_message_tool_kwarg: str,
+    max_steps: int = 10,
     include_return_message_types: Optional[List[MessageType]] = None,
 ) -> None:
     """Background task to process the message and update job status."""
@@ -927,6 +928,7 @@ async def send_message_async(
         use_assistant_message=request.use_assistant_message,
         assistant_message_tool_name=request.assistant_message_tool_name,
         assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+        max_steps=request.max_steps,
         include_return_message_types=request.include_return_message_types,
     )
 
