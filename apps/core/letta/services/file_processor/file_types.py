@@ -7,7 +7,18 @@ mime types, and file processing capabilities across the Letta codebase.
 
 import mimetypes
 from dataclasses import dataclass
+from enum import Enum
 from typing import Dict, Set
+
+
+class ChunkingStrategy(str, Enum):
+    """Enum for different file chunking strategies."""
+
+    CODE = "code"  # Line-based chunking for code files
+    STRUCTURED_DATA = "structured_data"  # Line-based chunking for JSON, XML, etc.
+    DOCUMENTATION = "documentation"  # Paragraph-aware chunking for Markdown, HTML
+    PROSE = "prose"  # Character-based wrapping for plain text
+    LINE_BASED = "line_based"  # Default line-based chunking
 
 
 @dataclass
@@ -18,6 +29,7 @@ class FileTypeInfo:
     mime_type: str
     is_simple_text: bool
     description: str
+    chunking_strategy: ChunkingStrategy = ChunkingStrategy.LINE_BASED
 
 
 class FileTypeRegistry:
@@ -31,63 +43,70 @@ class FileTypeRegistry:
     def _register_default_types(self) -> None:
         """Register all default supported file types."""
         # Document formats
-        self.register(".pdf", "application/pdf", False, "PDF document")
-        self.register(".txt", "text/plain", True, "Plain text file")
-        self.register(".md", "text/markdown", True, "Markdown document")
-        self.register(".markdown", "text/markdown", True, "Markdown document")
-        self.register(".json", "application/json", True, "JSON data file")
-        self.register(".jsonl", "application/jsonl", True, "JSON Lines file")
+        self.register(".pdf", "application/pdf", False, "PDF document", ChunkingStrategy.LINE_BASED)
+        self.register(".txt", "text/plain", True, "Plain text file", ChunkingStrategy.PROSE)
+        self.register(".md", "text/markdown", True, "Markdown document", ChunkingStrategy.DOCUMENTATION)
+        self.register(".markdown", "text/markdown", True, "Markdown document", ChunkingStrategy.DOCUMENTATION)
+        self.register(".json", "application/json", True, "JSON data file", ChunkingStrategy.STRUCTURED_DATA)
+        self.register(".jsonl", "application/jsonl", True, "JSON Lines file", ChunkingStrategy.STRUCTURED_DATA)
 
         # Programming languages
-        self.register(".py", "text/x-python", True, "Python source code")
-        self.register(".js", "text/javascript", True, "JavaScript source code")
-        self.register(".ts", "text/x-typescript", True, "TypeScript source code")
-        self.register(".java", "text/x-java-source", True, "Java source code")
-        self.register(".cpp", "text/x-c++", True, "C++ source code")
-        self.register(".cxx", "text/x-c++", True, "C++ source code")
-        self.register(".c", "text/x-c", True, "C source code")
-        self.register(".h", "text/x-c", True, "C/C++ header file")
-        self.register(".cs", "text/x-csharp", True, "C# source code")
-        self.register(".php", "text/x-php", True, "PHP source code")
-        self.register(".rb", "text/x-ruby", True, "Ruby source code")
-        self.register(".go", "text/x-go", True, "Go source code")
-        self.register(".rs", "text/x-rust", True, "Rust source code")
-        self.register(".swift", "text/x-swift", True, "Swift source code")
-        self.register(".kt", "text/x-kotlin", True, "Kotlin source code")
-        self.register(".scala", "text/x-scala", True, "Scala source code")
-        self.register(".r", "text/x-r", True, "R source code")
-        self.register(".m", "text/x-objective-c", True, "Objective-C source code")
+        self.register(".py", "text/x-python", True, "Python source code", ChunkingStrategy.CODE)
+        self.register(".js", "text/javascript", True, "JavaScript source code", ChunkingStrategy.CODE)
+        self.register(".ts", "text/x-typescript", True, "TypeScript source code", ChunkingStrategy.CODE)
+        self.register(".java", "text/x-java-source", True, "Java source code", ChunkingStrategy.CODE)
+        self.register(".cpp", "text/x-c++", True, "C++ source code", ChunkingStrategy.CODE)
+        self.register(".cxx", "text/x-c++", True, "C++ source code", ChunkingStrategy.CODE)
+        self.register(".c", "text/x-c", True, "C source code", ChunkingStrategy.CODE)
+        self.register(".h", "text/x-c", True, "C/C++ header file", ChunkingStrategy.CODE)
+        self.register(".cs", "text/x-csharp", True, "C# source code", ChunkingStrategy.CODE)
+        self.register(".php", "text/x-php", True, "PHP source code", ChunkingStrategy.CODE)
+        self.register(".rb", "text/x-ruby", True, "Ruby source code", ChunkingStrategy.CODE)
+        self.register(".go", "text/x-go", True, "Go source code", ChunkingStrategy.CODE)
+        self.register(".rs", "text/x-rust", True, "Rust source code", ChunkingStrategy.CODE)
+        self.register(".swift", "text/x-swift", True, "Swift source code", ChunkingStrategy.CODE)
+        self.register(".kt", "text/x-kotlin", True, "Kotlin source code", ChunkingStrategy.CODE)
+        self.register(".scala", "text/x-scala", True, "Scala source code", ChunkingStrategy.CODE)
+        self.register(".r", "text/x-r", True, "R source code", ChunkingStrategy.CODE)
+        self.register(".m", "text/x-objective-c", True, "Objective-C source code", ChunkingStrategy.CODE)
 
         # Web technologies
-        self.register(".html", "text/html", True, "HTML document")
-        self.register(".htm", "text/html", True, "HTML document")
-        self.register(".css", "text/css", True, "CSS stylesheet")
-        self.register(".scss", "text/x-scss", True, "SCSS stylesheet")
-        self.register(".sass", "text/x-sass", True, "Sass stylesheet")
-        self.register(".less", "text/x-less", True, "Less stylesheet")
-        self.register(".vue", "text/x-vue", True, "Vue.js component")
-        self.register(".jsx", "text/x-jsx", True, "JSX source code")
-        self.register(".tsx", "text/x-tsx", True, "TSX source code")
+        self.register(".html", "text/html", True, "HTML document", ChunkingStrategy.CODE)
+        self.register(".htm", "text/html", True, "HTML document", ChunkingStrategy.CODE)
+        self.register(".css", "text/css", True, "CSS stylesheet", ChunkingStrategy.STRUCTURED_DATA)
+        self.register(".scss", "text/x-scss", True, "SCSS stylesheet", ChunkingStrategy.STRUCTURED_DATA)
+        self.register(".sass", "text/x-sass", True, "Sass stylesheet", ChunkingStrategy.STRUCTURED_DATA)
+        self.register(".less", "text/x-less", True, "Less stylesheet", ChunkingStrategy.STRUCTURED_DATA)
+        self.register(".vue", "text/x-vue", True, "Vue.js component", ChunkingStrategy.CODE)
+        self.register(".jsx", "text/x-jsx", True, "JSX source code", ChunkingStrategy.CODE)
+        self.register(".tsx", "text/x-tsx", True, "TSX source code", ChunkingStrategy.CODE)
 
         # Configuration and data formats
-        self.register(".xml", "application/xml", True, "XML document")
-        self.register(".yaml", "text/x-yaml", True, "YAML configuration")
-        self.register(".yml", "text/x-yaml", True, "YAML configuration")
-        self.register(".toml", "application/toml", True, "TOML configuration")
-        self.register(".ini", "text/x-ini", True, "INI configuration")
-        self.register(".cfg", "text/x-conf", True, "Configuration file")
-        self.register(".conf", "text/x-conf", True, "Configuration file")
+        self.register(".xml", "application/xml", True, "XML document", ChunkingStrategy.STRUCTURED_DATA)
+        self.register(".yaml", "text/x-yaml", True, "YAML configuration", ChunkingStrategy.STRUCTURED_DATA)
+        self.register(".yml", "text/x-yaml", True, "YAML configuration", ChunkingStrategy.STRUCTURED_DATA)
+        self.register(".toml", "application/toml", True, "TOML configuration", ChunkingStrategy.STRUCTURED_DATA)
+        self.register(".ini", "text/x-ini", True, "INI configuration", ChunkingStrategy.STRUCTURED_DATA)
+        self.register(".cfg", "text/x-conf", True, "Configuration file", ChunkingStrategy.STRUCTURED_DATA)
+        self.register(".conf", "text/x-conf", True, "Configuration file", ChunkingStrategy.STRUCTURED_DATA)
 
         # Scripts and SQL
-        self.register(".sh", "text/x-shellscript", True, "Shell script")
-        self.register(".bash", "text/x-shellscript", True, "Bash script")
-        self.register(".ps1", "text/x-powershell", True, "PowerShell script")
-        self.register(".bat", "text/x-batch", True, "Batch script")
-        self.register(".cmd", "text/x-batch", True, "Command script")
-        self.register(".dockerfile", "text/x-dockerfile", True, "Dockerfile")
-        self.register(".sql", "text/x-sql", True, "SQL script")
+        self.register(".sh", "text/x-shellscript", True, "Shell script", ChunkingStrategy.CODE)
+        self.register(".bash", "text/x-shellscript", True, "Bash script", ChunkingStrategy.CODE)
+        self.register(".ps1", "text/x-powershell", True, "PowerShell script", ChunkingStrategy.CODE)
+        self.register(".bat", "text/x-batch", True, "Batch script", ChunkingStrategy.CODE)
+        self.register(".cmd", "text/x-batch", True, "Command script", ChunkingStrategy.CODE)
+        self.register(".dockerfile", "text/x-dockerfile", True, "Dockerfile", ChunkingStrategy.CODE)
+        self.register(".sql", "text/x-sql", True, "SQL script", ChunkingStrategy.CODE)
 
-    def register(self, extension: str, mime_type: str, is_simple_text: bool, description: str) -> None:
+    def register(
+        self,
+        extension: str,
+        mime_type: str,
+        is_simple_text: bool,
+        description: str,
+        chunking_strategy: ChunkingStrategy = ChunkingStrategy.LINE_BASED,
+    ) -> None:
         """
         Register a new file type.
 
@@ -96,12 +115,17 @@ class FileTypeRegistry:
             mime_type: MIME type for the file
             is_simple_text: Whether this is a simple text file that can be read directly
             description: Human-readable description of the file type
+            chunking_strategy: Strategy for chunking this file type
         """
         if not extension.startswith("."):
             extension = f".{extension}"
 
         self._file_types[extension] = FileTypeInfo(
-            extension=extension, mime_type=mime_type, is_simple_text=is_simple_text, description=description
+            extension=extension,
+            mime_type=mime_type,
+            is_simple_text=is_simple_text,
+            description=description,
+            chunking_strategy=chunking_strategy,
         )
 
     def register_mime_types(self) -> None:
@@ -216,6 +240,37 @@ class FileTypeRegistry:
         if not extension.startswith("."):
             extension = f".{extension}"
         return self._file_types[extension]
+
+    def get_chunking_strategy_by_extension(self, extension: str) -> ChunkingStrategy:
+        """
+        Get the chunking strategy for a file based on its extension.
+
+        Args:
+            extension: File extension (with or without leading dot)
+
+        Returns:
+            ChunkingStrategy enum value for the file type
+
+        Raises:
+            KeyError: If the extension is not supported
+        """
+        file_type_info = self.get_file_type_info(extension)
+        return file_type_info.chunking_strategy
+
+    def get_chunking_strategy_by_mime_type(self, mime_type: str) -> ChunkingStrategy:
+        """
+        Get the chunking strategy for a file based on its MIME type.
+
+        Args:
+            mime_type: MIME type of the file
+
+        Returns:
+            ChunkingStrategy enum value for the file type, or LINE_BASED if not found
+        """
+        for file_type in self._file_types.values():
+            if file_type.mime_type == mime_type:
+                return file_type.chunking_strategy
+        return ChunkingStrategy.LINE_BASED
 
 
 # Global registry instance

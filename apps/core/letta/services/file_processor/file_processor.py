@@ -82,7 +82,7 @@ class FileProcessor:
 
             # Insert to agent context window
             # TODO: Rethink this line chunking mechanism
-            content_lines = self.line_chunker.chunk_text(text=raw_markdown_text)
+            content_lines = self.line_chunker.chunk_text(text=raw_markdown_text, file_metadata=file_metadata)
             visible_content = "\n".join(content_lines)
 
             await server.insert_file_into_context_windows(
