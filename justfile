@@ -416,7 +416,6 @@ build-undertaker:
     docker push {{DOCKER_REGISTRY}}/undertaker:{{TAG}}
 
 @deploy-undertaker: push-undertaker
-    @echo "🚧 Deploying Helm chart..."
     #!/usr/bin/env bash
     echo "🚧 Deploying Helm chart..."
 
