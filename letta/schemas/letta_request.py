@@ -9,6 +9,10 @@ from letta.schemas.message import MessageCreate
 
 class LettaRequest(BaseModel):
     messages: List[MessageCreate] = Field(..., description="The messages to be sent to the agent.")
+    max_steps: int = Field(
+        default=10,
+        description="Maximum number of steps the agent should take to process the request.",
+    )
     use_assistant_message: bool = Field(
         default=True,
         description="Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.",

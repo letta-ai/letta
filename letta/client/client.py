@@ -136,6 +136,7 @@ class AbstractClient(object):
         stream: Optional[bool] = False,
         stream_steps: bool = False,
         stream_tokens: bool = False,
+        max_steps: Optional[int] = None,
     ) -> LettaResponse:
         raise NotImplementedError
 
@@ -977,7 +978,8 @@ class RESTClient(AbstractClient):
         stream: Optional[bool] = False,
         stream_steps: bool = False,
         stream_tokens: bool = False,
-    ) -> Union[LettaResponse, Generator[LettaStreamingResponse, None, None]]:
+        max_steps: Optional[int] = 10,
+    ) -> LettaResponse:
         """
         Send a message to an agent
 
@@ -988,6 +990,7 @@ class RESTClient(AbstractClient):
             name(str): Name of the sender
             stream (bool): Stream the response (default: `False`)
             stream_tokens (bool): Stream tokens (default: `False`)
+            max_steps (int): Maximum number of steps the agent should take (default: 10)
 
         Returns:
             response (LettaResponse): Response from the agent
