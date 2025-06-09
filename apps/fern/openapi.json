@@ -9123,6 +9123,42 @@
         "title": "AuthSchemeField",
         "description": "Auth scheme field."
       },
+      "Base64Image": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "base64",
+            "title": "Type",
+            "description": "The source type for the image.",
+            "default": "base64"
+          },
+          "media_type": {
+            "type": "string",
+            "title": "Media Type",
+            "description": "The media type for the image."
+          },
+          "data": {
+            "type": "string",
+            "title": "Data",
+            "description": "The base64 encoded image data."
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail",
+            "description": "What level of detail to use when processing and understanding the image (low, high, or auto to let the model decide)"
+          }
+        },
+        "type": "object",
+        "required": ["media_type", "data"],
+        "title": "Base64Image"
+      },
       "BaseToolRuleSchema": {
         "properties": {
           "tool_name": {
@@ -13090,6 +13126,43 @@
         "required": ["identifier_key", "name", "identity_type"],
         "title": "IdentityUpsert"
       },
+      "ImageContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "image",
+            "title": "Type",
+            "description": "The type of the message.",
+            "default": "image"
+          },
+          "source": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UrlImage"
+              },
+              {
+                "$ref": "#/components/schemas/Base64Image"
+              },
+              {
+                "$ref": "#/components/schemas/LettaImage"
+              }
+            ],
+            "title": "Source",
+            "description": "The source of the image.",
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "base64": "#/components/schemas/Base64Image",
+                "letta": "#/components/schemas/LettaImage",
+                "url": "#/components/schemas/UrlImage"
+              }
+            }
+          }
+        },
+        "type": "object",
+        "required": ["source"],
+        "title": "ImageContent"
+      },
       "ImageURL": {
         "properties": {
           "url": {
@@ -13596,6 +13669,61 @@
         "required": ["messages", "agent_id"],
         "title": "LettaBatchRequest"
       },
+      "LettaImage": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "letta",
+            "title": "Type",
+            "description": "The source type for the image.",
+            "default": "letta"
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "The unique identifier of the image file persisted in storage."
+          },
+          "media_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Type",
+            "description": "The media type for the image."
+          },
+          "data": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "The base64 encoded image data."
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail",
+            "description": "What level of detail to use when processing and understanding the image (low, high, or auto to let the model decide)"
+          }
+        },
+        "type": "object",
+        "required": ["file_id"],
+        "title": "LettaImage"
+      },
       "LettaRequest": {
         "properties": {
           "messages": {
@@ -14059,6 +14187,9 @@
                       "$ref": "#/components/schemas/TextContent"
                     },
                     {
+                      "$ref": "#/components/schemas/ImageContent"
+                    },
+                    {
                       "$ref": "#/components/schemas/ToolCallContent"
                     },
                     {
@@ -14077,6 +14208,7 @@
                   "discriminator": {
                     "propertyName": "type",
                     "mapping": {
+                      "image": "#/components/schemas/ImageContent",
                       "omitted_reasoning": "#/components/schemas/OmittedReasoningContent",
                       "reasoning": "#/components/schemas/ReasoningContent",
                       "redacted_reasoning": "#/components/schemas/RedactedReasoningContent",
@@ -17995,6 +18127,25 @@
         "required": ["content"],
         "title": "UpdateUserMessage"
       },
+      "UrlImage": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "url",
+            "title": "Type",
+            "description": "The source type for the image.",
+            "default": "url"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "The URL of the image."
+          }
+        },
+        "type": "object",
+        "required": ["url"],
+        "title": "UrlImage"
+      },
       "UsageStatistics": {
         "properties": {
           "completion_tokens": {
@@ -18500,6 +18651,9 @@
             "$ref": "#/components/schemas/TextContent"
           },
           {
+            "$ref": "#/components/schemas/ImageContent"
+          },
+          {
             "$ref": "#/components/schemas/ToolCallContent"
           },
           {
@@ -18519,6 +18673,7 @@
           "propertyName": "type",
           "mapping": {
             "text": "#/components/schemas/TextContent",
+            "image": "#/components/schemas/ImageContent",
             "tool_call": "#/components/schemas/ToolCallContent",
             "tool_return": "#/components/schemas/ToolCallContent",
             "reasoning": "#/components/schemas/ReasoningContent",
@@ -18544,12 +18699,16 @@
         "oneOf": [
           {
             "$ref": "#/components/schemas/TextContent"
+          },
+          {
+            "$ref": "#/components/schemas/ImageContent"
           }
         ],
         "discriminator": {
           "propertyName": "type",
           "mapping": {
-            "text": "#/components/schemas/TextContent"
+            "text": "#/components/schemas/TextContent",
+            "image": "#/components/schemas/ImageContent"
           }
         }
       }

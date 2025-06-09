@@ -820,7 +820,12 @@ class LettaAgent(BaseAgent):
             tool_list=allowed_tools, response_format=agent_state.response_format, request_heartbeat=True
         )
 
-        return llm_client.build_request_data(in_context_messages, agent_state.llm_config, allowed_tools, force_tool_call)
+        return llm_client.build_request_data(
+            in_context_messages,
+            agent_state.llm_config,
+            allowed_tools,
+            force_tool_call,
+        )
 
     @trace_method
     async def _handle_ai_response(

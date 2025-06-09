@@ -398,6 +398,25 @@ export type AuthSchemeField = {
   get_current_user_endpoint?: string | null;
 };
 
+export type Base64Image = {
+  /**
+   * The source type for the image.
+   */
+  type?: 'base64';
+  /**
+   * The media type for the image.
+   */
+  media_type: string;
+  /**
+   * The base64 encoded image data.
+   */
+  data: string;
+  /**
+   * What level of detail to use when processing and understanding the image (low, high, or auto to let the model decide)
+   */
+  detail?: string | null;
+};
+
 export type BaseToolRuleSchema = {
   tool_name: string;
   type: string;
@@ -1785,6 +1804,17 @@ export type IdentityUpsert = {
   properties?: Array<IdentityProperty> | null;
 };
 
+export type ImageContent = {
+  /**
+   * The type of the message.
+   */
+  type?: 'image';
+  /**
+   * The source of the image.
+   */
+  source: UrlImage | Base64Image | LettaImage;
+};
+
 export type ImageURL = {
   url: string;
   detail?: 'auto' | 'low' | 'high';
@@ -2079,6 +2109,29 @@ export type LettaBatchRequest = {
   agent_id: string;
 };
 
+export type LettaImage = {
+  /**
+   * The source type for the image.
+   */
+  type?: 'letta';
+  /**
+   * The unique identifier of the image file persisted in storage.
+   */
+  file_id: string;
+  /**
+   * The media type for the image.
+   */
+  media_type?: string | null;
+  /**
+   * The base64 encoded image data.
+   */
+  data?: string | null;
+  /**
+   * What level of detail to use when processing and understanding the image (low, high, or auto to let the model decide)
+   */
+  detail?: string | null;
+};
+
 export type LettaRequest = {
   /**
    * The messages to be sent to the agent.
@@ -2342,6 +2395,7 @@ export type Message = {
    */
   content?: Array<
     | TextContent
+    | ImageContent
     | ToolCallContent
     | ToolReturnContent
     | ReasoningContent
@@ -3905,6 +3959,17 @@ export type UpdateUserMessage = {
   content: Array<LettaUserMessageContentUnion> | string;
 };
 
+export type UrlImage = {
+  /**
+   * The source type for the image.
+   */
+  type?: 'url';
+  /**
+   * The URL of the image.
+   */
+  url: string;
+};
+
 export type UsageStatistics = {
   completion_tokens?: number;
   prompt_tokens?: number;
@@ -4089,6 +4154,7 @@ export type LettaMessageUnion =
 
 export type LettaMessageContentUnion =
   | TextContent
+  | ImageContent
   | ToolCallContent
   | ToolReturnContent
   | ReasoningContent
@@ -4097,7 +4163,7 @@ export type LettaMessageContentUnion =
 
 export type LettaAssistantMessageContentUnion = TextContent;
 
-export type LettaUserMessageContentUnion = TextContent;
+export type LettaUserMessageContentUnion = TextContent | ImageContent;
 
 export type DeleteToolData = {
   toolId: string;

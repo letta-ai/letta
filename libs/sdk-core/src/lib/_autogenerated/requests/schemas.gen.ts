@@ -1276,6 +1276,44 @@ export const $AuthSchemeField = {
   description: 'Auth scheme field.',
 } as const;
 
+export const $Base64Image = {
+  properties: {
+    type: {
+      type: 'string',
+      const: 'base64',
+      title: 'Type',
+      description: 'The source type for the image.',
+      default: 'base64',
+    },
+    media_type: {
+      type: 'string',
+      title: 'Media Type',
+      description: 'The media type for the image.',
+    },
+    data: {
+      type: 'string',
+      title: 'Data',
+      description: 'The base64 encoded image data.',
+    },
+    detail: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Detail',
+      description:
+        'What level of detail to use when processing and understanding the image (low, high, or auto to let the model decide)',
+    },
+  },
+  type: 'object',
+  required: ['media_type', 'data'],
+  title: 'Base64Image',
+} as const;
+
 export const $BaseToolRuleSchema = {
   properties: {
     tool_name: {
@@ -5430,6 +5468,44 @@ export const $IdentityUpsert = {
   title: 'IdentityUpsert',
 } as const;
 
+export const $ImageContent = {
+  properties: {
+    type: {
+      type: 'string',
+      const: 'image',
+      title: 'Type',
+      description: 'The type of the message.',
+      default: 'image',
+    },
+    source: {
+      oneOf: [
+        {
+          $ref: '#/components/schemas/UrlImage',
+        },
+        {
+          $ref: '#/components/schemas/Base64Image',
+        },
+        {
+          $ref: '#/components/schemas/LettaImage',
+        },
+      ],
+      title: 'Source',
+      description: 'The source of the image.',
+      discriminator: {
+        propertyName: 'type',
+        mapping: {
+          base64: '#/components/schemas/Base64Image',
+          letta: '#/components/schemas/LettaImage',
+          url: '#/components/schemas/UrlImage',
+        },
+      },
+    },
+  },
+  type: 'object',
+  required: ['source'],
+  title: 'ImageContent',
+} as const;
+
 export const $ImageURL = {
   properties: {
     url: {
@@ -5988,6 +6064,64 @@ export const $LettaBatchRequest = {
   title: 'LettaBatchRequest',
 } as const;
 
+export const $LettaImage = {
+  properties: {
+    type: {
+      type: 'string',
+      const: 'letta',
+      title: 'Type',
+      description: 'The source type for the image.',
+      default: 'letta',
+    },
+    file_id: {
+      type: 'string',
+      title: 'File Id',
+      description:
+        'The unique identifier of the image file persisted in storage.',
+    },
+    media_type: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Media Type',
+      description: 'The media type for the image.',
+    },
+    data: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Data',
+      description: 'The base64 encoded image data.',
+    },
+    detail: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Detail',
+      description:
+        'What level of detail to use when processing and understanding the image (low, high, or auto to let the model decide)',
+    },
+  },
+  type: 'object',
+  required: ['file_id'],
+  title: 'LettaImage',
+} as const;
+
 export const $LettaRequest = {
   properties: {
     messages: {
@@ -6510,6 +6644,9 @@ export const $Message = {
                 $ref: '#/components/schemas/TextContent',
               },
               {
+                $ref: '#/components/schemas/ImageContent',
+              },
+              {
                 $ref: '#/components/schemas/ToolCallContent',
               },
               {
@@ -6528,6 +6665,7 @@ export const $Message = {
             discriminator: {
               propertyName: 'type',
               mapping: {
+                image: '#/components/schemas/ImageContent',
                 omitted_reasoning:
                   '#/components/schemas/OmittedReasoningContent',
                 reasoning: '#/components/schemas/ReasoningContent',
@@ -10768,6 +10906,26 @@ export const $UpdateUserMessage = {
   title: 'UpdateUserMessage',
 } as const;
 
+export const $UrlImage = {
+  properties: {
+    type: {
+      type: 'string',
+      const: 'url',
+      title: 'Type',
+      description: 'The source type for the image.',
+      default: 'url',
+    },
+    url: {
+      type: 'string',
+      title: 'Url',
+      description: 'The URL of the image.',
+    },
+  },
+  type: 'object',
+  required: ['url'],
+  title: 'UrlImage',
+} as const;
+
 export const $UsageStatistics = {
   properties: {
     completion_tokens: {
@@ -11338,6 +11496,9 @@ export const $LettaMessageContentUnion = {
       $ref: '#/components/schemas/TextContent',
     },
     {
+      $ref: '#/components/schemas/ImageContent',
+    },
+    {
       $ref: '#/components/schemas/ToolCallContent',
     },
     {
@@ -11357,6 +11518,7 @@ export const $LettaMessageContentUnion = {
     propertyName: 'type',
     mapping: {
       text: '#/components/schemas/TextContent',
+      image: '#/components/schemas/ImageContent',
       tool_call: '#/components/schemas/ToolCallContent',
       tool_return: '#/components/schemas/ToolCallContent',
       reasoning: '#/components/schemas/ReasoningContent',
@@ -11385,11 +11547,15 @@ export const $LettaUserMessageContentUnion = {
     {
       $ref: '#/components/schemas/TextContent',
     },
+    {
+      $ref: '#/components/schemas/ImageContent',
+    },
   ],
   discriminator: {
     propertyName: 'type',
     mapping: {
       text: '#/components/schemas/TextContent',
+      image: '#/components/schemas/ImageContent',
     },
   },
 } as const;

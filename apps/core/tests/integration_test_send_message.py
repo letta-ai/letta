@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 import threading
@@ -5,12 +6,23 @@ import time
 import uuid
 from typing import Any, Dict, List
 
+import httpx
 import pytest
 import requests
 from dotenv import load_dotenv
 from letta_client import AsyncLetta, Letta, MessageCreate, Run
 from letta_client.core.api_error import ApiError
-from letta_client.types import AssistantMessage, LettaUsageStatistics, ReasoningMessage, ToolCallMessage, ToolReturnMessage, UserMessage
+from letta_client.types import (
+    AssistantMessage,
+    Base64Image,
+    ImageContent,
+    LettaUsageStatistics,
+    ReasoningMessage,
+    ToolCallMessage,
+    ToolReturnMessage,
+    UrlImage,
+    UserMessage,
+)
 
 from letta.schemas.agent import AgentState
 from letta.schemas.llm_config import LLMConfig
@@ -135,6 +147,30 @@ USER_MESSAGE_ROLL_DICE: List[MessageCreate] = [
     MessageCreate(
         role="user",
         content="This is an automated test message. Call the roll_dice tool with 16 sides and tell me the outcome.",
+        otid=USER_MESSAGE_OTID,
+    )
+]
+URL_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg"
+USER_MESSAGE_URL_IMAGE: List[MessageCreate] = [
+    MessageCreate(
+        role="user",
+        content=[
+            ImageContent(
+                source=UrlImage(url=URL_IMAGE),
+            )
+        ],
+        otid=USER_MESSAGE_OTID,
+    )
+]
+BASE64_IMAGE = base64.standard_b64encode(httpx.get(URL_IMAGE).content).decode("utf-8")
+USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
+    MessageCreate(
+        role="user",
+        content=[
+            ImageContent(
+                source=Base64Image(data=BASE64_IMAGE, media_type="image/jpeg"),
+            )
+        ],
         otid=USER_MESSAGE_OTID,
     )
 ]
@@ -285,6 +321,42 @@ def assert_tool_call_response(
         assert isinstance(messages[index], LettaUsageStatistics)
 
 
+def assert_image_input_response(
+    messages: List[Any],
+    streaming: bool = False,
+    token_streaming: bool = False,
+    from_db: bool = False,
+) -> None:
+    """
+    Asserts that the messages list follows the expected sequence:
+    ReasoningMessage -> AssistantMessage.
+    """
+    expected_message_count = 3 if streaming or from_db else 2
+    assert len(messages) == expected_message_count
+
+    index = 0
+    if from_db:
+        assert isinstance(messages[index], UserMessage)
+        assert messages[index].otid == USER_MESSAGE_OTID
+        index += 1
+
+    # Agent Step 1
+    assert isinstance(messages[index], ReasoningMessage)
+    assert messages[index].otid and messages[index].otid[-1] == "0"
+    index += 1
+
+    assert isinstance(messages[index], AssistantMessage)
+    assert messages[index].otid and messages[index].otid[-1] == "1"
+    index += 1
+
+    if streaming:
+        assert isinstance(messages[index], LettaUsageStatistics)
+        assert messages[index].prompt_tokens > 0
+        assert messages[index].completion_tokens > 0
+        assert messages[index].total_tokens > 0
+        assert messages[index].step_count > 0
+
+
 def accumulate_chunks(chunks: List[Any]) -> List[Any]:
     """
     Accumulates chunks into a list of messages.
@@ -419,6 +491,58 @@ def test_tool_call(
     assert_tool_call_response(response.messages)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_tool_call_response(messages_from_db, from_db=True)
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_url_image_input(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending a message with a synchronous client.
+    Verifies that the response messages follow the expected order.
+    """
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    response = client.agents.messages.create(
+        agent_id=agent_state.id,
+        messages=USER_MESSAGE_URL_IMAGE,
+    )
+    assert_image_input_response(response.messages)
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert_image_input_response(messages_from_db, from_db=True)
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_base64_image_input(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending a message with a synchronous client.
+    Verifies that the response messages follow the expected order.
+    """
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    response = client.agents.messages.create(
+        agent_id=agent_state.id,
+        messages=USER_MESSAGE_BASE64_IMAGE,
+    )
+    assert_image_input_response(response.messages)
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert_image_input_response(messages_from_db, from_db=True)
 
 
 @pytest.mark.parametrize(

@@ -1368,6 +1368,21 @@ export const AuthResponse = z.object({
     .optional(),
 });
 
+export type Base64Image = z.infer<typeof Base64Image>;
+export const Base64Image = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  media_type: z.string(),
+  data: z.string(),
+  detail: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type JobStatus = z.infer<typeof JobStatus>;
 export const JobStatus = z.union([
   z.literal('not_started'),
@@ -2703,6 +2718,48 @@ export const MessageRole = z.union([
   z.literal('system'),
 ]);
 
+export type UrlImage = z.infer<typeof UrlImage>;
+export const UrlImage = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  url: z.string(),
+});
+
+export type LettaImage = z.infer<typeof LettaImage>;
+export const LettaImage = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  file_id: z.string(),
+  media_type: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  data: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  detail: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ImageContent = z.infer<typeof ImageContent>;
+export const ImageContent = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  source: z.union([UrlImage, Base64Image, LettaImage]),
+});
+
 export type ToolCallContent = z.infer<typeof ToolCallContent>;
 export const ToolCallContent = z.object({
   type: z.union([z.string(), z.undefined()]).optional(),
@@ -2824,6 +2881,7 @@ export const Message = z.object({
       z.array(
         z.union([
           TextContent,
+          ImageContent,
           ToolCallContent,
           ToolReturnContent,
           ReasoningContent,
@@ -2837,6 +2895,7 @@ export const Message = z.object({
           z.array(
             z.union([
               TextContent,
+              ImageContent,
               ToolCallContent,
               ToolReturnContent,
               ReasoningContent,
@@ -3000,6 +3059,7 @@ export const CreateBlock = z.object({
 export type LettaMessageContentUnion = z.infer<typeof LettaMessageContentUnion>;
 export const LettaMessageContentUnion = z.union([
   TextContent,
+  ImageContent,
   ToolCallContent,
   ToolReturnContent,
   ReasoningContent,
@@ -3948,10 +4008,10 @@ export const SystemMessage = z.object({
 export type LettaUserMessageContentUnion = z.infer<
   typeof LettaUserMessageContentUnion
 >;
-export const LettaUserMessageContentUnion = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  text: z.string(),
-});
+export const LettaUserMessageContentUnion = z.union([
+  TextContent,
+  ImageContent,
+]);
 
 export type UserMessage = z.infer<typeof UserMessage>;
 export const UserMessage = z.object({
@@ -3991,9 +4051,9 @@ export const UserMessage = z.object({
     ])
     .optional(),
   content: z.union([
-    z.array(TextContent),
+    z.array(LettaUserMessageContentUnion),
     z.string(),
-    z.array(z.union([z.array(TextContent), z.string()])),
+    z.array(z.union([z.array(LettaUserMessageContentUnion), z.string()])),
   ]),
 });
 
@@ -5304,9 +5364,9 @@ export type UpdateUserMessage = z.infer<typeof UpdateUserMessage>;
 export const UpdateUserMessage = z.object({
   message_type: z.union([z.string(), z.undefined()]).optional(),
   content: z.union([
-    z.array(TextContent),
+    z.array(LettaUserMessageContentUnion),
     z.string(),
-    z.array(z.union([z.array(TextContent), z.string()])),
+    z.array(z.union([z.array(LettaUserMessageContentUnion), z.string()])),
   ]),
 });
 

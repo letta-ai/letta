@@ -31,6 +31,7 @@ from letta.schemas.letta_message import (
     UserMessage,
 )
 from letta.schemas.letta_message_content import (
+    ImageContent,
     LettaMessageContentUnion,
     OmittedReasoningContent,
     ReasoningContent,
@@ -415,6 +416,8 @@ class Message(BaseMessage):
             # This is type UserMessage
             if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
                 text_content = self.content[0].text
+            elif self.content and len(self.content) == 1 and isinstance(self.content[0], ImageContent):
+                text_content = "[Image Here]"
             else:
                 raise ValueError(f"Invalid user message (no text object on message): {self.content}")
 
@@ -658,6 +661,8 @@ class Message(BaseMessage):
             text_content = self.content[0].text
         elif self.content and len(self.content) == 1 and isinstance(self.content[0], ToolReturnContent):
             text_content = self.content[0].content
+        elif self.content and len(self.content) == 1 and isinstance(self.content[0], ImageContent):
+            text_content = "[Image Here]"
         # Otherwise, check if we have TextContent and multiple other parts
         elif self.content and len(self.content) > 1:
             text = [content for content in self.content if isinstance(content, TextContent)]
@@ -755,6 +760,8 @@ class Message(BaseMessage):
         # Check for COT
         if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
+        elif self.content and len(self.content) == 1 and isinstance(self.content[0], ImageContent):
+            text_content = "[Image Here]"
         else:
             text_content = None
 
@@ -872,6 +879,8 @@ class Message(BaseMessage):
             text_content = self.content[0].text
         elif self.content and len(self.content) == 1 and isinstance(self.content[0], ToolReturnContent):
             text_content = self.content[0].content
+        elif self.content and len(self.content) == 1 and isinstance((self.content[0]), ImageContent):
+            text_content = "[Image Here]"
         else:
             text_content = None
 
