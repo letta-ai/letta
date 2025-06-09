@@ -1814,6 +1814,7 @@
       "dashboard": "Dashboard",
       "agents": "Agents",
       "local": "Local server",
+      "settings": "Settings",
       "remote": "Remote",
       "create": "Add remote server"
     },
@@ -1832,6 +1833,9 @@
       "description": "Are you sure you want to delete this remote server connection? This will not delete any agents you have created."
     },
     "updateDetails": "Update configuration"
+  },
+  "development-servers/dashboard/settings": {
+    "title": "Development Server Settings"
   },
   "development-servers/dashboard/page": {
     "versionCompatibilityBanner": {
@@ -1962,6 +1966,20 @@
       "password": {
         "label": "Server password"
       }
+    },
+    "DeleteDevelopmentServerDialog": {
+      "title": "Delete Development Server",
+      "description": "This action cannot be undone. This will permanently delete the development server connection.",
+      "confirmText": "Please type <strong></strong> to confirm.",
+      "confirmTextLabel": "Development Server Name",
+      "nameError": "Please type the exact name of the development server",
+      "confirm": "Delete Development Server",
+      "error": "There was an error deleting the development server, please try again or contact support."
+    },
+    "DeleteDevelopmentServerSection": {
+      "title": "Delete Development Server",
+      "description": "Once you delete a development server connection, there is no going back. Please be certain.",
+      "trigger": "Delete"
     },
     "title": "Local agents",
     "description": "View your available agents running inside the Letta server",

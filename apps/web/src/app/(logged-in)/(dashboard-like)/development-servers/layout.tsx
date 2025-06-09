@@ -10,6 +10,7 @@ import {
   ServerNavigationDropdown,
   IdentitiesIcon,
   HR,
+  CogIcon,
 } from '@letta-cloud/ui-component-library';
 import React, { useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
@@ -137,6 +138,16 @@ function DashboardLayout(props: DashboardLayoutProps) {
         label: t('nav.identities'),
         href: `/development-servers/${developmentServerId}/identities`,
       },
+      ...(developmentServerId !== 'local'
+        ? [
+            {
+              id: 'settings',
+              icon: <CogIcon />,
+              label: t('nav.settings'),
+              href: `/development-servers/${developmentServerId}/settings`,
+            },
+          ]
+        : []),
     ];
   }, [developmentServerId, t]);
 

@@ -41,6 +41,10 @@ export const GetDevelopmentServerResponseSchema = z.object({
   developmentServer: DevelopmentServerSchema,
 });
 
+export type GetDevelopmentServerResponseType = z.infer<
+  typeof GetDevelopmentServerResponseSchema
+>;
+
 export const getDevelopmentServerContract = c.query({
   method: 'GET',
   path: '/development-servers/:developmentServerId',

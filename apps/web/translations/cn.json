@@ -1706,7 +1706,21 @@
         "label": "服务器密码"
       }
     },
-    "title": "本地智能体",
+    "DeleteDevelopmentServerDialog": {
+      "title": "删除开发服务器",
+      "description": "此操作无法撤消。这将永久删除开发服务器连接。",
+      "confirmText": "请输入 <strong></strong> 以确认。",
+      "confirmTextLabel": "开发服务器名称",
+      "nameError": "请输入开发服务器的确切名称",
+      "confirm": "删除开发服务器",
+      "error": "删除开发服务器时出错，请重试或联系支持。"
+    },
+    "DeleteDevelopmentServerSection": {
+      "title": "删除开发服务器",
+      "description": "一旦删除开发服务器连接，将无法恢复。请确认。",
+      "trigger": "删除"
+    },
+    "title": "本地代理",
     "description": "查看您在Letta服务器中运行的可用智能体",
     "createAgent": "创建新智能体",
     "importAgent": "导入智能体",

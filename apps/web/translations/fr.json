@@ -1061,6 +1061,20 @@
         "label": "Mot de passe du serveur"
       }
     },
+    "DeleteDevelopmentServerDialog": {
+      "title": "Supprimer le serveur de développement",
+      "description": "Cette action ne peut pas être annulée. Cela supprimera définitivement la connexion au serveur de développement.",
+      "confirmText": "Veuillez taper <strong></strong> pour confirmer.",
+      "confirmTextLabel": "Nom du serveur de développement",
+      "nameError": "Veuillez taper le nom exact du serveur de développement",
+      "confirm": "Supprimer le serveur de développement",
+      "error": "Une erreur s'est produite lors de la suppression du serveur de développement, veuillez réessayer ou contacter le support."
+    },
+    "DeleteDevelopmentServerSection": {
+      "title": "Supprimer le serveur de développement",
+      "description": "Une fois que vous supprimez une connexion au serveur de développement, il n'y a pas de retour en arrière. Veuillez en être certain.",
+      "trigger": "Supprimer"
+    },
     "title": "Agents locaux",
     "description": "Affichez vos agents disponibles exécutés sur le serveur Letta",
     "createAgent": "Créer un nouvel agent",
