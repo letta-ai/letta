@@ -665,10 +665,10 @@ async def send_message(
     Process a user message and return the agent's response.
     This endpoint accepts a message from a user and processes it through the agent.
     """
+    request_start_timestamp_ns = get_utc_timestamp_ns()
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    request_start_timestamp_ns = get_utc_timestamp_ns()
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
@@ -747,6 +747,7 @@ async def send_message_streaming(
     This endpoint accepts a message from a user and processes it through the agent.
     It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
     """
+    request_start_timestamp_ns = get_utc_timestamp_ns()
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
@@ -756,7 +757,6 @@ async def send_message_streaming(
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
     not_letta_endpoint = not ("inference.letta.com" in agent.llm_config.model_endpoint)
-    request_start_timestamp_ns = get_utc_timestamp_ns()
 
     if agent_eligible and model_compatible:
         if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
