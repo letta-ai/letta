@@ -11,6 +11,7 @@ RUN pip install charset-normalizer==3.2.0
 RUN pip install idna==3.4
 RUN pip install joblib==1.3.2
 RUN pip install kiwisolver==1.4.5
+RUN pip install letta_client==0.1.152
 RUN pip install matplotlib==3.8.0
 # minimum version of numpy compatible with python3.12
 RUN pip install numpy==1.26.4
