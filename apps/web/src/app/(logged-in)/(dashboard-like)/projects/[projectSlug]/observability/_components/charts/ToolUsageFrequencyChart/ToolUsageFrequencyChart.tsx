@@ -5,6 +5,7 @@ import {
   Chart,
   DashboardChartWrapper,
   makeFormattedTooltip,
+  makeMultiValueFormattedTooltip,
 } from '@letta-cloud/ui-component-library';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
@@ -48,6 +49,7 @@ export function ToolUsageFrequencyChart(props: ToolUsageFrequencyChartProps) {
     interface ToolUsageItem {
       date: string;
       usageCount: number;
+      name: string;
     }
 
     const groupedByName = data.body.items.reduce(
@@ -61,6 +63,7 @@ export function ToolUsageFrequencyChart(props: ToolUsageFrequencyChartProps) {
         }
         acc[item.toolName][date] = {
           date,
+          name: item.toolName,
           usageCount:
             (acc[item.toolName][date]?.usageCount || 0) + item.usageCount,
         };
@@ -73,6 +76,7 @@ export function ToolUsageFrequencyChart(props: ToolUsageFrequencyChartProps) {
       name: toolName,
       data: Object.values(dates),
       getterFn: (item: ToolUsageItem) => item.usageCount || 0,
+      nameGetterFn: (item: ToolUsageItem) => item.name,
       defaultValue: 0,
     }));
   }, [data?.body.items]);
@@ -105,35 +109,55 @@ export function ToolUsageFrequencyChart(props: ToolUsageFrequencyChartProps) {
           tooltip: {
             trigger: 'axis',
             formatter: (e) => {
-              const value = get(e, '0.data', null);
+              if (!Array.isArray(e) || e.length === 0) {
+                return '';
+              }
 
-              if (typeof value !== 'number') {
+              const date = get(e, '0.axisValue', '');
+
+              const options = e
+                .filter((param) => {
+                  const value = get(param, 'data.value', null);
+
+                  return (
+                    !!value &&
+                    typeof value === 'number' &&
+                    value >= 0 &&
+                    get(param, 'data.name', '')
+                  );
+                })
+                .map((param) => {
+                  let value = get(param, 'data.value', '');
+
+                  if (typeof value !== 'number') {
+                    // @ts-expect-error =-f afsd
+                    value = parseInt(value, 10);
+                  }
+
+                  if (isNaN(value)) {
+                    value = 0;
+                  }
+
+                  return {
+                    color: param.color as string,
+                    label: `${get(param, 'data.name', '')}`,
+                    value: formatNumber(value, {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0,
+                    }),
+                  };
+                });
+
+              if (options.length === 0) {
                 return makeFormattedTooltip({
+                  date,
                   label: t('tooltip.noData'),
                 });
               }
 
-              // Get top tools for this date
-              const date = get(e, '0.name', '');
-              const dateItems =
-                data?.body.items.filter((item) => {
-                  const itemDate = new Date(item.date);
-                  const formattedDate = `${itemDate.toLocaleDateString('en-US', { month: 'short' })} ${itemDate.getDate()}`;
-                  return formattedDate === date;
-                }) || [];
-
-              const topTools = dateItems
-                .sort((a, b) => b.usageCount - a.usageCount)
-                .slice(0, 3)
-                .map(
-                  (tool) =>
-                    `${tool.toolName}: ${formatNumber(tool.usageCount)}`,
-                )
-                .join('<br/>');
-
-              return makeFormattedTooltip({
-                label: t('tooltip.withValue'),
-                value: `${formatNumber(value)} total executions<br/><br/>Top tools:<br/>${topTools}`,
+              return makeMultiValueFormattedTooltip({
+                date,
+                options,
               });
             },
           },

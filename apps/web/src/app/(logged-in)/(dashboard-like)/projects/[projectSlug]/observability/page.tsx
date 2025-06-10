@@ -1,22 +1,22 @@
 'use client';
 import { HR, HStack, VR, VStack } from '@letta-cloud/ui-component-library';
-import { TimeToFirstTokenChart } from './_components/charts/TimeToFirstTokenChart/TimeToFirstTokenChart';
+// import { TimeToFirstTokenChart } from './_components/charts/TimeToFirstTokenChart/TimeToFirstTokenChart';
 import { TotalMessagesPerDayChart } from './_components/charts/TotalMessagesPerDayChart/TotalMessagesPerDayChart';
 
 import './observability.scss';
 
 import { ActiveAgentChart } from './_components/charts/ActiveAgentChart/ActiveAgentChart';
-import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
+// import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { ObservabilityPageWrapper } from './_components/ObservabilityPageWrapper/ObservabilityPageWrapper';
 import { ToolErrorsChart } from './_components/charts/ToolErrorsChart/ToolErrorsChart';
 import { ObservabilityOverview } from './_components/ObservabilityOverview/ObservabilityOverview';
 import { TotalResponseTimeChart } from './_components/charts/TotalResponseTimeChart/TotalResponseTimeChart';
 import { APIErrorsChart } from './_components/charts/APIErrorsChart/APIErrorsChart';
 import { ToolErrorRateChart } from './_components/charts/ToolErrorRateChart/ToolErrorRateChart';
-import { LLMLatencyChart } from './_components/charts/LLMLatencyChart/LLMLatencyChart';
-import { ToolLatencyChart } from './_components/charts/ToolLatencyChart/ToolLatencyChart';
+// import { LLMLatencyChart } from './_components/charts/LLMLatencyChart/LLMLatencyChart';
+// import { ToolLatencyChart } from './_components/charts/ToolLatencyChart/ToolLatencyChart';
 import { ToolUsageFrequencyChart } from './_components/charts/ToolUsageFrequencyChart/ToolUsageFrequencyChart';
-import { TimeToFirstTokenPerDayChart } from './_components/charts/TimeToFirstTokenPerDayChart/TimeToFirstTokenPerDayChart';
+// import { TimeToFirstTokenPerDayChart } from './_components/charts/TimeToFirstTokenPerDayChart/TimeToFirstTokenPerDayChart';
 import { ToolErrorsByNameChart } from './_components/charts/ToolErrorsByNameChart/ToolErrorsByNameChart';
 
 interface ChartRowProps {
@@ -30,7 +30,7 @@ function ChartRow(props: ChartRowProps) {
 }
 
 function ProjectObservabilityPage() {
-  const { slug } = useCurrentProject();
+  // const { slug } = useCurrentProject();
 
   return (
     <ObservabilityPageWrapper>
@@ -46,14 +46,16 @@ function ProjectObservabilityPage() {
             <HR />
             <ChartRow>
               <ToolErrorsChart
-                analysisLink={`/projects/${slug}/observability/tool-errors`}
+              // analysisLink={`/projects/${slug}/observability/tool-errors`}
               />
               <VR />
               <TotalResponseTimeChart />
             </ChartRow>
             <HR />
             <ChartRow>
-              <ToolLatencyChart />
+              {/*<ToolLatencyChart />*/}
+              <ToolErrorsByNameChart />
+
               <VR />
               <APIErrorsChart />
             </ChartRow>
@@ -61,21 +63,22 @@ function ProjectObservabilityPage() {
             <ChartRow>
               <ToolErrorRateChart />
               <VR />
-              <LLMLatencyChart />
-            </ChartRow>
-            <HR />
-            <ChartRow>
               <ToolUsageFrequencyChart />
-              <VR />
-              <TimeToFirstTokenChart />
+              {/*<LLMLatencyChart />*/}
             </ChartRow>
-            <HR />
-            <ChartRow>
-              <ToolErrorsByNameChart />
+            {/*<HR />*/}
+            {/*<ChartRow>*/}
+            {/*  <ToolUsageFrequencyChart />*/}
+            {/*  /!*<VR />*!/*/}
+            {/*  /!*<TimeToFirstTokenChart />*!/*/}
+            {/*</ChartRow>*/}
+            {/*<HR />*/}
+            {/*<ChartRow>*/}
+            {/*  <ToolErrorsByNameChart />*/}
 
-              <VR />
-              <TimeToFirstTokenPerDayChart />
-            </ChartRow>
+            {/*  <VR />*/}
+            {/*  <TimeToFirstTokenPerDayChart />*/}
+            {/*</ChartRow>*/}
             <HR />
           </VStack>
         </VStack>

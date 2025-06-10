@@ -78,7 +78,7 @@ export function ToolLatencyChart(props: ToolLatencyChartProps) {
           tooltip: {
             trigger: 'axis',
             formatter: (e) => {
-              const p50Latency = get(e, '0.data', null);
+              const p50Latency = get(e, '0.data.value', null);
               const p99Latency = get(e, '1.data', null);
 
               const date = get(e, '0.axisValue', '') as string;

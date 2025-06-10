@@ -65,7 +65,7 @@ export function TimeToFirstTokenChart(props: TimeToFirstTokenChartProps) {
           tooltip: {
             trigger: 'axis',
             formatter: (e) => {
-              const value = get(e, '0.data', null);
+              const value = get(e, '0.data.value', null);
 
               if (typeof value !== 'number') {
                 return makeFormattedTooltip({

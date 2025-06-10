@@ -39,11 +39,19 @@ export function TotalResponseTimeChart() {
     seriesData: [
       {
         data: data?.body.items,
-        getterFn: (item) => item.p50ResponseTimeNs / 1_000_000_000, // Convert to seconds
+        getterFn: (item) => {
+          if (!item.p50ResponseTimeNs) return null;
+
+          return item.p50ResponseTimeNs / 1_000_000_000;
+        }, // Convert to seconds
       },
       {
         data: data?.body.items,
-        getterFn: (item) => item.p99ResponseTimeNs / 1_000_000_000, // Convert to seconds
+        getterFn: (item) => {
+          if (!item.p99ResponseTimeNs) return null;
+
+          return item.p99ResponseTimeNs / 1_000_000_000;
+        },
       },
     ],
     startDate,
@@ -66,8 +74,8 @@ export function TotalResponseTimeChart() {
           tooltip: {
             trigger: 'axis',
             formatter: (e) => {
-              const p50Response = get(e, '0.data', null);
-              const p99Response = get(e, '1.data', null);
+              const p50Response = get(e, '0.data.value', null);
+              const p99Response = get(e, '1.data.value', null);
               const date = get(e, '0.axisValue', '');
               return makeMultiValueFormattedTooltip({
                 date,

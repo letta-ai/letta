@@ -69,10 +69,12 @@ export function APIErrorsChart(props: TimeToFirstTokenChartProps) {
           tooltip: {
             trigger: 'axis',
             formatter: (e) => {
-              const value = get(e, '0.data', null);
+              const value = get(e, '0.data.value', null);
+              const date = get(e, '0.axisValue', '');
 
               return makeFormattedTooltip({
                 label: t('tooltip'),
+                date,
                 value: `${value || 0}`,
               });
             },

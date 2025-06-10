@@ -61,7 +61,7 @@ export function ObservabilityOverview() {
     },
   });
 
-  const { formatNumber, formatSmallDuration } = useFormatters();
+  const { formatNumber } = useFormatters();
 
   const maybeNumber = useCallback(
     (d: unknown) => {
@@ -87,16 +87,16 @@ export function ObservabilityOverview() {
     [formatNumber],
   );
 
-  const maybeDuration = useCallback(
-    (d: unknown) => {
-      if (typeof d !== 'number') {
-        return null;
-      }
-
-      return formatSmallDuration(d);
-    },
-    [formatSmallDuration],
-  );
+  // const maybeDuration = useCallback(
+  //   (d: unknown) => {
+  //     if (typeof d !== 'number') {
+  //       return null;
+  //     }
+  //
+  //     return formatSmallDuration(d);
+  //   },
+  //   [formatSmallDuration],
+  // );
 
   return (
     <div className="min-w-[300px] w-[300px]">
@@ -130,26 +130,26 @@ export function ObservabilityOverview() {
               value={maybePercentage(data?.body.apiErrorRate)}
               tooltip={t('apiErrorRate.tooltip')}
             />
-            <Detail
-              label={t('p50TimeToFirstTokenMs.label')}
-              value={maybeDuration(data?.body.p50TimeToFirstTokenNs)}
-              tooltip={t('p50TimeToFirstTokenMs.tooltip')}
-            />
-            <Detail
-              label={t('p99TimeToFirstTokenMs.label')}
-              value={maybeDuration(data?.body.p99TimeToFirstTokenNs)}
-              tooltip={t('p99TimeToFirstTokenMs.tooltip')}
-            />
-            <Detail
-              label={t('p50ResponseTime.label')}
-              value={maybeDuration(data?.body.p50ResponseTimeNs)}
-              tooltip={t('p50ResponseTime.tooltip')}
-            />
-            <Detail
-              label={t('p99ResponseTime.label')}
-              value={maybeDuration(data?.body.p99ResponseTimeNs)}
-              tooltip={t('p99ResponseTime.tooltip')}
-            />
+            {/*<Detail*/}
+            {/*  label={t('p50TimeToFirstTokenMs.label')}*/}
+            {/*  value={maybeDuration(data?.body.p50TimeToFirstTokenNs)}*/}
+            {/*  tooltip={t('p50TimeToFirstTokenMs.tooltip')}*/}
+            {/*/>*/}
+            {/*<Detail*/}
+            {/*  label={t('p99TimeToFirstTokenMs.label')}*/}
+            {/*  value={maybeDuration(data?.body.p99TimeToFirstTokenNs)}*/}
+            {/*  tooltip={t('p99TimeToFirstTokenMs.tooltip')}*/}
+            {/*/>*/}
+            {/*<Detail*/}
+            {/*  label={t('p50ResponseTime.label')}*/}
+            {/*  value={maybeDuration(data?.body.p50ResponseTimeNs)}*/}
+            {/*  tooltip={t('p50ResponseTime.tooltip')}*/}
+            {/*/>*/}
+            {/*<Detail*/}
+            {/*  label={t('p99ResponseTime.label')}*/}
+            {/*  value={maybeDuration(data?.body.p99ResponseTimeNs)}*/}
+            {/*  tooltip={t('p99ResponseTime.tooltip')}*/}
+            {/*/>*/}
           </VStack>
         </VStack>
       </VStack>

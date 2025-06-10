@@ -14,7 +14,8 @@ interface UseSeriesDataOptions<T extends BaseType> {
   seriesData: Array<{
     data?: T[] | null;
     defaultValue?: number;
-    getterFn: (data: T) => number;
+    nameGetterFn?: (data: T) => string;
+    getterFn: (data: T) => number | null;
   }>;
 }
 
@@ -50,26 +51,39 @@ export function useObservabilitySeriesData<T extends BaseType>(
     };
   }, [startDate, endDate, formatDate]);
 
+  interface GetSeriesDataParams<T extends BaseType> {
+    data: UseSeriesDataOptions<T>['seriesData'][number]['data'] | null;
+    getterFn: UseSeriesDataOptions<T>['seriesData'][number]['getterFn'];
+    nameGetterFn?: UseSeriesDataOptions<T>['seriesData'][number]['nameGetterFn'];
+    defaultValue?: UseSeriesDataOptions<T>['seriesData'][number]['defaultValue'];
+  }
+
   const getSeriesData = useCallback(
-    (
-      data: T[] | null | undefined,
-      getterFn: (data: T) => number,
-      defaultValue?: number,
-    ) => {
+    function getSeriesData<T extends BaseType>({
+      data,
+      getterFn,
+      nameGetterFn,
+      defaultValue,
+    }: GetSeriesDataParams<T>) {
       if (!data) return [];
 
       const mappedData = data.reduce(
         (acc, item) => {
+          const value = getterFn(item);
+
           acc[
             formatDate(item.date, {
               month: 'short',
               day: 'numeric',
             })
-          ] = getterFn(item) || 0; // Use the getter function to extract the value
+          ] = {
+            value: typeof value === 'number' ? value : undefined,
+            name: nameGetterFn ? nameGetterFn(item) : undefined,
+          };
 
           return acc;
         },
-        {} as Record<string, number>,
+        {} as Record<string, { name?: string; value: number | undefined }>,
       );
 
       // Map the data to the format required by the chart
@@ -77,12 +91,12 @@ export function useObservabilitySeriesData<T extends BaseType>(
         const dateKey = date; // Assuming date is in YYYY-MM-DD format
         const item = mappedData[dateKey];
 
-        if (typeof item === 'undefined') {
+        if (typeof item?.value === 'undefined') {
           if (typeof defaultValue === 'number') {
-            return defaultValue;
+            return { value: defaultValue, name: item?.name };
           }
 
-          return undefined;
+          return { value: null, name: item?.name };
         }
 
         return item;
@@ -93,13 +107,16 @@ export function useObservabilitySeriesData<T extends BaseType>(
 
   const series: SeriesOption[] = useMemo(() => {
     return seriesData.map((item) => {
-      const { data, getterFn, defaultValue } = item;
-
       return {
         type: 'line',
         connectNulls: true,
         symbol: 'circle',
-        data: getSeriesData(data, getterFn, defaultValue),
+        data: getSeriesData({
+          data: item.data,
+          getterFn: item.getterFn,
+          nameGetterFn: item.nameGetterFn,
+          defaultValue: item.defaultValue,
+        }),
       };
     });
   }, [getSeriesData, seriesData]);

@@ -39,7 +39,8 @@ export function TotalMessagesPerDayChart() {
     seriesData: [
       {
         data: data?.body.items,
-        getterFn: (item) => item.totalMessages,
+        getterFn: (item) => item.totalMessages || 0,
+        defaultValue: 0,
       },
     ],
     startDate,
@@ -61,17 +62,20 @@ export function TotalMessagesPerDayChart() {
           tooltip: {
             trigger: 'axis',
             formatter: (e) => {
-              const value = get(e, '0.data', null);
+              const value = get(e, '0.data.value', null);
+              const date = get(e, '0.axisValue', '');
 
               if (typeof value !== 'number') {
                 return makeFormattedTooltip({
                   label: t('tooltip.noData'),
+                  date,
                 });
               }
 
               return makeFormattedTooltip({
                 label: t('tooltip.withValue'),
                 value: formatNumber(value),
+                date,
               });
             },
           },

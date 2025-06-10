@@ -20,6 +20,17 @@
   padding: 0.25rem 0.5rem;
 }
 
+.tooltip-multi-format-container {
+  font-size: var(--font-size-xs);
+  padding: 0.25rem 0.5rem;
+
+}
+
+.tooltip-date {
+  font-size: var(--font-size-xs);
+  color: hsl(var(--text-lighter));
+}
+
 .tooltip-color {
   width: 8px;
   height: 8px;

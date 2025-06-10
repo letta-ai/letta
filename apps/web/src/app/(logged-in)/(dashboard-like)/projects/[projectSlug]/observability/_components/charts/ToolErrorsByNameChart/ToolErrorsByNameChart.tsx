@@ -126,18 +126,14 @@ export function ToolErrorsByNameChart(props: ToolErrorsByNameChartProps) {
 
           const date = get(e, '0.axisValue', '');
 
-          const options = e
-            .filter(
-              (param: any) => typeof param.data === 'number' && param.data > 0,
-            )
-            .map((param: any) => ({
-              color: param.color as string,
-              label: param.seriesName,
-              value: `${formatNumber(param.data, {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-              })} errors`,
-            }));
+          const options = e.map((param: any) => ({
+            color: param.color as string,
+            label: param.seriesName,
+            value: `${formatNumber(param.data, {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0,
+            })} errors`,
+          }));
 
           return makeMultiValueFormattedTooltip({
             date,

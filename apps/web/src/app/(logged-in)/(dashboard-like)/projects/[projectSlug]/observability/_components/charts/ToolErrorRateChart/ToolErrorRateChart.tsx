@@ -72,7 +72,7 @@ export function ToolErrorRateChart(props: ToolErrorRateChartProps) {
           tooltip: {
             trigger: 'axis',
             formatter: (e) => {
-              const value = get(e, '0.data', null);
+              const value = get(e, '0.data.value', null);
               const date = get(e, '0.axisValue', '') as string;
 
               if (typeof value !== 'number') {

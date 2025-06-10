@@ -78,7 +78,7 @@ export function TimeToFirstTokenPerDayChart(
           tooltip: {
             trigger: 'axis',
             formatter: (e) => {
-              const p50Value = get(e, '0.data', null);
+              const p50Value = get(e, '0.data.value', null);
               const p99Value = get(e, '1.data', null);
               const date = get(e, '0.axisValue', '') as string;
 

@@ -40,10 +40,12 @@ export function ActiveAgentChart() {
       {
         data: data?.body.newActiveAgents,
         getterFn: (item) => item.activeAgents,
+        defaultValue: 0,
       },
       {
         data: data?.body.returningActiveAgents,
         getterFn: (item) => item.activeAgents,
+        defaultValue: 0,
       },
     ],
   });
@@ -58,8 +60,9 @@ export function ActiveAgentChart() {
           tooltip: {
             trigger: 'axis',
             formatter: (e) => {
-              let returningAgents = get(e, '0.data', null);
-              let newAgents = get(e, '1.data', null);
+              let returningAgents = get(e, '0.data.value', 0);
+              let newAgents = get(e, '1.data.value', 0);
+              const date = get(e, '0.axisValue', '');
 
               if (typeof returningAgents === 'string') {
                 returningAgents = parseInt(returningAgents, 10);
@@ -78,6 +81,7 @@ export function ActiveAgentChart() {
               }
 
               return makeFormattedTooltip({
+                date,
                 label: t('tooltip', {
                   newAgents: formatNumber(newAgents || 0, {
                     minimumFractionDigits: 0,
