@@ -38,37 +38,6 @@ function Detail(props: DetailProps) {
   );
 }
 
-/*
- "totalMessages": {
-      "label": "Total messages"
-    },
-    "totalTokenCount": {
-      "label": "Total tokens"
-    },
-    "medianTokensPerMessage": {
-      "label": "Median tokens per message"
-    },
- "errorRate": {
-      "label": "Error rate",
-      "tooltip": "The error rate is the percentage of messages that resulted in an error. This includes tool errors and agent errors."
-    },
-    "p50TimeToFirstTokenMs": {
-      "label": "Median time to first token",
-      "tooltip": "The median time to first token is the median time it takes for an agent to generate the first token in response to a user message."
-    },
-    "p99TimeToFirstTokenMs": {
-      "label": "99th percentile time to first token",
-      "tooltip": "The 99th percentile time to first token is the time it takes for 99% of agents to generate the first token in response to a user message."
-    },
-    "p50ResponseTime": {
-      "label": "Median response time",
-      "tooltip": "The median response time is the median time it takes for an agent to respond to a user message."
-    },
-    "p99ResponseTime": {
-      "label": "99th percentile response time",
-      "tooltip": "The 99th percentile response time is the time it takes for 99% of agents to respond to a user message."
-    }
- */
 export function ObservabilityOverview() {
   const t = useTranslations(
     'pages/projects/observability/ObservabilityOverview',

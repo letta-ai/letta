@@ -12,23 +12,30 @@ import { get } from 'lodash-es';
 import { useObservabilitySeriesData } from '../../hooks/useObservabilitySeriesData/useObservabilitySeriesData';
 import { useObservabilityContext } from '../../hooks/useObservabilityContext/useObservabilityContext';
 
-export function TotalResponseTimeChart() {
-  const { id: projectId } = useCurrentProject();
+interface TimeToFirstTokenPerDayChartProps {
+  analysisLink?: string;
+}
+
+export function TimeToFirstTokenPerDayChart(
+  props: TimeToFirstTokenPerDayChartProps,
+) {
   const { startDate, endDate } = useObservabilityContext();
+  const { analysisLink } = props;
+  const { id: projectId } = useCurrentProject();
 
   const t = useTranslations(
-    'pages/projects/observability/TotalResponseTimeChart',
+    'pages/projects/observability/TimeToFirstTokenPerDayChart',
   );
 
-  const { data } = webApi.observability.getAverageResponseTime.useQuery({
-    queryKey: webApiQueryKeys.observability.getAverageResponseTime({
-      projectId: projectId, // Replace with actual project slug
+  const { data } = webApi.observability.getTimeToFirstTokenPerDay.useQuery({
+    queryKey: webApiQueryKeys.observability.getTimeToFirstTokenPerDay({
+      projectId,
       startDate,
       endDate,
     }),
     queryData: {
       query: {
-        projectId: projectId,
+        projectId,
         startDate,
         endDate,
       },
@@ -36,65 +43,67 @@ export function TotalResponseTimeChart() {
   });
 
   const tableOptions = useObservabilitySeriesData({
+    formatter: (value) => {
+      return `${value}ms`;
+    },
     seriesData: [
       {
         data: data?.body.items,
-        getterFn: (item) => item.p50ResponseTimeNs / 1_000_000_000, // Convert to seconds
+        getterFn: (item) => item.p50TtftMs,
       },
       {
         data: data?.body.items,
-        getterFn: (item) => item.p99ResponseTimeNs / 1_000_000_000, // Convert to seconds
+        getterFn: (item) => item.p99TtftMs,
       },
     ],
     startDate,
     endDate,
-    formatter: function (value) {
-      return `${value}s`;
-    },
   });
 
   const { formatSmallDuration } = useFormatters();
 
   return (
-    <DashboardChartWrapper title={t('title')} isLoading={!data}>
+    <DashboardChartWrapper
+      analysisLink={analysisLink}
+      title={t('title')}
+      isLoading={!data}
+    >
       <Chart
         options={{
           ...tableOptions,
-          grid: {
-            ...tableOptions.grid,
+          yAxis: {
+            ...tableOptions.yAxis,
+            startValue: 0,
           },
           tooltip: {
             trigger: 'axis',
             formatter: (e) => {
-              const p50Response = get(e, '0.data', null);
-              const p99Response = get(e, '1.data', null);
-              const date = get(e, '0.axisValue', '');
+              const p50Value = get(e, '0.data', null);
+              const p99Value = get(e, '1.data', null);
+              const date = get(e, '0.axisValue', '') as string;
+
               return makeMultiValueFormattedTooltip({
                 date,
                 options: [
                   {
                     color: get(e, '0.color', '#333') as string,
-                    label: t('p50ResponseTime.label'),
+                    label: t('p50Ttft.label'),
                     value:
-                      typeof p50Response === 'number'
-                        ? formatSmallDuration(p50Response * 1_000_000_000)
+                      typeof p50Value === 'number'
+                        ? formatSmallDuration(p50Value * 1_000_000) // Convert ms to ns
                         : '-',
                   },
                   {
                     color: get(e, '1.color', '#555') as string,
-                    label: t('p99ResponseTime.label'),
+                    label: t('p99Ttft.label'),
                     value:
-                      typeof p99Response === 'number'
-                        ? formatSmallDuration(p99Response * 1_000_000_000)
+                      typeof p99Value === 'number'
+                        ? formatSmallDuration(p99Value * 1_000_000) // Convert ms to ns
                         : '-',
                   },
                 ],
               });
             },
-          },
-          yAxis: {
-            ...tableOptions.yAxis,
-            startValue: 0,
           },
         }}
       />

@@ -79,10 +79,13 @@ const getToolErrorsMetricsContract = c.query({
 });
 
 const GetToolErrorMessagesItem = z.object({
-  createdAt: z.string(), // ISO date string
   traceId: z.string(),
   agentId: z.string(),
-  toolName: z.string(),
+  functionName: z.string(),
+  errorMessage: z.string(),
+  userMessage: z.string(),
+  agentMessage: z.string(),
+  timestamp: z.string(),
 });
 
 export type GetToolErrorMessagesItemType = z.infer<
@@ -91,13 +94,20 @@ export type GetToolErrorMessagesItemType = z.infer<
 
 const GetToolErrorMessagesResponseSchema = z.object({
   items: z.array(GetToolErrorMessagesItem),
-  hasNextPage: z.boolean(),
+  totalCount: z.number(),
 });
 
 const getToolErrorMessagesContract = c.query({
   path: '/observability/metrics/tool-errors/messages',
   method: 'GET',
-  query: DefaultPagedMetricsQuery,
+  query: applyRefine(
+    z.object({
+      projectId: z.string(),
+      startDate: z.string(),
+      endDate: z.string(),
+      functionName: z.string().optional(),
+    }),
+  ),
   responses: {
     200: GetToolErrorMessagesResponseSchema,
   },
@@ -234,7 +244,168 @@ const getApiErrorCountContract = c.query({
   },
 });
 
+// Tool Error Rate Per Day
+const ToolErrorRateItem = z.object({
+  date: z.string(),
+  errorCount: z.number(),
+  totalCount: z.number(),
+  errorRate: z.number(),
+});
+
+const ToolErrorRateResponseSchema = z.object({
+  items: z.array(ToolErrorRateItem),
+});
+
+const getToolErrorRatePerDayContract = c.query({
+  path: '/observability/metrics/tool-error-rate-per-day',
+  method: 'GET',
+  query: DefaultMetricsQuery,
+  responses: {
+    200: ToolErrorRateResponseSchema,
+  },
+});
+
+// Tool Error Rate By Name
+const ToolErrorRateByNameItem = z.object({
+  date: z.string(),
+  toolName: z.string(),
+  errorCount: z.number(),
+  totalCount: z.number(),
+  errorRate: z.number(),
+});
+
+const ToolErrorRateByNameResponseSchema = z.object({
+  items: z.array(ToolErrorRateByNameItem),
+});
+
+const getToolErrorRateByNameContract = c.query({
+  path: '/observability/metrics/tool-error-rate-by-name',
+  method: 'GET',
+  query: DefaultMetricsQuery,
+  responses: {
+    200: ToolErrorRateByNameResponseSchema,
+  },
+});
+
+// LLM Latency Per Day
+const LLMLatencyItem = z.object({
+  date: z.string(),
+  count: z.number(),
+  avgLatencyMs: z.number(),
+  p50LatencyMs: z.number(),
+  p99LatencyMs: z.number(),
+});
+
+const LLMLatencyResponseSchema = z.object({
+  items: z.array(LLMLatencyItem),
+});
+
+const getLLMLatencyPerDayContract = c.query({
+  path: '/observability/metrics/llm-latency-per-day',
+  method: 'GET',
+  query: DefaultMetricsQuery,
+  responses: {
+    200: LLMLatencyResponseSchema,
+  },
+});
+
+// Tool Latency Per Day
+const ToolLatencyItem = z.object({
+  date: z.string(),
+  count: z.number(),
+  avgLatencyMs: z.number(),
+  p50LatencyMs: z.number(),
+  p99LatencyMs: z.number(),
+});
+
+const ToolLatencyResponseSchema = z.object({
+  items: z.array(ToolLatencyItem),
+});
+
+const getToolLatencyPerDayContract = c.query({
+  path: '/observability/metrics/tool-latency-per-day',
+  method: 'GET',
+  query: DefaultMetricsQuery,
+  responses: {
+    200: ToolLatencyResponseSchema,
+  },
+});
+
+// Tool Latency By Name
+const ToolLatencyByNameItem = z.object({
+  date: z.string(),
+  toolName: z.string(),
+  count: z.number(),
+  avgLatencyMs: z.number(),
+  p50LatencyMs: z.number(),
+  p99LatencyMs: z.number(),
+});
+
+const ToolLatencyByNameResponseSchema = z.object({
+  items: z.array(ToolLatencyByNameItem),
+});
+
+const getToolLatencyByNameContract = c.query({
+  path: '/observability/metrics/tool-latency-by-name',
+  method: 'GET',
+  query: DefaultMetricsQuery,
+  responses: {
+    200: ToolLatencyByNameResponseSchema,
+  },
+});
+
+// Tool Usage By Frequency
+const ToolUsageByFrequencyItem = z.object({
+  date: z.string(),
+  toolName: z.string(),
+  usageCount: z.number(),
+});
+
+const ToolUsageByFrequencyResponseSchema = z.object({
+  items: z.array(ToolUsageByFrequencyItem),
+});
+
+const getToolUsageByFrequencyContract = c.query({
+  path: '/observability/metrics/tool-usage-by-frequency',
+  method: 'GET',
+  query: DefaultMetricsQuery,
+  responses: {
+    200: ToolUsageByFrequencyResponseSchema,
+  },
+});
+
+// Time to First Token Per Day
+const TimeToFirstTokenPerDayItem = z.object({
+  date: z.string(),
+  count: z.number(),
+  avgTtftMs: z.number(),
+  p50TtftMs: z.number(),
+  p99TtftMs: z.number(),
+});
+
+const TimeToFirstTokenPerDayResponseSchema = z.object({
+  items: z.array(TimeToFirstTokenPerDayItem),
+});
+
+const getTimeToFirstTokenPerDayContract = c.query({
+  path: '/observability/metrics/time-to-first-token-per-day',
+  method: 'GET',
+  query: DefaultMetricsQuery,
+  responses: {
+    200: TimeToFirstTokenPerDayResponseSchema,
+  },
+});
+
 export const observabilityContracts = c.router({
+  // New metrics endpoints
+  getToolErrorRatePerDay: getToolErrorRatePerDayContract,
+  getToolErrorRateByName: getToolErrorRateByNameContract,
+  getLLMLatencyPerDay: getLLMLatencyPerDayContract,
+  getToolLatencyPerDay: getToolLatencyPerDayContract,
+  getToolLatencyByName: getToolLatencyByNameContract,
+  getToolUsageByFrequency: getToolUsageByFrequencyContract,
+  getTimeToFirstTokenPerDay: getTimeToFirstTokenPerDayContract,
+  // Existing endpoints
   getTimeToFirstTokenMetrics: timeToFirstTokenMetricsContract,
   getAverageResponseTime: getAverageResponseTimeContract,
   getTotalMessagesPerDay: getTotalMessagesPerDayContract,
@@ -247,6 +418,43 @@ export const observabilityContracts = c.router({
 });
 
 export const observabilityQueryKeys = {
+  // New metrics query keys
+  getToolErrorRatePerDay: (query: z.infer<typeof DefaultMetricsQuery>) => [
+    'observability',
+    'getToolErrorRatePerDay',
+    query,
+  ],
+  getToolErrorRateByName: (query: z.infer<typeof DefaultMetricsQuery>) => [
+    'observability',
+    'getToolErrorRateByName',
+    query,
+  ],
+  getLLMLatencyPerDay: (query: z.infer<typeof DefaultMetricsQuery>) => [
+    'observability',
+    'getLLMLatencyPerDay',
+    query,
+  ],
+  getToolLatencyPerDay: (query: z.infer<typeof DefaultMetricsQuery>) => [
+    'observability',
+    'getToolLatencyPerDay',
+    query,
+  ],
+  getToolLatencyByName: (query: z.infer<typeof DefaultMetricsQuery>) => [
+    'observability',
+    'getToolLatencyByName',
+    query,
+  ],
+  getToolUsageByFrequency: (query: z.infer<typeof DefaultMetricsQuery>) => [
+    'observability',
+    'getToolUsageByFrequency',
+    query,
+  ],
+  getTimeToFirstTokenPerDay: (query: z.infer<typeof DefaultMetricsQuery>) => [
+    'observability',
+    'getTimeToFirstTokenPerDay',
+    query,
+  ],
+  // Existing query keys
   getTimeToFirstTokenMetrics: (query: z.infer<typeof DefaultMetricsQuery>) => [
     'observability',
     'getTimeToFirstTokenMetrics',

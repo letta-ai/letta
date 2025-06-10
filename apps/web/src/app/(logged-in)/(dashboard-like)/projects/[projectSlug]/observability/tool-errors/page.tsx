@@ -14,7 +14,6 @@ import { useMemo, useState } from 'react';
 import { useObservabilityContext } from '../_components/hooks/useObservabilityContext/useObservabilityContext';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useFormatters } from '@letta-cloud/utils-client';
 import { ObservabilityExplorerPageWrapper } from '../_components/ObservabilityExplorerPageWrapper/ObservabilityExplorerPageWrapper';
 import { ToolErrorsChart } from '../_components/charts/ToolErrorsChart/ToolErrorsChart';
 import { ViewMessageTrace } from '../_components/ViewMessageTrace/ViewMessageTrace';
@@ -47,7 +46,7 @@ function LatestMessagesTable() {
     enabled: !!limit,
   });
 
-  const { formatDateAndTime } = useFormatters();
+  // const { formatDateAndTime } = useFormatters();
 
   const columns: Array<ColumnDef<GetToolErrorMessagesItemType>> = useMemo(
     () => [
@@ -59,7 +58,7 @@ function LatestMessagesTable() {
           },
         },
         header: t('table.columns.createdAt'),
-        cell: ({ row }) => formatDateAndTime(row.original.createdAt),
+        // cell: ({ row }) => formatDateAndTime(row.original.createdAt),
       },
       {
         accessorKey: 'toolName',
@@ -115,7 +114,7 @@ function LatestMessagesTable() {
         },
       },
     ],
-    [formatDateAndTime, slug, t],
+    [slug, t],
   );
 
   return (
@@ -124,7 +123,7 @@ function LatestMessagesTable() {
       columns={columns}
       isLoading={!data}
       showPagination
-      hasNextPage={data?.body.hasNextPage}
+      // hasNextPage={data?.body.hasNextPage}
       autofitHeight
       offset={offset}
       onLimitChange={setLimit}

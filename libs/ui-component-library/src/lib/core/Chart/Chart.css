@@ -12,6 +12,10 @@
   display: flex;
   align-items: center;
   gap: 4px;
+
+}
+
+.tooltip-format-container-outer {
   font-size: var(--font-size-xs);
   padding: 0.25rem 0.5rem;
 }

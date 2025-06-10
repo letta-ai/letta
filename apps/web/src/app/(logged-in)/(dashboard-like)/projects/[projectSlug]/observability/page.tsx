@@ -12,6 +12,12 @@ import { ToolErrorsChart } from './_components/charts/ToolErrorsChart/ToolErrors
 import { ObservabilityOverview } from './_components/ObservabilityOverview/ObservabilityOverview';
 import { TotalResponseTimeChart } from './_components/charts/TotalResponseTimeChart/TotalResponseTimeChart';
 import { APIErrorsChart } from './_components/charts/APIErrorsChart/APIErrorsChart';
+import { ToolErrorRateChart } from './_components/charts/ToolErrorRateChart/ToolErrorRateChart';
+import { LLMLatencyChart } from './_components/charts/LLMLatencyChart/LLMLatencyChart';
+import { ToolLatencyChart } from './_components/charts/ToolLatencyChart/ToolLatencyChart';
+import { ToolUsageFrequencyChart } from './_components/charts/ToolUsageFrequencyChart/ToolUsageFrequencyChart';
+import { TimeToFirstTokenPerDayChart } from './_components/charts/TimeToFirstTokenPerDayChart/TimeToFirstTokenPerDayChart';
+import { ToolErrorsByNameChart } from './_components/charts/ToolErrorsByNameChart/ToolErrorsByNameChart';
 
 interface ChartRowProps {
   children: React.ReactNode;
@@ -29,29 +35,49 @@ function ProjectObservabilityPage() {
   return (
     <ObservabilityPageWrapper>
       <HStack gap={false} fullWidth fullHeight>
-        <VStack gap={false} fullHeight collapseWidth flex>
-          <ChartRow>
-            <TimeToFirstTokenChart
-              analysisLink={`/projects/${slug}/observability/time-to-first-token`}
-            />
-            <VR />
-            <TotalMessagesPerDayChart />
-          </ChartRow>
-          <HR />
-          <ChartRow>
-            <ToolErrorsChart
-              analysisLink={`/projects/${slug}/observability/tool-errors`}
-            />
-            <VR />
-            <ActiveAgentChart />
-          </ChartRow>
-          <HR />
-          <ChartRow>
-            <TotalResponseTimeChart />
-            <VR />
-            <APIErrorsChart />
-          </ChartRow>
-          <HR />
+        <VStack fullWidth fullHeight collapseWidth flex>
+          <VStack overflowY="auto" gap={false} collapseHeight fullHeight flex>
+            <ChartRow>
+              <ActiveAgentChart />
+
+              <VR />
+              <TotalMessagesPerDayChart />
+            </ChartRow>
+            <HR />
+            <ChartRow>
+              <ToolErrorsChart
+                analysisLink={`/projects/${slug}/observability/tool-errors`}
+              />
+              <VR />
+              <TotalResponseTimeChart />
+            </ChartRow>
+            <HR />
+            <ChartRow>
+              <ToolLatencyChart />
+              <VR />
+              <APIErrorsChart />
+            </ChartRow>
+            <HR />
+            <ChartRow>
+              <ToolErrorRateChart />
+              <VR />
+              <LLMLatencyChart />
+            </ChartRow>
+            <HR />
+            <ChartRow>
+              <ToolUsageFrequencyChart />
+              <VR />
+              <TimeToFirstTokenChart />
+            </ChartRow>
+            <HR />
+            <ChartRow>
+              <ToolErrorsByNameChart />
+
+              <VR />
+              <TimeToFirstTokenPerDayChart />
+            </ChartRow>
+            <HR />
+          </VStack>
         </VStack>
         <VR />
         <ObservabilityOverview />

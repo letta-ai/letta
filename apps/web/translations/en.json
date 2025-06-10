@@ -1569,6 +1569,57 @@
       }
     }
   },
+  "pages/projects/observability/ToolErrorRateChart": {
+    "title": "Tool error rate",
+    "tooltip": {
+      "withValue": "Error rate",
+      "noData": "No data available"
+    }
+  },
+  "pages/projects/observability/LLMLatencyChart": {
+    "title": "LLM latency",
+    "p50Latency": {
+      "label": "Median latency"
+    },
+    "p99Latency": {
+      "label": "99th percentile latency"
+    }
+  },
+  "pages/projects/observability/ToolLatencyChart": {
+    "title": "Tool latency",
+    "p50Latency": {
+      "label": "Median latency"
+    },
+    "p99Latency": {
+      "label": "99th percentile latency"
+    }
+  },
+  "pages/projects/observability/ToolUsageFrequencyChart": {
+    "title": "Tool usage frequency",
+    "tooltip": {
+      "withValue": "Tool usage",
+      "noData": "No tool usage data"
+    }
+  },
+  "pages/projects/observability/TimeToFirstTokenPerDayChart": {
+    "title": "Time to first token",
+    "p50Ttft": {
+      "label": "Median TTFT"
+    },
+    "p99Ttft": {
+      "label": "99th percentile TTFT"
+    }
+  },
+  "pages/projects/observability/ToolErrorsByNameChart": {
+    "title": "Tool errors by name",
+    "tooltip": {
+      "noData": "No data available",
+      "withValue": "Tool errors"
+    }
+  },
+  "pages/projects/observability/ToolLatencyByNameChart": {
+    "title": "Tool latency by name"
+  },
   "projects/(projectSlug)/layout": {
     "nav": {
       "return": "All projects",

@@ -10,6 +10,7 @@ interface BaseType {
 interface UseSeriesDataOptions<T extends BaseType> {
   startDate: string;
   endDate: string;
+  formatter?: (value: number) => string;
   seriesData: Array<{
     data?: T[] | null;
     defaultValue?: number;
@@ -20,7 +21,7 @@ interface UseSeriesDataOptions<T extends BaseType> {
 export function useObservabilitySeriesData<T extends BaseType>(
   options: UseSeriesDataOptions<T>,
 ): Partial<EChartsOption> {
-  const { startDate, endDate, seriesData } = options;
+  const { startDate, endDate, seriesData, formatter } = options;
 
   const { formatDate } = useFormatters();
 
@@ -164,6 +165,10 @@ export function useObservabilitySeriesData<T extends BaseType>(
           fontSize: styles?.getPropertyValue('--font-size-xs'),
           inside: false,
           formatter: function (value: number) {
+            if (formatter) {
+              return formatter(value);
+            }
+
             if (value > 1) {
               return formatShorthandNumber(value, 0);
             }
@@ -175,13 +180,13 @@ export function useObservabilitySeriesData<T extends BaseType>(
       grid: {
         borderColor: `hsl(${styles?.getPropertyValue('--border')})`,
         show: true,
-        left: 32,
+        left: 40,
         right: 0,
         bottom: 30,
         top: 15,
       },
       series,
     }),
-    [styles, xAxis, series, formatShorthandNumber],
+    [xAxis, styles, series, formatter, formatShorthandNumber],
   );
 }

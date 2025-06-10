@@ -19,6 +19,7 @@ interface ChartOptions {
 interface MakeFormattedTooltipOptions {
   value?: string;
   label: string;
+  date?: string;
   color?: string;
 }
 
@@ -30,13 +31,16 @@ const defaultOptions: EChartsOption = {
 
 interface MakeMultiValueFormattedTooltipOptions {
   options: MakeFormattedTooltipOptions[];
+  date?: string;
 }
 
 export function makeMultiValueFormattedTooltip(
   options: MakeMultiValueFormattedTooltipOptions,
 ): string {
-  const { options: tooltipOptions } = options;
+  const { options: tooltipOptions, date } = options;
   return `<div class="tooltip-multi-format-container">
+          ${date ? `<div class="tooltip-date">${date}</div>` : ''}
+
     ${tooltipOptions
       .map(
         (option) => `<div class="tooltip-format-container">
@@ -49,12 +53,19 @@ export function makeMultiValueFormattedTooltip(
 </div>`;
 }
 
+export function generateFormatter(formatFn: (value: string) => string) {
+  return {};
+}
+
 export function makeFormattedTooltip(options: MakeFormattedTooltipOptions) {
   const { value, label, color } = options;
-  return `<div class="tooltip-format-container">
-    ${typeof color === 'string' ? `<div class="tooltip-color" style="background-color: ${color}"></div>` : ''}
+  return `<div class="tooltip-format-container-outer">
+    ${options.date ? `<div class="tooltip-date">${options.date}</div>` : ''}
+    <div class="tooltip-format-container">
+     ${typeof color === 'string' ? `<div class="tooltip-color" style="background-color: ${color}"></div>` : ''}
     ${typeof value === 'string' ? `<div class="tooltip-value">${value}</div>` : ''}
         <div class="tooltip-label">${label}</div>
+</div>
 </div>`;
 }
 
