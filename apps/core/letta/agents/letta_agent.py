@@ -9,6 +9,7 @@ from openai.types.chat import ChatCompletionChunk
 from letta.agents.base_agent import BaseAgent
 from letta.agents.ephemeral_summary_agent import EphemeralSummaryAgent
 from letta.agents.helpers import _create_letta_response, _prepare_in_context_messages_no_persist_async, generate_step_id
+from letta.constants import DEFAULT_MAX_STEPS
 from letta.errors import ContextWindowExceededError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import AsyncTimer, get_utc_timestamp_ns, ns_to_ms
@@ -114,7 +115,7 @@ class LettaAgent(BaseAgent):
     async def step(
         self,
         input_messages: List[MessageCreate],
-        max_steps: int = 10,
+        max_steps: int = DEFAULT_MAX_STEPS,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: Optional[int] = None,
         include_return_message_types: Optional[List[MessageType]] = None,
@@ -139,7 +140,7 @@ class LettaAgent(BaseAgent):
     async def step_stream_no_tokens(
         self,
         input_messages: List[MessageCreate],
-        max_steps: int = 10,
+        max_steps: int = DEFAULT_MAX_STEPS,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: Optional[int] = None,
         include_return_message_types: Optional[List[MessageType]] = None,
@@ -163,7 +164,7 @@ class LettaAgent(BaseAgent):
         request_span = tracer.start_span("time_to_first_token", start_time=request_start_timestamp_ns)
         request_span.set_attributes({f"llm_config.{k}": v for k, v in agent_state.llm_config.model_dump().items() if v is not None})
 
-        for _ in range(max_steps):
+        for i in range(max_steps):
             step_id = generate_step_id()
             step_start = get_utc_timestamp_ns()
             agent_step_span = tracer.start_span("agent_step", start_time=step_start)
@@ -225,6 +226,7 @@ class LettaAgent(BaseAgent):
                 reasoning_content=reasoning,
                 initial_messages=initial_messages,
                 agent_step_span=agent_step_span,
+                is_final_step=(i == max_steps - 1),
             )
             self.response_messages.extend(persisted_messages)
             new_in_context_messages.extend(persisted_messages)
@@ -289,7 +291,7 @@ class LettaAgent(BaseAgent):
         self,
         agent_state: AgentState,
         input_messages: List[MessageCreate],
-        max_steps: int = 10,
+        max_steps: int = DEFAULT_MAX_STEPS,
         request_start_timestamp_ns: Optional[int] = None,
     ) -> Tuple[List[Message], List[Message], LettaUsageStatistics]:
         """
@@ -315,7 +317,7 @@ class LettaAgent(BaseAgent):
         request_span.set_attributes({f"llm_config.{k}": v for k, v in agent_state.llm_config.model_dump().items() if v is not None})
 
         usage = LettaUsageStatistics()
-        for _ in range(max_steps):
+        for i in range(max_steps):
             step_id = generate_step_id()
             step_start = get_utc_timestamp_ns()
             agent_step_span = tracer.start_span("agent_step", start_time=step_start)
@@ -368,6 +370,7 @@ class LettaAgent(BaseAgent):
                 step_id=step_id,
                 initial_messages=initial_messages,
                 agent_step_span=agent_step_span,
+                is_final_step=(i == max_steps - 1),
             )
             self.response_messages.extend(persisted_messages)
             new_in_context_messages.extend(persisted_messages)
@@ -417,7 +420,7 @@ class LettaAgent(BaseAgent):
     async def step_stream(
         self,
         input_messages: List[MessageCreate],
-        max_steps: int = 10,
+        max_steps: int = DEFAULT_MAX_STEPS,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: Optional[int] = None,
         include_return_message_types: Optional[List[MessageType]] = None,
@@ -451,7 +454,7 @@ class LettaAgent(BaseAgent):
             request_span.set_attributes({f"llm_config.{k}": v for k, v in agent_state.llm_config.model_dump().items() if v is not None})
 
         provider_request_start_timestamp_ns = None
-        for _ in range(max_steps):
+        for i in range(max_steps):
             step_id = generate_step_id()
             step_start = get_utc_timestamp_ns()
             agent_step_span = tracer.start_span("agent_step", start_time=step_start)
@@ -532,6 +535,7 @@ class LettaAgent(BaseAgent):
                 step_id=step_id,
                 initial_messages=initial_messages,
                 agent_step_span=agent_step_span,
+                is_final_step=(i == max_steps - 1),
             )
             self.response_messages.extend(persisted_messages)
             new_in_context_messages.extend(persisted_messages)
@@ -838,6 +842,7 @@ class LettaAgent(BaseAgent):
         step_id: str | None = None,
         initial_messages: Optional[List[Message]] = None,
         agent_step_span: Optional["Span"] = None,
+        is_final_step: Optional[bool] = None,
     ) -> Tuple[List[Message], bool]:
         """
         Now that streaming is done, handle the final AI response.
@@ -858,17 +863,21 @@ class LettaAgent(BaseAgent):
         except AssertionError:
             tool_args = json.loads(tool_args)
 
-        # Get request heartbeats and coerce to bool
-        request_heartbeat = tool_args.pop("request_heartbeat", False)
-        # Pre-emptively pop out inner_thoughts
-        tool_args.pop(INNER_THOUGHTS_KWARG, "")
+        if is_final_step:
+            logger.info("Agent has reached max steps.")
+            request_heartbeat = False
+        else:
+            # Get request heartbeats and coerce to bool
+            request_heartbeat = tool_args.pop("request_heartbeat", False)
+            # Pre-emptively pop out inner_thoughts
+            tool_args.pop(INNER_THOUGHTS_KWARG, "")
 
-        # So this is necessary, because sometimes non-structured outputs makes mistakes
-        if not isinstance(request_heartbeat, bool):
-            if isinstance(request_heartbeat, str):
-                request_heartbeat = request_heartbeat.lower() == "true"
-            else:
-                request_heartbeat = bool(request_heartbeat)
+            # So this is necessary, because sometimes non-structured outputs makes mistakes
+            if not isinstance(request_heartbeat, bool):
+                if isinstance(request_heartbeat, str):
+                    request_heartbeat = request_heartbeat.lower() == "true"
+                else:
+                    request_heartbeat = bool(request_heartbeat)
 
         tool_call_id = tool_call.id or f"call_{uuid.uuid4().hex[:8]}"
 

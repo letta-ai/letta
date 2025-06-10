@@ -3,6 +3,7 @@ from typing import Any, AsyncGenerator, List, Optional, Union
 
 import openai
 
+from letta.constants import DEFAULT_MAX_STEPS
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
@@ -43,7 +44,7 @@ class BaseAgent(ABC):
         self.logger = get_logger(agent_id)
 
     @abstractmethod
-    async def step(self, input_messages: List[MessageCreate], max_steps: int = 10) -> LettaResponse:
+    async def step(self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS) -> LettaResponse:
         """
         Main execution loop for the agent.
         """
@@ -51,7 +52,7 @@ class BaseAgent(ABC):
 
     @abstractmethod
     async def step_stream(
-        self, input_messages: List[MessageCreate], max_steps: int = 10
+        self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS
     ) -> AsyncGenerator[Union[LettaMessage, LegacyLettaMessage, MessageStreamStatus], None]:
         """
         Main streaming execution loop for the agent.

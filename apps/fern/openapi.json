@@ -13651,7 +13651,7 @@
             "type": "integer",
             "title": "Max Steps",
             "description": "Maximum number of steps the agent should take to process the request.",
-            "default": 10
+            "default": 50
           },
           "use_assistant_message": {
             "type": "boolean",
@@ -13765,7 +13765,7 @@
             "type": "integer",
             "title": "Max Steps",
             "description": "Maximum number of steps the agent should take to process the request.",
-            "default": 10
+            "default": 50
           },
           "use_assistant_message": {
             "type": "boolean",
@@ -13863,7 +13863,7 @@
             "type": "integer",
             "title": "Max Steps",
             "description": "Maximum number of steps the agent should take to process the request.",
-            "default": 10
+            "default": 50
           },
           "use_assistant_message": {
             "type": "boolean",

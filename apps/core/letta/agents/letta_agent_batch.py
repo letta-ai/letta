@@ -8,6 +8,7 @@ from anthropic.types.beta.messages import BetaMessageBatchCanceledResult, BetaMe
 
 from letta.agents.base_agent import BaseAgent
 from letta.agents.helpers import _prepare_in_context_messages_async
+from letta.constants import DEFAULT_MAX_STEPS
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.tool_execution_helper import enable_strict_mode
@@ -110,7 +111,7 @@ class LettaAgentBatch(BaseAgent):
         sandbox_config_manager: SandboxConfigManager,
         job_manager: JobManager,
         actor: User,
-        max_steps: int = 10,
+        max_steps: int = DEFAULT_MAX_STEPS,
     ):
         self.message_manager = message_manager
         self.agent_manager = agent_manager
@@ -619,10 +620,10 @@ class LettaAgentBatch(BaseAgent):
         return in_context_messages
 
     # Not used in batch.
-    async def step(self, input_messages: List[MessageCreate], max_steps: int = 10) -> LettaResponse:
+    async def step(self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS) -> LettaResponse:
         raise NotImplementedError
 
     async def step_stream(
-        self, input_messages: List[MessageCreate], max_steps: int = 10
+        self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS
     ) -> AsyncGenerator[Union[LettaMessage, LegacyLettaMessage, MessageStreamStatus], None]:
         raise NotImplementedError

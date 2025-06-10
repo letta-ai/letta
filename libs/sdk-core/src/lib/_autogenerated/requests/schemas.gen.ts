@@ -6022,7 +6022,7 @@ export const $LettaBatchRequest = {
       title: 'Max Steps',
       description:
         'Maximum number of steps the agent should take to process the request.',
-      default: 10,
+      default: 50,
     },
     use_assistant_message: {
       type: 'boolean',
@@ -6144,7 +6144,7 @@ export const $LettaRequest = {
       title: 'Max Steps',
       description:
         'Maximum number of steps the agent should take to process the request.',
-      default: 10,
+      default: 50,
     },
     use_assistant_message: {
       type: 'boolean',
@@ -6256,7 +6256,7 @@ export const $LettaStreamingRequest = {
       title: 'Max Steps',
       description:
         'Maximum number of steps the agent should take to process the request.',
-      default: 10,
+      default: 50,
     },
     use_assistant_message: {
       type: 'boolean',
