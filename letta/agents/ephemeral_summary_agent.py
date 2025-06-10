@@ -4,6 +4,7 @@ from typing import AsyncGenerator, Dict, List
 from openai import AsyncOpenAI
 
 from letta.agents.base_agent import BaseAgent
+from letta.constants import DEFAULT_MAX_STEPS
 from letta.orm.errors import NoResultFound
 from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.enums import MessageRole
@@ -42,7 +43,7 @@ class EphemeralSummaryAgent(BaseAgent):
         self.target_block_label = target_block_label
         self.block_manager = block_manager
 
-    async def step(self, input_messages: List[MessageCreate], max_steps: int = 10) -> List[Message]:
+    async def step(self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS) -> List[Message]:
         if len(input_messages) > 1:
             raise ValueError("Can only invoke EphemeralSummaryAgent with a single summarization message.")
 
@@ -100,5 +101,5 @@ class EphemeralSummaryAgent(BaseAgent):
         )
         return openai_request
 
-    async def step_stream(self, input_messages: List[MessageCreate], max_steps: int = 10) -> AsyncGenerator[str, None]:
+    async def step_stream(self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS) -> AsyncGenerator[str, None]:
         raise NotImplementedError("EphemeralAgent does not support async step.")

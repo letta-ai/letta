@@ -4,6 +4,7 @@ from typing import AsyncGenerator, List, Optional
 
 from letta.agents.base_agent import BaseAgent
 from letta.agents.letta_agent import LettaAgent
+from letta.constants import DEFAULT_MAX_STEPS
 from letta.groups.helpers import stringify_message
 from letta.otel.tracing import trace_method
 from letta.schemas.enums import JobStatus
@@ -61,7 +62,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
     async def step(
         self,
         input_messages: List[MessageCreate],
-        max_steps: int = 10,
+        max_steps: int = DEFAULT_MAX_STEPS,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: Optional[int] = None,
         include_return_message_types: Optional[List[MessageType]] = None,
@@ -131,7 +132,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
     async def step_stream_no_tokens(
         self,
         input_messages: List[MessageCreate],
-        max_steps: int = 10,
+        max_steps: int = DEFAULT_MAX_STEPS,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: Optional[int] = None,
         include_return_message_types: Optional[List[MessageType]] = None,
@@ -149,7 +150,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
     async def step_stream(
         self,
         input_messages: List[MessageCreate],
-        max_steps: int = 10,
+        max_steps: int = DEFAULT_MAX_STEPS,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: Optional[int] = None,
         include_return_message_types: Optional[List[MessageType]] = None,

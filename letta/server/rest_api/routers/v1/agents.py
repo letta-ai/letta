@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
-from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
@@ -843,7 +843,7 @@ async def process_message_background(
     use_assistant_message: bool,
     assistant_message_tool_name: str,
     assistant_message_tool_kwarg: str,
-    max_steps: int = 10,
+    max_steps: int = DEFAULT_MAX_STEPS,
     include_return_message_types: Optional[List[MessageType]] = None,
 ) -> None:
     """Background task to process the message and update job status."""
