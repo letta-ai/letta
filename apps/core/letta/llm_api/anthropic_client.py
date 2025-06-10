@@ -289,9 +289,6 @@ class AnthropicClient(LLMClientBase):
                 tools=anthropic_tools or [],
             )
         except:
-            import ipdb
-
-            ipdb.set_trace()
             raise
 
         token_count = result.input_tokens
