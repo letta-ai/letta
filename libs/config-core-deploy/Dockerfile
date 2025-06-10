@@ -43,6 +43,8 @@ FROM python:3.12.2-slim-bookworm AS runtime
 ENV VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH"
 
+RUN pip install poetry==2.1.3
+
 # Copy OpenTelemetry Collector from collector stage
 COPY --from=collector /otelcol-contrib /usr/local/bin/otelcol-contrib
 RUN mkdir -p /etc/otel
