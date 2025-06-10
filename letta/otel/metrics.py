@@ -1,8 +1,8 @@
 import re
 import time
-from typing import List, Optional
+from typing import List
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI, Request
 from opentelemetry import metrics
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.metrics import NoOpMeter
