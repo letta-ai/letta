@@ -31,6 +31,9 @@ LETTA_TOOL_MODULE_NAMES = [
     LETTA_FILES_TOOL_MODULE_NAME,
 ]
 
+DEFAULT_ORG_ID = "org-00000000-0000-4000-8000-000000000000"
+DEFAULT_ORG_NAME = "default_org"
+
 
 # String in the error message for when the context window is too large
 # Example full message:

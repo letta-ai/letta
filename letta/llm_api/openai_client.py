@@ -217,12 +217,14 @@ class OpenAIClient(LLMClientBase):
             messages=fill_image_content_in_messages(openai_message_list, messages),
             tools=[OpenAITool(type="function", function=f) for f in tools] if tools else None,
             tool_choice=tool_choice,
-            parallel_tool_calls=False if tools else None,  # Forcibly disable parallel tool calling
             user=str(),
             max_completion_tokens=llm_config.max_tokens,
             # NOTE: the reasoners that don't support temperature require 1.0, not None
             temperature=llm_config.temperature if supports_temperature_param(model) else 1.0,
         )
+        if tools and supports_parallel_tool_calling(model):
+            data.parallel_tool_calls = False
+
         # always set user id for openai requests
         if self.actor:
             data.user = self.actor.id
