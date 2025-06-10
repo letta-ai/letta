@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from async_lru import alru_cache
 from sqlalchemy import select, text
 
 from letta.orm.errors import NoResultFound
@@ -19,6 +20,27 @@ class UserManager:
     DEFAULT_USER_NAME = "default_user"
     DEFAULT_USER_ID = "user-00000000-0000-4000-8000-000000000000"
 
+    @alru_cache(maxsize=16384)  # =16384 cached actor IDs per process
+    async def _cached_actor_by_id(self, actor_id: str) -> "PydanticUser":
+        """LOW-level fetch that the cache wraps around."""
+        return await self.get_actor_by_id_async(actor_id)
+
+    @trace_method
+    async def _get_actor_cached(self, actor_id: str) -> "PydanticUser":
+        """Public helper that returns cached actor."""
+        return await self._cached_actor_by_id(actor_id)
+
+    @trace_method
+    def _invalidate_actor_cache(self, actor_id: str | None = None) -> None:
+        """Call whenever you create/update/delete an actor."""
+        if actor_id:
+            try:
+                self._cached_actor_by_id.cache_invalidate(actor_id)
+            except KeyError:
+                pass
+        else:
+            self._cached_actor_by_id.cache_clear()
+
     @enforce_types
     @trace_method
     def create_default_user(self, org_id: str = OrganizationManager.DEFAULT_ORG_ID) -> PydanticUser:
@@ -37,6 +59,7 @@ class UserManager:
                 # If it doesn't exist, make it
                 user = UserModel(id=self.DEFAULT_USER_ID, name=self.DEFAULT_USER_NAME, organization_id=org_id)
                 user.create(session)
+                self._invalidate_actor_cache(self.DEFAULT_USER_ID)
 
             return user.to_pydantic()
 
@@ -58,6 +81,7 @@ class UserManager:
                 # If it doesn't exist, make it
                 actor = UserModel(id=self.DEFAULT_USER_ID, name=self.DEFAULT_USER_NAME, organization_id=org_id)
                 await actor.create_async(session)
+                self._invalidate_actor_cache(self.DEFAULT_USER_ID)
 
             return actor.to_pydantic()
 
@@ -68,6 +92,7 @@ class UserManager:
         with db_registry.session() as session:
             new_user = UserModel(**pydantic_user.model_dump(to_orm=True))
             new_user.create(session)
+            self._invalidate_actor_cache(new_user.id)
             return new_user.to_pydantic()
 
     @enforce_types
@@ -77,6 +102,7 @@ class UserManager:
         async with db_registry.async_session() as session:
             new_user = UserModel(**pydantic_user.model_dump(to_orm=True))
             await new_user.create_async(session)
+            self._invalidate_actor_cache(new_user.id)
             return new_user.to_pydantic()
 
     @enforce_types
@@ -94,6 +120,7 @@ class UserManager:
 
             # Commit the updated user
             existing_user.update(session)
+            self._invalidate_actor_cache(user_update.id)
             return existing_user.to_pydantic()
 
     @enforce_types
@@ -111,6 +138,7 @@ class UserManager:
 
             # Commit the updated user
             await existing_user.update_async(session)
+            self._invalidate_actor_cache(user_update.id)
             return existing_user.to_pydantic()
 
     @enforce_types
@@ -121,6 +149,7 @@ class UserManager:
             # Delete from user table
             user = UserModel.read(db_session=session, identifier=user_id)
             user.hard_delete(session)
+            self._invalidate_actor_cache(user_id)
 
             session.commit()
 
@@ -132,6 +161,7 @@ class UserManager:
             # Delete from user table
             user = await UserModel.read_async(db_session=session, identifier=user_id)
             await user.hard_delete_async(session)
+            self._invalidate_actor_cache(user_id)
 
     @enforce_types
     @trace_method
@@ -188,19 +218,19 @@ class UserManager:
         try:
             return await self.get_actor_by_id_async(self.DEFAULT_USER_ID)
         except NoResultFound:
-            return await self.create_default_actor_async(org_id=self.DEFAULT_ORG_ID)
+            return await self.create_default_actor_async(org_id=OrganizationManager.DEFAULT_ORG_ID)
 
     @enforce_types
     @trace_method
     async def get_actor_or_default_async(self, actor_id: Optional[str] = None):
         """Fetch the user or default user asynchronously."""
-        if not actor_id:
-            return await self.get_default_actor_async()
+        target_id = actor_id or self.DEFAULT_USER_ID
 
         try:
-            return await self.get_actor_by_id_async(actor_id=actor_id)
+            return await self._get_actor_cached(target_id)
         except NoResultFound:
-            return await self.get_default_actor_async()
+            user = await self.create_default_actor_async(org_id=OrganizationManager.DEFAULT_ORG_ID)
+            return user
 
     @enforce_types
     @trace_method
