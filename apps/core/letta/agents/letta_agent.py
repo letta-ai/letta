@@ -802,8 +802,7 @@ class LettaAgent(BaseAgent):
         ]
 
         # Mirror the sync agent loop: get allowed tools or allow all if none are allowed
-        if self.last_function_response is None:
-            self.last_function_response = self._load_last_function_response(in_context_messages)
+        self.last_function_response = self._load_last_function_response(in_context_messages)
         valid_tool_names = tool_rules_solver.get_allowed_tool_names(
             available_tools=set([t.name for t in tools]),
             last_function_response=self.last_function_response,
