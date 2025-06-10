@@ -229,6 +229,7 @@ def compile_system_message(
     template_format: Literal["f-string", "mustache", "jinja2"] = "f-string",
     previous_message_count: int = 0,
     archival_memory_size: int = 0,
+    tool_rules_solver: Optional[ToolRulesSolver] = None,
 ) -> str:
     """Prepare the final/full system message that will be fed into the LLM API
 
@@ -237,6 +238,11 @@ def compile_system_message(
     The following are reserved variables:
       - CORE_MEMORY: the in-context memory of the LLM
     """
+    # Add tool rule constraints if available
+    if tool_rules_solver is not None:
+        tool_constraint_block = tool_rules_solver.compile_tool_rule_prompts()
+        if tool_constraint_block:  # There may not be any depending on if there are tool rules attached
+            in_context_memory.blocks.append(tool_constraint_block)
 
     if user_defined_variables is not None:
         # TODO eventually support the user defining their own variables to inject

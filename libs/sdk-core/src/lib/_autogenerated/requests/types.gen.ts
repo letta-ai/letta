@@ -737,6 +737,10 @@ export type ChildToolRule = {
   tool_name: string;
   type?: 'constrain_child_tools';
   /**
+   * Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.
+   */
+  prompt_template?: string | null;
+  /**
    * The children tools that can be invoked.
    */
   children: Array<string>;
@@ -950,6 +954,10 @@ export type ConditionalToolRule = {
   tool_name: string;
   type?: 'conditional';
   /**
+   * Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.
+   */
+  prompt_template?: string | null;
+  /**
    * The default child tool to be called. If None, any tool can be called.
    */
   default_child?: string | null;
@@ -1058,6 +1066,10 @@ export type ContinueToolRule = {
    */
   tool_name: string;
   type?: 'continue_loop';
+  /**
+   * Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.
+   */
+  prompt_template?: string | null;
 };
 
 export type CoreMemoryBlockSchema = {
@@ -1831,6 +1843,10 @@ export type InitToolRule = {
    */
   tool_name: string;
   type?: 'run_first';
+  /**
+   * Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.
+   */
+  prompt_template?: string | null;
 };
 
 export type InputAudio = {
@@ -2316,6 +2332,10 @@ export type MaxCountPerStepToolRule = {
   tool_name: string;
   type?: 'max_count_per_step';
   /**
+   * Optional Jinja2 template for generating agent prompt about this tool rule.
+   */
+  prompt_template?: string | null;
+  /**
    * The max limit for the total number of times this tool can be invoked in a single step.
    */
   max_count_limit: number;
@@ -2585,6 +2605,10 @@ export type ParentToolRule = {
    */
   tool_name: string;
   type?: 'parent_last_tool';
+  /**
+   * Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.
+   */
+  prompt_template?: string | null;
   /**
    * The children tools that can be invoked.
    */
@@ -3456,6 +3480,10 @@ export type TerminalToolRule = {
    */
   tool_name: string;
   type?: 'exit_loop';
+  /**
+   * Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.
+   */
+  prompt_template?: string | null;
 };
 
 export type TextContent = {

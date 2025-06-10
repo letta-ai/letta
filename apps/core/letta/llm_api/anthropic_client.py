@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from typing import Dict, List, Optional, Union
 
@@ -271,6 +272,8 @@ class AnthropicClient(LLMClientBase):
         return data
 
     async def count_tokens(self, messages: List[dict] = None, model: str = None, tools: List[OpenAITool] = None) -> int:
+        logging.getLogger("httpx").setLevel(logging.WARNING)
+
         client = anthropic.AsyncAnthropic()
         if messages and len(messages) == 0:
             messages = None

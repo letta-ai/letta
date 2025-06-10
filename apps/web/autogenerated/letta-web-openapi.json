@@ -285,6 +285,36 @@
                                             {}
                                           ]
                                         },
+                                        "prompt_template": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
+                                        },
                                         "children": {
                                           "type": "array",
                                           "items": {
@@ -307,6 +337,36 @@
                                             },
                                             {}
                                           ]
+                                        },
+                                        "prompt_template": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         }
                                       },
                                       "required": ["tool_name"]
@@ -324,6 +384,36 @@
                                             },
                                             {}
                                           ]
+                                        },
+                                        "prompt_template": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         }
                                       },
                                       "required": ["tool_name"]
@@ -341,6 +431,36 @@
                                             },
                                             {}
                                           ]
+                                        },
+                                        "prompt_template": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         },
                                         "default_child": {
                                           "oneOf": [
@@ -399,6 +519,36 @@
                                             },
                                             {}
                                           ]
+                                        },
+                                        "prompt_template": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         }
                                       },
                                       "required": ["tool_name"]
@@ -416,6 +566,36 @@
                                             },
                                             {}
                                           ]
+                                        },
+                                        "prompt_template": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         },
                                         "max_count_limit": {
                                           "type": "number"
@@ -439,6 +619,36 @@
                                             },
                                             {}
                                           ]
+                                        },
+                                        "prompt_template": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         },
                                         "children": {
                                           "type": "array",
@@ -479,6 +689,36 @@
                                                   {}
                                                 ]
                                               },
+                                              "prompt_template": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
+                                              },
                                               "children": {
                                                 "type": "array",
                                                 "items": {
@@ -504,6 +744,36 @@
                                                   },
                                                   {}
                                                 ]
+                                              },
+                                              "prompt_template": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
                                               }
                                             },
                                             "required": ["tool_name"]
@@ -521,6 +791,36 @@
                                                   },
                                                   {}
                                                 ]
+                                              },
+                                              "prompt_template": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
                                               }
                                             },
                                             "required": ["tool_name"]
@@ -538,6 +838,36 @@
                                                   },
                                                   {}
                                                 ]
+                                              },
+                                              "prompt_template": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
                                               },
                                               "default_child": {
                                                 "oneOf": [
@@ -596,6 +926,36 @@
                                                   },
                                                   {}
                                                 ]
+                                              },
+                                              "prompt_template": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
                                               }
                                             },
                                             "required": ["tool_name"]
@@ -613,6 +973,36 @@
                                                   },
                                                   {}
                                                 ]
+                                              },
+                                              "prompt_template": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
                                               },
                                               "max_count_limit": {
                                                 "type": "number"
@@ -636,6 +1026,36 @@
                                                   },
                                                   {}
                                                 ]
+                                              },
+                                              "prompt_template": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
                                               },
                                               "children": {
                                                 "type": "array",
@@ -4451,6 +4871,36 @@
                                             {}
                                           ]
                                         },
+                                        "prompt_template": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
+                                        },
                                         "children": {
                                           "type": "array",
                                           "items": {
@@ -4473,6 +4923,36 @@
                                             },
                                             {}
                                           ]
+                                        },
+                                        "prompt_template": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         }
                                       },
                                       "required": ["tool_name"]
@@ -4490,6 +4970,36 @@
                                             },
                                             {}
                                           ]
+                                        },
+                                        "prompt_template": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         }
                                       },
                                       "required": ["tool_name"]
@@ -4507,6 +5017,36 @@
                                             },
                                             {}
                                           ]
+                                        },
+                                        "prompt_template": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         },
                                         "default_child": {
                                           "oneOf": [
@@ -4565,6 +5105,36 @@
                                             },
                                             {}
                                           ]
+                                        },
+                                        "prompt_template": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         }
                                       },
                                       "required": ["tool_name"]
@@ -4582,6 +5152,36 @@
                                             },
                                             {}
                                           ]
+                                        },
+                                        "prompt_template": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         },
                                         "max_count_limit": {
                                           "type": "number"
@@ -4605,6 +5205,36 @@
                                             },
                                             {}
                                           ]
+                                        },
+                                        "prompt_template": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         },
                                         "children": {
                                           "type": "array",
@@ -4645,6 +5275,36 @@
                                                   {}
                                                 ]
                                               },
+                                              "prompt_template": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
+                                              },
                                               "children": {
                                                 "type": "array",
                                                 "items": {
@@ -4670,6 +5330,36 @@
                                                   },
                                                   {}
                                                 ]
+                                              },
+                                              "prompt_template": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
                                               }
                                             },
                                             "required": ["tool_name"]
@@ -4687,6 +5377,36 @@
                                                   },
                                                   {}
                                                 ]
+                                              },
+                                              "prompt_template": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
                                               }
                                             },
                                             "required": ["tool_name"]
@@ -4704,6 +5424,36 @@
                                                   },
                                                   {}
                                                 ]
+                                              },
+                                              "prompt_template": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
                                               },
                                               "default_child": {
                                                 "oneOf": [
@@ -4762,6 +5512,36 @@
                                                   },
                                                   {}
                                                 ]
+                                              },
+                                              "prompt_template": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
                                               }
                                             },
                                             "required": ["tool_name"]
@@ -4779,6 +5559,36 @@
                                                   },
                                                   {}
                                                 ]
+                                              },
+                                              "prompt_template": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
                                               },
                                               "max_count_limit": {
                                                 "type": "number"
@@ -4802,6 +5612,36 @@
                                                   },
                                                   {}
                                                 ]
+                                              },
+                                              "prompt_template": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
                                               },
                                               "children": {
                                                 "type": "array",

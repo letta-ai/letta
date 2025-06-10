@@ -1,19 +1,42 @@
 import json
+import logging
 from typing import Annotated, Any, Dict, List, Literal, Optional, Set, Union
 
+from jinja2 import Template
 from pydantic import Field
 
 from letta.schemas.enums import ToolRuleType
 from letta.schemas.letta_base import LettaBase
+
+logger = logging.getLogger(__name__)
 
 
 class BaseToolRule(LettaBase):
     __id_prefix__ = "tool_rule"
     tool_name: str = Field(..., description="The name of the tool. Must exist in the database for the user's organization.")
     type: ToolRuleType = Field(..., description="The type of the message.")
+    prompt_template: Optional[str] = Field(
+        None,
+        description="Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
+    )
 
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> set[str]:
         raise NotImplementedError
+
+    def render_prompt(self) -> Optional[str]:
+        """Render the prompt template with this rule's attributes."""
+        if not self.prompt_template:
+            return None
+
+        try:
+            template = Template(self.prompt_template)
+            return template.render(**self.model_dump())
+        except Exception as e:
+            logger.warning(
+                f"Failed to render prompt template for tool rule '{self.tool_name}' (type: {self.type}). "
+                f"Template: '{self.prompt_template}'. Error: {e}"
+            )
+            return None
 
 
 class ChildToolRule(BaseToolRule):
@@ -128,6 +151,10 @@ class MaxCountPerStepToolRule(BaseToolRule):
 
     type: Literal[ToolRuleType.max_count_per_step] = ToolRuleType.max_count_per_step
     max_count_limit: int = Field(..., description="The max limit for the total number of times this tool can be invoked in a single step.")
+    prompt_template: Optional[str] = Field(
+        default="<tool_constraint>{{ tool_name }}: max {{ max_count_limit }} use(s) per turn</tool_constraint>",
+        description="Optional Jinja2 template for generating agent prompt about this tool rule.",
+    )
 
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
         """Restricts the tool if it has been called max_count_limit times in the current step."""

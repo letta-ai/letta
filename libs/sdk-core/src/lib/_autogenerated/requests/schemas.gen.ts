@@ -2250,6 +2250,19 @@ export const $ChildToolRule = {
       title: 'Type',
       default: 'constrain_child_tools',
     },
+    prompt_template: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Prompt Template',
+      description:
+        "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
+    },
     children: {
       items: {
         type: 'string',
@@ -3096,6 +3109,19 @@ export const $ConditionalToolRule = {
       title: 'Type',
       default: 'conditional',
     },
+    prompt_template: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Prompt Template',
+      description:
+        "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
+    },
     default_child: {
       anyOf: [
         {
@@ -3324,6 +3350,19 @@ export const $ContinueToolRule = {
       const: 'continue_loop',
       title: 'Type',
       default: 'continue_loop',
+    },
+    prompt_template: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Prompt Template',
+      description:
+        "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
     },
   },
   additionalProperties: false,
@@ -5537,6 +5576,19 @@ export const $InitToolRule = {
       title: 'Type',
       default: 'run_first',
     },
+    prompt_template: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Prompt Template',
+      description:
+        "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -6491,6 +6543,21 @@ export const $MaxCountPerStepToolRule = {
       title: 'Type',
       default: 'max_count_per_step',
     },
+    prompt_template: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Prompt Template',
+      description:
+        'Optional Jinja2 template for generating agent prompt about this tool rule.',
+      default:
+        '<tool_constraint>{{ tool_name }}: max {{ max_count_limit }} use(s) per turn</tool_constraint>',
+    },
     max_count_limit: {
       type: 'integer',
       title: 'Max Count Limit',
@@ -7244,6 +7311,19 @@ export const $ParentToolRule = {
       const: 'parent_last_tool',
       title: 'Type',
       default: 'parent_last_tool',
+    },
+    prompt_template: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Prompt Template',
+      description:
+        "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
     },
     children: {
       items: {
@@ -9454,6 +9534,19 @@ export const $TerminalToolRule = {
       const: 'exit_loop',
       title: 'Type',
       default: 'exit_loop',
+    },
+    prompt_template: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Prompt Template',
+      description:
+        "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
     },
   },
   additionalProperties: false,

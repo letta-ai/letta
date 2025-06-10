@@ -784,7 +784,11 @@ class LettaAgent(BaseAgent):
             ),
         )
         in_context_messages = await self._rebuild_memory_async(
-            in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
+            in_context_messages,
+            agent_state,
+            num_messages=self.num_messages,
+            num_archival_memories=self.num_archival_memories,
+            tool_rules_solver=tool_rules_solver,
         )
 
         tools = [

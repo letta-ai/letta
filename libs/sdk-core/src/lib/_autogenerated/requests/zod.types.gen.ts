@@ -573,6 +573,14 @@ export type ChildToolRule = z.infer<typeof ChildToolRule>;
 export const ChildToolRule = z.object({
   tool_name: z.string(),
   type: z.union([z.string(), z.undefined()]).optional(),
+  prompt_template: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   children: z.array(z.string()),
 });
 
@@ -580,18 +588,42 @@ export type InitToolRule = z.infer<typeof InitToolRule>;
 export const InitToolRule = z.object({
   tool_name: z.string(),
   type: z.union([z.string(), z.undefined()]).optional(),
+  prompt_template: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type TerminalToolRule = z.infer<typeof TerminalToolRule>;
 export const TerminalToolRule = z.object({
   tool_name: z.string(),
   type: z.union([z.string(), z.undefined()]).optional(),
+  prompt_template: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ConditionalToolRule = z.infer<typeof ConditionalToolRule>;
 export const ConditionalToolRule = z.object({
   tool_name: z.string(),
   type: z.union([z.string(), z.undefined()]).optional(),
+  prompt_template: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   default_child: z
     .union([
       z.string(),
@@ -608,12 +640,28 @@ export type ContinueToolRule = z.infer<typeof ContinueToolRule>;
 export const ContinueToolRule = z.object({
   tool_name: z.string(),
   type: z.union([z.string(), z.undefined()]).optional(),
+  prompt_template: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type MaxCountPerStepToolRule = z.infer<typeof MaxCountPerStepToolRule>;
 export const MaxCountPerStepToolRule = z.object({
   tool_name: z.string(),
   type: z.union([z.string(), z.undefined()]).optional(),
+  prompt_template: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   max_count_limit: z.number(),
 });
 
@@ -621,6 +669,14 @@ export type ParentToolRule = z.infer<typeof ParentToolRule>;
 export const ParentToolRule = z.object({
   tool_name: z.string(),
   type: z.union([z.string(), z.undefined()]).optional(),
+  prompt_template: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   children: z.array(z.string()),
 });
 

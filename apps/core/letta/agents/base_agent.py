@@ -4,6 +4,7 @@ from typing import Any, AsyncGenerator, List, Optional, Union
 import openai
 
 from letta.constants import DEFAULT_MAX_STEPS
+from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
@@ -16,6 +17,7 @@ from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.helpers.agent_manager_helper import compile_system_message
 from letta.services.message_manager import MessageManager
+from letta.services.passage_manager import PassageManager
 from letta.utils import united_diff
 
 logger = get_logger(__name__)
@@ -40,6 +42,8 @@ class BaseAgent(ABC):
         self.openai_client = openai_client
         self.message_manager = message_manager
         self.agent_manager = agent_manager
+        # TODO: Pass this in
+        self.passage_manager = PassageManager()
         self.actor = actor
         self.logger = get_logger(agent_id)
 
@@ -78,8 +82,9 @@ class BaseAgent(ABC):
         self,
         in_context_messages: List[Message],
         agent_state: AgentState,
-        num_messages: int | None = None,  # storing these calculations is specific to the voice agent
-        num_archival_memories: int | None = None,
+        tool_rules_solver: Optional[ToolRulesSolver] = None,
+        num_messages: Optional[int] = None,  # storing these calculations is specific to the voice agent
+        num_archival_memories: Optional[int] = None,
     ) -> List[Message]:
         """
         Async version of function above. For now before breaking up components, changes should be made in both places.
@@ -113,6 +118,7 @@ class BaseAgent(ABC):
                 in_context_memory_last_edit=memory_edit_timestamp,
                 previous_message_count=num_messages,
                 archival_memory_size=num_archival_memories,
+                tool_rules_solver=tool_rules_solver,
             )
 
             diff = united_diff(curr_system_message_text, new_system_message_str)
