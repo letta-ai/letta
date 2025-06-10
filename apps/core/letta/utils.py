@@ -468,17 +468,6 @@ NOUN_BANK = [
 ]
 
 
-def deduplicate(target_list: list) -> list:
-    seen = set()
-    dedup_list = []
-    for i in target_list:
-        if i not in seen:
-            seen.add(i)
-            dedup_list.append(i)
-
-    return dedup_list
-
-
 def smart_urljoin(base_url: str, relative_url: str) -> str:
     """urljoin is stupid and wants a trailing / at the end of the endpoint address, or it will chop the suffix off"""
     if not base_url.endswith("/"):
@@ -516,8 +505,9 @@ def is_optional_type(hint):
 
 def enforce_types(func):
     """Enforces that values passed in match the expected types.
+        Technically will handle coroutines as well.
 
-    Technically will handle coroutines as well.
+    TODO (cliandy): use stricter pydantic fields
     """
 
     @wraps(func)
@@ -808,7 +798,11 @@ class OpenAIBackcompatUnpickler(pickle.Unpickler):
 
 
 def count_tokens(s: str, model: str = "gpt-4") -> int:
-    encoding = tiktoken.encoding_for_model(model)
+    try:
+        encoding = tiktoken.encoding_for_model(model)
+    except KeyError:
+        print("Falling back to cl100k base for token counting.")
+        encoding = tiktoken.get_encoding("cl100k_base")
     return len(encoding.encode(s))
 
 
