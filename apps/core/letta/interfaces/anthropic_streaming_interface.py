@@ -91,7 +91,14 @@ class AnthropicStreamingInterface:
     def get_tool_call_object(self) -> ToolCall:
         """Useful for agent loop"""
         # hack for tool rules
-        tool_input = json.loads(self.accumulated_tool_call_args)
+        try:
+            tool_input = json.loads(self.accumulated_tool_call_args)
+        except json.JSONDecodeError as e:
+            logger.warning(
+                f"Failed to decode tool call arguments for tool_call_id={self.tool_call_id}, "
+                f"name={self.tool_call_name}. Raw input: {self.accumulated_tool_call_args!r}. Error: {e}"
+            )
+            raise
         if "id" in tool_input and tool_input["id"].startswith("toolu_") and "function" in tool_input:
             arguments = str(json.dumps(tool_input["function"]["arguments"], indent=2))
         else:

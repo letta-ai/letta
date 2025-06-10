@@ -202,7 +202,7 @@ class AnthropicClient(LLMClientBase):
             tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
             tools_for_request = [OpenAITool(function=f) for f in tools]
         elif force_tool_call is not None:
-            tool_choice = {"type": "tool", "name": force_tool_call}
+            tool_choice = {"type": "tool", "name": force_tool_call, "disable_parallel_tool_use": True}
             tools_for_request = [OpenAITool(function=f) for f in tools if f["name"] == force_tool_call]
 
             # need to have this setting to be able to put inner thoughts in kwargs
