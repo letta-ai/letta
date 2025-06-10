@@ -2141,7 +2141,7 @@ async def test_list_organizations(server: SyncServer, event_loop):
 async def test_create_default_organization(server: SyncServer, event_loop):
     await server.organization_manager.create_default_organization_async()
     retrieved = await server.organization_manager.get_default_organization_async()
-    assert retrieved.name == server.organization_manager.DEFAULT_ORG_NAME
+    assert retrieved.name == DEFAULT_ORG_ID
 
 
 @pytest.mark.asyncio
