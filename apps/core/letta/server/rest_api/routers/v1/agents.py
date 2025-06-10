@@ -679,7 +679,7 @@ async def send_message(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
-    agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
+    agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
 
     if agent_eligible and model_compatible:
@@ -761,7 +761,7 @@ async def send_message_streaming(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
-    agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
+    agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
     not_letta_endpoint = not ("inference.letta.com" in agent.llm_config.model_endpoint)
@@ -979,7 +979,7 @@ async def summarize_agent_conversation(
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
-    agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
+    agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
 
     if agent_eligible and model_compatible:
