@@ -1,6 +1,6 @@
 import sys
 import time
-from typing import Callable, Dict, Generator, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 import requests
 
@@ -18,7 +18,7 @@ from letta.schemas.file import FileMetadata
 from letta.schemas.job import Job
 from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
-from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
+from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, ChatMemory, CreateArchivalMemory, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate
