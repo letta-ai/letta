@@ -18,6 +18,7 @@ from letta_client.types import (
     ImageContent,
     LettaUsageStatistics,
     ReasoningMessage,
+    TextContent,
     ToolCallMessage,
     ToolReturnMessage,
     UrlImage,
@@ -155,9 +156,8 @@ USER_MESSAGE_URL_IMAGE: List[MessageCreate] = [
     MessageCreate(
         role="user",
         content=[
-            ImageContent(
-                source=UrlImage(url=URL_IMAGE),
-            )
+            ImageContent(source=UrlImage(url=URL_IMAGE)),
+            TextContent(text="What is in this image?"),
         ],
         otid=USER_MESSAGE_OTID,
     )
@@ -167,9 +167,8 @@ USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
     MessageCreate(
         role="user",
         content=[
-            ImageContent(
-                source=Base64Image(data=BASE64_IMAGE, media_type="image/jpeg"),
-            )
+            ImageContent(source=Base64Image(data=BASE64_IMAGE, media_type="image/jpeg")),
+            TextContent(text="What is in this image?"),
         ],
         otid=USER_MESSAGE_OTID,
     )

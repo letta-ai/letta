@@ -29,7 +29,6 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.enums import ProviderCategory
-from letta.schemas.letta_message_content import MessageContentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
@@ -251,8 +250,6 @@ class AnthropicClient(LLMClientBase):
             )
             for m in messages[1:]
         ]
-
-        data["messages"] = fill_image_content_in_messages(data["messages"], messages)
 
         # Ensure first message is user
         if data["messages"][0]["role"] != "user":
@@ -656,52 +653,3 @@ def strip_xml_tags_streaming(string: str, tag: Optional[str]) -> str:
         result = result.replace(part, "")
 
     return result
-
-
-def fill_image_content_in_messages(anthropic_message_list: List[dict], pydantic_message_list: List[PydanticMessage]) -> List[dict]:
-    """
-    Converts image content to anthropic format.
-    """
-
-    if len(anthropic_message_list) != len(pydantic_message_list):
-        return anthropic_message_list
-
-    new_message_list = []
-    for idx in range(len(anthropic_message_list)):
-        anthropic_message, pydantic_message = anthropic_message_list[idx], pydantic_message_list[idx]
-        if pydantic_message.role != "user":
-            new_message_list.append(anthropic_message)
-            continue
-
-        if not isinstance(pydantic_message.content, list) or (
-            len(pydantic_message.content) == 1 and pydantic_message.content.type == MessageContentType.text
-        ):
-            new_message_list.append(anthropic_message)
-            continue
-
-        message_content = []
-        for content in pydantic_message.content:
-            if content.type == MessageContentType.text:
-                message_content.append(
-                    {
-                        "type": "input_text",
-                        "text": content.text,
-                    }
-                )
-            elif content.type == MessageContentType.image:
-                message_content.append(
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": content.source.type,
-                            "media_type": content.source.media_type,
-                            "data": content.source.data,
-                        },
-                    }
-                )
-            else:
-                raise ValueError(f"Unsupported content type {content.type}")
-
-        new_message_list.append({"role": "user", "input": message_content})
-
-    return new_message_list
