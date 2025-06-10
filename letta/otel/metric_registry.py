@@ -120,3 +120,29 @@ class MetricRegistry:
                 unit="1",
             ),
         )
+
+    # (includes endpoint_path, method, status_code)
+    @property
+    def endpoint_e2e_ms_histogram(self) -> Histogram:
+        return self._get_or_create_metric(
+            "hist_endpoint_e2e_ms",
+            partial(
+                self._meter.create_histogram,
+                name="hist_endpoint_e2e_ms",
+                description="Histogram for endpoint e2e time (ms)",
+                unit="ms",
+            ),
+        )
+
+    # (includes endpoint_path, method, status_code)
+    @property
+    def endpoint_request_counter(self) -> Counter:
+        return self._get_or_create_metric(
+            "count_endpoint_requests",
+            partial(
+                self._meter.create_counter,
+                name="count_endpoint_requests",
+                description="Counts the number of endpoint requests",
+                unit="1",
+            ),
+        )
