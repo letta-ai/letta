@@ -37,11 +37,11 @@ interface WrapWithFormContextOptions {
 }
 
 export function generateWrapWithFormContext(
-  options: WrapWithFormContextOptions,
+  options: WrapWithFormContextOptions = {},
 ) {
   return function wrapWithFormContextDecorator(Story: ElementType) {
     return (
-      <WrapWithFormContextComponent alternativeText={options.alternativeText}>
+      <WrapWithFormContextComponent alternativeText={options?.alternativeText}>
         <Story />
       </WrapWithFormContextComponent>
     );
