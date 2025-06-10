@@ -17,7 +17,9 @@ export function ExportAgentButton(props: ExportAgentButtonProps) {
   const t = useTranslations('ExportAgentButton');
   const { isLocal } = useCurrentAgentMetaData();
   const { id: agentId, name } = useCurrentAgent();
-  const config = useCurrentAPIHostConfig();
+  const config = useCurrentAPIHostConfig({
+    isLocal,
+  });
   const handleAsyncDownload = useCallback(async () => {
     const downloadURL = isLocal
       ? `${config?.url}/v1/agents/${agentId}/export`
