@@ -2028,7 +2028,8 @@ class SyncServer(Server):
             )
 
     # Composio wrappers
-    def get_composio_client(self, api_key: Optional[str] = None):
+    @staticmethod
+    def get_composio_client(api_key: Optional[str] = None):
         if api_key:
             return Composio(api_key=api_key)
         elif tool_settings.composio_api_key:
@@ -2036,9 +2037,10 @@ class SyncServer(Server):
         else:
             return Composio()
 
-    def get_composio_apps(self, api_key: Optional[str] = None) -> List["AppModel"]:
+    @staticmethod
+    def get_composio_apps(api_key: Optional[str] = None) -> List["AppModel"]:
         """Get a list of all Composio apps with actions"""
-        apps = self.get_composio_client(api_key=api_key).apps.get()
+        apps = SyncServer.get_composio_client(api_key=api_key).apps.get()
         apps_with_actions = []
         for app in apps:
             # A bit of hacky logic until composio patches this
@@ -2049,7 +2051,8 @@ class SyncServer(Server):
 
     def get_composio_actions_from_app_name(self, composio_app_name: str, api_key: Optional[str] = None) -> List["ActionModel"]:
         actions = self.get_composio_client(api_key=api_key).actions.get(apps=[composio_app_name])
-        return actions
+        # Filter out deprecated composio actions
+        return [action for action in actions if "deprecated" not in action.description.lower()]
 
     # MCP wrappers
     # TODO support both command + SSE servers (via config)
