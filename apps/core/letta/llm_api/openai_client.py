@@ -432,7 +432,7 @@ def fill_image_content_in_messages(openai_message_list: List[dict], pydantic_mes
             if content.type == MessageContentType.text:
                 message_content.append(
                     {
-                        "type": "input_text",
+                        "type": "text",
                         "text": content.text,
                     }
                 )
