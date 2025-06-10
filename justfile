@@ -126,6 +126,7 @@ configure-kubectl cluster-name="letta":
             --set env.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
     else
         helm upgrade --install {{WEB_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{WEB_HELM_CHART_NAME}} \
+            --set image.tag={{TAG}} \
             --force \
             --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)";
     fi
@@ -224,8 +225,9 @@ describe-web:
         --set secrets.TAVILY_API_KEY=${TAVILY_API_KEY}
     else
         helm upgrade --install {{CORE_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{CORE_HELM_CHART_NAME}} \
-        --set deployMessage='{{deploy_message}}' \
-        --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)";
+            --set image.tag={{TAG}} \
+            --set deployMessage='{{deploy_message}}' \
+            --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)";
     fi
 
 @build-voice:
@@ -244,7 +246,8 @@ describe-web:
     echo "🚧 Deploying Helm chart..."
     helm upgrade --install {{VOICE_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{VOICE_HELM_CHART_NAME}} \
     --set deployMessage='{{deploy_message}}' \
-    --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --set image.tag={{TAG}}
 
 @build-cloud-api-voice:
     echo "🚧 Building multi-architecture Docker images with tag: {{TAG}}..."
@@ -262,7 +265,8 @@ describe-web:
     echo "🚧 Deploying Helm chart..."
     helm upgrade --install {{CLOUD_API_VOICE_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{CLOUD_API_VOICE_HELM_CHART_NAME}} \
     --set deployMessage='{{deploy_message}}' \
-    --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --set image.tag={{TAG}}
 
 # TODO: Migrate grafana to secrets v2
 # Deploy Grafana
@@ -381,6 +385,7 @@ deploy-cloud-api: push-cloud-api
             --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}"
     else
         helm upgrade --install cloud-api {{HELM_CHARTS_DIR}}/cloud-api \
+            --set image.tag={{TAG}} \
             --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)";
     fi
     npm run slack-bot-says "Successfully deployed cloud API service with tag: {{TAG}}."
@@ -435,6 +440,7 @@ build-undertaker:
             --set env.DATABASE_URL="${DATABASE_URL}"
     else
         helm upgrade --install credit-undertaker {{HELM_CHARTS_DIR}}/credit-undertaker \
+            --set image.tag={{TAG}} \
             --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)";
     fi
 
@@ -750,6 +756,7 @@ emails:
             --set env.TEMPORAL_LETTUCE_NAMESPACE="${TEMPORAL_LETTUCE_NAMESPACE:-lettuce.tmhou}"
     else
         helm upgrade --install lettuce {{HELM_CHARTS_DIR}}/lettuce \
+            --set image.tag={{TAG}} \
             --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)";
     fi
     npm run slack-bot-says "Successfully deployed lettuce service with tag: {{TAG}}."
@@ -787,6 +794,7 @@ push-model-proxy:
             --set env.OPENAI_API_KEY="${OPENAI_API_KEY}"
     else
         helm upgrade --install model-proxy {{HELM_CHARTS_DIR}}/model-proxy \
+            --set image.tag={{TAG}} \
             --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)";
     fi
 
