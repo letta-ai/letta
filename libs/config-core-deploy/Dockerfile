@@ -1,19 +1,8 @@
-# Excellent blog post on using poetry in docker: https://medium.com/@albertazzir/blazing-fast-python-docker-builds-with-poetry-a78a66f5aed0
-
-# =======================================================================
-# Builder image
-# =======================================================================
-
 # The builder image, used to build the virtual environment
-# slim image here fails because of psycopg2 install
-FROM python:3.12.2-bookworm AS builder
-
-# Install build dependencies in a single layer
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip install poetry==2.1.3
+FROM python:3.12.2-bookworm as builder
+ARG LETTA_ENVIRONMENT=PRODUCTION
+ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT}
+RUN pip install poetry==2.1.3
 
 ENV POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_IN_PROJECT=1 \
@@ -22,47 +11,46 @@ ENV POETRY_NO_INTERACTION=1 \
 
 WORKDIR /app
 
-# Copy dependency files first for better layer caching
 COPY apps/core/pyproject.toml apps/core/poetry.lock ./
-# Remove poetry cache in same step for efficient docker layer caching
-RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --no-root --all-extras
-
-# =======================================================================
-# Collector image
-# =======================================================================
+RUN poetry lock
+RUN poetry install --no-root --all-extras
 
 # The collector image, used to get the OpenTelemetry Collector
-FROM otel/opentelemetry-collector-contrib:0.96.0 AS collector
-
-# =======================================================================
-# Runtime image
-# =======================================================================
+FROM otel/opentelemetry-collector-contrib:0.96.0 as collector
 
 # The runtime image, used to just run the code provided its virtual environment
-FROM python:3.12.2-slim-bookworm AS runtime
+FROM python:3.12.2-slim-bookworm as runtime
+ARG LETTA_ENVIRONMENT=PRODUCTION
+ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT}
 ENV VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH"
 
-RUN pip install poetry==2.1.3
+# TODO (cliandy): remove this when implemented in secrets v2
+ENV REDIS_HOST="10.167.199.148"
+
 
 # Copy OpenTelemetry Collector from collector stage
 COPY --from=collector /otelcol-contrib /usr/local/bin/otelcol-contrib
 RUN mkdir -p /etc/otel
 
-# Copy virtual environment from builder
+# Copy poetry from builder to runtime
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin/poetry /usr/local/bin/poetry
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
-# Copy application code and configs in order of least frequently changed to most
-COPY ../scripts/cloud-plugins /letta/plugins
-COPY ../apps/core/alembic.ini /alembic.ini
-COPY ../apps/core/otel/otel-collector-config-clickhouse-prod.yaml /etc/otel/config-clickhouse.yaml
-# Tightly couple the permissioning of startup script
-COPY ./libs/config-core-deploy/scripts /scripts
-RUN ["chmod", "+x", "./scripts/startup.sh"]
-COPY ../apps/core/scripts /letta-scripts
-COPY ../apps/core/alembic /alembic
+# Copy the poetry.lock and pyproject.toml files
+COPY --from=builder /app/pyproject.toml /app/poetry.lock /
+
+# Copy application code and configs
 COPY ../apps/core/letta /letta
+COPY ../apps/core/alembic.ini /alembic.ini
+COPY ../apps/core/alembic /alembic
+COPY ./libs/config-core-deploy/scripts /scripts
+COPY ../apps/core/scripts /letta-scripts
+COPY ../apps/core/otel/otel-collector-config-clickhouse-prod.yaml /etc/otel/config-clickhouse.yaml
+COPY ../scripts/cloud-plugins /letta/plugins
 
 EXPOSE 8283 4317 4318
 
+RUN ["chmod", "+x", "./scripts/startup.sh"]
 CMD ./scripts/startup.sh
