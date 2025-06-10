@@ -22,6 +22,7 @@ let nextConfig = {
     },
     // swcPlugins: [['@swc-jotai/react-refresh', {}]],
   },
+  isrMemoryCacheSize: 0,
   sentry: {
     deleteSourcemapsAfterUpload: true,
   },
