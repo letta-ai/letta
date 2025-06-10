@@ -29,6 +29,7 @@ from letta.constants import (
     BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
     BASE_VOICE_SLEEPTIME_TOOLS,
     BUILTIN_TOOLS,
+    DEFAULT_ORG_ID,
     FILES_TOOLS,
     LETTA_TOOL_EXECUTION_DIR,
     LETTA_TOOL_SET,
@@ -81,7 +82,6 @@ from letta.schemas.user import UserUpdate
 from letta.server.db import db_registry
 from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
-from letta.services.organization_manager import OrganizationManager
 from letta.settings import tool_settings
 from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
 from tests.utils import random_string
@@ -2724,7 +2724,7 @@ async def test_update_user(server: SyncServer, event_loop):
     # Adjust name
     user = await server.user_manager.update_actor_async(UserUpdate(id=user.id, name=user_name_b))
     assert user.name == user_name_b
-    assert user.organization_id == OrganizationManager.DEFAULT_ORG_ID
+    assert user.organization_id == DEFAULT_ORG_ID
 
     # Adjust org id
     user = await server.user_manager.update_actor_async(UserUpdate(id=user.id, organization_id=test_org.id))

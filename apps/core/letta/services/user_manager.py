@@ -3,6 +3,7 @@ from typing import List, Optional
 from async_lru import alru_cache
 from sqlalchemy import select, text
 
+from letta.constants import DEFAULT_ORG_ID
 from letta.orm.errors import NoResultFound
 from letta.orm.organization import Organization as OrganizationModel
 from letta.orm.user import User as UserModel
@@ -10,7 +11,6 @@ from letta.otel.tracing import trace_method
 from letta.schemas.user import User as PydanticUser
 from letta.schemas.user import UserUpdate
 from letta.server.db import db_registry
-from letta.services.organization_manager import OrganizationManager
 from letta.utils import enforce_types
 
 
@@ -43,7 +43,7 @@ class UserManager:
 
     @enforce_types
     @trace_method
-    def create_default_user(self, org_id: str = OrganizationManager.DEFAULT_ORG_ID) -> PydanticUser:
+    def create_default_user(self, org_id: str = DEFAULT_ORG_ID) -> PydanticUser:
         """Create the default user."""
         with db_registry.session() as session:
             # Make sure the org id exists
@@ -65,7 +65,7 @@ class UserManager:
 
     @enforce_types
     @trace_method
-    async def create_default_actor_async(self, org_id: str = OrganizationManager.DEFAULT_ORG_ID) -> PydanticUser:
+    async def create_default_actor_async(self, org_id: str = DEFAULT_ORG_ID) -> PydanticUser:
         """Create the default user."""
         async with db_registry.async_session() as session:
             # Make sure the org id exists
@@ -218,7 +218,7 @@ class UserManager:
         try:
             return await self.get_actor_by_id_async(self.DEFAULT_USER_ID)
         except NoResultFound:
-            return await self.create_default_actor_async(org_id=OrganizationManager.DEFAULT_ORG_ID)
+            return await self.create_default_actor_async(org_id=DEFAULT_ORG_ID)
 
     @enforce_types
     @trace_method
@@ -229,7 +229,7 @@ class UserManager:
         try:
             return await self._get_actor_cached(target_id)
         except NoResultFound:
-            user = await self.create_default_actor_async(org_id=OrganizationManager.DEFAULT_ORG_ID)
+            user = await self.create_default_actor_async(org_id=DEFAULT_ORG_ID)
             return user
 
     @enforce_types

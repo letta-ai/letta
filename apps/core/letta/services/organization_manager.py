@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from letta.constants import DEFAULT_ORG_ID, DEFAULT_ORG_NAME
 from letta.orm.errors import NoResultFound
 from letta.orm.organization import Organization as OrganizationModel
 from letta.otel.tracing import trace_method
@@ -12,14 +13,11 @@ from letta.utils import enforce_types
 class OrganizationManager:
     """Manager class to handle business logic related to Organizations."""
 
-    DEFAULT_ORG_ID = "org-00000000-0000-4000-8000-000000000000"
-    DEFAULT_ORG_NAME = "default_org"
-
     @enforce_types
     @trace_method
     async def get_default_organization_async(self) -> PydanticOrganization:
         """Fetch the default organization."""
-        return await self.get_organization_by_id_async(self.DEFAULT_ORG_ID)
+        return await self.get_organization_by_id_async(DEFAULT_ORG_ID)
 
     @enforce_types
     @trace_method
@@ -72,14 +70,14 @@ class OrganizationManager:
     @trace_method
     def create_default_organization(self) -> PydanticOrganization:
         """Create the default organization."""
-        pydantic_org = PydanticOrganization(name=self.DEFAULT_ORG_NAME, id=self.DEFAULT_ORG_ID)
+        pydantic_org = PydanticOrganization(name=DEFAULT_ORG_NAME, id=DEFAULT_ORG_ID)
         return self.create_organization(pydantic_org)
 
     @enforce_types
     @trace_method
     async def create_default_organization_async(self) -> PydanticOrganization:
         """Create the default organization."""
-        return await self.create_organization_async(PydanticOrganization(name=self.DEFAULT_ORG_NAME, id=self.DEFAULT_ORG_ID))
+        return await self.create_organization_async(PydanticOrganization(name=DEFAULT_ORG_NAME, id=DEFAULT_ORG_ID))
 
     @enforce_types
     @trace_method
