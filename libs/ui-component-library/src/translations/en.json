@@ -6,7 +6,8 @@
     "thisAgent": "Current"
   },
   "components/DashboardChartWrapper": {
-    "explore": "Explore"
+    "explore": "Explore",
+    "noData": "This chart has no data, this usually means that this date range has had no active agents or data has not been collected yet"
   },
   "components/MessageReplay": {
     "events": {

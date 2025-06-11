@@ -46,6 +46,8 @@ export async function getToolLatencyPerDay(
           AND project_id = {projectId: String}
           AND time_window >= toDateTime({startDate: UInt32})
           AND time_window <= toDateTime({endDate: UInt32})
+          AND tool_name != ''
+          AND tool_name != 'send_message'
         GROUP BY toDate(time_window)
       )
       SELECT

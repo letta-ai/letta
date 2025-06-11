@@ -69,16 +69,6 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
           label: t('nav.identities'),
           href: `/projects/${projectSlug}/identities`,
         },
-        ...(enabled
-          ? [
-              {
-                icon: <MonitoringIcon />,
-                id: 'observability',
-                label: t('nav.observability'),
-                href: `/projects/${projectSlug}/observability`,
-              },
-            ]
-          : []),
         ...(canCRDProjects
           ? [
               {
@@ -86,6 +76,21 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
                 icon: <InstantMixIcon />,
                 label: t('nav.settings'),
                 href: `/projects/${projectSlug}/settings`,
+              },
+            ]
+          : []),
+        ...(enabled
+          ? [
+              {
+                title: t('nav.observability'),
+                items: [
+                  {
+                    icon: <MonitoringIcon />,
+                    id: 'observability',
+                    label: t('nav.monitoring'),
+                    href: `/projects/${projectSlug}/observability`,
+                  },
+                ],
               },
             ]
           : []),

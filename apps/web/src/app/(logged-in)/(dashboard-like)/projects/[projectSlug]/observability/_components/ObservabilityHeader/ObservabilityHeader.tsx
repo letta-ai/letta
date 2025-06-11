@@ -6,6 +6,7 @@ import {
   TabGroup,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
+import type { ChartType } from '../hooks/useObservabilityContext/useObservabilityContext';
 import { useObservabilityContext } from '../hooks/useObservabilityContext/useObservabilityContext';
 import { useCallback, useMemo } from 'react';
 import { differenceInDays } from 'date-fns';
@@ -114,10 +115,47 @@ interface ObservabilityHeaderProps {
   };
 }
 
+function ChartSelector() {
+  const { chartType, setChartType } = useObservabilityContext();
+  const t = useTranslations('pages/projects/observability/ObservabilityHeader');
+
+  return (
+    <TabGroup
+      variant="chips"
+      size="xsmall"
+      onValueChange={(value) => {
+        if (!value) return;
+
+        setChartType(value as ChartType);
+      }}
+      value={chartType}
+      items={[
+        {
+          label: t('ChartSelector.all'),
+          value: 'all',
+        },
+        {
+          label: t('ChartSelector.activity'),
+          value: 'activity',
+        },
+        {
+          label: t('ChartSelector.performance'),
+          value: 'performance',
+        },
+        {
+          label: t('ChartSelector.errors'),
+          value: 'errors',
+        },
+      ]}
+    />
+  );
+}
+
 export function ObservabilityHeader(props: ObservabilityHeaderProps) {
   const t = useTranslations('pages/projects/observability/ObservabilityHeader');
   const { subPage } = props;
   const { slug } = useCurrentProject();
+
   return (
     <HStack
       borderBottom
@@ -134,8 +172,10 @@ export function ObservabilityHeader(props: ObservabilityHeaderProps) {
           items={[
             {
               preIcon: <MonitoringIcon />,
+              bold: true,
               ...(subPage ? { href: `/projects/${slug}/observability` } : {}),
               label: t('root'),
+              contentOverride: !subPage ? <ChartSelector /> : null,
             },
             ...(subPage
               ? [

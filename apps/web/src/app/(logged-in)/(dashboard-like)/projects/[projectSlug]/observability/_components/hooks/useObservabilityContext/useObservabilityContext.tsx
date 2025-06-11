@@ -1,17 +1,26 @@
 'use client';
 import { createContext, useContext, useMemo, useState } from 'react';
 import { endOfDay, startOfDay, subDays } from 'date-fns';
+import { useSessionStorage } from '@mantine/hooks';
+
+export type ChartType = 'activity' | 'all' | 'errors' | 'performance';
 
 interface ObservabilityContextType {
   startDate: string;
   endDate: string;
   setDateRange: (startDate: Date, endDate: Date) => void;
+  chartType: ChartType;
+  setChartType: (type: ChartType) => void;
 }
 
 const ObservabilityContext = createContext<ObservabilityContextType>({
   startDate: new Date().toISOString(),
+  chartType: 'all',
   endDate: new Date().toISOString(),
   setDateRange: () => {
+    return;
+  },
+  setChartType: () => {
     return;
   },
 });
@@ -32,16 +41,25 @@ export function ObservabilityProvider({
     startOfDay(subDays(new Date(), 30)),
   );
 
+  const [chartType, setChartType] = useSessionStorage<ChartType>({
+    key: 'observability-chart-type',
+    defaultValue: 'all',
+  });
+
   const value = useMemo(
     () => ({
       startDate: new Date(startDate).toISOString(),
       endDate: new Date(endDate).toISOString(),
+      chartType,
       setDateRange: (startDate: Date, endDate: Date) => {
         setStartTime(startOfDay(startDate));
         setEndDate(endOfDay(endDate));
       },
+      setChartType: (type: ChartType) => {
+        setChartType(type);
+      },
     }),
-    [startDate, endDate],
+    [startDate, endDate, chartType, setChartType],
   );
 
   return (

@@ -11,12 +11,14 @@ interface DashboardChartWrapperProps {
   title: string;
   children: React.ReactNode;
   isLoading?: boolean;
+  isEmpty?: boolean;
   analysisLink?: string;
 }
 
 export function DashboardChartWrapper(props: DashboardChartWrapperProps) {
-  const { title, children, isLoading, analysisLink } = props;
+  const { title, children, isEmpty, isLoading, analysisLink } = props;
   const t = useTranslations('components/DashboardChartWrapper');
+
   return (
     <div className={cn('h-[300px] flex flex-col p-2  min-w-[250px] w-full')}>
       <HStack
@@ -46,7 +48,15 @@ export function DashboardChartWrapper(props: DashboardChartWrapperProps) {
         {isLoading ? (
           <Skeleton className="w-full h-full" />
         ) : (
-          <div className="w-full h-full">{children}</div>
+          <>
+            {isEmpty ? (
+              <div className="w-full h-full p-5 flex items-center justify-center bg-background-grey">
+                <Typography variant="body2">{t('noData')}</Typography>
+              </div>
+            ) : (
+              <div className="w-full h-full">{children}</div>
+            )}
+          </>
         )}
       </div>
     </div>

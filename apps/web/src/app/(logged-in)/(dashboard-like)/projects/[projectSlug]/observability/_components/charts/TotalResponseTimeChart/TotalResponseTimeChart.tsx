@@ -35,6 +35,8 @@ export function TotalResponseTimeChart() {
     },
   });
 
+  const { formatSmallDuration } = useFormatters();
+
   const tableOptions = useObservabilitySeriesData({
     seriesData: [
       {
@@ -57,11 +59,9 @@ export function TotalResponseTimeChart() {
     startDate,
     endDate,
     formatter: function (value) {
-      return `${value}s`;
+      return formatSmallDuration(value * 1_000_000_000); // Convert seconds to nanoseconds
     },
   });
-
-  const { formatSmallDuration } = useFormatters();
 
   return (
     <DashboardChartWrapper title={t('title')} isLoading={!data}>

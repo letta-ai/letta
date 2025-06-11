@@ -38,25 +38,21 @@ export function ToolLatencyChart(props: ToolLatencyChartProps) {
     },
   });
 
+  const { formatSmallDuration } = useFormatters();
+
   const tableOptions = useObservabilitySeriesData({
     formatter: (value) => {
-      return `${value}ms`;
+      return formatSmallDuration(value * 1_000_000).replace(' ', ''); // Convert ms to ns
     },
     seriesData: [
       {
         data: data?.body.items,
-        getterFn: (item) => item.p50LatencyMs,
-      },
-      {
-        data: data?.body.items,
-        getterFn: (item) => item.p99LatencyMs,
+        getterFn: (item) => item.avgLatencyMs,
       },
     ],
     startDate,
     endDate,
   });
-
-  const { formatSmallDuration } = useFormatters();
 
   return (
     <DashboardChartWrapper
@@ -78,8 +74,7 @@ export function ToolLatencyChart(props: ToolLatencyChartProps) {
           tooltip: {
             trigger: 'axis',
             formatter: (e) => {
-              const p50Latency = get(e, '0.data.value', null);
-              const p99Latency = get(e, '1.data', null);
+              const avgLatencyMs = get(e, '0.data.value', null);
 
               const date = get(e, '0.axisValue', '') as string;
               return makeMultiValueFormattedTooltip({
@@ -87,18 +82,10 @@ export function ToolLatencyChart(props: ToolLatencyChartProps) {
                 options: [
                   {
                     color: get(e, '0.color', '#333') as string,
-                    label: t('p50Latency.label'),
+                    label: t('avgLatencyMs.label'),
                     value:
-                      typeof p50Latency === 'number'
-                        ? formatSmallDuration(p50Latency * 1_000_000) // Convert ms to ns
-                        : '-',
-                  },
-                  {
-                    color: get(e, '1.color', '#555') as string,
-                    label: t('p99Latency.label'),
-                    value:
-                      typeof p99Latency === 'number'
-                        ? formatSmallDuration(p99Latency * 1_000_000) // Convert ms to ns
+                      typeof avgLatencyMs === 'number'
+                        ? formatSmallDuration(avgLatencyMs * 1_000_000) // Convert ms to ns
                         : '-',
                   },
                 ],

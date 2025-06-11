@@ -1460,6 +1460,10 @@
       "label": "API error rate",
       "tooltip": "The API error rate is the percentage of messages that resulted in an API error. An API error is when a request to the agent API fails."
     },
+    "avgToolLatencyNs": {
+      "label": "Average tool latency",
+      "tooltip": "The average tool latency is the average time it takes for a tool to execute. This is calculated as the time between the agent sending a request to the tool and receiving a response from the tool."
+    },
     "p50TimeToFirstTokenMs": {
       "label": "Median time to first token",
       "tooltip": "The median time to first token is the median time it takes for an agent to generate the first token in response to a user message."
@@ -1504,6 +1508,12 @@
       "60Days": "60D",
       "90Days": "90D",
       "365Days": "1Y"
+    },
+    "ChartSelector": {
+      "activity": "Activity and Usage",
+      "all": "All charts",
+      "performance": "Performance",
+      "errors": "Errors"
     }
   },
   "pages/projects/observability/TimeToFirstTokenChart": {
@@ -1583,10 +1593,20 @@
     },
     "p99Latency": {
       "label": "99th percentile latency"
+    },
+    "averageLatency": {
+      "label": "Average latency"
     }
   },
+  "pages/projects/observability/LLMLatencyByToolNameChart": {
+    "title": "Average tool latency by name",
+    "noData": "No data available"
+  },
   "pages/projects/observability/ToolLatencyChart": {
-    "title": "Tool latency",
+    "title": "Average tool latency",
+    "avgLatencyMs": {
+      "label": "Average latency"
+    },
     "p50Latency": {
       "label": "Median latency"
     },
@@ -1628,7 +1648,8 @@
       "agents": "Agents",
       "identities": "Identities",
       "settings": "Settings",
-      "observability": "Observability"
+      "observability": "Observability",
+      "monitoring": "Monitoring"
     }
   },
   "components/AgentTemplateCard": {

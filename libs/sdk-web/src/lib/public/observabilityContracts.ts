@@ -211,8 +211,7 @@ const ObservabilityOverviewSchema = z.object({
   tokenPerMessageMedian: z.number(),
   apiErrorRate: z.number(),
   toolErrorRate: z.number(),
-  p50TimeToFirstTokenNs: z.number(),
-  p99TimeToFirstTokenNs: z.number(),
+  avgToolLatencyNs: z.number(),
   p50ResponseTimeNs: z.number(),
   p99ResponseTimeNs: z.number(),
 });

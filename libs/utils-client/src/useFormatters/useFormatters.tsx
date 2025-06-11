@@ -70,6 +70,7 @@ export function useFormatters() {
       return new Intl.NumberFormat(defaultLocal, {
         style: 'unit',
         unit: 'millisecond',
+        unitDisplay: 'narrow',
         ...options,
       }).format(duration / 1_000_000);
     }
@@ -79,6 +80,7 @@ export function useFormatters() {
       return new Intl.NumberFormat(defaultLocal, {
         style: 'unit',
         unit: 'second',
+        unitDisplay: 'narrow',
         ...options,
       }).format(duration / 1_000_000_000);
     }
@@ -88,6 +90,7 @@ export function useFormatters() {
       return new Intl.NumberFormat(defaultLocal, {
         style: 'unit',
         unit: 'minute',
+        unitDisplay: 'narrow',
         ...options,
       }).format(duration / 60_000_000_000);
     }

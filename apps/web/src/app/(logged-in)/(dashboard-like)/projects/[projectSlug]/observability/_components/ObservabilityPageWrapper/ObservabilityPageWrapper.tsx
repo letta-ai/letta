@@ -10,10 +10,16 @@ export function ObservabilityPageWrapper(props: ObservabilityPageWrapperProps) {
   const { children, title } = props;
 
   return (
-    <div className="w-full pr-1 encapsulated-full-height h-full">
+    <div className="w-full pr-1 encapsulated-full-height h-0 overflow-y-auto">
       <VStack color="background" fullWidth fullHeight gap={false}>
         <ObservabilityHeader subPage={title ? { title } : undefined} />
-        <VStack overflowY="auto" gap={false} fullHeight fullWidth>
+        <VStack
+          collapseHeight
+          overflowY="auto"
+          gap={false}
+          fullHeight
+          fullWidth
+        >
           {children}
         </VStack>
       </VStack>

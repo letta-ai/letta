@@ -1,23 +1,22 @@
 'use client';
 import { HR, HStack, VR, VStack } from '@letta-cloud/ui-component-library';
-// import { TimeToFirstTokenChart } from './_components/charts/TimeToFirstTokenChart/TimeToFirstTokenChart';
 import { TotalMessagesPerDayChart } from './_components/charts/TotalMessagesPerDayChart/TotalMessagesPerDayChart';
 
 import './observability.scss';
 
 import { ActiveAgentChart } from './_components/charts/ActiveAgentChart/ActiveAgentChart';
-// import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { ObservabilityPageWrapper } from './_components/ObservabilityPageWrapper/ObservabilityPageWrapper';
 import { ToolErrorsChart } from './_components/charts/ToolErrorsChart/ToolErrorsChart';
 import { ObservabilityOverview } from './_components/ObservabilityOverview/ObservabilityOverview';
 import { TotalResponseTimeChart } from './_components/charts/TotalResponseTimeChart/TotalResponseTimeChart';
 import { APIErrorsChart } from './_components/charts/APIErrorsChart/APIErrorsChart';
 import { ToolErrorRateChart } from './_components/charts/ToolErrorRateChart/ToolErrorRateChart';
-// import { LLMLatencyChart } from './_components/charts/LLMLatencyChart/LLMLatencyChart';
-// import { ToolLatencyChart } from './_components/charts/ToolLatencyChart/ToolLatencyChart';
 import { ToolUsageFrequencyChart } from './_components/charts/ToolUsageFrequencyChart/ToolUsageFrequencyChart';
-// import { TimeToFirstTokenPerDayChart } from './_components/charts/TimeToFirstTokenPerDayChart/TimeToFirstTokenPerDayChart';
 import { ToolErrorsByNameChart } from './_components/charts/ToolErrorsByNameChart/ToolErrorsByNameChart';
+import { ToolLatencyChart } from './_components/charts/ToolLatencyChart/ToolLatencyChart';
+import { LLMLatencyByToolNameChart } from './_components/charts/LLMLatencyByToolNameChart/LLMLatencyByToolNameChart';
+import { useObservabilityContext } from './_components/hooks/useObservabilityContext/useObservabilityContext';
+import { Fragment, useMemo } from 'react';
 
 interface ChartRowProps {
   children: React.ReactNode;
@@ -29,57 +28,91 @@ function ChartRow(props: ChartRowProps) {
   return <div className="observability-chart-row">{children}</div>;
 }
 
+const allCharts = [
+  <ActiveAgentChart key="active-agent-chart" />,
+  <TotalMessagesPerDayChart key="total-messages-per-day-chart" />,
+  <ToolErrorsChart key="tool-errors-chart" />,
+  <TotalResponseTimeChart key="total-response-time-chart" />,
+  <APIErrorsChart key="api-errors-chart" />,
+  <ToolErrorRateChart key="tool-error-rate-chart" />,
+  <ToolUsageFrequencyChart key="tool-usage-frequency-chart" />,
+  <ToolErrorsByNameChart key="tool-errors-by-name-chart" />,
+  // <LLMLatencyChart key="llm-latency-chart" />,
+  <ToolLatencyChart key="tool-latency-chart" />,
+  <LLMLatencyByToolNameChart key="llm-latency-by-tool-name-chart" />,
+  // <TimeToFirstTokenChart key="time-to-first-token-chart" />,
+];
+
+const activityCharts = [
+  <ActiveAgentChart key="active-agent-chart" />,
+  <TotalMessagesPerDayChart key="total-messages-per-day-chart" />,
+  <ToolUsageFrequencyChart key="tool-usage-frequency-chart" />,
+];
+
+const performanceCharts = [
+  <TotalResponseTimeChart key="total-response-time-chart" />,
+  // <LLMLatencyChart key="llm-latency-chart" />,
+  <ToolLatencyChart key="tool-latency-chart" />,
+  <LLMLatencyByToolNameChart key="llm-latency-by-tool-name-chart" />,
+  // <TimeToFirstTokenChart key="time-to-first-token-chart" />,
+];
+
+const errorCharts = [
+  <ToolErrorsChart key="tool-errors-chart" />,
+  <APIErrorsChart key="api-errors-chart" />,
+  <ToolErrorRateChart key="tool-error-rate-chart" />,
+  <ToolErrorsByNameChart key="tool-errors-by-name-chart" />,
+];
+
 function ProjectObservabilityPage() {
   // const { slug } = useCurrentProject();
+  const { chartType } = useObservabilityContext();
+
+  const chartsToRender = useMemo(() => {
+    switch (chartType) {
+      case 'activity':
+        return activityCharts;
+      case 'performance':
+        return performanceCharts;
+      case 'errors':
+        return errorCharts;
+      default:
+        return allCharts;
+    }
+  }, [chartType]);
+
+  const groupCharts = useMemo(() => {
+    const GROUP_SIZE = 2;
+    const grouped: React.ReactNode[][] = [];
+    for (let i = 0; i < chartsToRender.length; i += GROUP_SIZE) {
+      grouped.push(chartsToRender.slice(i, i + GROUP_SIZE));
+    }
+
+    return grouped;
+  }, [chartsToRender]);
 
   return (
     <ObservabilityPageWrapper>
       <HStack gap={false} fullWidth fullHeight>
         <VStack fullWidth fullHeight collapseWidth flex>
           <VStack overflowY="auto" gap={false} collapseHeight fullHeight flex>
-            <ChartRow>
-              <ActiveAgentChart />
-
-              <VR />
-              <TotalMessagesPerDayChart />
-            </ChartRow>
-            <HR />
-            <ChartRow>
-              <ToolErrorsChart
-              // analysisLink={`/projects/${slug}/observability/tool-errors`}
-              />
-              <VR />
-              <TotalResponseTimeChart />
-            </ChartRow>
-            <HR />
-            <ChartRow>
-              {/*<ToolLatencyChart />*/}
-              <ToolErrorsByNameChart />
-
-              <VR />
-              <APIErrorsChart />
-            </ChartRow>
-            <HR />
-            <ChartRow>
-              <ToolErrorRateChart />
-              <VR />
-              <ToolUsageFrequencyChart />
-              {/*<LLMLatencyChart />*/}
-            </ChartRow>
-            {/*<HR />*/}
-            {/*<ChartRow>*/}
-            {/*  <ToolUsageFrequencyChart />*/}
-            {/*  /!*<VR />*!/*/}
-            {/*  /!*<TimeToFirstTokenChart />*!/*/}
-            {/*</ChartRow>*/}
-            {/*<HR />*/}
-            {/*<ChartRow>*/}
-            {/*  <ToolErrorsByNameChart />*/}
-
-            {/*  <VR />*/}
-            {/*  <TimeToFirstTokenPerDayChart />*/}
-            {/*</ChartRow>*/}
-            <HR />
+            <VStack gap={false} fullWidth>
+              {groupCharts.map((chartRow, index) => (
+                <Fragment key={index}>
+                  <ChartRow key={index}>
+                    {chartRow.map((chart, index) => (
+                      <Fragment key={index}>
+                        <VStack key={index} fullWidth>
+                          {chart}
+                        </VStack>
+                        {index < chartRow.length - 1 && <VR />}
+                      </Fragment>
+                    ))}
+                  </ChartRow>
+                  {index < groupCharts.length - 1 && <HR />}
+                </Fragment>
+              ))}
+            </VStack>
           </VStack>
         </VStack>
         <VR />

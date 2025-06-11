@@ -58,6 +58,11 @@ export function ToolUsageFrequencyChart(props: ToolUsageFrequencyChartProps) {
           month: 'short',
           day: 'numeric',
         });
+        // filter out send_message tool
+        if (item.toolName === 'send_message') {
+          return acc;
+        }
+
         if (!acc[item.toolName]) {
           acc[item.toolName] = {};
         }
