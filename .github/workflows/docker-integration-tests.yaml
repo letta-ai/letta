@@ -21,6 +21,7 @@ jobs:
         with:
           files: |
             apps/core/**
+            libs/config-core-deploy/**
             .github/workflows/docker-integration-tests.yaml
 
   test:
@@ -57,18 +58,12 @@ jobs:
         LETTA_PG_DB:   letta
         LETTA_PG_USER: letta
         LETTA_PG_PASSWORD: letta
-        LETTA_PG_PORT: 8888
+        LETTA_PG_PORT: 5432
         OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
 
       run: |
-        cd apps/core
-        docker compose -f dev-compose.yaml up --build -d
-
-    - name: Wait for service
-      run: |
-        cd apps/core
-        bash scripts/wait_for_service.sh http://localhost:8283 -- echo "Service is ready"
-
+        cd libs/config-core-deploy
+        docker compose -f compose.yaml up --build -d
 
     - name: Generate SDK with Fern
       uses: nick-fields/retry@v3
@@ -95,31 +90,36 @@ jobs:
       working-directory: apps/core
       run: poetry run pip install -e ../fern/.preview/fern-python-sdk/.
 
+    - name: Wait for service
+      working-directory: apps/core
+      run: |
+        bash scripts/wait_for_service.sh localhost:8083 -- echo "Service is ready"
+
     - name: Run tests with pytest
       working-directory: apps/core
       env:
         LETTA_PG_DB:   letta
         LETTA_PG_USER: letta
         LETTA_PG_PASSWORD: letta
-        LETTA_PG_PORT: 8888
+        LETTA_PG_HOST: localhost
+        LETTA_PG_PORT: 5432
         LETTA_SERVER_PASS: test_server_token
-        LETTA_SERVER_URL: http://localhost:8283
+        LETTA_SERVER_URL: http://localhost:8083
         OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
         PYTHONPATH: ${{ github.workspace }}:${{ env.PYTHONPATH }}
       run: |
         poetry run pytest -s tests/test_client.py
 
-
     - name: Print docker logs if tests fail
-      if: ${{ failure() }}
+      if: ${{ failure() || cancelled() }}
       working-directory: apps/core
       run: |
         echo "Printing Docker Logs..."
-        docker compose -f dev-compose.yaml logs
+        docker compose -f compose.yaml logs
 
     - name: Stop docker
       if: ${{ always() }}
-      working-directory: apps/core
+      working-directory: libs/config-core-deploy
       run: |
-        docker compose -f dev-compose.yaml down --volumes
+        docker compose -f compose.yaml down --volumes
         sudo rm -r .persist
