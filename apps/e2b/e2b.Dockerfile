@@ -4,18 +4,18 @@ FROM e2bdev/code-interpreter:latest
 
 # Install dependencies and customize sandbox
 RUN pip install 'letta-nightly[postgres,server,cloud-tool-sandbox,external-tools]'
-RUN pip install composio-core==0.7.2
+RUN pip install composio-core==0.7.7
 RUN pip install composio-langchain==0.7.2
-RUN pip install certifi==2023.7.22
+RUN pip install certifi==2024.7.4
 RUN pip install charset-normalizer==3.2.0
 RUN pip install idna==3.4
 RUN pip install joblib==1.3.2
 RUN pip install kiwisolver==1.4.5
-RUN pip install letta_client==0.1.153
-RUN pip install matplotlib==3.8.0
+RUN pip install letta-client==0.1.153
+RUN pip install matplotlib==3.10.1
 # minimum version of numpy compatible with python3.12
 RUN pip install numpy==1.26.4
-RUN pip install packaging==23.1
+RUN pip install packaging==24.2
 RUN pip install pandas==1.5.3
 RUN pip install Pillow==9.4.0
 RUN pip install pyparsing==3.1.1
