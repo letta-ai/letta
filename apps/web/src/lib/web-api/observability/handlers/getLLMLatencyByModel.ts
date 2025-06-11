@@ -62,6 +62,8 @@ export async function getLLMLatencyByModel(
         WHERE (SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
         SpanName = 'POST /v1/agents/{agent_id}/messages' OR
         SpanName = 'POST /v1/agents/{agent_id}/messages/async')
+        AND SpanAttributes['organization.id'] = {organizationId: String}
+        AND SpanAttributes['project.id'] = {projectId: String}
         AND ParentSpanId = ''
         )
         )
