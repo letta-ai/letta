@@ -30,6 +30,7 @@ from letta.constants import (
     BASE_VOICE_SLEEPTIME_TOOLS,
     BUILTIN_TOOLS,
     DEFAULT_ORG_ID,
+    DEFAULT_ORG_NAME,
     FILES_TOOLS,
     LETTA_TOOL_EXECUTION_DIR,
     LETTA_TOOL_SET,
@@ -2141,7 +2142,7 @@ async def test_list_organizations(server: SyncServer, event_loop):
 async def test_create_default_organization(server: SyncServer, event_loop):
     await server.organization_manager.create_default_organization_async()
     retrieved = await server.organization_manager.get_default_organization_async()
-    assert retrieved.name == DEFAULT_ORG_ID
+    assert retrieved.name == DEFAULT_ORG_NAME
 
 
 @pytest.mark.asyncio
