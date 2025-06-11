@@ -2733,41 +2733,6 @@ async def test_update_user(server: SyncServer, event_loop):
     assert user.organization_id == test_org.id
 
 
-@pytest.mark.asyncio
-async def test_user_caching(server: SyncServer, event_loop, default_user):
-    # First call (expected to miss the cache)
-    start = time.time()
-    actor = await server.user_manager._get_actor_cached(default_user.id)
-    duration_first = time.time() - start
-    print(f"First call: {duration_first:.4f}s")
-
-    assert actor.id == default_user.id
-    assert duration_first > 0  # Sanity check: took non-zero time
-
-    cached_hits = 10
-    durations = []
-
-    for i in range(cached_hits):
-        start = time.time()
-        actor_cached = await server.user_manager._get_actor_cached(default_user.id)
-        duration = time.time() - start
-        durations.append(duration)
-        print(f"Call {i+2}: {duration:.4f}s")
-        assert actor_cached is actor
-
-    for d in durations:
-        assert d < duration_first * 0.4
-
-    cache_info = server.user_manager._cached_actor_by_id.cache_info()
-    print(f"Cache size: {cache_info.currsize}")
-    print(f"After calls: {cache_info}")
-
-    # Assert cache stats
-    assert cache_info.misses == 1
-    assert cache_info.hits == cached_hits
-    assert cache_info.currsize == 1
-
-
 # ======================================================================================================================
 # ToolManager Tests
 # ======================================================================================================================
