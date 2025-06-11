@@ -124,6 +124,13 @@ navigation:
           - page: Sleep-time Agents
             path: pages/agents/sleeptime.mdx
             icon: fa-sharp fa-light fa-snooze
+          - section: Voice Agents
+            path: pages/voice/voice.mdx
+            icon: fa-sharp fa-light fa-headset
+            contents: 
+              - page: Connecting to LiveKit Agents 
+                path: pages/voice/voice_livekit.mdx
+
       #- section: Tool Execution
       #  contents:
       #    - page: Overview
