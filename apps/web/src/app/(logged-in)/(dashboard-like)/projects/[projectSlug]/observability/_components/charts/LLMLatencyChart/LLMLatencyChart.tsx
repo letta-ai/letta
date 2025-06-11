@@ -42,11 +42,15 @@ export function LLMLatencyChart(props: LLMLatencyChartProps) {
     seriesData: [
       {
         data: data?.body.items,
-        getterFn: (item) => item.avgLatencyMs,
+        getterFn: (item) => item.p50LatencyMs,
+      },
+      {
+        data: data?.body.items,
+        getterFn: (item) => item.p99LatencyMs,
       },
     ],
-    formatter: (value) => {
-      return `${value}ms`;
+    formatter: function (value) {
+      return formatSmallDuration(value * 1_000_000).replace(' ', '');
     },
     startDate,
     endDate,
@@ -71,18 +75,26 @@ export function LLMLatencyChart(props: LLMLatencyChartProps) {
           tooltip: {
             trigger: 'axis',
             formatter: (e) => {
-              const averageLatency = get(e, '0.data.value', null);
-              const date = get(e, '0.axisValue', '') as string;
-
+              const p50Response = get(e, '0.data.value', null);
+              const p99Response = get(e, '1.data.value', null);
+              const date = get(e, '0.axisValue', '');
               return makeMultiValueFormattedTooltip({
                 date,
                 options: [
                   {
                     color: get(e, '0.color', '#333') as string,
-                    label: t('averageLatency.label'),
+                    label: t('p50Latency.label'),
                     value:
-                      typeof averageLatency === 'number'
-                        ? formatSmallDuration(averageLatency * 1_000_000) // Convert ms to ns
+                      typeof p50Response === 'number'
+                        ? formatSmallDuration(p50Response * 1_000_000)
+                        : '-',
+                  },
+                  {
+                    color: get(e, '1.color', '#555') as string,
+                    label: t('p99Latency.label'),
+                    value:
+                      typeof p99Response === 'number'
+                        ? formatSmallDuration(p99Response * 1_000_000)
                         : '-',
                   },
                 ],

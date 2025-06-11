@@ -34,17 +34,35 @@ export async function getTimeToFirstTokenMetrics(
   const result = await client.query({
     query: `
       SELECT
-        toDate(time_window) as date,
-        sum(count) as sample_count,
-        CASE WHEN sum(count) > 0 THEN sum(sum) / sum(count) ELSE 0 END as avg_time_to_first_token_ms
-      FROM otel.letta_metrics_histograms_5min
-      WHERE metric_name = 'hist_ttft_ms'
-        AND organization_id = {organizationId: String}
-        AND project_id = {projectId: String}
-        AND time_window >= toDateTime({startDate: UInt32})
-        AND time_window <= toDateTime({endDate: UInt32})
-      GROUP BY toDate(time_window)
-      ORDER BY date DESC
+        toDate(Timestamp) as date,
+  quantile(0.99)(toFloat64OrNull(duration_ms)) AS p99_latency_ms,
+  quantile(0.50)(toFloat64OrNull(duration_ms)) AS p50_latency_ms
+      FROM (
+        SELECT
+        Timestamp,
+        arrayFirst(event -> event.Name = 'time_to_first_token_ms', Events).Attributes['ttft_ms'] AS duration_ms
+        FROM otel_traces
+        WHERE SpanName = 'time_to_first_token'
+        AND TraceId IN (
+        SELECT DISTINCT TraceId
+        FROM otel_traces
+        WHERE (SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
+        SpanName = 'POST /v1/agents/{agent_id}/messages' OR
+        SpanName = 'POST /v1/agents/{agent_id}/messages/async')
+        AND SpanAttributes['project.id'] = {projectId: String}
+        AND SpanAttributes['organization.id'] = {organizationId: String}
+        AND ParentSpanId = ''
+        AND Timestamp >= {startDate: DateTime}
+        AND Timestamp <= {endDate: DateTime}
+        )
+        AND arrayExists(
+        event -> event.Name = 'time_to_first_token_ms',
+        Events
+        )
+        )
+      WHERE duration_ms IS NOT NULL
+      GROUP BY toDate(Timestamp)
+      ORDER BY date
     `,
     query_params: {
       startDate: Math.round(new Date(startDate).getTime() / 1000),
@@ -57,8 +75,8 @@ export async function getTimeToFirstTokenMetrics(
 
   interface QueryResult {
     date: string;
-    avg_time_to_first_token_ms: number;
-    sample_count: number;
+    p50_latency_ms: string;
+    p99_latency_ms: string;
   }
 
   const response = await getClickhouseData<QueryResult[]>(result);
@@ -68,10 +86,8 @@ export async function getTimeToFirstTokenMetrics(
     body: {
       items: response.map((item) => ({
         date: item.date,
-        averageTimeToFirstTokenMs: parseFloat(
-          item.avg_time_to_first_token_ms.toString(),
-        ),
-        sampleCount: parseInt(item.sample_count.toString(), 10),
+        p50LatencyMs: parseFloat(item.p50_latency_ms),
+        p99LatencyMs: parseFloat(item.p99_latency_ms),
       })),
     },
   };

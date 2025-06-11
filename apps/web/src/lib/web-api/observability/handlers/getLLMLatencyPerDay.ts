@@ -33,29 +33,36 @@ export async function getLLMLatencyPerDay(
 
   const result = await client.query({
     query: `
-      WITH aggregated AS (
         SELECT
-          toDate(time_window) as date,
-          sum(count) as total_count,
-          sum(sum) as total_sum,
-          arrayReduce('sumForEach', groupArray(bucket_counts)) as total_bucket_counts,
-          any(explicit_bounds) as bounds
-        FROM otel.letta_metrics_histograms_5min
-        WHERE metric_name = 'hist_llm_execution_time_ms'
-          AND organization_id = {organizationId: String}
-          AND project_id = {projectId: String}
-          AND time_window >= toDateTime({startDate: UInt32})
-          AND time_window <= toDateTime({endDate: UInt32})
-        GROUP BY toDate(time_window)
-      )
-      SELECT
-        date,
-        total_count as count,
-        CASE WHEN total_count > 0 THEN total_sum / total_count ELSE 0 END as avg_latency_ms,
-        arrayElement(bounds, arrayFirstIndex(x -> x >= 0.5 * arraySum(total_bucket_counts), arrayCumSum(total_bucket_counts))) as p50_latency_ms,
-        arrayElement(bounds, arrayFirstIndex(x -> x >= 0.99 * arraySum(total_bucket_counts), arrayCumSum(total_bucket_counts))) as p99_latency_ms
-      FROM aggregated
-      ORDER BY date DESC
+            toDate(Timestamp) as date,
+  quantile(0.99)(CAST(duration_ms AS Float64)) AS p99_latency_ms,
+  quantile(0.50)(CAST(duration_ms AS Float64)) AS p50_latency_ms
+        FROM (
+            SELECT
+            Timestamp,
+            arrayFirst(event -> event.Name = 'llm_request_ms', Events).Attributes['duration_ms'] AS duration_ms
+            FROM otel_traces
+            WHERE SpanName = 'agent_step'
+            AND TraceId IN (
+            SELECT DISTINCT TraceId
+            FROM otel_traces
+            WHERE (SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
+            SpanName = 'POST /v1/agents/{agent_id}/messages' OR
+            SpanName = 'POST /v1/agents/{agent_id}/messages/async')
+            AND SpanAttributes['project.id'] = {projectId: String}
+            AND SpanAttributes['organization.id'] = {organizationId: String}
+            AND ParentSpanId = ''
+            AND Timestamp >= {startDate: DateTime}
+            AND Timestamp <= {endDate: DateTime}
+            )
+            AND arrayExists(
+            event -> event.Name = 'llm_request_ms',
+            Events
+            )
+            )
+        WHERE duration_ms IS NOT NULL
+        GROUP BY toDate(Timestamp)
+        ORDER BY date
     `,
     query_params: {
       startDate: Math.round(new Date(startDate).getTime() / 1000),

@@ -4,7 +4,7 @@ import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurren
 import {
   Chart,
   DashboardChartWrapper,
-  makeFormattedTooltip,
+  makeMultiValueFormattedTooltip,
 } from '@letta-cloud/ui-component-library';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
@@ -44,9 +44,16 @@ export function TimeToFirstTokenChart(props: TimeToFirstTokenChartProps) {
     seriesData: [
       {
         data: data?.body.items,
-        getterFn: (item) => item.averageTimeToFirstTokenMs / 1000,
+        getterFn: (item) => item.p50LatencyMs,
+      },
+      {
+        data: data?.body.items,
+        getterFn: (item) => item.p99LatencyMs,
       },
     ],
+    formatter: function (value) {
+      return formatSmallDuration(value * 1_000_000).replace(' ', '');
+    },
     startDate,
     endDate,
   });
@@ -65,17 +72,29 @@ export function TimeToFirstTokenChart(props: TimeToFirstTokenChartProps) {
           tooltip: {
             trigger: 'axis',
             formatter: (e) => {
-              const value = get(e, '0.data.value', null);
-
-              if (typeof value !== 'number') {
-                return makeFormattedTooltip({
-                  label: t('tooltip.noData'),
-                });
-              }
-
-              return makeFormattedTooltip({
-                label: t('tooltip.withValue'),
-                value: formatSmallDuration(value * 1_000_000),
+              const p50Response = get(e, '0.data.value', null);
+              const p99Response = get(e, '1.data.value', null);
+              const date = get(e, '0.axisValue', '');
+              return makeMultiValueFormattedTooltip({
+                date,
+                options: [
+                  {
+                    color: get(e, '0.color', '#333') as string,
+                    label: t('p50Latency.label'),
+                    value:
+                      typeof p50Response === 'number'
+                        ? formatSmallDuration(p50Response * 1_000_000)
+                        : '-',
+                  },
+                  {
+                    color: get(e, '1.color', '#555') as string,
+                    label: t('p99Latency.label'),
+                    value:
+                      typeof p99Response === 'number'
+                        ? formatSmallDuration(p99Response * 1_000_000)
+                        : '-',
+                  },
+                ],
               });
             },
           },

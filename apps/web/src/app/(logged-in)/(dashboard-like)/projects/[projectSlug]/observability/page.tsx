@@ -14,9 +14,12 @@ import { ToolErrorRateChart } from './_components/charts/ToolErrorRateChart/Tool
 import { ToolUsageFrequencyChart } from './_components/charts/ToolUsageFrequencyChart/ToolUsageFrequencyChart';
 import { ToolErrorsByNameChart } from './_components/charts/ToolErrorsByNameChart/ToolErrorsByNameChart';
 import { ToolLatencyChart } from './_components/charts/ToolLatencyChart/ToolLatencyChart';
-import { LLMLatencyByToolNameChart } from './_components/charts/LLMLatencyByToolNameChart/LLMLatencyByToolNameChart';
+import { ToolLatencyByToolNameChart } from './_components/charts/ToolLatencyByToolNameChart/ToolLatencyByToolNameChart';
 import { useObservabilityContext } from './_components/hooks/useObservabilityContext/useObservabilityContext';
 import { Fragment, useMemo } from 'react';
+import { LLMLatencyChart } from './_components/charts/LLMLatencyChart/LLMLatencyChart';
+import { LLMLatencyByModelNameChart } from './_components/charts/LLMLatencyByModelNameChart/LLMLatencyByModelNameChart';
+import { TimeToFirstTokenChart } from './_components/charts/TimeToFirstTokenChart/TimeToFirstTokenChart';
 
 interface ChartRowProps {
   children: React.ReactNode;
@@ -31,16 +34,13 @@ function ChartRow(props: ChartRowProps) {
 const allCharts = [
   <ActiveAgentChart key="active-agent-chart" />,
   <TotalMessagesPerDayChart key="total-messages-per-day-chart" />,
-  <ToolErrorsChart key="tool-errors-chart" />,
+  // <ToolErrorsChart key="tool-errors-chart" />,
   <TotalResponseTimeChart key="total-response-time-chart" />,
   <APIErrorsChart key="api-errors-chart" />,
   <ToolErrorRateChart key="tool-error-rate-chart" />,
   <ToolUsageFrequencyChart key="tool-usage-frequency-chart" />,
-  <ToolErrorsByNameChart key="tool-errors-by-name-chart" />,
-  // <LLMLatencyChart key="llm-latency-chart" />,
+  <LLMLatencyChart key="llm-latency-chart" />,
   <ToolLatencyChart key="tool-latency-chart" />,
-  <LLMLatencyByToolNameChart key="llm-latency-by-tool-name-chart" />,
-  // <TimeToFirstTokenChart key="time-to-first-token-chart" />,
 ];
 
 const activityCharts = [
@@ -51,10 +51,25 @@ const activityCharts = [
 
 const performanceCharts = [
   <TotalResponseTimeChart key="total-response-time-chart" />,
-  // <LLMLatencyChart key="llm-latency-chart" />,
+  <LLMLatencyChart key="llm-latency-chart" />,
   <ToolLatencyChart key="tool-latency-chart" />,
-  <LLMLatencyByToolNameChart key="llm-latency-by-tool-name-chart" />,
-  // <TimeToFirstTokenChart key="time-to-first-token-chart" />,
+  <ToolLatencyByToolNameChart
+    type="p50"
+    key="llm-latency-by-tool-name-chart"
+  />,
+  <ToolLatencyByToolNameChart
+    type="p99"
+    key="llm-latency-by-tool-name-chart"
+  />,
+  <LLMLatencyByModelNameChart
+    type="p50"
+    key="llm-latency-by-model-name-chart"
+  />,
+  <LLMLatencyByModelNameChart
+    type="p99"
+    key="llm-latency-by-model-name-chart"
+  />,
+  <TimeToFirstTokenChart key="time-to-first-token-chart" />,
 ];
 
 const errorCharts = [

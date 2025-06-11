@@ -6,8 +6,8 @@ const c = initContract();
 
 export const TimeToFirstTokenMetricsItem = z.object({
   date: z.string(), // ISO date string
-  averageTimeToFirstTokenMs: z.number(), // Average time to first token in milliseconds
-  sampleCount: z.number(), // Number of samples for the date
+  p50LatencyMs: z.number(), // 50th percentile latency in nanoseconds
+  p99LatencyMs: z.number(), // 99th percentile latency in nanoseconds
 });
 
 const TimeToFirstTokenMetricsResponseSchema = z.object({
@@ -308,6 +308,26 @@ const getLLMLatencyPerDayContract = c.query({
   },
 });
 
+const LLMLatencyByModelItem = z.object({
+  date: z.string(),
+  modelName: z.string(),
+  p50LatencyMs: z.number(),
+  p99LatencyMs: z.number(),
+});
+
+const LLMLatencyByModelResponseSchema = z.object({
+  items: z.array(LLMLatencyByModelItem),
+});
+
+const getLLMLatencyByModelContract = c.query({
+  path: '/observability/metrics/llm-latency-by-model',
+  method: 'GET',
+  query: DefaultMetricsQuery,
+  responses: {
+    200: LLMLatencyByModelResponseSchema,
+  },
+});
+
 // Tool Latency Per Day
 const ToolLatencyItem = z.object({
   date: z.string(),
@@ -495,6 +515,7 @@ export const observabilityContracts = c.router({
   getToolLatencyByName: getToolLatencyByNameContract,
   getToolUsageByFrequency: getToolUsageByFrequencyContract,
   getTimeToFirstTokenPerDay: getTimeToFirstTokenPerDayContract,
+  getLLMLatencyByModel: getLLMLatencyByModelContract,
   // Existing endpoints
   getTracesByProjectId: getTracesByProjectIdContract,
   getTimeToFirstTokenMetrics: timeToFirstTokenMetricsContract,
@@ -592,4 +613,9 @@ export const observabilityQueryKeys = {
   getTracesByProjectId: (
     query: z.infer<typeof getTracesByProjectIdContract.query>,
   ) => ['observability', 'getTracesByProjectId', query],
+  getLLMLatencyByModel: (query: z.infer<typeof DefaultMetricsQuery>) => [
+    'observability',
+    'getLLMLatencyByModel',
+    query,
+  ],
 };

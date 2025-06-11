@@ -6,17 +6,17 @@ import {
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 
-type GetToolLatencyPerDayRequest = ServerInferRequest<
-  typeof contracts.observability.getToolLatencyPerDay
+type GetLLMLatencyByModelRequest = ServerInferRequest<
+  typeof contracts.observability.getLLMLatencyByModel
 >;
 
-type GetToolLatencyPerDayResponse = ServerInferResponses<
-  typeof contracts.observability.getToolLatencyPerDay
+type GetLLMLatencyByModelResponse = ServerInferResponses<
+  typeof contracts.observability.getLLMLatencyByModel
 >;
 
-export async function getToolLatencyPerDay(
-  request: GetToolLatencyPerDayRequest,
-): Promise<GetToolLatencyPerDayResponse> {
+export async function getLLMLatencyByModel(
+  request: GetLLMLatencyByModelRequest,
+): Promise<GetLLMLatencyByModelResponse> {
   const { projectId, startDate, endDate } = request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
@@ -33,43 +33,41 @@ export async function getToolLatencyPerDay(
 
   const result = await client.query({
     query: `
-      SELECT
-        toDate(Timestamp) as date,
-  quantile(0.99)(CAST(duration_ms AS Float64)) AS p99_latency_ms,
-  quantile(0.50)(CAST(duration_ms AS Float64)) AS p50_latency_ms
+      SELECT toDate(Timestamp) as date,
+  llm_handle,
+  quantile(0.99)(duration_ms_float) AS p99_latency_ms,
+  quantile(0.50)(duration_ms_float) AS p50_latency_ms
       FROM (
         SELECT
-        Timestamp,
-        arrayFirst(
-        event -> has(event.Attributes, 'tool_name') AND has(event.Attributes, 'duration_ms'),
-        Events
-        ).Attributes['duration_ms'] AS duration_ms
+        agent.Timestamp, agent.duration_ms_float, ttft.handle AS llm_handle
+        FROM (
+        SELECT
+        Timestamp, TraceId, ParentSpanId, arrayFirst(event -> event.Name = 'llm_request_ms', Events).Attributes['duration_ms'] AS duration_ms, toFloat64OrNull(arrayFirst(event -> event.Name = 'llm_request_ms', Events).Attributes['duration_ms']) AS duration_ms_float
         FROM otel_traces
         WHERE SpanName = 'agent_step'
         AND arrayExists(
-        event -> event.Attributes['tool_name'] != 'send_message',
-        Events
+        event -> event.Name = 'llm_request_ms', Events
         )
-        AND TraceId IN (
+        ) AS agent
+        INNER JOIN (
+        SELECT
+        TraceId, ParentSpanId, SpanAttributes['llm_config.handle'] AS handle
+        FROM otel_traces
+        WHERE SpanName = 'time_to_first_token'
+        AND has(SpanAttributes, 'llm_config.handle')
+        ) AS ttft ON agent.TraceId = ttft.TraceId AND agent.ParentSpanId = ttft.ParentSpanId
+        WHERE agent.TraceId IN (
         SELECT DISTINCT TraceId
         FROM otel_traces
         WHERE (SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
         SpanName = 'POST /v1/agents/{agent_id}/messages' OR
         SpanName = 'POST /v1/agents/{agent_id}/messages/async')
-        AND SpanAttributes['project.id'] = {projectId: String}
-        AND SpanAttributes['organization.id'] = {organizationId: String}
         AND ParentSpanId = ''
-        AND Timestamp >= {startDate: DateTime}
-        AND Timestamp <= {endDate: DateTime}
-        )
-        AND arrayExists(
-        event -> has(event.Attributes, 'tool_name') AND has(event.Attributes, 'duration_ms'),
-        Events
         )
         )
-      WHERE duration_ms IS NOT NULL
-      GROUP BY toDate(Timestamp)
-      ORDER BY date
+      WHERE duration_ms_float IS NOT NULL AND llm_handle IS NOT NULL
+      GROUP BY date, llm_handle
+      ORDER BY date, llm_handle
     `,
     query_params: {
       startDate: Math.round(new Date(startDate).getTime() / 1000),
@@ -83,7 +81,7 @@ export async function getToolLatencyPerDay(
   const response = await getClickhouseData<
     Array<{
       date: string;
-      count: string;
+      llm_handle: string;
       p50_latency_ms: string;
       p99_latency_ms: string;
     }>
@@ -94,8 +92,7 @@ export async function getToolLatencyPerDay(
     body: {
       items: response.map((item) => ({
         date: item.date,
-        count: parseInt(item.count, 10),
-        avgLatencyMs: 0,
+        modelName: item.llm_handle,
         p50LatencyMs: parseFloat(item.p50_latency_ms),
         p99LatencyMs: parseFloat(item.p99_latency_ms),
       })),

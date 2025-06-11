@@ -1511,16 +1511,18 @@
     },
     "ChartSelector": {
       "activity": "Activity and Usage",
-      "all": "All charts",
+      "all": "Overview",
       "performance": "Performance",
       "errors": "Errors"
     }
   },
   "pages/projects/observability/TimeToFirstTokenChart": {
-    "title": "Average time to first token",
-    "tooltip": {
-      "withValue": "Time to first token",
-      "noData": "No data was recorded for this date"
+    "title": "Time to first token",
+    "p50Latency": {
+      "label": "Median Time to First Token"
+    },
+    "p99Latency": {
+      "label": "99th Time to First Token"
     }
   },
   "pages/projects/observability/TotalMessagesPerDayChart": {
@@ -1531,7 +1533,7 @@
     }
   },
   "pages/projects/observability/TotalResponseTimeChart": {
-    "title": "Total response time",
+    "title": "Response latency",
     "p50ResponseTime": {
       "label": "Median response time"
     },
@@ -1598,12 +1600,16 @@
       "label": "Average latency"
     }
   },
-  "pages/projects/observability/LLMLatencyByToolNameChart": {
-    "title": "Average tool latency by name",
+  "pages/projects/observability/ToolLatencyByToolNameChart": {
+    "title": "Tool latency by name ({type})",
+    "noData": "No data available"
+  },
+  "pages/projects/observability/LLMLatencyByModelNameChart": {
+    "title": "LLM latency by model ({type})",
     "noData": "No data available"
   },
   "pages/projects/observability/ToolLatencyChart": {
-    "title": "Average tool latency",
+    "title": "Tool latency",
     "avgLatencyMs": {
       "label": "Average latency"
     },

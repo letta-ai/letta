@@ -33,28 +33,45 @@ export async function getToolLatencyByName(
 
   const result = await client.query({
     query: `
-      WITH aggregated AS (
-        SELECT
-          toDate(time_window) as date,
-          tool_name,
-          sum(count) as total_count,
-          sum(sum) as total_sum
-        FROM otel.letta_metrics_histograms_5min
-        WHERE metric_name = 'hist_tool_execution_time_ms'
-          AND organization_id = {organizationId: String}
-          AND project_id = {projectId: String}
-          AND time_window >= toDateTime({startDate: UInt32})
-          AND time_window <= toDateTime({endDate: UInt32})
-          AND tool_name != ''
-        GROUP BY toDate(time_window), tool_name
-      )
       SELECT
-        date,
-        tool_name,
-        total_count as count,
-        CASE WHEN total_count > 0 THEN total_sum / total_count ELSE 0 END as avg_latency_ms
-      FROM aggregated
-      ORDER BY date DESC, tool_name
+        toDate(Timestamp) as date,
+  tool_name,
+  quantile(0.99)(CAST(duration_ms AS Float64)) AS p99_latency_ms,
+  quantile(0.50)(CAST(duration_ms AS Float64)) AS p50_latency_ms
+      FROM (
+        SELECT
+        Timestamp,
+        arrayFirst(
+        event -> has(event.Attributes, 'tool_name') AND has(event.Attributes, 'duration_ms'),
+        Events
+        ).Attributes['tool_name'] AS tool_name,
+        arrayFirst(
+        event -> has(event.Attributes, 'tool_name') AND has(event.Attributes, 'duration_ms'),
+        Events
+        ).Attributes['duration_ms'] AS duration_ms
+        FROM otel_traces
+        WHERE SpanName = 'agent_step'
+        AND arrayExists(
+        event -> has(event.Attributes, 'tool_name') AND has(event.Attributes, 'duration_ms'),
+        Events
+        )
+        AND TraceId IN (
+        SELECT DISTINCT TraceId
+        FROM otel_traces
+        WHERE (SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
+        SpanName = 'POST /v1/agents/{agent_id}/messages' OR
+        SpanName = 'POST /v1/agents/{agent_id}/messages/async')
+        AND SpanAttributes['project.id'] = {projectId: String}
+        AND SpanAttributes['organization.id'] = {organizationId: String}
+        AND ParentSpanId = ''
+        AND Timestamp >= {startDate: DateTime}
+        AND Timestamp <= {endDate: DateTime}
+        )
+        )
+      WHERE duration_ms IS NOT NULL AND tool_name IS NOT NULL
+      GROUP BY toDate(Timestamp), tool_name
+      ORDER BY date, tool_name
+
     `,
     query_params: {
       startDate: Math.round(new Date(startDate).getTime() / 1000),
@@ -83,9 +100,9 @@ export async function getToolLatencyByName(
         date: item.date,
         toolName: item.tool_name,
         count: parseInt(item.count, 10),
-        avgLatencyMs: parseFloat(item.avg_latency_ms),
-        p50LatencyMs: 0,
-        p99LatencyMs: 0,
+        avgLatencyMs: 0,
+        p50LatencyMs: parseFloat(item.p50_latency_ms),
+        p99LatencyMs: parseFloat(item.p99_latency_ms),
       })),
     },
   };

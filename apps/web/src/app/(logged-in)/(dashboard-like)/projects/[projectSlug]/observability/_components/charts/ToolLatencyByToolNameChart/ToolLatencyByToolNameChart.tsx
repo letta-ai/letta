@@ -15,19 +15,20 @@ import { useObservabilityContext } from '../../hooks/useObservabilityContext/use
 import { useMemo } from 'react';
 import type { EChartsOption } from 'echarts';
 
-interface LLMLatencyByToolNameChartProps {
+interface ToolLatencyByToolNameChartProps {
   analysisLink?: string;
+  type: 'p50' | 'p99';
 }
 
-export function LLMLatencyByToolNameChart(
-  props: LLMLatencyByToolNameChartProps,
+export function ToolLatencyByToolNameChart(
+  props: ToolLatencyByToolNameChartProps,
 ) {
   const { startDate, endDate } = useObservabilityContext();
-  const { analysisLink } = props;
+  const { analysisLink, type = 'p50' } = props;
   const { id: projectId } = useCurrentProject();
 
   const t = useTranslations(
-    'pages/projects/observability/LLMLatencyByToolNameChart',
+    'pages/projects/observability/ToolLatencyByToolNameChart',
   );
 
   const { data } = webApi.observability.getToolLatencyByName.useQuery({
@@ -49,7 +50,7 @@ export function LLMLatencyByToolNameChart(
 
   interface ToolSeriesData {
     date: string;
-    avgLatencyMs: number;
+    latencyMs: number;
     name: string;
   }
 
@@ -75,7 +76,7 @@ export function LLMLatencyByToolNameChart(
       }
       toolMap.get(item.toolName)?.push({
         date: item.date,
-        avgLatencyMs: item.avgLatencyMs,
+        latencyMs: type === 'p50' ? item.p50LatencyMs : item.p99LatencyMs,
         name: item.toolName || '',
       });
     });
@@ -85,12 +86,12 @@ export function LLMLatencyByToolNameChart(
       toolName,
       data,
     }));
-  }, [data]);
+  }, [data?.body.items, type]);
 
   const tableOptions = useObservabilitySeriesData<ToolSeriesData>({
     seriesData: toolSeries.map((tool) => ({
       data: tool.data,
-      getterFn: (item) => item.avgLatencyMs,
+      getterFn: (item) => item.latencyMs,
       nameGetterFn: (item) => item.name,
     })),
     startDate,
@@ -172,7 +173,7 @@ export function LLMLatencyByToolNameChart(
   return (
     <DashboardChartWrapper
       analysisLink={analysisLink}
-      title={t('title')}
+      title={t('title', { type })}
       isLoading={!data}
       isEmpty={!data?.body.items?.length}
     >
