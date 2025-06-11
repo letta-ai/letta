@@ -45,7 +45,7 @@ export function ViewMessageTrace(props: ViewMessageTraceProps) {
         traceId: traceId || '',
       },
     },
-    enabled: !!traceId,
+    enabled: !!traceId && open,
   });
 
   const t = useTranslations('pages/projects/observability/ViewMessageTrace');

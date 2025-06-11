@@ -10,6 +10,7 @@ import {
   HStack,
   IdentitiesIcon,
   MonitoringIcon,
+  ListIcon,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import type { PropsWithChildren } from 'react';
@@ -89,6 +90,12 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
                     id: 'observability',
                     label: t('nav.monitoring'),
                     href: `/projects/${projectSlug}/observability`,
+                  },
+                  {
+                    icon: <ListIcon />,
+                    id: 'steps',
+                    label: t('nav.responses'),
+                    href: `/projects/${projectSlug}/responses`,
                   },
                 ],
               },

@@ -1640,6 +1640,35 @@
   "pages/projects/observability/ToolLatencyByNameChart": {
     "title": "Tool latency by name"
   },
+  "projects/(projectSlug)/responses/page": {
+    "title": "Responses",
+    "description": "Responses are the segmented steps in an agent's response to a user message.",
+    "columns": {
+      "timestamp": "Timestamp",
+      "agent": "Agent",
+      "status": "Status",
+      "duration": "Duration",
+      "actions": "Actions"
+    },
+    "actions": {
+      "exploreMessage": "Inspect message"
+    },
+    "statuses": {
+      "requestFailed": {
+        "label": "Failed",
+        "tooltip": "This response failed due to a server error"
+      },
+      "executionFailed": {
+        "label": "Tool error",
+        "tooltip": "This response failed due to a tool execution error"
+      },
+      "success": {
+        "label": "Success"
+      }
+    },
+    "loadingMessage": "Loading responses...",
+    "errorMessage": "There was an error loading responses, please try again or contact support."
+  },
   "projects/(projectSlug)/layout": {
     "nav": {
       "return": "All projects",
@@ -1649,7 +1678,8 @@
       "identities": "Identities",
       "settings": "Settings",
       "observability": "Observability",
-      "monitoring": "Monitoring"
+      "monitoring": "Monitoring",
+      "responses": "Responses"
     }
   },
   "components/AgentTemplateCard": {

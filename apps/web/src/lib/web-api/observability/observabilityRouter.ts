@@ -15,6 +15,7 @@ import {
   getTimeToFirstTokenMessages,
   getObservabilityOverview,
   getApiErrorCount,
+  getTracesByProjectId,
 } from './handlers';
 
 export const observabilityRouter = {
@@ -28,6 +29,7 @@ export const observabilityRouter = {
   getTimeToFirstTokenPerDay,
   getTotalMessagesPerDay,
   // Existing endpoints
+  getTracesByProjectId,
   getTimeToFirstTokenMetrics,
   getTimeToFirstTokenMessages,
   getAverageResponseTime,

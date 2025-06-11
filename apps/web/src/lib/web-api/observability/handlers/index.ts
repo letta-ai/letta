@@ -14,3 +14,4 @@ export { getActiveAgentsPerDay } from './getActiveAgentsPerDay';
 export { getTimeToFirstTokenMessages } from './getTimeToFirstTokenMessages';
 export { getObservabilityOverview } from './getObservabilityOverview';
 export { getApiErrorCount } from './getApiErrorCount';
+export { getTracesByProjectId } from './getTracesByProjectId/getTracesByProjectId';

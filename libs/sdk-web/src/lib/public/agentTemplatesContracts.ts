@@ -14,7 +14,7 @@ export const AgentTemplateSchema = z.object({
   latestDeployedVersion: z.string().optional(),
   latestDeployedId: z.string().optional(),
   updatedAt: z.string(),
-  agentState: zodTypes.AgentState.optional().nullable(),
+  agentState: z.nullable(zodTypes.AgentState.optional()),
 });
 
 export const AgentTemplatesSchema = z.array(AgentTemplateSchema);

@@ -395,6 +395,97 @@ const getTimeToFirstTokenPerDayContract = c.query({
   },
 });
 
+export const StepDetail = z.object({
+  stepId: z.string(),
+  toolName: z.string(),
+  toolDurationMs: z.number(),
+  llmDurationMs: z.number(),
+  stepDurationMs: z.number(),
+  toolStatus: z.enum(['success', 'error']),
+});
+
+export type StepDetailType = z.infer<typeof StepDetail>;
+
+export const ParentSpanResponse = z.object({
+  traceId: z.string(),
+  spanId: z.string(),
+  createdAt: z.string(),
+  requestStatus: z.enum(['success', 'error']),
+  executionStatus: z.enum(['success', 'error']),
+  statusMessage: z.string(),
+  durationNs: z.number(),
+  steps: z.array(StepDetail),
+  agentId: z.string(),
+  inputPayload: z.string(),
+});
+
+export type ParentSpanResponseType = z.infer<typeof ParentSpanResponse>;
+
+const SearchResponsesByAgentId = z.object({
+  field: z.literal('agentId'),
+  operator: z.enum(['eq']),
+  value: z.string(),
+});
+
+const SearchResponsesByDuration = z.object({
+  field: z.literal('duration'),
+  operator: z.enum(['gte', 'lte']),
+  value: z.number(),
+});
+
+const SearchResponsesByStatusCode = z.object({
+  field: z.literal('statusCode'),
+  operator: z.enum(['eq']),
+  value: z.enum(['tool_error']),
+});
+
+const SearchResponsesByDateRange = z.object({
+  field: z.literal('timestamp'),
+  operator: z.enum(['gte', 'lte']),
+  value: z.string().refine(
+    (val) => {
+      const date = new Date(val);
+      return !isNaN(date.getTime());
+    },
+    {
+      message: 'Invalid date format',
+    },
+  ),
+});
+
+const SearchResponsesByFunctionName = z.object({
+  field: z.literal('functionName'),
+  operator: z.enum(['eq']),
+  value: z.string(),
+});
+
+export const SearchTypesSchema = z.union([
+  SearchResponsesByAgentId,
+  SearchResponsesByDuration,
+  SearchResponsesByStatusCode,
+  SearchResponsesByDateRange,
+  SearchResponsesByFunctionName,
+]);
+
+export type SearchTypesType = z.infer<typeof SearchTypesSchema>;
+
+const getTracesByProjectIdContract = c.query({
+  path: '/observability/traces',
+  method: 'GET',
+  query: z.object({
+    projectId: z.string(),
+    offset: z.number().default(0),
+    limit: z.number().max(100).min(1),
+    search: z.array(SearchTypesSchema).optional(),
+  }),
+  responses: {
+    200: z.object({
+      items: z.array(ParentSpanResponse),
+      hasNextPage: z.boolean(),
+    }),
+  },
+});
+
 export const observabilityContracts = c.router({
   // New metrics endpoints
   getToolErrorRatePerDay: getToolErrorRatePerDayContract,
@@ -405,6 +496,7 @@ export const observabilityContracts = c.router({
   getToolUsageByFrequency: getToolUsageByFrequencyContract,
   getTimeToFirstTokenPerDay: getTimeToFirstTokenPerDayContract,
   // Existing endpoints
+  getTracesByProjectId: getTracesByProjectIdContract,
   getTimeToFirstTokenMetrics: timeToFirstTokenMetricsContract,
   getAverageResponseTime: getAverageResponseTimeContract,
   getTotalMessagesPerDay: getTotalMessagesPerDayContract,
@@ -497,4 +589,7 @@ export const observabilityQueryKeys = {
     'getObservabilityOverview',
     query,
   ],
+  getTracesByProjectId: (
+    query: z.infer<typeof getTracesByProjectIdContract.query>,
+  ) => ['observability', 'getTracesByProjectId', query],
 };
