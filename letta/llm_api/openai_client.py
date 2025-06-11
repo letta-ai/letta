@@ -94,20 +94,13 @@ def supports_structured_output(llm_config: LLMConfig) -> bool:
 # TODO move into LLMConfig as a field?
 def requires_auto_tool_choice(llm_config: LLMConfig) -> bool:
     """Certain providers require the tool choice to be set to 'auto'."""
-
     if "nebius.com" in llm_config.model_endpoint:
         return True
     if "together.ai" in llm_config.model_endpoint or "together.xyz" in llm_config.model_endpoint:
         return True
-    # proxy also has this issue (FIXME check)
-    elif llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
+    if llm_config.handle and "vllm" in llm_config.handle:
         return True
-    # same with vLLM (FIXME check)
-    elif llm_config.handle and "vllm" in llm_config.handle:
-        return True
-    else:
-        # will use "required" instead of "auto"
-        return False
+    return False
 
 
 class OpenAIClient(LLMClientBase):
@@ -204,7 +197,7 @@ class OpenAIClient(LLMClientBase):
         # TODO: This vllm checking is very brittle and is a patch at most
         tool_choice = None
         if requires_auto_tool_choice(llm_config):
-            tool_choice = "auto"  # TODO change to "required" once proxy supports it
+            tool_choice = "auto"
         elif tools:
             # only set if tools is non-Null
             tool_choice = "required"
