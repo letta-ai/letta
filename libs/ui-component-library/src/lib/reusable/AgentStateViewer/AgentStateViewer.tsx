@@ -231,8 +231,8 @@ function ToolRuleViewer(props: ToolRuleViewerProps) {
             <VStack paddingTop={false} paddingX="small" paddingBottom="small">
               <VStack border>
                 <KeyValueDiffViewer
-                  keyValuePairs={rule || {}}
-                  comparedKeyValuePairs={comparedRule}
+                  keyValuePairs={comparedRule || {}}
+                  comparedKeyValuePairs={rule || {}}
                 />
               </VStack>
             </VStack>
@@ -246,11 +246,12 @@ function ToolRuleViewer(props: ToolRuleViewerProps) {
 interface MemoryBlockViewerProps {
   memoryBlocks: CleanedAgentState['memoryBlocks'];
   comparedMemoryBlocks?: CleanedAgentState['memoryBlocks'];
+  negative?: boolean;
 }
 
 function MemoryBlockViewer(props: MemoryBlockViewerProps) {
   const t = useTranslations('components/AgentStateViewer');
-  const { memoryBlocks, comparedMemoryBlocks } = props;
+  const { memoryBlocks, negative, comparedMemoryBlocks } = props;
 
   if (
     !memoryBlocks ||
@@ -277,7 +278,7 @@ function MemoryBlockViewer(props: MemoryBlockViewerProps) {
               comparedMemoryBlocks
                 ? getChangeClass({
                     isChanged: !comparedBlock,
-                    isAdditive: false,
+                    isAdditive: negative,
                   })
                 : '',
               'border border-background-grey2',
@@ -662,6 +663,7 @@ function StateViewer(props: StateViewerProps) {
           title={t('MemoryBlockViewer.title')}
           base={
             <MemoryBlockViewer
+              negative
               comparedMemoryBlocks={toCompare?.memoryBlocks}
               memoryBlocks={state.memoryBlocks}
             />
