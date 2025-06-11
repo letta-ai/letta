@@ -29,10 +29,13 @@ jobs:
             apps/e2b/e2b.Dockerfile
 
   build-e2b-template:
+    needs: changed-files
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
+    # - run: echo ${{ needs.changed-files.outputs.all_changed_files }}
+    # - run: echo ${{ needs.changed-files.outputs.any_changed }}
     - name: Checkout repository
       uses: actions/checkout@v3
 
