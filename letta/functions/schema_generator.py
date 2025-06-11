@@ -547,8 +547,11 @@ def generate_tool_schema_for_composio(
             property_schema["enum"] = field_props["enum"]
 
         # Handle array item types
-        if field_props["type"] == "array" and "items" in field_props:
-            property_schema["items"] = field_props["items"]
+        if field_props["type"] == "array":
+            if "items" in field_props:
+                property_schema["items"] = field_props["items"]
+            elif "anyOf" in field_props:
+                property_schema["items"] = [t for t in field_props["anyOf"] if "items" in t][0]["items"]
 
         # Add the property to the schema
         properties_json[field_name] = property_schema
