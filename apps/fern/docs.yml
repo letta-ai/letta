@@ -72,6 +72,8 @@ navigation:
             path: pages/getting-started/letta_platform.mdx
           - page: Quickstart
             path: pages/getting-started/quickstart.mdx
+          - page: Prompts for Vibecoding
+            path: pages/getting-started/prompts.mdx
           #- section: Supported Frameworks
           #  contents:
           #    - page: TypeScript (Node.js)
