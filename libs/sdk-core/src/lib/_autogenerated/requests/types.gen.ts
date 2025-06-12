@@ -4205,6 +4205,29 @@ export type LettaAssistantMessageContentUnion = TextContent;
 
 export type LettaUserMessageContentUnion = TextContent | ImageContent;
 
+/**
+ * Letta provided stop reason for why agent loop ended.
+ */
+export type LettaStopReason = {
+  /**
+   * The type of the message.
+   */
+  message_type?: 'stop_reason';
+  stop_reason:
+    | 'end_turn'
+    | 'error'
+    | 'invalid_tool_call'
+    | 'max_steps'
+    | 'no_tool_call';
+};
+
+export type stop_reason =
+  | 'end_turn'
+  | 'error'
+  | 'invalid_tool_call'
+  | 'max_steps'
+  | 'no_tool_call';
+
 export type DeleteToolData = {
   toolId: string;
   userId?: string | null;

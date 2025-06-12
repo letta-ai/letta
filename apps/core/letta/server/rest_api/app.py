@@ -24,6 +24,7 @@ from letta.schemas.letta_message_content import (
     create_letta_message_content_union_schema,
     create_letta_user_message_content_union_schema,
 )
+from letta.schemas.letta_stop_reason import create_letta_stop_reason_schema
 from letta.server.constants import REST_DEFAULT_PORT
 
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
@@ -68,6 +69,7 @@ def generate_openapi_schema(app: FastAPI):
     letta_docs["components"]["schemas"]["LettaMessageContentUnion"] = create_letta_message_content_union_schema()
     letta_docs["components"]["schemas"]["LettaAssistantMessageContentUnion"] = create_letta_assistant_message_content_union_schema()
     letta_docs["components"]["schemas"]["LettaUserMessageContentUnion"] = create_letta_user_message_content_union_schema()
+    letta_docs["components"]["schemas"]["LettaStopReason"] = create_letta_stop_reason_schema()
 
     # Update the app's schema with our modified version
     app.openapi_schema = letta_docs

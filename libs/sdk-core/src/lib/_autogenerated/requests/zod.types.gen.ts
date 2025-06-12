@@ -5522,6 +5522,18 @@ export const UserUpdate = z.object({
     .optional(),
 });
 
+export type LettaStopReason = z.infer<typeof LettaStopReason>;
+export const LettaStopReason = z.object({
+  message_type: z.union([z.string(), z.undefined()]).optional(),
+  stop_reason: z.union([
+    z.literal('end_turn'),
+    z.literal('error'),
+    z.literal('invalid_tool_call'),
+    z.literal('max_steps'),
+    z.literal('no_tool_call'),
+  ]),
+});
+
 export type delete_Delete_tool = typeof delete_Delete_tool;
 export const delete_Delete_tool = {
   method: z.literal('DELETE'),
