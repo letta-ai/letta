@@ -371,7 +371,7 @@ def async_client(server_url: str) -> AsyncLetta:
     yield async_client_instance
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def agent_state(client: Letta) -> AgentState:
     """
     Creates and returns an agent state for testing with a pre-configured agent.
@@ -394,7 +394,7 @@ def agent_state(client: Letta) -> AgentState:
     client.agents.delete(agent_state_instance.id)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def agent_state_no_tools(client: Letta) -> AgentState:
     """
     Creates and returns an agent state for testing with a pre-configured agent.
