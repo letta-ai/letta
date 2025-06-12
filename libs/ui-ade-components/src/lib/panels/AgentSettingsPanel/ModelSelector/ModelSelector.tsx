@@ -38,6 +38,16 @@ export function ModelSelector(props: LocalModelSelectorProps) {
 
   const [debouncedValue] = useDebouncedValue(selectedModelValue, 500);
 
+  /*
+  What is this?
+
+  If the user selects a model from the dropdown, we want to update the current agent's LLM configuration with the selected model.
+  We debounce the value to avoid too many updates in a short time.
+
+  Why is this needed?
+
+  Sometimes the LLM Configs values are too large for the selected model, so we should adjust the current agent's LLM configuration to match the selected model one
+   */
   useEffect(() => {
     if (!options) {
       return;
@@ -47,7 +57,7 @@ export function ModelSelector(props: LocalModelSelectorProps) {
       return;
     }
 
-    if (debouncedValue !== llmConfig.model) {
+    if (debouncedValue !== llmConfig.handle) {
       const selectedLLMConfig = getLLMConfigFromHandle(debouncedValue);
 
       if (!selectedLLMConfig) {
@@ -62,7 +72,7 @@ export function ModelSelector(props: LocalModelSelectorProps) {
     }
   }, [
     getLLMConfigFromHandle,
-    llmConfig.model,
+    llmConfig.handle,
     debouncedValue,
     syncUpdateCurrentAgent,
     options,
