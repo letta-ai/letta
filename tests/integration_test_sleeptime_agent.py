@@ -156,6 +156,7 @@ async def test_sleeptime_group_chat(server, actor):
 
     # 6. Verify run status after sleep
     time.sleep(2)
+
     for run_id in run_ids:
         job = server.job_manager.get_job_by_id(job_id=run_id, actor=actor)
         assert job.status == JobStatus.running or job.status == JobStatus.completed
