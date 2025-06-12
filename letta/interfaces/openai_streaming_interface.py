@@ -60,8 +60,11 @@ class OpenAIStreamingInterface:
     def get_tool_call_object(self) -> ToolCall:
         """Useful for agent loop"""
         function_name = self.last_flushed_function_name if self.last_flushed_function_name else self.function_name_buffer
+        tool_call_id = self.last_flushed_function_id if self.last_flushed_function_id else self.function_id_buffer
+        if not tool_call_id:
+            raise ValueError("No tool call ID available")
         return ToolCall(
-            id=self.last_flushed_function_id,
+            id=tool_call_id,
             function=FunctionCall(arguments=self.current_function_arguments, name=function_name),
         )
 
