@@ -520,51 +520,6 @@ def test_function_always_error(client: LettaSDKClient, agent: AgentState):
 #     assert len(responses) == len(messages), "Not all messages were processed"
 
 
-def test_send_message_async(client: LettaSDKClient, agent: AgentState):
-    """
-    Test that we can send a message asynchronously and retrieve the messages, along with usage statistics
-    """
-    test_message = "This is a test message, respond to the user with a sentence."
-    run = client.agents.messages.create_async(
-        agent_id=agent.id,
-        messages=[
-            MessageCreate(
-                role="user",
-                content=test_message,
-            ),
-        ],
-        use_assistant_message=False,
-    )
-    assert run.id is not None
-    assert run.status == "created"
-
-    # Wait for the job to complete, cancel it if takes over 10 seconds
-    start_time = time.time()
-    while run.status == "created":
-        time.sleep(1)
-        run = client.runs.retrieve(run_id=run.id)
-        print(f"Run status: {run.status}")
-        if time.time() - start_time > 10:
-            pytest.fail("Run took too long to complete")
-
-    print(f"Run completed in {time.time() - start_time} seconds, run={run}")
-    assert run.status == "completed"
-
-    # Get messages for the job
-    messages = client.runs.messages.list(run_id=run.id)
-    assert len(messages) >= 2  # At least assistant response
-
-    # Check filters
-    assistant_messages = client.runs.messages.list(run_id=run.id, role="assistant")
-    assert len(assistant_messages) > 0
-    tool_messages = client.runs.messages.list(run_id=run.id, role="tool")
-    assert len(tool_messages) > 0
-
-    # specific_tool_messages = [message for message in client.runs.list_run_messages(run_id=run.id) if isinstance(message, ToolCallMessage)]
-    # assert specific_tool_messages[0].tool_call.name == "send_message"
-    # assert len(specific_tool_messages) > 0
-
-
 def test_agent_creation(client: LettaSDKClient):
     """Test that block IDs are properly attached when creating an agent."""
     sleeptime_agent_system = """

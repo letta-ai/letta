@@ -33,6 +33,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
 from letta.schemas.provider_trace import ProviderTraceCreate
+from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.server.rest_api.utils import create_letta_messages_from_llm_response
@@ -170,12 +171,14 @@ class LettaAgent(BaseAgent):
             agent_step_span = tracer.start_span("agent_step", start_time=step_start)
             agent_step_span.set_attributes({"step_id": step_id})
 
-            request_data, response_data, current_in_context_messages, new_in_context_messages = await self._build_and_request_from_llm(
-                current_in_context_messages,
-                new_in_context_messages,
-                agent_state,
-                llm_client,
-                tool_rules_solver,
+            request_data, response_data, current_in_context_messages, new_in_context_messages, valid_tool_names = (
+                await self._build_and_request_from_llm(
+                    current_in_context_messages,
+                    new_in_context_messages,
+                    agent_state,
+                    llm_client,
+                    tool_rules_solver,
+                )
             )
             in_context_messages = current_in_context_messages + new_in_context_messages
 
@@ -220,6 +223,7 @@ class LettaAgent(BaseAgent):
 
             persisted_messages, should_continue = await self._handle_ai_response(
                 tool_call,
+                valid_tool_names,
                 agent_state,
                 tool_rules_solver,
                 response.usage,
@@ -323,8 +327,10 @@ class LettaAgent(BaseAgent):
             agent_step_span = tracer.start_span("agent_step", start_time=step_start)
             agent_step_span.set_attributes({"step_id": step_id})
 
-            request_data, response_data, current_in_context_messages, new_in_context_messages = await self._build_and_request_from_llm(
-                current_in_context_messages, new_in_context_messages, agent_state, llm_client, tool_rules_solver
+            request_data, response_data, current_in_context_messages, new_in_context_messages, valid_tool_names = (
+                await self._build_and_request_from_llm(
+                    current_in_context_messages, new_in_context_messages, agent_state, llm_client, tool_rules_solver
+                )
             )
             in_context_messages = current_in_context_messages + new_in_context_messages
 
@@ -363,6 +369,7 @@ class LettaAgent(BaseAgent):
 
             persisted_messages, should_continue = await self._handle_ai_response(
                 tool_call,
+                valid_tool_names,
                 agent_state,
                 tool_rules_solver,
                 response.usage,
@@ -460,15 +467,17 @@ class LettaAgent(BaseAgent):
             agent_step_span = tracer.start_span("agent_step", start_time=step_start)
             agent_step_span.set_attributes({"step_id": step_id})
 
-            request_data, stream, current_in_context_messages, new_in_context_messages = await self._build_and_request_from_llm_streaming(
-                first_chunk,
-                agent_step_span,
-                request_start_timestamp_ns,
-                current_in_context_messages,
-                new_in_context_messages,
-                agent_state,
-                llm_client,
-                tool_rules_solver,
+            request_data, stream, current_in_context_messages, new_in_context_messages, valid_tool_names = (
+                await self._build_and_request_from_llm_streaming(
+                    first_chunk,
+                    agent_step_span,
+                    request_start_timestamp_ns,
+                    current_in_context_messages,
+                    new_in_context_messages,
+                    agent_state,
+                    llm_client,
+                    tool_rules_solver,
+                )
             )
             log_event("agent.stream.llm_response.received")  # [3^]
 
@@ -523,6 +532,7 @@ class LettaAgent(BaseAgent):
             reasoning_content = interface.get_reasoning_content()
             persisted_messages, should_continue = await self._handle_ai_response(
                 tool_call,
+                valid_tool_names,
                 agent_state,
                 tool_rules_solver,
                 UsageStatistics(
@@ -611,12 +621,12 @@ class LettaAgent(BaseAgent):
         agent_state: AgentState,
         llm_client: LLMClientBase,
         tool_rules_solver: ToolRulesSolver,
-    ) -> Tuple[Dict, Dict, List[Message], List[Message]]:
+    ) -> Tuple[Dict, Dict, List[Message], List[Message], List[str]]:
         for attempt in range(self.max_summarization_retries + 1):
             try:
                 log_event("agent.stream_no_tokens.messages.refreshed")
                 # Create LLM request data
-                request_data = await self._create_llm_request_data_async(
+                request_data, valid_tool_names = await self._create_llm_request_data_async(
                     llm_client=llm_client,
                     in_context_messages=current_in_context_messages + new_in_context_messages,
                     agent_state=agent_state,
@@ -631,12 +641,7 @@ class LettaAgent(BaseAgent):
                     dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model}),
                 )
                 # Attempt LLM request
-                return (
-                    request_data,
-                    response,
-                    current_in_context_messages,
-                    new_in_context_messages,
-                )
+                return (request_data, response, current_in_context_messages, new_in_context_messages, valid_tool_names)
 
             except Exception as e:
                 if attempt == self.max_summarization_retries:
@@ -664,12 +669,12 @@ class LettaAgent(BaseAgent):
         agent_state: AgentState,
         llm_client: LLMClientBase,
         tool_rules_solver: ToolRulesSolver,
-    ) -> Tuple[Dict, AsyncStream[ChatCompletionChunk], List[Message], List[Message]]:
+    ) -> Tuple[Dict, AsyncStream[ChatCompletionChunk], List[Message], List[Message], List[str]]:
         for attempt in range(self.max_summarization_retries + 1):
             try:
                 log_event("agent.stream_no_tokens.messages.refreshed")
                 # Create LLM request data
-                request_data = await self._create_llm_request_data_async(
+                request_data, valid_tool_names = await self._create_llm_request_data_async(
                     llm_client=llm_client,
                     in_context_messages=current_in_context_messages + new_in_context_messages,
                     agent_state=agent_state,
@@ -688,6 +693,7 @@ class LettaAgent(BaseAgent):
                     await llm_client.stream_async(request_data, agent_state.llm_config),
                     current_in_context_messages,
                     new_in_context_messages,
+                    valid_tool_names,
                 )
 
             except Exception as e:
@@ -770,7 +776,7 @@ class LettaAgent(BaseAgent):
         in_context_messages: List[Message],
         agent_state: AgentState,
         tool_rules_solver: ToolRulesSolver,
-    ) -> dict:
+    ) -> Tuple[dict, List[str]]:
         self.num_messages, self.num_archival_memories = await asyncio.gather(
             (
                 self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id)
@@ -827,17 +833,21 @@ class LettaAgent(BaseAgent):
             tool_list=allowed_tools, response_format=agent_state.response_format, request_heartbeat=True
         )
 
-        return llm_client.build_request_data(
-            in_context_messages,
-            agent_state.llm_config,
-            allowed_tools,
-            force_tool_call,
+        return (
+            llm_client.build_request_data(
+                in_context_messages,
+                agent_state.llm_config,
+                allowed_tools,
+                force_tool_call,
+            ),
+            valid_tool_names,
         )
 
     @trace_method
     async def _handle_ai_response(
         self,
         tool_call: ToolCall,
+        valid_tool_names: List[str],
         agent_state: AgentState,
         tool_rules_solver: ToolRulesSolver,
         usage: UsageStatistics,
@@ -853,8 +863,10 @@ class LettaAgent(BaseAgent):
         This might yield additional SSE tokens if we do stalling.
         At the end, set self._continue_execution accordingly.
         """
+        # Check if the called tool is allowed by tool name:
         tool_call_name = tool_call.function.name
         tool_call_args_str = tool_call.function.arguments
+
         # Temp hack to gracefully handle parallel tool calling attempt, only take first one
         if "}{" in tool_call_args_str:
             tool_call_args_str = tool_call_args_str.split("}{", 1)[0] + "}"
@@ -893,14 +905,21 @@ class LettaAgent(BaseAgent):
             tool_call_id=tool_call_id,
             request_heartbeat=request_heartbeat,
         )
-
-        tool_execution_result = await self._execute_tool(
-            tool_name=tool_call_name,
-            tool_args=tool_args,
-            agent_state=agent_state,
-            agent_step_span=agent_step_span,
-            step_id=step_id,
-        )
+        if tool_call_name not in valid_tool_names:
+            base_error_message = f"[ToolConstraintError] Cannot call {tool_call_name}, valid tools to call include: {valid_tool_names}."
+            violated_rule_messages = tool_rules_solver.guess_rule_violation(tool_call_name)
+            if violated_rule_messages:
+                bullet_points = "\n".join(f"\t- {msg}" for msg in violated_rule_messages)
+                base_error_message += f"\n** Hint: Possible rules that were violated:\n{bullet_points}"
+            tool_execution_result = ToolExecutionResult(status="error", func_return=base_error_message)
+        else:
+            tool_execution_result = await self._execute_tool(
+                tool_name=tool_call_name,
+                tool_args=tool_args,
+                agent_state=agent_state,
+                agent_step_span=agent_step_span,
+                step_id=step_id,
+            )
         log_telemetry(
             self.logger, "_handle_ai_response execute tool finish", tool_execution_result=tool_execution_result, tool_call_id=tool_call_id
         )
