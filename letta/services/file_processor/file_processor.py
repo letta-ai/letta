@@ -11,6 +11,7 @@ from letta.schemas.job import Job, JobUpdate
 from letta.schemas.passage import Passage
 from letta.schemas.user import User
 from letta.server.server import SyncServer
+from letta.services.file_manager import FileManager
 from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.file_processor.chunker.llama_index_chunker import LlamaIndexChunker
 from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
@@ -38,6 +39,7 @@ class FileProcessor:
         self.line_chunker = LineChunker()
         self.embedder = embedder
         self.max_file_size = max_file_size
+        self.file_manager = FileManager()
         self.source_manager = SourceManager()
         self.passage_manager = PassageManager()
         self.job_manager = JobManager()
@@ -58,7 +60,7 @@ class FileProcessor:
 
         # Create file as early as possible with no content
         file_metadata.processing_status = FileProcessingStatus.PARSING  # Parsing now
-        file_metadata = await self.source_manager.create_file(file_metadata, self.actor)
+        file_metadata = await self.file_manager.create_file(file_metadata, self.actor)
 
         try:
             # Ensure we're working with bytes
@@ -73,16 +75,14 @@ class FileProcessor:
 
             # update file with raw text
             raw_markdown_text = "".join([page.markdown for page in ocr_response.pages])
-            file_metadata = await self.source_manager.upsert_file_content(
-                file_id=file_metadata.id, text=raw_markdown_text, actor=self.actor
-            )
-            file_metadata = await self.source_manager.update_file_status(
+            file_metadata = await self.file_manager.upsert_file_content(file_id=file_metadata.id, text=raw_markdown_text, actor=self.actor)
+            file_metadata = await self.file_manager.update_file_status(
                 file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.EMBEDDING
             )
 
             # Insert to agent context window
             # TODO: Rethink this line chunking mechanism
-            content_lines = self.line_chunker.chunk_text(text=raw_markdown_text)
+            content_lines = self.line_chunker.chunk_text(text=raw_markdown_text, file_metadata=file_metadata)
             visible_content = "\n".join(content_lines)
 
             await server.insert_file_into_context_windows(
@@ -123,7 +123,7 @@ class FileProcessor:
                 job.metadata["num_passages"] = len(all_passages)
                 await self.job_manager.update_job_by_id_async(job_id=job.id, job_update=JobUpdate(**job.model_dump()), actor=self.actor)
 
-            await self.source_manager.update_file_status(
+            await self.file_manager.update_file_status(
                 file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.COMPLETED
             )
 
@@ -138,7 +138,7 @@ class FileProcessor:
                 job.metadata["error"] = str(e)
                 await self.job_manager.update_job_by_id_async(job_id=job.id, job_update=JobUpdate(**job.model_dump()), actor=self.actor)
 
-            await self.source_manager.update_file_status(
+            await self.file_manager.update_file_status(
                 file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.ERROR, error_message=str(e)
             )
 

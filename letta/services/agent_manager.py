@@ -19,6 +19,7 @@ from letta.constants import (
     FILES_TOOLS,
     MULTI_AGENT_TOOLS,
 )
+from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
@@ -1444,7 +1445,7 @@ class AgentManager:
     @trace_method
     @enforce_types
     async def rebuild_system_prompt_async(
-        self, agent_id: str, actor: PydanticUser, force=False, update_timestamp=True
+        self, agent_id: str, actor: PydanticUser, force=False, update_timestamp=True, tool_rules_solver: Optional[ToolRulesSolver] = None
     ) -> PydanticAgentState:
         """Rebuilds the system message with the latest memory object and any shared memory block updates
 
@@ -1453,6 +1454,8 @@ class AgentManager:
         Updates to the memory header should *not* trigger a rebuild, since that will simply flood recall storage with excess messages
         """
         agent_state = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory"], actor=actor)
+        if not tool_rules_solver:
+            tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
 
         curr_system_message = await self.get_system_message_async(
             agent_id=agent_id, actor=actor
@@ -1492,6 +1495,7 @@ class AgentManager:
             in_context_memory_last_edit=memory_edit_timestamp,
             previous_message_count=num_messages,
             archival_memory_size=num_archival_memories,
+            tool_rules_solver=tool_rules_solver,
         )
 
         diff = united_diff(curr_system_message_openai["content"], new_system_message_str)

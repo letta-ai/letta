@@ -494,6 +494,8 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
         identifiers = [] if identifier is None else [identifier]
         query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, check_is_deleted, **kwargs)
+        if query is None:
+            raise NoResultFound(f"{cls.__name__} not found with identifier {identifier}")
 
         if settings.letta_pg_uri_no_default:
             await db_session.execute(text("SET LOCAL enable_seqscan = OFF"))
@@ -533,6 +535,8 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             NoResultFound: if the object is not found
         """
         query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, check_is_deleted, **kwargs)
+        if query is None:
+            return []
         results = db_session.execute(query).scalars().all()
         return cls._read_multiple_postprocess(results, identifiers, query_conditions)
 
@@ -553,6 +557,8 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         The primary accessor for ORM record(s)
         """
         query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, check_is_deleted, **kwargs)
+        if query is None:
+            return []
         results = await db_session.execute(query)
         return cls._read_multiple_postprocess(results.scalars().all(), identifiers, query_conditions)
 
@@ -582,7 +588,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             query_conditions.append(f"id='{identifiers}'")
         elif not kwargs:
             logger.debug(f"No identifiers provided for {cls.__name__}, returning empty list")
-            return []
+            return None, query_conditions
 
         if kwargs:
             query = query.filter_by(**kwargs)

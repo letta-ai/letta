@@ -31,6 +31,7 @@ from letta.schemas.letta_message import (
     UserMessage,
 )
 from letta.schemas.letta_message_content import (
+    ImageContent,
     LettaMessageContentUnion,
     OmittedReasoningContent,
     ReasoningContent,
@@ -415,15 +416,17 @@ class Message(BaseMessage):
             # This is type UserMessage
             if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
                 text_content = self.content[0].text
+            elif self.content:
+                text_content = self.content
             else:
                 raise ValueError(f"Invalid user message (no text object on message): {self.content}")
 
-            message_str = unpack_message(text_content)
+            message = unpack_message(text_content)
             messages.append(
                 UserMessage(
                     id=self.id,
                     date=self.created_at,
-                    content=message_str or text_content,
+                    content=message,
                     name=self.name,
                     otid=self.otid,
                     sender_id=self.sender_id,
@@ -658,13 +661,14 @@ class Message(BaseMessage):
             text_content = self.content[0].text
         elif self.content and len(self.content) == 1 and isinstance(self.content[0], ToolReturnContent):
             text_content = self.content[0].content
+        elif self.content and len(self.content) == 1 and isinstance(self.content[0], ImageContent):
+            text_content = "[Image Here]"
         # Otherwise, check if we have TextContent and multiple other parts
         elif self.content and len(self.content) > 1:
             text = [content for content in self.content if isinstance(content, TextContent)]
-            if len(text) > 1:
-                assert len(text) == 1, f"multiple text content parts found in a single message: {self.content}"
-                text_content = text[0].text
-                parse_content_parts = True
+            assert len(text) == 1, f"multiple text content parts found in a single message: {self.content}"
+            text_content = text[0].text
+            parse_content_parts = True
         else:
             text_content = None
 
@@ -778,11 +782,35 @@ class Message(BaseMessage):
             }
 
         elif self.role == "user":
-            assert all([v is not None for v in [text_content, self.role]]), vars(self)
-            anthropic_message = {
-                "content": text_content,
-                "role": self.role,
-            }
+            # special case for text-only message
+            if text_content is not None:
+                anthropic_message = {
+                    "content": text_content,
+                    "role": self.role,
+                }
+            else:
+                content_parts = []
+                for content in self.content:
+                    if isinstance(content, TextContent):
+                        content_parts.append({"type": "text", "text": content.text})
+                    elif isinstance(content, ImageContent):
+                        content_parts.append(
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "data": content.source.data,
+                                    "media_type": content.source.media_type,
+                                },
+                            }
+                        )
+                    else:
+                        raise ValueError(f"Unsupported content type: {content.type}")
+
+                anthropic_message = {
+                    "content": content_parts,
+                    "role": self.role,
+                }
 
         elif self.role == "assistant":
             assert self.tool_calls is not None or text_content is not None
@@ -887,10 +915,27 @@ class Message(BaseMessage):
             }
 
         elif self.role == "user":
-            assert all([v is not None for v in [text_content, self.role]]), vars(self)
+            assert self.content, vars(self)
+
+            content_parts = []
+            for content in self.content:
+                if isinstance(content, TextContent):
+                    content_parts.append({"text": content.text})
+                elif isinstance(content, ImageContent):
+                    content_parts.append(
+                        {
+                            "inline_data": {
+                                "data": content.source.data,
+                                "mime_type": content.source.media_type,
+                            }
+                        }
+                    )
+                else:
+                    raise ValueError(f"Unsupported content type: {content.type}")
+
             google_ai_message = {
                 "role": "user",
-                "parts": [{"text": text_content}],
+                "parts": content_parts,
             }
 
         elif self.role == "assistant":
@@ -1006,8 +1051,10 @@ class Message(BaseMessage):
         # embedded function calls in multi-turn conversation become more clear
         if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
-        if self.content and len(self.content) == 1 and isinstance(self.content[0], ToolReturnContent):
+        elif self.content and len(self.content) == 1 and isinstance(self.content[0], ToolReturnContent):
             text_content = self.content[0].content
+        elif self.content and len(self.content) == 1 and isinstance(self.content[0], ImageContent):
+            text_content = "[Image Here]"
         else:
             text_content = None
         if self.role == "system":

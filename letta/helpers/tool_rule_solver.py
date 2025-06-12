@@ -2,6 +2,7 @@ from typing import List, Optional, Set, Union
 
 from pydantic import BaseModel, Field
 
+from letta.schemas.block import Block
 from letta.schemas.enums import ToolRuleType
 from letta.schemas.tool_rule import (
     BaseToolRule,
@@ -116,10 +117,10 @@ class ToolRulesSolver(BaseModel):
                 return list(available_tools)
         else:
             # Collect valid tools from all child-based rules
-            valid_tool_sets = [
-                rule.get_valid_tools(self.tool_call_history, available_tools, last_function_response)
-                for rule in self.child_based_tool_rules + self.parent_tool_rules
-            ]
+            valid_tool_sets = []
+            for rule in self.child_based_tool_rules + self.parent_tool_rules:
+                tools = rule.get_valid_tools(self.tool_call_history, available_tools, last_function_response)
+                valid_tool_sets.append(tools)
 
             # Compute intersection of all valid tool sets
             final_allowed_tools = set.intersection(*valid_tool_sets) if valid_tool_sets else available_tools
@@ -140,6 +141,70 @@ class ToolRulesSolver(BaseModel):
     def is_continue_tool(self, tool_name):
         """Check if the tool is defined as a continue tool in the tool rules."""
         return any(rule.tool_name == tool_name for rule in self.continue_tool_rules)
+
+    def compile_tool_rule_prompts(self) -> Optional[Block]:
+        """
+        Compile prompt templates from all tool rules into an ephemeral Block.
+
+        Returns:
+            Optional[str]: Compiled prompt string with tool rule constraints, or None if no templates exist.
+        """
+        compiled_prompts = []
+
+        all_rules = (
+            self.init_tool_rules
+            + self.continue_tool_rules
+            + self.child_based_tool_rules
+            + self.parent_tool_rules
+            + self.terminal_tool_rules
+        )
+
+        for rule in all_rules:
+            rendered = rule.render_prompt()
+            if rendered:
+                compiled_prompts.append(rendered)
+
+        if compiled_prompts:
+            return Block(
+                label="tool_usage_rules",
+                value="\n".join(compiled_prompts),
+                description="The following constraints define rules for tool usage and guide desired behavior. These rules must be followed to ensure proper tool execution and workflow.",
+            )
+        return None
+
+    def guess_rule_violation(self, tool_name: str) -> List[str]:
+        """
+        Check if the given tool name or the previous tool in history matches any tool rule,
+        and return rendered prompt templates for matching rules.
+
+        Args:
+            tool_name: The name of the tool to check for rule violations
+
+        Returns:
+            List of rendered prompt templates from matching tool rules
+        """
+        violated_rules = []
+
+        # Get the previous tool from history if it exists
+        previous_tool = self.tool_call_history[-1] if self.tool_call_history else None
+
+        # Check all tool rules for matches
+        all_rules = (
+            self.init_tool_rules
+            + self.continue_tool_rules
+            + self.child_based_tool_rules
+            + self.parent_tool_rules
+            + self.terminal_tool_rules
+        )
+
+        for rule in all_rules:
+            # Check if the current tool name or previous tool matches this rule's tool_name
+            if rule.tool_name == tool_name or (previous_tool and rule.tool_name == previous_tool):
+                rendered_prompt = rule.render_prompt()
+                if rendered_prompt:
+                    violated_rules.append(rendered_prompt)
+
+        return violated_rules
 
     @staticmethod
     def validate_conditional_tool(rule: ConditionalToolRule):

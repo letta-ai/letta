@@ -1,4 +1,5 @@
 import json
+import uuid
 from typing import List, Optional, Sequence
 
 from sqlalchemy import delete, exists, func, select, text
@@ -10,10 +11,12 @@ from letta.orm.message import Message as MessageModel
 from letta.otel.tracing import trace_method
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import LettaMessageUpdateUnion
+from letta.schemas.letta_message_content import ImageSourceType, LettaImage, MessageContentType
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.services.file_manager import FileManager
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -21,6 +24,10 @@ logger = get_logger(__name__)
 
 class MessageManager:
     """Manager class to handle business logic related to Messages."""
+
+    def __init__(self):
+        """Initialize the MessageManager."""
+        self.file_manager = FileManager()
 
     @enforce_types
     @trace_method
@@ -131,6 +138,31 @@ class MessageManager:
         if not pydantic_msgs:
             return []
 
+        for message in pydantic_msgs:
+            if isinstance(message.content, list):
+                for content in message.content:
+                    if content.type == MessageContentType.image and content.source.type == ImageSourceType.base64:
+                        # TODO: actually persist image files in db
+                        # file = await self.file_manager.create_file( # TODO: use batch create to prevent multiple db round trips
+                        #     db_session=session,
+                        #     image_create=FileMetadata(
+                        #         user_id=actor.id, # TODO: add field
+                        #         source_id= '' # TODO: make optional
+                        #         organization_id=actor.organization_id,
+                        #         file_type=content.source.media_type,
+                        #         processing_status=FileProcessingStatus.COMPLETED,
+                        #         content= '' # TODO: should content be added here or in top level text field?
+                        #     ),
+                        #     actor=actor,
+                        #     text=content.source.data,
+                        # )
+                        file_id_placeholder = "file-" + str(uuid.uuid4())
+                        content.source = LettaImage(
+                            file_id=file_id_placeholder,
+                            data=content.source.data,
+                            media_type=content.source.media_type,
+                            detail=content.source.detail,
+                        )
         orm_messages = self._create_many_preprocess(pydantic_msgs, actor)
         async with db_registry.async_session() as session:
             created_messages = await MessageModel.batch_create_async(orm_messages, session, actor=actor)

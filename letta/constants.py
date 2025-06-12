@@ -31,6 +31,9 @@ LETTA_TOOL_MODULE_NAMES = [
     LETTA_FILES_TOOL_MODULE_NAME,
 ]
 
+DEFAULT_ORG_ID = "org-00000000-0000-4000-8000-000000000000"
+DEFAULT_ORG_NAME = "default_org"
+
 
 # String in the error message for when the context window is too large
 # Example full message:
@@ -42,6 +45,9 @@ IN_CONTEXT_MEMORY_KEYWORD = "CORE_MEMORY"
 
 # OpenAI error message: Invalid 'messages[1].tool_calls[0].id': string too long. Expected a string with maximum length 29, but got a string with length 36 instead.
 TOOL_CALL_ID_MAX_LEN = 29
+
+# Max steps for agent loop
+DEFAULT_MAX_STEPS = 50
 
 # minimum context window size
 MIN_CONTEXT_WINDOW = 4096

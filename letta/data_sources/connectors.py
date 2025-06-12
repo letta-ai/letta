@@ -8,8 +8,8 @@ from letta.embeddings import embedding_model
 from letta.schemas.file import FileMetadata
 from letta.schemas.passage import Passage
 from letta.schemas.source import Source
+from letta.services.file_manager import FileManager
 from letta.services.passage_manager import PassageManager
-from letta.services.source_manager import SourceManager
 
 
 class DataConnector:
@@ -38,9 +38,7 @@ class DataConnector:
         """
 
 
-async def load_data(
-    connector: DataConnector, source: Source, passage_manager: PassageManager, source_manager: SourceManager, actor: "User"
-):
+async def load_data(connector: DataConnector, source: Source, passage_manager: PassageManager, file_manager: FileManager, actor: "User"):
     from letta.llm_api.llm_client import LLMClient
     from letta.schemas.embedding_config import EmbeddingConfig
 
@@ -94,7 +92,7 @@ async def load_data(
 
     for file_metadata in connector.find_files(source):
         file_count += 1
-        await source_manager.create_file(file_metadata, actor)
+        await file_manager.create_file(file_metadata, actor)
 
         # generate passages
         for passage_text, passage_metadata in connector.generate_passages(file_metadata, chunk_size=embedding_config.embedding_chunk_size):

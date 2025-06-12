@@ -9,7 +9,7 @@ import openai
 from letta.agents.base_agent import BaseAgent
 from letta.agents.exceptions import IncompatibleAgentType
 from letta.agents.voice_sleeptime_agent import VoiceSleeptimeAgent
-from letta.constants import NON_USER_MSG_PREFIX
+from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.tool_execution_helper import (
     add_pre_execution_message,
@@ -111,10 +111,10 @@ class VoiceAgent(BaseAgent):
 
         return summarizer
 
-    async def step(self, input_messages: List[MessageCreate], max_steps: int = 10) -> LettaResponse:
+    async def step(self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS) -> LettaResponse:
         raise NotImplementedError("VoiceAgent does not have a synchronous step implemented currently.")
 
-    async def step_stream(self, input_messages: List[MessageCreate], max_steps: int = 10) -> AsyncGenerator[str, None]:
+    async def step_stream(self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS) -> AsyncGenerator[str, None]:
         """
         Main streaming loop that yields partial tokens.
         Whenever we detect a tool call, we yield from _handle_ai_response as well.

@@ -2816,8 +2816,8 @@ files = [
 ]
 
 [package.dependencies]
-decorator = {version = "*", markers = "python_version > \"3.6\""}
-ipython = {version = ">=7.31.1", markers = "python_version > \"3.6\""}
+decorator = {version = "*", markers = "python_version >= \"3.11\""}
+ipython = {version = ">=7.31.1", markers = "python_version >= \"3.11\""}
 tomli = {version = "*", markers = "python_version > \"3.6\" and python_version < \"3.11\""}
 
 [[package]]
@@ -3502,14 +3502,14 @@ pytest = ["pytest (>=7.0.0)", "rich (>=13.9.4,<14.0.0)"]
 
 [[package]]
 name = "letta-client"
-version = "0.1.147"
+version = "0.1.153"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.8"
 groups = ["main"]
 files = [
-    {file = "letta_client-0.1.147-py3-none-any.whl", hash = "sha256:13a42dfec4beaf37da41b5a8f3e86f4fc7d80743e9a2980560b07c097d413fcb"},
-    {file = "letta_client-0.1.147.tar.gz", hash = "sha256:d34135c913686a21bfcd5c1257aef3cf0a45e4f68bf12ca1d564553a0a0e3340"},
+    {file = "letta_client-0.1.153-py3-none-any.whl", hash = "sha256:90e3adc9a884cbcacdd31c3411081c4a1849bb988c37094d9338ce2ba285ea7c"},
+    {file = "letta_client-0.1.153.tar.gz", hash = "sha256:8c06ad3a0d187436ae523e2c2e493e674adb7563ddaba2070833210f4b1cd126"},
 ]
 
 [package.dependencies]
@@ -8199,4 +8199,4 @@ tests = ["wikipedia"]
 [metadata]
 lock-version = "2.1"
 python-versions = "<3.14,>=3.10"
-content-hash = "3c4253170cea8d2a7eec50fea32d33e8c155167d75d912cb5679d4e22ccc74c7"
+content-hash = "f49c1ce1aed0e20a201e95968268bb0516bdec7d3387c30f72c10cc3bd6572c9"

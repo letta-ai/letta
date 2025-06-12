@@ -2,13 +2,17 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field, HttpUrl
 
-from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.schemas.letta_message import MessageType
 from letta.schemas.message import MessageCreate
 
 
 class LettaRequest(BaseModel):
     messages: List[MessageCreate] = Field(..., description="The messages to be sent to the agent.")
+    max_steps: int = Field(
+        default=DEFAULT_MAX_STEPS,
+        description="Maximum number of steps the agent should take to process the request.",
+    )
     use_assistant_message: bool = Field(
         default=True,
         description="Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.",

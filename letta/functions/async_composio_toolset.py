@@ -84,7 +84,10 @@ class AsyncComposioToolSet(BaseComposioToolSet, runtime="letta", description_cha
                             # Handle specific error codes from Composio API
                             if error_code == 10401 or "API_KEY_NOT_FOUND" in error_message:
                                 raise ApiKeyNotProvidedError()
-                            if "connected account not found" in error_message.lower():
+                            if (
+                                "connected account not found" in error_message.lower()
+                                or "no connected account found" in error_message.lower()
+                            ):
                                 raise ConnectedAccountNotFoundError(f"Connected account not found: {error_message}")
                             if "enum metadata not found" in error_message.lower():
                                 raise EnumMetadataNotFound(f"Enum metadata not found: {error_message}")

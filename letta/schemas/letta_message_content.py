@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 class MessageContentType(str, Enum):
     text = "text"
+    image = "image"
     tool_call = "tool_call"
     tool_return = "tool_return"
     reasoning = "reasoning"
@@ -18,7 +19,7 @@ class MessageContent(BaseModel):
 
 
 # -------------------------------
-# User Content Types
+# Text Content
 # -------------------------------
 
 
@@ -27,8 +28,62 @@ class TextContent(MessageContent):
     text: str = Field(..., description="The text content of the message.")
 
 
+# -------------------------------
+# Image Content
+# -------------------------------
+
+
+class ImageSourceType(str, Enum):
+    url = "url"
+    base64 = "base64"
+    letta = "letta"
+
+
+class ImageSource(BaseModel):
+    type: ImageSourceType = Field(..., description="The source type for the image.")
+
+
+class UrlImage(ImageSource):
+    type: Literal[ImageSourceType.url] = Field(ImageSourceType.url, description="The source type for the image.")
+    url: str = Field(..., description="The URL of the image.")
+
+
+class Base64Image(ImageSource):
+    type: Literal[ImageSourceType.base64] = Field(ImageSourceType.base64, description="The source type for the image.")
+    media_type: str = Field(..., description="The media type for the image.")
+    data: str = Field(..., description="The base64 encoded image data.")
+    detail: Optional[str] = Field(
+        None,
+        description="What level of detail to use when processing and understanding the image (low, high, or auto to let the model decide)",
+    )
+
+
+class LettaImage(ImageSource):
+    type: Literal[ImageSourceType.letta] = Field(ImageSourceType.letta, description="The source type for the image.")
+    file_id: str = Field(..., description="The unique identifier of the image file persisted in storage.")
+    media_type: Optional[str] = Field(None, description="The media type for the image.")
+    data: Optional[str] = Field(None, description="The base64 encoded image data.")
+    detail: Optional[str] = Field(
+        None,
+        description="What level of detail to use when processing and understanding the image (low, high, or auto to let the model decide)",
+    )
+
+
+ImageSourceUnion = Annotated[Union[UrlImage, Base64Image, LettaImage], Field(discriminator="type")]
+
+
+class ImageContent(MessageContent):
+    type: Literal[MessageContentType.image] = Field(MessageContentType.image, description="The type of the message.")
+    source: ImageSourceUnion = Field(..., description="The source of the image.")
+
+
+# -------------------------------
+# User Content Types
+# -------------------------------
+
+
 LettaUserMessageContentUnion = Annotated[
-    Union[TextContent],
+    Union[TextContent, ImageContent],
     Field(discriminator="type"),
 ]
 
@@ -37,11 +92,13 @@ def create_letta_user_message_content_union_schema():
     return {
         "oneOf": [
             {"$ref": "#/components/schemas/TextContent"},
+            {"$ref": "#/components/schemas/ImageContent"},
         ],
         "discriminator": {
             "propertyName": "type",
             "mapping": {
                 "text": "#/components/schemas/TextContent",
+                "image": "#/components/schemas/ImageContent",
             },
         },
     }
@@ -150,7 +207,9 @@ class OmittedReasoningContent(MessageContent):
 
 
 LettaMessageContentUnion = Annotated[
-    Union[TextContent, ToolCallContent, ToolReturnContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent],
+    Union[
+        TextContent, ImageContent, ToolCallContent, ToolReturnContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent
+    ],
     Field(discriminator="type"),
 ]
 
@@ -159,6 +218,7 @@ def create_letta_message_content_union_schema():
     return {
         "oneOf": [
             {"$ref": "#/components/schemas/TextContent"},
+            {"$ref": "#/components/schemas/ImageContent"},
             {"$ref": "#/components/schemas/ToolCallContent"},
             {"$ref": "#/components/schemas/ToolReturnContent"},
             {"$ref": "#/components/schemas/ReasoningContent"},
@@ -169,6 +229,7 @@ def create_letta_message_content_union_schema():
             "propertyName": "type",
             "mapping": {
                 "text": "#/components/schemas/TextContent",
+                "image": "#/components/schemas/ImageContent",
                 "tool_call": "#/components/schemas/ToolCallContent",
                 "tool_return": "#/components/schemas/ToolCallContent",
                 "reasoning": "#/components/schemas/ReasoningContent",

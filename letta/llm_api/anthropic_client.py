@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from typing import Dict, List, Optional, Union
 
@@ -201,7 +202,7 @@ class AnthropicClient(LLMClientBase):
             tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
             tools_for_request = [OpenAITool(function=f) for f in tools]
         elif force_tool_call is not None:
-            tool_choice = {"type": "tool", "name": force_tool_call}
+            tool_choice = {"type": "tool", "name": force_tool_call, "disable_parallel_tool_use": True}
             tools_for_request = [OpenAITool(function=f) for f in tools if f["name"] == force_tool_call]
 
             # need to have this setting to be able to put inner thoughts in kwargs
@@ -271,6 +272,8 @@ class AnthropicClient(LLMClientBase):
         return data
 
     async def count_tokens(self, messages: List[dict] = None, model: str = None, tools: List[OpenAITool] = None) -> int:
+        logging.getLogger("httpx").setLevel(logging.WARNING)
+
         client = anthropic.AsyncAnthropic()
         if messages and len(messages) == 0:
             messages = None
@@ -286,9 +289,6 @@ class AnthropicClient(LLMClientBase):
                 tools=anthropic_tools or [],
             )
         except:
-            import ipdb
-
-            ipdb.set_trace()
             raise
 
         token_count = result.input_tokens

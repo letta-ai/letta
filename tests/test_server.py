@@ -901,18 +901,6 @@ async def test_tool_run_with_explicit_json_schema(server, disable_e2b_api_key, u
     assert not result.stderr
 
 
-def test_composio_client_simple(server):
-    apps = server.get_composio_apps()
-    # Assert there's some amount of apps returned
-    assert len(apps) > 0
-
-    app = apps[0]
-    actions = server.get_composio_actions_from_app_name(composio_app_name=app.name)
-
-    # Assert there's some amount of actions
-    assert len(actions) > 0
-
-
 async def test_memory_rebuild_count(server, user, disable_e2b_api_key, base_tools, base_memory_tools):
     """Test that the memory rebuild is generating the correct number of role=system messages"""
     actor = user

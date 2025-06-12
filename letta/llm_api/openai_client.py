@@ -26,6 +26,7 @@ from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderCategory, ProviderType
+from letta.schemas.letta_message_content import MessageContentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
@@ -93,20 +94,13 @@ def supports_structured_output(llm_config: LLMConfig) -> bool:
 # TODO move into LLMConfig as a field?
 def requires_auto_tool_choice(llm_config: LLMConfig) -> bool:
     """Certain providers require the tool choice to be set to 'auto'."""
-
     if "nebius.com" in llm_config.model_endpoint:
         return True
     if "together.ai" in llm_config.model_endpoint or "together.xyz" in llm_config.model_endpoint:
         return True
-    # proxy also has this issue (FIXME check)
-    elif llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
+    if llm_config.handle and "vllm" in llm_config.handle:
         return True
-    # same with vLLM (FIXME check)
-    elif llm_config.handle and "vllm" in llm_config.handle:
-        return True
-    else:
-        # will use "required" instead of "auto"
-        return False
+    return False
 
 
 class OpenAIClient(LLMClientBase):
@@ -203,7 +197,7 @@ class OpenAIClient(LLMClientBase):
         # TODO: This vllm checking is very brittle and is a patch at most
         tool_choice = None
         if requires_auto_tool_choice(llm_config):
-            tool_choice = "auto"  # TODO change to "required" once proxy supports it
+            tool_choice = "auto"
         elif tools:
             # only set if tools is non-Null
             tool_choice = "required"
@@ -213,7 +207,7 @@ class OpenAIClient(LLMClientBase):
 
         data = ChatCompletionRequest(
             model=model,
-            messages=openai_message_list,
+            messages=fill_image_content_in_messages(openai_message_list, messages),
             tools=[OpenAITool(type="function", function=f) for f in tools] if tools else None,
             tool_choice=tool_choice,
             user=str(),
@@ -221,6 +215,9 @@ class OpenAIClient(LLMClientBase):
             # NOTE: the reasoners that don't support temperature require 1.0, not None
             temperature=llm_config.temperature if supports_temperature_param(model) else 1.0,
         )
+        if tools and supports_parallel_tool_calling(model):
+            data.parallel_tool_calls = False
+
         # always set user id for openai requests
         if self.actor:
             data.user = self.actor.id
@@ -402,3 +399,51 @@ class OpenAIClient(LLMClientBase):
 
         # Fallback for unexpected errors
         return super().handle_llm_error(e)
+
+
+def fill_image_content_in_messages(openai_message_list: List[dict], pydantic_message_list: List[PydanticMessage]) -> List[dict]:
+    """
+    Converts image content to openai format.
+    """
+
+    if len(openai_message_list) != len(pydantic_message_list):
+        return openai_message_list
+
+    new_message_list = []
+    for idx in range(len(openai_message_list)):
+        openai_message, pydantic_message = openai_message_list[idx], pydantic_message_list[idx]
+        if pydantic_message.role != "user":
+            new_message_list.append(openai_message)
+            continue
+
+        if not isinstance(pydantic_message.content, list) or (
+            len(pydantic_message.content) == 1 and pydantic_message.content[0].type == MessageContentType.text
+        ):
+            new_message_list.append(openai_message)
+            continue
+
+        message_content = []
+        for content in pydantic_message.content:
+            if content.type == MessageContentType.text:
+                message_content.append(
+                    {
+                        "type": "text",
+                        "text": content.text,
+                    }
+                )
+            elif content.type == MessageContentType.image:
+                message_content.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{content.source.media_type};base64,{content.source.data}",
+                            "detail": content.source.detail or "auto",
+                        },
+                    }
+                )
+            else:
+                raise ValueError(f"Unsupported content type {content.type}")
+
+        new_message_list.append({"role": "user", "content": message_content})
+
+    return new_message_list

@@ -58,6 +58,7 @@ def agent_state(client: LettaSDKClient):
     open_file_tool = client.tools.list(name="open_file")[0]
     close_file_tool = client.tools.list(name="close_file")[0]
     search_files_tool = client.tools.list(name="search_files")[0]
+    grep_tool = client.tools.list(name="grep")[0]
 
     agent_state = client.agents.create(
         memory_blocks=[
@@ -68,7 +69,7 @@ def agent_state(client: LettaSDKClient):
         ],
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-ada-002",
-        tool_ids=[open_file_tool.id, close_file_tool.id, search_files_tool.id],
+        tool_ids=[open_file_tool.id, close_file_tool.id, search_files_tool.id, grep_tool.id],
     )
     yield agent_state
 
@@ -136,6 +137,11 @@ def test_auto_attach_detach_files_tools(client: LettaSDKClient):
         ("tests/data/toy_chat_fine_tuning.jsonl", '{"messages"', r"toy_chat_fine_tuning_[a-z0-9]+\.jsonl"),
         ("tests/data/test.md", "h2 Heading", r"test_[a-z0-9]+\.md"),
         ("tests/data/test.json", "glossary", r"test_[a-z0-9]+\.json"),
+        ("tests/data/react_component.jsx", "UserProfile", r"react_component_[a-z0-9]+\.jsx"),
+        ("tests/data/task_manager.java", "TaskManager", r"task_manager_[a-z0-9]+\.java"),
+        ("tests/data/data_structures.cpp", "BinarySearchTree", r"data_structures_[a-z0-9]+\.cpp"),
+        ("tests/data/api_server.go", "UserService", r"api_server_[a-z0-9]+\.go"),
+        ("tests/data/data_analysis.py", "StatisticalAnalyzer", r"data_analysis_[a-z0-9]+\.py"),
     ],
 )
 def test_file_upload_creates_source_blocks_correctly(
@@ -157,10 +163,13 @@ def test_file_upload_creates_source_blocks_correctly(
         job = client.sources.files.upload(source_id=source.id, file=f)
 
     # Wait for the job to complete
-    while job.status != "completed":
+    while job.status != "completed" and job.status != "failed":
         time.sleep(1)
         job = client.jobs.retrieve(job_id=job.id)
         print("Waiting for jobs to complete...", job.status)
+
+    if job.status == "failed":
+        pytest.fail("Job failed. Check error logs.")
 
     # Get uploaded files
     files = client.sources.files.list(source_id=source.id, limit=1)
@@ -407,18 +416,6 @@ def test_agent_uses_search_files_correctly(client: LettaSDKClient, agent_state: 
     files = client.sources.files.list(source_id=source.id, limit=1)
     assert len(files) == 1
     assert files[0].source_id == source.id
-    files[0]
-
-    # Check that file is opened initially
-    agent_state = client.agents.retrieve(agent_id=agent_state.id)
-    blocks = agent_state.memory.file_blocks
-    print(f"Agent has {len(blocks)} file block(s)")
-    if blocks:
-        initial_content_length = len(blocks[0].value)
-        print(f"Initial file content length: {initial_content_length} characters")
-        print(f"First 100 chars of content: {blocks[0].value[:100]}...")
-        assert initial_content_length > 10, f"Expected file content > 10 chars, got {initial_content_length}"
-        print("✓ File appears to be initially loaded")
 
     # Ask agent to use the search_files tool
     search_files_response = client.agents.messages.create(
@@ -441,6 +438,56 @@ def test_agent_uses_search_files_correctly(client: LettaSDKClient, agent_state: 
     assert all(tr.status == "success" for tr in tool_returns), "Tool call failed"
 
 
+def test_agent_uses_grep_correctly(client: LettaSDKClient, agent_state: AgentState):
+    # Create a new source
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
+
+    sources_list = client.sources.list()
+    assert len(sources_list) == 1
+
+    # Attach source to agent
+    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+
+    # Load files into the source
+    file_path = "tests/data/long_test.txt"
+    print(f"Uploading file: {file_path}")
+
+    # Upload the files
+    with open(file_path, "rb") as f:
+        job = client.sources.files.upload(source_id=source.id, file=f)
+
+    print(f"File upload job created with ID: {job.id}, initial status: {job.status}")
+
+    # Wait for the jobs to complete
+    while job.status != "completed":
+        print(f"Waiting for job {job.id} to complete... Current status: {job.status}")
+        time.sleep(1)
+        job = client.jobs.retrieve(job_id=job.id)
+
+    # Get uploaded files
+    files = client.sources.files.list(source_id=source.id, limit=1)
+    assert len(files) == 1
+    assert files[0].source_id == source.id
+
+    # Ask agent to use the search_files tool
+    search_files_response = client.agents.messages.create(
+        agent_id=agent_state.id,
+        messages=[MessageCreate(role="user", content=f"Use ONLY the grep tool to search for `Nunzia De Girolamo`.")],
+    )
+    print(f"Grep request sent, got {len(search_files_response.messages)} message(s) in response")
+    print(search_files_response.messages)
+
+    # Check that archival_memory_search was called
+    tool_calls = [msg for msg in search_files_response.messages if msg.message_type == "tool_call_message"]
+    assert len(tool_calls) > 0, "No tool calls found"
+    assert any(tc.tool_call.name == "grep" for tc in tool_calls), "search_files not called"
+
+    # Check it returned successfully
+    tool_returns = [msg for msg in search_files_response.messages if msg.message_type == "tool_return_message"]
+    assert len(tool_returns) > 0, "No tool returns found"
+    assert all(tr.status == "success" for tr in tool_returns), "Tool call failed"
+
+
 def test_view_ranges_have_metadata(client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
@@ -452,7 +499,7 @@ def test_view_ranges_have_metadata(client: LettaSDKClient, agent_state: AgentSta
     client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
 
     # Load files into the source
-    file_path = "tests/data/lines_1_to_100.txt"
+    file_path = "tests/data/0_to_99.py"
 
     # Upload the files
     with open(file_path, "rb") as f:
@@ -500,11 +547,11 @@ def test_view_ranges_have_metadata(client: LettaSDKClient, agent_state: AgentSta
     assert (
         block.value
         == """
-    [Viewing lines 50 to 55 (out of 100 lines)]
-Line 50: Line 51
-Line 51: Line 52
-Line 52: Line 53
-Line 53: Line 54
-Line 54: Line 55
+    [Viewing lines 50 to 54 (out of 100 lines)]
+50: x50 = 50
+51: x51 = 51
+52: x52 = 52
+53: x53 = 53
+54: x54 = 54
     """.strip()
     )

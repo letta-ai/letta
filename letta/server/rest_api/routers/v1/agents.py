@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
-from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
@@ -316,7 +316,7 @@ async def attach_source(
     # Check if the agent is missing any files tools
     agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=actor)
 
-    files = await server.source_manager.list_files(source_id, actor, include_content=True)
+    files = await server.file_manager.list_files(source_id, actor, include_content=True)
     texts = []
     file_ids = []
     file_names = []
@@ -354,7 +354,7 @@ async def detach_source(
     if not agent_state.sources:
         agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=actor)
 
-    files = await server.source_manager.list_files(source_id, actor)
+    files = await server.file_manager.list_files(source_id, actor)
     file_ids = [f.id for f in files]
     await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
 
@@ -371,6 +371,14 @@ async def detach_source(
 @router.get("/{agent_id}", response_model=AgentState, operation_id="retrieve_agent")
 async def retrieve_agent(
     agent_id: str,
+    include_relationships: Optional[List[str]] = Query(
+        None,
+        description=(
+            "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. "
+            "If not provided, all relationships are loaded by default. "
+            "Using this can optimize performance by reducing unnecessary joins."
+        ),
+    ),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -380,7 +388,7 @@ async def retrieve_agent(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
-        return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, include_relationships=include_relationships, actor=actor)
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -665,13 +673,13 @@ async def send_message(
     Process a user message and return the agent's response.
     This endpoint accepts a message from a user and processes it through the agent.
     """
+    request_start_timestamp_ns = get_utc_timestamp_ns()
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    request_start_timestamp_ns = get_utc_timestamp_ns()
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
-    agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
+    agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
 
     if agent_eligible and model_compatible:
@@ -701,7 +709,7 @@ async def send_message(
 
         result = await agent_loop.step(
             request.messages,
-            max_steps=10,
+            max_steps=request.max_steps,
             use_assistant_message=request.use_assistant_message,
             request_start_timestamp_ns=request_start_timestamp_ns,
             include_return_message_types=request.include_return_message_types,
@@ -747,16 +755,16 @@ async def send_message_streaming(
     This endpoint accepts a message from a user and processes it through the agent.
     It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
     """
+    request_start_timestamp_ns = get_utc_timestamp_ns()
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
-    agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
+    agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
     not_letta_endpoint = not ("inference.letta.com" in agent.llm_config.model_endpoint)
-    request_start_timestamp_ns = get_utc_timestamp_ns()
 
     if agent_eligible and model_compatible:
         if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
@@ -790,7 +798,7 @@ async def send_message_streaming(
             result = StreamingResponseWithStatusCode(
                 agent_loop.step_stream(
                     input_messages=request.messages,
-                    max_steps=10,
+                    max_steps=request.max_steps,
                     use_assistant_message=request.use_assistant_message,
                     request_start_timestamp_ns=request_start_timestamp_ns,
                     include_return_message_types=request.include_return_message_types,
@@ -801,7 +809,7 @@ async def send_message_streaming(
             result = StreamingResponseWithStatusCode(
                 agent_loop.step_stream_no_tokens(
                     request.messages,
-                    max_steps=10,
+                    max_steps=request.max_steps,
                     use_assistant_message=request.use_assistant_message,
                     request_start_timestamp_ns=request_start_timestamp_ns,
                     include_return_message_types=request.include_return_message_types,
@@ -835,6 +843,7 @@ async def process_message_background(
     use_assistant_message: bool,
     assistant_message_tool_name: str,
     assistant_message_tool_kwarg: str,
+    max_steps: int = DEFAULT_MAX_STEPS,
     include_return_message_types: Optional[List[MessageType]] = None,
 ) -> None:
     """Background task to process the message and update job status."""
@@ -919,6 +928,7 @@ async def send_message_async(
         use_assistant_message=request.use_assistant_message,
         assistant_message_tool_name=request.assistant_message_tool_name,
         assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+        max_steps=request.max_steps,
         include_return_message_types=request.include_return_message_types,
     )
 
@@ -969,7 +979,7 @@ async def summarize_agent_conversation(
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
-    agent_eligible = agent.enable_sleeptime or agent.agent_type == AgentType.sleeptime_agent or not agent.multi_agent_group
+    agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
 
     if agent_eligible and model_compatible:

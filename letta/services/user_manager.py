@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from sqlalchemy import select, text
 
+from letta.constants import DEFAULT_ORG_ID
 from letta.orm.errors import NoResultFound
 from letta.orm.organization import Organization as OrganizationModel
 from letta.orm.user import User as UserModel
@@ -9,7 +10,6 @@ from letta.otel.tracing import trace_method
 from letta.schemas.user import User as PydanticUser
 from letta.schemas.user import UserUpdate
 from letta.server.db import db_registry
-from letta.services.organization_manager import OrganizationManager
 from letta.utils import enforce_types
 from letta.settings import settings
 
@@ -22,7 +22,7 @@ class UserManager:
 
     @enforce_types
     @trace_method
-    def create_default_user(self, org_id: str = OrganizationManager.DEFAULT_ORG_ID) -> PydanticUser:
+    def create_default_user(self, org_id: str = DEFAULT_ORG_ID) -> PydanticUser:
         """Create the default user."""
         with db_registry.session() as session:
             # Make sure the org id exists
@@ -43,7 +43,7 @@ class UserManager:
 
     @enforce_types
     @trace_method
-    async def create_default_actor_async(self, org_id: str = OrganizationManager.DEFAULT_ORG_ID) -> PydanticUser:
+    async def create_default_actor_async(self, org_id: str = DEFAULT_ORG_ID) -> PydanticUser:
         """Create the default user."""
         async with db_registry.async_session() as session:
             # Make sure the org id exists
@@ -191,19 +191,19 @@ class UserManager:
         try:
             return await self.get_actor_by_id_async(self.DEFAULT_USER_ID)
         except NoResultFound:
-            return await self.create_default_actor_async(org_id=self.DEFAULT_ORG_ID)
+            return await self.create_default_actor_async(org_id=DEFAULT_ORG_ID)
 
     @enforce_types
     @trace_method
     async def get_actor_or_default_async(self, actor_id: Optional[str] = None):
         """Fetch the user or default user asynchronously."""
-        if not actor_id:
-            return await self.get_default_actor_async()
+        target_id = actor_id or self.DEFAULT_USER_ID
 
         try:
-            return await self.get_actor_by_id_async(actor_id=actor_id)
+            return await self.get_actor_by_id_async(target_id)
         except NoResultFound:
-            return await self.get_default_actor_async()
+            user = await self.create_default_actor_async(org_id=DEFAULT_ORG_ID)
+            return user
 
     @enforce_types
     @trace_method

@@ -521,6 +521,7 @@ class PassageManager:
         agent_id: str,
         text: str,
         actor: PydanticUser,
+        image_ids: Optional[List[str]] = None,
     ) -> List[PydanticPassage]:
         """Insert passage(s) into archival memory"""
 

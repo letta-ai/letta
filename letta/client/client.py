@@ -1,6 +1,6 @@
 import sys
 import time
-from typing import Callable, Dict, Generator, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 import requests
 
@@ -18,7 +18,7 @@ from letta.schemas.file import FileMetadata
 from letta.schemas.job import Job
 from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
-from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
+from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, ChatMemory, CreateArchivalMemory, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate
@@ -136,6 +136,7 @@ class AbstractClient(object):
         stream: Optional[bool] = False,
         stream_steps: bool = False,
         stream_tokens: bool = False,
+        max_steps: Optional[int] = None,
     ) -> LettaResponse:
         raise NotImplementedError
 
@@ -977,7 +978,8 @@ class RESTClient(AbstractClient):
         stream: Optional[bool] = False,
         stream_steps: bool = False,
         stream_tokens: bool = False,
-    ) -> Union[LettaResponse, Generator[LettaStreamingResponse, None, None]]:
+        max_steps: Optional[int] = 10,
+    ) -> LettaResponse:
         """
         Send a message to an agent
 
@@ -988,6 +990,7 @@ class RESTClient(AbstractClient):
             name(str): Name of the sender
             stream (bool): Stream the response (default: `False`)
             stream_tokens (bool): Stream tokens (default: `False`)
+            max_steps (int): Maximum number of steps the agent should take (default: 10)
 
         Returns:
             response (LettaResponse): Response from the agent

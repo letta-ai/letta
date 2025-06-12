@@ -10,7 +10,7 @@ class SystemMessage(BaseModel):
 
 
 class UserMessage(BaseModel):
-    content: Union[str, List[str]]
+    content: Union[str, List[str], List[dict]]
     role: str = "user"
     name: Optional[str] = None
 

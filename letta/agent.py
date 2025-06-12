@@ -46,7 +46,7 @@ from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent, get_
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole, ProviderType
-from letta.schemas.letta_message_content import TextContent
+from letta.schemas.letta_message_content import ImageContent, TextContent
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, MessageCreate, ToolReturn
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
@@ -369,6 +369,16 @@ class Agent(BaseAgent):
                     )
                 else:
                     # Fallback to existing flow
+                    for message in message_sequence:
+                        if isinstance(message.content, list):
+
+                            def get_fallback_text_content(content):
+                                if isinstance(content, ImageContent):
+                                    return TextContent(text="[Image Here]")
+                                return content
+
+                            message.content = [get_fallback_text_content(content) for content in message.content]
+
                     response = create(
                         llm_config=self.agent_state.llm_config,
                         messages=message_sequence,

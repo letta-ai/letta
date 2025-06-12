@@ -2,6 +2,8 @@ import warnings
 from datetime import datetime
 from typing import List, Literal, Optional
 
+import aiohttp
+import requests
 from pydantic import BaseModel, Field, model_validator
 
 from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE, LETTA_MODEL_ENDPOINT, LLM_MAX_TOKENS, MIN_CONTEXT_WINDOW
@@ -872,9 +874,6 @@ class OllamaProvider(OpenAIProvider):
     async def list_llm_models_async(self) -> List[LLMConfig]:
         """Async version of list_llm_models below"""
         endpoint = f"{self.base_url}/api/tags"
-
-        import aiohttp
-
         async with aiohttp.ClientSession() as session:
             async with session.get(endpoint) as response:
                 if response.status != 200:
@@ -903,8 +902,6 @@ class OllamaProvider(OpenAIProvider):
 
     def list_llm_models(self) -> List[LLMConfig]:
         # https://github.com/ollama/ollama/blob/main/docs/api.md#list-local-models
-        import requests
-
         response = requests.get(f"{self.base_url}/api/tags")
         if response.status_code != 200:
             raise Exception(f"Failed to list Ollama models: {response.text}")
@@ -931,9 +928,6 @@ class OllamaProvider(OpenAIProvider):
         return configs
 
     def get_model_context_window(self, model_name: str) -> Optional[int]:
-
-        import requests
-
         response = requests.post(f"{self.base_url}/api/show", json={"name": model_name, "verbose": True})
         response_json = response.json()
 
@@ -965,11 +959,19 @@ class OllamaProvider(OpenAIProvider):
                 return value
         return None
 
-    def get_model_embedding_dim(self, model_name: str):
-        import requests
-
+    def _get_model_embedding_dim(self, model_name: str):
         response = requests.post(f"{self.base_url}/api/show", json={"name": model_name, "verbose": True})
         response_json = response.json()
+        return self._get_model_embedding_dim_impl(response_json, model_name)
+
+    async def _get_model_embedding_dim_async(self, model_name: str):
+        async with aiohttp.ClientSession() as session:
+            async with session.post(f"{self.base_url}/api/show", json={"name": model_name, "verbose": True}) as response:
+                response_json = await response.json()
+            return self._get_model_embedding_dim_impl(response_json, model_name)
+
+    @staticmethod
+    def _get_model_embedding_dim_impl(response_json: dict, model_name: str):
         if "model_info" not in response_json:
             if "error" in response_json:
                 print(f"Ollama fetch model info error for {model_name}: {response_json['error']}")
@@ -979,10 +981,35 @@ class OllamaProvider(OpenAIProvider):
                 return value
         return None
 
+    async def list_embedding_models_async(self) -> List[EmbeddingConfig]:
+        """Async version of list_embedding_models below"""
+        endpoint = f"{self.base_url}/api/tags"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(endpoint) as response:
+                if response.status != 200:
+                    raise Exception(f"Failed to list Ollama models: {response.text}")
+                response_json = await response.json()
+
+        configs = []
+        for model in response_json["models"]:
+            embedding_dim = await self._get_model_embedding_dim_async(model["name"])
+            if not embedding_dim:
+                print(f"Ollama model {model['name']} has no embedding dimension")
+                continue
+            configs.append(
+                EmbeddingConfig(
+                    embedding_model=model["name"],
+                    embedding_endpoint_type="ollama",
+                    embedding_endpoint=self.base_url,
+                    embedding_dim=embedding_dim,
+                    embedding_chunk_size=300,
+                    handle=self.get_handle(model["name"], is_embedding=True),
+                )
+            )
+        return configs
+
     def list_embedding_models(self) -> List[EmbeddingConfig]:
         # https://github.com/ollama/ollama/blob/main/docs/api.md#list-local-models
-        import requests
-
         response = requests.get(f"{self.base_url}/api/tags")
         if response.status_code != 200:
             raise Exception(f"Failed to list Ollama models: {response.text}")
@@ -990,7 +1017,7 @@ class OllamaProvider(OpenAIProvider):
 
         configs = []
         for model in response_json["models"]:
-            embedding_dim = self.get_model_embedding_dim(model["name"])
+            embedding_dim = self._get_model_embedding_dim(model["name"])
             if not embedding_dim:
                 print(f"Ollama model {model['name']} has no embedding dimension")
                 continue

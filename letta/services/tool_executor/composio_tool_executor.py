@@ -26,7 +26,11 @@ class ExternalComposioToolExecutor(ToolExecutor):
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
-        assert agent_state is not None, "Agent state is required for external Composio tools"
+        if agent_state is None:
+            return ToolExecutionResult(
+                status="error",
+                func_return="Agent state is required for external Composio tools. Please contact Letta support if you see this error.",
+            )
         action_name = generate_composio_action_from_func_name(tool.name)
 
         # Get entity ID from the agent_state
