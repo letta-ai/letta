@@ -1,5 +1,4 @@
 import {
-  Badge,
   DashboardPageSection,
   NiceGridDisplay,
 } from '@letta-cloud/ui-component-library';
@@ -57,7 +56,7 @@ export function Tutorials() {
           largeImage={<TutorialImage src={voice} />}
           title={t('voice.title')}
           description={t('voice.description')}
-          badge={<Badge size="small" content={t('comingSoon')} />}
+          href="https://docs.letta.com/guides/voice/overview"
         />
       </NiceGridDisplay>
     </DashboardPageSection>
