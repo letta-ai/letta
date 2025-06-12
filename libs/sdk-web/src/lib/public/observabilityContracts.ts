@@ -447,16 +447,29 @@ const SearchResponsesByAgentId = z.object({
   value: z.string(),
 });
 
-const SearchResponsesByDuration = z.object({
+export const SearchResponsesByDuration = z.object({
   field: z.literal('duration'),
+  unit: z.enum(['ms', 's', 'm']),
   operator: z.enum(['gte', 'lte']),
-  value: z.number(),
+  value: z.string().refine(
+    (val) => {
+      const duration = parseFloat(val);
+      return !isNaN(duration) && duration >= 0;
+    },
+    {
+      message: 'Invalid duration format',
+    },
+  ),
 });
+
+export type SearchResponsesByDurationType = z.infer<
+  typeof SearchResponsesByDuration
+>;
 
 const SearchResponsesByStatusCode = z.object({
   field: z.literal('statusCode'),
   operator: z.enum(['eq']),
-  value: z.enum(['tool_error']),
+  value: z.enum(['tool_error', 'api_error']),
 });
 
 const SearchResponsesByDateRange = z.object({
@@ -487,22 +500,30 @@ export const SearchTypesSchema = z.union([
   SearchResponsesByFunctionName,
 ]);
 
+export const GetTracesByProjectIdQuery = z.object({
+  projectId: z.string(),
+  offset: z.number().default(0),
+  limit: z.number().max(100).min(1),
+  search: z.array(SearchTypesSchema).optional(),
+});
+
+export type GetTracesByProjectIdQueryType = z.infer<
+  typeof GetTracesByProjectIdQuery
+>;
+
 export type SearchTypesType = z.infer<typeof SearchTypesSchema>;
 
-const getTracesByProjectIdContract = c.query({
+const GetTracesByProjectIdContract200 = z.object({
+  items: z.array(ParentSpanResponse),
+  hasNextPage: z.boolean(),
+});
+
+const getTracesByProjectIdContract = c.mutation({
   path: '/observability/traces',
-  method: 'GET',
-  query: z.object({
-    projectId: z.string(),
-    offset: z.number().default(0),
-    limit: z.number().max(100).min(1),
-    search: z.array(SearchTypesSchema).optional(),
-  }),
+  method: 'POST',
+  body: GetTracesByProjectIdQuery,
   responses: {
-    200: z.object({
-      items: z.array(ParentSpanResponse),
-      hasNextPage: z.boolean(),
-    }),
+    200: GetTracesByProjectIdContract200,
   },
 });
 
@@ -610,9 +631,11 @@ export const observabilityQueryKeys = {
     'getObservabilityOverview',
     query,
   ],
-  getTracesByProjectId: (
-    query: z.infer<typeof getTracesByProjectIdContract.query>,
-  ) => ['observability', 'getTracesByProjectId', query],
+  getTracesByProjectId: (query: GetTracesByProjectIdQueryType) => [
+    'observability',
+    'getTracesByProjectId',
+    query,
+  ],
   getLLMLatencyByModel: (query: z.infer<typeof DefaultMetricsQuery>) => [
     'observability',
     'getLLMLatencyByModel',

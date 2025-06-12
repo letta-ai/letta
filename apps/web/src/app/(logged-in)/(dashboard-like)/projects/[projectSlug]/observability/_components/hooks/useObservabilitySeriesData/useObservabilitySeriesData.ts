@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { useCurrentUser } from '$web/client/hooks';
 import type { EChartsOption, SeriesOption } from 'echarts';
+import { addDays } from 'date-fns';
 
 interface BaseType {
   date: string; // Assuming the date is in YYYY-MM-DD format
@@ -31,6 +32,7 @@ export function useObservabilitySeriesData<T extends BaseType>(
     const labels = [];
     const dates = [];
 
+    console.log(startDate, endDate);
     for (
       let date = new Date(startDate);
       date < new Date(endDate);
@@ -46,8 +48,8 @@ export function useObservabilitySeriesData<T extends BaseType>(
     }
 
     return {
-      labels: labels.slice(0, -1),
-      dates: dates.slice(0, -1),
+      labels: labels,
+      dates: dates,
     };
   }, [startDate, endDate, formatDate]);
 
@@ -72,7 +74,7 @@ export function useObservabilitySeriesData<T extends BaseType>(
           const value = getterFn(item);
 
           acc[
-            formatDate(item.date, {
+            formatDate(addDays(item.date, 1), {
               month: 'short',
               day: 'numeric',
             })

@@ -1647,6 +1647,65 @@
     "title": "Tool latency by name"
   },
   "projects/(projectSlug)/responses/page": {
+    "search": {
+      "button": "Search",
+      "label": "Search responses"
+    },
+    "useQueryDefinition": {
+      "functionName": {
+        "name": "Tool used",
+        "operator": {
+          "label": "Operator",
+          "operators": {
+            "eq": "equals"
+          }
+        },
+        "value": {
+          "label": "Value",
+          "placeholder": "Search for a tool"
+        }
+      },
+      "statusCode": {
+        "name": "Failure cause",
+        "operator": {
+          "label": "Operator",
+          "operators": {
+            "eq": "is"
+          }
+        },
+        "value": {
+          "label": "Value",
+          "options": {
+            "tool_error": "tool error",
+            "api_error": "API error"
+          }
+        }
+      },
+      "duration": {
+        "name": "Duration",
+        "operator": {
+          "label": "Operator",
+          "operators": {
+            "lt": "less than",
+            "lte": "less than or equal to",
+            "gt": "greater than",
+            "gte": "greater than or equal to"
+          }
+        },
+        "unit": {
+          "label": "Unit",
+          "options": {
+            "ms": "milliseconds",
+            "s": "seconds",
+            "m": "minutes"
+          }
+        },
+        "value": {
+          "label": "Value",
+          "placeholder": "e.g. 50"
+        }
+      }
+    },
     "title": "Responses",
     "description": "Responses are the segmented steps in an agent's response to a user message.",
     "columns": {

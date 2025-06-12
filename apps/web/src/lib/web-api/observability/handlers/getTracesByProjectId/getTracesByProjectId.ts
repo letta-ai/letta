@@ -1,5 +1,9 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { contracts, SearchTypesType } from '@letta-cloud/sdk-web';
+import type {
+  contracts,
+  SearchResponsesByDurationType,
+  SearchTypesType,
+} from '@letta-cloud/sdk-web';
 import {
   getClickhouseClient,
   getClickhouseData,
@@ -21,6 +25,7 @@ interface Conditions {
   timestampQuery?: string;
   toolErrorQuery?: string;
   agentIdQuery?: string;
+  apiErrorQuery?: string;
 }
 
 function conditionBuilder(search: SearchTypesType[]): Conditions {
@@ -33,15 +38,41 @@ function conditionBuilder(search: SearchTypesType[]): Conditions {
     timestampQuery: '',
     toolErrorQuery: '',
     agentIdQuery: '',
+    apiErrorQuery: '',
   };
 
   search.forEach((item) => {
     if (item.field === 'duration') {
+      const duration = Number(item.value);
+
+      if (isNaN(duration)) {
+        return;
+      }
+
+      function convertToNs(
+        value: number,
+        unit: SearchResponsesByDurationType['unit'],
+      ): number {
+        switch (unit) {
+          case 's':
+            return value * 1_000_000_000; // seconds to nanoseconds
+          case 'ms':
+            return value * 1_000_000; // milliseconds to nanoseconds
+          case 'm':
+            return value * 60 * 1_000_000_000; // minutes to nanoseconds
+          default:
+            // assume milliseconds if unit is not recognized
+            return value * 1_000_000; // milliseconds to nanoseconds
+        }
+      }
+
+      const durationInNs = convertToNs(duration, item.unit);
+
       if (item.operator === 'gte') {
-        conditions.durationQuery += ` AND Duration >= ${item.value} `;
+        conditions.durationQuery += ` AND Duration >= ${durationInNs} `;
       }
       if (item.operator === 'lte') {
-        conditions.durationQuery += ` AND Duration <= ${item.value} `;
+        conditions.durationQuery += ` AND Duration <= ${durationInNs} `;
       }
     }
 
@@ -61,11 +92,15 @@ function conditionBuilder(search: SearchTypesType[]): Conditions {
           Events
         ) `;
       }
+
+      if (item.value === 'api_error') {
+        conditions.apiErrorQuery += ` AND STATUS_CODE != 'STATUS_CODE_OK' `;
+      }
     }
 
     if (item.field === 'functionName') {
       conditions.toolErrorQuery += ` AND arrayExists(
-        event -> event.Attributes['function.name'] = '${item.value}',
+        event -> event.Attributes['tool_name'] = '${item.value}',
         Events
       ) `;
     }
@@ -81,7 +116,7 @@ function conditionBuilder(search: SearchTypesType[]): Conditions {
 export async function getTracesByProjectId(
   request: GetToolErrorMessagesRequest,
 ): Promise<GetToolErrorMessagesResponse> {
-  const { projectId, limit = 10, offset = 0, search } = request.query;
+  const { projectId, limit = 10, offset = 0, search } = request.body;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
   const client = getClickhouseClient();
@@ -118,6 +153,7 @@ export async function getTracesByProjectId(
             ${conditions.durationQuery || ''}
             ${conditions.timestampQuery || ''}
             ${conditions.agentIdQuery || ''}
+            ${conditions.apiErrorQuery || ''}
         )
       SELECT
         a.TraceId,
