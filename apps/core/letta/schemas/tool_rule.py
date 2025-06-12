@@ -25,18 +25,23 @@ class BaseToolRule(LettaBase):
 
     def render_prompt(self) -> Optional[str]:
         """Render the prompt template with this rule's attributes."""
-        if not self.prompt_template:
+        template_to_use = self.prompt_template or self._get_default_template()
+        if not template_to_use:
             return None
 
         try:
-            template = Template(self.prompt_template)
+            template = Template(template_to_use)
             return template.render(**self.model_dump())
         except Exception as e:
             logger.warning(
                 f"Failed to render prompt template for tool rule '{self.tool_name}' (type: {self.type}). "
-                f"Template: '{self.prompt_template}'. Error: {e}"
+                f"Template: '{template_to_use}'. Error: {e}"
             )
             return None
+
+    def _get_default_template(self) -> Optional[str]:
+        """Get the default template for this rule type. Override in subclasses."""
+        return None
 
 
 class ChildToolRule(BaseToolRule):
@@ -46,10 +51,17 @@ class ChildToolRule(BaseToolRule):
 
     type: Literal[ToolRuleType.constrain_child_tools] = ToolRuleType.constrain_child_tools
     children: List[str] = Field(..., description="The children tools that can be invoked.")
+    prompt_template: Optional[str] = Field(
+        default="<tool_constraint>After using {{ tool_name }}, you can only use these tools: {{ children | join(', ') }}</tool_constraint>",
+        description="Optional Jinja2 template for generating agent prompt about this tool rule.",
+    )
 
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
         last_tool = tool_call_history[-1] if tool_call_history else None
         return set(self.children) if last_tool == self.tool_name else available_tools
+
+    def _get_default_template(self) -> Optional[str]:
+        return "<tool_constraint>After using {{ tool_name }}, you can only use these tools: {{ children | join(', ') }}</tool_constraint>"
 
 
 class ParentToolRule(BaseToolRule):
@@ -59,10 +71,17 @@ class ParentToolRule(BaseToolRule):
 
     type: Literal[ToolRuleType.parent_last_tool] = ToolRuleType.parent_last_tool
     children: List[str] = Field(..., description="The children tools that can be invoked.")
+    prompt_template: Optional[str] = Field(
+        default="<tool_constraint>{{ children | join(', ') }} can only be used after {{ tool_name }}</tool_constraint>",
+        description="Optional Jinja2 template for generating agent prompt about this tool rule.",
+    )
 
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
         last_tool = tool_call_history[-1] if tool_call_history else None
         return set(self.children) if last_tool == self.tool_name else available_tools - set(self.children)
+
+    def _get_default_template(self) -> Optional[str]:
+        return "<tool_constraint>{{ children | join(', ') }} can only be used after {{ tool_name }}</tool_constraint>"
 
 
 class ConditionalToolRule(BaseToolRule):
@@ -74,6 +93,10 @@ class ConditionalToolRule(BaseToolRule):
     default_child: Optional[str] = Field(None, description="The default child tool to be called. If None, any tool can be called.")
     child_output_mapping: Dict[Any, str] = Field(..., description="The output case to check for mapping")
     require_output_mapping: bool = Field(default=False, description="Whether to throw an error when output doesn't match any case")
+    prompt_template: Optional[str] = Field(
+        default="<tool_constraint>{{ tool_name }} will determine which tool to use next based on its output</tool_constraint>",
+        description="Optional Jinja2 template for generating agent prompt about this tool rule.",
+    )
 
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
         """Determine valid tools based on function output mapping."""
@@ -119,6 +142,9 @@ class ConditionalToolRule(BaseToolRule):
         else:  # Assume string
             return str(function_output) == str(key)
 
+    def _get_default_template(self) -> Optional[str]:
+        return "<tool_constraint>{{ tool_name }} will determine which tool to use next based on its output</tool_constraint>"
+
 
 class InitToolRule(BaseToolRule):
     """
@@ -134,6 +160,13 @@ class TerminalToolRule(BaseToolRule):
     """
 
     type: Literal[ToolRuleType.exit_loop] = ToolRuleType.exit_loop
+    prompt_template: Optional[str] = Field(
+        default="<tool_constraint>{{ tool_name }} ends the conversation when called</tool_constraint>",
+        description="Optional Jinja2 template for generating agent prompt about this tool rule.",
+    )
+
+    def _get_default_template(self) -> Optional[str]:
+        return "<tool_constraint>{{ tool_name }} ends the conversation when called</tool_constraint>"
 
 
 class ContinueToolRule(BaseToolRule):
@@ -142,6 +175,10 @@ class ContinueToolRule(BaseToolRule):
     """
 
     type: Literal[ToolRuleType.continue_loop] = ToolRuleType.continue_loop
+    prompt_template: Optional[str] = Field(
+        default="<tool_constraint>{{ tool_name }} requires continuing the conversation when called</tool_constraint>",
+        description="Optional Jinja2 template for generating agent prompt about this tool rule.",
+    )
 
 
 class MaxCountPerStepToolRule(BaseToolRule):
@@ -165,6 +202,9 @@ class MaxCountPerStepToolRule(BaseToolRule):
             return available_tools - {self.tool_name}
 
         return available_tools
+
+    def _get_default_template(self) -> Optional[str]:
+        return "<tool_constraint>{{ tool_name }}: max {{ max_count_limit }} use(s) per turn</tool_constraint>"
 
 
 ToolRule = Annotated[

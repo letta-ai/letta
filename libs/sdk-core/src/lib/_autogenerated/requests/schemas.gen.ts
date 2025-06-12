@@ -2261,7 +2261,9 @@ export const $ChildToolRule = {
       ],
       title: 'Prompt Template',
       description:
-        "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
+        'Optional Jinja2 template for generating agent prompt about this tool rule.',
+      default:
+        "<tool_constraint>After using {{ tool_name }}, you can only use these tools: {{ children | join(', ') }}</tool_constraint>",
     },
     children: {
       items: {
@@ -3120,7 +3122,9 @@ export const $ConditionalToolRule = {
       ],
       title: 'Prompt Template',
       description:
-        "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
+        'Optional Jinja2 template for generating agent prompt about this tool rule.',
+      default:
+        '<tool_constraint>{{ tool_name }} will determine which tool to use next based on its output</tool_constraint>',
     },
     default_child: {
       anyOf: [
@@ -3362,7 +3366,9 @@ export const $ContinueToolRule = {
       ],
       title: 'Prompt Template',
       description:
-        "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
+        'Optional Jinja2 template for generating agent prompt about this tool rule.',
+      default:
+        '<tool_constraint>{{ tool_name }} requires continuing the conversation when called</tool_constraint>',
     },
   },
   additionalProperties: false,
@@ -7323,7 +7329,9 @@ export const $ParentToolRule = {
       ],
       title: 'Prompt Template',
       description:
-        "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
+        'Optional Jinja2 template for generating agent prompt about this tool rule.',
+      default:
+        "<tool_constraint>{{ children | join(', ') }} can only be used after {{ tool_name }}</tool_constraint>",
     },
     children: {
       items: {
@@ -9546,7 +9554,9 @@ export const $TerminalToolRule = {
       ],
       title: 'Prompt Template',
       description:
-        "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
+        'Optional Jinja2 template for generating agent prompt about this tool rule.',
+      default:
+        '<tool_constraint>{{ tool_name }} ends the conversation when called</tool_constraint>',
     },
   },
   additionalProperties: false,

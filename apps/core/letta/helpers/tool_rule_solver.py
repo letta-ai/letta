@@ -172,6 +172,40 @@ class ToolRulesSolver(BaseModel):
             )
         return None
 
+    def guess_rule_violation(self, tool_name: str) -> List[str]:
+        """
+        Check if the given tool name or the previous tool in history matches any tool rule,
+        and return rendered prompt templates for matching rules.
+
+        Args:
+            tool_name: The name of the tool to check for rule violations
+
+        Returns:
+            List of rendered prompt templates from matching tool rules
+        """
+        violated_rules = []
+
+        # Get the previous tool from history if it exists
+        previous_tool = self.tool_call_history[-1] if self.tool_call_history else None
+
+        # Check all tool rules for matches
+        all_rules = (
+            self.init_tool_rules
+            + self.continue_tool_rules
+            + self.child_based_tool_rules
+            + self.parent_tool_rules
+            + self.terminal_tool_rules
+        )
+
+        for rule in all_rules:
+            # Check if the current tool name or previous tool matches this rule's tool_name
+            if rule.tool_name == tool_name or (previous_tool and rule.tool_name == previous_tool):
+                rendered_prompt = rule.render_prompt()
+                if rendered_prompt:
+                    violated_rules.append(rendered_prompt)
+
+        return violated_rules
+
     @staticmethod
     def validate_conditional_tool(rule: ConditionalToolRule):
         """
