@@ -1,6 +1,6 @@
 import os
 
-__version__ = "0.8.3"
+__version__ = "0.8.4"
 
 if os.environ.get("LETTA_VERSION"):
     __version__ = os.environ["LETTA_VERSION"]
