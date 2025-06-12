@@ -25,7 +25,7 @@ from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
 from letta.otel.tracing import log_event, trace_method, tracer
 from letta.schemas.agent import AgentState
-from letta.schemas.enums import MessageRole, MessageStreamStatus
+from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
@@ -262,9 +262,7 @@ class LettaAgent(BaseAgent):
             )
 
             for message in letta_messages:
-                if not include_return_message_types:
-                    yield f"data: {message.model_dump_json()}\n\n"
-                elif include_return_message_types and message.message_type in include_return_message_types:
+                if include_return_message_types is None or message.message_type in include_return_message_types:
                     yield f"data: {message.model_dump_json()}\n\n"
 
             if not should_continue:
@@ -288,8 +286,8 @@ class LettaAgent(BaseAgent):
         request_span.end()
 
         # Return back usage
-        yield f"data: {usage.model_dump_json()}\n\n"
-        yield f"data: {MessageStreamStatus.done.model_dump_json()}\n\n"
+        for finish_chunk in self.get_finish_chunks_for_stream(usage):
+            yield f"data: {finish_chunk}\n\n"
 
     async def _step(
         self,
@@ -506,10 +504,7 @@ class LettaAgent(BaseAgent):
                     request_span.add_event(name="time_to_first_token_ms", attributes={"ttft_ms": ns_to_ms(ttft_ns)})
                     first_chunk = False
 
-                if include_return_message_types is None:
-                    # return all data
-                    yield f"data: {chunk.model_dump_json()}\n\n"
-                elif include_return_message_types and chunk.message_type in include_return_message_types:
+                if include_return_message_types is None or chunk.message_type in include_return_message_types:
                     # filter down returned data
                     yield f"data: {chunk.model_dump_json()}\n\n"
 
@@ -610,9 +605,8 @@ class LettaAgent(BaseAgent):
             request_span.add_event(name="letta_request_ms", attributes={"duration_ms": ns_to_ms(request_ns)})
         request_span.end()
 
-        # TODO: Also yield out a letta usage stats SSE
-        yield f"data: {usage.model_dump_json()}\n\n"
-        yield f"data: {MessageStreamStatus.done.model_dump_json()}\n\n"
+        for finish_chunk in self.get_finish_chunks_for_stream(usage):
+            yield f"data: {finish_chunk}\n\n"
 
     async def _build_and_request_from_llm(
         self,

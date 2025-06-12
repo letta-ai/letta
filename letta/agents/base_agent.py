@@ -13,6 +13,7 @@ from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
+from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.helpers.agent_manager_helper import compile_system_message
@@ -136,3 +137,9 @@ class BaseAgent(ABC):
         except:
             logger.exception(f"Failed to rebuild memory for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name})")
             raise
+
+    def get_finish_chunks_for_stream(self, usage: LettaUsageStatistics):
+        return [
+            usage.model_dump_json(),
+            MessageStreamStatus.done.value,
+        ]

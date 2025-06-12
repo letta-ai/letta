@@ -90,6 +90,8 @@ class AnthropicStreamingInterface:
 
     def get_tool_call_object(self) -> ToolCall:
         """Useful for agent loop"""
+        if not self.tool_call_name:
+            raise ValueError("No tool call returned")
         # hack for tool rules
         try:
             tool_input = json.loads(self.accumulated_tool_call_args)
