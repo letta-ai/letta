@@ -151,6 +151,7 @@ function MemoryItem(props: MemoryItemProps) {
 
   return (
     <ActionCard
+      color="transparent"
       key={memory.id}
       title={t('MemoryItem.memoryText', {
         date: formatDateAndTime(memory?.created_at || ''),

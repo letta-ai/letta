@@ -12,6 +12,7 @@ import { Slot } from '@radix-ui/react-slot';
 import { forwardRef } from 'react';
 import { Skeleton } from '../../core/Skeleton/Skeleton';
 import { MaybeTooltip } from '../../core/Tooltip/Tooltip';
+import type { FrameProps } from '../../framing/Frame/Frame';
 
 const actionCardVariants = cva('', {
   variants: {
@@ -45,6 +46,7 @@ interface ToggleCardProps extends VariantProps<typeof actionCardVariants> {
   icon?: React.ReactNode;
   disableTooltip?: boolean;
   href?: string;
+  color?: FrameProps['color'];
   smallImage?: React.ReactNode;
   largeImage?: React.ReactNode;
   badge?: React.ReactNode;
@@ -75,6 +77,7 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
       onClick,
       noMobileViewChange,
       hideClickArrow,
+      color,
       mainAction,
       children,
       description,
@@ -88,11 +91,12 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
         href={href}
         testId={testId}
         ref={ref}
+        color={color}
         onClick={!isSkeleton ? onClick : undefined}
         className={cn(
           actionCardVariants({ ...props, clickable: !!onClick || !!href }),
           fullHeight ? 'h-full' : '',
-          isActive ? 'bg-background-grey' : 'bg-background',
+          !color ? (isActive ? 'bg-background-grey' : 'bg-background') : '',
           'action-card',
           'relative',
           isSkeleton ? 'border-none' : '',
