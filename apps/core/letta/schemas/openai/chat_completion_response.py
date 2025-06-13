@@ -62,7 +62,7 @@ class Message(BaseModel):
     reasoning_content: Optional[str] = None  # Used in newer reasoning APIs, e.g. DeepSeek
     reasoning_content_signature: Optional[str] = None  # NOTE: for Anthropic
     redacted_reasoning_content: Optional[str] = None  # NOTE: for Anthropic
-    ommitted_reasoning_content: bool = False  # NOTE: for OpenAI o1/o3
+    omitted_reasoning_content: bool = False  # NOTE: for OpenAI o1/o3
 
 
 class Choice(BaseModel):
