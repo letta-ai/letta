@@ -13,9 +13,9 @@ declare global {
   // eslint-disable-next-line no-var
   var loadPyodide: any;
 }
-
 try {
-  importScripts('https://cdn.jsdelivr.net/pyodide/dev/full/pyodide.js');
+  // Lock down stable version of Pyodide to guarantee stability with imports.
+  importScripts('https://cdn.jsdelivr.net/pyodide/pyodide@0.27.7/full/pyodide.js');
 } catch (_e) {
   console.warn('Failed to import pyodide.js');
 }
