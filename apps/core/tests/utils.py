@@ -131,27 +131,6 @@ def configure_letta(enable_openai=False, enable_azure=False):
         configure_letta_localllm()
 
 
-def qdrant_server_running() -> bool:
-    """Check if Qdrant server is running."""
-
-    try:
-        response = requests.get("http://localhost:6333", timeout=10.0)
-        response_json = response.json()
-        return response_json.get("title") == "qdrant - vector search engine"
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
-        return False
-
-
-def with_qdrant_storage(storage: list[str]):
-    """If Qdrant server is running and `qdrant_client` is installed,
-    append `'qdrant'` to the storage list"""
-
-    if util.find_spec("qdrant_client") is not None and qdrant_server_running():
-        storage.append("qdrant")
-
-    return storage
-
-
 def wait_for_incoming_message(
     client: Letta,
     agent_id: str,

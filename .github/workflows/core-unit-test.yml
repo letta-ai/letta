@@ -9,156 +9,39 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  changed-files:
-    runs-on: [self-hosted, medium]
-    name: changed-files
-    outputs:
-      all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
-      any_changed: ${{ steps.changed-files.outputs.any_changed }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v44
-        with:
-          files: |
-            apps/core/**
-            .github/workflows/core-unit-test.yml
-  unit-run:
-    needs: [ changed-files ]
-    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
-    runs-on: [self-hosted, medium]
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - test_suite: "test_vector_embeddings.py"
-          - test_suite: "test_client.py"
-          - test_suite: "test_sdk_client.py"
-          - test_suite: "test_client_legacy.py"
-          - test_suite: "test_server.py"
-          - test_suite: "test_multi_agent.py"
-          - test_suite: "test_managers.py"
-          - test_suite: "test_base_functions.py"
-          - test_suite: "test_tool_schema_parsing.py"
-          - test_suite: "test_tool_rule_solver.py"
-          - test_suite: "test_memory.py"
-          - test_suite: "test_utils.py"
-          - test_suite: "test_stream_buffer_readers.py"
-          - test_suite: "test_agent_serialization.py"
-          - test_suite: "test_optimistic_json_parser.py"
-          - test_suite: "test_llm_clients.py"
-          - test_suite: "test_letta_agent_batch.py"
-          - test_suite: "test_providers.py"
-          - test_suite: "test_sources.py"
-          - test_suite: "sdk/"
-          - test_suite: "mcp/"
-            use_experimental: true
-    services:
-      qdrant:
-        image: qdrant/qdrant
-        ports:
-          - 6333:6333
-      postgres:
-        image: pgvector/pgvector:pg17
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_HOST_AUTH_METHOD: trust
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Generate SDK with Fern
-        uses: nick-fields/retry@v3
-        if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
-        env:
-          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
-        with:
-          max_attempts: 3
-          timeout_minutes: 5
-          command: |
-            set -o xtrace
-            cd apps
-            fern generate --group python-sdk --preview
-            cd fern/.preview/fern-python-sdk
-            poetry install
-            poetry run mypy .
-            cd ../../../core
-            poetry run pip install -e ../fern/.preview/fern-python-sdk/.
-
-      - name: Install dependencies
-        shell: bash
-        working-directory: apps/core
-        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google' }}
-
-      - name: Migrate database
-        working-directory: apps/core
-        env:
-          LETTA_PG_PORT: 5432
-          LETTA_PG_USER: postgres
-          LETTA_PG_PASSWORD: postgres
-          LETTA_PG_DB: postgres
-          LETTA_PG_HOST: localhost
-        run: |
-          psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
-          poetry run alembic upgrade head
-
-      - name: Use SDK with on branch changes
-        if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
-        working-directory: apps/core
-        run: poetry run pip install -e ../fern/.preview/fern-python-sdk/.
-
-
-      - name: Inject env vars into environment
-        working-directory: apps/core
-        run: |
-          # Get secrets and mask them before adding to environment
-          while IFS= read -r line || [[ -n "$line" ]]; do
-            if [[ -n "$line" ]]; then
-              value=$(echo "$line" | cut -d= -f2-)
-              echo "::add-mask::$value"
-              echo "$line" >> $GITHUB_ENV
-            fi
-          done < <(letta_secrets_helper --env dev --service ci)
-
-
-      - name: Run core unit tests
-        working-directory: apps/core
-        env:
-          LETTA_PG_PORT: 5432
-          LETTA_PG_USER: postgres
-          LETTA_PG_PASSWORD: postgres
-          LETTA_PG_DB: postgres
-          LETTA_PG_HOST: localhost
-          LETTA_SERVER_PASS: test_server_token
-          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
-          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
-          GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
-          GROQ_API_KEY: ${{ env.GROQ_API_KEY }}
-          GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT}}
-          GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION}}
-          DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY}}
-          AZURE_API_KEY: ${{ env.AZURE_API_KEY }}
-          AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
-          E2B_API_KEY: ${{ env.E2B_API_KEY }}
-          E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
-          LETTA_MISTRAL_API_KEY: ${{ secrets.LETTA_MISTRAL_API_KEY }}
-          LETTA_ENABLE_BATCH_JOB_POLLING: true
-          LETTA_USE_EXPERIMENTAL: true
-        run: |
-          set -o xtrace
-          poetry run pip show letta-client
-          poetry run pytest -svv tests/${{ matrix.test_suite }}
+  unit-tests:
+    uses: ./.github/workflows/reusable-test-workflow.yml
+    with:
+      test-type: 'unit'
+      install-args: '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google'
+      timeout-minutes: 15
+      matrix-strategy: |
+        {
+          "fail-fast": false,
+          "matrix": {
+            "include": [
+              {"test_suite": "test_vector_embeddings.py"},
+              {"test_suite": "test_client.py"},
+              {"test_suite": "test_sdk_client.py"},
+              {"test_suite": "test_client_legacy.py"},
+              {"test_suite": "test_server.py"},
+              {"test_suite": "test_multi_agent.py"},
+              {"test_suite": "test_managers.py"},
+              {"test_suite": "test_base_functions.py"},
+              {"test_suite": "test_tool_schema_parsing.py"},
+              {"test_suite": "test_tool_rule_solver.py"},
+              {"test_suite": "test_memory.py"},
+              {"test_suite": "test_utils.py"},
+              {"test_suite": "test_stream_buffer_readers.py"},
+              {"test_suite": "test_agent_serialization.py"},
+              {"test_suite": "test_optimistic_json_parser.py"},
+              {"test_suite": "test_llm_clients.py"},
+              {"test_suite": "test_letta_agent_batch.py"},
+              {"test_suite": "test_providers.py"},
+              {"test_suite": "test_sources.py"},
+              {"test_suite": "sdk/"},
+              {"test_suite": "mcp/", "use_experimental": true}
+            ]
+          }
+        }
+    secrets: inherit

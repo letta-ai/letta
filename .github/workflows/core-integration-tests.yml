@@ -9,147 +9,31 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  changed-files:
-    runs-on: ubuntu-latest
-    name: changed-files
-    outputs:
-      all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
-      any_changed: ${{ steps.changed-files.outputs.any_changed }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v44
-        with:
-          files: |
-            apps/core/**
-            .github/workflows/core-integration-tests.yml
-  main:
-    needs: [ changed-files ]
-    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
-    runs-on: [self-hosted, medium]
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        integration_test_suite:
-          - "integration_test_summarizer.py"
-          - "integration_test_tool_execution_sandbox.py"
-          - "integration_test_async_tool_sandbox.py"
-          - "integration_test_sleeptime_agent.py"
-          - "integration_test_agent_tool_graph.py"
-          - "integration_test_composio.py"
-          - "integration_test_chat_completions.py"
-          - "integration_test_multi_agent.py"
-          - "integration_test_batch_api_cron_jobs.py"
-          - "integration_test_batch_sdk.py"
-          - "integration_test_voice_agent.py"
-          - "integration_test_builtin_tools.py"
-          - "integration_test_pinecone_tool.py"
-    services:
-      qdrant:
-        image: qdrant/qdrant
-        ports:
-          - 6333:6333
-      postgres:
-        image: pgvector/pgvector:pg17
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_HOST_AUTH_METHOD: trust
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Generate SDK with Fern
-        uses: nick-fields/retry@v3
-        if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
-        env:
-          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
-        with:
-          max_attempts: 3
-          timeout_minutes: 5
-          command: |
-            set -o xtrace
-            cd apps
-            fern generate --group python-sdk --preview
-            cd fern/.preview/fern-python-sdk
-            poetry install
-            poetry run mypy .
-
-      - name: Install dependencies
-        shell: bash
-        working-directory: apps/core
-        run: |
-          poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
-          poetry run pip install letta
-      - name: Migrate database
-        working-directory: apps/core
-        env:
-          LETTA_PG_PORT: 5432
-          LETTA_PG_USER: postgres
-          LETTA_PG_PASSWORD: postgres
-          LETTA_PG_DB: postgres
-          LETTA_PG_HOST: localhost
-        run: |
-          psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
-          poetry run alembic upgrade head
-
-      - name: Use SDK with on branch changes
-        if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
-        working-directory: apps/core
-        run: |
-          poetry run pip install -e ../fern/.preview/fern-python-sdk/.
-          poetry run pip install letta
-
-      - name: Inject env vars into environment
-        working-directory: apps/core
-        run: |
-          # Get secrets and mask them before adding to environment
-          while IFS= read -r line || [[ -n "$line" ]]; do
-            if [[ -n "$line" ]]; then
-              value=$(echo "$line" | cut -d= -f2-)
-              echo "::add-mask::$value"
-              echo "$line" >> $GITHUB_ENV
-            fi
-          done < <(letta_secrets_helper --env dev --service ci)
-
-      - name: Run core integration tests
-        working-directory: apps/core
-        env:
-          LETTA_PG_PORT: 5432
-          LETTA_PG_USER: postgres
-          LETTA_PG_PASSWORD: postgres
-          LETTA_PG_DB: postgres
-          LETTA_PG_HOST: localhost
-          LETTA_SERVER_PASS: test_server_token
-          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
-          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
-          GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
-          GROQ_API_KEY: ${{ env.GROQ_API_KEY }}
-          AZURE_API_KEY: ${{ env.AZURE_API_KEY }}
-          AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
-          E2B_API_KEY: ${{ env.E2B_API_KEY }}
-          E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
-          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
-          LETTA_ENABLE_BATCH_JOB_POLLING: true
-          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
-          PINECONE_INDEX_HOST: ${{ secrets.PINECONE_INDEX_HOST }}
-          PINECONE_NAMESPACE: ${{ secrets.PINECONE_NAMESPACE }}
-          LETTA_USE_EXPERIMENTAL: ${{ secrets.LETTA_USE_EXPERIMENTAL }}
-        run: |
-          set -o xtrace
-          poetry run pip show letta
-          poetry run pip show letta-client
-          poetry run pytest -svv tests/${{ matrix.integration_test_suite }}
+  integration-tests:
+    uses: ./.github/workflows/reusable-test-workflow.yml
+    with:
+      test-type: 'integration'
+      install-args: '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox'
+      timeout-minutes: 15
+      matrix-strategy: |
+        {
+          "fail-fast": false,
+          "matrix": {
+            "test_suite": [
+              "integration_test_summarizer.py",
+              "integration_test_tool_execution_sandbox.py",
+              "integration_test_async_tool_sandbox.py",
+              "integration_test_sleeptime_agent.py",
+              "integration_test_agent_tool_graph.py",
+              "integration_test_composio.py",
+              "integration_test_chat_completions.py",
+              "integration_test_multi_agent.py",
+              "integration_test_batch_api_cron_jobs.py",
+              "integration_test_batch_sdk.py",
+              "integration_test_voice_agent.py",
+              "integration_test_builtin_tools.py",
+              "integration_test_pinecone_tool.py"
+            ]
+          }
+        }
+    secrets: inherit

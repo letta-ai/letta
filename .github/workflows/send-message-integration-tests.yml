@@ -9,133 +9,26 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  changed-files:
-    runs-on: [self-hosted, medium]
-    name: changed-files
-    outputs:
-      all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
-      any_changed: ${{ steps.changed-files.outputs.any_changed }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v44
-        with:
-          files: |
-            apps/core/**
-            .github/workflows/send-message-integration-tests.yml
-  main:
-    needs: [ changed-files ]
-    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
-    runs-on: [self-hosted, medium]
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        config_file:
-          - "openai-gpt-4o-mini.json"
-#          - "azure-gpt-4o-mini.json" # TODO: Add back later, getting content violation
-          - "claude-3-5-sonnet.json"
-          - "claude-3-7-sonnet.json"
-          - "claude-3-7-sonnet-extended.json"
-          - "gemini-1.5-pro.json"
-          - "together-qwen-2.5-72b-instruct.json"
-    services:
-      qdrant:
-        image: qdrant/qdrant
-        ports:
-          - 6333:6333
-      postgres:
-        image: pgvector/pgvector:pg17
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_HOST_AUTH_METHOD: trust
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Inject env vars into environment
-        working-directory: apps/core
-        run: |
-          # Get secrets and mask them before adding to environment
-          while IFS= read -r line || [[ -n "$line" ]]; do
-            if [[ -n "$line" ]]; then
-              value=$(echo "$line" | cut -d= -f2-)
-              echo "::add-mask::$value"
-              echo "$line" >> $GITHUB_ENV
-            fi
-          done < <(letta_secrets_helper --env dev --service ci)
-
-      - name: Generate SDK with Fern
-        uses: nick-fields/retry@v3
-        if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
-        env:
-          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
-        with:
-          max_attempts: 3
-          timeout_minutes: 5
-          command: |
-            set -o xtrace
-            cd apps
-            fern generate --group python-sdk --preview
-            cd fern/.preview/fern-python-sdk
-            poetry install
-            poetry run mypy .
-
-      - name: Install dependencies
-        shell: bash
-        working-directory: apps/core
-        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google' }}
-      - name: Migrate database
-        working-directory: apps/core
-        env:
-          LETTA_PG_PORT: 5432
-          LETTA_PG_USER: postgres
-          LETTA_PG_PASSWORD: postgres
-          LETTA_PG_DB: postgres
-          LETTA_PG_HOST: localhost
-        run: |
-          psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
-          poetry run alembic upgrade head
-
-      - name: Use SDK with on branch changes
-        if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
-        working-directory: apps/core
-        run: poetry run pip install -e ../fern/.preview/fern-python-sdk/.
-
-      - name: Run integration tests for ${{ matrix.config_file }}
-        working-directory: apps/core
-        env:
-          LLM_CONFIG_FILE: ${{ matrix.config_file }}
-          LETTA_PG_PORT: 5432
-          LETTA_PG_USER: postgres
-          LETTA_PG_PASSWORD: postgres
-          LETTA_PG_DB: postgres
-          LETTA_PG_HOST: localhost
-          LETTA_SERVER_PASS: test_server_token
-          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
-          AZURE_API_KEY: ${{ env.AZURE_API_KEY }}
-          AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
-          GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
-          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
-          GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT}}
-          GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION}}
-          DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY}}
-          LETTA_USE_EXPERIMENTAL: 1
-        run: |
-          poetry run pytest \
-            -s -vv \
-            tests/integration_test_send_message.py \
-            --maxfail=1 --durations=10
+  send-message-tests:
+    uses: ./.github/workflows/reusable-test-workflow.yml
+    with:
+      test-type: 'send-message'
+      install-args: '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google'
+      timeout-minutes: 15
+      runner: '["self-hosted", "medium"]'
+      # TODO: "azure-gpt-4o-mini.json" add back later, getting content violation
+      matrix-strategy: |
+        {
+          "fail-fast": false,
+          "matrix": {
+            "config_file": [
+              "openai-gpt-4o-mini.json",
+              "claude-3-5-sonnet.json",
+              "claude-3-7-sonnet.json",
+              "claude-3-7-sonnet-extended.json",
+              "gemini-1.5-pro.json",
+              "together-qwen-2.5-72b-instruct.json"
+            ]
+          }
+        }
+    secrets: inherit
