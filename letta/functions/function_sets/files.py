@@ -7,10 +7,10 @@ if TYPE_CHECKING:
 
 async def open_file(agent_state: "AgentState", file_name: str, view_range: Optional[Tuple[int, int]]) -> str:
     """
-    Open up a file in core memory.
+    Open the file with name `file_name` and load the contents into files section in core memory.
 
     Args:
-        file_name (str): Name of the file to view.
+        file_name (str): Name of the file to view. Required.
         view_range (Optional[Tuple[int, int]]): Optional tuple indicating range to view.
 
     Returns:
@@ -21,7 +21,7 @@ async def open_file(agent_state: "AgentState", file_name: str, view_range: Optio
 
 async def close_file(agent_state: "AgentState", file_name: str) -> str:
     """
-    Close a file in core memory.
+    Close file with name `file_name` in files section in core memory.
 
     Args:
         file_name (str): Name of the file to close.
@@ -48,7 +48,7 @@ async def grep(agent_state: "AgentState", pattern: str, include: Optional[str] =
 
 async def search_files(agent_state: "AgentState", query: str) -> List["FileMetadata"]:
     """
-    Get list of most relevant files across all data sources.
+    Get list of most relevant files across all data sources using embedding search.
 
     Args:
         query (str): The search query.

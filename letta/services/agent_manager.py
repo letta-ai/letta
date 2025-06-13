@@ -15,7 +15,6 @@ from letta.constants import (
     BASE_TOOLS,
     BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
     BASE_VOICE_SLEEPTIME_TOOLS,
-    DATA_SOURCE_ATTACH_ALERT,
     FILES_TOOLS,
     MULTI_AGENT_TOOLS,
 )
@@ -1717,13 +1716,7 @@ class AgentManager:
             await agent.update_async(session, actor=actor)
 
         # Force rebuild of system prompt so that the agent is updated with passage count
-        # and recent passages and add system message alert to agent
         pydantic_agent = await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
-        await self.append_system_message_async(
-            agent_id=agent_id,
-            content=DATA_SOURCE_ATTACH_ALERT,
-            actor=actor,
-        )
 
         return pydantic_agent
 
