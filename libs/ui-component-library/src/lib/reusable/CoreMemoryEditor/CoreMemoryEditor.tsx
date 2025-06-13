@@ -210,7 +210,7 @@ function CoreMemoryEditorHeader(props: CoreMemoryEditorHeaderProps) {
 }
 
 const TEXTAREA_CLASSNAME =
-  'w-full h-full resize-none overflow-y-auto bg-panel-input-background whitespace-pre-line inline-block border border-border text-base p-2 text-lighter-text outline-none';
+  'w-full h-full resize-none  overflow-y-auto largerThanMobile:text-xs bg-panel-input-background whitespace-pre-line inline-block border border-border text-base p-2 text-lighter-text outline-none';
 
 interface InlineMemoryDiffProps {
   value: string;
