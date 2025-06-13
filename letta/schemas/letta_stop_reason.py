@@ -10,35 +10,13 @@ class StopReasonType(str, Enum):
     invalid_tool_call = "invalid_tool_call"
     max_steps = "max_steps"
     no_tool_call = "no_tool_call"
+    tool_rule = "tool_rule"
 
 
 class LettaStopReason(BaseModel):
     """
-    The stop reason from letta used during streaming response.
+    The stop reason from Letta indicating why agent loop stopped execution.
     """
 
-    message_type: Literal["stop_reason"] = "stop_reason"
-    stop_reason: StopReasonType = Field(..., description="The type of the message.")
-
-
-def create_letta_stop_reason_schema():
-    return {
-        "properties": {
-            "message_type": {
-                "type": "string",
-                "const": "stop_reason",
-                "title": "Message Type",
-                "description": "The type of the message.",
-                "default": "stop_reason",
-            },
-            "stop_reason": {
-                "type": "string",
-                "enum": list(StopReasonType.__members__.keys()),
-                "title": "Stop Reason",
-            },
-        },
-        "type": "object",
-        "required": ["stop_reason"],
-        "title": "LettaStopReason",
-        "description": "Letta provided stop reason for why agent loop ended.",
-    }
+    message_type: Literal["stop_reason"] = Field("stop_reason", description="The type of the message.")
+    stop_reason: StopReasonType = Field(..., description="The reason why execution stopped.")

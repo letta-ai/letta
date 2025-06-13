@@ -48,6 +48,7 @@ from letta.schemas.job import Job, JobUpdate
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, MessageType, ToolReturnMessage
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
+from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
@@ -2359,7 +2360,11 @@ class SyncServer(Server):
                 # If we want to convert these to Message, we can use the attached IDs
                 # NOTE: we will need to de-duplicate the Messsage IDs though (since Assistant->Inner+Func_Call)
                 # TODO: eventually update the interface to use `Message` and `MessageChunk` (new) inside the deque instead
-                return LettaResponse(messages=filtered_stream, usage=usage)
+                return LettaResponse(
+                    messages=filtered_stream,
+                    stop_reason=LettaStopReason(stop_reason=StopReasonType.end_turn.value),
+                    usage=usage,
+                )
 
         except HTTPException:
             raise
@@ -2461,4 +2466,8 @@ class SyncServer(Server):
             # If we want to convert these to Message, we can use the attached IDs
             # NOTE: we will need to de-duplicate the Messsage IDs though (since Assistant->Inner+Func_Call)
             # TODO: eventually update the interface to use `Message` and `MessageChunk` (new) inside the deque instead
-            return LettaResponse(messages=filtered_stream, usage=usage)
+            return LettaResponse(
+                messages=filtered_stream,
+                stop_reason=LettaStopReason(stop_reason=StopReasonType.end_turn.value),
+                usage=usage,
+            )

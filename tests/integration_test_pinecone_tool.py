@@ -164,8 +164,9 @@ async def test_pinecone_tool(client: AsyncLetta) -> None:
     assert pinecone_results is not None, "No Pinecone results received from the agent."
     assert len(queries) > 0, "No queries received from the agent."
 
+    assert messages[-2].message_type == "stop_reason", "Penultimate message in stream must be stop reason."
     assert messages[-1].message_type == "usage_statistics", "Last message in stream must be usage stats."
-    response_messages_from_stream = [m for m in messages if m.message_type != "usage_statistics"]
+    response_messages_from_stream = [m for m in messages if m.message_type not in ["stop_reason", "usage_statistics"]]
     response_message_types_from_stream = [m.message_type for m in response_messages_from_stream]
 
     messages_from_db = await client.agents.messages.list(

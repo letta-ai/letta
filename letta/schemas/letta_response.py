@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from letta.helpers.json_helpers import json_dumps
 from letta.schemas.enums import JobStatus, MessageStreamStatus
 from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
+from letta.schemas.letta_stop_reason import LettaStopReason
 from letta.schemas.message import Message
 from letta.schemas.usage import LettaUsageStatistics
 
@@ -33,6 +34,10 @@ class LettaResponse(BaseModel):
                 "$ref": "#/components/schemas/LettaMessageUnion",
             }
         },
+    )
+    stop_reason: LettaStopReason = Field(
+        ...,
+        description="The stop reason from Letta indicating why agent loop stopped execution.",
     )
     usage: LettaUsageStatistics = Field(
         ...,
@@ -166,7 +171,7 @@ class LettaResponse(BaseModel):
 
 
 # The streaming response is either [DONE], [DONE_STEP], [DONE], an error, or a LettaMessage
-LettaStreamingResponse = Union[LettaMessage, MessageStreamStatus, LettaUsageStatistics]
+LettaStreamingResponse = Union[LettaMessage, MessageStreamStatus, LettaStopReason, LettaUsageStatistics]
 
 
 class LettaBatchResponse(BaseModel):
