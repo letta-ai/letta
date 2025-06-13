@@ -2,11 +2,16 @@ import asyncio
 from functools import wraps
 from typing import Any, Optional, Set, Union
 
-import redis.asyncio as redis
-from redis import RedisError
-
 from letta.constants import REDIS_EXCLUDE, REDIS_INCLUDE, REDIS_SET_DEFAULT_VAL
 from letta.log import get_logger
+
+try:
+    from redis import RedisError
+    from redis.asyncio import ConnectionPool, Redis
+except ImportError:
+    RedisError = None
+    Redis = None
+    ConnectionPool = None
 
 logger = get_logger(__name__)
 
@@ -44,7 +49,7 @@ class AsyncRedisClient:
             retry_on_timeout: Retry operations on timeout
             health_check_interval: Seconds between health checks
         """
-        self.pool = redis.ConnectionPool(
+        self.pool = ConnectionPool(
             host=host,
             port=port,
             db=db,
@@ -59,12 +64,12 @@ class AsyncRedisClient:
         self._client = None
         self._lock = asyncio.Lock()
 
-    async def get_client(self) -> redis.Redis:
+    async def get_client(self) -> Redis:
         """Get or create Redis client instance."""
         if self._client is None:
             async with self._lock:
                 if self._client is None:
-                    self._client = redis.Redis(connection_pool=self.pool)
+                    self._client = Redis(connection_pool=self.pool)
         return self._client
 
     async def close(self):
@@ -213,8 +218,8 @@ class AsyncRedisClient:
         return await client.decr(key)
 
     async def check_inclusion_and_exclusion(self, member: str, group: str) -> bool:
-        exclude_key = f"{group}_{REDIS_EXCLUDE}"
-        include_key = f"{group}_{REDIS_INCLUDE}"
+        exclude_key = self._get_group_exclusion_key(group)
+        include_key = self._get_group_inclusion_key(group)
         # 1. if the member IS excluded from the group
         if self.exists(exclude_key) and await self.scard(exclude_key) > 1:
             return bool(await self.smismember(exclude_key, member))
@@ -231,14 +236,29 @@ class AsyncRedisClient:
 
     @staticmethod
     def _get_group_inclusion_key(group: str) -> str:
-        return f"{group}_{REDIS_INCLUDE}"
+        return f"{group}:{REDIS_INCLUDE}"
 
     @staticmethod
     def _get_group_exclusion_key(group: str) -> str:
-        return f"{group}_{REDIS_EXCLUDE}"
+        return f"{group}:{REDIS_EXCLUDE}"
 
 
 class NoopAsyncRedisClient(AsyncRedisClient):
+    # noinspection PyMissingConstructor
+    def __init__(self):
+        pass
+
+    async def set(
+        self,
+        key: str,
+        value: Union[str, int, float],
+        ex: Optional[int] = None,
+        px: Optional[int] = None,
+        nx: bool = False,
+        xx: bool = False,
+    ) -> bool:
+        return False
+
     async def get(self, key: str, default: Any = None) -> Any:
         return default
 

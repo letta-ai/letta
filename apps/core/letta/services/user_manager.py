@@ -3,6 +3,9 @@ from typing import List, Optional
 from sqlalchemy import select, text
 
 from letta.constants import DEFAULT_ORG_ID
+from letta.data_sources.redis_client import get_redis_client
+from letta.helpers.decorators import async_redis_cache
+from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.organization import Organization as OrganizationModel
 from letta.orm.user import User as UserModel
@@ -11,6 +14,8 @@ from letta.schemas.user import User as PydanticUser
 from letta.schemas.user import UserUpdate
 from letta.server.db import db_registry
 from letta.utils import enforce_types
+
+logger = get_logger(__name__)
 
 
 class UserManager:
@@ -58,6 +63,7 @@ class UserManager:
                 # If it doesn't exist, make it
                 actor = UserModel(id=self.DEFAULT_USER_ID, name=self.DEFAULT_USER_NAME, organization_id=org_id)
                 await actor.create_async(session)
+                await self._invalidate_actor_cache(self.DEFAULT_USER_ID)
 
             return actor.to_pydantic()
 
@@ -77,6 +83,7 @@ class UserManager:
         async with db_registry.async_session() as session:
             new_user = UserModel(**pydantic_user.model_dump(to_orm=True))
             await new_user.create_async(session)
+            await self._invalidate_actor_cache(new_user.id)
             return new_user.to_pydantic()
 
     @enforce_types
@@ -111,6 +118,7 @@ class UserManager:
 
             # Commit the updated user
             await existing_user.update_async(session)
+            await self._invalidate_actor_cache(user_update.id)
             return existing_user.to_pydantic()
 
     @enforce_types
@@ -132,6 +140,7 @@ class UserManager:
             # Delete from user table
             user = await UserModel.read_async(db_session=session, identifier=user_id)
             await user.hard_delete_async(session)
+            await self._invalidate_actor_cache(user_id)
 
     @enforce_types
     @trace_method
@@ -143,6 +152,7 @@ class UserManager:
 
     @enforce_types
     @trace_method
+    @async_redis_cache(key_func=lambda self, actor_id: f"actor_id:{actor_id}", model_class=PydanticUser)
     async def get_actor_by_id_async(self, actor_id: str) -> PydanticUser:
         """Fetch a user by ID asynchronously."""
         async with db_registry.async_session() as session:
@@ -225,3 +235,15 @@ class UserManager:
                 limit=limit,
             )
             return [user.to_pydantic() for user in users]
+
+    async def _invalidate_actor_cache(self, actor_id: str) -> bool:
+        """Invalidates the actor cache on CRUD operations.
+        TODO (cliandy): see notes on redis cache decorator
+        """
+        try:
+            redis_client = await get_redis_client()
+            cache_key = self.get_actor_by_id_async.cache_key_func(self, actor_id)
+            return (await redis_client.delete(cache_key)) > 0
+        except Exception as e:
+            logger.error(f"Failed to invalidate cache: {e}")
+            return False
