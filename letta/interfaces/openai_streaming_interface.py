@@ -7,6 +7,8 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns, ns_to_ms
 from letta.log import get_logger
+from letta.otel.context import get_ctx_attributes
+from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.letta_message import AssistantMessage, LettaMessage, ReasoningMessage, ToolCallDelta, ToolCallMessage
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message
@@ -95,6 +97,10 @@ class OpenAIStreamingInterface:
                         ttft_span.add_event(
                             name="openai_time_to_first_token_ms", attributes={"openai_time_to_first_token_ms": ns_to_ms(ttft_ns)}
                         )
+                        metric_attributes = get_ctx_attributes()
+                        metric_attributes["model.name"] = chunk.model
+                        MetricRegistry().ttft_ms_histogram.record(ns_to_ms(ttft_ns), metric_attributes)
+
                         first_chunk = False
 
                     if not self.model or not self.message_id:

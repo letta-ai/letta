@@ -5,6 +5,7 @@ from typing import AsyncGenerator, Dict, List, Optional, Tuple, Union
 
 from openai import AsyncStream
 from openai.types.chat import ChatCompletionChunk
+from opentelemetry.trace import Span
 
 from letta.agents.base_agent import BaseAgent
 from letta.agents.ephemeral_summary_agent import EphemeralSummaryAgent
@@ -178,16 +179,12 @@ class LettaAgent(BaseAgent):
                     agent_state,
                     llm_client,
                     tool_rules_solver,
+                    agent_step_span,
                 )
             )
             in_context_messages = current_in_context_messages + new_in_context_messages
 
             log_event("agent.stream_no_tokens.llm_response.received")  # [3^]
-
-            # log llm request time
-            now = get_utc_timestamp_ns()
-            llm_request_ns = now - step_start
-            agent_step_span.add_event(name="llm_request_ms", attributes={"duration_ms": ns_to_ms(llm_request_ns)})
 
             response = llm_client.convert_response_to_chat_completion(response_data, in_context_messages, agent_state.llm_config)
 
@@ -197,6 +194,9 @@ class LettaAgent(BaseAgent):
             usage.completion_tokens += response.usage.completion_tokens
             usage.prompt_tokens += response.usage.prompt_tokens
             usage.total_tokens += response.usage.total_tokens
+            MetricRegistry().message_output_tokens.record(
+                response.usage.completion_tokens, dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model})
+            )
 
             if not response.choices[0].message.tool_calls:
                 # TODO: make into a real error
@@ -215,11 +215,6 @@ class LettaAgent(BaseAgent):
             else:
                 logger.info("No reasoning content found.")
                 reasoning = None
-
-            # log LLM request time
-            now = get_utc_timestamp_ns()
-            llm_request_ns = now - step_start
-            agent_step_span.add_event(name="llm_request_ms", attributes={"duration_ms": ns_to_ms(llm_request_ns)})
 
             persisted_messages, should_continue = await self._handle_ai_response(
                 tool_call,
@@ -264,6 +259,8 @@ class LettaAgent(BaseAgent):
             for message in letta_messages:
                 if include_return_message_types is None or message.message_type in include_return_message_types:
                     yield f"data: {message.model_dump_json()}\n\n"
+
+            MetricRegistry().step_execution_time_ms_histogram.record(step_start - get_utc_timestamp_ns(), get_ctx_attributes())
 
             if not should_continue:
                 break
@@ -327,7 +324,7 @@ class LettaAgent(BaseAgent):
 
             request_data, response_data, current_in_context_messages, new_in_context_messages, valid_tool_names = (
                 await self._build_and_request_from_llm(
-                    current_in_context_messages, new_in_context_messages, agent_state, llm_client, tool_rules_solver
+                    current_in_context_messages, new_in_context_messages, agent_state, llm_client, tool_rules_solver, agent_step_span
                 )
             )
             in_context_messages = current_in_context_messages + new_in_context_messages
@@ -336,16 +333,14 @@ class LettaAgent(BaseAgent):
 
             response = llm_client.convert_response_to_chat_completion(response_data, in_context_messages, agent_state.llm_config)
 
-            # log LLM request time
-            now = get_utc_timestamp_ns()
-            llm_request_ns = now - step_start
-            agent_step_span.add_event(name="llm_request_ms", attributes={"duration_ms": ns_to_ms(llm_request_ns)})
-
             # TODO: add run_id
             usage.step_count += 1
             usage.completion_tokens += response.usage.completion_tokens
             usage.prompt_tokens += response.usage.prompt_tokens
             usage.total_tokens += response.usage.total_tokens
+            MetricRegistry().message_output_tokens.record(
+                response.usage.completion_tokens, dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model})
+            )
 
             if not response.choices[0].message.tool_calls:
                 # TODO: make into a real error
@@ -398,6 +393,8 @@ class LettaAgent(BaseAgent):
                     organization_id=self.actor.organization_id,
                 ),
             )
+
+            MetricRegistry().step_execution_time_ms_histogram.record(step_start - get_utc_timestamp_ns(), get_ctx_attributes())
 
             if not should_continue:
                 break
@@ -458,24 +455,28 @@ class LettaAgent(BaseAgent):
             request_span = tracer.start_span("time_to_first_token", start_time=request_start_timestamp_ns)
             request_span.set_attributes({f"llm_config.{k}": v for k, v in agent_state.llm_config.model_dump().items() if v is not None})
 
-        provider_request_start_timestamp_ns = None
         for i in range(max_steps):
             step_id = generate_step_id()
             step_start = get_utc_timestamp_ns()
             agent_step_span = tracer.start_span("agent_step", start_time=step_start)
             agent_step_span.set_attributes({"step_id": step_id})
 
-            request_data, stream, current_in_context_messages, new_in_context_messages, valid_tool_names = (
-                await self._build_and_request_from_llm_streaming(
-                    first_chunk,
-                    agent_step_span,
-                    request_start_timestamp_ns,
-                    current_in_context_messages,
-                    new_in_context_messages,
-                    agent_state,
-                    llm_client,
-                    tool_rules_solver,
-                )
+            (
+                request_data,
+                stream,
+                current_in_context_messages,
+                new_in_context_messages,
+                valid_tool_names,
+                provider_request_start_timestamp_ns,
+            ) = await self._build_and_request_from_llm_streaming(
+                first_chunk,
+                agent_step_span,
+                request_start_timestamp_ns,
+                current_in_context_messages,
+                new_in_context_messages,
+                agent_state,
+                llm_client,
+                tool_rules_solver,
             )
             log_event("agent.stream.llm_response.received")  # [3^]
 
@@ -502,11 +503,16 @@ class LettaAgent(BaseAgent):
                     now = get_utc_timestamp_ns()
                     ttft_ns = now - request_start_timestamp_ns
                     request_span.add_event(name="time_to_first_token_ms", attributes={"ttft_ms": ns_to_ms(ttft_ns)})
+                    metric_attributes = get_ctx_attributes()
+                    metric_attributes["model.name"] = agent_state.llm_config.model
+                    MetricRegistry().ttft_ms_histogram.record(ns_to_ms(ttft_ns), metric_attributes)
                     first_chunk = False
 
                 if include_return_message_types is None or chunk.message_type in include_return_message_types:
                     # filter down returned data
                     yield f"data: {chunk.model_dump_json()}\n\n"
+
+            stream_end_time_ns = get_utc_timestamp_ns()
 
             # update usage
             usage.step_count += 1
@@ -518,9 +524,12 @@ class LettaAgent(BaseAgent):
             )
 
             # log LLM request time
-            now = get_utc_timestamp_ns()
-            llm_request_ns = now - step_start
-            agent_step_span.add_event(name="llm_request_ms", attributes={"duration_ms": ns_to_ms(llm_request_ns)})
+            llm_request_ms = ns_to_ms(stream_end_time_ns - request_start_timestamp_ns)
+            agent_step_span.add_event(name="llm_request_ms", attributes={"duration_ms": llm_request_ms})
+            MetricRegistry().llm_execution_time_ms_histogram.record(
+                llm_request_ms,
+                dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model}),
+            )
 
             # Process resulting stream content
             tool_call = interface.get_tool_call_object()
@@ -585,6 +594,9 @@ class LettaAgent(BaseAgent):
                 if include_return_message_types is None or tool_return.message_type in include_return_message_types:
                     yield f"data: {tool_return.model_dump_json()}\n\n"
 
+            # TODO (cliandy): consolidate and expand with trace
+            MetricRegistry().step_execution_time_ms_histogram.record(step_start - get_utc_timestamp_ns(), get_ctx_attributes())
+
             if not should_continue:
                 break
 
@@ -608,6 +620,7 @@ class LettaAgent(BaseAgent):
         for finish_chunk in self.get_finish_chunks_for_stream(usage):
             yield f"data: {finish_chunk}\n\n"
 
+    # noinspection PyInconsistentReturns
     async def _build_and_request_from_llm(
         self,
         current_in_context_messages: List[Message],
@@ -615,7 +628,8 @@ class LettaAgent(BaseAgent):
         agent_state: AgentState,
         llm_client: LLMClientBase,
         tool_rules_solver: ToolRulesSolver,
-    ) -> Tuple[Dict, Dict, List[Message], List[Message], List[str]]:
+        agent_step_span: "Span",
+    ) -> Tuple[Dict, Dict, List[Message], List[Message], List[str]] | None:
         for attempt in range(self.max_summarization_retries + 1):
             try:
                 log_event("agent.stream_no_tokens.messages.refreshed")
@@ -629,13 +643,15 @@ class LettaAgent(BaseAgent):
                 log_event("agent.stream_no_tokens.llm_request.created")
 
                 async with AsyncTimer() as timer:
+                    # Attempt LLM request
                     response = await llm_client.request_async(request_data, agent_state.llm_config)
                 MetricRegistry().llm_execution_time_ms_histogram.record(
                     timer.elapsed_ms,
                     dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model}),
                 )
-                # Attempt LLM request
-                return (request_data, response, current_in_context_messages, new_in_context_messages, valid_tool_names)
+                agent_step_span.add_event(name="llm_request_ms", attributes={"duration_ms": timer.elapsed_ms})
+
+                return request_data, response, current_in_context_messages, new_in_context_messages, valid_tool_names
 
             except Exception as e:
                 if attempt == self.max_summarization_retries:
@@ -653,6 +669,7 @@ class LettaAgent(BaseAgent):
                 new_in_context_messages = []
                 log_event(f"agent.stream_no_tokens.retry_attempt.{attempt + 1}")
 
+    # noinspection PyInconsistentReturns
     async def _build_and_request_from_llm_streaming(
         self,
         first_chunk: bool,
@@ -663,7 +680,7 @@ class LettaAgent(BaseAgent):
         agent_state: AgentState,
         llm_client: LLMClientBase,
         tool_rules_solver: ToolRulesSolver,
-    ) -> Tuple[Dict, AsyncStream[ChatCompletionChunk], List[Message], List[Message], List[str]]:
+    ) -> Tuple[Dict, AsyncStream[ChatCompletionChunk], List[Message], List[Message], List[str], int] | None:
         for attempt in range(self.max_summarization_retries + 1):
             try:
                 log_event("agent.stream_no_tokens.messages.refreshed")
@@ -676,10 +693,13 @@ class LettaAgent(BaseAgent):
                 )
                 log_event("agent.stream.llm_request.created")  # [2^]
 
+                provider_request_start_timestamp_ns = get_utc_timestamp_ns()
                 if first_chunk and ttft_span is not None:
-                    provider_request_start_timestamp_ns = get_utc_timestamp_ns()
-                    provider_req_start_ns = provider_request_start_timestamp_ns - request_start_timestamp_ns
-                    ttft_span.add_event(name="provider_req_start_ns", attributes={"provider_req_start_ms": ns_to_ms(provider_req_start_ns)})
+                    request_start_to_provider_request_start_ns = provider_request_start_timestamp_ns - request_start_timestamp_ns
+                    ttft_span.add_event(
+                        name="request_start_to_provider_request_start_ns",
+                        attributes={"request_start_to_provider_request_start_ns": ns_to_ms(request_start_to_provider_request_start_ns)},
+                    )
 
                 # Attempt LLM request
                 return (
@@ -688,6 +708,7 @@ class LettaAgent(BaseAgent):
                     current_in_context_messages,
                     new_in_context_messages,
                     valid_tool_names,
+                    provider_request_start_timestamp_ns,
                 )
 
             except Exception as e:
@@ -703,7 +724,7 @@ class LettaAgent(BaseAgent):
                     llm_config=agent_state.llm_config,
                     force=True,
                 )
-                new_in_context_messages = []
+                new_in_context_messages: list[Message] = []
                 log_event(f"agent.stream_no_tokens.retry_attempt.{attempt + 1}")
 
     @trace_method

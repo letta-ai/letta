@@ -95,6 +95,18 @@ class MetricRegistry:
             ),
         )
 
+    @property
+    def step_execution_time_ms_histogram(self) -> Histogram:
+        return self._get_or_create_metric(
+            "hist_step_execution_time_ms",
+            partial(
+                self._meter.create_histogram,
+                name="hist_step_execution_time_ms",
+                description="Histogram for step execution time (ms)",
+                unit="ms",
+            ),
+        )
+
     # TODO (cliandy): instrument this
     @property
     def message_cost(self) -> Histogram:

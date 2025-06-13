@@ -5,14 +5,15 @@ from typing import List
 from fastapi import FastAPI, Request
 from opentelemetry import metrics
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
-from opentelemetry.metrics import NoOpMeter
+from opentelemetry.metrics import Counter, Histogram, NoOpMeter
 from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from opentelemetry.sdk.metrics.export import AggregationTemporality, PeriodicExportingMetricReader
 
 from letta.helpers.datetime_helpers import ns_to_ms
 from letta.log import get_logger
 from letta.otel.context import add_ctx_attribute, get_ctx_attributes
 from letta.otel.resource import get_resource, is_pytest_environment
+from letta.settings import settings
 
 logger = get_logger(__name__)
 
@@ -110,9 +111,17 @@ def setup_metrics(
     assert endpoint
 
     global _is_metrics_initialized, _meter
-
-    otlp_metric_exporter = OTLPMetricExporter(endpoint=endpoint)
+    preferred_temporality = AggregationTemporality(settings.otel_preferred_temporality)
+    otlp_metric_exporter = OTLPMetricExporter(
+        endpoint=endpoint,
+        preferred_temporality={
+            # Add more as needed here.
+            Counter: preferred_temporality,
+            Histogram: preferred_temporality,
+        },
+    )
     metric_reader = PeriodicExportingMetricReader(exporter=otlp_metric_exporter)
+
     meter_provider = MeterProvider(resource=get_resource(service_name), metric_readers=[metric_reader])
     metrics.set_meter_provider(meter_provider)
     _meter = metrics.get_meter(__name__)
