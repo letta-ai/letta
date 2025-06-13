@@ -88,7 +88,7 @@ async def sse_async_generator(
                 metric_attributes = get_ctx_attributes()
                 if llm_config:
                     metric_attributes["model.name"] = llm_config.model
-                    MetricRegistry().ttft_ms_histogram.record(ns_to_ms(ttft_ns), metric_attributes)
+                MetricRegistry().ttft_ms_histogram.record(ns_to_ms(ttft_ns), metric_attributes)
                 first_chunk = False
 
             # yield f"data: {json.dumps(chunk)}\n\n"

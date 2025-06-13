@@ -26,6 +26,8 @@ from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns, ns_to_ms
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.log import get_logger
+from letta.otel.context import get_ctx_attributes
+from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.letta_message import (
     AssistantMessage,
     HiddenReasoningMessage,
@@ -142,6 +144,10 @@ class AnthropicStreamingInterface:
                         ttft_span.add_event(
                             name="anthropic_time_to_first_token_ms", attributes={"anthropic_time_to_first_token_ms": ns_to_ms(ttft_ns)}
                         )
+                        metric_attributes = get_ctx_attributes()
+                        if isinstance(event, BetaRawMessageStartEvent):
+                            metric_attributes["model.name"] = event.message.model
+                        MetricRegistry().ttft_ms_histogram.record(ns_to_ms(ttft_ns), metric_attributes)
                         first_chunk = False
 
                     # TODO: Support BetaThinkingBlock, BetaRedactedThinkingBlock
