@@ -73,6 +73,7 @@ from letta.schemas.organization import Organization
 from letta.schemas.organization import Organization as PydanticOrganization
 from letta.schemas.organization import OrganizationUpdate
 from letta.schemas.passage import Passage as PydanticPassage
+from letta.schemas.pip_requirement import PipRequirement
 from letta.schemas.run import Run as PydanticRun
 from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate, SandboxType
 from letta.schemas.source import Source as PydanticSource
@@ -3046,6 +3047,175 @@ async def test_upsert_multiple_tool_types(server: SyncServer, default_user):
 async def test_upsert_base_tools_with_empty_type_filter(server: SyncServer, default_user):
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types=set())
     assert tools == []
+
+
+@pytest.mark.asyncio
+async def test_create_tool_with_pip_requirements(server: SyncServer, default_user, default_organization):
+    def test_tool_with_deps():
+        """
+        A test tool with pip dependencies.
+
+        Returns:
+            str: Hello message.
+        """
+        return "hello"
+
+    # Create pip requirements
+    pip_reqs = [
+        PipRequirement(name="requests", version="2.28.0"),
+        PipRequirement(name="numpy"),  # No version specified
+    ]
+
+    # Set up tool details
+    source_code = parse_source_code(test_tool_with_deps)
+    source_type = "python"
+    description = "A test tool with pip dependencies"
+    tags = ["test"]
+    metadata = {"test": "pip_requirements"}
+
+    tool = PydanticTool(
+        description=description, tags=tags, source_code=source_code, source_type=source_type, metadata_=metadata, pip_requirements=pip_reqs
+    )
+    derived_json_schema = derive_openai_json_schema(source_code=tool.source_code, name=tool.name)
+    derived_name = derived_json_schema["name"]
+    tool.json_schema = derived_json_schema
+    tool.name = derived_name
+
+    created_tool = await server.tool_manager.create_or_update_tool_async(tool, actor=default_user)
+
+    # Assertions
+    assert created_tool.pip_requirements is not None
+    assert len(created_tool.pip_requirements) == 2
+    assert created_tool.pip_requirements[0].name == "requests"
+    assert created_tool.pip_requirements[0].version == "2.28.0"
+    assert created_tool.pip_requirements[1].name == "numpy"
+    assert created_tool.pip_requirements[1].version is None
+
+
+@pytest.mark.asyncio
+async def test_create_tool_without_pip_requirements(server: SyncServer, print_tool):
+    # Verify that tools without pip_requirements have the field as None
+    assert print_tool.pip_requirements is None
+
+
+@pytest.mark.asyncio
+async def test_update_tool_pip_requirements(server: SyncServer, print_tool, default_user):
+    # Add pip requirements to existing tool
+    pip_reqs = [
+        PipRequirement(name="pandas", version="1.5.0"),
+        PipRequirement(name="matplotlib"),
+    ]
+
+    tool_update = ToolUpdate(pip_requirements=pip_reqs)
+    await server.tool_manager.update_tool_by_id_async(print_tool.id, tool_update, actor=default_user)
+
+    # Fetch the updated tool
+    updated_tool = await server.tool_manager.get_tool_by_id_async(print_tool.id, actor=default_user)
+
+    # Assertions
+    assert updated_tool.pip_requirements is not None
+    assert len(updated_tool.pip_requirements) == 2
+    assert updated_tool.pip_requirements[0].name == "pandas"
+    assert updated_tool.pip_requirements[0].version == "1.5.0"
+    assert updated_tool.pip_requirements[1].name == "matplotlib"
+    assert updated_tool.pip_requirements[1].version is None
+
+
+@pytest.mark.asyncio
+async def test_update_tool_clear_pip_requirements(server: SyncServer, default_user, default_organization):
+    def test_tool_clear_deps():
+        """
+        A test tool to clear dependencies.
+
+        Returns:
+            str: Hello message.
+        """
+        return "hello"
+
+    # Create a tool with pip requirements
+    pip_reqs = [PipRequirement(name="requests")]
+
+    # Set up tool details
+    source_code = parse_source_code(test_tool_clear_deps)
+    source_type = "python"
+    description = "A test tool to clear dependencies"
+    tags = ["test"]
+    metadata = {"test": "clear_deps"}
+
+    tool = PydanticTool(
+        description=description, tags=tags, source_code=source_code, source_type=source_type, metadata_=metadata, pip_requirements=pip_reqs
+    )
+    derived_json_schema = derive_openai_json_schema(source_code=tool.source_code, name=tool.name)
+    derived_name = derived_json_schema["name"]
+    tool.json_schema = derived_json_schema
+    tool.name = derived_name
+
+    created_tool = await server.tool_manager.create_or_update_tool_async(tool, actor=default_user)
+
+    # Verify it has requirements
+    assert created_tool.pip_requirements is not None
+    assert len(created_tool.pip_requirements) == 1
+
+    # Clear the requirements
+    tool_update = ToolUpdate(pip_requirements=[])
+    await server.tool_manager.update_tool_by_id_async(created_tool.id, tool_update, actor=default_user)
+
+    # Fetch the updated tool
+    updated_tool = await server.tool_manager.get_tool_by_id_async(created_tool.id, actor=default_user)
+
+    # Assertions
+    assert updated_tool.pip_requirements == []
+
+
+@pytest.mark.asyncio
+async def test_pip_requirements_roundtrip(server: SyncServer, default_user, default_organization):
+    def roundtrip_test_tool():
+        """
+        Test pip requirements roundtrip.
+
+        Returns:
+            str: Test message.
+        """
+        return "test"
+
+    # Create pip requirements with various version formats
+    pip_reqs = [
+        PipRequirement(name="requests", version="2.28.0"),
+        PipRequirement(name="flask", version="2.0"),
+        PipRequirement(name="django", version="4.1.0-beta"),
+        PipRequirement(name="numpy"),  # No version
+    ]
+
+    # Set up tool details
+    source_code = parse_source_code(roundtrip_test_tool)
+    source_type = "python"
+    description = "Test pip requirements roundtrip"
+    tags = ["test"]
+    metadata = {"test": "roundtrip"}
+
+    tool = PydanticTool(
+        description=description, tags=tags, source_code=source_code, source_type=source_type, metadata_=metadata, pip_requirements=pip_reqs
+    )
+    derived_json_schema = derive_openai_json_schema(source_code=tool.source_code, name=tool.name)
+    derived_name = derived_json_schema["name"]
+    tool.json_schema = derived_json_schema
+    tool.name = derived_name
+
+    created_tool = await server.tool_manager.create_or_update_tool_async(tool, actor=default_user)
+
+    # Fetch by ID
+    fetched_tool = await server.tool_manager.get_tool_by_id_async(created_tool.id, actor=default_user)
+
+    # Verify all requirements match exactly
+    assert fetched_tool.pip_requirements is not None
+    assert len(fetched_tool.pip_requirements) == 4
+
+    # Check each requirement
+    reqs_dict = {req.name: req.version for req in fetched_tool.pip_requirements}
+    assert reqs_dict["requests"] == "2.28.0"
+    assert reqs_dict["flask"] == "2.0"
+    assert reqs_dict["django"] == "4.1.0-beta"
+    assert reqs_dict["numpy"] is None
 
 
 # ======================================================================================================================

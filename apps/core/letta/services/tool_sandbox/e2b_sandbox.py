@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
+from e2b.sandbox.commands.command_handle import CommandExitException
 from e2b_code_interpreter import AsyncSandbox
 
 from letta.log import get_logger
@@ -189,14 +190,63 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
                         "package": package,
                     },
                 )
-                await sbx.commands.run(f"pip install {package}")
+                try:
+                    await sbx.commands.run(f"pip install {package}")
+                    log_event(
+                        "e2b_pip_install_finished",
+                        {
+                            "sandbox_id": sbx.sandbox_id,
+                            "package": package,
+                        },
+                    )
+                except CommandExitException as e:
+                    error_msg = f"Failed to install sandbox pip requirement '{package}' in E2B sandbox. This may be due to package version incompatibility with the E2B environment. Error: {e}"
+                    logger.error(error_msg)
+                    log_event(
+                        "e2b_pip_install_failed",
+                        {
+                            "sandbox_id": sbx.sandbox_id,
+                            "package": package,
+                            "error": str(e),
+                        },
+                    )
+                    raise RuntimeError(error_msg) from e
+
+        # Install tool-specific pip requirements
+        if self.tool and self.tool.pip_requirements:
+            for pip_requirement in self.tool.pip_requirements:
+                package_str = str(pip_requirement)
                 log_event(
-                    "e2b_pip_install_finished",
+                    "tool_pip_install_started",
                     {
                         "sandbox_id": sbx.sandbox_id,
-                        "package": package,
+                        "package": package_str,
+                        "tool_name": self.tool.name,
                     },
                 )
+                try:
+                    await sbx.commands.run(f"pip install {package_str}")
+                    log_event(
+                        "tool_pip_install_finished",
+                        {
+                            "sandbox_id": sbx.sandbox_id,
+                            "package": package_str,
+                            "tool_name": self.tool.name,
+                        },
+                    )
+                except CommandExitException as e:
+                    error_msg = f"Failed to install tool pip requirement '{package_str}' for tool '{self.tool.name}' in E2B sandbox. This may be due to package version incompatibility with the E2B environment. Consider updating the package version or removing the version constraint. Error: {e}"
+                    logger.error(error_msg)
+                    log_event(
+                        "tool_pip_install_failed",
+                        {
+                            "sandbox_id": sbx.sandbox_id,
+                            "package": package_str,
+                            "tool_name": self.tool.name,
+                            "error": str(e),
+                        },
+                    )
+                    raise RuntimeError(error_msg) from e
 
         return sbx
 

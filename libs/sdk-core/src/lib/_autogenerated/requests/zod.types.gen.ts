@@ -801,6 +801,19 @@ export const ToolType = z.union([
   z.literal('external_mcp'),
 ]);
 
+export type PipRequirement = z.infer<typeof PipRequirement>;
+export const PipRequirement = z.object({
+  name: z.string(),
+  version: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type Tool = z.infer<typeof Tool>;
 export const Tool = z.object({
   id: z.string().optional(),
@@ -828,6 +841,13 @@ export const Tool = z.object({
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
     .optional(),
   return_char_limit: z.number().optional(),
+  pip_requirements: z
+    .union([
+      z.array(PipRequirement),
+      z.null(),
+      z.array(z.union([z.array(PipRequirement), z.null()])),
+    ])
+    .optional(),
   created_by_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
@@ -4350,19 +4370,6 @@ export const LettaStreamingRequest = z.object({
   stream_tokens: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
-export type PipRequirement = z.infer<typeof PipRequirement>;
-export const PipRequirement = z.object({
-  name: z.string(),
-  version: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
 export type LocalSandboxConfig = z.infer<typeof LocalSandboxConfig>;
 export const LocalSandboxConfig = z.object({
   sandbox_dir: z
@@ -5187,6 +5194,14 @@ export const ToolCreate = z.object({
     ])
     .optional(),
   return_char_limit: z.union([z.number(), z.undefined()]).optional(),
+  pip_requirements: z
+    .union([
+      z.array(PipRequirement),
+      z.null(),
+      z.array(z.union([z.array(PipRequirement), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ToolRunFromSource = z.infer<typeof ToolRunFromSource>;
@@ -5226,6 +5241,14 @@ export const ToolRunFromSource = z.object({
       z.undefined(),
     ])
     .optional(),
+  pip_requirements: z
+    .union([
+      z.array(PipRequirement),
+      z.null(),
+      z.array(z.union([z.array(PipRequirement), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ToolUpdate = z.infer<typeof ToolUpdate>;
@@ -5254,6 +5277,13 @@ export const ToolUpdate = z.object({
     .optional(),
   return_char_limit: z
     .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+  pip_requirements: z
+    .union([
+      z.array(PipRequirement),
+      z.null(),
+      z.array(z.union([z.array(PipRequirement), z.null()])),
+    ])
     .optional(),
 });
 

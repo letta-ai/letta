@@ -9718,6 +9718,21 @@ export const $Tool = {
       description: 'The maximum number of characters in the response.',
       default: 6000,
     },
+    pip_requirements: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/PipRequirement',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Pip Requirements',
+      description: 'Optional list of pip packages required by this tool.',
+    },
     created_by_id: {
       anyOf: [
         {
@@ -10013,6 +10028,21 @@ export const $ToolCreate = {
       title: 'Return Char Limit',
       description: 'The maximum number of characters in the response.',
       default: 6000,
+    },
+    pip_requirements: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/PipRequirement',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Pip Requirements',
+      description: 'Optional list of pip packages required by this tool.',
     },
   },
   additionalProperties: false,
@@ -10368,6 +10398,21 @@ export const $ToolRunFromSource = {
       description:
         'The JSON schema of the function (auto-generated from source_code if not provided)',
     },
+    pip_requirements: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/PipRequirement',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Pip Requirements',
+      description: 'Optional list of pip packages required by this tool.',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -10574,6 +10619,21 @@ export const $ToolUpdate = {
       ],
       title: 'Return Char Limit',
       description: 'The maximum number of characters in the response.',
+    },
+    pip_requirements: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/PipRequirement',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Pip Requirements',
+      description: 'Optional list of pip packages required by this tool.',
     },
   },
   type: 'object',

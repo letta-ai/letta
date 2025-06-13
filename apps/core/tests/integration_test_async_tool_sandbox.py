@@ -15,7 +15,8 @@ from letta.schemas.agent import AgentState, CreateAgent
 from letta.schemas.block import CreateBlock
 from letta.schemas.environment_variables import AgentEnvironmentVariable, SandboxEnvironmentVariableCreate
 from letta.schemas.organization import Organization
-from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, PipRequirement, SandboxConfigCreate
+from letta.schemas.pip_requirement import PipRequirement
+from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate
 from letta.schemas.user import User
 from letta.server.server import SyncServer
 from letta.services.organization_manager import OrganizationManager
@@ -264,6 +265,64 @@ def custom_test_sandbox_config(test_user):
 
 # Tool-specific fixtures
 @pytest.fixture
+def tool_with_pip_requirements(test_user):
+    def use_requests_and_numpy() -> str:
+        """
+        Function that uses requests and numpy packages to test tool-specific pip requirements.
+
+        Returns:
+            str: Success message if packages are available.
+        """
+        try:
+            import numpy as np
+            import requests
+
+            # Simple usage to verify packages work
+            response = requests.get("https://httpbin.org/json", timeout=5)
+            arr = np.array([1, 2, 3])
+            return f"Success! Status: {response.status_code}, Array sum: {np.sum(arr)}"
+        except ImportError as e:
+            return f"Import error: {e}"
+        except Exception as e:
+            return f"Other error: {e}"
+
+    tool = create_tool_from_func(use_requests_and_numpy)
+    # Add pip requirements to the tool - using more recent versions for E2B compatibility
+    tool.pip_requirements = [
+        PipRequirement(name="requests", version="2.31.0"),
+        PipRequirement(name="numpy", version="1.26.0"),
+    ]
+    tool = ToolManager().create_or_update_tool(tool, test_user)
+    yield tool
+
+
+@pytest.fixture
+def tool_with_broken_pip_requirements(test_user):
+    def use_broken_package() -> str:
+        """
+        Function that requires a package with known compatibility issues.
+
+        Returns:
+            str: Should not reach here due to pip install failure.
+        """
+        try:
+            import some_nonexistent_package  # This will fail during pip install
+
+            return "This should not execute"
+        except ImportError as e:
+            return f"Import error: {e}"
+
+    tool = create_tool_from_func(use_broken_package)
+    # Add pip requirements that will fail in E2B environment
+    tool.pip_requirements = [
+        PipRequirement(name="numpy", version="1.24.0"),  # Known to have compatibility issues
+        PipRequirement(name="nonexistent-package-12345"),  # This package doesn't exist
+    ]
+    tool = ToolManager().create_or_update_tool(tool, test_user)
+    yield tool
+
+
+@pytest.fixture
 def core_memory_tools(test_user):
     """Create all base tools for testing."""
     tools = {}
@@ -419,6 +478,50 @@ async def test_local_sandbox_with_venv_pip_installs_basic(disable_e2b_api_key, c
 
 
 @pytest.mark.asyncio
+@pytest.mark.local_sandbox
+async def test_local_sandbox_with_tool_pip_requirements(disable_e2b_api_key, tool_with_pip_requirements, test_user, event_loop):
+    """Test that local sandbox installs tool-specific pip requirements."""
+    manager = SandboxConfigManager()
+    sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
+    config_create = SandboxConfigCreate(config=LocalSandboxConfig(sandbox_dir=sandbox_dir, use_venv=True).model_dump())
+    manager.create_or_update_sandbox_config(config_create, test_user)
+
+    sandbox = AsyncToolSandboxLocal(
+        tool_with_pip_requirements.name, {}, user=test_user, tool_object=tool_with_pip_requirements, force_recreate_venv=True
+    )
+    result = await sandbox.run()
+
+    # Should succeed since tool pip requirements were installed
+    assert "Success!" in result.func_return
+    assert "Status: 200" in result.func_return
+    assert "Array sum: 6" in result.func_return
+
+
+@pytest.mark.asyncio
+@pytest.mark.local_sandbox
+async def test_local_sandbox_with_mixed_pip_requirements(disable_e2b_api_key, tool_with_pip_requirements, test_user, event_loop):
+    """Test that local sandbox installs both sandbox and tool pip requirements."""
+    manager = SandboxConfigManager()
+    sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
+
+    # Add sandbox-level pip requirement
+    config_create = SandboxConfigCreate(
+        config=LocalSandboxConfig(sandbox_dir=sandbox_dir, use_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
+    )
+    manager.create_or_update_sandbox_config(config_create, test_user)
+
+    sandbox = AsyncToolSandboxLocal(
+        tool_with_pip_requirements.name, {}, user=test_user, tool_object=tool_with_pip_requirements, force_recreate_venv=True
+    )
+    result = await sandbox.run()
+
+    # Should succeed since both sandbox and tool pip requirements were installed
+    assert "Success!" in result.func_return
+    assert "Status: 200" in result.func_return
+    assert "Array sum: 6" in result.func_return
+
+
+@pytest.mark.asyncio
 @pytest.mark.e2b_sandbox
 async def test_local_sandbox_with_venv_pip_installs_with_update(disable_e2b_api_key, cowsay_tool, test_user, event_loop):
     manager = SandboxConfigManager()
@@ -550,3 +653,69 @@ async def test_e2b_sandbox_with_list_rv(check_e2b_key_is_set, list_tool, test_us
     sandbox = AsyncToolSandboxE2B(list_tool.name, {}, user=test_user)
     result = await sandbox.run()
     assert len(result.func_return) == 5
+
+
+@pytest.mark.asyncio
+@pytest.mark.e2b_sandbox
+async def test_e2b_sandbox_with_tool_pip_requirements(check_e2b_key_is_set, tool_with_pip_requirements, test_user, event_loop):
+    """Test that E2B sandbox installs tool-specific pip requirements."""
+    manager = SandboxConfigManager()
+    config_create = SandboxConfigCreate(config=E2BSandboxConfig().model_dump())
+    manager.create_or_update_sandbox_config(config_create, test_user)
+
+    sandbox = AsyncToolSandboxE2B(tool_with_pip_requirements.name, {}, user=test_user, tool_object=tool_with_pip_requirements)
+    result = await sandbox.run()
+
+    # Should succeed since tool pip requirements were installed
+    assert "Success!" in result.func_return
+    assert "Status: 200" in result.func_return
+    assert "Array sum: 6" in result.func_return
+
+
+@pytest.mark.asyncio
+@pytest.mark.e2b_sandbox
+async def test_e2b_sandbox_with_mixed_pip_requirements(check_e2b_key_is_set, tool_with_pip_requirements, test_user, event_loop):
+    """Test that E2B sandbox installs both sandbox and tool pip requirements."""
+    manager = SandboxConfigManager()
+
+    # Add sandbox-level pip requirement
+    config_create = SandboxConfigCreate(config=E2BSandboxConfig(pip_requirements=["cowsay"]).model_dump())
+    manager.create_or_update_sandbox_config(config_create, test_user)
+
+    sandbox = AsyncToolSandboxE2B(tool_with_pip_requirements.name, {}, user=test_user, tool_object=tool_with_pip_requirements)
+    result = await sandbox.run()
+
+    # Should succeed since both sandbox and tool pip requirements were installed
+    assert "Success!" in result.func_return
+    assert "Status: 200" in result.func_return
+    assert "Array sum: 6" in result.func_return
+
+
+@pytest.mark.asyncio
+@pytest.mark.e2b_sandbox
+async def test_e2b_sandbox_with_broken_tool_pip_requirements_error_handling(
+    check_e2b_key_is_set, tool_with_broken_pip_requirements, test_user, event_loop
+):
+    """Test that E2B sandbox provides informative error messages for broken tool pip requirements."""
+    manager = SandboxConfigManager()
+    config_create = SandboxConfigCreate(config=E2BSandboxConfig().model_dump())
+    manager.create_or_update_sandbox_config(config_create, test_user)
+
+    sandbox = AsyncToolSandboxE2B(tool_with_broken_pip_requirements.name, {}, user=test_user, tool_object=tool_with_broken_pip_requirements)
+
+    # Should raise a RuntimeError with informative message
+    with pytest.raises(RuntimeError) as exc_info:
+        await sandbox.run()
+
+    error_message = str(exc_info.value)
+    print(error_message)
+
+    # Verify the error message contains helpful information
+    assert "Failed to install tool pip requirement" in error_message
+    assert "use_broken_package" in error_message  # Tool name
+    assert "E2B sandbox" in error_message
+    assert "package version incompatibility" in error_message
+    assert "Consider updating the package version or removing the version constraint" in error_message
+
+    # Should mention one of the problematic packages
+    assert "numpy==1.24.0" in error_message or "nonexistent-package-12345" in error_message

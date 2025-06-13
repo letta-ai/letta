@@ -175,7 +175,9 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
             log_event(name="finish create_venv_for_local_sandbox")
 
         log_event(name="start install_pip_requirements_for_sandbox", attributes={"local_configs": local_configs.model_dump_json()})
-        await asyncio.to_thread(install_pip_requirements_for_sandbox, local_configs, upgrade=True, user_install_if_no_venv=False, env=env)
+        await asyncio.to_thread(
+            install_pip_requirements_for_sandbox, local_configs, upgrade=True, user_install_if_no_venv=False, env=env, tool=self.tool
+        )
         log_event(name="finish install_pip_requirements_for_sandbox", attributes={"local_configs": local_configs.model_dump_json()})
 
     @trace_method

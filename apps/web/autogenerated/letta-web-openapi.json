@@ -2683,6 +2683,113 @@
                                 "return_char_limit": {
                                   "type": "number"
                                 },
+                                "pip_requirements": {
+                                  "oneOf": [
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "version": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              },
+                                              {
+                                                "type": "array",
+                                                "items": {
+                                                  "oneOf": [
+                                                    {
+                                                      "type": "string"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "format": "null",
+                                                      "nullable": true
+                                                    }
+                                                  ],
+                                                  "nullable": true
+                                                }
+                                              },
+                                              {}
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        "required": ["name"]
+                                      }
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "name": {
+                                                  "type": "string"
+                                                },
+                                                "version": {
+                                                  "oneOf": [
+                                                    {
+                                                      "type": "string"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "format": "null",
+                                                      "nullable": true
+                                                    },
+                                                    {
+                                                      "type": "array",
+                                                      "items": {
+                                                        "oneOf": [
+                                                          {
+                                                            "type": "string"
+                                                          },
+                                                          {
+                                                            "type": "string",
+                                                            "format": "null",
+                                                            "nullable": true
+                                                          }
+                                                        ],
+                                                        "nullable": true
+                                                      }
+                                                    },
+                                                    {}
+                                                  ],
+                                                  "nullable": true
+                                                }
+                                              },
+                                              "required": ["name"]
+                                            }
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    }
+                                  ],
+                                  "nullable": true
+                                },
                                 "created_by_id": {
                                   "oneOf": [
                                     {
@@ -7268,6 +7375,113 @@
                                 },
                                 "return_char_limit": {
                                   "type": "number"
+                                },
+                                "pip_requirements": {
+                                  "oneOf": [
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "version": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              },
+                                              {
+                                                "type": "array",
+                                                "items": {
+                                                  "oneOf": [
+                                                    {
+                                                      "type": "string"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "format": "null",
+                                                      "nullable": true
+                                                    }
+                                                  ],
+                                                  "nullable": true
+                                                }
+                                              },
+                                              {}
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        "required": ["name"]
+                                      }
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "name": {
+                                                  "type": "string"
+                                                },
+                                                "version": {
+                                                  "oneOf": [
+                                                    {
+                                                      "type": "string"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "format": "null",
+                                                      "nullable": true
+                                                    },
+                                                    {
+                                                      "type": "array",
+                                                      "items": {
+                                                        "oneOf": [
+                                                          {
+                                                            "type": "string"
+                                                          },
+                                                          {
+                                                            "type": "string",
+                                                            "format": "null",
+                                                            "nullable": true
+                                                          }
+                                                        ],
+                                                        "nullable": true
+                                                      }
+                                                    },
+                                                    {}
+                                                  ],
+                                                  "nullable": true
+                                                }
+                                              },
+                                              "required": ["name"]
+                                            }
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    }
+                                  ],
+                                  "nullable": true
                                 },
                                 "created_by_id": {
                                   "oneOf": [

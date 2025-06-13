@@ -3567,6 +3567,10 @@ export type Tool = {
    */
   return_char_limit?: number;
   /**
+   * Optional list of pip packages required by this tool.
+   */
+  pip_requirements?: Array<PipRequirement> | null;
+  /**
    * The id of the user that made this Tool.
    */
   created_by_id?: string | null;
@@ -3671,6 +3675,10 @@ export type ToolCreate = {
    * The maximum number of characters in the response.
    */
   return_char_limit?: number;
+  /**
+   * Optional list of pip packages required by this tool.
+   */
+  pip_requirements?: Array<PipRequirement> | null;
 };
 
 export type ToolEnvVarSchema = {
@@ -3796,6 +3804,10 @@ export type ToolRunFromSource = {
   json_schema?: {
     [key: string]: unknown;
   } | null;
+  /**
+   * Optional list of pip packages required by this tool.
+   */
+  pip_requirements?: Array<PipRequirement> | null;
 };
 
 export type ToolSchema = {
@@ -3861,6 +3873,10 @@ export type ToolUpdate = {
    * The maximum number of characters in the response.
    */
   return_char_limit?: number | null;
+  /**
+   * Optional list of pip packages required by this tool.
+   */
+  pip_requirements?: Array<PipRequirement> | null;
 };
 
 export type UpdateAgent = {
