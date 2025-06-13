@@ -286,7 +286,7 @@ class OpenAIClient(LLMClientBase):
 
         # If we used a reasoning model, create a content part for the ommitted reasoning
         if is_openai_reasoning_model(llm_config.model):
-            chat_completion_response.choices[0].message.ommitted_reasoning_content = True
+            chat_completion_response.choices[0].message.omitted_reasoning_content = True
 
         return chat_completion_response
 

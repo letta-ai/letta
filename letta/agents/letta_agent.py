@@ -210,6 +210,8 @@ class LettaAgent(BaseAgent):
                         signature=response.choices[0].message.reasoning_content_signature,
                     )
                 ]
+            elif response.choices[0].message.omitted_reasoning_content:
+                reasoning = [OmittedReasoningContent()]
             elif response.choices[0].message.content:
                 reasoning = [TextContent(text=response.choices[0].message.content)]  # reasoning placed into content for legacy reasons
             else:
@@ -356,6 +358,8 @@ class LettaAgent(BaseAgent):
                 ]
             elif response.choices[0].message.content:
                 reasoning = [TextContent(text=response.choices[0].message.content)]  # reasoning placed into content for legacy reasons
+            elif response.choices[0].message.omitted_reasoning_content:
+                reasoning = [OmittedReasoningContent()]
             else:
                 logger.info("No reasoning content found.")
                 reasoning = None
