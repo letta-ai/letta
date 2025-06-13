@@ -24,6 +24,7 @@ from letta.functions.schema_generator import (
 from letta.log import get_logger
 from letta.orm.enums import ToolType
 from letta.schemas.letta_base import LettaBase
+from letta.schemas.pip_requirement import PipRequirement
 
 logger = get_logger(__name__)
 
@@ -60,6 +61,7 @@ class Tool(BaseTool):
 
     # tool configuration
     return_char_limit: int = Field(FUNCTION_RETURN_CHAR_LIMIT, description="The maximum number of characters in the response.")
+    pip_requirements: Optional[List[PipRequirement]] = Field(None, description="Optional list of pip packages required by this tool.")
 
     # metadata fields
     created_by_id: Optional[str] = Field(None, description="The id of the user that made this Tool.")
@@ -145,6 +147,7 @@ class ToolCreate(LettaBase):
     )
     args_json_schema: Optional[Dict] = Field(None, description="The args JSON schema of the function.")
     return_char_limit: int = Field(FUNCTION_RETURN_CHAR_LIMIT, description="The maximum number of characters in the response.")
+    pip_requirements: Optional[List[PipRequirement]] = Field(None, description="Optional list of pip packages required by this tool.")
 
     # TODO should we put the HTTP / API fetch inside from_mcp?
     # async def from_mcp(cls, mcp_server: str, mcp_tool_name: str) -> "ToolCreate":
@@ -253,6 +256,7 @@ class ToolUpdate(LettaBase):
     )
     args_json_schema: Optional[Dict] = Field(None, description="The args JSON schema of the function.")
     return_char_limit: Optional[int] = Field(None, description="The maximum number of characters in the response.")
+    pip_requirements: Optional[List[PipRequirement]] = Field(None, description="Optional list of pip packages required by this tool.")
 
     class Config:
         extra = "ignore"  # Allows extra fields without validation errors
@@ -269,3 +273,4 @@ class ToolRunFromSource(LettaBase):
     json_schema: Optional[Dict] = Field(
         None, description="The JSON schema of the function (auto-generated from source_code if not provided)"
     )
+    pip_requirements: Optional[List[PipRequirement]] = Field(None, description="Optional list of pip packages required by this tool.")

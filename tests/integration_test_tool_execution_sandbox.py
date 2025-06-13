@@ -14,7 +14,8 @@ from letta.schemas.agent import AgentState, CreateAgent
 from letta.schemas.block import CreateBlock
 from letta.schemas.environment_variables import AgentEnvironmentVariable, SandboxEnvironmentVariableCreate
 from letta.schemas.organization import Organization
-from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, PipRequirement, SandboxConfigCreate, SandboxConfigUpdate
+from letta.schemas.pip_requirement import PipRequirement
+from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate
 from letta.schemas.user import User
 from letta.server.server import SyncServer
 from letta.services.organization_manager import OrganizationManager

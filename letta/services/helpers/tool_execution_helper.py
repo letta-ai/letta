@@ -2,7 +2,7 @@ import os
 import platform
 import subprocess
 import venv
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 from datamodel_code_generator import DataModelType, PythonVersion
 from datamodel_code_generator.model import get_data_model_types
@@ -10,6 +10,9 @@ from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 
 from letta.log import get_logger
 from letta.schemas.sandbox_config import LocalSandboxConfig
+
+if TYPE_CHECKING:
+    from letta.schemas.tool import Tool
 
 logger = get_logger(__name__)
 
@@ -85,14 +88,12 @@ def install_pip_requirements_for_sandbox(
     upgrade: bool = True,
     user_install_if_no_venv: bool = False,
     env: Optional[Dict[str, str]] = None,
+    tool: Optional["Tool"] = None,
 ):
     """
     Installs the specified pip requirements inside the correct environment (venv or system).
+    Installs both sandbox-level and tool-specific pip requirements.
     """
-    if not local_configs.pip_requirements:
-        logger.debug("No pip requirements specified; skipping installation.")
-        return
-
     sandbox_dir = os.path.expanduser(local_configs.sandbox_dir)  # Expand tilde
     local_configs.sandbox_dir = sandbox_dir  # Update the object to store the absolute path
 
@@ -102,19 +103,48 @@ def install_pip_requirements_for_sandbox(
     if local_configs.use_venv:
         ensure_pip_is_up_to_date(python_exec, env=env)
 
-    # Construct package list
-    packages = [f"{req.name}=={req.version}" if req.version else req.name for req in local_configs.pip_requirements]
+    # Collect all pip requirements
+    all_packages = []
+
+    # Add sandbox-level pip requirements
+    if local_configs.pip_requirements:
+        packages = [f"{req.name}=={req.version}" if req.version else req.name for req in local_configs.pip_requirements]
+        all_packages.extend(packages)
+        logger.debug(f"Added sandbox pip requirements: {packages}")
+
+    # Add tool-specific pip requirements
+    if tool and tool.pip_requirements:
+        tool_packages = [str(req) for req in tool.pip_requirements]
+        all_packages.extend(tool_packages)
+        logger.debug(f"Added tool pip requirements for {tool.name}: {tool_packages}")
+
+    if not all_packages:
+        logger.debug("No pip requirements specified; skipping installation.")
+        return
 
     # Construct pip install command
     pip_cmd = [python_exec, "-m", "pip", "install"]
     if upgrade:
         pip_cmd.append("--upgrade")
-    pip_cmd += packages
+    pip_cmd += all_packages
 
     if user_install_if_no_venv and not local_configs.use_venv:
         pip_cmd.append("--user")
 
-    run_subprocess(pip_cmd, env=env, fail_msg=f"Failed to install packages: {', '.join(packages)}")
+    # Enhanced error message for better debugging
+    sandbox_packages = [f"{req.name}=={req.version}" if req.version else req.name for req in (local_configs.pip_requirements or [])]
+    tool_packages = [str(req) for req in (tool.pip_requirements if tool and tool.pip_requirements else [])]
+
+    error_details = []
+    if sandbox_packages:
+        error_details.append(f"sandbox requirements: {', '.join(sandbox_packages)}")
+    if tool_packages:
+        error_details.append(f"tool requirements: {', '.join(tool_packages)}")
+
+    context = f" ({'; '.join(error_details)})" if error_details else ""
+    fail_msg = f"Failed to install pip packages{context}. This may be due to package version incompatibility. Consider updating package versions or removing version constraints."
+
+    run_subprocess(pip_cmd, env=env, fail_msg=fail_msg)
 
 
 def create_venv_for_local_sandbox(sandbox_dir_path: str, venv_path: str, env: Dict[str, str], force_recreate: bool):
