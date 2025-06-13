@@ -126,15 +126,14 @@ class LettaFileToolExecutor(ToolExecutor):
         await self.files_agents_manager.update_file_agent_by_id(
             agent_id=agent_state.id, file_id=file_id, actor=self.actor, is_open=True, visible_content=visible_content
         )
-
-        return "Success"
+        return f"Successfully opened file {file_name}, lines {start} to {end} are now visible in memory block <{file_name}>"
 
     async def close_file(self, agent_state: AgentState, file_name: str) -> str:
         """Stub for close_file tool."""
         await self.files_agents_manager.update_file_agent_by_name(
             agent_id=agent_state.id, file_name=file_name, actor=self.actor, is_open=False
         )
-        return "Success"
+        return f"Successfully closed file {file_name}, use function calls to re-open file"
 
     def _validate_regex_pattern(self, pattern: str) -> None:
         """Validate regex pattern to prevent catastrophic backtracking."""
