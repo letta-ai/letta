@@ -93,7 +93,11 @@ function NavButton(props: NavButtonProps) {
       disabled={disabled}
       data-testid={`nav-button-${id}`}
       preload={preload}
-      _use_rarely_className={hideLabel ? '' : 'px-3'}
+      _use_rarely_className={cn(
+        'font-medium',
+        hideLabel ? '' : 'px-2',
+        !isActive ? 'text-text-lighter' : '',
+      )}
       onClick={onClick}
       active={isActive}
       href={href}
@@ -311,7 +315,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
             /*eslint-disable-next-line react/forbid-component-props*/
             style={{ minWidth: '56px' }}
           >
-            <VStack gap="small">
+            <VStack gap={false}>
               {baseNavItems.map((item) => {
                 if (item.id === 'development-servers' && hasCloudAccess) {
                   return (
@@ -392,7 +396,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
                   {title}
                 </HStack>
               )}
-              <VStack gap="small">
+              <VStack gap={false}>
                 {subNavItems.map((item, index) => {
                   if (isSubNavigationGroup(item)) {
                     const { title, titleOverride, items: groupItems } = item;
@@ -494,7 +498,7 @@ function SecondaryMenuItems(props: SecondaryMenuItemsProps) {
   return (
     <VStack gap="medium">
       <VStack gap={false}>
-        <VStack borderBottom gap="small" padding="small">
+        <VStack borderBottom gap={false} padding="small">
           {!isMobile && (
             <NavButton
               id="settings"
