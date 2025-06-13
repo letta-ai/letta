@@ -1419,7 +1419,7 @@ class AgentManager:
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
-            previous_message_count=num_messages,
+            previous_message_count=num_messages - len(agent_state.message_ids),
             archival_memory_size=num_archival_memories,
         )
 
@@ -1493,7 +1493,7 @@ class AgentManager:
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
-            previous_message_count=num_messages,
+            previous_message_count=num_messages - len(agent_state.message_ids),
             archival_memory_size=num_archival_memories,
             tool_rules_solver=tool_rules_solver,
         )
