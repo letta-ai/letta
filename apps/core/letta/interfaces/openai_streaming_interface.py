@@ -11,6 +11,7 @@ from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.letta_message import AssistantMessage, LettaMessage, ReasoningMessage, ToolCallDelta, ToolCallMessage
 from letta.schemas.letta_message_content import TextContent
+from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
 from letta.server.rest_api.json_parser import OptimisticJSONParser
@@ -343,6 +344,8 @@ class OpenAIStreamingInterface:
                                                 self.function_id_buffer = None
         except Exception as e:
             logger.error("Error processing stream: %s", e)
+            stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
+            yield f"data: {stop_reason.model_dump_json()}\n\n"
             raise
         finally:
             logger.info("OpenAIStreamingInterface: Stream processing complete.")

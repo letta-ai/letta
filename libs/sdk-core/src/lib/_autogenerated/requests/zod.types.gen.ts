@@ -4323,6 +4323,22 @@ export const LettaMessageUnion = z.union([
   AssistantMessage,
 ]);
 
+export type StopReasonType = z.infer<typeof StopReasonType>;
+export const StopReasonType = z.union([
+  z.literal('end_turn'),
+  z.literal('error'),
+  z.literal('invalid_tool_call'),
+  z.literal('max_steps'),
+  z.literal('no_tool_call'),
+  z.literal('tool_rule'),
+]);
+
+export type LettaStopReason = z.infer<typeof LettaStopReason>;
+export const LettaStopReason = z.object({
+  message_type: z.union([z.string(), z.undefined()]).optional(),
+  stop_reason: StopReasonType,
+});
+
 export type LettaUsageStatistics = z.infer<typeof LettaUsageStatistics>;
 export const LettaUsageStatistics = z.object({
   message_type: z.string().optional(),
@@ -4349,6 +4365,7 @@ export const LettaUsageStatistics = z.object({
 export type LettaResponse = z.infer<typeof LettaResponse>;
 export const LettaResponse = z.object({
   messages: z.array(LettaMessageUnion),
+  stop_reason: LettaStopReason,
   usage: LettaUsageStatistics,
 });
 
@@ -5550,18 +5567,6 @@ export const UserUpdate = z.object({
       z.undefined(),
     ])
     .optional(),
-});
-
-export type LettaStopReason = z.infer<typeof LettaStopReason>;
-export const LettaStopReason = z.object({
-  message_type: z.union([z.string(), z.undefined()]).optional(),
-  stop_reason: z.union([
-    z.literal('end_turn'),
-    z.literal('error'),
-    z.literal('invalid_tool_call'),
-    z.literal('max_steps'),
-    z.literal('no_tool_call'),
-  ]),
 });
 
 export type delete_Delete_tool = typeof delete_Delete_tool;

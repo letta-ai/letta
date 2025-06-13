@@ -37,6 +37,7 @@ from letta.schemas.letta_message import (
     ToolCallMessage,
 )
 from letta.schemas.letta_message_content import ReasoningContent, RedactedReasoningContent, TextContent
+from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
 from letta.server.rest_api.json_parser import JSONParser, PydanticJSONParser
@@ -385,6 +386,8 @@ class AnthropicStreamingInterface:
                         self.anthropic_mode = None
         except Exception as e:
             logger.error("Error processing stream: %s", e)
+            stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
+            yield f"data: {stop_reason.model_dump_json()}\n\n"
             raise
         finally:
             logger.info("AnthropicStreamingInterface: Stream processing complete.")

@@ -17,6 +17,7 @@ from letta_client.types import (
     Base64Image,
     HiddenReasoningMessage,
     ImageContent,
+    LettaStopReason,
     LettaUsageStatistics,
     ReasoningMessage,
     TextContent,
@@ -67,7 +68,7 @@ USER_MESSAGE_FORCE_REPLY: List[MessageCreate] = [
 USER_MESSAGE_ROLL_DICE: List[MessageCreate] = [
     MessageCreate(
         role="user",
-        content="This is an automated test message. Call the roll_dice tool with 16 sides and tell me the outcome.",
+        content="This is an automated test message. Call the roll_dice tool with 16 sides and send me a message with the outcome.",
         otid=USER_MESSAGE_OTID,
     )
 ]
@@ -128,7 +129,7 @@ def assert_greeting_with_assistant_message_response(
     Asserts that the messages list follows the expected sequence:
     ReasoningMessage -> AssistantMessage.
     """
-    expected_message_count = 3 if streaming or from_db else 2
+    expected_message_count = 4 if streaming else 3 if from_db else 2
     assert len(messages) == expected_message_count
 
     index = 0
@@ -153,6 +154,9 @@ def assert_greeting_with_assistant_message_response(
     index += 1
 
     if streaming:
+        assert isinstance(messages[index], LettaStopReason)
+        assert messages[index].stop_reason == "end_turn"
+        index += 1
         assert isinstance(messages[index], LettaUsageStatistics)
         assert messages[index].prompt_tokens > 0
         assert messages[index].completion_tokens > 0
@@ -171,7 +175,7 @@ def assert_greeting_without_assistant_message_response(
     Asserts that the messages list follows the expected sequence:
     ReasoningMessage -> ToolCallMessage -> ToolReturnMessage.
     """
-    expected_message_count = 4 if streaming or from_db else 3
+    expected_message_count = 5 if streaming else 4 if from_db else 3
     assert len(messages) == expected_message_count
 
     index = 0
@@ -201,7 +205,14 @@ def assert_greeting_without_assistant_message_response(
     index += 1
 
     if streaming:
+        assert isinstance(messages[index], LettaStopReason)
+        assert messages[index].stop_reason == "end_turn"
+        index += 1
         assert isinstance(messages[index], LettaUsageStatistics)
+        assert messages[index].prompt_tokens > 0
+        assert messages[index].completion_tokens > 0
+        assert messages[index].total_tokens > 0
+        assert messages[index].step_count > 0
 
 
 def assert_tool_call_response(
@@ -215,7 +226,7 @@ def assert_tool_call_response(
     ReasoningMessage -> ToolCallMessage -> ToolReturnMessage ->
     ReasoningMessage -> AssistantMessage.
     """
-    expected_message_count = 6 if streaming else 7 if from_db else 5
+    expected_message_count = 7 if streaming or from_db else 5
     assert len(messages) == expected_message_count
 
     index = 0
@@ -260,7 +271,14 @@ def assert_tool_call_response(
     index += 1
 
     if streaming:
+        assert isinstance(messages[index], LettaStopReason)
+        assert messages[index].stop_reason == "end_turn"
+        index += 1
         assert isinstance(messages[index], LettaUsageStatistics)
+        assert messages[index].prompt_tokens > 0
+        assert messages[index].completion_tokens > 0
+        assert messages[index].total_tokens > 0
+        assert messages[index].step_count > 0
 
 
 def assert_image_input_response(
@@ -274,7 +292,7 @@ def assert_image_input_response(
     Asserts that the messages list follows the expected sequence:
     ReasoningMessage -> AssistantMessage.
     """
-    expected_message_count = 3 if streaming or from_db else 2
+    expected_message_count = 4 if streaming else 3 if from_db else 2
     assert len(messages) == expected_message_count
 
     index = 0
@@ -296,6 +314,9 @@ def assert_image_input_response(
     index += 1
 
     if streaming:
+        assert isinstance(messages[index], LettaStopReason)
+        assert messages[index].stop_reason == "end_turn"
+        index += 1
         assert isinstance(messages[index], LettaUsageStatistics)
         assert messages[index].prompt_tokens > 0
         assert messages[index].completion_tokens > 0

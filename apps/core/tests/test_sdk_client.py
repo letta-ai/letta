@@ -666,7 +666,7 @@ def test_include_return_message_types(client: LettaSDKClient, agent: AgentState,
             ],
             include_return_message_types=message_types,
         )
-        messages = [message for message in list(response) if message.message_type != "usage_statistics"]
+        messages = [message for message in list(response) if message.message_type not in ["stop_reason", "usage_statistics"]]
         verify_message_types(messages, message_types)
 
     elif message_create == "async":
@@ -698,7 +698,7 @@ def test_include_return_message_types(client: LettaSDKClient, agent: AgentState,
             ],
             include_return_message_types=message_types,
         )
-        messages = [message for message in list(response) if message.message_type != "usage_statistics"]
+        messages = [message for message in list(response) if message.message_type not in ["stop_reason", "usage_statistics"]]
         verify_message_types(messages, message_types)
 
     elif message_create == "sync":

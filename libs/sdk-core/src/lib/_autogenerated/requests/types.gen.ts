@@ -2207,10 +2207,25 @@ export type LettaResponse = {
    * The messages returned by the agent.
    */
   messages: Array<LettaMessageUnion>;
+  stop_reason: LettaStopReason;
   /**
    * The usage statistics of the agent.
    */
   usage: LettaUsageStatistics;
+};
+
+/**
+ * The stop reason from Letta indicating why agent loop stopped execution.
+ */
+export type LettaStopReason = {
+  /**
+   * The type of the message.
+   */
+  message_type?: 'stop_reason';
+  /**
+   * The reason why execution stopped.
+   */
+  stop_reason: StopReasonType;
 };
 
 export type LettaStreamingRequest = {
@@ -3431,6 +3446,14 @@ export type Step = {
   messages?: Array<Message>;
 };
 
+export type StopReasonType =
+  | 'end_turn'
+  | 'error'
+  | 'invalid_tool_call'
+  | 'max_steps'
+  | 'no_tool_call'
+  | 'tool_rule';
+
 export type SupervisorManager = {
   manager_type?: 'supervisor';
   manager_agent_id: string;
@@ -4220,29 +4243,6 @@ export type LettaMessageContentUnion =
 export type LettaAssistantMessageContentUnion = TextContent;
 
 export type LettaUserMessageContentUnion = TextContent | ImageContent;
-
-/**
- * Letta provided stop reason for why agent loop ended.
- */
-export type LettaStopReason = {
-  /**
-   * The type of the message.
-   */
-  message_type?: 'stop_reason';
-  stop_reason:
-    | 'end_turn'
-    | 'error'
-    | 'invalid_tool_call'
-    | 'max_steps'
-    | 'no_tool_call';
-};
-
-export type stop_reason =
-  | 'end_turn'
-  | 'error'
-  | 'invalid_tool_call'
-  | 'max_steps'
-  | 'no_tool_call';
 
 export type DeleteToolData = {
   toolId: string;

@@ -3,10 +3,8 @@ import random
 import string
 import time
 from datetime import datetime, timezone
-from importlib import util
 from typing import Dict, Iterator, List, Optional, Tuple
 
-import requests
 from letta_client import Letta, SystemMessage
 
 from letta.config import LettaConfig

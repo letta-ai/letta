@@ -5,6 +5,7 @@ from typing import List, Optional, Tuple
 from letta.schemas.agent import AgentState
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_response import LettaResponse
+from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
@@ -16,6 +17,7 @@ def _create_letta_response(
     new_in_context_messages: list[Message],
     use_assistant_message: bool,
     usage: LettaUsageStatistics,
+    stop_reason: Optional[LettaStopReason] = None,
     include_return_message_types: Optional[List[MessageType]] = None,
 ) -> LettaResponse:
     """
@@ -32,8 +34,9 @@ def _create_letta_response(
     # Apply message type filtering if specified
     if include_return_message_types is not None:
         response_messages = [msg for msg in response_messages if msg.message_type in include_return_message_types]
-
-    return LettaResponse(messages=response_messages, usage=usage)
+    if stop_reason is None:
+        stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
+    return LettaResponse(messages=response_messages, stop_reason=stop_reason, usage=usage)
 
 
 def _prepare_in_context_messages(

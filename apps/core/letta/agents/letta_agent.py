@@ -30,6 +30,7 @@ from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
+from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
@@ -125,7 +126,7 @@ class LettaAgent(BaseAgent):
         agent_state = await self.agent_manager.get_agent_by_id_async(
             agent_id=self.agent_id, include_relationships=["tools", "memory", "tool_exec_environment_variables"], actor=self.actor
         )
-        _, new_in_context_messages, usage = await self._step(
+        _, new_in_context_messages, usage, stop_reason = await self._step(
             agent_state=agent_state,
             input_messages=input_messages,
             max_steps=max_steps,
@@ -134,6 +135,7 @@ class LettaAgent(BaseAgent):
         return _create_letta_response(
             new_in_context_messages=new_in_context_messages,
             use_assistant_message=use_assistant_message,
+            stop_reason=stop_reason,
             usage=usage,
             include_return_message_types=include_return_message_types,
         )
@@ -160,6 +162,7 @@ class LettaAgent(BaseAgent):
             put_inner_thoughts_first=True,
             actor=self.actor,
         )
+        stop_reason = None
         usage = LettaUsageStatistics()
 
         # span for request
@@ -218,7 +221,7 @@ class LettaAgent(BaseAgent):
                 logger.info("No reasoning content found.")
                 reasoning = None
 
-            persisted_messages, should_continue = await self._handle_ai_response(
+            persisted_messages, should_continue, stop_reason = await self._handle_ai_response(
                 tool_call,
                 valid_tool_names,
                 agent_state,
@@ -285,7 +288,7 @@ class LettaAgent(BaseAgent):
         request_span.end()
 
         # Return back usage
-        for finish_chunk in self.get_finish_chunks_for_stream(usage):
+        for finish_chunk in self.get_finish_chunks_for_stream(usage, stop_reason):
             yield f"data: {finish_chunk}\n\n"
 
     async def _step(
@@ -294,7 +297,7 @@ class LettaAgent(BaseAgent):
         input_messages: List[MessageCreate],
         max_steps: int = DEFAULT_MAX_STEPS,
         request_start_timestamp_ns: Optional[int] = None,
-    ) -> Tuple[List[Message], List[Message], LettaUsageStatistics]:
+    ) -> Tuple[List[Message], List[Message], Optional[LettaStopReason], LettaUsageStatistics]:
         """
         Carries out an invocation of the agent loop. In each step, the agent
             1. Rebuilds its memory
@@ -317,6 +320,7 @@ class LettaAgent(BaseAgent):
         request_span = tracer.start_span("time_to_first_token")
         request_span.set_attributes({f"llm_config.{k}": v for k, v in agent_state.llm_config.model_dump().items() if v is not None})
 
+        stop_reason = None
         usage = LettaUsageStatistics()
         for i in range(max_steps):
             step_id = generate_step_id()
@@ -364,7 +368,7 @@ class LettaAgent(BaseAgent):
                 logger.info("No reasoning content found.")
                 reasoning = None
 
-            persisted_messages, should_continue = await self._handle_ai_response(
+            persisted_messages, should_continue, stop_reason = await self._handle_ai_response(
                 tool_call,
                 valid_tool_names,
                 agent_state,
@@ -420,7 +424,7 @@ class LettaAgent(BaseAgent):
                 force=False,
             )
 
-        return current_in_context_messages, new_in_context_messages, usage
+        return current_in_context_messages, new_in_context_messages, usage, stop_reason
 
     @trace_method
     async def step_stream(
@@ -453,6 +457,7 @@ class LettaAgent(BaseAgent):
             put_inner_thoughts_first=True,
             actor=self.actor,
         )
+        stop_reason = None
         usage = LettaUsageStatistics()
         first_chunk, request_span = True, None
         if request_start_timestamp_ns:
@@ -536,9 +541,18 @@ class LettaAgent(BaseAgent):
             )
 
             # Process resulting stream content
-            tool_call = interface.get_tool_call_object()
+            try:
+                tool_call = interface.get_tool_call_object()
+            except ValueError as e:
+                stop_reason = LettaStopReason(stop_reason=StopReasonType.no_tool_call.value)
+                yield f"data: {stop_reason.model_dump_json()}\n\n"
+                raise e
+            except Exception as e:
+                stop_reason = LettaStopReason(stop_reason=StopReasonType.invalid_tool_call.value)
+                yield f"data: {stop_reason.model_dump_json()}\n\n"
+                raise e
             reasoning_content = interface.get_reasoning_content()
-            persisted_messages, should_continue = await self._handle_ai_response(
+            persisted_messages, should_continue, stop_reason = await self._handle_ai_response(
                 tool_call,
                 valid_tool_names,
                 agent_state,
@@ -621,7 +635,7 @@ class LettaAgent(BaseAgent):
             request_span.add_event(name="letta_request_ms", attributes={"duration_ms": ns_to_ms(request_ns)})
         request_span.end()
 
-        for finish_chunk in self.get_finish_chunks_for_stream(usage):
+        for finish_chunk in self.get_finish_chunks_for_stream(usage, stop_reason):
             yield f"data: {finish_chunk}\n\n"
 
     # noinspection PyInconsistentReturns
@@ -876,12 +890,13 @@ class LettaAgent(BaseAgent):
         initial_messages: Optional[List[Message]] = None,
         agent_step_span: Optional["Span"] = None,
         is_final_step: Optional[bool] = None,
-    ) -> Tuple[List[Message], bool]:
+    ) -> Tuple[List[Message], bool, Optional[LettaStopReason]]:
         """
         Now that streaming is done, handle the final AI response.
         This might yield additional SSE tokens if we do stalling.
         At the end, set self._continue_execution accordingly.
         """
+        stop_reason = None
         # Check if the called tool is allowed by tool name:
         tool_call_name = tool_call.function.name
         tool_call_args_str = tool_call.function.arguments
@@ -899,6 +914,7 @@ class LettaAgent(BaseAgent):
             tool_args = json.loads(tool_args)
 
         if is_final_step:
+            stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
             logger.info("Agent has reached max steps.")
             request_heartbeat = False
         else:
@@ -967,6 +983,8 @@ class LettaAgent(BaseAgent):
         continue_stepping = request_heartbeat
         tool_rules_solver.register_tool_call(tool_name=tool_call_name)
         if tool_rules_solver.is_terminal_tool(tool_name=tool_call_name):
+            if continue_stepping:
+                stop_reason = LettaStopReason(stop_reason=StopReasonType.tool_rule.value)
             continue_stepping = False
         elif tool_rules_solver.has_children_tools(tool_name=tool_call_name):
             continue_stepping = True
@@ -1013,7 +1031,7 @@ class LettaAgent(BaseAgent):
         )
         self.last_function_response = function_response
 
-        return persisted_messages, continue_stepping
+        return persisted_messages, continue_stepping, stop_reason
 
     @trace_method
     async def _execute_tool(
