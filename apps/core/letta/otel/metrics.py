@@ -5,8 +5,8 @@ from typing import List
 from fastapi import FastAPI, Request
 from opentelemetry import metrics
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
-from opentelemetry.metrics import Counter, Histogram, NoOpMeter
-from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.metrics import Meter, NoOpMeter
+from opentelemetry.sdk.metrics import Counter, Histogram, MeterProvider
 from opentelemetry.sdk.metrics.export import AggregationTemporality, PeriodicExportingMetricReader
 
 from letta.helpers.datetime_helpers import ns_to_ms
@@ -17,7 +17,7 @@ from letta.settings import settings
 
 logger = get_logger(__name__)
 
-_meter: metrics.Meter = NoOpMeter("noop")
+_meter: Meter = NoOpMeter("noop")
 _is_metrics_initialized: bool = False
 
 # Endpoints to include in endpoint metrics tracking (opt-in) vs tracing.py opt-out
@@ -132,7 +132,7 @@ def setup_metrics(
     _is_metrics_initialized = True
 
 
-def get_letta_meter() -> metrics.Meter | None:
+def get_letta_meter() -> Meter:
     """Returns the global letta meter if metrics are initialized."""
     if not _is_metrics_initialized or isinstance(_meter, NoOpMeter):
         logger.warning("Metrics are not initialized or meter is not available.")
