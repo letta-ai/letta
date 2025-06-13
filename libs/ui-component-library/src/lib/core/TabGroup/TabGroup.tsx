@@ -16,7 +16,7 @@ interface TabItemType {
   postIcon?: React.ReactNode;
 }
 
-const listVariant = cva('px-4 h-[28px] flex items-center gap-2 flex-row', {
+const listVariant = cva('flex items-center gap-2 flex-row', {
   variants: {
     variant: {
       default:
@@ -31,8 +31,8 @@ const listVariant = cva('px-4 h-[28px] flex items-center gap-2 flex-row', {
         'data-[state=active]:bg-brand-light data-[state=active]:text-brand-light-content',
     },
     size: {
-      small: 'h-biHeight',
-      xsmall: '',
+      small: 'px-4 h-biHeight',
+      xsmall: 'px-2 h-[28px]',
       xxsmall: 'px-2 h-[24px]',
     },
     fullWidth: {
