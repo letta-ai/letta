@@ -37,10 +37,12 @@ from letta.constants import (
     MCP_TOOL_TAG_NAME_PREFIX,
     MULTI_AGENT_TOOLS,
 )
+from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
 from letta.embeddings import embedding_model
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.functions.mcp_client.types import MCPTool
 from letta.helpers import ToolRulesSolver
+from letta.helpers.datetime_helpers import AsyncTimer
 from letta.jobs.types import ItemUpdateInfo, RequestStatusUpdateInfo, StepStatusUpdateInfo
 from letta.orm import Base, Block
 from letta.orm.block_history import BlockHistory
@@ -83,7 +85,7 @@ from letta.schemas.user import UserUpdate
 from letta.server.db import db_registry
 from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
-from letta.settings import tool_settings
+from letta.settings import settings, tool_settings
 from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
 from tests.utils import random_string
 
@@ -2731,6 +2733,43 @@ async def test_update_user(server: SyncServer, event_loop):
     user = await server.user_manager.update_actor_async(UserUpdate(id=user.id, organization_id=test_org.id))
     assert user.name == user_name_b
     assert user.organization_id == test_org.id
+
+
+@pytest.mark.asyncio
+async def test_user_caching(server: SyncServer, event_loop, default_user, performance_pct=0.4):
+    if isinstance(await get_redis_client(), NoopAsyncRedisClient):
+        pytest.skip("redis not available")
+    # Invalidate previous cache behavior.
+    await server.user_manager._invalidate_actor_cache(default_user.id)
+    before_stats = server.user_manager.get_actor_by_id_async.cache_stats
+    before_cache_misses = before_stats.misses
+    before_cache_hits = before_stats.hits
+
+    # First call (expected to miss the cache)
+    async with AsyncTimer() as timer:
+        actor = await server.user_manager.get_actor_by_id_async(default_user.id)
+    duration_first = timer.elapsed_ns
+    print(f"Call 1: {duration_first:.2e}ns")
+    assert actor.id == default_user.id
+    assert duration_first > 0  # Sanity check: took non-zero time
+    cached_hits = 10
+    durations = []
+    for i in range(cached_hits):
+        async with AsyncTimer() as timer:
+            actor_cached = await server.user_manager.get_actor_by_id_async(default_user.id)
+        duration = timer.elapsed_ns
+        durations.append(duration)
+        print(f"Call {i+2}: {duration:.2e}ns")
+        assert actor_cached == actor
+    for d in durations:
+        assert d < duration_first * performance_pct
+    stats = server.user_manager.get_actor_by_id_async.cache_stats
+
+    print(f"Before calls: {before_stats}")
+    print(f"After calls: {stats}")
+    # Assert cache stats
+    assert stats.misses - before_cache_misses == 1
+    assert stats.hits - before_cache_hits == cached_hits
 
 
 # ======================================================================================================================
