@@ -851,13 +851,16 @@ def test_async_greeting_with_assistant_message(
 )
 def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, llm_config: LLMConfig):
     """Test that summarization is automatically triggered."""
-    llm_config.context_window = 3000
+    # pydantic prevents us for overriding the context window paramter in the passed LLMConfig
+    new_llm_config = llm_config.model_dump()
+    new_llm_config["context_window"] = 3000
+    pinned_context_window_llm_config = LLMConfig(**new_llm_config)
 
     send_message_tool = client.tools.list(name="send_message")[0]
     temp_agent_state = client.agents.create(
         include_base_tools=False,
         tool_ids=[send_message_tool.id],
-        llm_config=llm_config,
+        llm_config=pinned_context_window_llm_config,
         embedding="letta/letta-free",
         tags=["supervisor"],
     )
