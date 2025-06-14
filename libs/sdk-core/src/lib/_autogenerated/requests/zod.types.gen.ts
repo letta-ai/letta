@@ -8379,16 +8379,7 @@ export const post_Create_voice_chat_completions = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
-    body: z.union([
-      CompletionCreateParamsNonStreaming,
-      CompletionCreateParamsStreaming,
-      z.array(
-        z.union([
-          CompletionCreateParamsNonStreaming,
-          CompletionCreateParamsStreaming,
-        ]),
-      ),
-    ]),
+    body: z.unknown(),
   }),
   response: z.unknown(),
 };

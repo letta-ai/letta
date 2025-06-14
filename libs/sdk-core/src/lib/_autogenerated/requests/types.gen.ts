@@ -5629,9 +5629,9 @@ export type CancelBatchRunResponse = unknown;
 
 export type CreateVoiceChatCompletionsData = {
   agentId: string;
-  requestBody:
-    | CompletionCreateParamsNonStreaming
-    | CompletionCreateParamsStreaming;
+  requestBody: {
+    [key: string]: unknown;
+  };
   userId?: string | null;
 };
 

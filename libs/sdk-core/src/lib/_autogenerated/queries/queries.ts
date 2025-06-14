@@ -37,8 +37,6 @@ import {
   BlockUpdate,
   Body_import_agent_serialized,
   Body_upload_file_to_source,
-  CompletionCreateParamsNonStreaming,
-  CompletionCreateParamsStreaming,
   CreateAgentRequest,
   CreateArchivalMemory,
   CreateBatch,
@@ -4058,9 +4056,7 @@ export const useVoiceServiceCreateVoiceChatCompletions = <
       TError,
       {
         agentId: string;
-        requestBody:
-          | CompletionCreateParamsNonStreaming
-          | CompletionCreateParamsStreaming;
+        requestBody: { [key: string]: unknown };
         userId?: string;
       },
       TContext
@@ -4073,9 +4069,7 @@ export const useVoiceServiceCreateVoiceChatCompletions = <
     TError,
     {
       agentId: string;
-      requestBody:
-        | CompletionCreateParamsNonStreaming
-        | CompletionCreateParamsStreaming;
+      requestBody: { [key: string]: unknown };
       userId?: string;
     },
     TContext
