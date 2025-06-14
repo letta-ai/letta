@@ -1,13 +1,20 @@
-import React from 'react';
+import * as React from 'react';
 
-interface ComposioLockupProps {
-  width?: number;
-  height?: number;
+interface ComposioLockupDynamicProps {
+  width?: string;
+  height?: string;
+  className?: string;
 }
 
-export function ComposioLockupDynamic(props: ComposioLockupProps) {
+export function ComposioLockupDynamic(props: ComposioLockupDynamicProps) {
   return (
-    <div style={{ width: props.width, height: props.height }}>
+    <div
+      className={props.className}
+      style={{
+        width: props.width,
+        height: props.height,
+      }}
+    >
       <svg
         viewBox="0 0 1456 350"
         fill="none"
@@ -41,9 +48,9 @@ export function ComposioLockupDynamic(props: ComposioLockupProps) {
             y2="350.692"
             gradientUnits="userSpaceOnUse"
           >
-            <stop stop-color="#FF8267" />
-            <stop offset="0.71" stop-color="#F15836" />
-            <stop offset="1" stop-color="#F33004" />
+            <stop stopColor="#FF8267" />
+            <stop offset="0.71" stopColor="#F15836" />
+            <stop offset="1" stopColor="#F33004" />
           </linearGradient>
         </defs>
       </svg>

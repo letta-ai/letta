@@ -1124,11 +1124,12 @@
       "confirm": "Remove",
       "description": "Are you sure you want to remove this server? This will remove any tools attached to an agent that use this server."
     },
+    "refetch": "Refetch tools",
     "actions": "Actions",
     "remove": "Remove server",
     "serverName": "Server name",
     "serverType": "Type",
-    "serverUrl": "Server URL",
+    "serverUrl": "Base Server URL",
     "command": "Command"
   },
   "ComposioToolViewer": {
@@ -1162,6 +1163,27 @@
       "ComposioSDKError": "Please connect this App on Composio before attempting to attach this tool. Press the 'View on Composio' button to do this",
       "ApiKeyNotProvidedError": "Please connect your Composio API key with Letta to add this tool to your agent.",
       "GenericSDKError": "There was an error attaching this tool, please try again or contact support."
+    }
+  },
+  "ToolManager/RecommendedMCPServers": {
+    "zapier": {
+      "description": "Zapier MCP gives your AI assistant direct access to over 7,000+ apps and 30,000+ actions without complex API integrations.",
+      "instructions": "To connect Zapier to Letta, you need to set up your Zapier account to use the Model Context Protocol (MCP). Visit the <link>Zapier MCP website</link> to generate your custom MCP url, and paste it above."
+    }
+  },
+  "ToolsEditor/MCPServerExplorer": {
+    "CustomSetupServer": {
+      "customUrlInputRequired": "Please enter a MCP server URL to connect to your Letta instance.",
+      "errorMessage": "There was an error connecting to the custom server, please check your URL and try again or contact support.",
+      "instructionsTitle": "Setup Instructions",
+      "customUrlInputPlaceholder": "Enter your custom MCP server URL here",
+      "customUrlInputLabel": "Custom URL"
+    },
+    "types": {
+      "custom": {
+        "label": "Custom server",
+        "description": "Add a custom Model Context Protocol server to your Letta instance."
+      }
     }
   },
   "ToolsEditor/ComposioToolsRoot": {
@@ -1386,17 +1408,22 @@
       "expand": "Expand",
       "close": "Return to ADE",
       "collapse": "Collapse sidebar",
+      "recommendedServers": "Directory (10)",
+      "createServer": "Add MCP server",
+      "utilityTools": "Utility tools <count></count>",
       "toolRules": "Rules",
       "current": "Tools",
       "attachedToAgent": "Attached to agent",
       "codeTools": "All tools",
       "toolVariables": "Variables",
-      "customTools": "Custom tools",
-      "lettaTools": "Letta tools",
+      "customTools": "Custom tools <count></count>",
+      "lettaTools": "Base tools <count></count>",
+      "multiAgentTools": "Multi-agent <count></count>",
       "dependencies": "Dependencies",
-      "integrationTools": "External tools",
+      "integrationTools": "Other integrations",
       "composioTools": "Composio",
-      "mcpServers": "MCP servers",
+      "mcpServerHeader": "MCP Servers",
+      "mcpServers": "Connected servers <count></count>",
       "create": "Create tool"
     }
   },

@@ -8,6 +8,7 @@ import { MCPServers } from './routes/MCPServers/MCPServers';
 import { ToolRulesEditor } from '../ToolRules/ToolRules';
 import { ToolVariables } from './routes/ToolVariables/ToolVariables';
 import { DependenciesPage } from './routes/DependenciesPage/DependenciesPage';
+import { MCPServerExplorer } from './routes/MCPServerExplorer/MCPServerExplorer';
 
 interface Routes {
   path: string;
@@ -55,7 +56,26 @@ export const toolManagerRoutes = [
   {
     path: '/letta-tools',
     key: 'lettaTools',
-    component: <LettaTools />,
+    component: (
+      <LettaTools
+        types={['letta_memory_core', 'letta_core', 'letta_sleeptime_core']}
+      />
+    ),
+  },
+  {
+    path: '/letta-utility-tools',
+    key: 'utilityTools',
+    component: <LettaTools types={['letta_builtin']} />,
+  },
+  {
+    path: '/add-mcp-servers',
+    key: 'addMCPServers',
+    component: <MCPServerExplorer />,
+  },
+  {
+    path: '/letta-multiagent-tools',
+    key: 'multiAgentTools',
+    component: <LettaTools types={['letta_multi_agent_core']} />,
   },
   {
     path: '/dependencies',

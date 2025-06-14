@@ -1,375 +1,29 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { ToolManagerPage } from '../../components/ToolManagerPage/ToolManagerPage';
 import {
   Badge,
   Button,
   ChevronDownIcon,
-  CodeEditor,
-  Dialog,
-  Form,
-  FormActions,
-  FormField,
-  FormProvider,
   HiddenOnMobile,
   HStack,
-  Input,
   LoadingEmptyStatusComponent,
   PlusIcon,
   Popover,
-  RawInputContainer,
-  TabGroup,
   Typography,
-  useForm,
   VisibleOnMobile,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import type {
-  ListMcpServersResponse,
-  MCPServerItemType,
-  MCPServerType,
-} from '@letta-cloud/sdk-core';
-import {
-  useToolsServiceAddMcpServer,
-  useToolsServiceListMcpServers,
-  UseToolsServiceListMcpServersKeyFn,
-} from '@letta-cloud/sdk-core';
+import type { MCPServerItemType, SSEServerConfig } from '@letta-cloud/sdk-core';
+import { useToolsServiceListMcpServers } from '@letta-cloud/sdk-core';
 import { ToolSearchInput } from '../../components/ToolSearchInput/ToolSearchInput';
 import { cn } from '@letta-cloud/ui-styles';
 import { SpecificToolIcon } from '../../components/SpecificToolIcon/SpecificToolIcon';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
-import { useCurrentAgentMetaData } from '../../../../hooks';
 import { SingleMCPServer } from './SingleMCPServer/SingleMCPServer';
-
-interface AddStdioServerFormProps {
-  onCancel: () => void;
-  onSuccess: () => void;
-}
-
-function AddStdioServerForm(props: AddStdioServerFormProps) {
-  const { onCancel, onSuccess } = props;
-
-  const t = useTranslations('ToolsEditor/MCPServers');
-
-  const AddStdioServerSchema = useMemo(
-    () =>
-      z.object({
-        name: z.string().regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, {
-          message: t('AddServerDialog.name.error'),
-        }),
-        command: z.string().min(1),
-        args: z.string().min(1),
-      }),
-    [t],
-  );
-
-  type AddStdioServerFormValues = z.infer<typeof AddStdioServerSchema>;
-
-  const form = useForm<AddStdioServerFormValues>({
-    resolver: zodResolver(AddStdioServerSchema),
-    defaultValues: {
-      name: '',
-      command: '',
-      args: '',
-    },
-  });
-
-  const queryClient = useQueryClient();
-  const { mutate, isPending, isError, reset } = useToolsServiceAddMcpServer({
-    onSuccess: (response) => {
-      queryClient.setQueriesData<ListMcpServersResponse | undefined>(
-        {
-          queryKey: UseToolsServiceListMcpServersKeyFn(),
-        },
-        () => {
-          return response.reduce((acc, item) => {
-            acc[item.server_name] = item;
-            return acc;
-          }, {} as ListMcpServersResponse);
-        },
-      );
-
-      onSuccess();
-    },
-  });
-
-  const handleReset = useCallback(() => {
-    form.reset();
-    reset();
-    onCancel();
-  }, [form, reset, onCancel]);
-
-  const handleSubmit = useCallback(
-    (values: AddStdioServerFormValues) => {
-      mutate({
-        requestBody: {
-          server_name: values.name,
-          type: 'stdio',
-          command: values.command,
-          args: values.args.split(','),
-        },
-      });
-    },
-    [mutate],
-  );
-
-  return (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(handleSubmit)}>
-        <VStack paddingBottom gap="form">
-          <FormField
-            name="name"
-            render={({ field }) => (
-              <Input
-                fullWidth
-                {...field}
-                placeholder={t('AddServerDialog.name.placeholder')}
-                label={t('AddServerDialog.name.label')}
-                infoTooltip={{ text: t('AddServerDialog.name.description') }}
-              />
-            )}
-          />
-          <FormField
-            name="command"
-            render={({ field }) => (
-              <CodeEditor
-                label={t('AddServerDialog.command.label')}
-                fullWidth
-                fontSize="small"
-                onSetCode={field.onChange}
-                showLineNumbers={false}
-                language="bash"
-                code={field.value}
-                placeholder={t('AddServerDialog.command.placeholder')}
-              />
-            )}
-          />
-          <FormField
-            name="args"
-            render={({ field }) => (
-              <CodeEditor
-                label={t('AddServerDialog.args.label')}
-                fullWidth
-                fontSize="small"
-                onSetCode={field.onChange}
-                showLineNumbers={false}
-                language="bash"
-                code={field.value}
-                placeholder={t('AddServerDialog.args.placeholder')}
-              />
-            )}
-          />
-          <FormActions
-            errorMessage={isError ? t('AddServerDialog.error') : undefined}
-          >
-            <Button
-              type="button"
-              color="tertiary"
-              label={t('AddServerDialog.cancel')}
-              onClick={handleReset}
-            />
-            <Button
-              type="submit"
-              label={t('AddServerDialog.submit')}
-              busy={isPending}
-            />
-          </FormActions>
-        </VStack>
-      </Form>
-    </FormProvider>
-  );
-}
-
-function AddSSEServerForm(props: AddStdioServerFormProps) {
-  const { onCancel, onSuccess } = props;
-
-  const t = useTranslations('ToolsEditor/MCPServers');
-
-  const AddSSEServerSchema = useMemo(
-    () =>
-      z.object({
-        // alphanumeric with underscores does not start with a number
-        name: z.string().regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, {
-          message: t('AddServerDialog.name.error'),
-        }),
-        serverUrl: z.string(),
-      }),
-    [t],
-  );
-
-  type AddSSEServerFormValues = z.infer<typeof AddSSEServerSchema>;
-
-  const form = useForm<AddSSEServerFormValues>({
-    resolver: zodResolver(AddSSEServerSchema),
-    defaultValues: {
-      name: '',
-      serverUrl: '',
-    },
-  });
-
-  const queryClient = useQueryClient();
-  const { mutate, isPending, isError, reset } = useToolsServiceAddMcpServer({
-    onSuccess: (response) => {
-      queryClient.setQueriesData<ListMcpServersResponse | undefined>(
-        {
-          queryKey: UseToolsServiceListMcpServersKeyFn(),
-        },
-        () => {
-          return response.reduce((acc, item) => {
-            acc[item.server_name] = item;
-            return acc;
-          }, {} as ListMcpServersResponse);
-        },
-      );
-
-      onSuccess();
-    },
-  });
-
-  const handleReset = useCallback(() => {
-    form.reset();
-    reset();
-    onCancel();
-  }, [form, reset, onCancel]);
-
-  const handleSubmit = useCallback(
-    (values: AddSSEServerFormValues) => {
-      mutate({
-        requestBody: {
-          server_name: values.name,
-          type: 'sse',
-          server_url: values.serverUrl,
-        },
-      });
-    },
-    [mutate],
-  );
-
-  return (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(handleSubmit)}>
-        <VStack gap="form" paddingBottom>
-          <FormField
-            name="name"
-            render={({ field }) => (
-              <Input
-                fullWidth
-                {...field}
-                placeholder={t('AddServerDialog.name.placeholder')}
-                label={t('AddServerDialog.name.label')}
-                infoTooltip={{ text: t('AddServerDialog.name.description') }}
-              />
-            )}
-          />
-          <FormField
-            name="serverUrl"
-            render={({ field }) => (
-              <Input
-                fullWidth
-                {...field}
-                label={t('AddServerDialog.serverUrl.label')}
-                placeholder={t('AddServerDialog.serverUrl.placeholder')}
-                infoTooltip={{
-                  text: t('AddServerDialog.serverUrl.description'),
-                }}
-              />
-            )}
-          />
-          <FormActions
-            errorMessage={isError ? t('AddServerDialog.error') : undefined}
-          >
-            <Button
-              type="button"
-              label={t('AddServerDialog.cancel')}
-              onClick={handleReset}
-              color="tertiary"
-            />
-            <Button
-              type="submit"
-              label={t('AddServerDialog.submit')}
-              busy={isPending}
-            />
-          </FormActions>
-        </VStack>
-      </Form>
-    </FormProvider>
-  );
-}
-
-interface AddServerDialogProps {
-  trigger: React.ReactNode;
-}
-
-function AddServerDialog(props: AddServerDialogProps) {
-  const { trigger } = props;
-  const [isOpen, setIsOpen] = useState(false);
-
-  const { isLocal } = useCurrentAgentMetaData();
-  const [serverType, setServerType] = useState<MCPServerType>('sse');
-
-  const t = useTranslations('ToolsEditor/MCPServers');
-
-  const options = useMemo(() => {
-    return [
-      { label: t('AddServerDialog.type.options.sse'), value: 'sse' },
-      ...(isLocal
-        ? [{ label: t('AddServerDialog.type.options.stdio'), value: 'stdio' }]
-        : []),
-    ];
-  }, [t, isLocal]);
-
-  const selectedOption = useMemo(() => {
-    return options.find((option) => option.value === serverType);
-  }, [options, serverType]);
-
-  return (
-    <Dialog
-      trigger={trigger}
-      onOpenChange={setIsOpen}
-      isOpen={isOpen}
-      hideFooter
-      title={t('AddServerDialog.title')}
-      disableForm
-    >
-      <VStack gap="form">
-        {options.length > 1 && (
-          <RawInputContainer label={t('AddServerDialog.type.label')}>
-            <TabGroup
-              extendBorder
-              variant="chips"
-              items={options}
-              value={selectedOption?.value}
-              onValueChange={(option) => {
-                setServerType(option as MCPServerType);
-              }}
-            />
-          </RawInputContainer>
-        )}
-        {serverType === 'stdio' ? (
-          <AddStdioServerForm
-            onSuccess={() => {
-              setIsOpen(false);
-            }}
-            onCancel={() => {
-              setIsOpen(false);
-            }}
-          />
-        ) : (
-          <AddSSEServerForm
-            onSuccess={() => {
-              setIsOpen(false);
-            }}
-            onCancel={() => {
-              setIsOpen(false);
-            }}
-          />
-        )}
-      </VStack>
-    </Dialog>
-  );
-}
+import { AddServerDialog } from './AddMCPServerDialog/AddMCPServerDialog';
+import { useToolManagerState } from '../../hooks/useToolManagerState/useToolManagerState';
+import { getObfuscatedMCPServerUrl } from '@letta-cloud/utils-shared';
+import { MCPServerLogo } from '../MCPServerExplorer/MCPServerLogo/MCPServerLogo';
 
 interface MCPServerListProps {
   search: string;
@@ -421,8 +75,8 @@ function MCPServerList(props: MCPServerListProps) {
       <VStack overflowY="auto" collapseHeight flex gap={false}>
         {servers.map((server) => (
           <HStack
-            paddingY="xsmall"
-            paddingX
+            paddingY="small"
+            paddingX="medium"
             gap="small"
             justify="spaceBetween"
             align="center"
@@ -440,18 +94,34 @@ function MCPServerList(props: MCPServerListProps) {
                 : '',
             )}
           >
-            <HStack align="center" gap="small">
+            <HStack fullWidth align="center" gap="medium">
               <div className="min-w-[20px] h-[24px] items-center justify-center">
-                <SpecificToolIcon toolType="external_mcp" />
+                <MCPServerLogo
+                  serverUrl={(server as SSEServerConfig).server_url}
+                />
               </div>
-              <Typography
-                fullWidth
-                overflow="ellipsis"
-                noWrap
-                variant={isMobile ? 'body' : 'body2'}
-              >
-                {server.server_name || 'unnamed'}
-              </Typography>
+              <VStack collapseWidth flex gap="text">
+                <Typography
+                  fullWidth
+                  overflow="ellipsis"
+                  noWrap
+                  variant={isMobile ? 'body' : 'body2'}
+                >
+                  {server.server_name || 'unnamed'}
+                </Typography>
+                {!isMobile && (
+                  <Typography
+                    fullWidth
+                    variant="body3"
+                    overflow="ellipsis"
+                    noWrap
+                  >
+                    {getObfuscatedMCPServerUrl(
+                      (server as SSEServerConfig).server_url,
+                    )}
+                  </Typography>
+                )}
+              </VStack>
             </HStack>
             <Badge size="small" content={server.type} />
           </HStack>
@@ -499,6 +169,8 @@ export function MCPServers() {
     );
   }, [search, serversAsArray]);
 
+  const { setPath } = useToolManagerState();
+
   return (
     <ToolManagerPage border>
       {!servers || serversAsArray.length === 0 ? (
@@ -509,10 +181,13 @@ export function MCPServers() {
           loadingMessage={t('loading')}
           emptyMessage={t('empty')}
           emptyAction={
-            <AddServerDialog
-              trigger={
-                <Button label={t('connect')} color="primary" fullWidth />
-              }
+            <Button
+              onClick={() => {
+                setPath('/add-mcp-servers');
+              }}
+              label={t('connect')}
+              color="primary"
+              fullWidth
             />
           }
         />
@@ -527,7 +202,7 @@ export function MCPServers() {
               servers={filteredServers}
             />
           </HiddenOnMobile>
-          <VStack fullWidth fullHeight gap={false}>
+          <VStack flex collapseWidth fullHeight gap={false}>
             <VisibleOnMobile>
               <HStack color="background-grey" borderBottom fullWidth>
                 <HStack paddingX="medium" height="header-sm" align="center">

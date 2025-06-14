@@ -19,6 +19,7 @@ export * from './openai';
 export * from './qwen';
 export * from './snorkel-ai';
 export * from './together-ai';
+export * from './zapier';
 export type BrandKeys =
   | 'anthropic'
   | 'azure'
@@ -40,4 +41,5 @@ export type BrandKeys =
   | 'openai'
   | 'qwen'
   | 'snorkel-ai'
-  | 'together-ai';
+  | 'together-ai'
+  | 'zapier';

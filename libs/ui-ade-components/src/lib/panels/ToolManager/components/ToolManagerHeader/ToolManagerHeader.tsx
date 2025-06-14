@@ -27,6 +27,7 @@ const CATEGORY_KEYS: NavigationKeys[] = [
   'lettaTools',
   'composioTools',
   'mcpServers',
+  'addMCPServers',
 ];
 
 export function CategoryNavigationDropdown() {
@@ -67,7 +68,7 @@ export function CategoryNavigationDropdown() {
   if (isSubpath) {
     return (
       <Button
-        label={details[rootPathKey].title}
+        label={details[rootPathKey].title as string}
         color="tertiary"
         size="small"
         onClick={() => {
@@ -90,7 +91,7 @@ export function CategoryNavigationDropdown() {
       className="shadow-lg w-[200px]"
       trigger={
         <Button
-          label={details[rootPathKey].title}
+          label={details[rootPathKey].title as string}
           color="tertiary"
           fullWidth
           align="left"
@@ -108,7 +109,7 @@ export function CategoryNavigationDropdown() {
                 fullWidth
                 align="left"
                 size="small"
-                label={details[key].title}
+                label={details[key].title as string}
                 color="tertiary"
                 preIcon={details[key].icon}
                 onClick={() => {

@@ -195,7 +195,7 @@ function CreateToolDialog(props: CreateToolDialogProps) {
 }
 
 interface SidebarButtonProps {
-  label: string;
+  label: React.ReactNode;
   path: string;
   hideLabel?: boolean;
   icon: React.ReactNode;
@@ -314,6 +314,7 @@ function ToolManagerNavigationSidebar() {
   const { closeToolManager } = useToolManagerState();
 
   const { name } = useCurrentAgent();
+  const { setPath } = useToolManagerState();
 
   return (
     <VStack
@@ -407,17 +408,32 @@ function ToolManagerNavigationSidebar() {
         >
           <SidebarButton
             hideLabel={!isExpanded}
-            label={details.customTools.title}
-            path="/my-tools"
-            hasSubmenu
-            icon={details.customTools.icon}
-          />
-          <SidebarButton
-            hideLabel={!isExpanded}
             label={details.lettaTools.title}
             path="/letta-tools"
             hasSubmenu
             icon={details.lettaTools.icon}
+          />
+          <SidebarButton
+            hideLabel={!isExpanded}
+            label={details.multiAgentTools.title}
+            path="/letta-multiagent-tools"
+            hasSubmenu
+            icon={details.multiAgentTools.icon}
+          />
+          <SidebarButton
+            hideLabel={!isExpanded}
+            label={details.utilityTools.title}
+            path="/letta-utility-tools"
+            hasSubmenu
+            icon={details.utilityTools.icon}
+          />
+
+          <SidebarButton
+            hideLabel={!isExpanded}
+            label={details.customTools.title}
+            path="/my-tools"
+            hasSubmenu
+            icon={details.customTools.icon}
           />
           <HStack>
             <CreateToolDialog
@@ -439,6 +455,31 @@ function ToolManagerNavigationSidebar() {
 
         <SidebarSection
           isExpanded={isExpanded}
+          title={t('ToolManagerNavigationSidebar.mcpServerHeader')}
+        >
+          <SidebarButton
+            hideLabel={!isExpanded}
+            label={details.mcpServers.title}
+            path="/mcp-servers"
+            icon={details.mcpServers.icon}
+          />
+          <HStack>
+            <Button
+              size="xsmall"
+              hideLabel={!isExpanded}
+              preIcon={<PlusIcon />}
+              onClick={() => {
+                setPath('/add-mcp-servers');
+              }}
+              label={t('ToolManagerNavigationSidebar.createServer')}
+              color="secondary"
+              bold
+            />
+          </HStack>
+        </SidebarSection>
+        <HR />
+        <SidebarSection
+          isExpanded={isExpanded}
           title={t('ToolManagerNavigationSidebar.integrationTools')}
         >
           <SidebarButton
@@ -446,12 +487,6 @@ function ToolManagerNavigationSidebar() {
             label={details.composioTools.title}
             path="/composio"
             icon={details.composioTools.icon}
-          />
-          <SidebarButton
-            hideLabel={!isExpanded}
-            label={details.mcpServers.title}
-            path="/mcp-servers"
-            icon={details.mcpServers.icon}
           />
         </SidebarSection>
       </VStack>

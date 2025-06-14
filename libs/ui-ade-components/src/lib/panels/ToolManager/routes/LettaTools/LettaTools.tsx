@@ -1,10 +1,16 @@
 import { ToolsEditor } from '../../components/ToolsEditor/ToolsEditor';
 import { useMemo, useState } from 'react';
+import type { ToolType } from '@letta-cloud/sdk-core';
 import { useToolsServiceListTools } from '@letta-cloud/sdk-core';
 import { LoadingEmptyStatusComponent } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 
-export function LettaTools() {
+interface LettaToolsProps {
+  types: ToolType[];
+}
+
+export function LettaTools(props: LettaToolsProps) {
+  const { types } = props;
   const {
     data: tools,
     isError,
@@ -16,17 +22,11 @@ export function LettaTools() {
 
   const lettaTools = useMemo(() => {
     return (
-      tools?.filter((tool) =>
-        [
-          'letta_memory_core',
-          'letta_multi_agent_core',
-          'letta_core',
-          'letta_sleeptime_core',
-          'letta_builtin',
-        ].includes(tool.tool_type || ''),
+      tools?.filter(
+        (tool) => tool.tool_type && types.includes(tool.tool_type),
       ) || []
     );
-  }, [tools]);
+  }, [tools, types]);
 
   const filteredTools = useMemo(() => {
     return (lettaTools || []).filter((tool) =>

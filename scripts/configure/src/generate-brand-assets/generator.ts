@@ -13,7 +13,7 @@ function generateIndexFile(brandKeys: string[]) {
   return `${exports}\n${keys}`
 }
 
-function generateComponentFiles(name: string, svgContent: string) {
+function generateIconFile(name: string, svgContent: string) {
   return `import * as React from 'react';
 import type { IconWrappedProps} from '../../../icons/IconWrapper';
 import { IconWrapper } from '../../../icons/IconWrapper';
@@ -23,6 +23,34 @@ export function ${name}(props: IconWrappedProps) {
 }
 `;
 }
+
+
+function generateDynamicLockupFile(name: string, svgContent: string) {
+  return `import * as React from 'react';
+
+interface ${name}Props {
+  width?: string;
+  height?: string;
+  className?: string;
+}
+
+export function ${name}(props: ${name}Props) {
+  return (
+    <div
+      className={props.className}
+      style={{
+        width: props.width,
+        height: props.height
+      }}
+    >
+      ${svgContent}
+    </div>
+  );
+}
+`;
+}
+
+
 
 
 const sourcePath =  path.join(workspaceRoot, 'libs/ui-component-library/src/lib/brands/sources');
@@ -51,7 +79,7 @@ export async function generateIconsGenerator(
       const logoMarkFilePath = files.find(fileName => fileName.split('.')[0] === 'logomark');
       const logoMarkLockupFilePath = files.find(fileName => fileName.split('.')[0] === 'lockup');
       const dynamicFile = files.find(fileName => fileName.split('.')[0] === 'logomark-dynamic');
-
+      const lockupDynamicFile = files.find(fileName => fileName.split('.')[0] === 'lockup-dynamic');
 
       // make directory if does not exist
       if (!fs.existsSync(path.join(outputPath, brandKey))) {
@@ -77,9 +105,27 @@ export async function generateIconsGenerator(
 
       tree.write(
         path.join(outputPath, brandKey, `${componentName}LogoMarkDynamic.tsx`),
-        generateComponentFiles(`${componentName}LogoMarkDynamic`,dynamicFileCode)
+        generateIconFile(`${componentName}LogoMarkDynamic`,dynamicFileCode)
           .replace(/[A-z](-[A-z]+)=/g, x=>x.replace(/-./, y => y[1].toUpperCase()))
       )
+
+      if (lockupDynamicFile) {
+        const lockupDynamicFileCode = fs.readFileSync(path.join(sourcePath, brandKey, lockupDynamicFile), 'utf-8');
+
+        tree.write(
+          path.join(outputPath, brandKey, `${componentName}LockupDynamic.tsx`),
+          generateDynamicLockupFile(`${componentName}LockupDynamic`,lockupDynamicFileCode)
+            .replace(/[A-z](-[A-z]+)=/g, x=>x.replace(/-./, y => y[1].toUpperCase()))
+        )
+
+        // update index.tsx to include the dynamic lockup component
+        const indexFilePath = path.join(outputPath, brandKey, 'index.tsx');
+
+        const indexContent = tree.read(indexFilePath, 'utf-8');
+        const newIndexContent = `${indexContent}\nexport * from './${componentName}LockupDynamic';\n`;
+        tree.write(indexFilePath, newIndexContent);
+
+      }
 
       files.forEach(file => {
         copyFile(

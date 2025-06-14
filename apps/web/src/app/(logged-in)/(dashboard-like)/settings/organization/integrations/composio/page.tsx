@@ -239,7 +239,7 @@ function ComposioSettingsPage() {
 
   return (
     <IntegrationPageLayout
-      image={<ComposioLockupDynamic width={200} />}
+      image={<ComposioLockupDynamic width="150px" />}
       description={t('description')}
       disconnect={
         isConnected && (

@@ -1,5 +1,7 @@
 import {
+  type ListMcpServersResponse,
   useToolsServiceDeleteMcpServer,
+  UseToolsServiceListMcpServersKeyFn,
   useToolsServiceListMcpToolsByServer,
 } from '@letta-cloud/sdk-core';
 import type {
@@ -17,14 +19,23 @@ import {
   HStack,
   LoadingEmptyStatusComponent,
   McpIcon,
+  RefreshIcon,
   TrashIcon,
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import { useCallback, useState } from 'react';
+import React, {
+  useCallback,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import { AttachDetachButton } from '../../../components/AttachDetachButton/AttachDetachButton';
 import { useCurrentAgent } from '../../../../../hooks';
+import { useQueryClient } from '@tanstack/react-query';
+import { getObfuscatedMCPServerUrl } from '@letta-cloud/utils-shared';
+import { MCPServerLogo } from '../../MCPServerExplorer/MCPServerLogo/MCPServerLogo';
 
 interface RemoveMCPServerDialogProps {
   serverName: string;
@@ -36,9 +47,29 @@ function RemoveMCPServerDialog(props: RemoveMCPServerDialogProps) {
 
   const [isOpen, setIsOpen] = useState(false);
 
+  const queryClient = useQueryClient();
+
   const { mutate, isError, isPending } = useToolsServiceDeleteMcpServer({
     onSuccess: () => {
       setIsOpen(false);
+      queryClient.setQueriesData<ListMcpServersResponse | undefined>(
+        {
+          queryKey: UseToolsServiceListMcpServersKeyFn(),
+        },
+        (data) => {
+          if (!data) {
+            return undefined;
+          }
+
+          return Object.values(data).reduce((acc, item) => {
+            if (item.server_name !== serverName) {
+              acc[item.server_name] = item;
+            }
+
+            return acc;
+          }, {} as ListMcpServersResponse);
+        },
+      );
     },
   });
 
@@ -65,19 +96,31 @@ function RemoveMCPServerDialog(props: RemoveMCPServerDialogProps) {
   );
 }
 
+interface ServerToolsRef {
+  reload: () => void;
+}
+
 interface ServerToolsListProps {
   serverName: string;
+  ref?: React.RefObject<ServerToolsRef>;
 }
 
 function ServerToolsList(props: ServerToolsListProps) {
-  const { serverName } = props;
+  const { serverName, ref } = props;
   const t = useTranslations('ToolManager/SingleMCPServer');
 
   const { tools } = useCurrentAgent();
 
-  const { data, isError, isLoading } = useToolsServiceListMcpToolsByServer({
-    mcpServerName: serverName,
-  });
+  const { data, isError, isFetching, refetch } =
+    useToolsServiceListMcpToolsByServer({
+      mcpServerName: serverName,
+    });
+
+  useImperativeHandle(ref, () => ({
+    reload: () => {
+      void refetch();
+    },
+  }));
 
   const getAttachedId = useCallback(
     (toolName: string) => {
@@ -88,10 +131,10 @@ function ServerToolsList(props: ServerToolsListProps) {
     [tools],
   );
 
-  if (!data || data?.length === 0) {
+  if (!data || data?.length === 0 || isFetching) {
     return (
       <LoadingEmptyStatusComponent
-        isLoading={isLoading}
+        isLoading={isFetching}
         loadingMessage={t('ServerToolsList.loading')}
         emptyMessage={t('ServerToolsList.empty')}
         isError={isError}
@@ -131,18 +174,34 @@ interface SingleMCPServerProps {
   server: MCPServerItemType;
 }
 
+function serverHasServerUrl(
+  server: MCPServerItemType,
+): server is SSEServerConfig {
+  return (server as SSEServerConfig).server_url !== undefined;
+}
+
 export function SingleMCPServer(props: SingleMCPServerProps) {
   const { server } = props;
 
   const t = useTranslations('ToolManager/SingleMCPServer');
 
+  const ref = useRef<ServerToolsRef>({
+    reload: () => {
+      return;
+    },
+  });
+
   return (
-    <VStack overflow="hidden" fullWidth fullHeight>
+    <VStack fullWidth flex fullHeight>
       <HStack borderBottom padding>
         <VStack fullWidth>
           <HStack fullWidth paddingBottom="large" justify="spaceBetween">
             <HStack align="center" gap="medium">
-              <McpIcon />
+              {serverHasServerUrl(server) ? (
+                <MCPServerLogo serverUrl={server.server_url} />
+              ) : (
+                <McpIcon />
+              )}
               <VStack gap={false}>
                 <Typography>{server.server_name}</Typography>
               </VStack>
@@ -170,6 +229,13 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
                   />
                 }
               />
+              <DropdownMenuItem
+                preIcon={<RefreshIcon />}
+                onClick={() => {
+                  ref.current?.reload();
+                }}
+                label={t('refetch')}
+              />
             </DropdownMenu>
           </HStack>
           <VStack gap="large">
@@ -179,7 +245,9 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
                   {t('serverUrl')}
                 </Typography>
                 <Typography>
-                  {(server as SSEServerConfig).server_url}
+                  {getObfuscatedMCPServerUrl(
+                    (server as SSEServerConfig).server_url,
+                  )}
                 </Typography>
               </VStack>
             ) : (
@@ -201,7 +269,7 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
           </VStack>
         </VStack>
       </HStack>
-      <ServerToolsList serverName={server.server_name} />
+      <ServerToolsList ref={ref} serverName={server.server_name} />
     </VStack>
   );
 }

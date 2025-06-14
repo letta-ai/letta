@@ -56,6 +56,11 @@ export const featureFlags = {
     expiryDate: '2024-08-01',
     flagValue: z.boolean(),
   },
+  RECOMMENDED_MCP: {
+    description: 'Recommended MCP',
+    expiryDate: '2025-12-01',
+    flagValue: z.boolean(),
+  },
   GENERAL_ACCESS: {
     description: 'General access',
     expiryDate: '2025-07-01',
