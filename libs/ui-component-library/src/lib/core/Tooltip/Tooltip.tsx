@@ -1,6 +1,7 @@
 'use client';
 import * as React from 'react';
 import {
+  arrow,
   useFloating,
   autoUpdate,
   offset,
@@ -12,6 +13,7 @@ import {
   useRole,
   useInteractions,
   useMergeRefs,
+  FloatingArrow,
   FloatingPortal,
 } from '@floating-ui/react';
 import type { Placement } from '@floating-ui/react';
@@ -22,6 +24,7 @@ interface TooltipOptions {
   placement?: Placement;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  showArrow?: boolean;
 }
 
 export function useTooltip({
@@ -29,19 +32,17 @@ export function useTooltip({
   placement = 'top',
   open: controlledOpen,
   onOpenChange: setControlledOpen,
+  showArrow = true,
 }: TooltipOptions = {}) {
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(initialOpen);
+  const arrowRef = React.useRef(null);
 
   const open = controlledOpen ?? uncontrolledOpen;
   const setOpen = setControlledOpen ?? setUncontrolledOpen;
 
-  const data = useFloating({
-    placement,
-    open,
-    onOpenChange: setOpen,
-    whileElementsMounted: autoUpdate,
-    middleware: [
-      offset(5),
+  const middleware = React.useMemo(
+    () => [
+      offset(showArrow ? 10 : 5),
       flip({
         crossAxis: placement.includes('-'),
         fallbackAxisSideDirection: 'start',
@@ -49,6 +50,19 @@ export function useTooltip({
       }),
       shift({ padding: 5 }),
     ],
+    [showArrow, placement],
+  );
+
+  if (showArrow) {
+    middleware.push(arrow({ element: arrowRef }));
+  }
+
+  const data = useFloating({
+    placement,
+    open,
+    onOpenChange: setOpen,
+    whileElementsMounted: autoUpdate,
+    middleware: middleware,
   });
 
   const context = data.context;
@@ -69,10 +83,12 @@ export function useTooltip({
     () => ({
       open,
       setOpen,
+      showArrow,
+      arrowRef,
       ...interactions,
       ...data,
     }),
-    [open, setOpen, interactions, data],
+    [open, setOpen, showArrow, arrowRef, interactions, data],
   );
 }
 
@@ -153,13 +169,25 @@ const TooltipContent = React.forwardRef<
     <FloatingPortal root={document.body}>
       <div
         ref={ref}
-        className="z-tooltip max-w-[300px] py-1 bg-background-black text-background-black-content text-sm px-2"
+        className="z-tooltip max-w-[300px] py-1 text-sm px-2"
         style={{
+          backgroundColor: 'hsl(var(--background-inverted))',
+          color: 'hsl(var(--background-inverted-content))',
           ...context.floatingStyles,
           ...style,
         }}
         {...context.getFloatingProps(props)}
-      />
+      >
+        {context.showArrow && (
+          <FloatingArrow
+            ref={context.arrowRef}
+            context={context.context}
+            fill="hsl(var(--background-inverted))"
+            tipRadius={1}
+          />
+        )}
+        {props.children}
+      </div>
     </FloatingPortal>
   );
 });

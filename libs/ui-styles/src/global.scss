@@ -108,6 +108,9 @@
   --background-black-content: 0, 0%, 100%;
   --background-black-hover: 0, 0%, 20%;
 
+  --background-inverted: 0, 0%, 0%;
+  --background-inverted-content: 0, 0%, 100%;
+
   --background-violet: 276, 74%, 93%;
   --background-violet-content: var(--content);
 
@@ -234,6 +237,9 @@
 
   --user-content-background: 210deg 3.23% 12.16%;
   --agent-content-background: 231.43deg 8.64% 15.88%;
+
+  --background-inverted: 0, 0%, 100%;
+  --background-inverted-content: 0, 0%, 0%;
 
   --background-grey: 0, 0%, 9%;
   --background-grey-content: var(--text-default);
