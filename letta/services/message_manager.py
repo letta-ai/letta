@@ -603,10 +603,11 @@ class MessageManager:
 
     @enforce_types
     @trace_method
-    async def delete_all_messages_for_agent_async(self, agent_id: str, actor: PydanticUser) -> int:
+    async def delete_all_messages_for_agent_async(self, agent_id: str, actor: PydanticUser, exclude_ids: Optional[List[str]] = None) -> int:
         """
         Efficiently deletes all messages associated with a given agent_id,
         while enforcing permission checks and avoiding any ORM‑level loads.
+        Optionally excludes specific message IDs from deletion.
         """
         async with db_registry.async_session() as session:
             # 1) verify the agent exists and the actor has access
@@ -616,10 +617,36 @@ class MessageManager:
             stmt = (
                 delete(MessageModel).where(MessageModel.agent_id == agent_id).where(MessageModel.organization_id == actor.organization_id)
             )
+
+            # 3) exclude specific message IDs if provided
+            if exclude_ids:
+                stmt = stmt.where(~MessageModel.id.in_(exclude_ids))
+
             result = await session.execute(stmt)
 
-            # 3) commit once
+            # 4) commit once
             await session.commit()
 
-            # 4) return the number of rows deleted
+            # 5) return the number of rows deleted
+            return result.rowcount
+
+    @enforce_types
+    @trace_method
+    async def delete_messages_by_ids_async(self, message_ids: List[str], actor: PydanticUser) -> int:
+        """
+        Efficiently deletes messages by their specific IDs,
+        while enforcing permission checks.
+        """
+        if not message_ids:
+            return 0
+
+        async with db_registry.async_session() as session:
+            # issue a CORE DELETE against the mapped class for specific message IDs
+            stmt = delete(MessageModel).where(MessageModel.id.in_(message_ids)).where(MessageModel.organization_id == actor.organization_id)
+            result = await session.execute(stmt)
+
+            # commit once
+            await session.commit()
+
+            # return the number of rows deleted
             return result.rowcount

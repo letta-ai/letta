@@ -1574,10 +1574,11 @@ class AgentManager:
         self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False
     ) -> PydanticAgentState:
         """
-        Removes all in-context messages for the specified agent by:
-          1) Clearing the agent.messages relationship (which cascades delete-orphans).
-          2) Resetting the message_ids list to empty.
-          3) Committing the transaction.
+        Removes all in-context messages for the specified agent except the original system message by:
+          1) Preserving the first message ID (original system message).
+          2) Deleting all other messages for the agent.
+          3) Updating the agent's message_ids to only contain the system message.
+          4) Optionally adding default initial messages after the system message.
 
         This action is destructive and cannot be undone once committed.
 
@@ -1587,35 +1588,49 @@ class AgentManager:
             actor (PydanticUser): The user performing this action.
 
         Returns:
-            PydanticAgentState: The updated agent state with no linked messages.
+            PydanticAgentState: The updated agent state with only the original system message preserved.
         """
         async with db_registry.async_session() as session:
             # Retrieve the existing agent (will raise NoResultFound if invalid)
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
 
-            # Also clear out the message_ids field to keep in-context memory consistent
-            agent.message_ids = []
+            # Ensure agent has message_ids with at least one message
+            if not agent.message_ids or len(agent.message_ids) == 0:
+                logger.error(
+                    f"Agent {agent_id} has no message_ids. Agent details: "
+                    f"name={agent.name}, created_at={agent.created_at}, "
+                    f"message_ids={agent.message_ids}, organization_id={agent.organization_id}"
+                )
+                raise ValueError(f"Agent {agent_id} has no message_ids - cannot preserve system message")
 
-            # Commit the update
+            # Get the system message ID (first message)
+            system_message_id = agent.message_ids[0]
+
+            # Delete all messages for the agent except the system message
+            await self.message_manager.delete_all_messages_for_agent_async(agent_id=agent_id, actor=actor, exclude_ids=[system_message_id])
+
+            # Update agent to only keep the system message
+            agent.message_ids = [system_message_id]
             await agent.update_async(db_session=session, actor=actor)
-
             agent_state = await agent.to_pydantic_async()
 
-        await self.message_manager.delete_all_messages_for_agent_async(agent_id=agent_id, actor=actor)
-
+        # Optionally add default initial messages after the system message
         if add_default_initial_messages:
-            return await self.append_initial_message_sequence_to_in_context_messages_async(actor, agent_state)
-        else:
-            # We still want to always have a system message
             init_messages = initialize_message_sequence(
                 agent_state=agent_state, memory_edit_timestamp=get_utc_time(), include_initial_boot_message=True
             )
-            system_message = PydanticMessage.dict_to_message(
-                agent_id=agent_state.id,
-                model=agent_state.llm_config.model,
-                openai_message_dict=init_messages[0],
-            )
-            return await self.append_to_in_context_messages_async([system_message], agent_id=agent_state.id, actor=actor)
+            # Skip index 0 (system message) since we preserved the original
+            non_system_messages = [
+                PydanticMessage.dict_to_message(
+                    agent_id=agent_state.id,
+                    model=agent_state.llm_config.model,
+                    openai_message_dict=msg,
+                )
+                for msg in init_messages[1:]
+            ]
+            return await self.append_to_in_context_messages_async(non_system_messages, agent_id=agent_state.id, actor=actor)
+        else:
+            return agent_state
 
     @trace_method
     @enforce_types
