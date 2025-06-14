@@ -186,16 +186,16 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         icon: <ProjectsIcon />,
       },
       {
-        label: t('nav.models'),
-        href: '/models',
-        id: 'models',
-        icon: <TokenIcon />,
-      },
-      {
         label: t('nav.dataSources'),
         href: '/data-sources',
         id: 'data-sources',
         icon: <DatabaseIcon />,
+      },
+      {
+        label: t('nav.models'),
+        href: '/models',
+        id: 'models',
+        icon: <TokenIcon />,
       },
 
       ...(canReadAPIKeys
