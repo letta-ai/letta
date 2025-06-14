@@ -387,7 +387,7 @@ class AnthropicStreamingInterface:
         except Exception as e:
             logger.error("Error processing stream: %s", e)
             stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
-            yield f"data: {stop_reason.model_dump_json()}\n\n"
+            yield stop_reason
             raise
         finally:
             logger.info("AnthropicStreamingInterface: Stream processing complete.")
