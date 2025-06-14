@@ -1592,14 +1592,13 @@ async def test_reset_messages_no_messages(server: SyncServer, sarah_agent, defau
     Test that resetting messages on an agent that has zero messages
     does not fail and clears out message_ids if somehow it's non-empty.
     """
-    # Force a weird scenario: Suppose the message_ids field was set non-empty (without actual messages).
-    await server.agent_manager.update_agent_async(sarah_agent.id, UpdateAgent(message_ids=["ghost-message-id"]), actor=default_user)
-    updated_agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, default_user)
-    assert updated_agent.message_ids == ["ghost-message-id"]
+    assert len(sarah_agent.message_ids) == 4
+    og_message_ids = sarah_agent.message_ids
 
     # Reset messages
     reset_agent = await server.agent_manager.reset_messages_async(agent_id=sarah_agent.id, actor=default_user)
     assert len(reset_agent.message_ids) == 1
+    assert og_message_ids[0] == reset_agent.message_ids[0]
     # Double check that physically no messages exist
     assert await server.message_manager.size_async(agent_id=sarah_agent.id, actor=default_user) == 1
 
@@ -1610,16 +1609,18 @@ async def test_reset_messages_default_messages(server: SyncServer, sarah_agent, 
     Test that resetting messages on an agent that has zero messages
     does not fail and clears out message_ids if somehow it's non-empty.
     """
-    # Force a weird scenario: Suppose the message_ids field was set non-empty (without actual messages).
-    await server.agent_manager.update_agent_async(sarah_agent.id, UpdateAgent(message_ids=["ghost-message-id"]), actor=default_user)
-    updated_agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, default_user)
-    assert updated_agent.message_ids == ["ghost-message-id"]
+    assert len(sarah_agent.message_ids) == 4
+    og_message_ids = sarah_agent.message_ids
 
     # Reset messages
     reset_agent = await server.agent_manager.reset_messages_async(
         agent_id=sarah_agent.id, actor=default_user, add_default_initial_messages=True
     )
     assert len(reset_agent.message_ids) == 4
+    assert og_message_ids[0] == reset_agent.message_ids[0]
+    assert og_message_ids[1] != reset_agent.message_ids[1]
+    assert og_message_ids[2] != reset_agent.message_ids[2]
+    assert og_message_ids[3] != reset_agent.message_ids[3]
     # Double check that physically no messages exist
     assert await server.message_manager.size_async(agent_id=sarah_agent.id, actor=default_user) == 4
 
@@ -1671,6 +1672,9 @@ async def test_reset_messages_idempotency(server: SyncServer, sarah_agent, defau
     """
     Test that calling reset_messages multiple times has no adverse effect.
     """
+    # Clear messages first
+    await server.message_manager.delete_messages_by_ids_async(message_ids=sarah_agent.message_ids[1:], actor=default_user)
+
     # Create a single message
     server.message_manager.create_message(
         PydanticMessage(
@@ -1690,6 +1694,72 @@ async def test_reset_messages_idempotency(server: SyncServer, sarah_agent, defau
     reset_agent_again = await server.agent_manager.reset_messages_async(agent_id=sarah_agent.id, actor=default_user)
     assert len(reset_agent.message_ids) == 1
     assert await server.message_manager.size_async(agent_id=sarah_agent.id, actor=default_user) == 1
+
+
+@pytest.mark.asyncio
+async def test_reset_messages_preserves_system_message_id(server: SyncServer, sarah_agent, default_user, event_loop):
+    """
+    Test that resetting messages preserves the original system message ID.
+    """
+    # Get the original system message ID
+    original_agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, default_user)
+    original_system_message_id = original_agent.message_ids[0]
+
+    # Add some user messages
+    server.message_manager.create_message(
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            role="user",
+            content=[TextContent(text="Hello!")],
+        ),
+        actor=default_user,
+    )
+
+    # Reset messages
+    reset_agent = await server.agent_manager.reset_messages_async(agent_id=sarah_agent.id, actor=default_user)
+
+    # Verify the system message ID is preserved
+    assert len(reset_agent.message_ids) == 1
+    assert reset_agent.message_ids[0] == original_system_message_id
+
+    # Verify the system message still exists in the database
+    system_message = await server.message_manager.get_message_by_id_async(message_id=original_system_message_id, actor=default_user)
+    assert system_message.role == "system"
+
+
+@pytest.mark.asyncio
+async def test_reset_messages_preserves_system_message_content(server: SyncServer, sarah_agent, default_user, event_loop):
+    """
+    Test that resetting messages preserves the original system message content.
+    """
+    # Get the original system message
+    original_agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, default_user)
+    original_system_message = await server.message_manager.get_message_by_id_async(
+        message_id=original_agent.message_ids[0], actor=default_user
+    )
+
+    # Add some messages and reset
+    server.message_manager.create_message(
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            role="user",
+            content=[TextContent(text="Hello!")],
+        ),
+        actor=default_user,
+    )
+
+    reset_agent = await server.agent_manager.reset_messages_async(agent_id=sarah_agent.id, actor=default_user)
+
+    # Verify the system message content is unchanged
+    preserved_system_message = await server.message_manager.get_message_by_id_async(
+        message_id=reset_agent.message_ids[0], actor=default_user
+    )
+
+    assert preserved_system_message.content == original_system_message.content
+    assert preserved_system_message.role == "system"
+    assert preserved_system_message.id == original_system_message.id
 
 
 @pytest.mark.asyncio
