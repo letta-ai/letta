@@ -7,7 +7,6 @@ import {
   ProjectsIcon,
   isSubNavigationGroup,
   Breadcrumb,
-  ExternalLinkIcon,
   isSubNavigationOverride,
   TokenIcon,
   GroupAddIcon,
@@ -781,7 +780,6 @@ export function DashboardHeaderNavigation(
         <Button
           size="small"
           color="tertiary"
-          postIcon={<ExternalLinkIcon />}
           target="_blank"
           label={t('DashboardHeaderNavigation.documentation')}
           href="https://docs.letta.com/introduction"
@@ -789,7 +787,6 @@ export function DashboardHeaderNavigation(
         <Button
           size="small"
           color="tertiary"
-          postIcon={<ExternalLinkIcon />}
           target="_blank"
           label={t('DashboardHeaderNavigation.apiReference')}
           href="https://docs.letta.com/api-reference"

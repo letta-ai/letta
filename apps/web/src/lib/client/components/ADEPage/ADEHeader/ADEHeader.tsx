@@ -10,13 +10,12 @@ import {
   ForkIcon,
   HiddenOnMobile,
   HStack,
-  LettaInvaderIcon,
+  LettaInvaderOutlineIcon,
   Logo,
   TrashIcon,
   Typography,
   DotsVerticalIcon,
   VisibleOnMobile,
-  ExternalLinkIcon,
   WarningIcon,
   Tooltip,
   BetaTag,
@@ -387,9 +386,8 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
         <HStack align="center" gap="small">
           {isTemplate && (
             <Button
-              size="small"
-              preIcon={<LettaInvaderIcon />}
-              postIcon={<ExternalLinkIcon />}
+              size="default"
+              preIcon={<LettaInvaderOutlineIcon />}
               label={t('viewAgents')}
               target="_blank"
               href={`/projects/${slug}/agents?query=${JSON.stringify({
@@ -409,7 +407,7 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
                   ],
                 },
               } satisfies QueryBuilderQuery)}`}
-              color="tertiary"
+              color="secondary"
             />
           )}
           <HStack paddingRight="small">

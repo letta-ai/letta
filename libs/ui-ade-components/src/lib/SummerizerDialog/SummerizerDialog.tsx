@@ -8,7 +8,6 @@ import {
   Input,
   useForm,
   VStack,
-  Typography,
   Link,
   Alert,
 } from '@letta-cloud/ui-component-library';
@@ -128,9 +127,6 @@ export function SummerizerDialog(props: SummerizerDialogProps) {
               />
             )}
           />
-          <Typography variant="body2" color="muted">
-            {t('warning')}
-          </Typography>
         </VStack>
       </Dialog>
     </FormProvider>

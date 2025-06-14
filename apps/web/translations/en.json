@@ -797,14 +797,14 @@
     "title": "Project settings",
     "EditProjectSettings": {
       "id": {
-        "name": "Project ID",
+        "name": "ID",
         "placeholder": "The project id"
       },
       "name": {
-        "label": "Project name"
+        "label": "Name"
       },
       "slug": {
-        "label": "Project slug",
+        "label": "Slug",
         "placeholder": "my-project-slug"
       },
       "errors": {
@@ -1087,7 +1087,7 @@
     "UpgradeButton": {
       "trigger": "Upgrade to Pro"
     },
-    "title": "Current plan - <plan></plan>",
+    "title": "Current plan <plan></plan>",
     "tiers": {
       "free": {
         "title": "Free"
@@ -1111,9 +1111,9 @@
       "actions": "Manage membership invite rules"
     },
     "EditOrganizationSettings": {
-      "title": "Organization profile",
+      "title": "Profile",
       "name": {
-        "label": "Organization name"
+        "label": "Name"
       },
       "error": "There was an error updating organization settings, please try again or contact support."
     },

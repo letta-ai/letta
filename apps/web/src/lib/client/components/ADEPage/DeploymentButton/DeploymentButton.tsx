@@ -13,7 +13,6 @@ import {
   MiniApp,
   OnboardingAsideFocus,
   Popover,
-  SaveIcon,
   TemplateIcon,
   TextArea,
   toast,
@@ -458,7 +457,7 @@ function TemplateVersionDisplay() {
     return (
       <Tooltip asChild content={t('DeploymentButton.errorTooltip')}>
         <Button
-          size="small"
+          size="default"
           color="destructive"
           data-testid="version-template-trigger"
           label={t('DeploymentButton.error')}
@@ -471,7 +470,7 @@ function TemplateVersionDisplay() {
   if (!canUpdateTemplate) {
     return (
       <Button
-        size="small"
+        size="default"
         color="primary"
         disabled
         label={t('DeploymentButton.readyToDeploy.trigger', {
@@ -486,9 +485,8 @@ function TemplateVersionDisplay() {
       <CreateNewTemplateVersionDialog
         trigger={
           <Button
-            size="small"
+            size="default"
             _use_rarely_className={show ? 'shine' : ''}
-            preIcon={<SaveIcon />}
             data-testid="stage-new-version-button"
             color="primary"
             fullWidth
@@ -541,7 +539,7 @@ function CreateTemplateButton() {
       triggerAsChild
       trigger={
         <Button
-          size="small"
+          size="default"
           preIcon={<TemplateIcon />}
           color="primary"
           label={t('CreateTemplateButton.trigger')}
