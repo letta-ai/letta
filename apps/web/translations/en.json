@@ -881,7 +881,7 @@
         "cost": "Contact us",
         "cta": "Contact sales",
         "label": "Enterprise",
-        "usage": "For teams deploying agents at scale."
+        "usage": "For enterprises with particular deployment needs."
       },
       "cost": "<cost></cost> per month"
     },

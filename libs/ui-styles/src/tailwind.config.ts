@@ -178,6 +178,7 @@ export function buildConfig(appDir: string): Config {
           'background-warning': {
             DEFAULT: 'hsl(var(--background-warning))',
             content: 'hsl(var(--background-warning-content))',
+            border: 'hsl(var(--background-warning-border))',
           },
           popover: {
             DEFAULT: 'hsl(var(--popover))',

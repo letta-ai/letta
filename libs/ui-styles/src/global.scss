@@ -85,8 +85,9 @@
   --destructive-diff: 10, 100%, 60%, 0.16;
   --destructive-diff-content: 10, 67%, 48%;
 
-  --background-warning: 39, 100%, 94%;
-  --background-warning-content: 39, 100%, 10%;
+  --background-warning: 44, 99%, 67%, 0.24;
+  --background-warning-content: 44, 58%, 19%;
+  --background-warning-border: 44, 99%, 67%, 0.16;
 
   --background-destructive: 0, 100%, 90%;
   --background-destructive-content: 0, 100%, 10%;
@@ -281,8 +282,9 @@
 
   --warning: 0 0% 100%;
   --warning-content: 43, 65%, 38%;
-  --background-warning: 43, 65%, 38%;
-  --background-warning-content: 0 0% 100%;
+  --background-warning: 44, 99%, 67%, 0.24;
+  --background-warning-content: 44, 100%, 86%;
+  --background-warning-border: 44, 99%, 67%, 0.16;
 
   --input: 0, 0%, 13%;
   --ring: 240 4.9% 83.9%;

@@ -21,7 +21,7 @@ const badgeVariants = cva(
       variant: {
         default: 'bg-background-grey2 text-background-grey2-content',
         warning:
-          'bg-background-warning text-background-warning-content border-color-[#ffedc3]',
+          'bg-background-warning text-background-warning-content border-background-warning-border',
         destructive:
           'bg-background-destructive text-background-destructive-content',
         success: 'bg-background-success text-background-success-content',
