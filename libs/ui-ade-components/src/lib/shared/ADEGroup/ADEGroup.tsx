@@ -44,19 +44,20 @@ export function ADEGroup(props: ADEGroupProps) {
                 setActiveTab(index);
               }}
             >
-              <Typography
-                uppercase
-                bold
-                fullWidth
-                noWrap
-                overflow="ellipsis"
-                className="tracking-[0.04em]"
-                color={activeTab === index ? 'default' : 'muted'}
-                variant="body4"
-              >
-                {item.title}
-              </Typography>
-              {item.badge}
+              <HStack align="center" gap="medium">
+                <Typography
+                  uppercase
+                  bold
+                  noWrap
+                  overflow="ellipsis"
+                  className="tracking-[0.04em]"
+                  color={activeTab === index ? 'default' : 'muted'}
+                  variant="body4"
+                >
+                  {item.title}
+                </Typography>
+                {item.badge}
+              </HStack>
             </HStack>
           );
         })}
