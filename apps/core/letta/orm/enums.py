@@ -38,3 +38,4 @@ class ActorType(str, Enum):
 class MCPServerType(str, Enum):
     SSE = "sse"
     STDIO = "stdio"
+    STREAMABLE_HTTP = "streamable_http"

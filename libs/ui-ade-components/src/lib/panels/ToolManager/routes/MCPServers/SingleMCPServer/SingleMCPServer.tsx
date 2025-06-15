@@ -239,14 +239,15 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
             </DropdownMenu>
           </HStack>
           <VStack gap="large">
-            {server.type === 'sse' ? (
+            {server.type === 'sse' || server.type === 'streamable_http' ? (
               <VStack gap={false}>
                 <Typography uppercase bold variant="body3">
                   {t('serverUrl')}
                 </Typography>
                 <Typography>
                   {getObfuscatedMCPServerUrl(
-                    (server as SSEServerConfig).server_url,
+                    (server as SSEServerConfig | { server_url: string })
+                      .server_url,
                   )}
                 </Typography>
               </VStack>

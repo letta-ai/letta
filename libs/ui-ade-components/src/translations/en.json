@@ -1315,13 +1315,19 @@
         "placeholder": "http://localhost:5000",
         "description": "The URL of the server"
       },
+      "authToken": {
+        "label": "Authentication",
+        "placeholder": "Access Token / API Key",
+        "description": "The value set here will be passed as a Bearer token in the `Authorization` header."
+      },
       "type": {
         "label": "Server Type",
         "name": "stdio",
         "description": "The type of server",
         "options": {
           "stdio": "stdio",
-          "sse": "sse"
+          "sse": "sse",
+          "streamable_http": "streamable http"
         }
       },
       "args": {

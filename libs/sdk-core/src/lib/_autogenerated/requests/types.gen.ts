@@ -2315,7 +2315,7 @@ export type LocalSandboxConfig = {
   pip_requirements?: Array<PipRequirement>;
 };
 
-export type MCPServerType = 'sse' | 'stdio';
+export type MCPServerType = 'sse' | 'stdio' | 'streamable_http';
 
 /**
  * A simple wrapper around MCP's tool definition (to avoid conflict with our own)
@@ -2326,6 +2326,7 @@ export type MCPTool = {
   inputSchema: {
     [key: string]: unknown;
   };
+  annotations?: ToolAnnotations | null;
   [key: string]: unknown | string;
 };
 
@@ -3066,6 +3067,16 @@ export type Run = {
   request_config?: LettaRequestConfig | null;
 };
 
+/**
+ * Configuration for an MCP server using SSE
+ *
+ * Authentication can be provided in multiple ways:
+ * 1. Using auth_header + auth_token: Will add a specific header with the token
+ * Example: auth_header="Authorization", auth_token="Bearer abc123"
+ *
+ * 2. Using the custom_headers dict: For more complex authentication scenarios
+ * Example: custom_headers={"X-API-Key": "abc123", "X-Custom-Header": "value"}
+ */
 export type SSEServerConfig = {
   /**
    * The name of the server
@@ -3076,6 +3087,20 @@ export type SSEServerConfig = {
    * The URL of the server (MCP SSE client will connect to this URL)
    */
   server_url: string;
+  /**
+   * The name of the authentication header (e.g., 'Authorization')
+   */
+  auth_header?: string | null;
+  /**
+   * The authentication token or API key value
+   */
+  auth_token?: string | null;
+  /**
+   * Custom HTTP headers to include with SSE requests
+   */
+  custom_headers?: {
+    [key: string]: string;
+  } | null;
 };
 
 export type SandboxConfig = {
@@ -3607,6 +3632,25 @@ export type Tool = {
   metadata_?: {
     [key: string]: unknown;
   } | null;
+};
+
+/**
+ * Additional properties describing a Tool to clients.
+ *
+ * NOTE: all properties in ToolAnnotations are **hints**.
+ * They are not guaranteed to provide a faithful description of
+ * tool behavior (including descriptive properties like `title`).
+ *
+ * Clients should never make tool use decisions based on ToolAnnotations
+ * received from untrusted servers.
+ */
+export type ToolAnnotations = {
+  title?: string | null;
+  readOnlyHint?: boolean | null;
+  destructiveHint?: boolean | null;
+  idempotentHint?: boolean | null;
+  openWorldHint?: boolean | null;
+  [key: string]: unknown;
 };
 
 export type ToolCall = {

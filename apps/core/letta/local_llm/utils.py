@@ -100,7 +100,11 @@ def num_tokens_from_functions(functions: List[dict], model: str = "gpt-4"):
                         try:
                             if field == "type":
                                 function_tokens += 2
-                                function_tokens += len(encoding.encode(v["type"]))
+                                # Handle both string and array types, e.g. {"type": ["string", "null"]}
+                                if isinstance(v["type"], list):
+                                    function_tokens += len(encoding.encode(",".join(v["type"])))
+                                else:
+                                    function_tokens += len(encoding.encode(v["type"]))
                             elif field == "description":
                                 function_tokens += 2
                                 function_tokens += len(encoding.encode(v["description"]))

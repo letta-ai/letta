@@ -3,17 +3,18 @@ import os
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import letta.constants as constants
-from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig
+from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.mcp_server import MCPServer as MCPServerModel
-from letta.schemas.mcp import MCPServer, UpdateMCPServer, UpdateSSEMCPServer, UpdateStdioMCPServer
+from letta.schemas.mcp import MCPServer, UpdateMCPServer, UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer
 from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool import ToolCreate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.mcp.sse_client import MCP_CONFIG_TOPLEVEL_KEY, AsyncSSEMCPClient
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
+from letta.services.mcp.streamable_http_client import AsyncStreamableHTTPMCPClient
 from letta.services.tool_manager import ToolManager
 from letta.utils import enforce_types, printd
 
@@ -31,7 +32,6 @@ class MCPManager:
     @enforce_types
     async def list_mcp_server_tools(self, mcp_server_name: str, actor: PydanticUser) -> List[MCPTool]:
         """Get a list of all tools for a specific MCP server."""
-        print("mcp_server_name", mcp_server_name)
         mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor=actor)
         mcp_config = await self.get_mcp_server_by_id_async(mcp_server_id, actor=actor)
         server_config = mcp_config.to_config()
@@ -40,12 +40,16 @@ class MCPManager:
             mcp_client = AsyncSSEMCPClient(server_config=server_config)
         elif mcp_config.server_type == MCPServerType.STDIO:
             mcp_client = AsyncStdioMCPClient(server_config=server_config)
+        elif mcp_config.server_type == MCPServerType.STREAMABLE_HTTP:
+            mcp_client = AsyncStreamableHTTPMCPClient(server_config=server_config)
+        else:
+            raise ValueError(f"Unsupported MCP server type: {mcp_config.server_type}")
         await mcp_client.connect_to_server()
 
         # list tools
         tools = await mcp_client.list_tools()
-        # TODO: change to pydantic tools
 
+        # TODO: change to pydantic tools
         await mcp_client.cleanup()
 
         return tools
@@ -55,7 +59,6 @@ class MCPManager:
         self, mcp_server_name: str, tool_name: str, tool_args: Optional[Dict[str, Any]], actor: PydanticUser
     ) -> Tuple[str, bool]:
         """Call a specific tool from a specific MCP server."""
-
         from letta.settings import tool_settings
 
         if not tool_settings.mcp_read_from_config:
@@ -75,6 +78,10 @@ class MCPManager:
             mcp_client = AsyncSSEMCPClient(server_config=server_config)
         elif isinstance(server_config, StdioServerConfig):
             mcp_client = AsyncStdioMCPClient(server_config=server_config)
+        elif isinstance(server_config, StreamableHTTPServerConfig):
+            mcp_client = AsyncStreamableHTTPMCPClient(server_config=server_config)
+        else:
+            raise ValueError(f"Unsupported server config type: {type(server_config)}")
         await mcp_client.connect_to_server()
 
         # call tool
@@ -114,7 +121,6 @@ class MCPManager:
     async def create_or_update_mcp_server(self, pydantic_mcp_server: MCPServer, actor: PydanticUser) -> MCPServer:
         """Create a new tool based on the ToolCreate schema."""
         mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name=pydantic_mcp_server.server_name, actor=actor)
-        print("FOUND SERVER", mcp_server_id, pydantic_mcp_server.server_name)
         if mcp_server_id:
             # Put to dict and remove fields that should not be reset
             update_data = pydantic_mcp_server.model_dump(exclude_unset=True, exclude_none=True)
@@ -122,11 +128,16 @@ class MCPManager:
             # If there's anything to update (can only update the configs, not the name)
             if update_data:
                 if pydantic_mcp_server.server_type == MCPServerType.SSE:
-                    update_request = UpdateSSEMCPServer(server_url=pydantic_mcp_server.server_url)
+                    update_request = UpdateSSEMCPServer(server_url=pydantic_mcp_server.server_url, token=pydantic_mcp_server.token)
                 elif pydantic_mcp_server.server_type == MCPServerType.STDIO:
                     update_request = UpdateStdioMCPServer(stdio_config=pydantic_mcp_server.stdio_config)
+                elif pydantic_mcp_server.server_type == MCPServerType.STREAMABLE_HTTP:
+                    update_request = UpdateStreamableHTTPMCPServer(
+                        server_url=pydantic_mcp_server.server_url, token=pydantic_mcp_server.token
+                    )
+                else:
+                    raise ValueError(f"Unsupported server type: {pydantic_mcp_server.server_type}")
                 mcp_server = await self.update_mcp_server_by_id(mcp_server_id, update_request, actor)
-                print("RETURN", mcp_server)
             else:
                 printd(
                     f"`create_or_update_mcp_server` was called with user_id={actor.id}, organization_id={actor.organization_id}, name={pydantic_mcp_server.server_name}, but found existing mcp server with nothing to update."
@@ -229,7 +240,7 @@ class MCPManager:
             except NoResultFound:
                 raise ValueError(f"MCP server with id {mcp_server_id} not found.")
 
-    def read_mcp_config(self) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
+    def read_mcp_config(self) -> dict[str, Union[SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig]]:
         mcp_server_list = {}
 
         # Attempt to read from ~/.letta/mcp_config.json
@@ -260,6 +271,9 @@ class MCPManager:
                                 server_params = SSEServerConfig(
                                     server_name=server_name,
                                     server_url=server_params_raw["url"],
+                                    auth_header=server_params_raw.get("auth_header", None),
+                                    auth_token=server_params_raw.get("auth_token", None),
+                                    headers=server_params_raw.get("headers", None),
                                 )
                                 mcp_server_list[server_name] = server_params
                             except Exception as e:

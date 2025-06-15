@@ -6511,7 +6511,7 @@ export const $LocalSandboxConfig = {
 
 export const $MCPServerType = {
   type: 'string',
-  enum: ['sse', 'stdio'],
+  enum: ['sse', 'stdio', 'streamable_http'],
   title: 'MCPServerType',
 } as const;
 
@@ -6536,6 +6536,16 @@ export const $MCPTool = {
       additionalProperties: true,
       type: 'object',
       title: 'Inputschema',
+    },
+    annotations: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/ToolAnnotations',
+        },
+        {
+          type: 'null',
+        },
+      ],
     },
   },
   additionalProperties: true,
@@ -8454,10 +8464,58 @@ export const $SSEServerConfig = {
       description:
         'The URL of the server (MCP SSE client will connect to this URL)',
     },
+    auth_header: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Auth Header',
+      description:
+        "The name of the authentication header (e.g., 'Authorization')",
+    },
+    auth_token: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Auth Token',
+      description: 'The authentication token or API key value',
+    },
+    custom_headers: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'string',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Custom Headers',
+      description: 'Custom HTTP headers to include with SSE requests',
+    },
   },
   type: 'object',
   required: ['server_name', 'server_url'],
   title: 'SSEServerConfig',
+  description: `Configuration for an MCP server using SSE
+
+Authentication can be provided in multiple ways:
+1. Using auth_header + auth_token: Will add a specific header with the token
+   Example: auth_header="Authorization", auth_token="Bearer abc123"
+
+2. Using the custom_headers dict: For more complex authentication scenarios
+   Example: custom_headers={"X-API-Key": "abc123", "X-Custom-Header": "value"}`,
 } as const;
 
 export const $SandboxConfig = {
@@ -9819,6 +9877,77 @@ Parameters:
     tags (List[str]): Metadata tags.
     source_code (str): The source code of the function.
     json_schema (Dict): The JSON schema of the function.`,
+} as const;
+
+export const $ToolAnnotations = {
+  properties: {
+    title: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Title',
+    },
+    readOnlyHint: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Readonlyhint',
+    },
+    destructiveHint: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Destructivehint',
+    },
+    idempotentHint: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Idempotenthint',
+    },
+    openWorldHint: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Openworldhint',
+    },
+  },
+  additionalProperties: true,
+  type: 'object',
+  title: 'ToolAnnotations',
+  description: `Additional properties describing a Tool to clients.
+
+NOTE: all properties in ToolAnnotations are **hints**.
+They are not guaranteed to provide a faithful description of
+tool behavior (including descriptive properties like \`title\`).
+
+Clients should never make tool use decisions based on ToolAnnotations
+received from untrusted servers.`,
 } as const;
 
 export const $ToolCall = {

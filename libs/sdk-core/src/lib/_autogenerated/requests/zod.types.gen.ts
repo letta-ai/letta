@@ -4398,7 +4398,35 @@ export const LocalSandboxConfig = z.object({
 });
 
 export type MCPServerType = z.infer<typeof MCPServerType>;
-export const MCPServerType = z.union([z.literal('sse'), z.literal('stdio')]);
+export const MCPServerType = z.union([
+  z.literal('sse'),
+  z.literal('stdio'),
+  z.literal('streamable_http'),
+]);
+
+export type ToolAnnotations = z.infer<typeof ToolAnnotations>;
+export const ToolAnnotations = z.intersection(
+  z.object({
+    title: z
+      .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+      .optional(),
+    readOnlyHint: z
+      .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
+      .optional(),
+    destructiveHint: z
+      .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
+      .optional(),
+    idempotentHint: z
+      .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
+      .optional(),
+    openWorldHint: z
+      .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
+      .optional(),
+  }),
+  z.object({
+    string: z.any().optional(),
+  }),
+);
 
 export type MCPTool = z.infer<typeof MCPTool>;
 export const MCPTool = z.intersection(
@@ -4413,6 +4441,14 @@ export const MCPTool = z.intersection(
       ])
       .optional(),
     inputSchema: z.unknown(),
+    annotations: z
+      .union([
+        ToolAnnotations,
+        z.null(),
+        z.array(z.union([ToolAnnotations, z.null()])),
+        z.undefined(),
+      ])
+      .optional(),
   }),
   z.object({
     string: z.any(),
@@ -4818,6 +4854,30 @@ export const SSEServerConfig = z.object({
   server_name: z.string(),
   type: z.union([MCPServerType, z.undefined()]).optional(),
   server_url: z.string(),
+  auth_header: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  auth_token: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  custom_headers: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type SandboxType = z.infer<typeof SandboxType>;

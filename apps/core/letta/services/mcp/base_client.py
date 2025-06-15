@@ -24,11 +24,22 @@ class AsyncBaseMCPClient:
             await self._initialize_connection(self.server_config)
             await self.session.initialize()
             self.initialized = True
+        except ConnectionError as e:
+            logger.error(f"MCP connection failed: {str(e)}")
+            raise e
         except Exception as e:
             logger.error(
-                f"Connecting to MCP server failed. Please review your server config: {self.server_config.model_dump_json(indent=4)}"
+                f"Connecting to MCP server failed. Please review your server config: {self.server_config.model_dump_json(indent=4)}. Error: {str(e)}"
             )
-            raise e
+            if hasattr(self.server_config, "server_url") and self.server_config.server_url:
+                server_info = f"server URL '{self.server_config.server_url}'"
+            elif hasattr(self.server_config, "command") and self.server_config.command:
+                server_info = f"command '{self.server_config.command}'"
+            else:
+                server_info = f"server '{self.server_config.server_name}'"
+            raise ConnectionError(
+                f"Failed to connect to MCP {server_info}. Please check your configuration and ensure the server is accessible."
+            ) from e
 
     async def _initialize_connection(self, server_config: BaseServerConfig) -> None:
         raise NotImplementedError("Subclasses must implement _initialize_connection")

@@ -14086,7 +14086,7 @@
       },
       "MCPServerType": {
         "type": "string",
-        "enum": ["sse", "stdio"],
+        "enum": ["sse", "stdio", "streamable_http"],
         "title": "MCPServerType"
       },
       "MCPTool": {
@@ -14110,6 +14110,16 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Inputschema"
+          },
+          "annotations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolAnnotations"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": true,
@@ -15840,11 +15850,51 @@
             "type": "string",
             "title": "Server Url",
             "description": "The URL of the server (MCP SSE client will connect to this URL)"
+          },
+          "auth_header": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Header",
+            "description": "The name of the authentication header (e.g., 'Authorization')"
+          },
+          "auth_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Token",
+            "description": "The authentication token or API key value"
+          },
+          "custom_headers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Headers",
+            "description": "Custom HTTP headers to include with SSE requests"
           }
         },
         "type": "object",
         "required": ["server_name", "server_url"],
-        "title": "SSEServerConfig"
+        "title": "SSEServerConfig",
+        "description": "Configuration for an MCP server using SSE\n\nAuthentication can be provided in multiple ways:\n1. Using auth_header + auth_token: Will add a specific header with the token\n   Example: auth_header=\"Authorization\", auth_token=\"Bearer abc123\"\n\n2. Using the custom_headers dict: For more complex authentication scenarios\n   Example: custom_headers={\"X-API-Key\": \"abc123\", \"X-Custom-Header\": \"value\"}"
       },
       "SandboxConfig": {
         "properties": {
@@ -17087,6 +17137,69 @@
         "type": "object",
         "title": "Tool",
         "description": "Representation of a tool, which is a function that can be called by the agent.\n\nParameters:\n    id (str): The unique identifier of the tool.\n    name (str): The name of the function.\n    tags (List[str]): Metadata tags.\n    source_code (str): The source code of the function.\n    json_schema (Dict): The JSON schema of the function."
+      },
+      "ToolAnnotations": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "readOnlyHint": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Readonlyhint"
+          },
+          "destructiveHint": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destructivehint"
+          },
+          "idempotentHint": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotenthint"
+          },
+          "openWorldHint": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Openworldhint"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "ToolAnnotations",
+        "description": "Additional properties describing a Tool to clients.\n\nNOTE: all properties in ToolAnnotations are **hints**.\nThey are not guaranteed to provide a faithful description of\ntool behavior (including descriptive properties like `title`).\n\nClients should never make tool use decisions based on ToolAnnotations\nreceived from untrusted servers."
       },
       "ToolCall": {
         "properties": {
