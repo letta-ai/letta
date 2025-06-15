@@ -474,9 +474,13 @@ export function ContextWindowSimulator() {
         id: 'system',
         label: t('ContextWindowPreview.systemPrompt'),
         content: (
-          <Typography variant="body2" font="mono">
-            {systemPromptSummary}
-          </Typography>
+          <Code
+            language="xml"
+            code={systemPromptSummary || ''}
+            fontSize="small"
+            showLineNumbers={false}
+            variant="minimal"
+          />
         ),
         size: systemPromptLength,
         color: '#3758F9',
@@ -500,9 +504,13 @@ export function ContextWindowSimulator() {
         id: 'external',
         label: t('ContextWindowPreview.externalSummaryLength'),
         content: (
-          <Typography variant="body2" font="mono">
-            {externalSummary}
-          </Typography>
+          <Code
+            language="xml"
+            code={externalSummary || ''}
+            fontSize="small"
+            showLineNumbers={false}
+            variant="minimal"
+          />
         ),
         size: externalSummaryLength,
         color: '#37f9a2',
