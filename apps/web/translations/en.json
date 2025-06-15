@@ -2219,7 +2219,7 @@
       },
       "leftNameOverride": "Last saved version",
       "rightNameOverride": "Template to save",
-      "title": "Save Template",
+      "title": "Save template",
       "trigger": "Version manager",
       "deployedAgents": "Deployed agents",
       "confirm": "Save new version",
@@ -2252,7 +2252,7 @@
       "loading": "Loading version information...",
       "version": "VERSION {version}",
       "error": "ERROR",
-      "save": "Save Template",
+      "save": "Save template",
       "errorTooltip": "There was an error fetching template information, please refresh the page or contact support.",
       "readyToDeploy": {
         "trigger": "Template v{version}",

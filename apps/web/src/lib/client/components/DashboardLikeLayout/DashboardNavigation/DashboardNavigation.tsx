@@ -738,7 +738,7 @@ export function DashboardHeaderNavigation(
           triggerAsChild
           trigger={
             <Button
-              size="small"
+              size="xsmall"
               color="tertiary"
               label={t('DashboardHeaderNavigation.support')}
             />
@@ -778,14 +778,14 @@ export function DashboardHeaderNavigation(
           </VStack>
         </Popover>
         <Button
-          size="small"
+          size="xsmall"
           color="tertiary"
           target="_blank"
           label={t('DashboardHeaderNavigation.documentation')}
           href="https://docs.letta.com/introduction"
         />
         <Button
-          size="small"
+          size="xsmall"
           color="tertiary"
           target="_blank"
           label={t('DashboardHeaderNavigation.apiReference')}

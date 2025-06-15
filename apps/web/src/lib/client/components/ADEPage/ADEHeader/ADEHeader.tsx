@@ -380,40 +380,42 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
         </HStack>
       </HStack>
       <HStack gap={false} align="center">
-        <HStack align="center" gap="small">
+        <HStack align="center" gap="small" paddingRight="small">
           <DashboardHeaderNavigation />
         </HStack>
         <HStack align="center" gap="small">
           {isTemplate && (
-            <Button
-              size="default"
-              preIcon={<LettaInvaderOutlineIcon />}
-              label={t('viewAgents')}
-              target="_blank"
-              href={`/projects/${slug}/agents?query=${JSON.stringify({
-                root: {
-                  combinator: 'AND',
-                  items: [
-                    {
-                      field: 'version',
-                      queryData: {
-                        operator: { label: 'equals', value: 'eq' },
-                        value: {
-                          label: `${agentName}:latest`,
-                          value: `${agentName}:latest`,
+            <HStack paddingRight="xxsmall">
+              <Button
+                size="default"
+                preIcon={<LettaInvaderOutlineIcon />}
+                label={t('viewAgents')}
+                target="_blank"
+                href={`/projects/${slug}/agents?query=${JSON.stringify({
+                  root: {
+                    combinator: 'AND',
+                    items: [
+                      {
+                        field: 'version',
+                        queryData: {
+                          operator: { label: 'equals', value: 'eq' },
+                          value: {
+                            label: `${agentName}:latest`,
+                            value: `${agentName}:latest`,
+                          },
                         },
                       },
-                    },
-                  ],
-                },
-              } satisfies QueryBuilderQuery)}`}
-              color="secondary"
-            />
+                    ],
+                  },
+                } satisfies QueryBuilderQuery)}`}
+                color="secondary"
+              />
+            </HStack>
           )}
-          <HStack paddingRight="small">
+          <HStack paddingRight="xxsmall">
             <DeploymentButton />
           </HStack>
-          <ProfilePopover size="large" />
+          <ProfilePopover size="medium" />
         </HStack>
       </HStack>
     </HStack>

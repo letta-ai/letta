@@ -29,14 +29,14 @@ describe('Button', () => {
       render(<Button label="Secondary" color="secondary" />);
       const button = screen.getByRole('button');
       expect(button).toHaveClass('bg-transparent');
-      expect(button).toHaveClass('text-tertiary-content');
+      expect(button).toHaveClass('text-text-default');
     });
 
     it('applies tertiary color styles', () => {
       render(<Button label="Tertiary" color="tertiary" />);
       const button = screen.getByRole('button');
       expect(button).toHaveClass('bg-transparent');
-      expect(button).toHaveClass('text-tertiary-content');
+      expect(button).toHaveClass('text-text-lighter');
     });
 
     it('applies destructive color styles', () => {

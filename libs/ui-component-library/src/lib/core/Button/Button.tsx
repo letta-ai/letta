@@ -34,12 +34,12 @@ const buttonVariants = cva(
 
       color: {
         tertiary:
-          'bg-transparent border-none hover:bg-secondary-hover text-tertiary-content',
+          'bg-transparent border-none hover:bg-secondary-hover text-text-lighter',
         brand:
           'bg-brand-light hover:bg-brand-light-hover text-brand-light-content border-transparent',
         primary: 'bg-primary text-primary-content border-transparent',
         secondary:
-          'bg-transparent hover:bg-secondary-hover text-tertiary-content border-button-border',
+          'bg-transparent hover:bg-secondary-hover text-text-default border-button-border',
         destructive:
           'bg-destructive hover:bg-destructive-hover text-white border-transparent',
         black:
@@ -51,9 +51,9 @@ const buttonVariants = cva(
         large:
           'px-6 py-2 h-biHeight-lg min-h-biHeight-lg text-base font-bold gap-2',
         default:
-          'px-4 py-1 h-biHeight min-h-biHeight text-base font-medium gap-2',
+          'px-3 py-1 h-biHeight min-h-biHeight text-base font-semibold gap-2',
         small:
-          'px-3 py-1 h-biHeight-sm min-h-biHeight-sm text-sm font-medium gap-2',
+          'px-2 py-1 h-biHeight-sm min-h-biHeight-sm text-sm font-medium gap-2',
       },
       active: {
         true: '',
