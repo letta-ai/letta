@@ -96,16 +96,16 @@ function AgentAdvancedSettingsView() {
   return (
     <VStack gap="large">
       <VStack>
-        <MessageBufferAutoclearSwitch />
+        <AgentType />
         <SystemPromptEditor />
+        {!isTemplate && <AgentDescription />}
+        <MessageBufferAutoclearSwitch />
       </VStack>
       <VStack gap="xlarge">
-        <AgentType />
         {agentType === 'voice_convo_agent' && <MessageBufferLengthSlider />}
         {isSleeptimeAgent && agentType !== 'voice_convo_agent' && (
           <SleeptimeAgentFrequencyInput />
         )}
-        {!isTemplate && <AgentDescription />}
       </VStack>
     </VStack>
   );
