@@ -144,7 +144,8 @@ class SleeptimeMultiAgentV2(BaseAgent):
         for message in response.messages:
             yield f"data: {message.model_dump_json()}\n\n"
 
-        yield f"data: {response.usage.model_dump_json()}\n\n"
+        for finish_chunk in self.get_finish_chunks_for_stream(response.usage):
+            yield f"data: {finish_chunk}\n\n"
 
     @trace_method
     async def step_stream(

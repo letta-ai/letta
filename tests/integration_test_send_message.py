@@ -15,7 +15,9 @@ from letta_client.core.api_error import ApiError
 from letta_client.types import (
     AssistantMessage,
     Base64Image,
+    HiddenReasoningMessage,
     ImageContent,
+    LettaStopReason,
     LettaUsageStatistics,
     ReasoningMessage,
     TextContent,
@@ -25,6 +27,7 @@ from letta_client.types import (
     UserMessage,
 )
 
+from letta.llm_api.openai_client import is_openai_reasoning_model
 from letta.schemas.agent import AgentState
 from letta.schemas.llm_config import LLMConfig
 
@@ -65,7 +68,7 @@ USER_MESSAGE_FORCE_REPLY: List[MessageCreate] = [
 USER_MESSAGE_ROLL_DICE: List[MessageCreate] = [
     MessageCreate(
         role="user",
-        content="This is an automated test message. Call the roll_dice tool with 16 sides and tell me the outcome.",
+        content="This is an automated test message. Call the roll_dice tool with 16 sides and send me a message with the outcome.",
         otid=USER_MESSAGE_OTID,
     )
 ]
@@ -93,6 +96,11 @@ USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
 ]
 all_configs = [
     "openai-gpt-4o-mini.json",
+    "openai-o1.json",
+    "openai-o1-mini.json",
+    "openai-o3.json",
+    "openai-o3-mini.json",
+    # "azure-gpt-4o-mini.json", # TODO: Re-enable on new agent loop
     "azure-gpt-4o-mini.json",
     "claude-3-5-sonnet.json",
     "claude-3-7-sonnet.json",
@@ -103,6 +111,8 @@ all_configs = [
     "together-qwen-2.5-72b-instruct.json",
     "ollama.json",
 ]
+
+
 requested = os.getenv("LLM_CONFIG_FILE")
 filenames = [requested] if requested else all_configs
 TESTED_LLM_CONFIGS: List[LLMConfig] = [get_llm_config(fn) for fn in filenames]
@@ -110,6 +120,7 @@ TESTED_LLM_CONFIGS: List[LLMConfig] = [get_llm_config(fn) for fn in filenames]
 
 def assert_greeting_with_assistant_message_response(
     messages: List[Any],
+    llm_config: LLMConfig,
     streaming: bool = False,
     token_streaming: bool = False,
     from_db: bool = False,
@@ -118,7 +129,7 @@ def assert_greeting_with_assistant_message_response(
     Asserts that the messages list follows the expected sequence:
     ReasoningMessage -> AssistantMessage.
     """
-    expected_message_count = 3 if streaming or from_db else 2
+    expected_message_count = 4 if streaming else 3 if from_db else 2
     assert len(messages) == expected_message_count
 
     index = 0
@@ -128,7 +139,11 @@ def assert_greeting_with_assistant_message_response(
         index += 1
 
     # Agent Step 1
-    assert isinstance(messages[index], ReasoningMessage)
+    if is_openai_reasoning_model(llm_config.model):
+        assert isinstance(messages[index], HiddenReasoningMessage)
+    else:
+        assert isinstance(messages[index], ReasoningMessage)
+
     assert messages[index].otid and messages[index].otid[-1] == "0"
     index += 1
 
@@ -139,6 +154,9 @@ def assert_greeting_with_assistant_message_response(
     index += 1
 
     if streaming:
+        assert isinstance(messages[index], LettaStopReason)
+        assert messages[index].stop_reason == "end_turn"
+        index += 1
         assert isinstance(messages[index], LettaUsageStatistics)
         assert messages[index].prompt_tokens > 0
         assert messages[index].completion_tokens > 0
@@ -148,6 +166,7 @@ def assert_greeting_with_assistant_message_response(
 
 def assert_greeting_without_assistant_message_response(
     messages: List[Any],
+    llm_config: LLMConfig,
     streaming: bool = False,
     token_streaming: bool = False,
     from_db: bool = False,
@@ -156,7 +175,7 @@ def assert_greeting_without_assistant_message_response(
     Asserts that the messages list follows the expected sequence:
     ReasoningMessage -> ToolCallMessage -> ToolReturnMessage.
     """
-    expected_message_count = 4 if streaming or from_db else 3
+    expected_message_count = 5 if streaming else 4 if from_db else 3
     assert len(messages) == expected_message_count
 
     index = 0
@@ -166,7 +185,10 @@ def assert_greeting_without_assistant_message_response(
         index += 1
 
     # Agent Step 1
-    assert isinstance(messages[index], ReasoningMessage)
+    if is_openai_reasoning_model(llm_config.model):
+        assert isinstance(messages[index], HiddenReasoningMessage)
+    else:
+        assert isinstance(messages[index], ReasoningMessage)
     assert messages[index].otid and messages[index].otid[-1] == "0"
     index += 1
 
@@ -183,11 +205,19 @@ def assert_greeting_without_assistant_message_response(
     index += 1
 
     if streaming:
+        assert isinstance(messages[index], LettaStopReason)
+        assert messages[index].stop_reason == "end_turn"
+        index += 1
         assert isinstance(messages[index], LettaUsageStatistics)
+        assert messages[index].prompt_tokens > 0
+        assert messages[index].completion_tokens > 0
+        assert messages[index].total_tokens > 0
+        assert messages[index].step_count > 0
 
 
 def assert_tool_call_response(
     messages: List[Any],
+    llm_config: LLMConfig,
     streaming: bool = False,
     from_db: bool = False,
 ) -> None:
@@ -196,7 +226,7 @@ def assert_tool_call_response(
     ReasoningMessage -> ToolCallMessage -> ToolReturnMessage ->
     ReasoningMessage -> AssistantMessage.
     """
-    expected_message_count = 6 if streaming else 7 if from_db else 5
+    expected_message_count = 7 if streaming or from_db else 5
     assert len(messages) == expected_message_count
 
     index = 0
@@ -206,7 +236,10 @@ def assert_tool_call_response(
         index += 1
 
     # Agent Step 1
-    assert isinstance(messages[index], ReasoningMessage)
+    if is_openai_reasoning_model(llm_config.model):
+        assert isinstance(messages[index], HiddenReasoningMessage)
+    else:
+        assert isinstance(messages[index], ReasoningMessage)
     assert messages[index].otid and messages[index].otid[-1] == "0"
     index += 1
 
@@ -226,7 +259,10 @@ def assert_tool_call_response(
         index += 1
 
     # Agent Step 3
-    assert isinstance(messages[index], ReasoningMessage)
+    if is_openai_reasoning_model(llm_config.model):
+        assert isinstance(messages[index], HiddenReasoningMessage)
+    else:
+        assert isinstance(messages[index], ReasoningMessage)
     assert messages[index].otid and messages[index].otid[-1] == "0"
     index += 1
 
@@ -235,11 +271,19 @@ def assert_tool_call_response(
     index += 1
 
     if streaming:
+        assert isinstance(messages[index], LettaStopReason)
+        assert messages[index].stop_reason == "end_turn"
+        index += 1
         assert isinstance(messages[index], LettaUsageStatistics)
+        assert messages[index].prompt_tokens > 0
+        assert messages[index].completion_tokens > 0
+        assert messages[index].total_tokens > 0
+        assert messages[index].step_count > 0
 
 
 def assert_image_input_response(
     messages: List[Any],
+    llm_config: LLMConfig,
     streaming: bool = False,
     token_streaming: bool = False,
     from_db: bool = False,
@@ -248,7 +292,7 @@ def assert_image_input_response(
     Asserts that the messages list follows the expected sequence:
     ReasoningMessage -> AssistantMessage.
     """
-    expected_message_count = 3 if streaming or from_db else 2
+    expected_message_count = 4 if streaming else 3 if from_db else 2
     assert len(messages) == expected_message_count
 
     index = 0
@@ -258,7 +302,10 @@ def assert_image_input_response(
         index += 1
 
     # Agent Step 1
-    assert isinstance(messages[index], ReasoningMessage)
+    if is_openai_reasoning_model(llm_config.model):
+        assert isinstance(messages[index], HiddenReasoningMessage)
+    else:
+        assert isinstance(messages[index], ReasoningMessage)
     assert messages[index].otid and messages[index].otid[-1] == "0"
     index += 1
 
@@ -267,6 +314,9 @@ def assert_image_input_response(
     index += 1
 
     if streaming:
+        assert isinstance(messages[index], LettaStopReason)
+        assert messages[index].stop_reason == "end_turn"
+        index += 1
         assert isinstance(messages[index], LettaUsageStatistics)
         assert messages[index].prompt_tokens > 0
         assert messages[index].completion_tokens > 0
@@ -321,7 +371,7 @@ def server_url() -> str:
     """
     Provides the URL for the Letta server.
     If LETTA_SERVER_URL is not set, starts the server in a background thread
-    and polls until it’s accepting connections.
+    and polls until it's accepting connections.
     """
 
     def _run_server() -> None:
@@ -439,9 +489,9 @@ def test_greeting_with_assistant_message(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_FORCE_REPLY,
     )
-    assert_greeting_with_assistant_message_response(response.messages)
+    assert_greeting_with_assistant_message_response(response.messages, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True)
+    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
 @pytest.mark.parametrize(
@@ -466,9 +516,9 @@ def test_greeting_without_assistant_message(
         messages=USER_MESSAGE_FORCE_REPLY,
         use_assistant_message=False,
     )
-    assert_greeting_without_assistant_message_response(response.messages)
+    assert_greeting_without_assistant_message_response(response.messages, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id, use_assistant_message=False)
-    assert_greeting_without_assistant_message_response(messages_from_db, from_db=True)
+    assert_greeting_without_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
 @pytest.mark.parametrize(
@@ -492,9 +542,9 @@ def test_tool_call(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_ROLL_DICE,
     )
-    assert_tool_call_response(response.messages)
+    assert_tool_call_response(response.messages, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_tool_call_response(messages_from_db, from_db=True)
+    assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
 @pytest.mark.parametrize(
@@ -518,9 +568,9 @@ def test_url_image_input(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_URL_IMAGE,
     )
-    assert_image_input_response(response.messages)
+    assert_image_input_response(response.messages, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_image_input_response(messages_from_db, from_db=True)
+    assert_image_input_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
 @pytest.mark.parametrize(
@@ -544,9 +594,9 @@ def test_base64_image_input(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_BASE64_IMAGE,
     )
-    assert_image_input_response(response.messages)
+    assert_image_input_response(response.messages, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_image_input_response(messages_from_db, from_db=True)
+    assert_image_input_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
 @pytest.mark.parametrize(
@@ -597,9 +647,9 @@ def test_step_streaming_greeting_with_assistant_message(
         messages=USER_MESSAGE_FORCE_REPLY,
     )
     messages = accumulate_chunks(list(response))
-    assert_greeting_with_assistant_message_response(messages, streaming=True)
+    assert_greeting_with_assistant_message_response(messages, streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True)
+    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
 @pytest.mark.parametrize(
@@ -625,9 +675,9 @@ def test_step_streaming_greeting_without_assistant_message(
         use_assistant_message=False,
     )
     messages = accumulate_chunks(list(response))
-    assert_greeting_without_assistant_message_response(messages, streaming=True)
+    assert_greeting_without_assistant_message_response(messages, streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id, use_assistant_message=False)
-    assert_greeting_without_assistant_message_response(messages_from_db, from_db=True)
+    assert_greeting_without_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
 @pytest.mark.parametrize(
@@ -652,9 +702,9 @@ def test_step_streaming_tool_call(
         messages=USER_MESSAGE_ROLL_DICE,
     )
     messages = accumulate_chunks(list(response))
-    assert_tool_call_response(messages, streaming=True)
+    assert_tool_call_response(messages, streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_tool_call_response(messages_from_db, from_db=True)
+    assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
 @pytest.mark.parametrize(
@@ -708,9 +758,9 @@ def test_token_streaming_greeting_with_assistant_message(
         stream_tokens=True,
     )
     messages = accumulate_chunks(list(response))
-    assert_greeting_with_assistant_message_response(messages, streaming=True, token_streaming=True)
+    assert_greeting_with_assistant_message_response(messages, streaming=True, token_streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True)
+    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
 @pytest.mark.parametrize(
@@ -737,9 +787,9 @@ def test_token_streaming_greeting_without_assistant_message(
         stream_tokens=True,
     )
     messages = accumulate_chunks(list(response))
-    assert_greeting_without_assistant_message_response(messages, streaming=True, token_streaming=True)
+    assert_greeting_without_assistant_message_response(messages, streaming=True, token_streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id, use_assistant_message=False)
-    assert_greeting_without_assistant_message_response(messages_from_db, from_db=True)
+    assert_greeting_without_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
 @pytest.mark.parametrize(
@@ -765,9 +815,9 @@ def test_token_streaming_tool_call(
         stream_tokens=True,
     )
     messages = accumulate_chunks(list(response))
-    assert_tool_call_response(messages, streaming=True)
+    assert_tool_call_response(messages, streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_tool_call_response(messages_from_db, from_db=True)
+    assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
 @pytest.mark.parametrize(
@@ -851,23 +901,26 @@ def test_async_greeting_with_assistant_message(
 )
 def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, llm_config: LLMConfig):
     """Test that summarization is automatically triggered."""
-    llm_config.context_window = 3000
+    # pydantic prevents us for overriding the context window paramter in the passed LLMConfig
+    new_llm_config = llm_config.model_dump()
+    new_llm_config["context_window"] = 3000
+    pinned_context_window_llm_config = LLMConfig(**new_llm_config)
 
     send_message_tool = client.tools.list(name="send_message")[0]
     temp_agent_state = client.agents.create(
         include_base_tools=False,
         tool_ids=[send_message_tool.id],
-        llm_config=llm_config,
+        llm_config=pinned_context_window_llm_config,
         embedding="letta/letta-free",
         tags=["supervisor"],
     )
 
     philosophical_question = """
-You know, sometimes I wonder if the entire structure of our lives is built on a series of unexamined assumptions we just silently agreed to somewhere along the way—like how we all just decided that five days a week of work and two days of “rest” constitutes balance, or how 9-to-5 became the default rhythm of a meaningful life, or even how the idea of “success” got boiled down to job titles and property ownership and productivity metrics on a LinkedIn profile, when maybe none of that is actually what makes a life feel full, or grounded, or real. And then there’s the weird paradox of ambition, how we're taught to chase it like a finish line that keeps moving, constantly redefining itself right as you’re about to grasp it—because even when you get the job, or the degree, or the validation, there's always something next, something more, like a treadmill with invisible settings you didn’t realize were turned up all the way.
+You know, sometimes I wonder if the entire structure of our lives is built on a series of unexamined assumptions we just silently agreed to somewhere along the way—like how we all just decided that five days a week of work and two days of "rest" constitutes balance, or how 9-to-5 became the default rhythm of a meaningful life, or even how the idea of "success" got boiled down to job titles and property ownership and productivity metrics on a LinkedIn profile, when maybe none of that is actually what makes a life feel full, or grounded, or real. And then there's the weird paradox of ambition, how we're taught to chase it like a finish line that keeps moving, constantly redefining itself right as you're about to grasp it—because even when you get the job, or the degree, or the validation, there's always something next, something more, like a treadmill with invisible settings you didn't realize were turned up all the way.
 
-And have you noticed how we rarely stop to ask who set those definitions for us? Like was there ever a council that decided, yes, owning a home by thirty-five and retiring by sixty-five is the universal template for fulfillment? Or did it just accumulate like cultural sediment over generations, layered into us so deeply that questioning it feels uncomfortable, even dangerous? And isn’t it strange that we spend so much of our lives trying to optimize things—our workflows, our diets, our sleep, our morning routines—as though the point of life is to operate more efficiently rather than to experience it more richly? We build these intricate systems, these rulebooks for being a “high-functioning” human, but where in all of that is the space for feeling lost, for being soft, for wandering without a purpose just because it’s a sunny day and your heart is tugging you toward nowhere in particular?
+And have you noticed how we rarely stop to ask who set those definitions for us? Like was there ever a council that decided, yes, owning a home by thirty-five and retiring by sixty-five is the universal template for fulfillment? Or did it just accumulate like cultural sediment over generations, layered into us so deeply that questioning it feels uncomfortable, even dangerous? And isn't it strange that we spend so much of our lives trying to optimize things—our workflows, our diets, our sleep, our morning routines—as though the point of life is to operate more efficiently rather than to experience it more richly? We build these intricate systems, these rulebooks for being a "high-functioning" human, but where in all of that is the space for feeling lost, for being soft, for wandering without a purpose just because it's a sunny day and your heart is tugging you toward nowhere in particular?
 
-Sometimes I lie awake at night and wonder if all the noise we wrap around ourselves—notifications, updates, performance reviews, even our internal monologues—might be crowding out the questions we were meant to live into slowly, like how to love better, or how to forgive ourselves, or what the hell we’re even doing here in the first place. And when you strip it all down—no goals, no KPIs, no curated identity—what’s actually left of us? Are we just a sum of the roles we perform, or is there something quieter underneath that we've forgotten how to hear?
+Sometimes I lie awake at night and wonder if all the noise we wrap around ourselves—notifications, updates, performance reviews, even our internal monologues—might be crowding out the questions we were meant to live into slowly, like how to love better, or how to forgive ourselves, or what the hell we're even doing here in the first place. And when you strip it all down—no goals, no KPIs, no curated identity—what's actually left of us? Are we just a sum of the roles we perform, or is there something quieter underneath that we've forgotten how to hear?
 
 And if there is something underneath all of it—something real, something worth listening to—then how do we begin to uncover it, gently, without rushing or reducing it to another task on our to-do list?
     """

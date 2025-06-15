@@ -1,6 +1,5 @@
 import hashlib
 import json
-import re
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
 
@@ -9,6 +8,7 @@ from pydantic import BaseModel, Field, model_validator
 from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.schemas.agent import AgentState
 from letta.schemas.letta_base import LettaBase, OrmMetadataBase
+from letta.schemas.pip_requirement import PipRequirement
 from letta.settings import tool_settings
 
 
@@ -25,24 +25,6 @@ class SandboxRunResult(BaseModel):
     stderr: Optional[List[str]] = Field(None, description="Captured stderr from the function invocation")
     status: Literal["success", "error"] = Field(..., description="The status of the tool execution and return object")
     sandbox_config_fingerprint: str = Field(None, description="The fingerprint of the config for the sandbox")
-
-
-class PipRequirement(BaseModel):
-    name: str = Field(..., min_length=1, description="Name of the pip package.")
-    version: Optional[str] = Field(None, description="Optional version of the package, following semantic versioning.")
-
-    @classmethod
-    def validate_version(cls, version: Optional[str]) -> Optional[str]:
-        if version is None:
-            return None
-        semver_pattern = re.compile(r"^\d+(\.\d+){0,2}(-[a-zA-Z0-9.]+)?$")
-        if not semver_pattern.match(version):
-            raise ValueError(f"Invalid version format: {version}. Must follow semantic versioning (e.g., 1.2.3, 2.0, 1.5.0-alpha).")
-        return version
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        self.version = self.validate_version(self.version)
 
 
 class LocalSandboxConfig(BaseModel):

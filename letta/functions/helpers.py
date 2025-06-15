@@ -14,6 +14,7 @@ from letta.orm.errors import NoResultFound
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import AssistantMessage
 from letta.schemas.letta_response import LettaResponse
+from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.user import User
 from letta.server.rest_api.utils import get_letta_server
@@ -292,7 +293,11 @@ async def _send_message_to_agent_no_stream(
     )
 
     final_messages = interface.get_captured_send_messages()
-    return LettaResponse(messages=final_messages, usage=usage_stats)
+    return LettaResponse(
+        messages=final_messages,
+        stop_reason=LettaStopReason(stop_reason=StopReasonType.end_turn.value),
+        usage=usage_stats,
+    )
 
 
 async def _async_send_message_with_retries(

@@ -292,9 +292,6 @@ MESSAGE_SUMMARY_WARNING_STR = " ".join(
         # "Remember to pass request_heartbeat = true if you would like to send a message immediately after.",
     ]
 )
-DATA_SOURCE_ATTACH_ALERT = (
-    "[ALERT] New data was just uploaded to archival memory. You can view this data by calling the archival_memory_search tool."
-)
 
 # Throw an error message when a read-only block is edited
 READ_ONLY_BLOCK_EDIT_ERROR = f"{ERROR_MESSAGE_PREFIX} This block is read-only and cannot be edited."
@@ -337,6 +334,7 @@ WEB_SEARCH_CLIP_CONTENT = False
 WEB_SEARCH_INCLUDE_SCORE = False
 WEB_SEARCH_SEPARATOR = "\n" + "-" * 40 + "\n"
 
-REDIS_INCLUDE = "INCLUDE"
-REDIS_EXCLUDE = "EXCLUDE"
+REDIS_INCLUDE = "include"
+REDIS_EXCLUDE = "exclude"
 REDIS_SET_DEFAULT_VAL = "None"
+REDIS_DEFAULT_CACHE_PREFIX = "letta_cache"

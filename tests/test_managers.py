@@ -37,10 +37,12 @@ from letta.constants import (
     MCP_TOOL_TAG_NAME_PREFIX,
     MULTI_AGENT_TOOLS,
 )
+from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
 from letta.embeddings import embedding_model
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.functions.mcp_client.types import MCPTool
 from letta.helpers import ToolRulesSolver
+from letta.helpers.datetime_helpers import AsyncTimer
 from letta.jobs.types import ItemUpdateInfo, RequestStatusUpdateInfo, StepStatusUpdateInfo
 from letta.orm import Base, Block
 from letta.orm.block_history import BlockHistory
@@ -71,6 +73,7 @@ from letta.schemas.organization import Organization
 from letta.schemas.organization import Organization as PydanticOrganization
 from letta.schemas.organization import OrganizationUpdate
 from letta.schemas.passage import Passage as PydanticPassage
+from letta.schemas.pip_requirement import PipRequirement
 from letta.schemas.run import Run as PydanticRun
 from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate, SandboxType
 from letta.schemas.source import Source as PydanticSource
@@ -1589,14 +1592,13 @@ async def test_reset_messages_no_messages(server: SyncServer, sarah_agent, defau
     Test that resetting messages on an agent that has zero messages
     does not fail and clears out message_ids if somehow it's non-empty.
     """
-    # Force a weird scenario: Suppose the message_ids field was set non-empty (without actual messages).
-    await server.agent_manager.update_agent_async(sarah_agent.id, UpdateAgent(message_ids=["ghost-message-id"]), actor=default_user)
-    updated_agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, default_user)
-    assert updated_agent.message_ids == ["ghost-message-id"]
+    assert len(sarah_agent.message_ids) == 4
+    og_message_ids = sarah_agent.message_ids
 
     # Reset messages
     reset_agent = await server.agent_manager.reset_messages_async(agent_id=sarah_agent.id, actor=default_user)
     assert len(reset_agent.message_ids) == 1
+    assert og_message_ids[0] == reset_agent.message_ids[0]
     # Double check that physically no messages exist
     assert await server.message_manager.size_async(agent_id=sarah_agent.id, actor=default_user) == 1
 
@@ -1607,16 +1609,18 @@ async def test_reset_messages_default_messages(server: SyncServer, sarah_agent, 
     Test that resetting messages on an agent that has zero messages
     does not fail and clears out message_ids if somehow it's non-empty.
     """
-    # Force a weird scenario: Suppose the message_ids field was set non-empty (without actual messages).
-    await server.agent_manager.update_agent_async(sarah_agent.id, UpdateAgent(message_ids=["ghost-message-id"]), actor=default_user)
-    updated_agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, default_user)
-    assert updated_agent.message_ids == ["ghost-message-id"]
+    assert len(sarah_agent.message_ids) == 4
+    og_message_ids = sarah_agent.message_ids
 
     # Reset messages
     reset_agent = await server.agent_manager.reset_messages_async(
         agent_id=sarah_agent.id, actor=default_user, add_default_initial_messages=True
     )
     assert len(reset_agent.message_ids) == 4
+    assert og_message_ids[0] == reset_agent.message_ids[0]
+    assert og_message_ids[1] != reset_agent.message_ids[1]
+    assert og_message_ids[2] != reset_agent.message_ids[2]
+    assert og_message_ids[3] != reset_agent.message_ids[3]
     # Double check that physically no messages exist
     assert await server.message_manager.size_async(agent_id=sarah_agent.id, actor=default_user) == 4
 
@@ -1668,6 +1672,9 @@ async def test_reset_messages_idempotency(server: SyncServer, sarah_agent, defau
     """
     Test that calling reset_messages multiple times has no adverse effect.
     """
+    # Clear messages first
+    await server.message_manager.delete_messages_by_ids_async(message_ids=sarah_agent.message_ids[1:], actor=default_user)
+
     # Create a single message
     server.message_manager.create_message(
         PydanticMessage(
@@ -1687,6 +1694,72 @@ async def test_reset_messages_idempotency(server: SyncServer, sarah_agent, defau
     reset_agent_again = await server.agent_manager.reset_messages_async(agent_id=sarah_agent.id, actor=default_user)
     assert len(reset_agent.message_ids) == 1
     assert await server.message_manager.size_async(agent_id=sarah_agent.id, actor=default_user) == 1
+
+
+@pytest.mark.asyncio
+async def test_reset_messages_preserves_system_message_id(server: SyncServer, sarah_agent, default_user, event_loop):
+    """
+    Test that resetting messages preserves the original system message ID.
+    """
+    # Get the original system message ID
+    original_agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, default_user)
+    original_system_message_id = original_agent.message_ids[0]
+
+    # Add some user messages
+    server.message_manager.create_message(
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            role="user",
+            content=[TextContent(text="Hello!")],
+        ),
+        actor=default_user,
+    )
+
+    # Reset messages
+    reset_agent = await server.agent_manager.reset_messages_async(agent_id=sarah_agent.id, actor=default_user)
+
+    # Verify the system message ID is preserved
+    assert len(reset_agent.message_ids) == 1
+    assert reset_agent.message_ids[0] == original_system_message_id
+
+    # Verify the system message still exists in the database
+    system_message = await server.message_manager.get_message_by_id_async(message_id=original_system_message_id, actor=default_user)
+    assert system_message.role == "system"
+
+
+@pytest.mark.asyncio
+async def test_reset_messages_preserves_system_message_content(server: SyncServer, sarah_agent, default_user, event_loop):
+    """
+    Test that resetting messages preserves the original system message content.
+    """
+    # Get the original system message
+    original_agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, default_user)
+    original_system_message = await server.message_manager.get_message_by_id_async(
+        message_id=original_agent.message_ids[0], actor=default_user
+    )
+
+    # Add some messages and reset
+    server.message_manager.create_message(
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            role="user",
+            content=[TextContent(text="Hello!")],
+        ),
+        actor=default_user,
+    )
+
+    reset_agent = await server.agent_manager.reset_messages_async(agent_id=sarah_agent.id, actor=default_user)
+
+    # Verify the system message content is unchanged
+    preserved_system_message = await server.message_manager.get_message_by_id_async(
+        message_id=reset_agent.message_ids[0], actor=default_user
+    )
+
+    assert preserved_system_message.content == original_system_message.content
+    assert preserved_system_message.role == "system"
+    assert preserved_system_message.id == original_system_message.id
 
 
 @pytest.mark.asyncio
@@ -2733,6 +2806,43 @@ async def test_update_user(server: SyncServer, event_loop):
     assert user.organization_id == test_org.id
 
 
+@pytest.mark.asyncio
+async def test_user_caching(server: SyncServer, event_loop, default_user, performance_pct=0.4):
+    if isinstance(await get_redis_client(), NoopAsyncRedisClient):
+        pytest.skip("redis not available")
+    # Invalidate previous cache behavior.
+    await server.user_manager._invalidate_actor_cache(default_user.id)
+    before_stats = server.user_manager.get_actor_by_id_async.cache_stats
+    before_cache_misses = before_stats.misses
+    before_cache_hits = before_stats.hits
+
+    # First call (expected to miss the cache)
+    async with AsyncTimer() as timer:
+        actor = await server.user_manager.get_actor_by_id_async(default_user.id)
+    duration_first = timer.elapsed_ns
+    print(f"Call 1: {duration_first:.2e}ns")
+    assert actor.id == default_user.id
+    assert duration_first > 0  # Sanity check: took non-zero time
+    cached_hits = 10
+    durations = []
+    for i in range(cached_hits):
+        async with AsyncTimer() as timer:
+            actor_cached = await server.user_manager.get_actor_by_id_async(default_user.id)
+        duration = timer.elapsed_ns
+        durations.append(duration)
+        print(f"Call {i+2}: {duration:.2e}ns")
+        assert actor_cached == actor
+    for d in durations:
+        assert d < duration_first * performance_pct
+    stats = server.user_manager.get_actor_by_id_async.cache_stats
+
+    print(f"Before calls: {before_stats}")
+    print(f"After calls: {stats}")
+    # Assert cache stats
+    assert stats.misses - before_cache_misses == 1
+    assert stats.hits - before_cache_hits == cached_hits
+
+
 # ======================================================================================================================
 # ToolManager Tests
 # ======================================================================================================================
@@ -3007,6 +3117,175 @@ async def test_upsert_multiple_tool_types(server: SyncServer, default_user):
 async def test_upsert_base_tools_with_empty_type_filter(server: SyncServer, default_user):
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types=set())
     assert tools == []
+
+
+@pytest.mark.asyncio
+async def test_create_tool_with_pip_requirements(server: SyncServer, default_user, default_organization):
+    def test_tool_with_deps():
+        """
+        A test tool with pip dependencies.
+
+        Returns:
+            str: Hello message.
+        """
+        return "hello"
+
+    # Create pip requirements
+    pip_reqs = [
+        PipRequirement(name="requests", version="2.28.0"),
+        PipRequirement(name="numpy"),  # No version specified
+    ]
+
+    # Set up tool details
+    source_code = parse_source_code(test_tool_with_deps)
+    source_type = "python"
+    description = "A test tool with pip dependencies"
+    tags = ["test"]
+    metadata = {"test": "pip_requirements"}
+
+    tool = PydanticTool(
+        description=description, tags=tags, source_code=source_code, source_type=source_type, metadata_=metadata, pip_requirements=pip_reqs
+    )
+    derived_json_schema = derive_openai_json_schema(source_code=tool.source_code, name=tool.name)
+    derived_name = derived_json_schema["name"]
+    tool.json_schema = derived_json_schema
+    tool.name = derived_name
+
+    created_tool = await server.tool_manager.create_or_update_tool_async(tool, actor=default_user)
+
+    # Assertions
+    assert created_tool.pip_requirements is not None
+    assert len(created_tool.pip_requirements) == 2
+    assert created_tool.pip_requirements[0].name == "requests"
+    assert created_tool.pip_requirements[0].version == "2.28.0"
+    assert created_tool.pip_requirements[1].name == "numpy"
+    assert created_tool.pip_requirements[1].version is None
+
+
+@pytest.mark.asyncio
+async def test_create_tool_without_pip_requirements(server: SyncServer, print_tool):
+    # Verify that tools without pip_requirements have the field as None
+    assert print_tool.pip_requirements is None
+
+
+@pytest.mark.asyncio
+async def test_update_tool_pip_requirements(server: SyncServer, print_tool, default_user):
+    # Add pip requirements to existing tool
+    pip_reqs = [
+        PipRequirement(name="pandas", version="1.5.0"),
+        PipRequirement(name="matplotlib"),
+    ]
+
+    tool_update = ToolUpdate(pip_requirements=pip_reqs)
+    await server.tool_manager.update_tool_by_id_async(print_tool.id, tool_update, actor=default_user)
+
+    # Fetch the updated tool
+    updated_tool = await server.tool_manager.get_tool_by_id_async(print_tool.id, actor=default_user)
+
+    # Assertions
+    assert updated_tool.pip_requirements is not None
+    assert len(updated_tool.pip_requirements) == 2
+    assert updated_tool.pip_requirements[0].name == "pandas"
+    assert updated_tool.pip_requirements[0].version == "1.5.0"
+    assert updated_tool.pip_requirements[1].name == "matplotlib"
+    assert updated_tool.pip_requirements[1].version is None
+
+
+@pytest.mark.asyncio
+async def test_update_tool_clear_pip_requirements(server: SyncServer, default_user, default_organization):
+    def test_tool_clear_deps():
+        """
+        A test tool to clear dependencies.
+
+        Returns:
+            str: Hello message.
+        """
+        return "hello"
+
+    # Create a tool with pip requirements
+    pip_reqs = [PipRequirement(name="requests")]
+
+    # Set up tool details
+    source_code = parse_source_code(test_tool_clear_deps)
+    source_type = "python"
+    description = "A test tool to clear dependencies"
+    tags = ["test"]
+    metadata = {"test": "clear_deps"}
+
+    tool = PydanticTool(
+        description=description, tags=tags, source_code=source_code, source_type=source_type, metadata_=metadata, pip_requirements=pip_reqs
+    )
+    derived_json_schema = derive_openai_json_schema(source_code=tool.source_code, name=tool.name)
+    derived_name = derived_json_schema["name"]
+    tool.json_schema = derived_json_schema
+    tool.name = derived_name
+
+    created_tool = await server.tool_manager.create_or_update_tool_async(tool, actor=default_user)
+
+    # Verify it has requirements
+    assert created_tool.pip_requirements is not None
+    assert len(created_tool.pip_requirements) == 1
+
+    # Clear the requirements
+    tool_update = ToolUpdate(pip_requirements=[])
+    await server.tool_manager.update_tool_by_id_async(created_tool.id, tool_update, actor=default_user)
+
+    # Fetch the updated tool
+    updated_tool = await server.tool_manager.get_tool_by_id_async(created_tool.id, actor=default_user)
+
+    # Assertions
+    assert updated_tool.pip_requirements == []
+
+
+@pytest.mark.asyncio
+async def test_pip_requirements_roundtrip(server: SyncServer, default_user, default_organization):
+    def roundtrip_test_tool():
+        """
+        Test pip requirements roundtrip.
+
+        Returns:
+            str: Test message.
+        """
+        return "test"
+
+    # Create pip requirements with various version formats
+    pip_reqs = [
+        PipRequirement(name="requests", version="2.28.0"),
+        PipRequirement(name="flask", version="2.0"),
+        PipRequirement(name="django", version="4.1.0-beta"),
+        PipRequirement(name="numpy"),  # No version
+    ]
+
+    # Set up tool details
+    source_code = parse_source_code(roundtrip_test_tool)
+    source_type = "python"
+    description = "Test pip requirements roundtrip"
+    tags = ["test"]
+    metadata = {"test": "roundtrip"}
+
+    tool = PydanticTool(
+        description=description, tags=tags, source_code=source_code, source_type=source_type, metadata_=metadata, pip_requirements=pip_reqs
+    )
+    derived_json_schema = derive_openai_json_schema(source_code=tool.source_code, name=tool.name)
+    derived_name = derived_json_schema["name"]
+    tool.json_schema = derived_json_schema
+    tool.name = derived_name
+
+    created_tool = await server.tool_manager.create_or_update_tool_async(tool, actor=default_user)
+
+    # Fetch by ID
+    fetched_tool = await server.tool_manager.get_tool_by_id_async(created_tool.id, actor=default_user)
+
+    # Verify all requirements match exactly
+    assert fetched_tool.pip_requirements is not None
+    assert len(fetched_tool.pip_requirements) == 4
+
+    # Check each requirement
+    reqs_dict = {req.name: req.version for req in fetched_tool.pip_requirements}
+    assert reqs_dict["requests"] == "2.28.0"
+    assert reqs_dict["flask"] == "2.0"
+    assert reqs_dict["django"] == "4.1.0-beta"
+    assert reqs_dict["numpy"] is None
 
 
 # ======================================================================================================================

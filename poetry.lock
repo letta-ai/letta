@@ -1069,14 +1069,14 @@ files = [
 
 [[package]]
 name = "click"
-version = "8.2.1"
+version = "8.1.8"
 description = "Composable command line interface toolkit"
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.7"
 groups = ["main", "dev"]
 files = [
-    {file = "click-8.2.1-py3-none-any.whl", hash = "sha256:61a3265b914e850b85317d0b3109c7f8cd35a670f963866005d6ef1d5175a12b"},
-    {file = "click-8.2.1.tar.gz", hash = "sha256:27c491cc05d968d271d5a1db13e3b5a184636d9d930f148c50b038f0d0646202"},
+    {file = "click-8.1.8-py3-none-any.whl", hash = "sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2"},
+    {file = "click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a"},
 ]
 
 [package.dependencies]
@@ -2593,36 +2593,6 @@ files = [
 ]
 
 [[package]]
-name = "h2"
-version = "4.2.0"
-description = "Pure-Python HTTP/2 protocol implementation"
-optional = true
-python-versions = ">=3.9"
-groups = ["main"]
-markers = "extra == \"qdrant\""
-files = [
-    {file = "h2-4.2.0-py3-none-any.whl", hash = "sha256:479a53ad425bb29af087f3458a61d30780bc818e4ebcf01f0b536ba916462ed0"},
-    {file = "h2-4.2.0.tar.gz", hash = "sha256:c8a52129695e88b1a0578d8d2cc6842bbd79128ac685463b887ee278126ad01f"},
-]
-
-[package.dependencies]
-hpack = ">=4.1,<5"
-hyperframe = ">=6.1,<7"
-
-[[package]]
-name = "hpack"
-version = "4.1.0"
-description = "Pure-Python HPACK header encoding"
-optional = true
-python-versions = ">=3.9"
-groups = ["main"]
-markers = "extra == \"qdrant\""
-files = [
-    {file = "hpack-4.1.0-py3-none-any.whl", hash = "sha256:157ac792668d995c657d93111f46b4535ed114f0c9c8d672271bbec7eae1b496"},
-    {file = "hpack-4.1.0.tar.gz", hash = "sha256:ec5eca154f7056aa06f196a557655c5b009b382873ac8d1e66e79e87535f1dca"},
-]
-
-[[package]]
 name = "html2text"
 version = "2020.1.16"
 description = "Turn HTML into equivalent Markdown-structured text."
@@ -2671,7 +2641,6 @@ files = [
 [package.dependencies]
 anyio = "*"
 certifi = "*"
-h2 = {version = ">=3,<5", optional = true, markers = "extra == \"http2\""}
 httpcore = "==1.*"
 idna = "*"
 
@@ -2692,19 +2661,6 @@ groups = ["main"]
 files = [
     {file = "httpx-sse-0.4.0.tar.gz", hash = "sha256:1e81a3a3070ce322add1d3529ed42eb5f70817f45ed6ec915ab753f961139721"},
     {file = "httpx_sse-0.4.0-py3-none-any.whl", hash = "sha256:f329af6eae57eaa2bdfd962b42524764af68075ea87370a2de920af5341e318f"},
-]
-
-[[package]]
-name = "hyperframe"
-version = "6.1.0"
-description = "Pure-Python HTTP/2 framing"
-optional = true
-python-versions = ">=3.9"
-groups = ["main"]
-markers = "extra == \"qdrant\""
-files = [
-    {file = "hyperframe-6.1.0-py3-none-any.whl", hash = "sha256:b03380493a519fce58ea5af42e4a42317bf9bd425596f7a0835ffce80f1a42e5"},
-    {file = "hyperframe-6.1.0.tar.gz", hash = "sha256:f630908a00854a7adeabd6382b43923a4c4cd4b821fcb527e6ab9e15382a3b08"},
 ]
 
 [[package]]
@@ -3502,14 +3458,14 @@ pytest = ["pytest (>=7.0.0)", "rich (>=13.9.4,<14.0.0)"]
 
 [[package]]
 name = "letta-client"
-version = "0.1.153"
+version = "0.1.155"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.8"
 groups = ["main"]
 files = [
-    {file = "letta_client-0.1.153-py3-none-any.whl", hash = "sha256:90e3adc9a884cbcacdd31c3411081c4a1849bb988c37094d9338ce2ba285ea7c"},
-    {file = "letta_client-0.1.153.tar.gz", hash = "sha256:8c06ad3a0d187436ae523e2c2e493e674adb7563ddaba2070833210f4b1cd126"},
+    {file = "letta_client-0.1.155-py3-none-any.whl", hash = "sha256:a1531c58c9d036eb248714827c356841b2537794d07c368ced6f741eaebeb85a"},
+    {file = "letta_client-0.1.155.tar.gz", hash = "sha256:687d07d0ee8b515885ab0e6d9b15b2dca2db031b4295370c41bdd8dc728d6498"},
 ]
 
 [package.dependencies]
@@ -4093,14 +4049,14 @@ traitlets = "*"
 
 [[package]]
 name = "mcp"
-version = "1.9.3"
+version = "1.9.4"
 description = "Model Context Protocol SDK"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "mcp-1.9.3-py3-none-any.whl", hash = "sha256:69b0136d1ac9927402ed4cf221d4b8ff875e7132b0b06edd446448766f34f9b9"},
-    {file = "mcp-1.9.3.tar.gz", hash = "sha256:587ba38448e81885e5d1b84055cfcc0ca56d35cd0c58f50941cab01109405388"},
+    {file = "mcp-1.9.4-py3-none-any.whl", hash = "sha256:7fcf36b62936adb8e63f89346bccca1268eeca9bf6dfb562ee10b1dfbda9dac0"},
+    {file = "mcp-1.9.4.tar.gz", hash = "sha256:cfb0bcd1a9535b42edaef89947b9e18a8feb49362e1cc059d6e7fc636f2cb09f"},
 ]
 
 [package.dependencies]
@@ -4109,9 +4065,11 @@ httpx = ">=0.27"
 httpx-sse = ">=0.4"
 pydantic = ">=2.7.2,<3.0.0"
 pydantic-settings = ">=2.5.2"
+python-dotenv = {version = ">=1.0.0", optional = true, markers = "extra == \"cli\""}
 python-multipart = ">=0.0.9"
 sse-starlette = ">=1.6.1"
 starlette = ">=0.27"
+typer = {version = ">=0.12.4", optional = true, markers = "extra == \"cli\""}
 uvicorn = {version = ">=0.23.1", markers = "sys_platform != \"emscripten\""}
 
 [package.extras]
@@ -5144,27 +5102,6 @@ dev = ["pre-commit", "tox"]
 testing = ["coverage", "pytest", "pytest-benchmark"]
 
 [[package]]
-name = "portalocker"
-version = "2.10.1"
-description = "Wraps the portalocker recipe for easy usage"
-optional = true
-python-versions = ">=3.8"
-groups = ["main"]
-markers = "extra == \"qdrant\""
-files = [
-    {file = "portalocker-2.10.1-py3-none-any.whl", hash = "sha256:53a5984ebc86a025552264b459b46a2086e269b21823cb572f8f28ee759e45bf"},
-    {file = "portalocker-2.10.1.tar.gz", hash = "sha256:ef1bf844e878ab08aee7e40184156e1151f228f103aa5c6bd0724cc330960f8f"},
-]
-
-[package.dependencies]
-pywin32 = {version = ">=226", markers = "platform_system == \"Windows\""}
-
-[package.extras]
-docs = ["sphinx (>=1.7.1)"]
-redis = ["redis"]
-tests = ["pytest (>=5.4.1)", "pytest-cov (>=2.8.1)", "pytest-mypy (>=0.8.0)", "pytest-timeout (>=2.1.0)", "redis", "sphinx (>=6.0.0)", "types-redis"]
-
-[[package]]
 name = "pre-commit"
 version = "3.8.0"
 description = "A framework for managing and maintaining multi-language pre-commit hooks."
@@ -6093,7 +6030,7 @@ files = [
     {file = "pywin32-310-cp39-cp39-win32.whl", hash = "sha256:851c8d927af0d879221e616ae1f66145253537bbdd321a77e8ef701b443a9a1a"},
     {file = "pywin32-310-cp39-cp39-win_amd64.whl", hash = "sha256:96867217335559ac619f00ad70e513c0fcf84b8a3af9fc2bba3b59b97da70475"},
 ]
-markers = {main = "(platform_system == \"Windows\" or extra == \"external-tools\" or extra == \"desktop\" or extra == \"all\" or extra == \"dev\") and (sys_platform == \"win32\" or extra == \"qdrant\") and (extra == \"qdrant\" or extra == \"external-tools\" or extra == \"desktop\" or extra == \"all\" or extra == \"dev\") and (sys_platform == \"win32\" or platform_system == \"Windows\")", dev = "sys_platform == \"win32\" and platform_python_implementation != \"PyPy\""}
+markers = {main = "sys_platform == \"win32\" and (extra == \"external-tools\" or extra == \"desktop\" or extra == \"all\" or extra == \"dev\")", dev = "platform_python_implementation != \"PyPy\" and sys_platform == \"win32\""}
 
 [[package]]
 name = "pyyaml"
@@ -6264,61 +6201,6 @@ markers = {main = "extra == \"dev\" or extra == \"desktop\" or extra == \"all\""
 
 [package.dependencies]
 cffi = {version = "*", markers = "implementation_name == \"pypy\""}
-
-[[package]]
-name = "qdrant-client"
-version = "1.12.1"
-description = "Client library for the Qdrant vector search engine"
-optional = true
-python-versions = ">=3.8"
-groups = ["main"]
-markers = "python_version == \"3.13\" and extra == \"qdrant\""
-files = [
-    {file = "qdrant_client-1.12.1-py3-none-any.whl", hash = "sha256:b2d17ce18e9e767471368380dd3bbc4a0e3a0e2061fedc9af3542084b48451e0"},
-    {file = "qdrant_client-1.12.1.tar.gz", hash = "sha256:35e8e646f75b7b883b3d2d0ee4c69c5301000bba41c82aa546e985db0f1aeb72"},
-]
-
-[package.dependencies]
-grpcio = ">=1.41.0"
-grpcio-tools = ">=1.41.0"
-httpx = {version = ">=0.20.0", extras = ["http2"]}
-numpy = {version = ">=1.26", markers = "python_version >= \"3.12\""}
-portalocker = ">=2.7.0,<3.0.0"
-pydantic = ">=1.10.8"
-urllib3 = ">=1.26.14,<3"
-
-[package.extras]
-fastembed = ["fastembed (==0.3.6) ; python_version < \"3.13\""]
-fastembed-gpu = ["fastembed-gpu (==0.3.6) ; python_version < \"3.13\""]
-
-[[package]]
-name = "qdrant-client"
-version = "1.14.2"
-description = "Client library for the Qdrant vector search engine"
-optional = true
-python-versions = ">=3.9"
-groups = ["main"]
-markers = "extra == \"qdrant\" and python_version < \"3.13\""
-files = [
-    {file = "qdrant_client-1.14.2-py3-none-any.whl", hash = "sha256:7c283b1f0e71db9c21b85d898fb395791caca2a6d56ee751da96d797b001410c"},
-    {file = "qdrant_client-1.14.2.tar.gz", hash = "sha256:da5cab4d367d099d1330b6f30d45aefc8bd76f8b8f9d8fa5d4f813501b93af0d"},
-]
-
-[package.dependencies]
-grpcio = ">=1.41.0"
-httpx = {version = ">=0.20.0", extras = ["http2"]}
-numpy = [
-    {version = ">=1.26", markers = "python_version == \"3.12\""},
-    {version = ">=1.21", markers = "python_version >= \"3.10\" and python_version < \"3.12\""},
-]
-portalocker = ">=2.7.0,<3.0.0"
-protobuf = ">=3.20.0"
-pydantic = ">=1.10.8,<2.0.dev0 || >2.2.0"
-urllib3 = ">=1.26.14,<3"
-
-[package.extras]
-fastembed = ["fastembed (==0.6.1)"]
-fastembed-gpu = ["fastembed-gpu (==0.6.1)"]
 
 [[package]]
 name = "questionary"
@@ -7097,6 +6979,21 @@ files = [
 ]
 
 [[package]]
+name = "structlog"
+version = "25.4.0"
+description = "Structured Logging for Python"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "structlog-25.4.0-py3-none-any.whl", hash = "sha256:fe809ff5c27e557d14e613f45ca441aabda051d119ee5a0102aaba6ce40eed2c"},
+    {file = "structlog-25.4.0.tar.gz", hash = "sha256:186cd1b0a8ae762e29417095664adf1d6a31702160a46dacb7796ea82f7409e4"},
+]
+
+[package.dependencies]
+typing-extensions = {version = "*", markers = "python_version < \"3.11\""}
+
+[[package]]
 name = "tavily-python"
 version = "0.7.5"
 description = "Python wrapper for the Tavily API"
@@ -7309,28 +7206,21 @@ test = ["argcomplete (>=3.0.3)", "mypy (>=1.7.0)", "pre-commit", "pytest (>=7.0,
 
 [[package]]
 name = "typer"
-version = "0.9.4"
+version = "0.15.4"
 description = "Typer, build great CLIs. Easy to code. Based on Python type hints."
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "typer-0.9.4-py3-none-any.whl", hash = "sha256:aa6c4a4e2329d868b80ecbaf16f807f2b54e192209d7ac9dd42691d63f7a54eb"},
-    {file = "typer-0.9.4.tar.gz", hash = "sha256:f714c2d90afae3a7929fcd72a3abb08df305e1ff61719381384211c4070af57f"},
+    {file = "typer-0.15.4-py3-none-any.whl", hash = "sha256:eb0651654dcdea706780c466cf06d8f174405a659ffff8f163cfbfee98c0e173"},
+    {file = "typer-0.15.4.tar.gz", hash = "sha256:89507b104f9b6a0730354f27c39fae5b63ccd0c95b1ce1f1a6ba0cfd329997c3"},
 ]
 
 [package.dependencies]
-click = ">=7.1.1,<9.0.0"
-colorama = {version = ">=0.4.3,<0.5.0", optional = true, markers = "extra == \"all\""}
-rich = {version = ">=10.11.0,<14.0.0", optional = true, markers = "extra == \"all\""}
-shellingham = {version = ">=1.3.0,<2.0.0", optional = true, markers = "extra == \"all\""}
+click = ">=8.0.0,<8.2"
+rich = ">=10.11.0"
+shellingham = ">=1.3.0"
 typing-extensions = ">=3.7.4.3"
-
-[package.extras]
-all = ["colorama (>=0.4.3,<0.5.0)", "rich (>=10.11.0,<14.0.0)", "shellingham (>=1.3.0,<2.0.0)"]
-dev = ["autoflake (>=1.3.1,<2.0.0)", "flake8 (>=3.8.3,<4.0.0)", "pre-commit (>=2.17.0,<3.0.0)"]
-doc = ["cairosvg (>=2.5.2,<3.0.0)", "mdx-include (>=1.4.1,<2.0.0)", "mkdocs (>=1.1.2,<2.0.0)", "mkdocs-material (>=8.1.4,<9.0.0)", "pillow (>=9.3.0,<10.0.0)"]
-test = ["black (>=22.3.0,<23.0.0)", "coverage (>=6.2,<7.0)", "isort (>=5.0.6,<6.0.0)", "mypy (==0.971)", "pytest (>=4.4.0,<8.0.0)", "pytest-cov (>=2.10.0,<5.0.0)", "pytest-sugar (>=0.9.4,<0.10.0)", "pytest-xdist (>=1.32.0,<4.0.0)", "rich (>=10.11.0,<14.0.0)", "shellingham (>=1.3.0,<2.0.0)"]
 
 [[package]]
 name = "typing-extensions"
@@ -8191,7 +8081,6 @@ experimental = ["granian", "uvloop"]
 external-tools = ["docker", "langchain", "langchain-community", "wikipedia"]
 google = ["google-genai"]
 postgres = ["asyncpg", "pg8000", "pgvector", "psycopg2", "psycopg2-binary"]
-qdrant = ["qdrant-client"]
 redis = ["redis"]
 server = ["fastapi", "uvicorn"]
 tests = ["wikipedia"]
@@ -8199,4 +8088,4 @@ tests = ["wikipedia"]
 [metadata]
 lock-version = "2.1"
 python-versions = "<3.14,>=3.10"
-content-hash = "f49c1ce1aed0e20a201e95968268bb0516bdec7d3387c30f72c10cc3bd6572c9"
+content-hash = "ac866a133f3b82b4777d1bcaf18536ee711efa5c325cc45304bb3b382fc161ce"
