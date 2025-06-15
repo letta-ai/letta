@@ -7,10 +7,12 @@ export function CopyIcon(props: IconWrappedProps) {
     <IconWrapper {...props}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
+        height="24px"
         viewBox="0 -960 960 960"
+        width="24px"
         fill="currentColor"
       >
-        <path d="M360-240q-29.7 0-50.85-21.15Q288-282.3 288-312v-480q0-29.7 21.15-50.85Q330.3-864 360-864h384q29.7 0 50.85 21.15Q816-821.7 816-792v480q0 29.7-21.15 50.85Q773.7-240 744-240H360Zm0-72h384v-480H360v480ZM216-96q-29.7 0-50.85-21.15Q144-138.3 144-168v-552h72v552h456v72H216Zm144-216v-480 480Z" />
+        <path d="M290-260v-600h480v600H290Zm60-60h360v-480H350v480ZM150-120v-587.69h60V-180h407.69v60H150Zm200-200v-480 480Z" />
       </svg>
     </IconWrapper>
   );
