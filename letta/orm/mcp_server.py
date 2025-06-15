@@ -36,6 +36,9 @@ class MCPServer(SqlalchemyBase, OrganizationMixin):
         String, nullable=True, doc="The URL of the server (MCP SSE client will connect to this URL)"
     )
 
+    # access token / api key for MCP servers that require authentication
+    token: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The access token or api key for the MCP server")
+
     # stdio server
     stdio_config: Mapped[Optional[StdioServerConfig]] = mapped_column(
         MCPStdioServerConfigColumn, nullable=True, doc="The configuration for the stdio server"

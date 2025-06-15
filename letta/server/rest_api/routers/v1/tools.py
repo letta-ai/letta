@@ -489,7 +489,9 @@ async def add_mcp_server_to_config(
             if tool_settings.mcp_disable_stdio:  # protected server
                 raise HTTPException(status_code=400, detail="StdioServerConfig is not supported")
         elif isinstance(request, SSEServerConfig):
-            mapped_request = MCPServer(server_name=request.server_name, server_type=request.type, server_url=request.server_url)
+            mapped_request = MCPServer(
+                server_name=request.server_name, server_type=request.type, server_url=request.server_url, token=request.resolve_token()
+            )
         # TODO: add HTTP streaming
         mcp_server = await server.mcp_manager.create_or_update_mcp_server(mapped_request, actor=actor)
 
