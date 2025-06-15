@@ -83,7 +83,7 @@ function RowItem(props: RowItemProps) {
         <HStack align="center">{badge}</HStack>
       </HStack>
       <HStack
-        className="absolute right-5 top-0 h-full"
+        className="absolute right-0 top-0 h-full bg-background-grey"
         align="center"
         gap="small"
       >
