@@ -399,33 +399,9 @@ export function ContextWindowPanel() {
 
   return (
     <VStack fullWidth gap="small" paddingX="small" paddingY="xsmall">
-      <HStack fullWidth justify="spaceBetween">
-        <Typography
-          variant="body4"
-          uppercase
-          bold
-          className="tracking-[0.04em]"
-        >
-          {t('title')}
-        </Typography>
-        <div className="pointer-events-none">
-          <HStack fullWidth justify="spaceBetween">
-            <div />
-            <div className="pointer-events-auto">
-              <Typography
-                color={totalUsedLength > totalLength ? 'destructive' : 'muted'}
-                variant="body3"
-              >
-                {t('ContextWindowPreview.usage', {
-                  used: totalUsedLength,
-                  total: totalLength,
-                })}
-              </Typography>
-            </div>
-          </HStack>
-        </div>
-      </HStack>
-      {}
+      <Typography variant="body4" uppercase bold className="tracking-[0.04em]">
+        {t('title')}
+      </Typography>
       <HStack fullWidth>
         <div className="w-full relative">
           <div className="w-full relative z-[1] px-[1px]">
@@ -445,6 +421,25 @@ export function ContextWindowPanel() {
             />
           }
         />
+      </HStack>
+      <HStack fullWidth justify="end">
+        <Typography
+          color={totalUsedLength > totalLength ? 'destructive' : 'muted'}
+          variant="body4"
+        >
+          <span
+            className="font-semibold"
+            style={{
+              color:
+                totalUsedLength > totalLength
+                  ? 'hsl(var(--destructive))'
+                  : 'hsl(var(--text-default))',
+            }}
+          >
+            {totalUsedLength}
+          </span>
+          {` of ${totalLength} tokens used`}
+        </Typography>
       </HStack>
     </VStack>
   );

@@ -330,10 +330,11 @@ function IdentitiesEditorDialog(props: IdentitiesEditorDialogProps) {
       color="background"
       trigger={
         <Button
+          size="small"
           data-testid="update-identities"
           hideLabel
           preIcon={<GroupIcon />}
-          color="tertiary"
+          color="secondary"
           label={t('IdentitiesEditorDialog.trigger')}
         />
       }
@@ -673,10 +674,11 @@ export function AgentSettingsPanel() {
           <UpdateNameDialog
             trigger={
               <Button
+                size="small"
                 hideLabel
                 data-testid="update-agent-name-button"
                 preIcon={<EditIcon />}
-                color="tertiary"
+                color="secondary"
                 label={t('agentName.edit', { baseName })}
               />
             }

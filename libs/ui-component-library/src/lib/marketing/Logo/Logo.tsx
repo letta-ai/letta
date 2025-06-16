@@ -18,7 +18,7 @@ const logoVariants = cva('', {
   variants: {
     color,
     size: {
-      small: 'h-[16px] w-[16px]',
+      small: 'h-[17px] w-[17px]',
       medium: 'h-[20px] w-[20px]',
       default: 'h-[24px] w-[24px]',
       large: 'h-[56px] w-[56px]',

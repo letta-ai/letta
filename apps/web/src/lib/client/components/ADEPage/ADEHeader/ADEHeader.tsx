@@ -259,7 +259,7 @@ function LogoContainer() {
       className="min-h-biHeight min-w-[36px]"
       fullHeight
     >
-      <Logo size="medium" color="background" />
+      <Logo size="small" color="background" />
     </HStack>
   );
 }

@@ -252,9 +252,9 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                 value={text}
                 onKeyDown={handleKeyPress}
                 /* To prevent layout shift due to js load lag we explicitly set minrow height */
-                className="w-full min-h-[84px] bg-transparent text-base font-inherit resize-none	focus:outline-none"
+                className="w-full min-h-[42px] bg-transparent text-base font-inherit resize-none	focus:outline-none"
                 maxRows={10}
-                minRows={4}
+                minRows={2}
                 placeholder={t('placeholder')}
               />
               <HStack justify="spaceBetween">
