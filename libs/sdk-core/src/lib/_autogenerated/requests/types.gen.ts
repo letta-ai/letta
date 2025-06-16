@@ -4875,6 +4875,10 @@ export type CreateAgentMessageStreamResponse = unknown;
 
 export type CreateAgentMessageAsyncData = {
   agentId: string;
+  /**
+   * Optional callback URL to POST to when the job completes
+   */
+  callbackUrl?: string | null;
   requestBody: LettaRequest;
   userId?: string | null;
 };

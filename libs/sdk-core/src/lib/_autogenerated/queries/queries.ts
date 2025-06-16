@@ -3301,6 +3301,7 @@ export const useAgentsServiceCreateAgentMessageStream = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.requestBody
+ * @param data.callbackUrl Optional callback URL to POST to when the job completes
  * @param data.userId
  * @returns Run Successful Response
  * @throws ApiError
@@ -3316,6 +3317,7 @@ export const useAgentsServiceCreateAgentMessageAsync = <
       TError,
       {
         agentId: string;
+        callbackUrl?: string;
         requestBody: LettaRequest;
         userId?: string;
       },
@@ -3329,14 +3331,16 @@ export const useAgentsServiceCreateAgentMessageAsync = <
     TError,
     {
       agentId: string;
+      callbackUrl?: string;
       requestBody: LettaRequest;
       userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, requestBody, userId }) =>
+    mutationFn: ({ agentId, callbackUrl, requestBody, userId }) =>
       AgentsService.createAgentMessageAsync({
         agentId,
+        callbackUrl,
         requestBody,
         userId,
       }) as unknown as Promise<TData>,

@@ -3361,6 +3361,24 @@
               "type": "string",
               "title": "Agent Id"
             }
+          },
+          {
+            "name": "callback_url",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional callback URL to POST to when the job completes",
+              "title": "Callback Url"
+            },
+            "description": "Optional callback URL to POST to when the job completes"
           }
         ],
         "requestBody": {

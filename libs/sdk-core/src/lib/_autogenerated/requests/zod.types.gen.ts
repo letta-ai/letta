@@ -6839,6 +6839,11 @@ export const post_Create_agent_message_async = {
   path: z.literal('/v1/agents/{agent_id}/messages/async'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    query: z.object({
+      callback_url: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
     path: z.object({
       agent_id: z.string(),
     }),
