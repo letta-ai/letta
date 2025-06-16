@@ -1454,6 +1454,19 @@ export const $BatchJob = {
       title: 'Callback Status Code',
       description: 'HTTP status code returned by the callback endpoint.',
     },
+    callback_error: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Callback Error',
+      description:
+        'Optional error message from attempting to POST the callback endpoint.',
+    },
     id: {
       type: 'string',
       pattern: '^(job|run)-[a-fA-F0-9]{8}',
@@ -5777,6 +5790,19 @@ export const $Job = {
       title: 'Callback Status Code',
       description: 'HTTP status code returned by the callback endpoint.',
     },
+    callback_error: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Callback Error',
+      description:
+        'Optional error message from attempting to POST the callback endpoint.',
+    },
     id: {
       type: 'string',
       pattern: '^(job|run)-[a-fA-F0-9]{8}',
@@ -8401,6 +8427,19 @@ export const $Run = {
       ],
       title: 'Callback Status Code',
       description: 'HTTP status code returned by the callback endpoint.',
+    },
+    callback_error: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Callback Error',
+      description:
+        'Optional error message from attempting to POST the callback endpoint.',
     },
     id: {
       type: 'string',

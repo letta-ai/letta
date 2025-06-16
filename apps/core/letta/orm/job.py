@@ -43,6 +43,9 @@ class Job(SqlalchemyBase, UserMixin):
     callback_url: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="When set, POST to this URL after job completion.")
     callback_sent_at: Mapped[Optional[datetime]] = mapped_column(nullable=True, doc="Timestamp when the callback was last attempted.")
     callback_status_code: Mapped[Optional[int]] = mapped_column(nullable=True, doc="HTTP status code returned by the callback endpoint.")
+    callback_error: Mapped[Optional[str]] = mapped_column(
+        nullable=True, doc="Optional error message from attempting to POST the callback endpoint."
+    )
 
     # relationships
     user: Mapped["User"] = relationship("User", back_populates="jobs")

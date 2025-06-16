@@ -404,7 +404,7 @@ def test_send_system_message(client: LettaSDKClient, agent: AgentState):
     assert send_system_message_response, "Sending message failed"
 
 
-def test_function_return_limit(client: LettaSDKClient, agent: AgentState):
+def test_function_return_limit(disable_e2b_api_key, client: LettaSDKClient, agent: AgentState):
     """Test to see if the function return limit works"""
 
     def big_return():

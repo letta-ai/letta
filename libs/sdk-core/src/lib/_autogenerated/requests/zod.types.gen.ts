@@ -1509,6 +1509,9 @@ export const BatchJob = z.object({
   callback_status_code: z
     .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
     .optional(),
+  callback_error: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
   id: z.string().optional(),
   user_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -4008,6 +4011,9 @@ export const Job = z.object({
   callback_status_code: z
     .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
     .optional(),
+  callback_error: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
   id: z.string().optional(),
   user_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -4835,6 +4841,9 @@ export const Run = z.object({
     .optional(),
   callback_status_code: z
     .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+  callback_error: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
   id: z.string().optional(),
   user_id: z

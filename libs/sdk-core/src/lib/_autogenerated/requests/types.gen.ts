@@ -467,6 +467,10 @@ export type BatchJob = {
    */
   callback_status_code?: number | null;
   /**
+   * Optional error message from attempting to POST the callback endpoint.
+   */
+  callback_error?: string | null;
+  /**
    * The human-friendly ID of the Job
    */
   id?: string;
@@ -1923,6 +1927,10 @@ export type Job = {
    */
   callback_status_code?: number | null;
   /**
+   * Optional error message from attempting to POST the callback endpoint.
+   */
+  callback_error?: string | null;
+  /**
    * The human-friendly ID of the Job
    */
   id?: string;
@@ -3053,6 +3061,10 @@ export type Run = {
    * HTTP status code returned by the callback endpoint.
    */
   callback_status_code?: number | null;
+  /**
+   * Optional error message from attempting to POST the callback endpoint.
+   */
+  callback_error?: string | null;
   /**
    * The human-friendly ID of the Run
    */
