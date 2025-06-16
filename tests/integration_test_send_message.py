@@ -979,106 +979,113 @@ def callback_server():
         server.stop()
 
 
-# TODO: Add back in a bit
-# @pytest.mark.parametrize(
-#     "llm_config",
-#     TESTED_LLM_CONFIGS,
-#     ids=[c.model for c in TESTED_LLM_CONFIGS],
-# )
-# def test_async_greeting_with_callback_url(
-#     disable_e2b_api_key: Any,
-#     client: Letta,
-#     agent_state: AgentState,
-#     llm_config: LLMConfig,
-# ) -> None:
-#     """
-#     Tests sending a message as an asynchronous job with callback URL functionality.
-#     Validates that callbacks are properly sent with correct payload structure.
-#     """
-#     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
-#
-#     with callback_server() as server:
-#         # Create async job with callback URL
-#         run = client.agents.messages.create_async(
-#             agent_id=agent_state.id,
-#             messages=USER_MESSAGE_FORCE_REPLY,
-#             callback_url=server.url,
-#         )
-#
-#         # Wait for job completion
-#         run = wait_for_run_completion(client, run.id)
-#
-#         # Validate job completed successfully
-#         result = run.metadata.get("result")
-#         assert result is not None, "Run metadata missing 'result' key"
-#         messages = result["messages"]
-#         assert_tool_response_dict_messages(messages)
-#
-#         # Validate callback was received
-#         assert server.wait_for_callback(timeout=15), "Callback was not received within timeout"
-#         assert len(server.received_callbacks) == 1, f"Expected 1 callback, got {len(server.received_callbacks)}"
-#
-#         # Validate callback payload structure
-#         callback = server.received_callbacks[0]
-#         callback_data = callback["data"]
-#
-#         # Check required fields
-#         assert "job_id" in callback_data, "Callback missing 'job_id' field"
-#         assert "status" in callback_data, "Callback missing 'status' field"
-#         assert "completed_at" in callback_data, "Callback missing 'completed_at' field"
-#         assert "metadata" in callback_data, "Callback missing 'metadata' field"
-#
-#         # Validate field values
-#         assert callback_data["job_id"] == run.id, f"Job ID mismatch: {callback_data['job_id']} != {run.id}"
-#         assert callback_data["status"] == "completed", f"Expected status 'completed', got {callback_data['status']}"
-#         assert callback_data["completed_at"] is not None, "completed_at should not be None"
-#         assert callback_data["metadata"] is not None, "metadata should not be None"
-#
-#         # Validate that callback metadata contains the result
-#         assert "result" in callback_data["metadata"], "Callback metadata missing 'result' field"
-#         callback_result = callback_data["metadata"]["result"]
-#         assert callback_result == result, "Callback result doesn't match job result"
-#
-#         # Validate HTTP headers
-#         headers = callback["headers"]
-#         assert headers.get("Content-Type") == "application/json", "Callback should have JSON content type"
-#
-#
-# @pytest.mark.parametrize(
-#     "llm_config",
-#     TESTED_LLM_CONFIGS,
-#     ids=[c.model for c in TESTED_LLM_CONFIGS],
-# )
-# def test_async_callback_failure_scenarios(
-#     disable_e2b_api_key: Any,
-#     client: Letta,
-#     agent_state: AgentState,
-#     llm_config: LLMConfig,
-# ) -> None:
-#     """
-#     Tests that job completion works even when callback URLs fail.
-#     This ensures callback failures don't affect job processing.
-#     """
-#     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
-#
-#     # Test with invalid callback URL - job should still complete
-#     run = client.agents.messages.create_async(
-#         agent_id=agent_state.id,
-#         messages=USER_MESSAGE_FORCE_REPLY,
-#         callback_url="http://invalid-domain-that-does-not-exist.com/callback",
-#     )
-#
-#     # Wait for job completion - should work despite callback failure
-#     run = wait_for_run_completion(client, run.id)
-#
-#     # Validate job completed successfully
-#     result = run.metadata.get("result")
-#     assert result is not None, "Run metadata missing 'result' key"
-#     messages = result["messages"]
-#     assert_tool_response_dict_messages(messages)
-#
-#     # Job should be marked as completed even if callback failed
-#     assert run.status == "completed", f"Expected status 'completed', got {run.status}"
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_async_greeting_with_callback_url(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending a message as an asynchronous job with callback URL functionality.
+    Validates that callbacks are properly sent with correct payload structure.
+    """
+    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+
+    with callback_server() as server:
+        # Create async job with callback URL
+        run = client.agents.messages.create_async(
+            agent_id=agent_state.id,
+            messages=USER_MESSAGE_FORCE_REPLY,
+            callback_url=server.url,
+        )
+
+        # Wait for job completion
+        run = wait_for_run_completion(client, run.id)
+
+        # Validate job completed successfully
+        result = run.metadata.get("result")
+        assert result is not None, "Run metadata missing 'result' key"
+        messages = result["messages"]
+        assert_tool_response_dict_messages(messages)
+
+        # Validate callback was received
+        assert server.wait_for_callback(timeout=15), "Callback was not received within timeout"
+        assert len(server.received_callbacks) == 1, f"Expected 1 callback, got {len(server.received_callbacks)}"
+
+        # Validate callback payload structure
+        callback = server.received_callbacks[0]
+        callback_data = callback["data"]
+
+        # Check required fields
+        assert "job_id" in callback_data, "Callback missing 'job_id' field"
+        assert "status" in callback_data, "Callback missing 'status' field"
+        assert "completed_at" in callback_data, "Callback missing 'completed_at' field"
+        assert "metadata" in callback_data, "Callback missing 'metadata' field"
+
+        # Validate field values
+        assert callback_data["job_id"] == run.id, f"Job ID mismatch: {callback_data['job_id']} != {run.id}"
+        assert callback_data["status"] == "completed", f"Expected status 'completed', got {callback_data['status']}"
+        assert callback_data["completed_at"] is not None, "completed_at should not be None"
+        assert callback_data["metadata"] is not None, "metadata should not be None"
+
+        # Validate that callback metadata contains the result
+        assert "result" in callback_data["metadata"], "Callback metadata missing 'result' field"
+        callback_result = callback_data["metadata"]["result"]
+        assert callback_result == result, "Callback result doesn't match job result"
+
+        # Validate HTTP headers
+        headers = callback["headers"]
+        assert headers.get("Content-Type") == "application/json", "Callback should have JSON content type"
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_async_callback_failure_scenarios(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests that job completion works even when callback URLs fail.
+    This ensures callback failures don't affect job processing.
+    """
+    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+
+    # Test with invalid callback URL - job should still complete
+    run = client.agents.messages.create_async(
+        agent_id=agent_state.id,
+        messages=USER_MESSAGE_FORCE_REPLY,
+        callback_url="http://invalid-domain-that-does-not-exist.com/callback",
+    )
+
+    # Wait for job completion - should work despite callback failure
+    run = wait_for_run_completion(client, run.id)
+
+    # Validate job completed successfully
+    result = run.metadata.get("result")
+    assert result is not None, "Run metadata missing 'result' key"
+    messages = result["messages"]
+    assert_tool_response_dict_messages(messages)
+
+    # Job should be marked as completed even if callback failed
+    assert run.status == "completed", f"Expected status 'completed', got {run.status}"
+
+    # Validate callback failure was properly recorded
+    assert run.callback_sent_at is not None, "callback_sent_at should be set even for failed callbacks"
+    assert run.callback_error is not None, "callback_error should be set to error message for failed callbacks"
+    assert isinstance(run.callback_error, str), "callback_error should be error message string for failed callbacks"
+    assert "Failed to dispatch callback" in run.callback_error, "callback_error should contain error details"
+    assert run.id in run.callback_error, "callback_error should contain job ID"
+    assert "invalid-domain-that-does-not-exist.com" in run.callback_error, "callback_error should contain failed URL"
 
 
 @pytest.mark.parametrize(

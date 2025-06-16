@@ -70,6 +70,7 @@ class JobManager:
         with db_registry.session() as session:
             # Fetch the job by ID
             job = self._verify_job_access(session=session, job_id=job_id, actor=actor, access=["write"])
+            not_completed_before = not bool(job.completed_at)
 
             # Update job attributes with only the fields that were explicitly set
             update_data = job_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
@@ -81,7 +82,7 @@ class JobManager:
                     value = value.replace(tzinfo=None)
                 setattr(job, key, value)
 
-            if job_update.status in {JobStatus.completed, JobStatus.failed} and not job.completed_at:
+            if job_update.status in {JobStatus.completed, JobStatus.failed} and not_completed_before:
                 job.completed_at = get_utc_time().replace(tzinfo=None)
                 if job.callback_url:
                     self._dispatch_callback(job)
@@ -98,6 +99,7 @@ class JobManager:
         async with db_registry.async_session() as session:
             # Fetch the job by ID
             job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor, access=["write"])
+            not_completed_before = not bool(job.completed_at)
 
             # Update job attributes with only the fields that were explicitly set
             update_data = job_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
@@ -109,7 +111,7 @@ class JobManager:
                     value = value.replace(tzinfo=None)
                 setattr(job, key, value)
 
-            if job_update.status in {JobStatus.completed, JobStatus.failed} and not job.completed_at:
+            if job_update.status in {JobStatus.completed, JobStatus.failed} and not_completed_before:
                 job.completed_at = get_utc_time().replace(tzinfo=None)
                 if job.callback_url:
                     await self._dispatch_callback_async(job)
@@ -605,7 +607,7 @@ class JobManager:
             "job_id": job.id,
             "status": job.status,
             "completed_at": job.completed_at.isoformat() if job.completed_at else None,
-            "metadata": job.metadata,
+            "metadata": job.metadata_,
         }
         try:
             import httpx
@@ -615,7 +617,11 @@ class JobManager:
             job.callback_status_code = resp.status_code
 
         except Exception as e:
-            logger.error(f"Failed to dispatch callback for job {job.id} to {job.callback_url}: {str(e)}")
+            error_message = f"Failed to dispatch callback for job {job.id} to {job.callback_url}: {str(e)}"
+            logger.error(error_message)
+            # Record the failed attempt
+            job.callback_sent_at = get_utc_time().replace(tzinfo=None)
+            job.callback_error = error_message
             # Continue silently - callback failures should not affect job completion
 
     async def _dispatch_callback_async(self, job: JobModel) -> None:
@@ -626,7 +632,7 @@ class JobManager:
             "job_id": job.id,
             "status": job.status,
             "completed_at": job.completed_at.isoformat() if job.completed_at else None,
-            "metadata": job.metadata,
+            "metadata": job.metadata_,
         }
 
         try:
@@ -638,5 +644,9 @@ class JobManager:
                 job.callback_sent_at = get_utc_time().replace(tzinfo=None)
                 job.callback_status_code = resp.status_code
         except Exception as e:
-            logger.error(f"Failed to dispatch callback for job {job.id} to {job.callback_url}: {str(e)}")
+            error_message = f"Failed to dispatch callback for job {job.id} to {job.callback_url}: {str(e)}"
+            logger.error(error_message)
+            # Record the failed attempt
+            job.callback_sent_at = get_utc_time().replace(tzinfo=None)
+            job.callback_error = error_message
             # Continue silently - callback failures should not affect job completion
