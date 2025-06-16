@@ -10,7 +10,7 @@ declare global {
 }
 
 try {
-  importScripts('https://cdn.jsdelivr.net/pyodide/dev/full/pyodide.js');
+  importScripts('https://cdn.jsdelivr.net/npm/pyodide@0.27.7/pyodide.js');
 } catch (_e) {
   console.warn('Failed to import pyodide.js');
 }
