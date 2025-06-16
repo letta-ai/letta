@@ -6,6 +6,7 @@ export function getObfuscatedMCPServerUrl(url: string) {
     return `${parsedUrl.protocol}//${parsedUrl.hostname}${parsedUrl.port ? `:${parsedUrl.port}` : ''}`;
   } catch (error) {
     console.error('Invalid URL:', url, error);
-    return 'Invalid URL';
+    // TODO: handle invalid URLs better
+    return url;
   }
 }

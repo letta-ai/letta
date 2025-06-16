@@ -11,7 +11,14 @@ export function MCPServerLogo(props: MCPServerLogoProps) {
   const recommendedServers = useRecommendedMCPServers();
 
   const recommendedServer = useMemo(() => {
-    const baseUrl = new URL(serverUrl).origin;
+    let baseUrl: string;
+    try {
+      baseUrl = new URL(serverUrl).origin;
+    } catch {
+      // If URL is malformed, use the original string for matching
+      console.warn('Possible invalid MCP server URL: ', serverUrl);
+      baseUrl = serverUrl;
+    }
 
     return recommendedServers.find((server) => server.baseUrl === baseUrl);
   }, [recommendedServers, serverUrl]);
