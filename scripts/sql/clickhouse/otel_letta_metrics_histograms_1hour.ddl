@@ -10,6 +10,8 @@ create table otel.letta_metrics_histograms_1hour
     tool_name              String,
     model_name             String,
     tool_execution_success String,
+    status_code            String,
+    endpoint_path          String,
     count                  UInt64,
     sum                    Float64,
     bucket_counts          Array(UInt64),
@@ -19,4 +21,3 @@ create table otel.letta_metrics_histograms_1hour
         PARTITION BY toYYYYMM(time_window)
         ORDER BY (organization_id, project_id, metric_name, time_window)
         SETTINGS index_granularity = 8192;
-
