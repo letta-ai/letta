@@ -115,6 +115,12 @@ const buttonVariants = cva(
         className:
           'w-biWidth-xs min-w-biWidth-xs p-0 items-center justify-center flex',
       },
+      {
+        hideLabel: true,
+        size: 'xsmall',
+        className:
+          'w-biWidth-xs min-w-biWidth-xs p-0 items-center justify-center flex',
+      },
     ],
     defaultVariants: {
       color: 'primary',

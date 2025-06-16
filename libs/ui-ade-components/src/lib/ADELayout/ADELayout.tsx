@@ -118,7 +118,13 @@ function DesktopLayout() {
   ]);
 
   return (
-    <HStack border color="background-grey" fullWidth fullHeight>
+    <HStack
+      className={isTemplate ? 'border-t border-r border-b' : ''}
+      border={!isTemplate}
+      color="background-grey"
+      fullWidth
+      fullHeight
+    >
       <PanelGroup className="h-full" direction="horizontal" autoSaveId="ade">
         <Panel
           defaultSize={30}

@@ -2236,10 +2236,10 @@
       }
     },
     "CloudUpsellDeploy": {
-      "trigger": "Deploy",
-      "title": "Deploy your agents on Letta Cloud",
-      "description": "Letta Cloud allows you to deploy agents at scale with zero infrastructure.",
-      "cta": "Get early access"
+      "trigger": "Launch",
+      "title": "Run your agents on Letta Cloud",
+      "description": "To copy your local agent to Letta Cloud, simply export your agent file and import it into a cloud project.",
+      "cta": "View projects"
     },
     "CreateTemplateButton": {
       "error": "There was an error converting this agent to a template, please try again or contact support.",

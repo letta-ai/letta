@@ -75,7 +75,6 @@ function CloudUpsellDeploy() {
             fullWidth
             label={t('CloudUpsellDeploy.cta')}
             href={CLOUD_UPSELL_URL}
-            target="_blank"
             color="primary"
           />
         </VStack>

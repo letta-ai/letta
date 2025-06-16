@@ -221,7 +221,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
           color="panel-input-background"
           onSubmit={handleSubmit}
           as="form"
-          className="relative focus-within:ring-ring focus-within:ring-1 ignore-focus-on-buttons"
+          className="relative focus-within:ring-ring focus-within:ring-1 ignore-focus-on-buttons border-background-grey3-border"
           border
           fullWidth
           borderTop

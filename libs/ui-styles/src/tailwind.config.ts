@@ -36,6 +36,7 @@ export function buildConfig(appDir: string): Config {
         },
         height: {
           biHeight: 'var(--button-input-height)',
+          'biHeight-xs': 'var(--button-input-height-xs)',
           'biHeight-sm': 'var(--button-input-height-sm)',
           'biHeight-lg': 'var(--button-input-height-lg)',
           inputHeight: 'var(--input-height)',
@@ -47,11 +48,13 @@ export function buildConfig(appDir: string): Config {
           header: 'var(--header-height)',
           'header-sm': 'var(--header-height-sm)',
           biHeight: 'var(--button-input-height)',
+          'biHeight-xs': 'var(--button-input-height-xs)',
           'biHeight-sm': 'var(--button-input-height-sm)',
           'biHeight-lg': 'var(--button-input-height-lg)',
         },
         width: {
           biWidth: 'var(--button-input-height)',
+          'biWidth-xs': 'var(--button-input-height-xs)',
           'biWidth-sm': 'var(--button-input-height-sm)',
           sidebar: 'var(--sidebar-width)',
         },
@@ -61,6 +64,7 @@ export function buildConfig(appDir: string): Config {
         minWidth: {
           sidebar: 'var(--sidebar-width)',
           biWidth: 'var(--button-input-height)',
+          'biWidth-xs': 'var(--button-input-height-xs)',
           'biWidth-sm': 'var(--button-input-height-sm)',
         },
         fontSize: {
@@ -117,6 +121,7 @@ export function buildConfig(appDir: string): Config {
           'background-grey3': {
             DEFAULT: 'hsl(var(--grey3))',
             content: 'hsl(var(--grey3-content))',
+            border: 'hsl(var(--background-grey3-border))',
           },
           'background-black': {
             DEFAULT: 'hsl(var(--background-black))',
@@ -142,6 +147,10 @@ export function buildConfig(appDir: string): Config {
             DEFAULT: 'hsl(var(--brand))',
             content: 'hsl(var(--brand-content))',
             hover: 'hsl(var(--brand-hover))',
+          },
+          'brand-hover': {
+            DEFAULT: 'hsl(var(--brand-hover))',
+            content: 'hsl(var(--brand-hover-content))',
           },
           primary: {
             DEFAULT: 'hsl(var(--primary))',

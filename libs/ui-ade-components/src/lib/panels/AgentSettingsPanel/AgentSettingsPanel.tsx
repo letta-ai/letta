@@ -686,10 +686,10 @@ export function AgentSettingsPanel() {
         </HStack>
         <AgentIdentifierToCopy />
       </VStack>
+      <ModelSelector llmConfig={currentAgent.llm_config} />
       {!isTemplate && <IdentityViewer />}
       {isTemplate && <TemplateDescription />}
       {!isTemplate && <AgentTags />}
-      <ModelSelector llmConfig={currentAgent.llm_config} />
     </PanelMainContent>
   );
 }

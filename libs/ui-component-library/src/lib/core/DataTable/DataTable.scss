@@ -1,6 +1,6 @@
 .linear-gradient-background {
   position: sticky;
-  background: hsl(var(--background));
+  background: hsl(var(--dashboard-color));
 }
 
 .linear-gradient-background:before {
@@ -12,9 +12,9 @@
   width: 100%;
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0) 0%,
-    hsl(var(--background)) 10%,
-    hsl(var(--background)) 100%
+    transparent 0%,
+    hsl(var(--dashboard-color)) 10%,
+    hsl(var(--dashboard-color)) 100%
   );
   z-index: -1;
   overflow: hidden;

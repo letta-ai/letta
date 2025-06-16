@@ -38,10 +38,11 @@
 
   --brand: 240, 92%, 35%;
   --brand-content: 0 0% 98%;
-  --brand-hover: 240, 54%, 48%;
+  --brand-hover: 233, 27%, 94%;
+  --brand-hover-content: 240, 92%, 35%;
 
-  --brand-light: 240deg 36.36% 95.69%;
-  --brand-light-content: 240 96% 40%;
+  --brand-light: 236, 33%, 92%;
+  --brand-light-content: var(--text-default);
   --brand-light-border: 240, 100%, 88%;
 
   --element-focus: 240, 50%, 97%;;
@@ -89,7 +90,8 @@
   --background-warning-content: 44, 58%, 19%;
   --background-warning-border: 44, 99%, 67%, 0.16;
 
-  --background-grey2-border: 210, 14%, 93%;
+  --background-grey2-border: 210, 13%, 94%;
+  --background-grey3-border: 210, 3%, 89%;
 
   --background-destructive: 0, 100%, 90%;
   --background-destructive-content: 0, 100%, 10%;
@@ -98,10 +100,10 @@
   --panel-input-background-content: var(--text-default);
 
   --background-grey-content: var(--text-default);
-  --background-grey: 210, 10%, 98%;
+  --background-grey: 0, 0%, 98%;
   --background-grey-hover: 210, 10%, 80%;
 
-  --background-grey2: 210, 10%, 96%;
+  --background-grey2: 180, 6%, 97%;
   --background-grey2-content: var(--text-default);
 
   --user-content-background: 0deg 0% 94.5%;
@@ -127,6 +129,7 @@
   --border-violet: 278, 72%, 86%;
 
   --button-input-height: 36px;
+  --button-input-height-xs: 26px;
   --button-input-height-sm: 28px;
   --button-input-height-lg: 44px;
 
@@ -224,11 +227,11 @@
 
   --brand: 10, 100%, 68%;
   --brand-content: 0 0% 98%;
-  --brand-hover: 10, 100%, 67%;
+  --brand-hover: 9, 10%, 25%;
+  --brand-hover-content: 10, 100%, 84%;
 
-
-  --brand-light: 12deg 6% 17%;
-  --brand-light-content: 10, 100%, 60%;
+  --brand-light: 9, 10%, 25%;
+  --brand-light-content: 210, 7%, 84%;
   --brand-light-border: 9, 15%, 25%;
 
   --violet: 283, 69%, 69%;
@@ -292,7 +295,8 @@
   --background-warning-content: 44, 100%, 86%;
   --background-warning-border: 44, 99%, 67%, 0.16;
 
-  --background-grey2-border: 210, 5%, 18%;
+  --background-grey2-border: 0, 0%, 13%;
+  --background-grey3-border: 200, 3%, 17%;
 
   --input: 0, 0%, 13%;
   --ring: 240 4.9% 83.9%;
