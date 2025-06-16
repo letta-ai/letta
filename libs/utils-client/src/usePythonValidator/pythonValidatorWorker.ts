@@ -16,7 +16,7 @@ declare global {
 try {
   // Lock down stable version of Pyodide to guarantee stability with imports.
   importScripts(
-    'https://cdn.jsdelivr.net/npm/pyodide@0.27.7/pyodide.js',
+    'https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js',
   );
 } catch (_e) {
   console.warn('Failed to import pyodide.js');
