@@ -315,9 +315,11 @@ class AnthropicClient(LLMClientBase):
 
         if isinstance(e, anthropic.BadRequestError):
             logger.warning(f"[Anthropic] Bad request: {str(e)}")
-            if "prompt is too long" in str(e).lower():
-                # If the context window is too large, we expect to receive:
+            error_str = str(e).lower()
+            if "prompt is too long" in error_str or "exceed context limit" in error_str:
+                # If the context window is too large, we expect to receive either:
                 # 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'prompt is too long: 200758 tokens > 200000 maximum'}}
+                # 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'input length and `max_tokens` exceed context limit: 173298 + 32000 > 200000, decrease input length or `max_tokens` and try again'}}
                 return ContextWindowExceededError(
                     message=f"Bad request to Anthropic (context window exceeded): {str(e)}",
                 )
