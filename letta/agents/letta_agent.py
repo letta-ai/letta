@@ -913,13 +913,13 @@ class LettaAgent(BaseAgent):
         except AssertionError:
             tool_args = json.loads(tool_args)
 
+        # Get request heartbeats and coerce to bool
+        request_heartbeat = tool_args.pop("request_heartbeat", False)
         if is_final_step:
             stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
             logger.info("Agent has reached max steps.")
             request_heartbeat = False
         else:
-            # Get request heartbeats and coerce to bool
-            request_heartbeat = tool_args.pop("request_heartbeat", False)
             # Pre-emptively pop out inner_thoughts
             tool_args.pop(INNER_THOUGHTS_KWARG, "")
 
