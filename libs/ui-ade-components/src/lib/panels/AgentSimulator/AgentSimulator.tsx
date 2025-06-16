@@ -39,6 +39,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import type {
   AgentState,
   Identity,
+  LettaUserMessageContentUnion,
   LettaMessageUnion,
   ListMessagesResponse,
   SystemMessage,
@@ -99,7 +100,7 @@ type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
 interface SendMessagePayload {
   role: RoleOption;
-  content: string;
+  content: LettaUserMessageContentUnion[] | string;
 }
 
 const FAILED_ID = 'failed';
@@ -116,6 +117,20 @@ function errorHasResponseAndStatus(e: unknown): e is {
   };
 } {
   return Object.prototype.hasOwnProperty.call(e, 'response');
+}
+
+function extractMessageTextFromContent(
+  content: LettaUserMessageContentUnion[] | string,
+): string {
+  if (typeof content === 'string') {
+    return content;
+  } else if (Array.isArray(content) && content.length > 0) {
+    const textPart = content.find((part) => part && part.type === 'text');
+    if (textPart && textPart.type === 'text') {
+      return textPart.text;
+    }
+  }
+  return '';
 }
 
 export function useSendMessage(
@@ -141,7 +156,8 @@ export function useSendMessage(
 
   const sendMessage: SendMessageType = useCallback(
     (payload: SendMessagePayload) => {
-      const { content: message, role } = payload;
+      const { content, role } = payload;
+      const message = extractMessageTextFromContent(content);
       setIsPending(true);
       setFailedToSendMessage(false);
       setErrorCode(undefined);
@@ -186,22 +202,28 @@ export function useSendMessage(
         );
       }
 
-      const newMessage: SystemMessage | UserMessage = {
-        message_type:
-          role.value !== 'system' ? 'user_message' : 'system_message',
-        otid: userMessageOtid,
-        sender_id: role.identityId || '',
-        content:
-          role.value !== 'system'
-            ? message
-            : JSON.stringify({
+      const newMessage: SystemMessage | UserMessage =
+        role.value === 'system'
+          ? {
+              message_type: 'system_message' as const,
+              otid: userMessageOtid,
+              sender_id: role.identityId || '',
+              content: JSON.stringify({
                 type: 'system_alert',
                 message: message,
                 time: new Date().toISOString(),
               }),
-        date: new Date().toISOString(),
-        id: `${new Date().getTime()}-user_message`,
-      };
+              date: new Date().toISOString(),
+              id: `${new Date().getTime()}-user_message`,
+            }
+          : {
+              message_type: 'user_message' as const,
+              otid: userMessageOtid,
+              sender_id: role.identityId || '',
+              content: content,
+              date: new Date().toISOString(),
+              id: `${new Date().getTime()}-user_message`,
+            };
 
       queryClient.setQueriesData<InfiniteData<ListMessagesResponse>>(
         {
@@ -271,7 +293,7 @@ export function useSendMessage(
               {
                 role: role.value !== 'system' ? 'user' : 'system',
                 ...(role.identityId ? { sender_id: role.identityId } : {}),
-                content: message,
+                content: content,
                 otid: userMessageOtid,
               },
             ],
@@ -1041,7 +1063,7 @@ export function AgentSimulator() {
     attachApiKey: false,
   });
   const getSendSnippet = useCallback(
-    (role: RoleOption, message: string) => {
+    (role: RoleOption, content: LettaUserMessageContentUnion[] | string) => {
       if (isTemplate) {
         return undefined;
       }
@@ -1057,7 +1079,7 @@ export function AgentSimulator() {
           messages: [
             {
               role: role.value !== 'system' ? 'user' : 'system',
-              content: message,
+              content,
             },
           ],
           stream_steps: true,
@@ -1148,7 +1170,10 @@ export function AgentSimulator() {
                 getSendSnippet={getSendSnippet}
                 hasFailedToSendMessageText={hasFailedToSendMessageText}
                 sendingMessageText={t('sendingMessage')}
-                onSendMessage={(role: RoleOption, content: string) => {
+                onSendMessage={(
+                  role: RoleOption,
+                  content: LettaUserMessageContentUnion[] | string,
+                ) => {
                   sendMessage({ role, content });
                 }}
                 isSendingMessage={isPending}

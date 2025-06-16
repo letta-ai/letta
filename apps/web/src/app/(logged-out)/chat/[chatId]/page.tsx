@@ -1,6 +1,7 @@
 'use client';
 import { useParams } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import type { LettaUserMessageContentUnion } from '@letta-cloud/sdk-core';
 import {
   ChatInput,
   type ChatInputRef,
@@ -110,7 +111,10 @@ export default function ChatPage() {
               hasFailedToSendMessage ? t('hasFailedToSendMessage') : ''
             }
             sendingMessageText={t('sendingMessage')}
-            onSendMessage={(role: RoleOption, content: string) => {
+            onSendMessage={(
+              role: RoleOption,
+              content: LettaUserMessageContentUnion[] | string,
+            ) => {
               sendMessage({ role, content });
             }}
             isSendingMessage={isPending}

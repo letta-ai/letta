@@ -22,6 +22,7 @@ import { Slot } from '@radix-ui/react-slot';
 import { CopyWithCodePreview } from '../CopyWithCodePreview/CopyWithCodePreview';
 import { HiddenOnMobile } from '../../framing/HiddenOnMobile/HiddenOnMobile';
 import { VisibleOnMobile } from '../../framing/VisibleOnMobile/VisibleOnMobile';
+import type { LettaUserMessageContentUnion } from '@letta-cloud/sdk-core';
 
 export interface RoleOption {
   value: string;
@@ -35,12 +36,18 @@ export interface RoleOption {
 }
 
 interface ChatInputProps {
-  onSendMessage: (role: RoleOption, message: string) => void;
+  onSendMessage: (
+    role: RoleOption,
+    content: LettaUserMessageContentUnion[] | string,
+  ) => void;
   isSendingMessage: boolean;
   disabled?: boolean;
   hasFailedToSendMessageText?: React.ReactNode;
   roles: RoleOption[];
-  getSendSnippet?: (role: RoleOption, message: string) => string | undefined;
+  getSendSnippet?: (
+    role: RoleOption,
+    content: LettaUserMessageContentUnion[] | string,
+  ) => string | undefined;
   sendingMessageText?: string;
 }
 
