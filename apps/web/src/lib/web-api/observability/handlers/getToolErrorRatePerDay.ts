@@ -42,7 +42,7 @@ export async function getToolErrorRatePerDay(
           THEN (SUM(CASE WHEN tool_execution_success = 'false' THEN value ELSE 0 END) / SUM(value)) * 100
           ELSE 0
         END as error_rate
-      FROM otel.letta_metrics_counters_5min_view
+      FROM otel.letta_metrics_counters_1hour_view
       WHERE metric_name = 'count_tool_execution'
         AND organization_id = {organizationId: String}
         AND project_id = {projectId: String}

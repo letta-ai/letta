@@ -54,10 +54,6 @@ export function ToolUsageFrequencyChart(props: ToolUsageFrequencyChartProps) {
 
     const groupedByName = data.body.items.reduce(
       (acc, item) => {
-        const date = new Date(item.date).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-        });
         // filter out send_message tool
         if (item.toolName === 'send_message') {
           return acc;
@@ -66,11 +62,11 @@ export function ToolUsageFrequencyChart(props: ToolUsageFrequencyChartProps) {
         if (!acc[item.toolName]) {
           acc[item.toolName] = {};
         }
-        acc[item.toolName][date] = {
-          date,
+        acc[item.toolName][item.date] = {
+          date: item.date,
           name: item.toolName,
           usageCount:
-            (acc[item.toolName][date]?.usageCount || 0) + item.usageCount,
+            (acc[item.toolName][item.date]?.usageCount || 0) + item.usageCount,
         };
         return acc;
       },

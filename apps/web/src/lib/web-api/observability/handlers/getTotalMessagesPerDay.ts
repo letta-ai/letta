@@ -37,7 +37,7 @@ export async function getTotalMessagesPerDay(
       SELECT
         toDate(time_window) as date,
         SUM(value) as total_messages
-      FROM otel.letta_metrics_counters_5min_view
+      FROM otel.letta_metrics_counters_1hour_view
       WHERE metric_name = 'count_user_message'
         AND organization_id = {organizationId: String}
         AND project_id = {projectId: String}

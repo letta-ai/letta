@@ -36,7 +36,7 @@ export async function getToolErrorsMetrics(
       SELECT
         toDate(time_window) as error_date,
         SUM(CASE WHEN tool_execution_success = 'false' THEN value ELSE 0 END) as error_count
-      FROM otel.letta_metrics_counters_5min_view
+      FROM otel.letta_metrics_counters_1hour_view
       WHERE metric_name = 'count_tool_execution'
         AND organization_id = {organizationId: String}
         AND project_id = {projectId: String}

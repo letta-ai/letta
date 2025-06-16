@@ -6,10 +6,6 @@ import {
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 
-const DEFAULT_SPAN_SEARCH = `(SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
-                   SpanName = 'POST /v1/agents/{agent_id}/messages' OR
-                   SpanName = 'POST /v1/agents/{agent_id}/messages/async')`;
-
 type GetApiErrorCountRequest = ServerInferRequest<
   typeof contracts.observability.getApiErrorCount
 >;
@@ -38,17 +34,17 @@ export async function getApiErrorCount(
 
   const result = await client.query({
     query: `
-      SELECT toDate(Timestamp) as error_date,
-             count() as error_count
-      FROM otel_traces
-      WHERE (${DEFAULT_SPAN_SEARCH})
-        AND SpanAttributes['project.id'] = {projectId: String}
-        AND SpanAttributes['organization.id'] = {organizationId: String}
-        AND Timestamp >= {startDate: DateTime}
-        AND Timestamp <= {endDate: DateTime}
-        AND SpanAttributes['StatusCode'] = 'STATUS_CODE_ERROR'
-      GROUP BY toDate(Timestamp)
-      ORDER BY error_date DESC
+      SELECT
+        toDate(time_window) as date,
+        SUM(CASE WHEN status_code != '200' THEN value ELSE 0 END) as error_count
+      FROM otel.letta_metrics_counters_1hour_view
+      WHERE metric_name = 'count_tool_execution'
+        AND organization_id = {organizationId: String}
+        AND project_id = {projectId: String}
+        AND time_window >= toDateTime({startDate: UInt32})
+        AND time_window <= toDateTime({endDate: UInt32})
+      GROUP BY toDate(time_window)
+      ORDER BY date DESC
     `,
     query_params: {
       startDate: Math.round(new Date(startDate).getTime() / 1000),

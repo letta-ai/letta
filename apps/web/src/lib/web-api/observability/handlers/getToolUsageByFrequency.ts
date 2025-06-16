@@ -37,7 +37,7 @@ export async function getToolUsageByFrequency(
         toDate(time_window) as date,
         tool_name,
         SUM(value) as usage_count
-      FROM otel.letta_metrics_counters_5min_view
+      FROM otel.letta_metrics_counters_1hour_view
       WHERE metric_name = 'count_tool_execution'
         AND organization_id = {organizationId: String}
         AND project_id = {projectId: String}
