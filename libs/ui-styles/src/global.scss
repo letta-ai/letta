@@ -28,7 +28,7 @@
 
   --steel: 210, 8%, 80%;
 
-  --text-default: 0, 0%, 9%;
+  --text-default: 0, 0%, 8%;
   --text-lighter: 210, 3%, 28%;
   --text-disabled: 210, 3%, 66%;
   --text-negative: 210, 10%, 96%;
@@ -102,7 +102,7 @@
   --background-grey2: 210, 10%, 96%;
   --background-grey2-content: var(--text-default);
 
-  --user-content-background: 0deg 0% 96.86%;
+  --user-content-background: 0deg 0% 94.5%;
   --agent-content-background: 240deg 33.33% 95.88%;
 
   --background-black: 0, 0%, 0%;
@@ -121,11 +121,14 @@
   --input: 240 5.9% 90%;
   --ring: var(--brand);
   --radius: 0.375rem;
-  --violet: 278, 44%, 49%;
+  --violet: 278, 72%, 63%;
+  --border-violet: 278, 72%, 86%;
 
   --button-input-height: 36px;
   --button-input-height-sm: 28px;
   --button-input-height-lg: 44px;
+
+  --input-height: 28px;
   --panel-row-height: 42px;
   --header-height: 43px;
   --header-height-sm: 43px;
@@ -226,7 +229,8 @@
   --brand-light-content: 10, 100%, 60%;
   --brand-light-border: 9, 15%, 25%;
 
-  --violet: 278, 72%, 69%;
+  --violet: 283, 69%, 69%;
+  --border-violet: 283, 69%, 89%, 0.24;
   --on-transparent: 100, 100%, 100%;
 
   --background: 0, 0%, 6%;

@@ -77,7 +77,7 @@ function AgentIdentifierToCopy() {
         align="left"
         font="mono"
         color="muted"
-        variant="body2"
+        variant="body4"
       >
         {identifier}
       </Typography>

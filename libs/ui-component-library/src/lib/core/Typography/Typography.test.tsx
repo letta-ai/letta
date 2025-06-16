@@ -96,8 +96,9 @@ describe('Typography', () => {
     it('renders body4 variant', () => {
       render(<Typography variant="body4">Body4 Text</Typography>);
       const element = screen.getByText('Body4 Text');
-      expect(element).toHaveClass('text-[0.7rem]');
-      expect(element.tagName).toBe('SPAN');
+      expect(element).toHaveClass('text-[0.625rem]');
+      expect(element).toHaveClass('tracking-[0.04em]');
+      expect(element.tagName).toBe('P');
     });
 
     it('renders large variant', () => {

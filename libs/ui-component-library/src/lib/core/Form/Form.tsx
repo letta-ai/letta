@@ -110,7 +110,7 @@ function InputWrapper({
 }: InputWrapperProps) {
   const className = useMemo(() => {
     return cn(
-      'flex flex-col gap-[6px]',
+      'flex flex-col gap-[5px]',
       collapseHeight ? 'h-0' : '',
       fullWidth ? 'w-full' : 'w-fit',
       fullHeight ? 'h-full' : '',
@@ -174,7 +174,12 @@ function InputContainerHeader(props: InputContainerHeaderProps) {
     <HStack>
       <HStack gap="small" align="center">
         {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
-        <Typography align="left" variant={labelFontVariant} color={'default'}>
+        <Typography
+          align="left"
+          variant={labelFontVariant || 'body3'}
+          semibold
+          color={'lighter'}
+        >
           {label}
         </Typography>
         {labelBadge}

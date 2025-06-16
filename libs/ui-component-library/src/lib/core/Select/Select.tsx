@@ -164,7 +164,13 @@ function useSelectComponents(selectProps: BaseSelectProps) {
                 {props.data.icon && (
                   <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
                 )}
-                <Typography fullWidth align="left" noWrap overflow="ellipsis">
+                <Typography
+                  variant="body3"
+                  fullWidth
+                  align="left"
+                  noWrap
+                  overflow="ellipsis"
+                >
                   {children}
                 </Typography>
               </HStack>
@@ -217,11 +223,17 @@ function useSelectComponents(selectProps: BaseSelectProps) {
               data-testid={`select-box-option-${props.data.value}`}
               data-testid_alt={`select-box-option-container-${props.data.label}`}
             >
-              <HStack align="center" collapseWidth flex>
+              <HStack align="center" collapseWidth flex gap="small">
                 {props.data.icon && !hideIconsOnOptions && (
                   <Slot className="max-h-3  w-3">{props.data.icon}</Slot>
                 )}
-                <Typography align="left" noWrap fullWidth overflow="ellipsis">
+                <Typography
+                  variant="body3"
+                  align="left"
+                  noWrap
+                  fullWidth
+                  overflow="ellipsis"
+                >
                   {children}
                 </Typography>
               </HStack>
@@ -238,7 +250,7 @@ function useSelectComponents(selectProps: BaseSelectProps) {
 }
 
 const controlVariants = cva(
-  'border bg-panel-input-background text-panel-input-background-content border-solid h-[auto] px-2 py-1 w-full',
+  'border bg-panel-input-background text-panel-input-background-content border-solid h-inputHeight px-2 py-1 w-full',
   {
     variants: {},
     defaultVariants: {},
@@ -275,21 +287,21 @@ function getClassNames(props: GetClassNameArgs = {}) {
     container: () => 'min-w-[200px] w-full',
     control: () =>
       cn(
-        'border bg-panel-input-background text-panel-input-background-content border-solid h-[auto] px-2 py-1 w-full',
+        'border bg-panel-input-background text-panel-input-background-content border-solid px-2 py-1 w-full',
         controlVariants(props),
       ),
-    placeholder: () => cn('text-muted-content text-base'),
+    placeholder: () => cn('text-muted-content text-xs'),
     menu: () =>
       cn(
         'mt-1 bg-panel-input-background text-panel-input-background-content border',
       ),
     option: () =>
-      cn('px-3 py-2  hover:bg-background-hover flex w-full overflow-hidden'),
+      cn('px-2 py-2  hover:bg-background-hover flex w-full overflow-hidden'),
     noOptionsMessage: () => cn('py-3 px-3'),
-    valueContainer: () => cn('flex items-center gap-1 text-sm'),
+    valueContainer: () => cn('flex items-center gap-1 text-xs'),
     groupHeading: () =>
       cn('border-b px-3 mt-3 pb-2 text-sm font-medium text-tertiary-content'),
-    multiValue: () => cn('h-[21px] text-sm'),
+    multiValue: () => cn('h-[21px] text-xs'),
   };
 }
 
@@ -309,10 +321,10 @@ function useStyles(args: UseStylesArgs) {
       minHeight:
         args.size === 'large'
           ? 'var(--button-input-height-lg)'
-          : 'var(--button-input-height)',
+          : 'var(--input-height)',
     }),
-    option: () => ({ fontSize: 'var(--font-size-sm)' }),
-    noOptionsMessage: () => ({ fontSize: 'var(--font-size-sm)' }),
+    option: () => ({ fontSize: 'var(--font-size-xs)' }),
+    noOptionsMessage: () => ({ fontSize: 'var(--font-size-xs)' }),
     menu: (base: any) => ({
       ...base,
       ...(menuWidth ? { minWidth: menuWidth } : {}),

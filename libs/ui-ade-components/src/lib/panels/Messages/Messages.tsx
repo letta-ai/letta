@@ -193,7 +193,9 @@ function MessageGroup({ group }: MessageGroupType) {
 
   return (
     <HStack
-      padding="medium"
+      paddingY="medium"
+      paddingLeft="medium"
+      paddingRight="xlarge"
       /* eslint-disable-next-line react/forbid-component-props */
       style={{
         backgroundColor:
@@ -213,7 +215,12 @@ function MessageGroup({ group }: MessageGroupType) {
       />
       <VStack collapseWidth flex gap="small">
         <HStack fullWidth align="center" justify="spaceBetween">
-          <Typography bold variant="body2" color="lighter">
+          <Typography
+            semibold
+            variant="body3"
+            color="lighter"
+            className="tracking-[0.04em]"
+          >
             {name.toUpperCase()}
           </Typography>
         </HStack>

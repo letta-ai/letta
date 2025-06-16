@@ -165,6 +165,7 @@ const frameVariants = cva('', {
       medium: 'pr-3',
       large: 'pr-4',
       true: 'pr-5',
+      xlarge: 'pr-6',
     },
     overflow: {
       hidden: 'overflow-hidden',

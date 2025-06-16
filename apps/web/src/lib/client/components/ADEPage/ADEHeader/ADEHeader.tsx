@@ -331,7 +331,7 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
         />
         <HStack align="center" gap={false}>
           <Breadcrumb
-            size="small"
+            size="xsmall"
             items={[
               ...(isLocal
                 ? [
@@ -343,7 +343,7 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
                           href={projectUrl}
                           color="tertiary"
                           label={t('nav.localDev')}
-                          size="small"
+                          size="xsmall"
                           _use_rarely_className="text-text-lighter inline-flex items-center gap-1.5"
                           postIcon={
                             <Tooltip content={t('localAgentDevelopment')}>

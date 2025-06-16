@@ -19,11 +19,11 @@ import { HStack } from '../../framing/HStack/HStack';
 import { VStack } from '../../framing/VStack/VStack';
 
 export const inputVariants = cva(
-  'flex  items-center overflow-hidden border border-input text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring',
+  'flex  items-center overflow-hidden border border-input text-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring',
   {
     variants: {
       size: {
-        default: 'h-biHeight',
+        default: 'h-inputHeight',
         small: 'h-biHeight-sm',
         large: 'h-biHeight-lg',
       },
@@ -82,10 +82,10 @@ const inputIconVariants = cva('', {
   },
 });
 
-const innerInputVariants = cva('px-3 gap-2', {
+const innerInputVariants = cva('px-2 gap-2', {
   variants: {
     size: {
-      default: 'h-biHeight',
+      default: 'h-inputHeight',
       small: 'h-biHeight-sm',
       large: 'h-biHeight-lg',
     },
@@ -230,7 +230,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
             onChange={handleOnChange}
             disabled={disabled || readOnly}
             type={typeOverride}
-            className="w-full h-full text-base focus:outline-none bg-transparent"
+            className="w-full h-full text-xs focus:outline-none bg-transparent"
             ref={ref}
           />
           {showVisibilityControls && (

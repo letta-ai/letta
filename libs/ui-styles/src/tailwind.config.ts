@@ -38,6 +38,7 @@ export function buildConfig(appDir: string): Config {
           biHeight: 'var(--button-input-height)',
           'biHeight-sm': 'var(--button-input-height-sm)',
           'biHeight-lg': 'var(--button-input-height-lg)',
+          inputHeight: 'var(--input-height)',
           panel: 'var(--panel-row-height)',
           header: 'var(--header-height)',
           'header-sm': 'var(--header-height-sm)',
@@ -72,6 +73,7 @@ export function buildConfig(appDir: string): Config {
         },
         colors: {
           border: 'hsl(var(--border))',
+          'border-violet': 'hsl(var(--border-violet))',
           input: 'hsl(var(--input))',
           ring: 'hsl(var(--ring))',
           steel: 'hsl(var(--steel))',

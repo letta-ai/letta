@@ -74,7 +74,7 @@ function SliderInput(props: SliderProps) {
       />
       <input
         className={cn(
-          'w-[75px] bg-panel-input-background text-panel-input-background-content border text-base px-1 py-1',
+          'w-[75px] bg-panel-input-background text-panel-input-background-content border text-xs px-1 py-1',
           !isSliderValueValid && 'border-destructive',
         )}
         value={sliderValue}

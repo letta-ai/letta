@@ -50,7 +50,6 @@ export function ADEGroup(props: ADEGroupProps) {
                   bold
                   noWrap
                   overflow="ellipsis"
-                  className="tracking-[0.04em]"
                   color={activeTab === index ? 'default' : 'muted'}
                   variant="body4"
                 >

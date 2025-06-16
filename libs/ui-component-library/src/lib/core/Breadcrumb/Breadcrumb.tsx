@@ -141,7 +141,9 @@ function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
     <BreadcrumbItem className="mx-2">
       <MaybeLink testId={`breadcrumb-item:${label}`} href={href}>
         <Typography
-          variant={size === 'small' ? 'body2' : 'body'}
+          variant={
+            size === 'xsmall' ? 'body3' : size === 'small' ? 'body2' : 'body'
+          }
           onClick={onClick}
           className={cn(
             'flex items-center gap-1',

@@ -167,7 +167,7 @@ export function SystemPromptEditor() {
       )}
       <HStack align="center" fullWidth justify="spaceBetween">
         <HStack align="center">
-          <Typography variant="body" color="default" semibold={true}>
+          <Typography variant="body3" color="lighter" semibold={true}>
             {t('SystemPromptEditor.label')}
           </Typography>
           <InfoTooltip text={t('SystemPromptEditor.tooltip')} />

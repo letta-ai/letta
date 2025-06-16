@@ -11,7 +11,10 @@ interface BlockQuoteProps {
 export function BlockQuote(props: BlockQuoteProps) {
   const { children, fullWidth } = props;
   const className = useMemo(() => {
-    return cn('border-l-2 pl-2', fullWidth ? 'w-full' : 'w-fit');
+    return cn(
+      'border-l-[3px] border-border-violet pl-4',
+      fullWidth ? 'w-full' : 'w-fit',
+    );
   }, [fullWidth]);
   return <div className={className}>{children}</div>;
 }

@@ -13,7 +13,7 @@ export function AgentType() {
   return (
     <HStack align="center" fullWidth justify="spaceBetween">
       <HStack align="center">
-        <Typography variant="body" color="default" semibold={true}>
+        <Typography variant="body3" color="lighter" semibold={true}>
           {t('AgentType.label')}
         </Typography>
         <InfoTooltip text={t('AgentType.tooltip')} />
