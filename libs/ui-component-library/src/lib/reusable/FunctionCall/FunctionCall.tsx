@@ -82,41 +82,30 @@ export function FunctionCall(props: FunctionCallProps) {
 
   const t = useTranslations('ui-component-library/FunctionCall');
 
-  const statusMessage = useMemo(() => {
-    if (!response?.tool_return) {
-      return t('isExecuting');
-    }
-
+  const statusInfo = useMemo(() => {
     if (status === 'success') {
-      return t('success');
+      return {
+        message: t('success'),
+        color: 'success' as const,
+        icon: <CheckCircleFilledIcon size="small" />,
+      };
     }
 
-    return t('error');
+    if (!response?.tool_return && status !== 'error') {
+      return {
+        message: t('isExecuting'),
+        color: 'warning' as const,
+        icon: <Spinner size="small" />,
+      };
+    }
+
+    return {
+      message: t('error'),
+      color: 'destructive' as const,
+      icon: <WarningIcon />,
+    }
+
   }, [response?.tool_return, status, t]);
-
-  const statusColor = useMemo(() => {
-    if (!response?.tool_return) {
-      return 'warning';
-    }
-
-    if (status === 'success') {
-      return 'success';
-    }
-
-    return 'destructive';
-  }, [response?.tool_return, status]);
-
-  const statusIcon = useMemo(() => {
-    if (!response?.tool_return) {
-      return <Spinner size="small" />;
-    }
-
-    if (status === 'success') {
-      return <CheckCircleFilledIcon size="small" />;
-    }
-
-    return <WarningIcon />;
-  }, [response?.tool_return, status]);
 
   const [responseView, setResponseView] = useState<ResponseViews>('response');
 
@@ -184,9 +173,9 @@ export function FunctionCall(props: FunctionCallProps) {
               </Typography>
             </HStack>
             <Badge
-              preIcon={statusIcon}
-              content={statusMessage}
-              variant={statusColor}
+              preIcon={statusInfo.icon}
+              content={statusInfo.message}
+              variant={statusInfo.color}
             />
           </HStack>
         </HStack>
