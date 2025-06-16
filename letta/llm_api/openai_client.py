@@ -53,7 +53,7 @@ def accepts_developer_role(model: str) -> bool:
 
     See: https://community.openai.com/t/developer-role-not-accepted-for-o1-o1-mini-o3-mini/1110750/7
     """
-    if is_openai_reasoning_model(model):
+    if is_openai_reasoning_model(model) and not "o1-mini" in model or "o1-preview" in model:
         return True
     else:
         return False
