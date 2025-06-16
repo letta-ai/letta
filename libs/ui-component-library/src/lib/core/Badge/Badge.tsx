@@ -19,7 +19,8 @@ const badgeVariants = cva(
         true: 'border',
       },
       variant: {
-        default: 'bg-background-grey2 text-background-grey2-content',
+        default:
+          'bg-background-grey2 text-background-grey2-content border-background-grey2-border',
         warning:
           'bg-background-warning text-background-warning-content border-background-warning-border',
         destructive:

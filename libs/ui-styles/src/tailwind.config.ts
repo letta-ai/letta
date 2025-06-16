@@ -112,6 +112,7 @@ export function buildConfig(appDir: string): Config {
           'background-grey2': {
             DEFAULT: 'hsl(var(--background-grey2))',
             content: 'hsl(var(--background-grey2-content))',
+            border: 'hsl(var(--background-grey2-border))',
           },
           'background-grey3': {
             DEFAULT: 'hsl(var(--grey3))',
