@@ -132,6 +132,8 @@ navigation:
             contents: 
               - page: Connecting to LiveKit Agents 
                 path: pages/voice/voice_livekit.mdx
+              - page: Connecting to Vapi 
+                path: pages/voice/voice_vapi.mdx
 
       #- section: Tool Execution
       #  contents:
