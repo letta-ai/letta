@@ -290,12 +290,17 @@ async def get_redis_client() -> AsyncRedisClient:
         try:
             from letta.settings import settings
 
-            _client_instance = AsyncRedisClient(
-                host=settings.redis_host or "localhost",
-                port=settings.redis_port or 6379,
-            )
-            await _client_instance.wait_for_ready(timeout=5)
-            logger.info("Redis client initialized")
+            # If Redis settings are not configured, use noop client
+            if settings.redis_host is None or settings.redis_port is None:
+                logger.info("Redis not configured, using noop client")
+                _client_instance = NoopAsyncRedisClient()
+            else:
+                _client_instance = AsyncRedisClient(
+                    host=settings.redis_host,
+                    port=settings.redis_port,
+                )
+                await _client_instance.wait_for_ready(timeout=5)
+                logger.info("Redis client initialized")
         except Exception as e:
             logger.warning(f"Failed to initialize Redis: {e}")
             _client_instance = NoopAsyncRedisClient()
