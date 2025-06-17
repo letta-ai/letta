@@ -31,7 +31,6 @@ class DocumentAnalysis(BaseModel):
     """Analysis of a document's relevance to a search question."""
 
     citations: List[Citation]
-    summary: str  # Brief summary of how this document relates to the question
 
 
 class LettaBuiltinToolExecutor(ToolExecutor):
@@ -225,7 +224,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
                 for result, analysis in zip(results_with_markdown, analyses):
                     if isinstance(analysis, Exception) or analysis is None:
                         logger.error(f"Analysis failed for {result.get('url')}, falling back to raw results")
-                        return search_result.model_dump_json(exclude_none=True)
+                        return str(search_result)
 
                 # All analyses succeeded, build processed results
                 for result, analysis in zip(results_with_markdown, analyses):
@@ -252,7 +251,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
                 logger.error(f"Error with OpenAI processing: {e}")
 
         # Return raw search results if OpenAI processing isn't available or fails
-        return search_result.model_dump_json(exclude_none=True)
+        return str(search_result)
 
     async def _analyze_document_with_openai(self, client, markdown_content: str, query: str, question: str) -> Optional[DocumentAnalysis]:
         """Use OpenAI to analyze a document and extract relevant passages."""
@@ -283,11 +282,9 @@ class LettaBuiltinToolExecutor(ToolExecutor):
 
             if result.get("analysis") and result["analysis"].get("citations"):
                 analysis = result["analysis"]
-                source["summary"] = analysis.get("summary")
                 source["citations"] = analysis["citations"]
                 total_snippets += len(analysis["citations"])
             else:
-                source["summary"] = "No relevant information found to answer the question"
                 source["citations"] = []
 
             sources.append(source)
