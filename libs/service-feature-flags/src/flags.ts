@@ -82,6 +82,11 @@ export const featureFlags = {
     expiryDate: '9999-99-99',
     flagValue: z.boolean(),
   },
+  TOOL_RULE_VIEWER: {
+    description: 'Enable the Tool Rules Visual viewer panel',
+    expiryDate: '9999-99-99',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;

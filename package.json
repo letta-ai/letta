@@ -110,6 +110,7 @@
     "@types/react-virtualized": "^9.22.2",
     "@types/react-window": "^1.8.8",
     "@workos-inc/node": "^7.39.0",
+    "@xyflow/react": "^12.7.0",
     "array.prototype.tosorted": "^1.1.4",
     "axios": "^1.7.9",
     "bcrypt": "^5.1.1",

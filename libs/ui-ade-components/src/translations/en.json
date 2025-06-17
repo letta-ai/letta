@@ -145,6 +145,14 @@
       }
     }
   },
+  "ADE/ToolRulesVisual": {
+    "ruleTypes": "Rule Types",
+    "runFirst": "Run First",
+    "constrain": "Constrain Tools",
+    "maxCount": "Max Count",
+    "continueLoop": "Continue Loop",
+    "exitLoop": "Exit Loop"
+  },
   "ADE/AgentVariablesModal": {
     "noVariablesInDeployedAgent": "No variables in this agent",
     "noVariablesInDeployedAgentWithNoTemplate": "Variables allow you to programatically define parts of an agent's memory that can be customized per-user on agent creation. Variables are only available in templates - to use variables, click 'Create template' in the top right.",
