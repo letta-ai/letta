@@ -125,7 +125,7 @@ MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX = re.compile(
 )
 
 # Built in tools
-BUILTIN_TOOLS = ["run_code", "web_search"]
+BUILTIN_TOOLS = ["run_code", "web_search", "firecrawl_search"]
 
 # Built in tools
 FILES_TOOLS = ["open_file", "close_file", "grep", "search_files"]
