@@ -91,6 +91,8 @@ async def list_tools(
         if name is not None:
             tool = await server.tool_manager.get_tool_by_name_async(tool_name=name, actor=actor)
             return [tool] if tool else []
+
+        # Get the list of tools
         return await server.tool_manager.list_tools_async(actor=actor, after=after, limit=limit)
     except Exception as e:
         # Log or print the full exception here for debugging
