@@ -163,7 +163,7 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
                         </Typography>
                       </MaybeTooltip>
                     </HStack>
-                    {typeof props.subtitle === 'string' && (
+                    {typeof props.subtitle === 'string' ? (
                       <Typography
                         fullWidth
                         align="left"
@@ -174,8 +174,9 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
                       >
                         {props.subtitle}
                       </Typography>
+                    ) : (
+                      props.subtitle
                     )}
-                    {props.subtitle}
                   </VStack>
                 </HStack>
               </VStack>
