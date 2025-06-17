@@ -1,18 +1,6 @@
 from typing import Literal
 
 
-async def web_search(query: str) -> str:
-    """
-    Search the web for information.
-    Args:
-        query (str): The query to search the web for.
-    Returns:
-        str: The search results.
-    """
-
-    raise NotImplementedError("This is only available on the latest agent architecture. Please contact the Letta team.")
-
-
 def run_code(code: str, language: Literal["python", "js", "ts", "r", "java"]) -> str:
     """
     Run code in a sandbox. Supports Python, Javascript, Typescript, R, and Java.
@@ -27,7 +15,7 @@ def run_code(code: str, language: Literal["python", "js", "ts", "r", "java"]) ->
     raise NotImplementedError("This is only available on the latest agent architecture. Please contact the Letta team.")
 
 
-async def firecrawl_search(
+async def web_search(
     query: str,
     question: str,
     limit: int = 5,

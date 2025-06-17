@@ -76,11 +76,10 @@ def agent_state(client: Letta) -> AgentState:
     send_message_tool = client.tools.list(name="send_message")[0]
     run_code_tool = client.tools.list(name="run_code")[0]
     web_search_tool = client.tools.list(name="web_search")[0]
-    firecrawl_search_tool = client.tools.list(name="firecrawl_search")[0]
     agent_state_instance = client.agents.create(
         name="test_builtin_tools_agent",
         include_base_tools=False,
-        tool_ids=[send_message_tool.id, run_code_tool.id, web_search_tool.id, firecrawl_search_tool.id],
+        tool_ids=[send_message_tool.id, run_code_tool.id, web_search_tool.id],
         model="openai/gpt-4o",
         embedding="letta/letta-free",
         tags=["test_builtin_tools_agent"],
@@ -98,11 +97,10 @@ def agent_state_with_firecrawl_key(client: Letta) -> AgentState:
     send_message_tool = client.tools.list(name="send_message")[0]
     run_code_tool = client.tools.list(name="run_code")[0]
     web_search_tool = client.tools.list(name="web_search")[0]
-    firecrawl_search_tool = client.tools.list(name="firecrawl_search")[0]
     agent_state_instance = client.agents.create(
         name="test_builtin_tools_agent",
         include_base_tools=False,
-        tool_ids=[send_message_tool.id, run_code_tool.id, web_search_tool.id, firecrawl_search_tool.id],
+        tool_ids=[send_message_tool.id, run_code_tool.id, web_search_tool.id],
         model="openai/gpt-4o",
         embedding="letta/letta-free",
         tags=["test_builtin_tools_agent"],
@@ -207,32 +205,7 @@ def test_web_search(
 ) -> None:
     user_message = MessageCreate(
         role="user",
-        content="Use the web search tool to find the latest news about San Francisco.",
-        otid=USER_MESSAGE_OTID,
-    )
-
-    response = client.agents.messages.create(
-        agent_id=agent_state.id,
-        messages=[user_message],
-    )
-
-    tool_returns = [m for m in response.messages if isinstance(m, ToolReturnMessage)]
-    assert tool_returns, "No ToolReturnMessage found"
-
-    returns = [m.tool_return for m in tool_returns]
-    expected = "RESULT 1:"
-    assert any(expected in ret for ret in returns), f"Expected to find '{expected}' in tool_return, " f"but got {returns!r}"
-
-
-@pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS, ids=[c.model for c in TESTED_LLM_CONFIGS])
-def test_firecrawl_search(
-    client: Letta,
-    agent_state: AgentState,
-    llm_config: LLMConfig,
-) -> None:
-    user_message = MessageCreate(
-        role="user",
-        content="I am executing a test. Use the firecrawl search tool to find where I, Charles Packer, the CEO of Letta, went to school.",
+        content="I am executing a test. Use the web search tool to find where I, Charles Packer, the CEO of Letta, went to school.",
         otid=USER_MESSAGE_OTID,
     )
 
@@ -247,7 +220,7 @@ def test_firecrawl_search(
     returns = [m.tool_return for m in tool_returns]
     print(returns)
 
-    # Parse the JSON response from firecrawl_search
+    # Parse the JSON response from web_search
     assert len(returns) > 0, "No tool returns found"
     response_json = json.loads(returns[0])
 
@@ -290,14 +263,14 @@ def test_firecrawl_search(
 
 
 @pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS, ids=[c.model for c in TESTED_LLM_CONFIGS])
-def test_firecrawl_search_using_agent_state_env_var(
+def test_web_search_using_agent_state_env_var(
     client: Letta,
     agent_state_with_firecrawl_key: AgentState,
     llm_config: LLMConfig,
 ) -> None:
     user_message = MessageCreate(
         role="user",
-        content="I am executing a test. Use the firecrawl search tool to find where I, Charles Packer, the CEO of Letta, went to school.",
+        content="I am executing a test. Use the web search tool to find where I, Charles Packer, the CEO of Letta, went to school.",
         otid=USER_MESSAGE_OTID,
     )
 
@@ -312,7 +285,7 @@ def test_firecrawl_search_using_agent_state_env_var(
     returns = [m.tool_return for m in tool_returns]
     print(returns)
 
-    # Parse the JSON response from firecrawl_search
+    # Parse the JSON response from web search
     assert len(returns) > 0, "No tool returns found"
     response_json = json.loads(returns[0])
 
