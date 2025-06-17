@@ -152,6 +152,19 @@
   --agent-color: 276, 74%, 93%;
   --agent-color-content: 0, 0%, 0%;
 
+  /* Model type chip colors */
+  --chip-standard: 244, 245, 246, 0.4;
+  --chip-standard-border: 233, 235, 237, 1;
+  --chip-standard-content: 70, 72, 74, 1;
+
+  --chip-premium: 193, 186, 120, 0.24;
+  --chip-premium-border: 193, 186, 120, 0.24;
+  --chip-premium-content: 104, 98, 49, 1;
+
+  --chip-usage-based: 254, 205, 90, 0.24;
+  --chip-usage-based-border: 254, 205, 90, 0.16;
+  --chip-usage-based-content: 77, 60, 21, 1;
+
   --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI',
     'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
     'Helvetica Neue', sans-serif;

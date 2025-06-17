@@ -205,6 +205,21 @@ export function buildConfig(appDir: string): Config {
             DEFAULT: 'hsl(var(--agent-color))',
             content: 'hsl(var(--agent-color-content))',
           },
+          'chip-standard': {
+            DEFAULT: 'rgba(var(--chip-standard))',
+            border: 'rgba(var(--chip-standard-border))',
+            content: 'rgba(var(--chip-standard-content))',
+          },
+          'chip-premium': {
+            DEFAULT: 'rgba(var(--chip-premium))',
+            border: 'rgba(var(--chip-premium-border))',
+            content: 'rgba(var(--chip-premium-content))',
+          },
+          'chip-usage-based': {
+            DEFAULT: 'rgba(var(--chip-usage-based))',
+            border: 'rgba(var(--chip-usage-based-border))',
+            content: 'rgba(var(--chip-usage-based-content))',
+          },
         },
         borderRadius: {
           DEFAULT: `var(--radius)`,

@@ -27,6 +27,12 @@ const badgeVariants = cva(
           'bg-background-destructive text-background-destructive-content',
         success: 'bg-background-success text-background-success-content',
         info: 'text-brand-light-content bg-brand-light',
+        chipStandard:
+          'bg-chip-standard text-chip-standard-content border-chip-standard-border',
+        chipPremium:
+          'bg-chip-premium text-chip-premium-content border-chip-premium-border',
+        chipUsageBased:
+          'bg-chip-usage-based text-chip-usage-based-content border-chip-usage-based-border',
       },
       uppercase: {
         true: 'uppercase',

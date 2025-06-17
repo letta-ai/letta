@@ -103,9 +103,6 @@ export function ModelSelector(props: LocalModelSelectorProps) {
       fullWidth
       placeholder={t('placeholder')}
       isLoading={isLoading}
-      styleConfig={{
-        menuWidth: 350,
-      }}
       infoTooltip={{
         text: t('tooltip'),
       }}

@@ -106,9 +106,10 @@ function useHostedOptions(enabled: boolean) {
           return (
             <Badge
               size="small"
-              variant="success"
+              variant="chipStandard"
+              border={true}
               content={t('standard.label')}
-            ></Badge>
+            />
           );
         }
 
@@ -116,18 +117,20 @@ function useHostedOptions(enabled: boolean) {
           return (
             <Badge
               size="small"
-              variant="info"
+              variant="chipPremium"
+              border={true}
               content={t('premium.label')}
-            ></Badge>
+            />
           );
         }
 
         return (
           <Badge
             size="small"
-            variant="default"
+            variant="chipUsageBased"
+            border={true}
             content={t('usageBased.label')}
-          ></Badge>
+          />
         );
       })();
 
