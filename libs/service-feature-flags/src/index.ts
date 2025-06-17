@@ -75,6 +75,50 @@ export async function getOrganizationFeatureFlags(org: OrgDetails) {
   return response.toJSON();
 }
 
+interface UserDetails {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export function isLettaEmail(email: string) {
+  return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
+}
+export async function getLettaUserFeatureFlags(user: UserDetails) {
+  if (!environment.LAUNCH_DARKLY_SDK_KEY) {
+    return {};
+  }
+
+  // Duplicate check for email as setting this context will increase our LaunchDarkly bill significantly.
+  if (!isLettaEmail(user.email)) {
+    return {};
+  }
+
+  const ldClient = await getLaunchDarklyClient();
+
+  const context: ld.LDContext = {
+    kind: 'user',
+    key: user.id,
+    name: user.name,
+    email: user.email,
+  };
+
+  ldClient.identify(context);
+  const response = await ldClient.allFlagsState(context);
+  const allFlags = response.toJSON();
+
+  const explicitFlags: Record<string, any> = {};
+  // Only include flags that were explicitly set for this user
+  Object.entries(allFlags).forEach(([key, value]) => {
+    const reason = response.getFlagReason(key);
+    
+    if (reason?.kind === 'TARGET_MATCH' || reason?.kind === 'RULE_MATCH') {
+      explicitFlags[key] = value;
+    }
+  });
+  return explicitFlags;
+}
+
 export async function getSingleFlag<SingleFlag extends Flag>(
   flag: SingleFlag,
   orgId?: string,

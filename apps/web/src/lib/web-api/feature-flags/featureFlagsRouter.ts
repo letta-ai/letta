@@ -5,7 +5,9 @@ import {
   featureFlags,
   type FlagMap,
   getDefaultFlags,
+  getLettaUserFeatureFlags,
   getOrganizationFeatureFlags,
+  isLettaEmail,
 } from '@letta-cloud/service-feature-flags';
 
 type FeatureFlagsResponse = ServerInferResponses<
@@ -19,22 +21,25 @@ function flagIsValid(flag: string): flag is keyof FlagMap {
 }
 
 async function getFeatureFlags(): Promise<FeatureFlagsResponse> {
-  const user = await getUser();
+  let userFlags = {};
+  let orgFlags = {};
 
-  let flags: Record<string, any> | undefined;
+  const [user, defaultFlags] = await Promise.all([
+    getUser(),
+    getDefaultFlags(),
+  ]);
+
+  if (user?.email && isLettaEmail(user.email)) {
+    userFlags = await getLettaUserFeatureFlags(user);
+  }
 
   if (user?.activeOrganizationId) {
     const org = await getOrganizationFromOrganizationId(
       user.activeOrganizationId,
     );
-
     if (org) {
-      flags = await getOrganizationFeatureFlags(org);
+      orgFlags = await getOrganizationFeatureFlags(org);
     }
-  }
-
-  if (!flags) {
-    flags = await getDefaultFlags();
   }
 
   if (process.env.NODE_ENV !== 'production') {
@@ -42,12 +47,14 @@ async function getFeatureFlags(): Promise<FeatureFlagsResponse> {
       // eslint-disable-next-line @typescript-eslint/no-require-imports,@typescript-eslint/no-var-requires
       flagOverrides = require('../../../../flag.overrides.json');
     } catch (_e) {
-      //
+      // Ignore errors
     }
   }
 
   const final = {
-    ...flags,
+    ...defaultFlags,
+    ...orgFlags,
+    ...userFlags,
     ...flagOverrides,
   };
 
