@@ -11,9 +11,11 @@ import {
   Badge,
   Button,
   Code,
+  Dialog,
   FunctionCall,
   HStack,
   IconAvatar,
+  ImagePreview,
   SystemIcon,
   Markdown,
   PersonIcon,
@@ -33,6 +35,8 @@ import {
 } from '@letta-cloud/ui-component-library';
 import type {
   AgentMessage,
+  ImageContent,
+  LettaUserMessageContentUnion,
   ToolReturnMessageSchemaType,
 } from '@letta-cloud/sdk-core';
 import { SendMessageFunctionCallSchema } from '@letta-cloud/sdk-core';
@@ -72,6 +76,108 @@ function tryFallbackParseJson(str: string): unknown {
   }
 
   return null;
+}
+
+function getImageSrc(imageContent: ImageContent): string | null {
+  if (
+    imageContent.source.type === 'base64' ||
+    imageContent.source.type === 'letta'
+  ) {
+    const { media_type, data } = imageContent.source;
+    if (!data || !media_type) return null;
+    return `data:${media_type};base64,${data}`;
+  }
+  return null;
+}
+
+interface MessageImagePreviewProps {
+  imageContent: ImageContent;
+}
+
+function MessageImagePreview({ imageContent }: MessageImagePreviewProps) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const src = getImageSrc(imageContent);
+  const t = useTranslations('components/Messages');
+
+  useEffect(() => {
+    if (!src) {
+      console.warn('Could not generate image src for:', imageContent);
+    }
+  }, [src, imageContent]);
+
+  if (!src) {
+    return null;
+  }
+
+  return (
+    <>
+      <ImagePreview
+        src={src}
+        alt={t('imageAltText')}
+        thumbnailMaxWidth={200}
+        thumbnailMaxHeight={150}
+        onClick={() => {
+          setIsDialogOpen(true);
+        }}
+        onClickDisabled={isDialogOpen}
+      />
+      <Dialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        size="large"
+        confirmText={t('close')}
+        hideCancel
+        onConfirm={() => {
+          setIsDialogOpen(false);
+        }}
+      >
+        <img
+          src={src}
+          alt={t('imageAltText')}
+          className="max-w-full max-h-[80vh] object-contain rounded-lg"
+        />
+      </Dialog>
+    </>
+  );
+}
+
+interface ContentPartsRendererProps {
+  contentParts: LettaUserMessageContentUnion[];
+}
+
+function ContentPartsRenderer({ contentParts }: ContentPartsRendererProps) {
+  const parts = contentParts.reduce<Array<ImageContent[] | string>>(
+    (acc, part) => {
+      if (part.type === 'image') {
+        const last = acc[acc.length - 1];
+        if (Array.isArray(last)) {
+          last.push(part);
+        } else {
+          acc.push([part]);
+        }
+      } else if (part.type === 'text') {
+        acc.push(part.text);
+      }
+      return acc;
+    },
+    [],
+  );
+
+  return (
+    <VStack gap="medium">
+      {parts.map((item, idx) =>
+        Array.isArray(item) ? (
+          <HStack key={`images-${idx}`} gap="small" wrap>
+            {item.map((img, i) => (
+              <MessageImagePreview key={i} imageContent={img} />
+            ))}
+          </HStack>
+        ) : (
+          <Markdown key={`text-${idx}`} text={item} />
+        ),
+      )}
+    </VStack>
+  );
 }
 
 interface MessageProps {
@@ -739,55 +845,78 @@ export function Messages(props: MessagesProps) {
             name: 'Agent',
           };
         case 'user_message': {
-          let isContentJson = false;
-          try {
-            JSON.parse(agentMessage.content);
-            isContentJson = true;
-          } catch {
-            isContentJson = false;
-          }
-
-          if (mode === 'simple' || mode === 'interactive') {
-            if (isContentJson) {
-              return null;
+          const content = agentMessage.content as
+            | LettaUserMessageContentUnion[]
+            | string;
+          if (Array.isArray(content)) {
+            if (mode === 'simple' || mode === 'interactive') {
+              return {
+                stepId: agentMessage.step_id,
+                id: `${agentMessage.id}-${agentMessage.message_type}`,
+                content: <ContentPartsRenderer contentParts={content} />,
+                timestamp: new Date(agentMessage.date).toISOString(),
+                name: 'User',
+              };
+            }
+          } else {
+            let isContentJson = false;
+            try {
+              JSON.parse(content);
+              isContentJson = true;
+            } catch {
+              isContentJson = false;
             }
 
-            return {
-              stepId: agentMessage.step_id,
-              id: `${agentMessage.id}-${agentMessage.message_type}`,
-              content: (
-                <VStack>
-                  <Markdown text={agentIdWrapper(agentMessage.content)} />
-                </VStack>
-              ),
-              timestamp: new Date(agentMessage.date).toISOString(),
-              name: 'User',
-            };
-          }
+            if (mode === 'simple' || mode === 'interactive') {
+              if (isContentJson) {
+                return null;
+              }
 
-          if (isContentJson) {
-            const tryParseResp = tryFallbackParseJson(agentMessage.content);
-
-            if (tryParseResp) {
               return {
                 stepId: agentMessage.step_id,
                 id: `${agentMessage.id}-${agentMessage.message_type}`,
                 content: (
-                  <MessageWrapper
-                    type="code"
-                    header={{
-                      title: t('hiddenUserMessage'),
-                    }}
-                  >
-                    <Code
-                      fontSize="small"
-                      variant="minimal"
-                      showLineNumbers={false}
-                      code={JSON.stringify(tryParseResp, null, 2)}
-                      language="javascript"
-                    ></Code>
-                  </MessageWrapper>
+                  <VStack>
+                    <Markdown text={agentIdWrapper(content)} />
+                  </VStack>
                 ),
+                timestamp: new Date(agentMessage.date).toISOString(),
+                name: 'User',
+              };
+            }
+
+            if (isContentJson) {
+              const tryParseResp = tryFallbackParseJson(content);
+
+              if (tryParseResp) {
+                return {
+                  stepId: agentMessage.step_id,
+                  id: `${agentMessage.id}-${agentMessage.message_type}`,
+                  content: (
+                    <MessageWrapper
+                      type="code"
+                      header={{
+                        title: t('hiddenUserMessage'),
+                      }}
+                    >
+                      <Code
+                        fontSize="small"
+                        variant="minimal"
+                        showLineNumbers={false}
+                        code={JSON.stringify(tryParseResp, null, 2)}
+                        language="javascript"
+                      ></Code>
+                    </MessageWrapper>
+                  ),
+                  timestamp: new Date(agentMessage.date).toISOString(),
+                  name: 'User',
+                };
+              }
+
+              return {
+                stepId: agentMessage.step_id,
+                id: `${agentMessage.id}-${agentMessage.message_type}`,
+                content: <Typography>{content}</Typography>,
                 timestamp: new Date(agentMessage.date).toISOString(),
                 name: 'User',
               };
@@ -796,19 +925,11 @@ export function Messages(props: MessagesProps) {
             return {
               stepId: agentMessage.step_id,
               id: `${agentMessage.id}-${agentMessage.message_type}`,
-              content: <Typography>{agentMessage.content}</Typography>,
+              content: <Typography>{content}</Typography>,
               timestamp: new Date(agentMessage.date).toISOString(),
               name: 'User',
             };
           }
-
-          return {
-            stepId: agentMessage.step_id,
-            id: `${agentMessage.id}-${agentMessage.message_type}`,
-            content: <Typography>{agentMessage.content}</Typography>,
-            timestamp: new Date(agentMessage.date).toISOString(),
-            name: 'User',
-          };
         }
       }
     },

@@ -652,7 +652,9 @@
   },
   "components/Messages": {
     "hiddenUserMessage": "Message utilisateur interne",
-    "noParsableMessages": "Aucun message n'est disponible dans cette vue, cela est généralement dû à un manque d'actions send_message déclenchées dans votre agent, vérifiez davantage le débogage pour vérifier."
+    "noParsableMessages": "Aucun message n'est disponible dans cette vue, cela est généralement dû à un manque d'actions send_message déclenchées dans votre agent, vérifiez davantage le débogage pour vérifier.",
+    "imageAltText": "Image utilisateur chargée",
+    "close": "Fermer"
   },
   "components/ThemeSelector": {
     "label": "Choisir un thème",

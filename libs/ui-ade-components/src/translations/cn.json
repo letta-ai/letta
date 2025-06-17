@@ -745,7 +745,9 @@
     "reasoningMessage": "推理",
     "reasonerModel": "由推理模型生成",
     "hiddenUserMessage": "内部用户消息",
-    "noParsableMessages": "此视图中没有可用的消息，这通常是因为您的智能体中缺少触发的send_message操作，请查看调试模式进行验证。"
+    "noParsableMessages": "此视图中没有可用的消息，这通常是因为您的智能体中缺少触发的send_message操作，请查看调试模式进行验证。",
+    "imageAltText": "用户上传的图片",
+    "close": "关闭"
   },
   "UpdateNameDialog": {
     "title": "重命名{agentBaseType}",
