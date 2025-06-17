@@ -38,11 +38,12 @@
 
   --brand: 240, 92%, 35%;
   --brand-content: 0 0% 98%;
-  --brand-hover: 233, 27%, 94%;
-  --brand-hover-content: 240, 92%, 35%;
+  --brand-hover: 240, 41%, 93%;
+  --brand-hover-content: 240, 93%, 21%;
 
-  --brand-light: 236, 33%, 92%;
-  --brand-light-content: var(--text-default);
+  --brand-light: 240, 36%, 96%;
+  --brand-light-content: 240, 92%, 35%;
+  --brand-light-hover: 240, 41%, 93%;
   --brand-light-border: 240, 100%, 88%;
 
   --element-focus: 240, 50%, 97%;;
@@ -54,7 +55,7 @@
   --secondary: var(--background);
   --secondary-content: var(--content);
   --secondary-active: var(--grey3);
-  --secondary-hover: var(--background-grey2);
+  --secondary-hover: var(--brand-hover);
 
   --muted: 218, 11%, 65%;
   --muted-content: 240 3.8% 46.1%;
@@ -227,11 +228,12 @@
 
   --brand: 10, 100%, 68%;
   --brand-content: 0 0% 98%;
-  --brand-hover: 9, 10%, 25%;
+  --brand-hover: 10, 11%, 22%;
   --brand-hover-content: 10, 100%, 84%;
 
-  --brand-light: 9, 10%, 25%;
-  --brand-light-content: 210, 7%, 84%;
+  --brand-light: 12, 6%, 17%;
+  --brand-light-content: 10, 100%, 68%;
+  --brand-light-hover: 10, 11%, 22%;
   --brand-light-border: 9, 15%, 25%;
 
   --violet: 283, 69%, 69%;
@@ -279,7 +281,7 @@
   --secondary: var(--background);
   --secondary-content: var(--content);
   --secondary-active: var(--grey3);
-  --secondary-hover: var(--background-grey2);
+  --secondary-hover: var(--brand-hover);
 
   --muted: 210 2% 48%;
   --muted-content: 240 5% 64.9%;

@@ -34,7 +34,7 @@ const buttonVariants = cva(
 
       color: {
         tertiary:
-          'bg-transparent border-none hover:bg-secondary-hover text-text-lighter',
+          'bg-transparent border-none hover:bg-secondary-hover hover:!text-brand-hover-content text-text-lighter',
         brand:
           'bg-brand-light hover:bg-brand-light-hover text-brand-light-content border-transparent',
         primary: 'bg-primary text-primary-content border-transparent',

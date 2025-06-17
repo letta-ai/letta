@@ -459,6 +459,7 @@ function DeleteMemoryBlockDialog(props: DeleteMemoryBlockDialogProps) {
           data-testid="delete-memory-block"
           preIcon={<TrashIcon />}
           color="secondary"
+          size="small"
           label={t('DeleteMemoryBlockDialog.trigger')}
         />
       }
@@ -542,6 +543,7 @@ function CoreMemorySidebar() {
                 preIcon={<PlusIcon />}
                 data-testid="create-new-memory-block-item"
                 color="secondary"
+                size="small"
                 label={t('CoreMemorySidebar.create')}
               />
             )
@@ -581,11 +583,11 @@ function CoreMemorySidebar() {
                 <Typography>{block.label}</Typography>
                 <Typography
                   overflow="ellipsis"
-                  inline
                   noWrap
                   align="left"
                   color="muted"
                   variant="body3"
+                  fullWidth
                 >
                   {block.id}
                 </Typography>

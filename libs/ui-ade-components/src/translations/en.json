@@ -694,7 +694,7 @@
       "message": "Adjusting the memory label may require you to update your system instructions to reflect the new memory label."
     },
     "CharacterCounter": {
-      "count": "{count} CHARS"
+      "count": "{count} Chars"
     },
     "AdvancedMemoryEditorForm": {
       "error": "There was an error updating your memory, please try again or contact support",
