@@ -241,6 +241,28 @@ class ToolManager:
     @trace_method
     async def list_tools_async(self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticTool]:
         """List all tools with optional pagination."""
+        tools = await self._list_tools_async(actor=actor, after=after, limit=limit)
+
+        # Check if all base tools are present if we requested all the tools w/o cursor
+        # TODO: This is a temporary hack to resolve this issue
+        # TODO: This requires a deeper rethink about how we keep all our internal tools up-to-date
+        if not after:
+            existing_tool_names = {tool.name for tool in tools}
+            missing_base_tools = LETTA_TOOL_SET - existing_tool_names
+
+            # If any base tools are missing, upsert all base tools
+            if missing_base_tools:
+                logger.info(f"Missing base tools detected: {missing_base_tools}. Upserting all base tools.")
+                await self.upsert_base_tools_async(actor=actor)
+                # Re-fetch the tools list after upserting base tools
+                tools = await self._list_tools_async(actor=actor, after=after, limit=limit)
+
+        return tools
+
+    @enforce_types
+    @trace_method
+    async def _list_tools_async(self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticTool]:
+        """List all tools with optional pagination."""
         tools_to_delete = []
         async with db_registry.async_session() as session:
             tools = await ToolModel.list_async(
