@@ -139,7 +139,7 @@ export function startServer() {
   app.use(verifyIdentityMiddleware);
   app.use(verifyRoutePermissionsMiddleware);
 
-  app.use(bodyParser.json());
+  app.use(bodyParser.json({ limit: '25mb' }));
   app.use(rateLimitMiddleware);
   app.use(contentModerationMiddleware);
   app.use(itemRateLimitMiddleware);
