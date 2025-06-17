@@ -16,7 +16,6 @@ class OpenAIChatCompletionsStreamingInterface:
     """
 
     def __init__(self, stream_pre_execution_message: bool = True):
-        print("CHAT COMPLETITION INTERFACE")
         self.optimistic_json_parser: OptimisticJSONParser = OptimisticJSONParser()
         self.stream_pre_execution_message: bool = stream_pre_execution_message
 

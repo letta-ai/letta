@@ -23,7 +23,6 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
 from letta.schemas.openai.chat_completion_request import UserMessage as OpenAIUserMessage
-from letta.schemas.tool import ToolCreate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.server.server import SyncServer
 from letta.services.agent_manager import AgentManager
@@ -158,8 +157,8 @@ def server():
 # --- Client Setup --- #
 
 
-@pytest.fixture
-async def roll_dice_tool(server):
+@pytest.fixture(scope="module")
+async def roll_dice_tool(server, actor):
     def roll_dice():
         """
         Rolls a 6 sided die.
@@ -169,51 +168,13 @@ async def roll_dice_tool(server):
         """
         return "Rolled a 10!"
 
-    actor = server.user_manager.get_user_or_default()
     tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=roll_dice), actor=actor)
     yield tool
 
 
 @pytest.fixture
-async def weather_tool(server):
-    def get_weather(location: str) -> str:
-        """
-        Fetches the current weather for a given location.
-
-        Parameters:
-            location (str): The location to get the weather for.
-
-        Returns:
-            str: A formatted string describing the weather in the given location.
-
-        Raises:
-            RuntimeError: If the request to fetch weather data fails.
-        """
-        import requests
-
-        url = f"https://wttr.in/{location}?format=%C+%t"
-
-        response = requests.get(url)
-        if response.status_code == 200:
-            weather_data = response.text
-            return f"The weather in {location} is {weather_data}."
-        else:
-            raise RuntimeError(f"Failed to get weather data, status code: {response.status_code}")
-
-    actor = server.user_manager.get_user_or_default()
-    tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=get_weather), actor=actor)
-    yield tool
-
-
-@pytest.fixture
-def composio_gmail_get_profile_tool(default_user):
-    tool_create = ToolCreate.from_composio(action_name="GMAIL_GET_PROFILE")
-    tool = ToolManager().create_or_update_composio_tool(tool_create=tool_create, actor=default_user)
-    yield tool
-
-
-@pytest.fixture
-def voice_agent(server, actor):
+def voice_agent(server, actor, roll_dice_tool):
+    run_code_tool = server.tool_manager.get_tool_by_name("run_code", actor)
     main_agent = server.create_agent(
         request=CreateAgent(
             agent_type=AgentType.voice_convo_agent,
@@ -231,6 +192,7 @@ def voice_agent(server, actor):
             model="openai/gpt-4o-mini",
             embedding="openai/text-embedding-ada-002",
             enable_sleeptime=True,
+            tool_ids=[roll_dice_tool.id, run_code_tool.id],
         ),
         actor=actor,
     )
@@ -292,9 +254,15 @@ def _assert_valid_chunk(chunk, idx, chunks):
 
 @pytest.mark.asyncio(loop_scope="module")
 @pytest.mark.parametrize("model", ["openai/gpt-4o-mini", "anthropic/claude-3-5-sonnet-20241022"])
-async def test_model_compatibility(disable_e2b_api_key, voice_agent, model, server, server_url, group_id, actor):
-    request = _get_chat_request("How are you?")
+@pytest.mark.parametrize(
+    "message", ["How are you?", "Use the roll_dice tool to roll a die for me", "Use the run_code tool to calculate 2+2"]
+)
+async def test_model_compatibility(model, message, server, server_url, actor, roll_dice_tool):
+    request = _get_chat_request(message)
     server.tool_manager.upsert_base_tools(actor=actor)
+
+    # Get the run_code tool
+    run_code_tool = server.tool_manager.get_tool_by_name("run_code", actor)
 
     main_agent = server.create_agent(
         request=CreateAgent(
@@ -313,6 +281,7 @@ async def test_model_compatibility(disable_e2b_api_key, voice_agent, model, serv
             model=model,
             embedding="openai/text-embedding-ada-002",
             enable_sleeptime=True,
+            tool_ids=[roll_dice_tool.id, run_code_tool.id],
         ),
         actor=actor,
     )
@@ -323,6 +292,43 @@ async def test_model_compatibility(disable_e2b_api_key, voice_agent, model, serv
         async for chunk in stream:
             if chunk.choices and chunk.choices[0].delta.content:
                 print(chunk.choices[0].delta.content)
+
+    # Get the messages and assert based on the message type
+    messages = await server.message_manager.list_messages_for_agent_async(agent_id=main_agent.id, actor=actor)
+
+    # Find user message with our request
+    user_messages = [msg for msg in messages if msg.role == MessageRole.user and message in str(msg.content)]
+    assert len(user_messages) >= 1, f"Should find user message containing: {message}"
+
+    # Find assistant messages with tool calls
+    assistant_tool_messages = [msg for msg in messages if msg.role == MessageRole.assistant and msg.tool_calls]
+
+    if "How are you?" in message:
+        # Generic greeting should have no tool calls (just conversational)
+        tool_call_names = [
+            tc.function.name for msg in assistant_tool_messages for tc in msg.tool_calls if tc.function.name not in ["send_message"]
+        ]
+        assert len(tool_call_names) == 0, f"Generic greeting should not use tools, but found: {tool_call_names}"
+
+    elif "roll_dice" in message:
+        # Should have roll_dice tool call
+        tool_call_names = [tc.function.name for msg in assistant_tool_messages for tc in msg.tool_calls]
+        assert "roll_dice" in tool_call_names, f"Should call roll_dice tool, found calls: {tool_call_names}"
+
+        # Should have tool response with dice result
+        tool_responses = [msg for msg in messages if msg.role == MessageRole.tool and msg.name == "roll_dice"]
+        assert len(tool_responses) >= 1, "Should have roll_dice tool response"
+        assert "Rolled a 10!" in str(tool_responses[0].content), "Should contain dice result"
+
+    elif "run_code" in message:
+        # Should have run_code tool call
+        tool_call_names = [tc.function.name for msg in assistant_tool_messages for tc in msg.tool_calls]
+        assert "run_code" in tool_call_names, f"Should call run_code tool, found calls: {tool_call_names}"
+
+        # Should have tool response with calculation result
+        tool_responses = [msg for msg in messages if msg.role == MessageRole.tool and msg.name == "run_code"]
+        assert len(tool_responses) >= 1, "Should have run_code tool response"
+        assert "4" in str(tool_responses[0].content), "Should contain calculation result '4'"
 
 
 @pytest.mark.asyncio(loop_scope="module")
