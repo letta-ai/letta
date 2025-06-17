@@ -165,6 +165,7 @@ function ToolRuleItemWrapper(props: ToolRuleItemWrapperProps) {
                 color="secondary"
                 size="small"
                 hideLabel
+                _use_rarely_disableTooltip
               />
             }
           >
