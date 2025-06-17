@@ -69,12 +69,15 @@ import {
   SourceCreate,
   SourceUpdate,
   StdioServerConfig,
+  StreamableHTTPServerConfig,
   ToolCreate,
   ToolRunFromSource,
   ToolUpdate,
   UpdateAgent,
   UpdateAssistantMessage,
   UpdateReasoningMessage,
+  UpdateSSEMCPServer,
+  UpdateStreamableHTTPMCPServer,
   UpdateSystemMessage,
   UpdateUserMessage,
   UserCreate,
@@ -4265,7 +4268,10 @@ export const useToolsServiceAddMcpServer = <
       TData,
       TError,
       {
-        requestBody: StdioServerConfig | SSEServerConfig;
+        requestBody:
+          | StdioServerConfig
+          | SSEServerConfig
+          | StreamableHTTPServerConfig;
         userId?: string;
       },
       TContext
@@ -4277,7 +4283,10 @@ export const useToolsServiceAddMcpServer = <
     TData,
     TError,
     {
-      requestBody: StdioServerConfig | SSEServerConfig;
+      requestBody:
+        | StdioServerConfig
+        | SSEServerConfig
+        | StreamableHTTPServerConfig;
       userId?: string;
     },
     TContext
@@ -4498,6 +4507,53 @@ export const useToolsServiceModifyTool = <
       ToolsService.modifyTool({
         requestBody,
         toolId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Update Mcp Server
+ * Update an existing MCP server configuration
+ * @param data The data for the request.
+ * @param data.mcpServerName
+ * @param data.requestBody
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useToolsServiceUpdateMcpServer = <
+  TData = Common.ToolsServiceUpdateMcpServerMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        mcpServerName: string;
+        requestBody: UpdateSSEMCPServer | UpdateStreamableHTTPMCPServer;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      mcpServerName: string;
+      requestBody: UpdateSSEMCPServer | UpdateStreamableHTTPMCPServer;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ mcpServerName, requestBody, userId }) =>
+      ToolsService.updateMcpServer({
+        mcpServerName,
+        requestBody,
         userId,
       }) as unknown as Promise<TData>,
     ...options,

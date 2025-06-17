@@ -15,7 +15,8 @@ import {
   VisibleOnMobile,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import type { MCPServerItemType, SSEServerConfig } from '@letta-cloud/sdk-core';
+import type { MCPServerItemType } from '@letta-cloud/sdk-core';
+import { toMCPServerTypeLabel, getIsStreamableOrHttpServer } from './types';
 import { useToolsServiceListMcpServers } from '@letta-cloud/sdk-core';
 import { ToolSearchInput } from '../../components/ToolSearchInput/ToolSearchInput';
 import { cn } from '@letta-cloud/ui-styles';
@@ -52,7 +53,7 @@ function MCPServerList(props: MCPServerListProps) {
       fullHeight
       borderRight
       fullWidth
-      className={!isMobile ? 'max-w-[250px]' : 'w-full'}
+      className={!isMobile ? 'max-w-[300px]' : 'w-full'}
     >
       <ToolSearchInput
         placeholder={t('search.placeholder')}
@@ -98,7 +99,11 @@ function MCPServerList(props: MCPServerListProps) {
             <HStack fullWidth align="center" gap="medium">
               <div className="min-w-[20px] h-[24px] items-center justify-center">
                 <MCPServerLogo
-                  serverUrl={(server as SSEServerConfig).server_url}
+                  serverUrl={
+                    !getIsStreamableOrHttpServer(server)
+                      ? server.command
+                      : server.server_url
+                  }
                 />
               </div>
               <VStack collapseWidth flex gap="text">
@@ -117,14 +122,14 @@ function MCPServerList(props: MCPServerListProps) {
                     overflow="ellipsis"
                     noWrap
                   >
-                    {getObfuscatedMCPServerUrl(
-                      (server as SSEServerConfig).server_url,
-                    )}
+                    {!getIsStreamableOrHttpServer(server)
+                      ? server.command
+                      : getObfuscatedMCPServerUrl(server.server_url)}
                   </Typography>
                 )}
               </VStack>
             </HStack>
-            <Badge size="small" content={server.type} />
+            <Badge size="small" content={toMCPServerTypeLabel(server.type)} />
           </HStack>
         ))}
       </VStack>

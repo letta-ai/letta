@@ -1787,6 +1787,9 @@ export type UsersServiceUpdateUserMutationResult = Awaited<
 export type ToolsServiceModifyToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.modifyTool>
 >;
+export type ToolsServiceUpdateMcpServerMutationResult = Awaited<
+  ReturnType<typeof ToolsService.updateMcpServer>
+>;
 export type SourcesServiceModifySourceMutationResult = Awaited<
   ReturnType<typeof SourcesService.modifySource>
 >;

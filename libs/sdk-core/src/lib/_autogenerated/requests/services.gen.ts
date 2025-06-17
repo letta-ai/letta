@@ -36,6 +36,8 @@ import type {
   ListMcpToolsByServerResponse,
   AddMcpToolData,
   AddMcpToolResponse,
+  UpdateMcpServerData,
+  UpdateMcpServerResponse,
   DeleteMcpServerData,
   DeleteMcpServerResponse,
   CountSourcesData,
@@ -686,6 +688,35 @@ export class ToolsService {
         mcp_server_name: data.mcpServerName,
         mcp_tool_name: data.mcpToolName,
       },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Mcp Server
+   * Update an existing MCP server configuration
+   * @param data The data for the request.
+   * @param data.mcpServerName
+   * @param data.requestBody
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static updateMcpServer(
+    data: UpdateMcpServerData,
+    headers?: { user_id: string },
+  ): CancelablePromise<UpdateMcpServerResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/tools/mcp/servers/{mcp_server_name}',
+      path: {
+        mcp_server_name: data.mcpServerName,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
       errors: {
         422: 'Validation Error',
       },

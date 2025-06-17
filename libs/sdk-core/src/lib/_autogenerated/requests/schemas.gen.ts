@@ -9524,6 +9524,78 @@ export const $StopReasonType = {
   title: 'StopReasonType',
 } as const;
 
+export const $StreamableHTTPServerConfig = {
+  properties: {
+    server_name: {
+      type: 'string',
+      title: 'Server Name',
+      description: 'The name of the server',
+    },
+    type: {
+      $ref: '#/components/schemas/MCPServerType',
+      default: 'streamable_http',
+    },
+    server_url: {
+      type: 'string',
+      title: 'Server Url',
+      description:
+        "The URL path for the streamable HTTP server (e.g., 'example/mcp')",
+    },
+    auth_header: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Auth Header',
+      description:
+        "The name of the authentication header (e.g., 'Authorization')",
+    },
+    auth_token: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Auth Token',
+      description: 'The authentication token or API key value',
+    },
+    custom_headers: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'string',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Custom Headers',
+      description:
+        'Custom HTTP headers to include with streamable HTTP requests',
+    },
+  },
+  type: 'object',
+  required: ['server_name', 'server_url'],
+  title: 'StreamableHTTPServerConfig',
+  description: `Configuration for an MCP server using Streamable HTTP
+
+Authentication can be provided in multiple ways:
+1. Using auth_header + auth_token: Will add a specific header with the token
+   Example: auth_header="Authorization", auth_token="Bearer abc123"
+
+2. Using the custom_headers dict: For more complex authentication scenarios
+   Example: custom_headers={"X-API-Key": "abc123", "X-Custom-Header": "value"}`,
+} as const;
+
 export const $SupervisorManager = {
   properties: {
     manager_type: {
@@ -11243,6 +11315,112 @@ export const $UpdateReasoningMessage = {
   type: 'object',
   required: ['reasoning'],
   title: 'UpdateReasoningMessage',
+} as const;
+
+export const $UpdateSSEMCPServer = {
+  properties: {
+    server_name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Server Name',
+      description: 'The name of the server',
+    },
+    server_url: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Server Url',
+      description:
+        'The URL of the server (MCP SSE client will connect to this URL)',
+    },
+    token: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Token',
+      description:
+        'The access token or API key for the MCP server (used for SSE authentication)',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  title: 'UpdateSSEMCPServer',
+  description: 'Update an SSE MCP server',
+} as const;
+
+export const $UpdateStreamableHTTPMCPServer = {
+  properties: {
+    server_name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Server Name',
+      description: 'The name of the server',
+    },
+    server_url: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Server Url',
+      description:
+        "The URL path for the streamable HTTP server (e.g., 'example/mcp')",
+    },
+    auth_header: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Auth Header',
+      description:
+        "The name of the authentication header (e.g., 'Authorization')",
+    },
+    auth_token: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Auth Token',
+      description: 'The authentication token or API key value',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  title: 'UpdateStreamableHTTPMCPServer',
+  description: 'Update a Streamable HTTP MCP server',
 } as const;
 
 export const $UpdateSystemMessage = {

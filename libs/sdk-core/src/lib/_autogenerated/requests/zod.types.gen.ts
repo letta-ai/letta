@@ -5250,6 +5250,39 @@ export const Step = z.object({
   messages: z.union([z.array(Message), z.undefined()]).optional(),
 });
 
+export type StreamableHTTPServerConfig = z.infer<
+  typeof StreamableHTTPServerConfig
+>;
+export const StreamableHTTPServerConfig = z.object({
+  server_name: z.string(),
+  type: z.union([MCPServerType, z.undefined()]).optional(),
+  server_url: z.string(),
+  auth_header: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  auth_token: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  custom_headers: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type ToolCreate = z.infer<typeof ToolCreate>;
 export const ToolCreate = z.object({
   description: z
@@ -5527,6 +5560,37 @@ export type UpdateReasoningMessage = z.infer<typeof UpdateReasoningMessage>;
 export const UpdateReasoningMessage = z.object({
   reasoning: z.string(),
   message_type: z.union([z.string(), z.undefined()]).optional(),
+});
+
+export type UpdateSSEMCPServer = z.infer<typeof UpdateSSEMCPServer>;
+export const UpdateSSEMCPServer = z.object({
+  server_name: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  server_url: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  token: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+});
+
+export type UpdateStreamableHTTPMCPServer = z.infer<
+  typeof UpdateStreamableHTTPMCPServer
+>;
+export const UpdateStreamableHTTPMCPServer = z.object({
+  server_name: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  server_url: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  auth_header: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  auth_token: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
 });
 
 export type UpdateSystemMessage = z.infer<typeof UpdateSystemMessage>;
@@ -5887,14 +5951,28 @@ export const put_Add_mcp_server = {
     body: z.union([
       StdioServerConfig,
       SSEServerConfig,
-      z.array(z.union([StdioServerConfig, SSEServerConfig])),
+      StreamableHTTPServerConfig,
+      z.array(
+        z.union([
+          StdioServerConfig,
+          SSEServerConfig,
+          StreamableHTTPServerConfig,
+        ]),
+      ),
     ]),
   }),
   response: z.array(
     z.union([
       StdioServerConfig,
       SSEServerConfig,
-      z.array(z.union([StdioServerConfig, SSEServerConfig])),
+      StreamableHTTPServerConfig,
+      z.array(
+        z.union([
+          StdioServerConfig,
+          SSEServerConfig,
+          StreamableHTTPServerConfig,
+        ]),
+      ),
     ]),
   ),
 };
@@ -5936,6 +6014,36 @@ export const post_Add_mcp_tool = {
   response: Tool,
 };
 
+export type patch_Update_mcp_server = typeof patch_Update_mcp_server;
+export const patch_Update_mcp_server = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/tools/mcp/servers/{mcp_server_name}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      mcp_server_name: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: z.union([
+      UpdateSSEMCPServer,
+      UpdateStreamableHTTPMCPServer,
+      z.array(z.union([UpdateSSEMCPServer, UpdateStreamableHTTPMCPServer])),
+    ]),
+  }),
+  response: z.union([
+    StdioServerConfig,
+    SSEServerConfig,
+    StreamableHTTPServerConfig,
+    z.array(
+      z.union([StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig]),
+    ),
+  ]),
+};
+
 export type delete_Delete_mcp_server = typeof delete_Delete_mcp_server;
 export const delete_Delete_mcp_server = {
   method: z.literal('DELETE'),
@@ -5955,7 +6063,14 @@ export const delete_Delete_mcp_server = {
     z.union([
       StdioServerConfig,
       SSEServerConfig,
-      z.array(z.union([StdioServerConfig, SSEServerConfig])),
+      StreamableHTTPServerConfig,
+      z.array(
+        z.union([
+          StdioServerConfig,
+          SSEServerConfig,
+          StreamableHTTPServerConfig,
+        ]),
+      ),
     ]),
   ),
 };
@@ -8691,6 +8806,7 @@ export const EndpointByMethod = {
   },
   patch: {
     '/v1/tools/{tool_id}': patch_Modify_tool,
+    '/v1/tools/mcp/servers/{mcp_server_name}': patch_Update_mcp_server,
     '/v1/sources/{source_id}': patch_Modify_source,
     '/v1/agents/{agent_id}': patch_Modify_agent,
     '/v1/agents/{agent_id}/tools/attach/{tool_id}': patch_Attach_tool,

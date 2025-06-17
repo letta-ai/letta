@@ -15,7 +15,7 @@ export function MCPServerLogo(props: MCPServerLogoProps) {
     try {
       baseUrl = new URL(serverUrl).origin;
     } catch {
-      // If URL is malformed, use the original string for matching
+      // If not a valid URL with protocol, try to match the full URL
       console.warn('Possible invalid MCP server URL: ', serverUrl);
       baseUrl = serverUrl;
     }

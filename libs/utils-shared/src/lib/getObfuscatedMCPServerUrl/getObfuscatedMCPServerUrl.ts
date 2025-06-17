@@ -5,7 +5,7 @@ export function getObfuscatedMCPServerUrl(url: string) {
     const parsedUrl = new URL(url);
     return `${parsedUrl.protocol}//${parsedUrl.hostname}${parsedUrl.port ? `:${parsedUrl.port}` : ''}`;
   } catch (error) {
-    console.error('Invalid URL:', url, error);
+    console.error('Failed to obfuscate URL: ', url, error);
     // TODO: handle invalid URLs better
     return url;
   }

@@ -1142,6 +1142,7 @@
     },
     "refetch": "Refetch tools",
     "actions": "Actions",
+    "edit": "Edit server",
     "remove": "Remove server",
     "serverName": "Server name",
     "serverType": "Type",
@@ -1310,13 +1311,12 @@
     },
     "AddServerDialog": {
       "addServer": "Add Server",
-      "title": "Add Server Dialog",
+      "title": "Add Server",
       "description": "",
       "name": {
-        "error": "Name must be alphanumeric and underscores only",
+        "error": "Name must be alphanumeric and underscores only.",
         "label": "Server Name",
-        "placeholder": "my_server",
-        "description": "Names must be unique to your Letta instance",
+        "placeholder": "my_mcp_server",
         "name": "My Server"
       },
       "command": {
@@ -1328,8 +1328,9 @@
       "serverUrl": {
         "label": "Server URL",
         "name": "http://localhost:5000",
-        "placeholder": "http://localhost:5000",
-        "description": "The URL of the server"
+        "placeholder": "https://example.com/mcp",
+        "invalid": "Please enter a valid URL (e.g. \"https://example.com/mcp\").",
+        "required": "Server URL is required."
       },
       "authToken": {
         "label": "Authentication",
@@ -1338,12 +1339,12 @@
       },
       "type": {
         "label": "Server Type",
-        "name": "stdio",
+        "name": "Server Type",
         "description": "The type of server",
         "options": {
-          "stdio": "stdio",
-          "sse": "sse",
-          "streamable_http": "streamable http"
+          "stdio": "STDIO",
+          "sse": "SSE",
+          "streamable_http": "Streamable HTTP"
         }
       },
       "args": {
@@ -1353,8 +1354,19 @@
         "description": "Please provide arguments as a comma separated list"
       },
       "error": "There was an error adding this server, please try again or contact support.",
-      "submit": "Add Server",
+      "duplicateName": {
+        "error": "Server name already exists, please try a different name."
+      },
+      "submit": "Add",
       "cancel": "Cancel"
+    },
+    "UpdateServerDialog": {
+      "title": "Edit Server",
+      "authToken": {
+        "placeholder": "Access Token / API Key"
+      },
+      "submit": "Edit",
+      "error": "There was an error editing this server, please try again or contact support."
     }
   },
   "ToolsEditor/LettaTools": {

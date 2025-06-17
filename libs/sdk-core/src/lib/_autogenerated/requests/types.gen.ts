@@ -3491,6 +3491,42 @@ export type StopReasonType =
   | 'no_tool_call'
   | 'tool_rule';
 
+/**
+ * Configuration for an MCP server using Streamable HTTP
+ *
+ * Authentication can be provided in multiple ways:
+ * 1. Using auth_header + auth_token: Will add a specific header with the token
+ * Example: auth_header="Authorization", auth_token="Bearer abc123"
+ *
+ * 2. Using the custom_headers dict: For more complex authentication scenarios
+ * Example: custom_headers={"X-API-Key": "abc123", "X-Custom-Header": "value"}
+ */
+export type StreamableHTTPServerConfig = {
+  /**
+   * The name of the server
+   */
+  server_name: string;
+  type?: MCPServerType;
+  /**
+   * The URL path for the streamable HTTP server (e.g., 'example/mcp')
+   */
+  server_url: string;
+  /**
+   * The name of the authentication header (e.g., 'Authorization')
+   */
+  auth_header?: string | null;
+  /**
+   * The authentication token or API key value
+   */
+  auth_token?: string | null;
+  /**
+   * Custom HTTP headers to include with streamable HTTP requests
+   */
+  custom_headers?: {
+    [key: string]: string;
+  } | null;
+};
+
 export type SupervisorManager = {
   manager_type?: 'supervisor';
   manager_agent_id: string;
@@ -4078,6 +4114,46 @@ export type UpdateReasoningMessage = {
   message_type?: 'reasoning_message';
 };
 
+/**
+ * Update an SSE MCP server
+ */
+export type UpdateSSEMCPServer = {
+  /**
+   * The name of the server
+   */
+  server_name?: string | null;
+  /**
+   * The URL of the server (MCP SSE client will connect to this URL)
+   */
+  server_url?: string | null;
+  /**
+   * The access token or API key for the MCP server (used for SSE authentication)
+   */
+  token?: string | null;
+};
+
+/**
+ * Update a Streamable HTTP MCP server
+ */
+export type UpdateStreamableHTTPMCPServer = {
+  /**
+   * The name of the server
+   */
+  server_name?: string | null;
+  /**
+   * The URL path for the streamable HTTP server (e.g., 'example/mcp')
+   */
+  server_url?: string | null;
+  /**
+   * The name of the authentication header (e.g., 'Authorization')
+   */
+  auth_header?: string | null;
+  /**
+   * The authentication token or API key value
+   */
+  auth_token?: string | null;
+};
+
 export type UpdateSystemMessage = {
   message_type?: 'system_message';
   /**
@@ -4393,15 +4469,20 @@ export type ListMcpServersData = {
 };
 
 export type ListMcpServersResponse = {
-  [key: string]: SSEServerConfig | StdioServerConfig;
+  [key: string]:
+    | SSEServerConfig
+    | StdioServerConfig
+    | StreamableHTTPServerConfig;
 };
 
 export type AddMcpServerData = {
-  requestBody: StdioServerConfig | SSEServerConfig;
+  requestBody: StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig;
   userId?: string | null;
 };
 
-export type AddMcpServerResponse = Array<StdioServerConfig | SSEServerConfig>;
+export type AddMcpServerResponse = Array<
+  StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig
+>;
 
 export type ListMcpToolsByServerData = {
   mcpServerName: string;
@@ -4418,13 +4499,24 @@ export type AddMcpToolData = {
 
 export type AddMcpToolResponse = Tool;
 
+export type UpdateMcpServerData = {
+  mcpServerName: string;
+  requestBody: UpdateSSEMCPServer | UpdateStreamableHTTPMCPServer;
+  userId?: string | null;
+};
+
+export type UpdateMcpServerResponse =
+  | StdioServerConfig
+  | SSEServerConfig
+  | StreamableHTTPServerConfig;
+
 export type DeleteMcpServerData = {
   mcpServerName: string;
   userId?: string | null;
 };
 
 export type DeleteMcpServerResponse = Array<
-  StdioServerConfig | SSEServerConfig
+  StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig
 >;
 
 export type CountSourcesData = {
@@ -5891,7 +5983,10 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: {
-          [key: string]: SSEServerConfig | StdioServerConfig;
+          [key: string]:
+            | SSEServerConfig
+            | StdioServerConfig
+            | StreamableHTTPServerConfig;
         };
         /**
          * Validation Error
@@ -5905,7 +6000,9 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Array<StdioServerConfig | SSEServerConfig>;
+        200: Array<
+          StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig
+        >;
         /**
          * Validation Error
          */
@@ -5944,13 +6041,28 @@ export type $OpenApiTs = {
     };
   };
   '/v1/tools/mcp/servers/{mcp_server_name}': {
+    patch: {
+      req: UpdateMcpServerData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
     delete: {
       req: DeleteMcpServerData;
       res: {
         /**
          * Successful Response
          */
-        200: Array<StdioServerConfig | SSEServerConfig>;
+        200: Array<
+          StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig
+        >;
         /**
          * Validation Error
          */

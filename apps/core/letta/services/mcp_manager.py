@@ -149,19 +149,19 @@ class MCPManager:
         return mcp_server
 
     @enforce_types
-    async def create_mcp_server(self, pydantic_mcp_server: MCPServer, actor: PydanticUser) -> PydanticTool:
-        """Create a new tool based on the ToolCreate schema."""
-        with db_registry.session() as session:
+    async def create_mcp_server(self, pydantic_mcp_server: MCPServer, actor: PydanticUser) -> MCPServer:
+        """Create a new MCP server."""
+        async with db_registry.async_session() as session:
             # Set the organization id at the ORM layer
             pydantic_mcp_server.organization_id = actor.organization_id
             mcp_server_data = pydantic_mcp_server.model_dump(to_orm=True)
 
             mcp_server = MCPServerModel(**mcp_server_data)
-            mcp_server.create(session, actor=actor)  # Re-raise other database-related errors
+            mcp_server = await mcp_server.create_async(session, actor=actor)
             return mcp_server.to_pydantic()
 
     @enforce_types
-    async def update_mcp_server_by_id(self, mcp_server_id: str, mcp_server_update: UpdateMCPServer, actor: PydanticUser) -> PydanticTool:
+    async def update_mcp_server_by_id(self, mcp_server_id: str, mcp_server_update: UpdateMCPServer, actor: PydanticUser) -> MCPServer:
         """Update a tool by its ID with the given ToolUpdate object."""
         async with db_registry.async_session() as session:
             # Fetch the tool by ID
@@ -176,6 +176,21 @@ class MCPManager:
 
             # Save the updated tool to the database mcp_server = await mcp_server.update_async(db_session=session, actor=actor)
             return mcp_server.to_pydantic()
+
+    @enforce_types
+    async def update_mcp_server_by_name(self, mcp_server_name: str, mcp_server_update: UpdateMCPServer, actor: PydanticUser) -> MCPServer:
+        """Update an MCP server by its name."""
+        mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor)
+        if not mcp_server_id:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "MCPServerNotFoundError",
+                    "message": f"MCP server {mcp_server_name} not found",
+                    "mcp_server_name": mcp_server_name,
+                },
+            )
+        return await self.update_mcp_server_by_id(mcp_server_id, mcp_server_update, actor)
 
     @enforce_types
     async def get_mcp_server_id_by_name(self, mcp_server_name: str, actor: PydanticUser) -> Optional[str]:

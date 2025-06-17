@@ -4,11 +4,8 @@ import {
   UseToolsServiceListMcpServersKeyFn,
   useToolsServiceListMcpToolsByServer,
 } from '@letta-cloud/sdk-core';
-import type {
-  MCPServerItemType,
-  SSEServerConfig,
-  StdioServerConfig,
-} from '@letta-cloud/sdk-core';
+import type { MCPServerItemType } from '@letta-cloud/sdk-core';
+import { getIsStreamableOrHttpServer } from '../types';
 import {
   Badge,
   Button,
@@ -16,6 +13,7 @@ import {
   DotsVerticalIcon,
   DropdownMenu,
   DropdownMenuItem,
+  EditIcon,
   HStack,
   LoadingEmptyStatusComponent,
   McpIcon,
@@ -36,6 +34,8 @@ import { useCurrentAgent } from '../../../../../hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { getObfuscatedMCPServerUrl } from '@letta-cloud/utils-shared';
 import { MCPServerLogo } from '../../MCPServerExplorer/MCPServerLogo/MCPServerLogo';
+import { toMCPServerTypeLabel } from '../types';
+import { UpdateMCPServerDialog } from '../UpdateMCPServerDialog/UpdateMCPServerDialog';
 
 interface RemoveMCPServerDialogProps {
   serverName: string;
@@ -174,12 +174,6 @@ interface SingleMCPServerProps {
   server: MCPServerItemType;
 }
 
-function serverHasServerUrl(
-  server: MCPServerItemType,
-): server is SSEServerConfig {
-  return (server as SSEServerConfig).server_url !== undefined;
-}
-
 export function SingleMCPServer(props: SingleMCPServerProps) {
   const { server } = props;
 
@@ -197,7 +191,7 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
         <VStack fullWidth>
           <HStack fullWidth paddingBottom="large" justify="spaceBetween">
             <HStack align="center" gap="medium">
-              {serverHasServerUrl(server) ? (
+              {getIsStreamableOrHttpServer(server) ? (
                 <MCPServerLogo serverUrl={server.server_url} />
               ) : (
                 <McpIcon />
@@ -219,6 +213,25 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
                 />
               }
             >
+              <DropdownMenuItem
+                preIcon={<RefreshIcon />}
+                onClick={() => {
+                  ref.current?.reload();
+                }}
+                label={t('refetch')}
+              />
+              {getIsStreamableOrHttpServer(server) && (
+                <UpdateMCPServerDialog
+                  server={server}
+                  trigger={
+                    <DropdownMenuItem
+                      preIcon={<EditIcon />}
+                      doNotCloseOnSelect
+                      label={t('edit')}
+                    />
+                  }
+                />
+              )}
               <RemoveMCPServerDialog
                 serverName={server.server_name}
                 trigger={
@@ -229,26 +242,16 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
                   />
                 }
               />
-              <DropdownMenuItem
-                preIcon={<RefreshIcon />}
-                onClick={() => {
-                  ref.current?.reload();
-                }}
-                label={t('refetch')}
-              />
             </DropdownMenu>
           </HStack>
           <VStack gap="large">
-            {server.type === 'sse' || server.type === 'streamable_http' ? (
+            {getIsStreamableOrHttpServer(server) ? (
               <VStack gap={false}>
                 <Typography uppercase bold variant="body3">
                   {t('serverUrl')}
                 </Typography>
                 <Typography>
-                  {getObfuscatedMCPServerUrl(
-                    (server as SSEServerConfig | { server_url: string })
-                      .server_url,
-                  )}
+                  {getObfuscatedMCPServerUrl(server.server_url)}
                 </Typography>
               </VStack>
             ) : (
@@ -256,7 +259,7 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
                 <Typography uppercase bold variant="body3">
                   {t('command')}
                 </Typography>
-                <Typography>{(server as StdioServerConfig).command}</Typography>
+                <Typography>{server.command}</Typography>
               </VStack>
             )}
             <VStack gap={false}>
@@ -264,7 +267,10 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
                 {t('serverType')}
               </Typography>
               <div>
-                <Badge content={server.type} size="small" />
+                <Badge
+                  content={toMCPServerTypeLabel(server.type)}
+                  size="small"
+                />
               </div>
             </VStack>
           </VStack>
