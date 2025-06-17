@@ -1,11 +1,9 @@
 import asyncio
 import json
-from textwrap import shorten
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel
 
-from letta.constants import WEB_SEARCH_CLIP_CONTENT, WEB_SEARCH_INCLUDE_SCORE, WEB_SEARCH_SEPARATOR
 from letta.functions.prompts import FIRECRAWL_SEARCH_SYSTEM_PROMPT, get_firecrawl_search_user_prompt
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
@@ -47,7 +45,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
-        function_map = {"run_code": self.run_code, "web_search": self.web_search, "firecrawl_search": self.firecrawl_search}
+        function_map = {"run_code": self.run_code, "web_search": self.web_search}
 
         if function_name not in function_map:
             raise ValueError(f"Unknown function: {function_name}")
@@ -90,53 +88,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
             out["error"] = err
         return out
 
-    async def web_search(self, agent_state: "AgentState", query: str) -> str:
-        """
-        Search the web for information.
-        Args:
-            query (str): The query to search the web for.
-        Returns:
-            str: The search results.
-        """
-
-        try:
-            from tavily import AsyncTavilyClient
-        except ImportError:
-            raise ImportError("tavily is not installed in the tool execution environment")
-
-        # Check if the API key exists
-        if tool_settings.tavily_api_key is None:
-            raise ValueError("TAVILY_API_KEY is not set")
-
-        # Instantiate client and search
-        tavily_client = AsyncTavilyClient(api_key=tool_settings.tavily_api_key)
-        search_results = await tavily_client.search(query=query, auto_parameters=True)
-
-        results = search_results.get("results", [])
-        if not results:
-            return "No search results found."
-
-        # ---- format for the LLM -------------------------------------------------
-        formatted_blocks = []
-        for idx, item in enumerate(results, start=1):
-            title = item.get("title") or "Untitled"
-            url = item.get("url") or "Unknown URL"
-            # keep each content snippet reasonably short so you don’t blow up context
-            content = (
-                shorten(item.get("content", "").strip(), width=600, placeholder=" …")
-                if WEB_SEARCH_CLIP_CONTENT
-                else item.get("content", "").strip()
-            )
-            score = item.get("score")
-            if WEB_SEARCH_INCLUDE_SCORE:
-                block = f"\nRESULT {idx}:\n" f"Title: {title}\n" f"URL: {url}\n" f"Relevance score: {score:.4f}\n" f"Content: {content}\n"
-            else:
-                block = f"\nRESULT {idx}:\n" f"Title: {title}\n" f"URL: {url}\n" f"Content: {content}\n"
-            formatted_blocks.append(block)
-
-        return WEB_SEARCH_SEPARATOR.join(formatted_blocks)
-
-    async def firecrawl_search(
+    async def web_search(
         self,
         agent_state: "AgentState",
         query: str,
