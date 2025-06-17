@@ -185,5 +185,9 @@
   },
   "onboarding/OnboardingRewardElement": {
     "claimed": "Someone in your organization has already claimed this reward"
+  },
+  "components/ImagePreview": {
+    "removeFile": "Remove file",
+    "openInFullSize": "Open in full size"
   }
 }

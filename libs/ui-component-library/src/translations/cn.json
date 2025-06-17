@@ -90,5 +90,9 @@
   },
   "onboarding/OnboardingRewardElement": {
     "claimed": "您组织中的某人已经领取了此奖励"
+  },
+  "components/ImagePreview": {
+    "removeFile": "移除文件",
+    "openInFullSize": "打开全屏"
   }
 }

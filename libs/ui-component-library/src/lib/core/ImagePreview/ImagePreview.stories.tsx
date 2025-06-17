@@ -33,13 +33,17 @@ const meta: Meta<typeof ImagePreview> = {
       control: 'number',
       description: 'Maximum height for thumbnail in pixels',
     },
-    onClickDisabled: {
+    disabled: {
       control: 'boolean',
       description: 'Disable the click functionality',
     },
     rounded: {
       control: 'boolean',
       description: 'Apply rounded corners to the image',
+    },
+    fixedSize: {
+      control: 'boolean',
+      description: 'Use fixed dimensions instead of max dimensions',
     },
   },
 };
@@ -109,7 +113,7 @@ export const ClickDisabled: Story = {
     onClick: () => {
       alert('This should not appear');
     },
-    onClickDisabled: true,
+    disabled: true,
   },
 };
 
@@ -172,7 +176,7 @@ function WithCallbacksStory(args: any) {
           setClickCount((prev) => prev + 1);
           setIsDialogOpen(true);
         }}
-        onClickDisabled={isDialogOpen}
+        disabled={isDialogOpen}
       />
 
       <Dialog
@@ -224,5 +228,141 @@ export const CustomClassName: Story = {
     thumbnailMaxWidth: 200,
     thumbnailMaxHeight: 150,
     className: 'shadow-lg ring-2 ring-blue-500',
+  },
+};
+
+export const FixedSize: Story = {
+  args: {
+    src: sampleImage,
+    alt: 'Fixed size image',
+    thumbnailMaxWidth: 64,
+    thumbnailMaxHeight: 64,
+    fixedSize: true,
+  },
+};
+
+export const FixedSizeComparison: Story = {
+  render: () => {
+    const images = [
+      {
+        src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=400&fit=crop',
+        aspect: 'Wide',
+      },
+      {
+        src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=800&fit=crop',
+        aspect: 'Tall',
+      },
+      {
+        src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=600&fit=crop',
+        aspect: 'Square',
+      },
+    ];
+
+    return (
+      <VStack gap="large">
+        <h3>Fixed Size vs Flexible Size Comparison</h3>
+
+        <VStack gap="medium">
+          <h4>Flexible Size (preserves aspect ratio):</h4>
+          <HStack gap="small" wrap>
+            {images.map((image, index) => (
+              <VStack key={index} gap="small" align="center">
+                <ImagePreview
+                  src={image.src}
+                  alt={`${image.aspect} image`}
+                  thumbnailMaxWidth={64}
+                  thumbnailMaxHeight={64}
+                  fixedSize={false}
+                />
+                <span className="text-xs text-muted-foreground">
+                  {image.aspect}
+                </span>
+              </VStack>
+            ))}
+          </HStack>
+        </VStack>
+
+        <VStack gap="medium">
+          <h4>Fixed Size (uniform 64x64, cropped to fit):</h4>
+          <HStack gap="small" wrap>
+            {images.map((image, index) => (
+              <VStack key={index} gap="small" align="center">
+                <ImagePreview
+                  src={image.src}
+                  alt={`${image.aspect} image`}
+                  thumbnailMaxWidth={64}
+                  thumbnailMaxHeight={64}
+                  fixedSize={true}
+                />
+                <span className="text-xs text-muted-foreground">
+                  {image.aspect}
+                </span>
+              </VStack>
+            ))}
+          </HStack>
+        </VStack>
+
+        <p className="text-sm text-muted-foreground">
+          Fixed size is perfect for chat input thumbnails where you need uniform
+          sizing regardless of aspect ratio.
+        </p>
+      </VStack>
+    );
+  },
+};
+
+export const ErrorStates: Story = {
+  render: () => {
+    return (
+      <VStack gap="large">
+        <h3>Error States</h3>
+        <p>
+          Images with errors show a red overlay and tooltip with error details.
+        </p>
+
+        <HStack gap="medium" wrap>
+          <VStack gap="small" align="center">
+            <ImagePreview
+              src={sampleImage}
+              alt="File too large error"
+              thumbnailMaxWidth={64}
+              thumbnailMaxHeight={64}
+              fixedSize
+              error="File size exceeds 1MB limit"
+            />
+            <span className="text-xs text-muted-foreground">
+              File too large
+            </span>
+          </VStack>
+
+          <VStack gap="small" align="center">
+            <ImagePreview
+              src={sampleImage}
+              alt="Unknown error"
+              thumbnailMaxWidth={64}
+              thumbnailMaxHeight={64}
+              fixedSize
+              error="Unknown error occurred"
+            />
+            <span className="text-xs text-muted-foreground">Unknown error</span>
+          </VStack>
+
+          <VStack gap="small" align="center">
+            <ImagePreview
+              src={sampleImage}
+              alt="No error"
+              thumbnailMaxWidth={64}
+              thumbnailMaxHeight={64}
+              fixedSize
+            />
+            <span className="text-xs text-muted-foreground">No error</span>
+          </VStack>
+        </HStack>
+
+        <p className="text-sm text-muted-foreground">
+          Hover over the error images to see the tooltip with error details.
+        </p>
+      </VStack>
+    );
   },
 };

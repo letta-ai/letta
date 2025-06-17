@@ -962,6 +962,12 @@
     "send": "Envoyer",
     "role": {
       "label": "Cliquez ici pour changer de rôle, le rôle actuel est {role}"
+    },
+    "image": {
+      "dropImagesHere": "Déposez vos images ici pour les ajouter au chat",
+      "uploadImages": "Télécharger des images (max 5 Mo)",
+      "fileTooLarge": "La taille du fichier dépasse la limite de 5Mo",
+      "uploadFailed": "Téléchargement échoué"
     }
   },
   "ui-component-library/core/Code": {
@@ -1455,5 +1461,9 @@
         "lastModified": "Dernière modification"
       }
     }
+  },
+  "components/ImagePreview": {
+    "removeFile": "Supprimer le fichier",
+    "openInFullSize": "Ouvrir en taille d'écran"
   }
 }

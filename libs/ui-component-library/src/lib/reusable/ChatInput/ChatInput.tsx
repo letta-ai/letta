@@ -4,9 +4,10 @@ import React, {
   useCallback,
   useImperativeHandle,
   useMemo,
+  useRef,
   useState,
 } from 'react';
-import type { SetStateAction, Dispatch } from 'react';
+import type { SetStateAction, Dispatch, DragEvent } from 'react';
 import { Frame } from '../../framing/Frame/Frame';
 import { HStack } from '../../framing/HStack/HStack';
 import { cn } from '@letta-cloud/ui-styles';
@@ -15,12 +16,18 @@ import { Typography } from '../../core/Typography/Typography';
 import { VStack } from '../../framing/VStack/VStack';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Button } from '../../core/Button/Button';
-import { SendIcon, ThinkingIcon } from '../../icons';
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ImageIcon,
+  SendIcon,
+  ThinkingIcon,
+} from '../../icons';
 import { Popover } from '../../core/Popover/Popover';
 import { useTranslations } from '@letta-cloud/translations';
-import { Slot } from '@radix-ui/react-slot';
 import { CopyWithCodePreview } from '../CopyWithCodePreview/CopyWithCodePreview';
 import { HiddenOnMobile } from '../../framing/HiddenOnMobile/HiddenOnMobile';
+import { ImagePreview } from '../../core/ImagePreview/ImagePreview';
 import { VisibleOnMobile } from '../../framing/VisibleOnMobile/VisibleOnMobile';
 import type { LettaUserMessageContentUnion } from '@letta-cloud/sdk-core';
 
@@ -33,6 +40,73 @@ export interface RoleOption {
     text: string;
     background: string;
   };
+}
+
+export interface ImageAttachment {
+  id: string;
+  file: File;
+  previewUrl: string;
+  base64Data: string;
+  mediaType: string;
+  errorType?: 'file-too-large' | 'unknown';
+}
+
+const ACCEPTED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+];
+
+function validateImageFile(file: File): boolean {
+  return ACCEPTED_IMAGE_TYPES.includes(file.type);
+}
+
+async function createImageAttachment(file: File): Promise<ImageAttachment> {
+  const [base64Data, previewUrl] = await Promise.all([
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64String = reader.result as string;
+        const base64Data = base64String.split(',')[1];
+        resolve(base64Data);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    }),
+    Promise.resolve(URL.createObjectURL(file)),
+  ]);
+
+  const maxFileSize = 5 * 1024 * 1024;
+  const errorType = file.size > maxFileSize ? 'file-too-large' : undefined;
+
+  return {
+    id: `image-${Date.now()}-${Math.random()}`,
+    file,
+    previewUrl,
+    base64Data,
+    mediaType: file.type,
+    errorType,
+  };
+}
+
+function createContentFromChatInput(
+  text: string,
+  images: ImageAttachment[],
+): LettaUserMessageContentUnion[] | string {
+  if (images.length == 0) {
+    return text;
+  }
+  const imageContent = images.map((image) => ({
+    type: 'image' as const,
+    source: {
+      type: 'base64' as const,
+      data: image.base64Data,
+      media_type: image.mediaType,
+    },
+  }));
+  return [{ type: 'text' as const, text }, ...imageContent];
 }
 
 interface ChatInputProps {
@@ -57,12 +131,13 @@ export interface ChatInputRef {
 
 interface CopySendMessageRequestButtonProps {
   code: string;
+  disabled?: boolean;
 }
 
 function CopySendMessageRequestButton(
   props: CopySendMessageRequestButtonProps,
 ) {
-  const { code } = props;
+  const { code, disabled } = props;
   const t = useTranslations('ui-component-library/reusable/ChatInput');
 
   return (
@@ -72,6 +147,9 @@ function CopySendMessageRequestButton(
       language="bash"
       align="center"
       side="top"
+      buttonProps={{
+        disabled: disabled,
+      }}
     />
   );
 }
@@ -80,11 +158,12 @@ interface RoleSelectorProps {
   roles: RoleOption[];
   role: RoleOption;
   setRole: Dispatch<SetStateAction<RoleOption>>;
+  disabled?: boolean;
 }
 
 function RoleSelector(props: RoleSelectorProps) {
   const t = useTranslations('ui-component-library/reusable/ChatInput');
-  const { roles, role, setRole } = props;
+  const { roles, role, setRole, disabled } = props;
   const [open, setOpen] = useState(false);
 
   const selectedRole = useMemo(() => {
@@ -106,31 +185,27 @@ function RoleSelector(props: RoleSelectorProps) {
       open={open}
       onOpenChange={setOpen}
       side="top"
-      align="start"
+      align="end"
       triggerAsChild
       trigger={
-        <button
+        <Button
           style={{
             backgroundColor: selectedRole?.color?.background,
             color: selectedRole?.color?.text,
+            paddingRight: 8,
           }}
-          className="flex bg-background-grey2 font-medium text-base h-biHeight gap-2 items-center px-4"
-        >
-          {selectedRole?.icon && (
-            <Slot className="w-5">{selectedRole.icon}</Slot>
-          )}
-          <div className="sr-only">
-            {t('role.label', { role: selectedRole?.label || role.label })}
-          </div>
-          <span>{selectedRole?.label || role.label}</span>
-        </button>
+          label={selectedRole?.label || role.label}
+          color={open ? 'brand' : 'secondary'}
+          postIcon={open ? <ChevronUpIcon /> : <ChevronDownIcon />}
+          disabled={disabled}
+        />
       }
     >
       <VStack gap={false}>
         {roles.map((r) => (
           <Button
             key={r.value + '_' + r.identityId}
-            color="tertiary"
+            color="grey2"
             label={r.label}
             preIcon={r.icon}
             onClick={() => {
@@ -157,6 +232,9 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
     } = props;
     const [text, setText] = useState('');
     const [role, setRole] = useState(roles?.[0]);
+    const [images, setImages] = useState<ImageAttachment[]>([]);
+    const [isDraggedOver, setIsDraggedOver] = useState(false);
+    const hiddenFileInputRef = useRef<HTMLInputElement>(null);
     const t = useTranslations('ui-component-library/reusable/ChatInput');
 
     useImperativeHandle(ref, () => ({
@@ -164,6 +242,131 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
         setText(message);
       },
     }));
+
+    const handleAddImages = useCallback(async (files: FileList) => {
+      const imageFiles = Array.from(files).filter(validateImageFile);
+
+      if (imageFiles.length === 0) {
+        return;
+      }
+
+      try {
+        const newImageAttachments = await Promise.all(
+          imageFiles.map(createImageAttachment),
+        );
+        setImages((prev) => [...prev, ...newImageAttachments]);
+      } catch (error) {
+        console.error('Failed to process images:', error);
+      }
+    }, []);
+
+    const handleRemoveImage = useCallback((imageId: string) => {
+      setImages((prev) => {
+        const imageToRemove = prev.find((img) => img.id === imageId);
+        if (imageToRemove) {
+          URL.revokeObjectURL(imageToRemove.previewUrl);
+        }
+        return prev.filter((img) => img.id !== imageId);
+      });
+    }, []);
+
+    const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setIsDraggedOver(true);
+    }, []);
+
+    const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setIsDraggedOver(false);
+    }, []);
+
+    const handleDrop = useCallback(
+      (e: DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDraggedOver(false);
+
+        // Handle file drops (from file system)
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          void handleAddImages(files);
+          return;
+        }
+
+        // Handle image drops from websites/browsers
+        const items = e.dataTransfer.items;
+        if (items) {
+          for (const item of Array.from(items)) {
+            // Handle dropped images from web pages
+            if (item.type.startsWith('image/')) {
+              const file = item.getAsFile();
+              if (file) {
+                const fileList = [file] as unknown as FileList;
+                Object.defineProperty(fileList, 'length', { value: 1 });
+                void handleAddImages(fileList);
+                return;
+              }
+            }
+          }
+        }
+      },
+      [handleAddImages],
+    );
+
+    const handleFileInputChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+          void handleAddImages(files);
+        }
+        if (hiddenFileInputRef.current) {
+          hiddenFileInputRef.current.value = '';
+        }
+      },
+      [handleAddImages],
+    );
+
+    const handleImageUploadClick = useCallback(() => {
+      if (hiddenFileInputRef.current) {
+        hiddenFileInputRef.current.click();
+      }
+    }, []);
+
+    const handlePaste = useCallback(
+      (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+        const clipboardData = e.clipboardData;
+
+        if (clipboardData?.items) {
+          const items = Array.from(clipboardData.items);
+          const imageItems = items.filter((item) =>
+            item.type.startsWith('image/'),
+          );
+
+          if (imageItems.length > 0) {
+            e.preventDefault();
+
+            const files: File[] = [];
+            imageItems.forEach((item) => {
+              const file = item.getAsFile();
+              if (file && validateImageFile(file)) {
+                files.push(file);
+              }
+            });
+
+            if (files.length > 0) {
+              const fileList = files as unknown as FileList;
+              Object.defineProperty(fileList, 'length', {
+                value: files.length,
+              });
+              files.forEach((file, index) => {
+                Object.defineProperty(fileList, index, { value: file });
+              });
+              void handleAddImages(fileList);
+            }
+          }
+        }
+      },
+      [handleAddImages],
+    );
 
     const handleSendMessage = useCallback(() => {
       if (isSendingMessage) {
@@ -173,11 +376,12 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
       if (disabled) {
         return;
       }
-      if (text) {
+      if (text || images.length > 0) {
         setText('');
-        onSendMessage(role, text);
+        setImages([]);
+        onSendMessage(role, createContentFromChatInput(text, images));
       }
-    }, [isSendingMessage, disabled, text, onSendMessage, role]);
+    }, [isSendingMessage, disabled, text, onSendMessage, role, images]);
 
     const handleKeyPress = useCallback(
       (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -199,11 +403,29 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
 
     const sendSnippet = useMemo(() => {
       if (getSendSnippet) {
-        return getSendSnippet(role, text);
+        return getSendSnippet(role, createContentFromChatInput(text, images));
       }
 
       return undefined;
-    }, [getSendSnippet, role, text]);
+    }, [getSendSnippet, role, text, images]);
+
+    const hasImageErrors = useMemo(() => {
+      return images.some((image) => !!image.errorType);
+    }, [images]);
+
+    const getErrorMessage = useCallback(
+      (errorType: string): string => {
+        switch (errorType) {
+          case 'file-too-large':
+            return t('image.fileTooLarge');
+          case 'unknown':
+            return t('image.uploadFailed');
+          default:
+            return t('image.uploadFailed');
+        }
+      },
+      [t],
+    );
 
     return (
       <Frame position="relative" paddingX="medium" paddingBottom>
@@ -228,10 +450,19 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
           color="panel-input-background"
           onSubmit={handleSubmit}
           as="form"
-          className="relative focus-within:ring-ring focus-within:ring-1 ignore-focus-on-buttons border-background-grey3-border"
-          border
+          className={cn(
+            'relative focus-within:ring-ring focus-within:ring-1 ignore-focus-on-buttons transition-colors',
+            !isDraggedOver && 'border border-t',
+          )}
+          style={
+            isDraggedOver
+              ? { border: '2px dotted hsl(var(--border-drag))' }
+              : undefined
+          }
           fullWidth
-          borderTop
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
         >
           {hasFailedToSendMessageText && (
             <VStack
@@ -258,28 +489,80 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                 }}
                 value={text}
                 onKeyDown={handleKeyPress}
+                onPaste={handlePaste}
                 /* To prevent layout shift due to js load lag we explicitly set minrow height */
                 className="w-full min-h-[42px] bg-transparent text-base font-inherit resize-none	focus:outline-none"
                 maxRows={10}
                 minRows={2}
-                placeholder={t('placeholder')}
+                placeholder={
+                  isDraggedOver ? t('image.dropImagesHere') : t('placeholder')
+                }
               />
-              <HStack justify="spaceBetween">
-                <HStack align="center" gap={false}>
-                  <RoleSelector role={role} setRole={setRole} roles={roles} />
+              {images.length > 0 && (
+                <HStack gap="medium" wrap paddingTop="small">
+                  {images.map((image) => {
+                    return (
+                      <ImagePreview
+                        key={image.id}
+                        id={image.id}
+                        src={image.previewUrl}
+                        alt={`Uploaded image ${image.id}`}
+                        thumbnailMaxWidth={64}
+                        thumbnailMaxHeight={64}
+                        fixedSize
+                        rounded={false}
+                        onRemove={handleRemoveImage}
+                        disabled={isSendingMessage || disabled || isDraggedOver}
+                        error={
+                          image.errorType
+                            ? getErrorMessage(image.errorType)
+                            : undefined
+                        }
+                      />
+                    );
+                  })}
                 </HStack>
+              )}
+              <HStack justify="spaceBetween">
+                <Button
+                  type="button"
+                  color="tertiary"
+                  hideLabel
+                  preIcon={<ImageIcon />}
+                  onClick={handleImageUploadClick}
+                  disabled={isSendingMessage || disabled || isDraggedOver}
+                  label={t('image.uploadImages')}
+                />
                 <HStack>
                   {sendSnippet && (
-                    <CopySendMessageRequestButton code={sendSnippet} />
+                    <CopySendMessageRequestButton
+                      code={sendSnippet}
+                      disabled={disabled || isDraggedOver}
+                    />
                   )}
-                  <Button
-                    data-testid="chat-simulator-send"
-                    type="submit"
-                    color="primary"
-                    preIcon={<SendIcon />}
-                    disabled={isSendingMessage || disabled}
-                    label={t('send')}
-                  />
+                  <HStack gap={false}>
+                    <RoleSelector
+                      role={role}
+                      setRole={setRole}
+                      roles={roles}
+                      disabled={disabled || isDraggedOver}
+                    />
+                    <Button
+                      data-testid="chat-simulator-send"
+                      type="submit"
+                      color="primary"
+                      preIcon={<SendIcon />}
+                      disabled={
+                        isSendingMessage ||
+                        disabled ||
+                        isDraggedOver ||
+                        hasImageErrors
+                      }
+                      label={t('send')}
+                      hideLabel
+                      square={true}
+                    />
+                  </HStack>
                 </HStack>
               </HStack>
             </VStack>
@@ -320,6 +603,14 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
             </HStack>
           </VisibleOnMobile>
         </VStack>
+        <input
+          ref={hiddenFileInputRef}
+          type="file"
+          multiple
+          accept={ACCEPTED_IMAGE_TYPES.join(',')}
+          className="hidden"
+          onChange={handleFileInputChange}
+        />
       </Frame>
     );
   },

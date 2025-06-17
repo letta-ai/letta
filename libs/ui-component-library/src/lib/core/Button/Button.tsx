@@ -44,6 +44,8 @@ const buttonVariants = cva(
           'bg-destructive hover:bg-destructive-hover text-white border-transparent',
         black:
           'bg-background-black text-background-black-content hover:bg-background-black-hover border-transparent',
+        grey2:
+          'bg-background-grey2 text-background-grey2-content hover:bg-background-grey2-hover border-transparent',
       },
       size: {
         xsmall:

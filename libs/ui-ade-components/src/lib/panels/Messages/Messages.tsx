@@ -119,7 +119,7 @@ function MessageImagePreview({ imageContent }: MessageImagePreviewProps) {
         onClick={() => {
           setIsDialogOpen(true);
         }}
-        onClickDisabled={isDialogOpen}
+        disabled={isDialogOpen}
       />
       <Dialog
         isOpen={isDialogOpen}

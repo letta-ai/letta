@@ -643,6 +643,12 @@
     "send": "Send",
     "role": {
       "label": "Click here to switch roles, the current role is {role}"
+    },
+    "image": {
+      "dropImagesHere": "Drop images here to add to chat",
+      "uploadImages": "Upload images max 5MB",
+      "fileTooLarge": "File too large (max 5MB)",
+      "uploadFailed": "Upload failed"
     }
   },
   "ui-component-library/core/Code": {
