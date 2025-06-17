@@ -243,7 +243,8 @@ class AnthropicClient(LLMClientBase):
         # Move 'system' to the top level
         if messages[0].role != "system":
             raise RuntimeError(f"First message is not a system message, instead has role {messages[0].role}")
-        data["system"] = messages[0].content if isinstance(messages[0].content, str) else messages[0].content[0].text
+        system_content = messages[0].content if isinstance(messages[0].content, str) else messages[0].content[0].text
+        data["system"] = self._add_cache_control_to_system_message(system_content)
         data["messages"] = [
             m.to_anthropic_dict(
                 inner_thoughts_xml_tag=inner_thoughts_xml_tag,
@@ -489,6 +490,27 @@ class AnthropicClient(LLMClientBase):
             )
 
         return chat_completion_response
+    def _add_cache_control_to_system_message(self, system_content):
+        """Add cache control to system message content"""
+        if isinstance(system_content, str):
+            # For string content, convert to list format with cache control
+            return [
+                {
+                    'type': 'text',
+                    'text': system_content,
+                    'cache_control': {'type': 'ephemeral'}
+                }
+            ]
+        elif isinstance(system_content, list):
+            # For list content, add cache control to the last text block
+            cached_content = system_content.copy()
+            for i in range(len(cached_content) - 1, -1, -1):
+                if cached_content[i].get('type') == 'text':
+                    cached_content[i]['cache_control'] = {'type': 'ephemeral'}
+                    break
+            return cached_content
+
+        return system_content
 
 
 def convert_tools_to_anthropic_format(tools: List[OpenAITool]) -> List[dict]:
