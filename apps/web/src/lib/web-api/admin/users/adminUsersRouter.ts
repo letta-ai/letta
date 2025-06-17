@@ -84,6 +84,7 @@ async function adminGetUser(
       name: user.name,
       imageUrl: user.imageUrl,
       theme: user.theme || 'light',
+      signupMethod: user.signupMethod,
       hubspotContactId: user.userMarketingDetails?.hubSpotContactId,
       lettaAgentsUserId: user.lettaAgentsId || '',
       activeOrganizationId: user.activeOrganizationId || '',

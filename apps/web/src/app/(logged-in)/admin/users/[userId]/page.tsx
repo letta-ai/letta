@@ -196,6 +196,10 @@ function UserProperties() {
         name: 'Letta Agents User ID',
         value: user.lettaAgentsUserId || 'None (Bugged User)',
       },
+      {
+        name: 'Signup Method',
+        value: user.signupMethod || 'None (Bugged User)',
+      },
     ];
   }, [user]);
 

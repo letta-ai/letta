@@ -19,6 +19,7 @@ const AdminWholeUser = z.object({
   name: z.string(),
   imageUrl: z.string(),
   theme: z.string(),
+  signupMethod: z.string(),
   hubspotContactId: z.string().nullable(),
   activeOrganizationId: z.string(),
   lettaAgentsUserId: z.string(),
