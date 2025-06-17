@@ -222,7 +222,7 @@ describe-web:
         --set secrets.LETTA_MISTRAL_API_KEY=${LETTA_MISTRAL_API_KEY} \
         --set secrets.MCP_READ_FROM_CONFIG=false \
         --set secrets.MCP_DISABLE_STDIO=true \
-        --set secrets.TAVILY_API_KEY=${TAVILY_API_KEY}
+        --set secrets.FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
     else
         helm upgrade --install {{CORE_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{CORE_HELM_CHART_NAME}} \
             --set image.tag={{TAG}} \

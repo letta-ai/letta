@@ -108,6 +108,7 @@ jobs:
           LETTA_PG_MAX_OVERFLOW: ${{ secrets.LETTA_PG_MAX_OVERFLOW }}
           MCP_READ_FROM_CONFIG: false
           MCP_DISABLE_STDIO: true
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
         run: |
           just build-core deploy-core "${DEPLOY_MESSAGE}"
 

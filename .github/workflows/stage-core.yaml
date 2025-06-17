@@ -146,4 +146,5 @@ jobs:
           LETTA_DEFAULT_EMBEDDING_HANDLE: ${{ secrets.LETTA_DEFAULT_EMBEDDING_HANDLE }}
           MCP_READ_FROM_CONFIG: false # disable MCP config
           MCP_DISABLE_STDIO: true
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
         run: just build-core deploy-core "${DEPLOY_MESSAGE}"
