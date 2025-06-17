@@ -85,7 +85,7 @@ marshmallow-sqlalchemy = "^1.4.1"
 boto3 = {version = "^1.36.24", optional = true}
 datamodel-code-generator = {extras = ["http"], version = "^0.25.0"}
 mcp = {extras = ["cli"], version = "^1.9.4"}
-firecrawl-py = "^1.15.0"
+firecrawl-py = "^2.8.0"
 apscheduler = "^3.11.0"
 aiomultiprocess = "^0.9.1"
 matplotlib = "^3.10.1"
@@ -97,6 +97,7 @@ uvloop = {version = "^0.21.0", optional = true}
 granian = {version = "^2.3.2", extras = ["uvloop", "reload"], optional = true}
 redis = {version = "^6.2.0", optional = true}
 structlog = "^25.4.0"
+certifi = "^2025.6.15"
 
 
 [tool.poetry.extras]
@@ -106,7 +107,7 @@ dev = ["pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "pyright", 
 experimental = ["uvloop", "granian"]
 server = ["websockets", "fastapi", "uvicorn"]
 cloud-tool-sandbox = ["e2b-code-interpreter"]
-external-tools = ["docker", "langchain", "wikipedia", "langchain-community"]
+external-tools = ["docker", "langchain", "wikipedia", "langchain-community", "firecrawl-py"]
 tests = ["wikipedia"]
 bedrock = ["boto3"]
 google = ["google-genai"]

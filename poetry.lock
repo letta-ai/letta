@@ -731,13 +731,13 @@ files = [
 
 [[package]]
 name = "certifi"
-version = "2025.1.31"
+version = "2025.6.15"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 files = [
-    {file = "certifi-2025.1.31-py3-none-any.whl", hash = "sha256:ca78db4565a652026a4db2bcdf68f2fb589ea80d0be70e03929ed730746b84fe"},
-    {file = "certifi-2025.1.31.tar.gz", hash = "sha256:3d5da6925056f6f18f119200434a4780a94263f10d1c21d032a6f6b2baa20651"},
+    {file = "certifi-2025.6.15-py3-none-any.whl", hash = "sha256:2e0c7ce7cb5d8f8634ca55d2ba7e6ec2689a2fd6537d8dec1296a477a4910057"},
+    {file = "certifi-2025.6.15.tar.gz", hash = "sha256:d747aa5a8b9bbbb1bb8c22bb13e22bd1f18e9796defa16bab421f7f7a317323b"},
 ]
 
 [[package]]
@@ -1537,18 +1537,19 @@ files = [
 
 [[package]]
 name = "firecrawl-py"
-version = "1.17.0"
+version = "2.8.0"
 description = "Python SDK for Firecrawl API"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "firecrawl_py-1.17.0-py3-none-any.whl", hash = "sha256:0392822fbd906731f4c0876f91a9c3cce7624279c81948e4e3f8bc60b4e1c855"},
-    {file = "firecrawl_py-1.17.0.tar.gz", hash = "sha256:5e2f50ec1f0e67514cdf6f0afc7df6be36eb8277fbec9e1f5a283fc01fae7875"},
+    {file = "firecrawl_py-2.8.0-py3-none-any.whl", hash = "sha256:f2e148086aa1ca42f603a56009577b4f66a2c23893eaa71f7c9c0082b4fdcf60"},
+    {file = "firecrawl_py-2.8.0.tar.gz", hash = "sha256:657795b6ddd63f0bd38b38bf0571187e0a66becda23d97c032801895257403c9"},
 ]
 
 [package.dependencies]
+aiohttp = "*"
 nest-asyncio = "*"
-pydantic = ">=2.10.3"
+pydantic = "*"
 python-dotenv = "*"
 requests = "*"
 websockets = "*"
@@ -7385,7 +7386,7 @@ cloud-tool-sandbox = ["e2b-code-interpreter"]
 desktop = ["docker", "fastapi", "langchain", "langchain-community", "locust", "pg8000", "pgvector", "psycopg2", "psycopg2-binary", "pyright", "uvicorn", "wikipedia"]
 dev = ["autoflake", "black", "isort", "locust", "pexpect", "pre-commit", "pyright", "pytest-asyncio", "pytest-order"]
 experimental = ["granian", "uvloop"]
-external-tools = ["docker", "langchain", "langchain-community", "wikipedia"]
+external-tools = ["docker", "firecrawl-py", "langchain", "langchain-community", "wikipedia"]
 google = ["google-genai"]
 postgres = ["asyncpg", "pg8000", "pgvector", "psycopg2", "psycopg2-binary"]
 redis = ["redis"]
@@ -7395,4 +7396,4 @@ tests = ["wikipedia"]
 [metadata]
 lock-version = "2.0"
 python-versions = "<3.14,>=3.10"
-content-hash = "064797612dc82335ea4c5e68aa53535318970789007cc20ebc9bf32a646a03c1"
+content-hash = "87b1d77da4ccba13d41d7b6ed9fe24302982e181f84ad93f0cb409f216e33255"

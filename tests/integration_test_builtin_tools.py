@@ -13,6 +13,7 @@ from letta_client.types import ToolReturnMessage
 
 from letta.schemas.agent import AgentState
 from letta.schemas.llm_config import LLMConfig
+from letta.settings import tool_settings
 
 # ------------------------------
 # Fixtures
@@ -69,24 +70,45 @@ def client(server_url: str) -> Letta:
 def agent_state(client: Letta) -> AgentState:
     """
     Creates and returns an agent state for testing with a pre-configured agent.
-    The agent is named 'supervisor' and is configured with base tools and the roll_dice tool.
     """
     client.tools.upsert_base_tools()
 
     send_message_tool = client.tools.list(name="send_message")[0]
     run_code_tool = client.tools.list(name="run_code")[0]
     web_search_tool = client.tools.list(name="web_search")[0]
+    firecrawl_search_tool = client.tools.list(name="firecrawl_search")[0]
     agent_state_instance = client.agents.create(
-        name="supervisor",
+        name="test_builtin_tools_agent",
         include_base_tools=False,
-        tool_ids=[send_message_tool.id, run_code_tool.id, web_search_tool.id],
+        tool_ids=[send_message_tool.id, run_code_tool.id, web_search_tool.id, firecrawl_search_tool.id],
         model="openai/gpt-4o",
         embedding="letta/letta-free",
-        tags=["supervisor"],
+        tags=["test_builtin_tools_agent"],
     )
     yield agent_state_instance
 
-    client.agents.delete(agent_state_instance.id)
+
+@pytest.fixture(scope="module")
+def agent_state_with_firecrawl_key(client: Letta) -> AgentState:
+    """
+    Creates and returns an agent state for testing with a pre-configured agent.
+    """
+    client.tools.upsert_base_tools()
+
+    send_message_tool = client.tools.list(name="send_message")[0]
+    run_code_tool = client.tools.list(name="run_code")[0]
+    web_search_tool = client.tools.list(name="web_search")[0]
+    firecrawl_search_tool = client.tools.list(name="firecrawl_search")[0]
+    agent_state_instance = client.agents.create(
+        name="test_builtin_tools_agent",
+        include_base_tools=False,
+        tool_ids=[send_message_tool.id, run_code_tool.id, web_search_tool.id, firecrawl_search_tool.id],
+        model="openai/gpt-4o",
+        embedding="letta/letta-free",
+        tags=["test_builtin_tools_agent"],
+        tool_exec_environment_variables={"FIRECRAWL_API_KEY": tool_settings.firecrawl_api_key},
+    )
+    yield agent_state_instance
 
 
 # ------------------------------
@@ -200,3 +222,99 @@ def test_web_search(
     returns = [m.tool_return for m in tool_returns]
     expected = "RESULT 1:"
     assert any(expected in ret for ret in returns), f"Expected to find '{expected}' in tool_return, " f"but got {returns!r}"
+
+
+@pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS, ids=[c.model for c in TESTED_LLM_CONFIGS])
+def test_firecrawl_search(
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    user_message = MessageCreate(
+        role="user",
+        content="I am executing a test. Use the firecrawl search tool to find where I, Charles Packer, the CEO of Letta, went to school.",
+        otid=USER_MESSAGE_OTID,
+    )
+
+    response = client.agents.messages.create(
+        agent_id=agent_state.id,
+        messages=[user_message],
+    )
+
+    tool_returns = [m for m in response.messages if isinstance(m, ToolReturnMessage)]
+    assert tool_returns, "No ToolReturnMessage found"
+
+    returns = [m.tool_return for m in tool_returns]
+    print(returns)
+
+    # Parse the JSON response from firecrawl_search
+    assert len(returns) > 0, "No tool returns found"
+    response_json = json.loads(returns[0])
+
+    # Basic structure assertions
+    assert "query" in response_json, "Missing 'query' field in response"
+    assert "question" in response_json, "Missing 'question' field in response"
+    assert "total_sources" in response_json, "Missing 'total_sources' field in response"
+    assert "total_citations" in response_json, "Missing 'total_citations' field in response"
+    assert "sources" in response_json, "Missing 'sources' field in response"
+    assert "api_key_source" in response_json, "Missing 'api_key_source' field in response"
+    assert response_json["api_key_source"] == "system_settings"
+
+    # Content assertions
+    assert response_json["total_sources"] > 0, "Should have found at least one source"
+    assert response_json["total_citations"] > 0, "Should have found at least one citation"
+    assert len(response_json["sources"]) == response_json["total_sources"], "Sources count mismatch"
+
+    # Verify we found information about Charles Packer's education
+    found_education_info = False
+    for source in response_json["sources"]:
+        assert "url" in source, "Source missing URL"
+        assert "title" in source, "Source missing title"
+        assert "citations" in source, "Source missing citations"
+
+        for citation in source["citations"]:
+            assert "text" in citation, "Citation missing text"
+            assert "thinking" in citation, "Citation missing thinking"
+
+            # Check if we found education-related information
+            if any(keyword in citation["text"].lower() for keyword in ["berkeley", "phd", "ph.d", "university", "student"]):
+                found_education_info = True
+
+    assert found_education_info, "Should have found education-related information about Charles Packer"
+
+    # API key source should be valid
+    assert response_json["api_key_source"] in [
+        "agent_environment",
+        "system_settings",
+    ], f"Invalid api_key_source: {response_json['api_key_source']}"
+
+
+@pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS, ids=[c.model for c in TESTED_LLM_CONFIGS])
+def test_firecrawl_search_using_agent_state_env_var(
+    client: Letta,
+    agent_state_with_firecrawl_key: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    user_message = MessageCreate(
+        role="user",
+        content="I am executing a test. Use the firecrawl search tool to find where I, Charles Packer, the CEO of Letta, went to school.",
+        otid=USER_MESSAGE_OTID,
+    )
+
+    response = client.agents.messages.create(
+        agent_id=agent_state_with_firecrawl_key.id,
+        messages=[user_message],
+    )
+
+    tool_returns = [m for m in response.messages if isinstance(m, ToolReturnMessage)]
+    assert tool_returns, "No ToolReturnMessage found"
+
+    returns = [m.tool_return for m in tool_returns]
+    print(returns)
+
+    # Parse the JSON response from firecrawl_search
+    assert len(returns) > 0, "No tool returns found"
+    response_json = json.loads(returns[0])
+
+    # Basic structure assertions
+    assert response_json["api_key_source"] == "agent_environment"
