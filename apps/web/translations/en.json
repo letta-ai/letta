@@ -8,7 +8,7 @@
   },
   "onboarding/PausedOnboardingView": {
     "title": "Finish onboarding!",
-    "description": "You can continue your onboarding at any time. Click the button below to continue.",
+    "description": "Continue your onboarding at any time by clicking the button below.",
     "trigger": "Continue onboarding"
   },
   "components/CustomerQuotaView": {

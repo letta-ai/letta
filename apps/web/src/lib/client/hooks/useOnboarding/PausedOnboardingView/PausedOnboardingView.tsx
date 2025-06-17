@@ -34,7 +34,13 @@ export function PausedOnboardingView() {
   }
 
   return (
-    <VStack fullWidth fullHeight color="background-grey" padding>
+    <VStack
+      fullWidth
+      fullHeight
+      padding
+      /*eslint-disable-next-line react/forbid-component-props*/
+      className="bg-card-background border border-background-grey3-border"
+    >
       <HStack align="center">
         <div className="min-w-[72] max-w-[72px] bg-gray-100 h-full max-h-[72px] min-h-[72px] overflow-hidden">
           <Image

@@ -98,11 +98,14 @@ export function buildConfig(appDir: string): Config {
             hover: 'hsl(var(--background-hover))',
             DEFAULT: 'hsl(var(--background))',
           },
+          'card-background': 'hsl(var(--card-background))',
+          'list-item-background': 'hsl(var(--list-item-background))',
           'panel-input-background': {
             DEFAULT: 'hsl(var(--panel-input-background))',
             content: 'hsl(var(--panel-input-background-content))',
           },
           'button-border': 'hsl(var(--button-border))',
+          'project-card-background': 'hsl(var(--project-card-background))',
           'brand-light': {
             DEFAULT: 'hsl(var(--brand-light))',
             content: 'hsl(var(--brand-light-content))',

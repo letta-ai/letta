@@ -152,7 +152,7 @@ function ProjectCard(props: ProjectCardProps) {
   return (
     <Link href={url}>
       {/* eslint-disable-next-line react/forbid-component-props */}
-      <Card className="hover:bg-background-grey">
+      <Card className="bg-project-card-background border border-background-grey3-border hover:bg-background-grey2">
         <VStack fullWidth>
           <VStack gap="medium" fullWidth>
             <Avatar size="medium" name={projectName} />

@@ -90,6 +90,7 @@ const frameVariants = cva('', {
     },
     borderRight: {
       true: 'border-r',
+      dark: 'border-r border-r-background-grey3-border',
     },
     borderLeft: {
       true: 'border-l',

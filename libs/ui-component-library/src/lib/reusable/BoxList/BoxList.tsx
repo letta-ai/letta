@@ -70,13 +70,12 @@ function ListState(props: ListStateProps) {
       <VStack align="center" justify="center">
         {items.map((item, index) => (
           <HStack
-            className={ROW_HEIGHT}
+            className={`${ROW_HEIGHT} bg-list-item-background border border-background-grey3-border`}
             justify="spaceBetween"
             align="center"
             paddingX="large"
             paddingY="small"
             key={index}
-            border
             fullWidth
           >
             <VStack overflow="hidden" gap={false}>

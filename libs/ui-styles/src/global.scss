@@ -76,14 +76,14 @@
   --warning: 40, 100%, 50%;
   --warning-content: 40, 100%, 85%;
 
-  --sidebar-color: 240 11.11% 98.24%;
+  --sidebar-color: 240, 11%, 98%;
 
   /* backgrounds */
   --background: 0 0% 100%;
   --background-hover: 0 0% 98%;
   --content: var(--text-default);
 
-  --dashboard-color: var(--background);
+  --dashboard-color: 180, 14%, 99%;
 
   --destructive-diff: 10, 100%, 60%, 0.16;
   --destructive-diff-content: 10, 67%, 48%;
@@ -107,6 +107,10 @@
 
   --background-grey2: 180, 6%, 97%;
   --background-grey2-content: var(--text-default);
+
+  --project-card-background: 210, 17%, 98%;
+  --card-background: 0, 0%, 97%;
+  --list-item-background: 180, 8%, 97%;
 
   --user-content-background: 0deg 0% 94.5%;
   --agent-content-background: 240deg 33.33% 95.88%;
@@ -276,6 +280,8 @@
 
   --button-border: 0.56	0.03	17%;
 
+  --project-card-background: 180, 3%, 13%;
+
 
   --card: 240 10% 3.9%;
   --card-content: 0 0% 98%;
@@ -315,14 +321,29 @@
   --background-grey2-border: 0, 0%, 13%;
   --background-grey3-border: 200, 3%, 17%;
 
+  /* Model type chip colors - dark mode */
+  --chip-standard: 42, 44, 45, 0.4;
+  --chip-standard-border: 42, 44, 45, 1;
+  --chip-standard-content: 165, 168, 171, 1;
+
+  --chip-premium: 104, 98, 49, 0.16;
+  --chip-premium-border: 104, 98, 49, 0.24;
+  --chip-premium-content: 202, 198, 152, 1;
+
+  --chip-usage-based: 254, 205, 90, 0.24;
+  --chip-usage-based-border: 255, 245, 222, 0.16;
+  --chip-usage-based-content: 255, 235, 189, 1;
+
   --input: 0, 0%, 13%;
   --ring: 240 4.9% 83.9%;
 
   --background-violet: 278, 44%, 25%;
   --background-violet-content: var(--content);
 
-  --sidebar-color: 0 0% 10%;
-  --dashboard-color: 0 0% 8.47%;
+  --sidebar-color: 180, 2%, 11%;
+  --dashboard-color: 210, 4%, 11%;
+  --card-background: 210, 3%, 12%;
+  --list-item-background: 200, 4%, 13%;
 }
 
 

@@ -96,10 +96,14 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
         className={cn(
           actionCardVariants({ ...props, clickable: !!onClick || !!href }),
           fullHeight ? 'h-full' : '',
-          !color ? (isActive ? 'bg-background-grey' : 'bg-background') : '',
+          !color
+            ? isActive
+              ? 'bg-background-grey'
+              : 'bg-card-background'
+            : '',
           'action-card',
           'relative',
-          isSkeleton ? 'border-none' : '',
+          isSkeleton ? 'border-none' : 'border-background-grey3-border',
         )}
       >
         {isSkeleton && (

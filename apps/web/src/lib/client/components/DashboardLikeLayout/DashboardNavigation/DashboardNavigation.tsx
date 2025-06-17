@@ -312,6 +312,8 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
             borderRight={!isBaseNav}
             justify="spaceBetween"
             /*eslint-disable-next-line react/forbid-component-props*/
+            className={!isBaseNav ? 'border-r-background-grey3-border' : ''}
+            /*eslint-disable-next-line react/forbid-component-props*/
             style={{ minWidth: '56px' }}
           >
             <VStack gap={false}>
@@ -323,6 +325,8 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
                       fullWidth
                       borderTop
                       paddingY="xsmall"
+                      /*eslint-disable-next-line react/forbid-component-props*/
+                      className="border-t-background-grey3-border"
                     >
                       <NavButton
                         id={item.id}
@@ -374,6 +378,8 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
                   borderBottom
                   paddingBottom="small"
                   fullWidth
+                  /*eslint-disable-next-line react/forbid-component-props*/
+                  className="border-b-background-grey3-border"
                 >
                   <Button
                     size="small"
@@ -406,6 +412,12 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
                           borderTop={index !== 0}
                           paddingTop={false}
                           padding="small"
+                          /*eslint-disable-next-line react/forbid-component-props*/
+                          className={
+                            index !== 0
+                              ? 'border-t-background-grey3-border'
+                              : ''
+                          }
                         >
                           {titleOverride ? (
                             titleOverride
@@ -567,7 +579,7 @@ export function NavigationSidebar() {
             borderY
             borderLeft
             /* eslint-disable-next-line react/forbid-component-props */
-            className="main-sidebar"
+            className="main-sidebar border-background-grey3-border"
           >
             <MainNavigationItems />
           </VStack>
