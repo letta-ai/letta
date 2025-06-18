@@ -26,6 +26,7 @@ from letta.llm_api.helpers import add_inner_thoughts_to_functions
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.log import get_logger
+from letta.otel.tracing import log_event
 from letta.schemas.enums import ProviderCategory
 from letta.schemas.message import Message as _Message
 from letta.schemas.message import MessageRole as _MessageRole
@@ -45,7 +46,6 @@ from letta.services.provider_manager import ProviderManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
-from letta.tracing import log_event
 
 logger = get_logger(__name__)
 

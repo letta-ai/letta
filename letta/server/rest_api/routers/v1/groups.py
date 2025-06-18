@@ -52,7 +52,7 @@ def count_groups(
 
 
 @router.get("/{group_id}", response_model=Group, operation_id="retrieve_group")
-def retrieve_group(
+async def retrieve_group(
     group_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
@@ -60,10 +60,10 @@ def retrieve_group(
     """
     Retrieve the group by id.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
-        return server.group_manager.retrieve_group(group_id=group_id, actor=actor)
+        return await server.group_manager.retrieve_group_async(group_id=group_id, actor=actor)
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -86,7 +86,7 @@ def create_group(
 
 
 @router.patch("/{group_id}", response_model=Group, operation_id="modify_group")
-def modify_group(
+async def modify_group(
     group_id: str,
     group: GroupUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
@@ -97,8 +97,8 @@ def modify_group(
     Create a new multi-agent group with the specified configuration.
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
-        return server.group_manager.modify_group(group_id=group_id, group_update=group, actor=actor)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        return await server.group_manager.modify_group_async(group_id=group_id, group_update=group, actor=actor)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -44,24 +44,6 @@ def post_json_auth_request(uri, json_payload, auth_type, auth_key):
     return response
 
 
-# deprecated for Box
-class DotDict(dict):
-    """Allow dot access on properties similar to OpenAI response object"""
-
-    def __getattr__(self, attr):
-        return self.get(attr)
-
-    def __setattr__(self, key, value):
-        self[key] = value
-
-    # following methods necessary for pickling
-    def __getstate__(self):
-        return vars(self)
-
-    def __setstate__(self, state):
-        vars(self).update(state)
-
-
 def load_grammar_file(grammar):
     # Set grammar
     grammar_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "grammars", f"{grammar}.gbnf")
@@ -79,8 +61,9 @@ def load_grammar_file(grammar):
 
 # TODO: support tokenizers/tokenizer apis available in local models
 def count_tokens(s: str, model: str = "gpt-4") -> int:
-    encoding = tiktoken.encoding_for_model(model)
-    return len(encoding.encode(s))
+    from letta.utils import count_tokens
+
+    return count_tokens(s, model)
 
 
 def num_tokens_from_functions(functions: List[dict], model: str = "gpt-4"):
@@ -117,7 +100,11 @@ def num_tokens_from_functions(functions: List[dict], model: str = "gpt-4"):
                         try:
                             if field == "type":
                                 function_tokens += 2
-                                function_tokens += len(encoding.encode(v["type"]))
+                                # Handle both string and array types, e.g. {"type": ["string", "null"]}
+                                if isinstance(v["type"], list):
+                                    function_tokens += len(encoding.encode(",".join(v["type"])))
+                                else:
+                                    function_tokens += len(encoding.encode(v["type"]))
                             elif field == "description":
                                 function_tokens += 2
                                 function_tokens += len(encoding.encode(v["description"]))

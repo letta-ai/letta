@@ -1,3 +1,4 @@
+import json
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
@@ -6,12 +7,13 @@ from openai import AsyncStream, Stream
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from letta.errors import LLMError
+from letta.otel.tracing import log_event, trace_method
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.services.telemetry_manager import TelemetryManager
-from letta.tracing import log_event, trace_method
 
 if TYPE_CHECKING:
     from letta.orm import User
@@ -139,6 +141,20 @@ class LLMClientBase:
         raise NotImplementedError
 
     @abstractmethod
+    async def request_embeddings(self, texts: List[str], embedding_config: EmbeddingConfig) -> List[List[float]]:
+        """
+        Generate embeddings for a batch of texts.
+
+        Args:
+            texts (List[str]): List of texts to generate embeddings for.
+            embedding_config (EmbeddingConfig): Configuration for the embedding model.
+
+        Returns:
+            embeddings (List[List[float]]): List of embeddings for the input texts.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def convert_response_to_chat_completion(
         self,
         response_data: dict,
@@ -171,3 +187,30 @@ class LLMClientBase:
             An LLMError subclass that represents the error in a provider-agnostic way
         """
         return LLMError(f"Unhandled LLM error: {str(e)}")
+
+    def _fix_truncated_json_response(self, response: ChatCompletionResponse) -> ChatCompletionResponse:
+        """
+        Fixes truncated JSON responses by ensuring the content is properly formatted.
+        This is a workaround for some providers that may return incomplete JSON.
+        """
+        if response.choices and response.choices[0].message and response.choices[0].message.tool_calls:
+            tool_call_args_str = response.choices[0].message.tool_calls[0].function.arguments
+            try:
+                json.loads(tool_call_args_str)
+            except json.JSONDecodeError:
+                try:
+                    json_str_end = ""
+                    quote_count = tool_call_args_str.count('"')
+                    if quote_count % 2 != 0:
+                        json_str_end = json_str_end + '"'
+
+                    open_braces = tool_call_args_str.count("{")
+                    close_braces = tool_call_args_str.count("}")
+                    missing_braces = open_braces - close_braces
+                    json_str_end += "}" * missing_braces
+                    fixed_tool_call_args_str = tool_call_args_str[: -len(json_str_end)] + json_str_end
+                    json.loads(fixed_tool_call_args_str)
+                    response.choices[0].message.tool_calls[0].function.arguments = fixed_tool_call_args_str
+                except json.JSONDecodeError:
+                    pass
+        return response

@@ -28,7 +28,8 @@ class ToolSettings(BaseSettings):
     mcp_connect_to_server_timeout: float = 30.0
     mcp_list_tools_timeout: float = 30.0
     mcp_execute_tool_timeout: float = 60.0
-    mcp_read_from_config: bool = True  # if False, will throw if attempting to read/write from file
+    mcp_read_from_config: bool = False  # if False, will throw if attempting to read/write from file
+    mcp_disable_stdio: bool = False
 
 
 class SummarizerSettings(BaseSettings):
@@ -172,6 +173,10 @@ class Settings(BaseSettings):
     debug: Optional[bool] = False
     cors_origins: Optional[list] = cors_origins
 
+    # default handles
+    default_llm_handle: Optional[str] = None
+    default_embedding_handle: Optional[str] = None
+
     # database configuration
     pg_db: Optional[str] = None
     pg_user: Optional[str] = None
@@ -188,14 +193,21 @@ class Settings(BaseSettings):
     pool_use_lifo: bool = True
     disable_sqlalchemy_pooling: bool = False
 
+    redis_host: Optional[str] = None
+    redis_port: Optional[int] = None
+
+    plugin_register: Optional[str] = None
+
     # multi agent settings
     multi_agent_send_message_max_retries: int = 3
     multi_agent_send_message_timeout: int = 20 * 60
     multi_agent_concurrent_sends: int = 50
 
     # telemetry logging
-    verbose_telemetry_logging: bool = False
     otel_exporter_otlp_endpoint: Optional[str] = None  # otel default: "http://localhost:4317"
+    otel_preferred_temporality: Optional[int] = Field(
+        default=1, ge=0, le=2, description="Exported metric temporality. {0: UNSPECIFIED, 1: DELTA, 2: CUMULATIVE}"
+    )
     disable_tracing: bool = False
     llm_api_logging: bool = True
 
@@ -204,15 +216,16 @@ class Settings(BaseSettings):
     uvicorn_reload: bool = False
     uvicorn_timeout_keep_alive: int = 5
 
+    use_uvloop: bool = False
+    use_granian: bool = False
+    sqlalchemy_tracing: bool = False
+
     # event loop parallelism
     event_loop_threadpool_max_workers: int = 43
 
     # experimental toggle
     use_experimental: bool = False
     use_vertex_structured_outputs_experimental: bool = False
-    use_vertex_async_loop_experimental: bool = False
-    experimental_enable_async_db_engine: bool = False
-    experimental_skip_rebuild_memory: bool = False
 
     # LLM provider client settings
     httpx_max_retries: int = 5
@@ -228,6 +241,11 @@ class Settings(BaseSettings):
     enable_batch_job_polling: bool = False
     poll_running_llm_batches_interval_seconds: int = 5 * 60
     poll_lock_retry_interval_seconds: int = 5 * 60
+    batch_job_polling_lookback_weeks: int = 2
+    batch_job_polling_batch_size: Optional[int] = None
+
+    # for OCR
+    mistral_api_key: Optional[str] = None
 
     @property
     def letta_pg_uri(self) -> str:
@@ -249,11 +267,25 @@ class Settings(BaseSettings):
         else:
             return None
 
+    @property
+    def plugin_register_dict(self) -> dict:
+        plugins = {}
+        if self.plugin_register:
+            for plugin in self.plugin_register.split(";"):
+                name, target = plugin.split("=")
+                plugins[name] = {"target": target}
+        return plugins
+
 
 class TestSettings(Settings):
     model_config = SettingsConfigDict(env_prefix="letta_test_", extra="ignore")
 
     letta_dir: Optional[Path] = Field(Path.home() / ".letta/test", env="LETTA_TEST_DIR")
+
+
+class LogSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="letta_logging_", extra="ignore")
+    verbose_telemetry_logging: bool = False
 
 
 # singleton
@@ -262,3 +294,4 @@ test_settings = TestSettings()
 model_settings = ModelSettings()
 tool_settings = ToolSettings()
 summarizer_settings = SummarizerSettings()
+log_settings = LogSettings()

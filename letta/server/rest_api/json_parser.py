@@ -32,9 +32,14 @@ class PydanticJSONParser(JSONParser):
             return {}
         try:
             return from_json(input_str, allow_partial="trailing-strings" if not self.strict else False)
-        except ValueError as e:
-            logger.error(f"Failed to parse JSON: {e}")
-            raise
+        except Exception as e:
+            logger.warning(f"PydanticJSONParser failed: {e} | input_str={input_str!r}, falling back to OptimisticJSONParser")
+            try:
+                fallback_parser = OptimisticJSONParser(strict=self.strict)
+                return fallback_parser.parse(input_str)
+            except Exception as fallback_e:
+                logger.error(f"Both parsers failed. Pydantic: {e}, Optimistic: {fallback_e} | input_str={input_str!r}")
+                raise fallback_e
 
 
 class OptimisticJSONParser(JSONParser):
@@ -219,3 +224,34 @@ class OptimisticJSONParser(JSONParser):
         if input_str.startswith("n"):
             return None, input_str[4:]
         raise decode_error
+
+
+# TODO: Keeping this around for posterity
+# def main():
+#     test_string = '{"inner_thoughts":}'
+#
+#     print(f"Testing string: {test_string!r}")
+#     print("=" * 50)
+#
+#     print("OptimisticJSONParser (strict=False):")
+#     try:
+#         optimistic_parser = OptimisticJSONParser(strict=False)
+#         result = optimistic_parser.parse(test_string)
+#         print(f"  Result: {result}")
+#         print(f"  Remaining: {optimistic_parser.last_parse_reminding!r}")
+#     except Exception as e:
+#         print(f"  Error: {e}")
+#
+#     print()
+#
+#     print("PydanticJSONParser (strict=False):")
+#     try:
+#         pydantic_parser = PydanticJSONParser(strict=False)
+#         result = pydantic_parser.parse(test_string)
+#         print(f"  Result: {result}")
+#     except Exception as e:
+#         print(f"  Error: {e}")
+#
+#
+# if __name__ == "__main__":
+#     main()

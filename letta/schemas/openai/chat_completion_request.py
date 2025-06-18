@@ -10,7 +10,7 @@ class SystemMessage(BaseModel):
 
 
 class UserMessage(BaseModel):
-    content: Union[str, List[str]]
+    content: Union[str, List[str], List[dict]]
     role: str = "user"
     name: Optional[str] = None
 
@@ -123,7 +123,7 @@ class ChatCompletionRequest(BaseModel):
     logit_bias: Optional[Dict[str, int]] = None
     logprobs: Optional[bool] = False
     top_logprobs: Optional[int] = None
-    max_tokens: Optional[int] = None
+    max_completion_tokens: Optional[int] = None
     n: Optional[int] = 1
     presence_penalty: Optional[float] = 0
     response_format: Optional[ResponseFormat] = None

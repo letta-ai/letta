@@ -41,21 +41,13 @@ class BasePassage(SqlalchemyBase, OrganizationMixin):
         """Relationship to organization"""
         return relationship("Organization", back_populates="passages", lazy="selectin")
 
-    @declared_attr
-    def __table_args__(cls):
-        if settings.letta_pg_uri_no_default:
-            return (
-                Index(f"{cls.__tablename__}_org_idx", "organization_id"),
-                Index(f"{cls.__tablename__}_created_at_id_idx", "created_at", "id"),
-                {"extend_existing": True},
-            )
-        return (Index(f"{cls.__tablename__}_created_at_id_idx", "created_at", "id"), {"extend_existing": True})
-
 
 class SourcePassage(BasePassage, FileMixin, SourceMixin):
     """Passages derived from external files/sources"""
 
     __tablename__ = "source_passages"
+
+    file_name: Mapped[str] = mapped_column(doc="The name of the file that this passage was derived from")
 
     @declared_attr
     def file(cls) -> Mapped["FileMetadata"]:
@@ -65,6 +57,16 @@ class SourcePassage(BasePassage, FileMixin, SourceMixin):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", back_populates="source_passages", lazy="selectin")
+
+    @declared_attr
+    def __table_args__(cls):
+        if settings.letta_pg_uri_no_default:
+            return (
+                Index("source_passages_org_idx", "organization_id"),
+                Index("source_passages_created_at_id_idx", "created_at", "id"),
+                {"extend_existing": True},
+            )
+        return (Index("source_passages_created_at_id_idx", "created_at", "id"), {"extend_existing": True})
 
     @declared_attr
     def source(cls) -> Mapped["Source"]:
@@ -80,3 +82,18 @@ class AgentPassage(BasePassage, AgentMixin):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", back_populates="agent_passages", lazy="selectin")
+
+    @declared_attr
+    def __table_args__(cls):
+        if settings.letta_pg_uri_no_default:
+            return (
+                Index("agent_passages_org_idx", "organization_id"),
+                Index("ix_agent_passages_org_agent", "organization_id", "agent_id"),
+                Index("agent_passages_created_at_id_idx", "created_at", "id"),
+                {"extend_existing": True},
+            )
+        return (
+            Index("ix_agent_passages_org_agent", "organization_id", "agent_id"),
+            Index("agent_passages_created_at_id_idx", "created_at", "id"),
+            {"extend_existing": True},
+        )

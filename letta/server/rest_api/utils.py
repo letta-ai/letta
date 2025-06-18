@@ -15,18 +15,21 @@ from pydantic import BaseModel
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE
 from letta.errors import ContextWindowExceededError, RateLimitExceededError
-from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
+from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns, ns_to_ms
 from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.log import get_logger
+from letta.otel.context import get_ctx_attributes
+from letta.otel.metric_registry import MetricRegistry
+from letta.otel.tracing import tracer
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message, MessageCreate
+from letta.schemas.message import Message, MessageCreate, ToolReturn
+from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.system import get_heartbeat, package_function_response
-from letta.tracing import tracer
 
 if TYPE_CHECKING:
     from letta.server.server import SyncServer
@@ -80,8 +83,12 @@ async def sse_async_generator(
             if first_chunk and ttft_span is not None:
                 now = get_utc_timestamp_ns()
                 ttft_ns = now - request_start_timestamp_ns
-                ttft_span.add_event(name="time_to_first_token_ms", attributes={"ttft_ms": ttft_ns // 1_000_000})
+                ttft_span.add_event(name="time_to_first_token_ms", attributes={"ttft_ms": ns_to_ms(ttft_ns)})
                 ttft_span.end()
+                metric_attributes = get_ctx_attributes()
+                if llm_config:
+                    metric_attributes["model.name"] = llm_config.model
+                MetricRegistry().ttft_ms_histogram.record(ns_to_ms(ttft_ns), metric_attributes)
                 first_chunk = False
 
             # yield f"data: {json.dumps(chunk)}\n\n"
@@ -181,6 +188,7 @@ def create_letta_messages_from_llm_response(
     model: str,
     function_name: str,
     function_arguments: Dict,
+    tool_execution_result: ToolExecutionResult,
     tool_call_id: str,
     function_call_success: bool,
     function_response: Optional[str],
@@ -188,7 +196,6 @@ def create_letta_messages_from_llm_response(
     add_heartbeat_request_system_message: bool = False,
     reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
     pre_computed_assistant_message_id: Optional[str] = None,
-    pre_computed_tool_message_id: Optional[str] = None,
     llm_batch_item_id: Optional[str] = None,
     step_id: str | None = None,
 ) -> List[Message]:
@@ -234,9 +241,15 @@ def create_letta_messages_from_llm_response(
         created_at=get_utc_time(),
         name=function_name,
         batch_item_id=llm_batch_item_id,
+        tool_returns=[
+            ToolReturn(
+                status=tool_execution_result.status,
+                stderr=tool_execution_result.stderr,
+                stdout=tool_execution_result.stdout,
+                # func_return=tool_execution_result.func_return,
+            )
+        ],
     )
-    if pre_computed_tool_message_id:
-        tool_message.id = pre_computed_tool_message_id
     messages.append(tool_message)
 
     if add_heartbeat_request_system_message:
@@ -286,6 +299,7 @@ def create_assistant_messages_from_openai_response(
         model=model,
         function_name=DEFAULT_MESSAGE_TOOL,
         function_arguments={DEFAULT_MESSAGE_TOOL_KWARG: response_text},  # Avoid raw string manipulation
+        tool_execution_result=ToolExecutionResult(status="success"),
         tool_call_id=tool_call_id,
         function_call_success=True,
         function_response=None,

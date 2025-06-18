@@ -7,10 +7,13 @@ from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMe
 from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
 from sqlalchemy import Dialect
 
+from letta.functions.mcp_client.types import StdioServerConfig
 from letta.schemas.agent import AgentStepState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderType, ToolRuleType
 from letta.schemas.letta_message_content import (
+    ImageContent,
+    ImageSourceType,
     MessageContent,
     MessageContentType,
     OmittedReasoningContent,
@@ -215,12 +218,13 @@ def serialize_message_content(message_content: Optional[List[Union[MessageConten
     serialized_message_content = []
     for content in message_content:
         if isinstance(content, MessageContent):
+            if content.type == MessageContentType.image:
+                assert content.source.type == ImageSourceType.letta, f"Invalid image source type: {content.source.type}"
             serialized_message_content.append(content.model_dump(mode="json"))
         elif isinstance(content, dict):
             serialized_message_content.append(content)  # Already a dictionary, leave it as-is
         else:
             raise TypeError(f"Unexpected message content type: {type(content)}")
-
     return serialized_message_content
 
 
@@ -237,6 +241,9 @@ def deserialize_message_content(data: Optional[List[Dict]]) -> List[MessageConte
         content_type = item.get("type")
         if content_type == MessageContentType.text:
             content = TextContent(**item)
+        elif content_type == MessageContentType.image:
+            assert item["source"]["type"] == ImageSourceType.letta, f'Invalid image source type: {item["source"]["type"]}'
+            content = ImageContent(**item)
         elif content_type == MessageContentType.tool_call:
             content = ToolCallContent(**item)
         elif content_type == MessageContentType.tool_return:
@@ -400,3 +407,22 @@ def deserialize_response_format(data: Optional[Dict]) -> Optional[ResponseFormat
         return JsonSchemaResponseFormat(**data)
     if data["type"] == ResponseFormatType.json_object:
         return JsonObjectResponseFormat(**data)
+
+
+# --------------------------
+# MCP Stdio Server Config Serialization
+# --------------------------
+
+
+def serialize_mcp_stdio_config(config: Union[Optional[StdioServerConfig], Dict]) -> Optional[Dict]:
+    """Convert an StdioServerConfig object into a JSON-serializable dictionary."""
+    if config and isinstance(config, StdioServerConfig):
+        return config.to_dict()
+    return config
+
+
+def deserialize_mcp_stdio_config(data: Optional[Dict]) -> Optional[StdioServerConfig]:
+    """Convert a dictionary back into an StdioServerConfig object."""
+    if not data:
+        return None
+    return StdioServerConfig(**data)

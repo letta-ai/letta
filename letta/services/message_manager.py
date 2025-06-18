@@ -1,4 +1,5 @@
 import json
+import uuid
 from typing import List, Optional, Sequence
 
 from sqlalchemy import delete, exists, func, select, text
@@ -7,13 +8,15 @@ from letta.log import get_logger
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.errors import NoResultFound
 from letta.orm.message import Message as MessageModel
+from letta.otel.tracing import trace_method
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import LettaMessageUpdateUnion
+from letta.schemas.letta_message_content import ImageSourceType, LettaImage, MessageContentType
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.tracing import trace_method
+from letta.services.file_manager import FileManager
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -21,6 +24,10 @@ logger = get_logger(__name__)
 
 class MessageManager:
     """Manager class to handle business logic related to Messages."""
+
+    def __init__(self):
+        """Initialize the MessageManager."""
+        self.file_manager = FileManager()
 
     @enforce_types
     @trace_method
@@ -49,7 +56,7 @@ class MessageManager:
     def get_messages_by_ids(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
         """Fetch messages by ID and return them in the requested order."""
         with db_registry.session() as session:
-            results = MessageModel.list(db_session=session, id=message_ids, organization_id=actor.organization_id, limit=len(message_ids))
+            results = MessageModel.read_multiple(db_session=session, identifiers=message_ids, actor=actor)
         return self._get_messages_by_id_postprocess(results, message_ids)
 
     @enforce_types
@@ -57,10 +64,8 @@ class MessageManager:
     async def get_messages_by_ids_async(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
         """Fetch messages by ID and return them in the requested order. Async version of above function."""
         async with db_registry.async_session() as session:
-            results = await MessageModel.list_async(
-                db_session=session, id=message_ids, organization_id=actor.organization_id, limit=len(message_ids)
-            )
-        return self._get_messages_by_id_postprocess(results, message_ids)
+            results = await MessageModel.read_multiple_async(db_session=session, identifiers=message_ids, actor=actor)
+            return self._get_messages_by_id_postprocess(results, message_ids)
 
     def _get_messages_by_id_postprocess(
         self,
@@ -133,6 +138,31 @@ class MessageManager:
         if not pydantic_msgs:
             return []
 
+        for message in pydantic_msgs:
+            if isinstance(message.content, list):
+                for content in message.content:
+                    if content.type == MessageContentType.image and content.source.type == ImageSourceType.base64:
+                        # TODO: actually persist image files in db
+                        # file = await self.file_manager.create_file( # TODO: use batch create to prevent multiple db round trips
+                        #     db_session=session,
+                        #     image_create=FileMetadata(
+                        #         user_id=actor.id, # TODO: add field
+                        #         source_id= '' # TODO: make optional
+                        #         organization_id=actor.organization_id,
+                        #         file_type=content.source.media_type,
+                        #         processing_status=FileProcessingStatus.COMPLETED,
+                        #         content= '' # TODO: should content be added here or in top level text field?
+                        #     ),
+                        #     actor=actor,
+                        #     text=content.source.data,
+                        # )
+                        file_id_placeholder = "file-" + str(uuid.uuid4())
+                        content.source = LettaImage(
+                            file_id=file_id_placeholder,
+                            data=content.source.data,
+                            media_type=content.source.media_type,
+                            detail=content.source.detail,
+                        )
         orm_messages = self._create_many_preprocess(pydantic_msgs, actor)
         async with db_registry.async_session() as session:
             created_messages = await MessageModel.batch_create_async(orm_messages, session, actor=actor)
@@ -351,6 +381,29 @@ class MessageManager:
 
     @enforce_types
     @trace_method
+    async def list_user_messages_for_agent_async(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
+        query_text: Optional[str] = None,
+        limit: Optional[int] = 50,
+        ascending: bool = True,
+    ) -> List[PydanticMessage]:
+        return await self.list_messages_for_agent_async(
+            agent_id=agent_id,
+            actor=actor,
+            after=after,
+            before=before,
+            query_text=query_text,
+            roles=[MessageRole.user],
+            limit=limit,
+            ascending=ascending,
+        )
+
+    @enforce_types
+    @trace_method
     def list_messages_for_agent(
         self,
         agent_id: str,
@@ -400,24 +453,17 @@ class MessageManager:
             if group_id:
                 query = query.filter(MessageModel.group_id == group_id)
 
-            # If query_text is provided, filter messages by matching any "text" type content block
-            # whose text includes the query string (case-insensitive).
+            # If query_text is provided, filter messages using subquery + json_array_elements.
             if query_text:
-                dialect_name = session.bind.dialect.name
-
-                if dialect_name == "postgresql":  # using subquery + json_array_elements.
-                    content_element = func.json_array_elements(MessageModel.content).alias("content_element")
-                    subquery_sql = text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text")
-                    subquery = select(1).select_from(content_element).where(subquery_sql)
-
-                elif dialect_name == "sqlite":  # using `json_each` and JSON path expressions
-                    json_item = func.json_each(MessageModel.content).alias("json_item")
-                    subquery_sql = text(
-                        "json_extract(value, '$.type') = 'text' AND lower(json_extract(value, '$.text')) LIKE lower(:query_text)"
+                content_element = func.json_array_elements(MessageModel.content).alias("content_element")
+                query = query.filter(
+                    exists(
+                        select(1)
+                        .select_from(content_element)
+                        .where(text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text"))
+                        .params(query_text=f"%{query_text}%")
                     )
-                    subquery = select(1).select_from(json_item).where(subquery_sql)
-
-                query = query.filter(exists(subquery.params(query_text=f"%{query_text}%")))
+                )
 
             # If role(s) are provided, filter messages by those roles.
             if roles:
@@ -557,23 +603,50 @@ class MessageManager:
 
     @enforce_types
     @trace_method
-    def delete_all_messages_for_agent(self, agent_id: str, actor: PydanticUser) -> int:
+    async def delete_all_messages_for_agent_async(self, agent_id: str, actor: PydanticUser, exclude_ids: Optional[List[str]] = None) -> int:
         """
         Efficiently deletes all messages associated with a given agent_id,
         while enforcing permission checks and avoiding any ORM‑level loads.
+        Optionally excludes specific message IDs from deletion.
         """
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             # 1) verify the agent exists and the actor has access
-            AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+            await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
 
             # 2) issue a CORE DELETE against the mapped class
             stmt = (
                 delete(MessageModel).where(MessageModel.agent_id == agent_id).where(MessageModel.organization_id == actor.organization_id)
             )
-            result = session.execute(stmt)
 
-            # 3) commit once
-            session.commit()
+            # 3) exclude specific message IDs if provided
+            if exclude_ids:
+                stmt = stmt.where(~MessageModel.id.in_(exclude_ids))
 
-            # 4) return the number of rows deleted
+            result = await session.execute(stmt)
+
+            # 4) commit once
+            await session.commit()
+
+            # 5) return the number of rows deleted
+            return result.rowcount
+
+    @enforce_types
+    @trace_method
+    async def delete_messages_by_ids_async(self, message_ids: List[str], actor: PydanticUser) -> int:
+        """
+        Efficiently deletes messages by their specific IDs,
+        while enforcing permission checks.
+        """
+        if not message_ids:
+            return 0
+
+        async with db_registry.async_session() as session:
+            # issue a CORE DELETE against the mapped class for specific message IDs
+            stmt = delete(MessageModel).where(MessageModel.id.in_(message_ids)).where(MessageModel.organization_id == actor.organization_id)
+            result = await session.execute(stmt)
+
+            # commit once
+            await session.commit()
+
+            # return the number of rows deleted
             return result.rowcount

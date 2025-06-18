@@ -13,7 +13,6 @@ from letta_client.types import ToolReturnMessage
 
 from letta.schemas.agent import AgentState
 from letta.schemas.llm_config import LLMConfig
-from letta.settings import settings
 
 # ------------------------------
 # Fixtures
@@ -54,10 +53,7 @@ def server_url() -> str:
         else:
             raise RuntimeError(f"Could not reach {url} within {timeout_seconds}s")
 
-    temp = settings.use_experimental
-    settings.use_experimental = True
     yield url
-    settings.use_experimental = temp
 
 
 @pytest.fixture(scope="module")
@@ -189,7 +185,7 @@ def test_web_search(
 ) -> None:
     user_message = MessageCreate(
         role="user",
-        content=("Use the web search tool to find the latest news about San Francisco."),
+        content="Use the web search tool to find the latest news about San Francisco.",
         otid=USER_MESSAGE_OTID,
     )
 

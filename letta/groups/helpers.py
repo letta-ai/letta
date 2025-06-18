@@ -2,13 +2,13 @@ import json
 from typing import Dict, Optional, Union
 
 from letta.agent import Agent
-from letta.functions.mcp_client.base_client import BaseMCPClient
 from letta.interface import AgentInterface
 from letta.orm.group import Group
 from letta.orm.user import User
 from letta.schemas.agent import AgentState
 from letta.schemas.group import ManagerType
 from letta.schemas.message import Message
+from letta.services.mcp.base_client import AsyncBaseMCPClient
 
 
 def load_multi_agent(
@@ -16,7 +16,7 @@ def load_multi_agent(
     agent_state: Optional[AgentState],
     actor: User,
     interface: Union[AgentInterface, None] = None,
-    mcp_clients: Optional[Dict[str, BaseMCPClient]] = None,
+    mcp_clients: Optional[Dict[str, AsyncBaseMCPClient]] = None,
 ) -> Agent:
     if len(group.agent_ids) == 0:
         raise ValueError("Empty group: group must have at least one agent")
@@ -76,7 +76,6 @@ def load_multi_agent(
                 agent_state=agent_state,
                 interface=interface,
                 user=actor,
-                mcp_clients=mcp_clients,
                 group_id=group.id,
                 agent_ids=group.agent_ids,
                 description=group.description,
@@ -108,7 +107,7 @@ def stringify_message(message: Message, use_assistant_name: bool = False) -> str
     elif message.role == "tool":
         if message.content:
             content = json.loads(message.content[0].text)
-            if content["message"] != "None" and content["message"] != None:
+            if str(content["message"]) != "None":
                 return f"{assistant_name}: Tool call returned {content['message']}"
         return None
     elif message.role == "system":

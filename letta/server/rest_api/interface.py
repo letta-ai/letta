@@ -1338,8 +1338,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                     tool_return=msg,
                     status=msg_obj.tool_returns[0].status if msg_obj.tool_returns else "success",
                     tool_call_id=msg_obj.tool_call_id,
-                    stdout=msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else None,
-                    stderr=msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else None,
+                    stdout=msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else [],
+                    stderr=msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else [],
                     name=msg_obj.name,
                     otid=Message.generate_otid_from_id(msg_obj.id, chunk_index) if chunk_index is not None else None,
                 )
@@ -1354,8 +1354,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 tool_return=msg,
                 status=msg_obj.tool_returns[0].status if msg_obj.tool_returns else "error",
                 tool_call_id=msg_obj.tool_call_id,
-                stdout=msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else None,
-                stderr=msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else None,
+                stdout=msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else [],
+                stderr=msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else [],
                 name=msg_obj.name,
                 otid=Message.generate_otid_from_id(msg_obj.id, chunk_index) if chunk_index is not None else None,
             )

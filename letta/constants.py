@@ -1,4 +1,5 @@
 import os
+import re
 from logging import CRITICAL, DEBUG, ERROR, INFO, NOTSET, WARN, WARNING
 
 LETTA_DIR = os.path.join(os.path.expanduser("~"), ".letta")
@@ -20,6 +21,18 @@ LETTA_CORE_TOOL_MODULE_NAME = "letta.functions.function_sets.base"
 LETTA_MULTI_AGENT_TOOL_MODULE_NAME = "letta.functions.function_sets.multi_agent"
 LETTA_VOICE_TOOL_MODULE_NAME = "letta.functions.function_sets.voice"
 LETTA_BUILTIN_TOOL_MODULE_NAME = "letta.functions.function_sets.builtin"
+LETTA_FILES_TOOL_MODULE_NAME = "letta.functions.function_sets.files"
+
+LETTA_TOOL_MODULE_NAMES = [
+    LETTA_CORE_TOOL_MODULE_NAME,
+    LETTA_MULTI_AGENT_TOOL_MODULE_NAME,
+    LETTA_VOICE_TOOL_MODULE_NAME,
+    LETTA_BUILTIN_TOOL_MODULE_NAME,
+    LETTA_FILES_TOOL_MODULE_NAME,
+]
+
+DEFAULT_ORG_ID = "org-00000000-0000-4000-8000-000000000000"
+DEFAULT_ORG_NAME = "default_org"
 
 
 # String in the error message for when the context window is too large
@@ -33,8 +46,14 @@ IN_CONTEXT_MEMORY_KEYWORD = "CORE_MEMORY"
 # OpenAI error message: Invalid 'messages[1].tool_calls[0].id': string too long. Expected a string with maximum length 29, but got a string with length 36 instead.
 TOOL_CALL_ID_MAX_LEN = 29
 
+# Max steps for agent loop
+DEFAULT_MAX_STEPS = 50
+
 # minimum context window size
 MIN_CONTEXT_WINDOW = 4096
+
+# number of concurrent embedding requests to sent
+EMBEDDING_BATCH_SIZE = 200
 
 # Voice Sleeptime message buffer lengths
 DEFAULT_MAX_MESSAGE_BUFFER_LENGTH = 30
@@ -56,12 +75,23 @@ DEFAULT_PERSONA = "sam_pov"
 DEFAULT_HUMAN = "basic"
 DEFAULT_PRESET = "memgpt_chat"
 
+DEFAULT_PERSONA_BLOCK_DESCRIPTION = "The persona block: Stores details about your current persona, guiding how you behave and respond. This helps you to maintain consistency and personality in your interactions."
+DEFAULT_HUMAN_BLOCK_DESCRIPTION = "The human block: Stores key details about the person you are conversing with, allowing for more personalized and friend-like conversation."
+
 SEND_MESSAGE_TOOL_NAME = "send_message"
 # Base tools that cannot be edited, as they access agent state directly
 # Note that we don't include "conversation_search_date" for now
 BASE_TOOLS = [SEND_MESSAGE_TOOL_NAME, "conversation_search", "archival_memory_insert", "archival_memory_search"]
 # Base memory tools CAN be edited, and are added by default by the server
 BASE_MEMORY_TOOLS = ["core_memory_append", "core_memory_replace"]
+# New v2 collection of the base memory tools (effecitvely same as sleeptime set), to pair with memgpt_v2 prompt
+BASE_MEMORY_TOOLS_V2 = [
+    "memory_replace",
+    "memory_insert",
+    # NOTE: leaving these ones out to simply the set? Can have these reserved for sleep-time
+    # "memory_rethink",
+    # "memory_finish_edits",
+]
 # Base tools if the memgpt agent has enable_sleeptime on
 BASE_SLEEPTIME_CHAT_TOOLS = [SEND_MESSAGE_TOOL_NAME, "conversation_search", "archival_memory_search"]
 # Base memory tools for sleeptime agent
@@ -85,8 +115,20 @@ BASE_VOICE_SLEEPTIME_TOOLS = [
 # Multi agent tools
 MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_tags", "send_message_to_agent_async"]
 
+# Used to catch if line numbers are pushed in
+# MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX = re.compile(r"^Line \d+: ", re.MULTILINE)
+# More "robust" version that handles different kinds of whitespace
+# shared constant for both memory_insert and memory_replace
+MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX = re.compile(
+    r"^[ \t]*Line[ \t]+\d+[ \t]*:",  # allow any leading whitespace and flexible spacing
+    re.MULTILINE,
+)
+
 # Built in tools
 BUILTIN_TOOLS = ["run_code", "web_search"]
+
+# Built in tools
+FILES_TOOLS = ["open_file", "close_file", "grep", "search_files"]
 
 # Set of all built-in Letta tools
 LETTA_TOOL_SET = set(
@@ -97,7 +139,15 @@ LETTA_TOOL_SET = set(
     + BASE_VOICE_SLEEPTIME_TOOLS
     + BASE_VOICE_SLEEPTIME_CHAT_TOOLS
     + BUILTIN_TOOLS
+    + FILES_TOOLS
 )
+
+
+def FUNCTION_RETURN_VALUE_TRUNCATED(return_str, return_char: int, return_char_limit: int):
+    return (
+        f"{return_str}... [NOTE: function output was truncated since it exceeded the character limit: {return_char} > {return_char_limit}]"
+    )
+
 
 # The name of the tool used to send message to the user
 # May not be relevant in cases where the agent has multiple ways to message to user (send_imessage, send_discord_mesasge, ...)
@@ -108,6 +158,7 @@ DEFAULT_MESSAGE_TOOL_KWARG = "message"
 PRE_EXECUTION_MESSAGE_ARG = "pre_exec_msg"
 
 REQUEST_HEARTBEAT_PARAM = "request_heartbeat"
+REQUEST_HEARTBEAT_DESCRIPTION = "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
 
 
 # Structured output models
@@ -241,9 +292,6 @@ MESSAGE_SUMMARY_WARNING_STR = " ".join(
         # "Remember to pass request_heartbeat = true if you would like to send a message immediately after.",
     ]
 )
-DATA_SOURCE_ATTACH_ALERT = (
-    "[ALERT] New data was just uploaded to archival memory. You can view this data by calling the archival_memory_search tool."
-)
 
 # Throw an error message when a read-only block is edited
 READ_ONLY_BLOCK_EDIT_ERROR = f"{ERROR_MESSAGE_PREFIX} This block is read-only and cannot be edited."
@@ -258,10 +306,11 @@ MAX_ERROR_MESSAGE_CHAR_LIMIT = 500
 CORE_MEMORY_PERSONA_CHAR_LIMIT: int = 5000
 CORE_MEMORY_HUMAN_CHAR_LIMIT: int = 5000
 CORE_MEMORY_BLOCK_CHAR_LIMIT: int = 5000
-
+CORE_MEMORY_SOURCE_CHAR_LIMIT: int = 5000
 # Function return limits
 FUNCTION_RETURN_CHAR_LIMIT = 6000  # ~300 words
 BASE_FUNCTION_RETURN_CHAR_LIMIT = 1000000  # very high (we rely on implementation)
+FILE_IS_TRUNCATED_WARNING = "# NOTE: This block is truncated, use functions to view the full content."
 
 MAX_PAUSE_HEARTBEATS = 360  # in min
 
@@ -284,3 +333,8 @@ RESERVED_FILENAMES = {"CON", "PRN", "AUX", "NUL", "COM1", "COM2", "LPT1", "LPT2"
 WEB_SEARCH_CLIP_CONTENT = False
 WEB_SEARCH_INCLUDE_SCORE = False
 WEB_SEARCH_SEPARATOR = "\n" + "-" * 40 + "\n"
+
+REDIS_INCLUDE = "include"
+REDIS_EXCLUDE = "exclude"
+REDIS_SET_DEFAULT_VAL = "None"
+REDIS_DEFAULT_CACHE_PREFIX = "letta_cache"

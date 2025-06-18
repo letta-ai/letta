@@ -1,4 +1,10 @@
-__version__ = "0.7.27"
+import os
+
+__version__ = "0.8.4"
+
+if os.environ.get("LETTA_VERSION"):
+    __version__ = os.environ["LETTA_VERSION"]
+
 
 # import clients
 from letta.client.client import RESTClient
@@ -11,6 +17,7 @@ from letta.schemas.enums import JobStatus
 from letta.schemas.file import FileMetadata
 from letta.schemas.job import Job
 from letta.schemas.letta_message import LettaMessage
+from letta.schemas.letta_stop_reason import LettaStopReason
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, BasicBlockMemory, ChatMemory, Memory, RecallMemorySummary
 from letta.schemas.message import Message

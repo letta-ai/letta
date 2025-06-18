@@ -90,13 +90,13 @@ async def update_sandbox_config(
 
 
 @router.delete("/{sandbox_config_id}", status_code=204)
-def delete_sandbox_config(
+async def delete_sandbox_config(
     sandbox_config_id: str,
     server: SyncServer = Depends(get_letta_server),
     actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    server.sandbox_config_manager.delete_sandbox_config(sandbox_config_id, actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    await server.sandbox_config_manager.delete_sandbox_config_async(sandbox_config_id, actor)
 
 
 @router.get("/", response_model=List[PydanticSandboxConfig])
@@ -158,35 +158,35 @@ async def force_recreate_local_sandbox_venv(
 
 
 @router.post("/{sandbox_config_id}/environment-variable", response_model=PydanticEnvVar)
-def create_sandbox_env_var(
+async def create_sandbox_env_var(
     sandbox_config_id: str,
     env_var_create: SandboxEnvironmentVariableCreate,
     server: SyncServer = Depends(get_letta_server),
     actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.sandbox_config_manager.create_sandbox_env_var(env_var_create, sandbox_config_id, actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.sandbox_config_manager.create_sandbox_env_var_async(env_var_create, sandbox_config_id, actor)
 
 
 @router.patch("/environment-variable/{env_var_id}", response_model=PydanticEnvVar)
-def update_sandbox_env_var(
+async def update_sandbox_env_var(
     env_var_id: str,
     env_var_update: SandboxEnvironmentVariableUpdate,
     server: SyncServer = Depends(get_letta_server),
     actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.sandbox_config_manager.update_sandbox_env_var(env_var_id, env_var_update, actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.sandbox_config_manager.update_sandbox_env_var_async(env_var_id, env_var_update, actor)
 
 
 @router.delete("/environment-variable/{env_var_id}", status_code=204)
-def delete_sandbox_env_var(
+async def delete_sandbox_env_var(
     env_var_id: str,
     server: SyncServer = Depends(get_letta_server),
     actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    server.sandbox_config_manager.delete_sandbox_env_var(env_var_id, actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    await server.sandbox_config_manager.delete_sandbox_env_var_async(env_var_id, actor)
 
 
 @router.get("/{sandbox_config_id}/environment-variable", response_model=List[PydanticEnvVar])

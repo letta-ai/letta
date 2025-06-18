@@ -1,15 +1,23 @@
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+from e2b.sandbox.commands.command_handle import CommandExitException
+from e2b_code_interpreter import AsyncSandbox
 
 from letta.log import get_logger
+from letta.otel.tracing import log_event, trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.sandbox_config import SandboxConfig, SandboxType
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
+from letta.services.helpers.tool_parser_helper import parse_stdout_best_effort
 from letta.services.tool_sandbox.base import AsyncToolSandboxBase
-from letta.tracing import log_event, trace_method
+from letta.types import JsonDict
 from letta.utils import get_friendly_error_msg
 
 logger = get_logger(__name__)
+
+if TYPE_CHECKING:
+    from e2b_code_interpreter import Execution
 
 
 class AsyncToolSandboxE2B(AsyncToolSandboxBase):
@@ -18,9 +26,9 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
     def __init__(
         self,
         tool_name: str,
-        args: dict,
+        args: JsonDict,
         user,
-        force_recreate=True,
+        force_recreate: bool = True,
         tool_object: Optional[Tool] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
@@ -92,7 +100,7 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
         )
         execution = await e2b_sandbox.run_code(code, envs=env_vars)
         if execution.results:
-            func_return, agent_state = self.parse_best_effort(execution.results[0].text)
+            func_return, agent_state = parse_stdout_best_effort(execution.results[0].text)
             log_event(
                 "e2b_execution_succeeded",
                 {
@@ -138,16 +146,15 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
             sandbox_config_fingerprint=sbx_config.fingerprint(),
         )
 
-    def parse_exception_from_e2b_execution(self, e2b_execution: "Execution") -> Exception:
+    @staticmethod
+    def parse_exception_from_e2b_execution(e2b_execution: "Execution") -> Exception:
         builtins_dict = __builtins__ if isinstance(__builtins__, dict) else vars(__builtins__)
         # Dynamically fetch the exception class from builtins, defaulting to Exception if not found
         exception_class = builtins_dict.get(e2b_execution.error.name, Exception)
         return exception_class(e2b_execution.error.value)
 
     @trace_method
-    async def create_e2b_sandbox_with_metadata_hash(self, sandbox_config: SandboxConfig) -> "Sandbox":
-        from e2b_code_interpreter import AsyncSandbox
-
+    async def create_e2b_sandbox_with_metadata_hash(self, sandbox_config: SandboxConfig) -> "AsyncSandbox":
         state_hash = sandbox_config.fingerprint()
         e2b_config = sandbox_config.get_e2b_config()
 
@@ -183,19 +190,67 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
                         "package": package,
                     },
                 )
-                await sbx.commands.run(f"pip install {package}")
+                try:
+                    await sbx.commands.run(f"pip install {package}")
+                    log_event(
+                        "e2b_pip_install_finished",
+                        {
+                            "sandbox_id": sbx.sandbox_id,
+                            "package": package,
+                        },
+                    )
+                except CommandExitException as e:
+                    error_msg = f"Failed to install sandbox pip requirement '{package}' in E2B sandbox. This may be due to package version incompatibility with the E2B environment. Error: {e}"
+                    logger.error(error_msg)
+                    log_event(
+                        "e2b_pip_install_failed",
+                        {
+                            "sandbox_id": sbx.sandbox_id,
+                            "package": package,
+                            "error": str(e),
+                        },
+                    )
+                    raise RuntimeError(error_msg) from e
+
+        # Install tool-specific pip requirements
+        if self.tool and self.tool.pip_requirements:
+            for pip_requirement in self.tool.pip_requirements:
+                package_str = str(pip_requirement)
                 log_event(
-                    "e2b_pip_install_finished",
+                    "tool_pip_install_started",
                     {
                         "sandbox_id": sbx.sandbox_id,
-                        "package": package,
+                        "package": package_str,
+                        "tool_name": self.tool.name,
                     },
                 )
+                try:
+                    await sbx.commands.run(f"pip install {package_str}")
+                    log_event(
+                        "tool_pip_install_finished",
+                        {
+                            "sandbox_id": sbx.sandbox_id,
+                            "package": package_str,
+                            "tool_name": self.tool.name,
+                        },
+                    )
+                except CommandExitException as e:
+                    error_msg = f"Failed to install tool pip requirement '{package_str}' for tool '{self.tool.name}' in E2B sandbox. This may be due to package version incompatibility with the E2B environment. Consider updating the package version or removing the version constraint. Error: {e}"
+                    logger.error(error_msg)
+                    log_event(
+                        "tool_pip_install_failed",
+                        {
+                            "sandbox_id": sbx.sandbox_id,
+                            "package": package_str,
+                            "tool_name": self.tool.name,
+                            "error": str(e),
+                        },
+                    )
+                    raise RuntimeError(error_msg) from e
 
         return sbx
 
-    async def list_running_e2b_sandboxes(self):
-        from e2b_code_interpreter import AsyncSandbox
-
+    @staticmethod
+    async def list_running_e2b_sandboxes():
         # List running sandboxes and access metadata.
         return await AsyncSandbox.list()

@@ -9,6 +9,7 @@ from letta.log import get_logger
 from letta.orm import Message as MessageModel
 from letta.orm.llm_batch_items import LLMBatchItem
 from letta.orm.llm_batch_job import LLMBatchJob
+from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentStepState
 from letta.schemas.enums import AgentStepStatus, JobStatus, ProviderType
 from letta.schemas.llm_batch_job import LLMBatchItem as PydanticLLMBatchItem
@@ -17,7 +18,6 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.tracing import trace_method
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -205,13 +205,22 @@ class LLMBatchManager:
 
     @enforce_types
     @trace_method
-    async def list_running_llm_batches_async(self, actor: Optional[PydanticUser] = None) -> List[PydanticLLMBatchJob]:
-        """Return all running LLM batch jobs, optionally filtered by actor's organization."""
+    async def list_running_llm_batches_async(
+        self, actor: Optional[PydanticUser] = None, weeks: Optional[int] = None, batch_size: Optional[int] = None
+    ) -> List[PydanticLLMBatchJob]:
+        """Return all running LLM batch jobs, optionally filtered by actor's organization and recent weeks."""
         async with db_registry.async_session() as session:
             query = select(LLMBatchJob).where(LLMBatchJob.status == JobStatus.running)
 
             if actor is not None:
                 query = query.where(LLMBatchJob.organization_id == actor.organization_id)
+
+            if weeks is not None:
+                cutoff_datetime = datetime.datetime.utcnow() - datetime.timedelta(weeks=weeks)
+                query = query.where(LLMBatchJob.created_at >= cutoff_datetime)
+
+            if batch_size is not None:
+                query = query.limit(batch_size)
 
             results = await session.execute(query)
             return [batch.to_pydantic() for batch in results.scalars().all()]

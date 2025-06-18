@@ -468,17 +468,6 @@ NOUN_BANK = [
 ]
 
 
-def deduplicate(target_list: list) -> list:
-    seen = set()
-    dedup_list = []
-    for i in target_list:
-        if i not in seen:
-            seen.add(i)
-            dedup_list.append(i)
-
-    return dedup_list
-
-
 def smart_urljoin(base_url: str, relative_url: str) -> str:
     """urljoin is stupid and wants a trailing / at the end of the endpoint address, or it will chop the suffix off"""
     if not base_url.endswith("/"):
@@ -515,6 +504,12 @@ def is_optional_type(hint):
 
 
 def enforce_types(func):
+    """Enforces that values passed in match the expected types.
+        Technically will handle coroutines as well.
+
+    TODO (cliandy): use stricter pydantic fields
+    """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         # Get type hints, excluding the return type hint
@@ -803,7 +798,11 @@ class OpenAIBackcompatUnpickler(pickle.Unpickler):
 
 
 def count_tokens(s: str, model: str = "gpt-4") -> int:
-    encoding = tiktoken.encoding_for_model(model)
+    try:
+        encoding = tiktoken.encoding_for_model(model)
+    except KeyError:
+        print("Falling back to cl100k base for token counting.")
+        encoding = tiktoken.get_encoding("cl100k_base")
     return len(encoding.encode(s))
 
 
@@ -1018,7 +1017,7 @@ def sanitize_filename(filename: str) -> str:
         base = base[:max_base_length]
 
     # Append a unique UUID suffix for uniqueness
-    unique_suffix = uuid.uuid4().hex
+    unique_suffix = uuid.uuid4().hex[:4]
     sanitized_filename = f"{base}_{unique_suffix}{ext}"
 
     # Return the sanitized filename
@@ -1032,6 +1031,20 @@ def get_friendly_error_msg(function_name: str, exception_name: str, exception_me
     if len(error_msg) > MAX_ERROR_MESSAGE_CHAR_LIMIT:
         error_msg = error_msg[:MAX_ERROR_MESSAGE_CHAR_LIMIT]
     return error_msg
+
+
+def parse_stderr_error_msg(stderr_txt: str, last_n_lines: int = 3) -> tuple[str, str]:
+    """
+    Parses out from the last `last_n_line` of `stderr_txt` the Exception type and message.
+    """
+    index = -(last_n_lines + 1)
+    pattern = r"(\w+(?:Error|Exception)): (.+?)$"
+    for line in stderr_txt.split("\n")[:index:-1]:
+        if "Error" in line or "Exception" in line:
+            match = re.search(pattern, line)
+            if match:
+                return match.group(1), match.group(2)
+    return "", ""
 
 
 def run_async_task(coro: Coroutine[Any, Any, Any]) -> Any:
@@ -1064,9 +1077,9 @@ def log_telemetry(logger: Logger, event: str, **kwargs):
     :param event: A string describing the event.
     :param kwargs: Additional key-value pairs for logging metadata.
     """
-    from letta.settings import settings
+    from letta.settings import log_settings
 
-    if settings.verbose_telemetry_logging:
+    if log_settings.verbose_telemetry_logging:
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S,%f UTC")  # More readable timestamp
         extra_data = " | ".join(f"{key}={value}" for key, value in kwargs.items() if value is not None)
         logger.info(f"[{timestamp}] EVENT: {event} | {extra_data}")
@@ -1074,3 +1087,13 @@ def log_telemetry(logger: Logger, event: str, **kwargs):
 
 def make_key(*args, **kwargs):
     return str((args, tuple(sorted(kwargs.items()))))
+
+
+def safe_create_task(coro, logger: Logger, label: str = "background task"):
+    async def wrapper():
+        try:
+            await coro
+        except Exception as e:
+            logger.exception(f"{label} failed with {type(e).__name__}: {e}")
+
+    return asyncio.create_task(wrapper())

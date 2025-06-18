@@ -12,12 +12,12 @@ from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.json_parser import clean_json_string_extra_backslash
 from letta.local_llm.utils import count_tokens
 from letta.log import get_logger
+from letta.otel.tracing import trace_method
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall, Message, ToolCall, UsageStatistics
 from letta.settings import model_settings, settings
-from letta.tracing import trace_method
 from letta.utils import get_tool_call_id
 
 logger = get_logger(__name__)
@@ -241,13 +241,14 @@ class GoogleVertexClient(LLMClientBase):
             )
             request_data["config"]["tool_config"] = tool_config.model_dump()
 
-        # Add thinking_config
+        # Add thinking_config for flash
         # If enable_reasoner is False, set thinking_budget to 0
         # Otherwise, use the value from max_reasoning_tokens
-        thinking_config = ThinkingConfig(
-            thinking_budget=llm_config.max_reasoning_tokens if llm_config.enable_reasoner else 0,
-        )
-        request_data["config"]["thinking_config"] = thinking_config.model_dump()
+        if "flash" in llm_config.model:
+            thinking_config = ThinkingConfig(
+                thinking_budget=llm_config.max_reasoning_tokens if llm_config.enable_reasoner else 0,
+            )
+            request_data["config"]["thinking_config"] = thinking_config.model_dump()
 
         return request_data
 
@@ -480,5 +481,6 @@ class GoogleVertexClient(LLMClientBase):
                     "required": tool["parameters"]["required"],
                 },
             },
+            "propertyOrdering": ["name", "args"],
             "required": ["name", "args"],
         }

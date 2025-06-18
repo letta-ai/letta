@@ -73,8 +73,8 @@ async def test_send_llm_batch_request_async_success(
     anthropic_client, mock_agent_messages, mock_agent_tools, mock_agent_llm_config, dummy_beta_message_batch
 ):
     """Test a successful batch request using mocked Anthropic client responses."""
-    # Patch the _get_anthropic_client method so that it returns a mock client.
-    with patch.object(anthropic_client, "_get_anthropic_client") as mock_get_client:
+    # Patch the _get_anthropic_client_async method so that it returns a mock client.
+    with patch.object(anthropic_client, "_get_anthropic_client_async") as mock_get_client:
         mock_client = AsyncMock()
         # Set the create method to return the dummy response asynchronously.
         mock_client.beta.messages.batches.create.return_value = dummy_beta_message_batch

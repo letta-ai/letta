@@ -1,11 +1,11 @@
 from letta.helpers.json_helpers import json_dumps, json_loads
+from letta.helpers.singleton import singleton
 from letta.orm.provider_trace import ProviderTrace as ProviderTraceModel
 from letta.schemas.provider_trace import ProviderTrace as PydanticProviderTrace
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.schemas.step import Step as PydanticStep
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.services.helpers.noop_helper import singleton
 from letta.utils import enforce_types
 
 
@@ -38,6 +38,13 @@ class TelemetryManager:
     def create_provider_trace(self, actor: PydanticUser, provider_trace_create: ProviderTraceCreate) -> PydanticProviderTrace:
         with db_registry.session() as session:
             provider_trace = ProviderTraceModel(**provider_trace_create.model_dump())
+            if provider_trace_create.request_json:
+                request_json_str = json_dumps(provider_trace_create.request_json)
+                provider_trace.request_json = json_loads(request_json_str)
+
+            if provider_trace_create.response_json:
+                response_json_str = json_dumps(provider_trace_create.response_json)
+                provider_trace.response_json = json_loads(response_json_str)
             provider_trace.create(session, actor=actor)
             return provider_trace.to_pydantic()
 

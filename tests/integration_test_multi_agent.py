@@ -14,7 +14,6 @@ from letta.schemas.letta_message import SystemMessage, ToolReturnMessage
 from letta.schemas.tool import Tool
 from letta.server.server import SyncServer
 from letta.services.agent_manager import AgentManager
-from letta.settings import settings
 from tests.helpers.utils import retry_until_success
 from tests.utils import wait_for_incoming_message
 
@@ -53,10 +52,7 @@ def server_url() -> str:
         else:
             raise RuntimeError(f"Could not reach {url} within {timeout_seconds}s")
 
-    temp = settings.use_experimental
-    settings.use_experimental = True
     yield url
-    settings.use_experimental = temp
 
 
 @pytest.fixture(scope="module")
@@ -94,8 +90,9 @@ def agent_obj(client):
     agent_state_instance = client.agents.create(
         include_base_tools=True,
         tool_ids=[send_message_to_agent_tool.id],
-        model="openai/gpt-4o-mini",
+        model="openai/gpt-4o",
         embedding="letta/letta-free",
+        context_window_limit=32000,
     )
     yield agent_state_instance
 
@@ -108,8 +105,9 @@ def other_agent_obj(client):
     agent_state_instance = client.agents.create(
         include_base_tools=True,
         include_multi_agent_tools=False,
-        model="openai/gpt-4o-mini",
+        model="openai/gpt-4o",
         embedding="letta/letta-free",
+        context_window_limit=32000,
     )
 
     yield agent_state_instance

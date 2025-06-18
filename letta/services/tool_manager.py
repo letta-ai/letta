@@ -1,7 +1,7 @@
 import asyncio
 import importlib
 import warnings
-from typing import List, Optional
+from typing import List, Optional, Set, Union
 
 from letta.constants import (
     BASE_FUNCTION_RETURN_CHAR_LIMIT,
@@ -11,6 +11,8 @@ from letta.constants import (
     BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
     BASE_VOICE_SLEEPTIME_TOOLS,
     BUILTIN_TOOLS,
+    FILES_TOOLS,
+    LETTA_TOOL_MODULE_NAMES,
     LETTA_TOOL_SET,
     MCP_TOOL_TAG_NAME_PREFIX,
     MULTI_AGENT_TOOLS,
@@ -22,11 +24,12 @@ from letta.orm.enums import ToolType
 # TODO: Remove this once we translate all of these to the ORM
 from letta.orm.errors import NoResultFound
 from letta.orm.tool import Tool as ToolModel
+from letta.otel.tracing import trace_method
 from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.tracing import trace_method
+from letta.services.mcp.types import SSEServerConfig, StdioServerConfig
 from letta.utils import enforce_types, printd
 
 logger = get_logger(__name__)
@@ -91,6 +94,12 @@ class ToolManager:
         return tool
 
     @enforce_types
+    async def create_mcp_server(
+        self, server_config: Union[StdioServerConfig, SSEServerConfig], actor: PydanticUser
+    ) -> List[Union[StdioServerConfig, SSEServerConfig]]:
+        pass
+
+    @enforce_types
     @trace_method
     def create_or_update_mcp_tool(self, tool_create: ToolCreate, mcp_server_name: str, actor: PydanticUser) -> PydanticTool:
         metadata = {MCP_TOOL_TAG_NAME_PREFIX: {"server_name": mcp_server_name}}
@@ -102,9 +111,26 @@ class ToolManager:
         )
 
     @enforce_types
+    async def create_mcp_tool_async(self, tool_create: ToolCreate, mcp_server_name: str, actor: PydanticUser) -> PydanticTool:
+        metadata = {MCP_TOOL_TAG_NAME_PREFIX: {"server_name": mcp_server_name}}
+        return await self.create_or_update_tool_async(
+            PydanticTool(
+                tool_type=ToolType.EXTERNAL_MCP, name=tool_create.json_schema["name"], metadata_=metadata, **tool_create.model_dump()
+            ),
+            actor,
+        )
+
+    @enforce_types
     @trace_method
     def create_or_update_composio_tool(self, tool_create: ToolCreate, actor: PydanticUser) -> PydanticTool:
         return self.create_or_update_tool(
+            PydanticTool(tool_type=ToolType.EXTERNAL_COMPOSIO, name=tool_create.json_schema["name"], **tool_create.model_dump()), actor
+        )
+
+    @enforce_types
+    @trace_method
+    async def create_or_update_composio_tool_async(self, tool_create: ToolCreate, actor: PydanticUser) -> PydanticTool:
+        return await self.create_or_update_tool_async(
             PydanticTool(tool_type=ToolType.EXTERNAL_COMPOSIO, name=tool_create.json_schema["name"], **tool_create.model_dump()), actor
         )
 
@@ -145,7 +171,7 @@ class ToolManager:
 
             tool = ToolModel(**tool_data)
             await tool.create_async(session, actor=actor)  # Re-raise other database-related errors
-        return tool.to_pydantic()
+            return tool.to_pydantic()
 
     @enforce_types
     @trace_method
@@ -215,6 +241,7 @@ class ToolManager:
     @trace_method
     async def list_tools_async(self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticTool]:
         """List all tools with optional pagination."""
+        tools_to_delete = []
         async with db_registry.async_session() as session:
             tools = await ToolModel.list_async(
                 db_session=session,
@@ -223,23 +250,26 @@ class ToolManager:
                 organization_id=actor.organization_id,
             )
 
-        # Remove any malformed tools
-        results = []
-        for tool in tools:
-            try:
-                pydantic_tool = tool.to_pydantic()
-                results.append(pydantic_tool)
-            except (ValueError, ModuleNotFoundError, AttributeError) as e:
-                logger.warning(f"Deleting malformed tool with id={tool.id} and name={tool.name}, error was:\n{e}")
-                logger.warning("Deleted tool: ")
-                logger.warning(tool.pretty_print_columns())
-                self.delete_tool_by_id(tool.id, actor=actor)
+            # Remove any malformed tools
+            results = []
+            for tool in tools:
+                try:
+                    pydantic_tool = tool.to_pydantic()
+                    results.append(pydantic_tool)
+                except (ValueError, ModuleNotFoundError, AttributeError) as e:
+                    tools_to_delete.append(tool)
+                    logger.warning(f"Deleting malformed tool with id={tool.id} and name={tool.name}, error was:\n{e}")
+                    logger.warning("Deleted tool: ")
+                    logger.warning(tool.pretty_print_columns())
+
+        for tool in tools_to_delete:
+            await self.delete_tool_by_id_async(tool.id, actor=actor)
 
         return results
 
     @enforce_types
     @trace_method
-    def size(
+    async def size_async(
         self,
         actor: PydanticUser,
         include_base_tools: bool,
@@ -249,10 +279,10 @@ class ToolManager:
 
         If include_builtin is True, it will also count the built-in tools.
         """
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             if include_base_tools:
-                return ToolModel.size(db_session=session, actor=actor)
-            return ToolModel.size(db_session=session, actor=actor, name=LETTA_TOOL_SET)
+                return await ToolModel.size_async(db_session=session, actor=actor)
+            return await ToolModel.size_async(db_session=session, actor=actor, name=LETTA_TOOL_SET)
 
     @enforce_types
     @trace_method
@@ -326,15 +356,24 @@ class ToolManager:
 
     @enforce_types
     @trace_method
+    async def delete_tool_by_id_async(self, tool_id: str, actor: PydanticUser) -> None:
+        """Delete a tool by its ID."""
+        async with db_registry.async_session() as session:
+            try:
+                tool = await ToolModel.read_async(db_session=session, identifier=tool_id, actor=actor)
+                await tool.hard_delete_async(db_session=session, actor=actor)
+            except NoResultFound:
+                raise ValueError(f"Tool with id {tool_id} not found.")
+
+    @enforce_types
+    @trace_method
     def upsert_base_tools(self, actor: PydanticUser) -> List[PydanticTool]:
         """Add default tools in base.py and multi_agent.py"""
         functions_to_schema = {}
-        module_names = ["base", "multi_agent", "voice", "builtin"]
 
-        for module_name in module_names:
-            full_module_name = f"letta.functions.function_sets.{module_name}"
+        for module_name in LETTA_TOOL_MODULE_NAMES:
             try:
-                module = importlib.import_module(full_module_name)
+                module = importlib.import_module(module_name)
             except Exception as e:
                 # Handle other general exceptions
                 raise e
@@ -367,6 +406,9 @@ class ToolManager:
                     tags = [tool_type.value]
                 elif name in BUILTIN_TOOLS:
                     tool_type = ToolType.LETTA_BUILTIN
+                    tags = [tool_type.value]
+                elif name in FILES_TOOLS:
+                    tool_type = ToolType.LETTA_FILES_CORE
                     tags = [tool_type.value]
                 else:
                     raise ValueError(
@@ -392,66 +434,59 @@ class ToolManager:
 
     @enforce_types
     @trace_method
-    async def upsert_base_tools_async(self, actor: PydanticUser) -> List[PydanticTool]:
-        """Add default tools in base.py and multi_agent.py"""
+    async def upsert_base_tools_async(
+        self,
+        actor: PydanticUser,
+        allowed_types: Optional[Set[ToolType]] = None,
+    ) -> List[PydanticTool]:
+        """Add default tools defined in the various function_sets modules, optionally filtered by ToolType."""
+
         functions_to_schema = {}
-        module_names = ["base", "multi_agent", "voice", "builtin"]
-
-        for module_name in module_names:
-            full_module_name = f"letta.functions.function_sets.{module_name}"
+        for module_name in LETTA_TOOL_MODULE_NAMES:
             try:
-                module = importlib.import_module(full_module_name)
-            except Exception as e:
-                # Handle other general exceptions
-                raise e
-
-            try:
-                # Load the function set
+                module = importlib.import_module(module_name)
                 functions_to_schema.update(load_function_set(module))
             except ValueError as e:
-                err = f"Error loading function set '{module_name}': {e}"
-                warnings.warn(err)
+                warnings.warn(f"Error loading function set '{module_name}': {e}")
+            except Exception as e:
+                raise e
 
-        # create tool in db
         tools = []
         for name, schema in functions_to_schema.items():
-            if name in LETTA_TOOL_SET:
-                if name in BASE_TOOLS:
-                    tool_type = ToolType.LETTA_CORE
-                    tags = [tool_type.value]
-                elif name in BASE_MEMORY_TOOLS:
-                    tool_type = ToolType.LETTA_MEMORY_CORE
-                    tags = [tool_type.value]
-                elif name in MULTI_AGENT_TOOLS:
-                    tool_type = ToolType.LETTA_MULTI_AGENT_CORE
-                    tags = [tool_type.value]
-                elif name in BASE_SLEEPTIME_TOOLS:
-                    tool_type = ToolType.LETTA_SLEEPTIME_CORE
-                    tags = [tool_type.value]
-                elif name in BASE_VOICE_SLEEPTIME_TOOLS or name in BASE_VOICE_SLEEPTIME_CHAT_TOOLS:
-                    tool_type = ToolType.LETTA_VOICE_SLEEPTIME_CORE
-                    tags = [tool_type.value]
-                elif name in BUILTIN_TOOLS:
-                    tool_type = ToolType.LETTA_BUILTIN
-                    tags = [tool_type.value]
-                else:
-                    raise ValueError(
-                        f"Tool name {name} is not in the list of base tool names: {BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS + BASE_SLEEPTIME_TOOLS + BASE_VOICE_SLEEPTIME_TOOLS + BASE_VOICE_SLEEPTIME_CHAT_TOOLS}"
-                    )
+            if name not in LETTA_TOOL_SET:
+                continue
 
-                # create to tool
-                tools.append(
-                    self.create_or_update_tool_async(
-                        PydanticTool(
-                            name=name,
-                            tags=tags,
-                            source_type="python",
-                            tool_type=tool_type,
-                            return_char_limit=BASE_FUNCTION_RETURN_CHAR_LIMIT,
-                        ),
-                        actor=actor,
-                    )
+            if name in BASE_TOOLS:
+                tool_type = ToolType.LETTA_CORE
+            elif name in BASE_MEMORY_TOOLS:
+                tool_type = ToolType.LETTA_MEMORY_CORE
+            elif name in BASE_SLEEPTIME_TOOLS:
+                tool_type = ToolType.LETTA_SLEEPTIME_CORE
+            elif name in MULTI_AGENT_TOOLS:
+                tool_type = ToolType.LETTA_MULTI_AGENT_CORE
+            elif name in BASE_VOICE_SLEEPTIME_TOOLS or name in BASE_VOICE_SLEEPTIME_CHAT_TOOLS:
+                tool_type = ToolType.LETTA_VOICE_SLEEPTIME_CORE
+            elif name in BUILTIN_TOOLS:
+                tool_type = ToolType.LETTA_BUILTIN
+            elif name in FILES_TOOLS:
+                tool_type = ToolType.LETTA_FILES_CORE
+            else:
+                raise ValueError(f"Tool name {name} is not recognized in any known base tool set.")
+
+            if allowed_types is not None and tool_type not in allowed_types:
+                continue
+
+            tools.append(
+                self.create_or_update_tool_async(
+                    PydanticTool(
+                        name=name,
+                        tags=[tool_type.value],
+                        source_type="python",
+                        tool_type=tool_type,
+                        return_char_limit=BASE_FUNCTION_RETURN_CHAR_LIMIT,
+                    ),
+                    actor=actor,
                 )
+            )
 
-        # TODO: Delete any base tools that are stale
         return await asyncio.gather(*tools)

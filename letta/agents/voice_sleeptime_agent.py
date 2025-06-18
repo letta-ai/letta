@@ -1,12 +1,14 @@
-from typing import AsyncGenerator, List, Tuple, Union
+from typing import AsyncGenerator, List, Optional, Tuple, Union
 
 from letta.agents.helpers import _create_letta_response, serialize_message_history
 from letta.agents.letta_agent import LettaAgent
+from letta.constants import DEFAULT_MAX_STEPS
 from letta.orm.enums import ToolType
+from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.block import BlockUpdate
 from letta.schemas.enums import MessageStreamStatus
-from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage
+from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, MessageType
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.message import MessageCreate
 from letta.schemas.tool_rule import ChildToolRule, ContinueToolRule, InitToolRule, TerminalToolRule
@@ -17,7 +19,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
-from letta.tracing import trace_method
+from letta.types import JsonDict
 
 
 class VoiceSleeptimeAgent(LettaAgent):
@@ -58,7 +60,13 @@ class VoiceSleeptimeAgent(LettaAgent):
     def update_message_transcript(self, message_transcripts: List[str]):
         self.message_transcripts = message_transcripts
 
-    async def step(self, input_messages: List[MessageCreate], max_steps: int = 20, use_assistant_message: bool = True) -> LettaResponse:
+    async def step(
+        self,
+        input_messages: List[MessageCreate],
+        max_steps: int = DEFAULT_MAX_STEPS,
+        use_assistant_message: bool = True,
+        include_return_message_types: Optional[List[MessageType]] = None,
+    ) -> LettaResponse:
         """
         Process the user's input message, allowing the model to call memory-related tools
         until it decides to stop and provide a final response.
@@ -74,7 +82,7 @@ class VoiceSleeptimeAgent(LettaAgent):
         ]
 
         # Summarize
-        current_in_context_messages, new_in_context_messages, usage = await super()._step(
+        current_in_context_messages, new_in_context_messages, usage, stop_reason = await super()._step(
             agent_state=agent_state, input_messages=input_messages, max_steps=max_steps
         )
         new_in_context_messages, updated = self.summarizer.summarize(
@@ -85,24 +93,38 @@ class VoiceSleeptimeAgent(LettaAgent):
         )
 
         return _create_letta_response(
-            new_in_context_messages=new_in_context_messages, use_assistant_message=use_assistant_message, usage=usage
+            new_in_context_messages=new_in_context_messages,
+            use_assistant_message=use_assistant_message,
+            stop_reason=stop_reason,
+            usage=usage,
+            include_return_message_types=include_return_message_types,
         )
 
     @trace_method
-    async def _execute_tool(self, tool_name: str, tool_args: dict, agent_state: AgentState) -> Tuple[str, bool]:
+    async def _execute_tool(
+        self,
+        tool_name: str,
+        tool_args: JsonDict,
+        agent_state: AgentState,
+        agent_step_span: Optional["Span"] = None,
+        step_id: str | None = None,
+    ) -> "ToolExecutionResult":
         """
-        Executes a tool and returns (result, success_flag).
+        Executes a tool and returns the ToolExecutionResult
         """
+        from letta.schemas.tool_execution_result import ToolExecutionResult
+
         # Special memory case
         target_tool = next((x for x in agent_state.tools if x.name == tool_name), None)
         if not target_tool:
-            return f"Tool not found: {tool_name}", False
+            return ToolExecutionResult(status="error", func_return=f"Tool not found: {tool_name}")
 
         try:
             if target_tool.name == "rethink_user_memory" and target_tool.tool_type == ToolType.LETTA_VOICE_SLEEPTIME_CORE:
-                return self.rethink_user_memory(agent_state=agent_state, **tool_args)
+                func_return, success_flag = self.rethink_user_memory(agent_state=agent_state, **tool_args)
+                return ToolExecutionResult(func_return=func_return, status="success" if success_flag else "error")
             elif target_tool.name == "finish_rethinking_memory" and target_tool.tool_type == ToolType.LETTA_VOICE_SLEEPTIME_CORE:
-                return "", True
+                return ToolExecutionResult(func_return="", status="success")
             elif target_tool.name == "store_memories" and target_tool.tool_type == ToolType.LETTA_VOICE_SLEEPTIME_CORE:
                 chunks = tool_args.get("chunks", [])
                 results = [self.store_memory(agent_state=self.convo_agent_state, **chunk_args) for chunk_args in chunks]
@@ -110,12 +132,14 @@ class VoiceSleeptimeAgent(LettaAgent):
                 aggregated_result = next((res for res, _ in results if res is not None), None)
                 aggregated_success = all(success for _, success in results)
 
-                return aggregated_result, aggregated_success  # Note that here we store to the convo agent's archival memory
+                return ToolExecutionResult(
+                    func_return=aggregated_result, status="success" if aggregated_success else "error"
+                )  # Note that here we store to the convo agent's archival memory
             else:
                 result = f"Voice sleeptime agent tried invoking invalid tool with type {target_tool.tool_type}: {target_tool}"
-                return result, False
+                return ToolExecutionResult(func_return=result, status="error")
         except Exception as e:
-            return f"Failed to call tool. Error: {e}", False
+            return ToolExecutionResult(func_return=f"Failed to call tool. Error: {e}", status="error")
 
     def rethink_user_memory(self, new_memory: str, agent_state: AgentState) -> Tuple[str, bool]:
         if agent_state.memory.get_block(self.target_block_label) is None:
@@ -148,7 +172,7 @@ class VoiceSleeptimeAgent(LettaAgent):
             return f"Failed to store memory given start_index {start_index} and end_index {end_index}: {e}", False
 
     async def step_stream(
-        self, input_messages: List[MessageCreate], max_steps: int = 10, use_assistant_message: bool = True
+        self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS, use_assistant_message: bool = True
     ) -> AsyncGenerator[Union[LettaMessage, LegacyLettaMessage, MessageStreamStatus], None]:
         """
         This agent is synchronous-only. If called in an async context, raise an error.

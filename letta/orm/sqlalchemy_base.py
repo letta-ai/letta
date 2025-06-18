@@ -1,13 +1,15 @@
+import inspect
 from datetime import datetime
 from enum import Enum
 from functools import wraps
 from pprint import pformat
 from typing import TYPE_CHECKING, List, Literal, Optional, Tuple, Union
 
-from sqlalchemy import String, and_, func, or_, select
+from sqlalchemy import Sequence, String, and_, delete, func, or_, select, text
 from sqlalchemy.exc import DBAPIError, IntegrityError, TimeoutError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, Session, mapped_column
+from sqlalchemy.orm.interfaces import ORMOption
 
 from letta.log import get_logger
 from letta.orm.base import Base, CommonSqlalchemyMetaMixins
@@ -23,16 +25,28 @@ logger = get_logger(__name__)
 
 def handle_db_timeout(func):
     """Decorator to handle SQLAlchemy TimeoutError and wrap it in a custom exception."""
+    if not inspect.iscoroutinefunction(func):
 
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except TimeoutError as e:
-            logger.error(f"Timeout while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}")
-            raise DatabaseTimeoutError(message=f"Timeout occurred in {func.__name__}.", original_exception=e)
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except TimeoutError as e:
+                logger.error(f"Timeout while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}")
+                raise DatabaseTimeoutError(message=f"Timeout occurred in {func.__name__}.", original_exception=e)
 
-    return wrapper
+        return wrapper
+    else:
+
+        @wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            try:
+                return await func(*args, **kwargs)
+            except TimeoutError as e:
+                logger.error(f"Timeout while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}")
+                raise DatabaseTimeoutError(message=f"Timeout occurred in {func.__name__}.", original_exception=e)
+
+        return async_wrapper
 
 
 class AccessType(str, Enum):
@@ -61,8 +75,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         query_text: Optional[str] = None,
         query_embedding: Optional[List[float]] = None,
         ascending: bool = True,
-        tags: Optional[List[str]] = None,
-        match_all_tags: bool = False,
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
@@ -86,8 +98,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             query_text: Text to search for
             query_embedding: Vector to search for similar embeddings
             ascending: Sort direction
-            tags: List of tags to filter by
-            match_all_tags: If True, return items matching all tags. If False, match any tag.
             **kwargs: Additional filters to apply
         """
         if start_date and end_date and start_date > end_date:
@@ -123,8 +133,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 query_text=query_text,
                 query_embedding=query_embedding,
                 ascending=ascending,
-                tags=tags,
-                match_all_tags=match_all_tags,
                 actor=actor,
                 access=access,
                 access_type=access_type,
@@ -162,8 +170,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         query_text: Optional[str] = None,
         query_embedding: Optional[List[float]] = None,
         ascending: bool = True,
-        tags: Optional[List[str]] = None,
-        match_all_tags: bool = False,
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
@@ -171,6 +177,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         join_conditions: Optional[Union[Tuple, List]] = None,
         identifier_keys: Optional[List[str]] = None,
         identity_id: Optional[str] = None,
+        query_options: Sequence[ORMOption] | None = None,  # ← new
         **kwargs,
     ) -> List["SqlalchemyBase"]:
         """
@@ -189,8 +196,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             query_text: Text to search for
             query_embedding: Vector to search for similar embeddings
             ascending: Sort direction
-            tags: List of tags to filter by
-            match_all_tags: If True, return items matching all tags. If False, match any tag.
             **kwargs: Additional filters to apply
         """
         if start_date and end_date and start_date > end_date:
@@ -198,58 +203,58 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
         logger.debug(f"Listing {cls.__name__} with kwarg filters {kwargs}")
 
-        async with db_session as session:
-            # Get the reference objects for pagination
-            before_obj = None
-            after_obj = None
+        # Get the reference objects for pagination
+        before_obj = None
+        after_obj = None
 
-            if before:
-                before_obj = await session.get(cls, before)
-                if not before_obj:
-                    raise NoResultFound(f"No {cls.__name__} found with id {before}")
+        if before:
+            before_obj = await db_session.get(cls, before)
+            if not before_obj:
+                raise NoResultFound(f"No {cls.__name__} found with id {before}")
 
-            if after:
-                after_obj = await session.get(cls, after)
-                if not after_obj:
-                    raise NoResultFound(f"No {cls.__name__} found with id {after}")
+        if after:
+            after_obj = await db_session.get(cls, after)
+            if not after_obj:
+                raise NoResultFound(f"No {cls.__name__} found with id {after}")
 
-            # Validate that before comes after the after object if both are provided
-            if before_obj and after_obj and before_obj.created_at < after_obj.created_at:
-                raise ValueError("'before' reference must be later than 'after' reference")
+        # Validate that before comes after the after object if both are provided
+        if before_obj and after_obj and before_obj.created_at < after_obj.created_at:
+            raise ValueError("'before' reference must be later than 'after' reference")
 
-            query = cls._list_preprocess(
-                before_obj=before_obj,
-                after_obj=after_obj,
-                start_date=start_date,
-                end_date=end_date,
-                limit=limit,
-                query_text=query_text,
-                query_embedding=query_embedding,
-                ascending=ascending,
-                tags=tags,
-                match_all_tags=match_all_tags,
-                actor=actor,
-                access=access,
-                access_type=access_type,
-                join_model=join_model,
-                join_conditions=join_conditions,
-                identifier_keys=identifier_keys,
-                identity_id=identity_id,
-                **kwargs,
-            )
+        query = cls._list_preprocess(
+            before_obj=before_obj,
+            after_obj=after_obj,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit,
+            query_text=query_text,
+            query_embedding=query_embedding,
+            ascending=ascending,
+            actor=actor,
+            access=access,
+            access_type=access_type,
+            join_model=join_model,
+            join_conditions=join_conditions,
+            identifier_keys=identifier_keys,
+            identity_id=identity_id,
+            **kwargs,
+        )
+        if query_options:
+            for opt in query_options:
+                query = query.options(opt)
 
-            # Execute the query
-            results = await session.execute(query)
+        # Execute the query
+        results = await db_session.execute(query)
 
-            results = list(results.scalars())
-            results = cls._list_postprocess(
-                before=before,
-                after=after,
-                limit=limit,
-                results=results,
-            )
+        results = list(results.scalars())
+        results = cls._list_postprocess(
+            before=before,
+            after=after,
+            limit=limit,
+            results=results,
+        )
 
-            return results
+        return results
 
     @classmethod
     def _list_preprocess(
@@ -263,8 +268,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         query_text: Optional[str] = None,
         query_embedding: Optional[List[float]] = None,
         ascending: bool = True,
-        tags: Optional[List[str]] = None,
-        match_all_tags: bool = False,
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
@@ -272,6 +275,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         join_conditions: Optional[Union[Tuple, List]] = None,
         identifier_keys: Optional[List[str]] = None,
         identity_id: Optional[str] = None,
+        check_is_deleted: bool = False,
         **kwargs,
     ):
         """
@@ -286,28 +290,6 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         if actor:
             query = cls.apply_access_predicate(query, actor, access, access_type)
 
-        # Handle tag filtering if the model has tags
-        if tags and hasattr(cls, "tags"):
-            query = select(cls)
-
-            if match_all_tags:
-                # Match ALL tags - use subqueries
-                subquery = (
-                    select(cls.tags.property.mapper.class_.agent_id)
-                    .where(cls.tags.property.mapper.class_.tag.in_(tags))
-                    .group_by(cls.tags.property.mapper.class_.agent_id)
-                    .having(func.count() == len(tags))
-                )
-                query = query.filter(cls.id.in_(subquery))
-            else:
-                # Match ANY tag - use join and filter
-                query = (
-                    query.join(cls.tags).filter(cls.tags.property.mapper.class_.tag.in_(tags)).distinct(cls.id).order_by(cls.id)
-                )  # Deduplicate results
-
-            # select distinct primary key
-            query = query.distinct(cls.id).order_by(cls.id)
-
         if identifier_keys and hasattr(cls, "identities"):
             query = query.join(cls.identities).filter(cls.identities.property.mapper.class_.identifier_key.in_(identifier_keys))
 
@@ -316,15 +298,28 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             query = query.join(cls.identities).filter(cls.identities.property.mapper.class_.id == identity_id)
 
         # Apply filtering logic from kwargs
+        # 1 part: <column> // 2 parts: <table>.<column> OR <column>.<json_key> // 3 parts: <table>.<column>.<json_key>
+        # TODO (cliandy): can make this more robust down the line
         for key, value in kwargs.items():
-            if "." in key:
-                # Handle joined table columns
-                table_name, column_name = key.split(".")
+            parts = key.split(".")
+            if len(parts) == 1:
+                column = getattr(cls, key)
+            elif len(parts) == 2:
+                if locals().get(parts[0]) or globals().get(parts[0]):
+                    # It's a joined table column
+                    joined_table = locals().get(parts[0]) or globals().get(parts[0])
+                    column = getattr(joined_table, parts[1])
+                else:
+                    # It's a JSON field on the main table
+                    column = getattr(cls, parts[0])
+                    column = column.op("->>")(parts[1])
+            elif len(parts) == 3:
+                table_name, column_name, json_key = parts
                 joined_table = locals().get(table_name) or globals().get(table_name)
                 column = getattr(joined_table, column_name)
+                column = column.op("->>")(json_key)
             else:
-                # Handle columns from main table
-                column = getattr(cls, key)
+                raise ValueError(f"Unhandled column name {key}")
 
             if isinstance(value, (list, tuple, set)):
                 query = query.where(column.in_(value))
@@ -397,7 +392,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 is_ordered = True
 
         # Handle soft deletes
-        if hasattr(cls, "is_deleted"):
+        if check_is_deleted and hasattr(cls, "is_deleted"):
             query = query.where(cls.is_deleted == False)
 
         # Apply ordering
@@ -441,6 +436,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
+        check_is_deleted: bool = False,
         **kwargs,
     ) -> "SqlalchemyBase":
         """The primary accessor for an ORM record.
@@ -457,7 +453,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         """
         # this is ok because read_multiple will check if the
         identifiers = [] if identifier is None else [identifier]
-        found = cls.read_multiple(db_session, identifiers, actor, access, access_type, **kwargs)
+        found = cls.read_multiple(db_session, identifiers, actor, access, access_type, check_is_deleted, **kwargs)
         if len(found) == 0:
             # for backwards compatibility.
             conditions = []
@@ -465,7 +461,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 conditions.append(f"id={identifier}")
             if actor:
                 conditions.append(f"access level in {access} for {actor}")
-            if hasattr(cls, "is_deleted"):
+            if check_is_deleted and hasattr(cls, "is_deleted"):
                 conditions.append("is_deleted=False")
             raise NoResultFound(f"{cls.__name__} not found with {', '.join(conditions if conditions else ['no conditions'])}")
         return found[0]
@@ -479,6 +475,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
+        check_is_deleted: bool = False,
         **kwargs,
     ) -> "SqlalchemyBase":
         """The primary accessor for an ORM record. Async version of read method.
@@ -493,20 +490,25 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         Raises:
             NoResultFound: if the object is not found
         """
-        # this is ok because read_multiple will check if the
+        from letta.settings import settings
+
         identifiers = [] if identifier is None else [identifier]
-        found = await cls.read_multiple_async(db_session, identifiers, actor, access, access_type, **kwargs)
-        if len(found) == 0:
-            # for backwards compatibility.
-            conditions = []
-            if identifier:
-                conditions.append(f"id={identifier}")
-            if actor:
-                conditions.append(f"access level in {access} for {actor}")
-            if hasattr(cls, "is_deleted"):
-                conditions.append("is_deleted=False")
-            raise NoResultFound(f"{cls.__name__} not found with {', '.join(conditions if conditions else ['no conditions'])}")
-        return found[0]
+        query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, check_is_deleted, **kwargs)
+        if query is None:
+            raise NoResultFound(f"{cls.__name__} not found with identifier {identifier}")
+
+        if settings.letta_pg_uri_no_default:
+            await db_session.execute(text("SET LOCAL enable_seqscan = OFF"))
+        try:
+            result = await db_session.execute(query)
+            item = result.scalar_one_or_none()
+        finally:
+            if settings.letta_pg_uri_no_default:
+                await db_session.execute(text("SET LOCAL enable_seqscan = ON"))
+
+        if item is None:
+            raise NoResultFound(f"{cls.__name__} not found with {', '.join(query_conditions if query_conditions else ['no conditions'])}")
+        return item
 
     @classmethod
     @handle_db_timeout
@@ -517,6 +519,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
+        check_is_deleted: bool = False,
         **kwargs,
     ) -> List["SqlalchemyBase"]:
         """The primary accessor for ORM record(s)
@@ -531,7 +534,9 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         Raises:
             NoResultFound: if the object is not found
         """
-        query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, **kwargs)
+        query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, check_is_deleted, **kwargs)
+        if query is None:
+            return []
         results = db_session.execute(query).scalars().all()
         return cls._read_multiple_postprocess(results, identifiers, query_conditions)
 
@@ -544,13 +549,16 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
+        check_is_deleted: bool = False,
         **kwargs,
     ) -> List["SqlalchemyBase"]:
         """
         Async version of read_multiple(...)
         The primary accessor for ORM record(s)
         """
-        query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, **kwargs)
+        query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, check_is_deleted, **kwargs)
+        if query is None:
+            return []
         results = await db_session.execute(query)
         return cls._read_multiple_postprocess(results.scalars().all(), identifiers, query_conditions)
 
@@ -561,6 +569,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"],
         access: Optional[List[Literal["read", "write", "admin"]]],
         access_type: AccessType,
+        check_is_deleted: bool,
         **kwargs,
     ):
         logger.debug(f"Reading {cls.__name__} with ID(s): {identifiers} with actor={actor}")
@@ -571,12 +580,15 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         query_conditions = []
 
         # If an identifier is provided, add it to the query conditions
-        if len(identifiers) > 0:
-            query = query.where(cls.id.in_(identifiers))
+        if identifiers:
+            if len(identifiers) == 1:
+                query = query.where(cls.id == identifiers[0])
+            else:
+                query = query.where(cls.id.in_(identifiers))
             query_conditions.append(f"id='{identifiers}'")
         elif not kwargs:
             logger.debug(f"No identifiers provided for {cls.__name__}, returning empty list")
-            return []
+            return None, query_conditions
 
         if kwargs:
             query = query.filter_by(**kwargs)
@@ -586,7 +598,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             query = cls.apply_access_predicate(query, actor, access, access_type)
             query_conditions.append(f"access level in {access} for actor='{actor}'")
 
-        if hasattr(cls, "is_deleted"):
+        if check_is_deleted and hasattr(cls, "is_deleted"):
             query = query.where(cls.is_deleted == False)
             query_conditions.append("is_deleted=False")
 
@@ -715,22 +727,21 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 item._set_created_and_updated_by_fields(actor.id)
 
         try:
-            async with db_session as session:
-                session.add_all(items)
-                await session.flush()  # Flush to generate IDs but don't commit yet
+            db_session.add_all(items)
+            await db_session.flush()  # Flush to generate IDs but don't commit yet
 
-                # Collect IDs to fetch the complete objects after commit
-                item_ids = [item.id for item in items]
+            # Collect IDs to fetch the complete objects after commit
+            item_ids = [item.id for item in items]
 
-                await session.commit()
+            await db_session.commit()
 
-                # Re-query the objects to get them with relationships loaded
-                query = select(cls).where(cls.id.in_(item_ids))
-                if hasattr(cls, "created_at"):
-                    query = query.order_by(cls.created_at)
+            # Re-query the objects to get them with relationships loaded
+            query = select(cls).where(cls.id.in_(item_ids))
+            if hasattr(cls, "created_at"):
+                query = query.order_by(cls.created_at)
 
-                result = await session.execute(query)
-                return list(result.scalars())
+            result = await db_session.execute(query)
+            return list(result.scalars())
 
         except (DBAPIError, IntegrityError) as e:
             cls._handle_dbapi_error(e)
@@ -777,14 +788,42 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         """Permanently removes the record from the database asynchronously."""
         logger.debug(f"Hard deleting {self.__class__.__name__} with ID: {self.id} with actor={actor} (async)")
 
-        async with db_session as session:
-            try:
-                await session.delete(self)
-                await session.commit()
-            except Exception as e:
-                await session.rollback()
-                logger.exception(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}")
-                raise ValueError(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}: {e}")
+        try:
+            await db_session.delete(self)
+            await db_session.commit()
+        except Exception as e:
+            await db_session.rollback()
+            logger.exception(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}")
+            raise ValueError(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}: {e}")
+
+    @classmethod
+    @handle_db_timeout
+    async def bulk_hard_delete_async(
+        cls,
+        db_session: "AsyncSession",
+        identifiers: List[str],
+        actor: Optional["User"],
+        access: Optional[List[Literal["read", "write", "admin"]]] = ["write"],
+        access_type: AccessType = AccessType.ORGANIZATION,
+    ) -> None:
+        """Permanently removes the record from the database asynchronously."""
+        logger.debug(f"Hard deleting {cls.__name__} with IDs: {identifiers} with actor={actor} (async)")
+
+        if len(identifiers) == 0:
+            logger.debug(f"No identifiers provided for {cls.__name__}, nothing to delete")
+            return
+
+        query = delete(cls)
+        query = query.where(cls.id.in_(identifiers))
+        query = cls.apply_access_predicate(query, actor, access, access_type)
+        try:
+            result = await db_session.execute(query)
+            await db_session.commit()
+            logger.debug(f"Successfully deleted {result.rowcount} {cls.__name__} records")
+        except Exception as e:
+            await db_session.rollback()
+            logger.exception(f"Failed to hard delete {cls.__name__} with identifiers {identifiers}")
+            raise ValueError(f"Failed to hard delete {cls.__name__} with identifiers {identifiers}: {e}")
 
     @handle_db_timeout
     def update(self, db_session: Session, actor: Optional["User"] = None, no_commit: bool = False) -> "SqlalchemyBase":
@@ -826,10 +865,11 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
+        check_is_deleted: bool = False,
         **kwargs,
     ):
         logger.debug(f"Calculating size for {cls.__name__} with filters {kwargs}")
-        query = select(func.count()).select_from(cls)
+        query = select(func.count(1)).select_from(cls)
 
         if actor:
             query = cls.apply_access_predicate(query, actor, access, access_type)
@@ -845,8 +885,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 else:  # Single value for equality filtering
                     query = query.where(column == value)
 
-        # Handle soft deletes if the class has the 'is_deleted' attribute
-        if hasattr(cls, "is_deleted"):
+        if check_is_deleted and hasattr(cls, "is_deleted"):
             query = query.where(cls.is_deleted == False)
 
         return query
@@ -860,6 +899,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
+        check_is_deleted: bool = False,
         **kwargs,
     ) -> int:
         """
@@ -876,7 +916,14 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             DBAPIError: If a database error occurs
         """
         with db_session as session:
-            query = cls._size_preprocess(db_session=session, actor=actor, access=access, access_type=access_type, **kwargs)
+            query = cls._size_preprocess(
+                db_session=session,
+                actor=actor,
+                access=access,
+                access_type=access_type,
+                check_is_deleted=check_is_deleted,
+                **kwargs,
+            )
 
             try:
                 count = session.execute(query).scalar()
@@ -894,6 +941,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"] = None,
         access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
         access_type: AccessType = AccessType.ORGANIZATION,
+        check_is_deleted: bool = False,
         **kwargs,
     ) -> int:
         """
@@ -906,16 +954,22 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         Raises:
             DBAPIError: If a database error occurs
         """
-        async with db_session as session:
-            query = cls._size_preprocess(db_session=session, actor=actor, access=access, access_type=access_type, **kwargs)
+        query = cls._size_preprocess(
+            db_session=db_session,
+            actor=actor,
+            access=access,
+            access_type=access_type,
+            check_is_deleted=check_is_deleted,
+            **kwargs,
+        )
 
-            try:
-                result = await session.execute(query)
-                count = result.scalar()
-                return count if count else 0
-            except DBAPIError as e:
-                logger.exception(f"Failed to calculate size for {cls.__name__}")
-                raise e
+        try:
+            result = await db_session.execute(query)
+            count = result.scalar()
+            return count if count else 0
+        except DBAPIError as e:
+            logger.exception(f"Failed to calculate size for {cls.__name__}")
+            raise e
 
     @classmethod
     def apply_access_predicate(
@@ -941,12 +995,12 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             org_id = getattr(actor, "organization_id", None)
             if not org_id:
                 raise ValueError(f"object {actor} has no organization accessor")
-            return query.where(cls.organization_id == org_id, cls.is_deleted == False)
+            return query.where(cls.organization_id == org_id)
         elif access_type == AccessType.USER:
             user_id = getattr(actor, "id", None)
             if not user_id:
                 raise ValueError(f"object {actor} has no user accessor")
-            return query.where(cls.user_id == user_id, cls.is_deleted == False)
+            return query.where(cls.user_id == user_id)
         else:
             raise ValueError(f"unknown access_type: {access_type}")
 

@@ -35,6 +35,7 @@ class Block(OrganizationMixin, SqlalchemyBase):
     is_template: Mapped[bool] = mapped_column(
         doc="whether the block is a template (e.g. saved human/persona options as baselines for other templates)", default=False
     )
+    preserve_on_migration: Mapped[Optional[bool]] = mapped_column(doc="preserve the block on template migration", default=False)
     value: Mapped[str] = mapped_column(doc="Text content of the block for the respective section of core memory.")
     limit: Mapped[BigInteger] = mapped_column(Integer, default=CORE_MEMORY_BLOCK_CHAR_LIMIT, doc="Character limit of the block.")
     metadata_: Mapped[Optional[dict]] = mapped_column(JSON, default={}, doc="arbitrary information related to the block.")

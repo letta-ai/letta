@@ -4,10 +4,13 @@ from typing import AsyncGenerator, List, Optional
 
 from letta.agents.base_agent import BaseAgent
 from letta.agents.letta_agent import LettaAgent
+from letta.constants import DEFAULT_MAX_STEPS
 from letta.groups.helpers import stringify_message
+from letta.otel.tracing import trace_method
 from letta.schemas.enums import JobStatus
 from letta.schemas.group import Group, ManagerType
 from letta.schemas.job import JobUpdate
+from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.message import Message, MessageCreate
@@ -55,11 +58,14 @@ class SleeptimeMultiAgentV2(BaseAgent):
         assert group.manager_type == ManagerType.sleeptime, f"Expected group manager type to be 'sleeptime', got {group.manager_type}"
         self.group = group
 
+    @trace_method
     async def step(
         self,
         input_messages: List[MessageCreate],
-        max_steps: int = 10,
+        max_steps: int = DEFAULT_MAX_STEPS,
         use_assistant_message: bool = True,
+        request_start_timestamp_ns: Optional[int] = None,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ) -> LettaResponse:
         run_ids = []
 
@@ -84,7 +90,10 @@ class SleeptimeMultiAgentV2(BaseAgent):
         )
         # Perform foreground agent step
         response = await foreground_agent.step(
-            input_messages=new_messages, max_steps=max_steps, use_assistant_message=use_assistant_message
+            input_messages=new_messages,
+            max_steps=max_steps,
+            use_assistant_message=use_assistant_message,
+            include_return_message_types=include_return_message_types,
         )
 
         # Get last response messages
@@ -119,12 +128,33 @@ class SleeptimeMultiAgentV2(BaseAgent):
         response.usage.run_ids = run_ids
         return response
 
+    @trace_method
+    async def step_stream_no_tokens(
+        self,
+        input_messages: List[MessageCreate],
+        max_steps: int = DEFAULT_MAX_STEPS,
+        use_assistant_message: bool = True,
+        request_start_timestamp_ns: Optional[int] = None,
+        include_return_message_types: Optional[List[MessageType]] = None,
+    ):
+        response = await self.step(
+            input_messages, max_steps, use_assistant_message, request_start_timestamp_ns, include_return_message_types
+        )
+
+        for message in response.messages:
+            yield f"data: {message.model_dump_json()}\n\n"
+
+        for finish_chunk in self.get_finish_chunks_for_stream(response.usage):
+            yield f"data: {finish_chunk}\n\n"
+
+    @trace_method
     async def step_stream(
         self,
         input_messages: List[MessageCreate],
-        max_steps: int = 10,
+        max_steps: int = DEFAULT_MAX_STEPS,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: Optional[int] = None,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ) -> AsyncGenerator[str, None]:
         # Prepare new messages
         new_messages = []
@@ -151,6 +181,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
             max_steps=max_steps,
             use_assistant_message=use_assistant_message,
             request_start_timestamp_ns=request_start_timestamp_ns,
+            include_return_message_types=include_return_message_types,
         ):
             yield chunk
 
@@ -256,6 +287,9 @@ class SleeptimeMultiAgentV2(BaseAgent):
                 actor=self.actor,
                 step_manager=self.step_manager,
                 telemetry_manager=self.telemetry_manager,
+                message_buffer_limit=20,  # TODO: Make this configurable
+                message_buffer_min=8,  # TODO: Make this configurable
+                enable_summarization=False,  # TODO: Make this configurable
             )
 
             # Perform sleeptime agent step

@@ -1,6 +1,6 @@
 {
   "name": "create_task_plan",
-  "description": "Creates a task plan for the current task.",
+  "description": "It takes in a list of steps, and updates the task with the new steps provided.\nIf there are any current steps, they will be overwritten.\nEach step in the list should have the following format:\n{\n    \"name\": <string> -- Name of the step.\n    \"key\": <string> -- Unique identifier for the step.\n    \"description\": <string> -- An exhaustic description of what this step is trying to achieve and accomplish.\n}",
   "strict": true,
   "parameters": {
     "type": "object",

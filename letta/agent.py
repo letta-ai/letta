@@ -27,7 +27,6 @@ from letta.errors import ContextWindowExceededError
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
 from letta.functions.composio_helpers import execute_composio_action, generate_composio_action_from_func_name
 from letta.functions.functions import get_function_from_module
-from letta.functions.mcp_client.base_client import BaseMCPClient
 from letta.helpers import ToolRulesSolver
 from letta.helpers.composio_helpers import get_composio_api_key
 from letta.helpers.datetime_helpers import get_utc_time
@@ -42,11 +41,12 @@ from letta.log import get_logger
 from letta.memory import summarize_messages
 from letta.orm import User
 from letta.orm.enums import ToolType
+from letta.otel.tracing import log_event, trace_method
 from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent, get_prompt_template_for_agent_type
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole, ProviderType
-from letta.schemas.letta_message_content import TextContent
+from letta.schemas.letta_message_content import ImageContent, TextContent
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, MessageCreate, ToolReturn
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
@@ -60,7 +60,9 @@ from letta.schemas.usage import LettaUsageStatistics
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import check_supports_structured_output, compile_memory_metadata_block
+from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
 from letta.services.job_manager import JobManager
+from letta.services.mcp.base_client import AsyncBaseMCPClient
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.provider_manager import ProviderManager
@@ -71,7 +73,6 @@ from letta.services.tool_manager import ToolManager
 from letta.settings import settings, summarizer_settings
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from letta.system import get_heartbeat, get_token_limit_warning, package_function_response, package_summarize_message, package_user_message
-from letta.tracing import log_event, trace_method
 from letta.utils import count_tokens, get_friendly_error_msg, get_tool_call_id, log_telemetry, parse_json, validate_function_response
 
 logger = get_logger(__name__)
@@ -103,7 +104,7 @@ class Agent(BaseAgent):
         # extras
         first_message_verify_mono: bool = True,  # TODO move to config?
         # MCP sessions, state held in-memory in the server
-        mcp_clients: Optional[Dict[str, BaseMCPClient]] = None,
+        mcp_clients: Optional[Dict[str, AsyncBaseMCPClient]] = None,
         save_last_response: bool = False,
     ):
         assert isinstance(agent_state.memory, Memory), f"Memory object is not of type Memory: {type(agent_state.memory)}"
@@ -168,7 +169,11 @@ class Agent(BaseAgent):
         self.logger = get_logger(agent_state.id)
 
         # MCPClient, state/sessions managed by the server
-        self.mcp_clients = mcp_clients
+        # TODO: This is temporary, as a bridge
+        self.mcp_clients = None
+        # TODO: no longer supported
+        # if mcp_clients:
+        #    self.mcp_clients = {client_id: client.to_sync_client() for client_id, client in mcp_clients.items()}
 
     def load_last_function_response(self):
         """Load the last function response from message history"""
@@ -217,6 +222,7 @@ class Agent(BaseAgent):
             # refresh memory from DB (using block ids)
             self.agent_state.memory = Memory(
                 blocks=[self.block_manager.get_block_by_id(block.id, actor=self.user) for block in self.agent_state.memory.get_blocks()],
+                file_blocks=self.agent_state.memory.file_blocks,
                 prompt_template=get_prompt_template_for_agent_type(self.agent_state.agent_type),
             )
 
@@ -226,6 +232,7 @@ class Agent(BaseAgent):
             self.agent_state = self.agent_manager.rebuild_system_prompt(agent_id=self.agent_state.id, actor=self.user)
 
             return True
+
         return False
 
     def _handle_function_error_response(
@@ -323,7 +330,9 @@ class Agent(BaseAgent):
                 return None
 
         allowed_functions = [func for func in agent_state_tool_jsons if func["name"] in allowed_tool_names]
-        allowed_functions = self._runtime_override_tool_json_schema(allowed_functions)
+        allowed_functions = runtime_override_tool_json_schema(
+            tool_list=allowed_functions, response_format=self.agent_state.response_format, request_heartbeat=True
+        )
 
         # For the first message, force the initial tool if one is specified
         force_tool_call = None
@@ -360,6 +369,16 @@ class Agent(BaseAgent):
                     )
                 else:
                     # Fallback to existing flow
+                    for message in message_sequence:
+                        if isinstance(message.content, list):
+
+                            def get_fallback_text_content(content):
+                                if isinstance(content, ImageContent):
+                                    return TextContent(text="[Image Here]")
+                                return content
+
+                            message.content = [get_fallback_text_content(content) for content in message.content]
+
                     response = create(
                         llm_config=self.agent_state.llm_config,
                         messages=message_sequence,
@@ -494,7 +513,7 @@ class Agent(BaseAgent):
                 response_message.function_call if response_message.function_call is not None else response_message.tool_calls[0].function
             )
             function_name = function_call.name
-            self.logger.debug(f"Request to call function {function_name} with tool_call_id: {tool_call_id}")
+            self.logger.info(f"Request to call function {function_name} with tool_call_id: {tool_call_id}")
 
             # Failure case 1: function name is wrong (not in agent_state.tools)
             target_letta_tool = None
@@ -858,6 +877,7 @@ class Agent(BaseAgent):
             # only pulling latest block data if shared memory is being used
             current_persisted_memory = Memory(
                 blocks=[self.block_manager.get_block_by_id(block.id, actor=self.user) for block in self.agent_state.memory.get_blocks()],
+                file_blocks=self.agent_state.memory.file_blocks,
                 prompt_template=get_prompt_template_for_agent_type(self.agent_state.agent_type),
             )  # read blocks from DB
             self.update_memory_if_changed(current_persisted_memory)
@@ -1225,7 +1245,6 @@ class Agent(BaseAgent):
             memory_edit_timestamp=get_utc_time(),
             previous_message_count=self.message_manager.size(actor=self.user, agent_id=self.agent_state.id),
             archival_memory_size=self.agent_manager.passage_size(actor=self.user, agent_id=self.agent_state.id),
-            recent_passages=self.agent_manager.list_passages(actor=self.user, agent_id=self.agent_state.id, ascending=False, limit=10),
         )
         num_tokens_external_memory_summary = count_tokens(external_memory_summary)
 
@@ -1282,8 +1301,8 @@ class Agent(BaseAgent):
         # Grab the in-context messages
         # conversion of messages to OpenAI dict format, which is passed to the token counter
         (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
-            self.agent_manager.get_in_context_messages_async(agent_id=self.agent_state.id, actor=self.user),
-            self.passage_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
+            self.message_manager.get_messages_by_ids_async(message_ids=self.agent_state.message_ids, actor=self.user),
+            self.passage_manager.agent_passage_size_async(actor=self.user, agent_id=self.agent_state.id),
             self.message_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
         )
         in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
@@ -1306,11 +1325,13 @@ class Agent(BaseAgent):
                 core_memory = system_message[core_memory_marker_pos:].strip()
             else:
                 # if no markers found, put everything in system message
+                self.logger.info("No markers found in system message, core_memory and external_memory_summary will not be loaded")
                 system_prompt = system_message
                 external_memory_summary = ""
                 core_memory = ""
         else:
             # if no system message, fall back on agent's system prompt
+            self.logger.info("No system message found in history, core_memory and external_memory_summary will not be loaded")
             system_prompt = self.agent_state.system
             external_memory_summary = ""
             core_memory = ""
@@ -1402,8 +1423,8 @@ class Agent(BaseAgent):
         # Grab the in-context messages
         # conversion of messages to anthropic dict format, which is passed to the token counter
         (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
-            self.agent_manager.get_in_context_messages_async(agent_id=self.agent_state.id, actor=self.user),
-            self.passage_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
+            self.message_manager.get_messages_by_ids_async(message_ids=self.agent_state.message_ids, actor=self.user),
+            self.passage_manager.agent_passage_size_async(actor=self.user, agent_id=self.agent_state.id),
             self.message_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
         )
         in_context_messages_anthropic = [m.to_anthropic_dict() for m in in_context_messages]
@@ -1426,14 +1447,16 @@ class Agent(BaseAgent):
                 core_memory = system_message[core_memory_marker_pos:].strip()
             else:
                 # if no markers found, put everything in system message
+                self.logger.info("No markers found in system message, core_memory and external_memory_summary will not be loaded")
                 system_prompt = system_message
-                external_memory_summary = None
-                core_memory = None
+                external_memory_summary = ""
+                core_memory = ""
         else:
             # if no system message, fall back on agent's system prompt
+            self.logger.info("No system message found in history, core_memory and external_memory_summary will not be loaded")
             system_prompt = self.agent_state.system
-            external_memory_summary = None
-            core_memory = None
+            external_memory_summary = ""
+            core_memory = ""
 
         num_tokens_system_coroutine = anthropic_client.count_tokens(model=model, messages=[{"role": "user", "content": system_prompt}])
         num_tokens_core_memory_coroutine = (
@@ -1601,8 +1624,6 @@ class Agent(BaseAgent):
                 if server_name not in self.mcp_clients:
                     raise ValueError(f"Unknown MCP server name: {server_name}")
                 mcp_client = self.mcp_clients[server_name]
-                if not isinstance(mcp_client, BaseMCPClient):
-                    raise RuntimeError(f"Expected an MCPClient, but got: {type(mcp_client)}")
 
                 # Check that tool exists
                 available_tools = mcp_client.list_tools()

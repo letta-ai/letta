@@ -1,14 +1,15 @@
+import asyncio
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 import openai
 
 from letta.agents.base_agent import BaseAgent
 from letta.agents.exceptions import IncompatibleAgentType
 from letta.agents.voice_sleeptime_agent import VoiceSleeptimeAgent
-from letta.constants import NON_USER_MSG_PREFIX
+from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.tool_execution_helper import (
     add_pre_execution_message,
@@ -81,8 +82,8 @@ class VoiceAgent(BaseAgent):
         self.summary_block_label = "human"
 
         # Cached archival memory/message size
-        self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_id)
-        self.num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_id)
+        self.num_messages = None
+        self.num_archival_memories = None
 
     def init_summarizer(self, agent_state: AgentState) -> Summarizer:
         if not agent_state.multi_agent_group:
@@ -110,10 +111,10 @@ class VoiceAgent(BaseAgent):
 
         return summarizer
 
-    async def step(self, input_messages: List[MessageCreate], max_steps: int = 10) -> LettaResponse:
+    async def step(self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS) -> LettaResponse:
         raise NotImplementedError("VoiceAgent does not have a synchronous step implemented currently.")
 
-    async def step_stream(self, input_messages: List[MessageCreate], max_steps: int = 10) -> AsyncGenerator[str, None]:
+    async def step_stream(self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS) -> AsyncGenerator[str, None]:
         """
         Main streaming loop that yields partial tokens.
         Whenever we detect a tool call, we yield from _handle_ai_response as well.
@@ -123,7 +124,7 @@ class VoiceAgent(BaseAgent):
 
         user_query = input_messages[0].content[0].text
 
-        agent_state = self.agent_manager.get_agent_by_id(self.agent_id, actor=self.actor)
+        agent_state = await self.agent_manager.get_agent_by_id_async(self.agent_id, actor=self.actor)
 
         # TODO: Refactor this so it uses our in-house clients
         # TODO: For now, piggyback off of OpenAI client for ease
@@ -139,7 +140,7 @@ class VoiceAgent(BaseAgent):
 
         summarizer = self.init_summarizer(agent_state=agent_state)
 
-        in_context_messages = self.message_manager.get_messages_by_ids(message_ids=agent_state.message_ids, actor=self.actor)
+        in_context_messages = await self.message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=self.actor)
         memory_edit_timestamp = get_utc_time()
         in_context_messages[0].content[0].text = compile_system_message(
             system_prompt=agent_state.system,
@@ -181,10 +182,6 @@ class VoiceAgent(BaseAgent):
 
         # Rebuild context window if desired
         await self._rebuild_context_window(summarizer, in_context_messages, letta_message_db_queue)
-
-        # TODO: This may be out of sync, if in between steps users add files
-        self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_state.id)
-        self.num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_state.id)
 
         yield "data: [DONE]\n\n"
 
@@ -238,14 +235,17 @@ class VoiceAgent(BaseAgent):
             )
             in_memory_message_history.append(assistant_tool_call_msg.model_dump())
 
-            tool_result, success_flag = await self._execute_tool(
+            tool_execution_result = await self._execute_tool(
                 user_query=user_query,
                 tool_name=tool_call_name,
                 tool_args=tool_args,
                 agent_state=agent_state,
             )
+            tool_result = tool_execution_result.func_return
+            success_flag = tool_execution_result.success_flag
 
             # 3. Provide function_call response back into the conversation
+            # TODO: fix this tool format
             tool_message = ToolMessage(
                 content=json.dumps({"result": tool_result}),
                 tool_call_id=tool_call_id,
@@ -267,6 +267,7 @@ class VoiceAgent(BaseAgent):
                 tool_call_id=tool_call_id,
                 function_call_success=success_flag,
                 function_response=tool_result,
+                tool_execution_result=tool_execution_result,
                 actor=self.actor,
                 add_heartbeat_request_system_message=True,
             )
@@ -281,14 +282,14 @@ class VoiceAgent(BaseAgent):
     async def _rebuild_context_window(
         self, summarizer: Summarizer, in_context_messages: List[Message], letta_message_db_queue: List[Message]
     ) -> None:
-        new_letta_messages = self.message_manager.create_many_messages(letta_message_db_queue, actor=self.actor)
+        new_letta_messages = await self.message_manager.create_many_messages_async(letta_message_db_queue, actor=self.actor)
 
         # TODO: Make this more general and configurable, less brittle
         new_in_context_messages, updated = summarizer.summarize(
             in_context_messages=in_context_messages, new_letta_messages=new_letta_messages
         )
 
-        self.agent_manager.set_in_context_messages(
+        await self.agent_manager.set_in_context_messages_async(
             agent_id=self.agent_id, message_ids=[m.id for m in new_in_context_messages], actor=self.actor
         )
 
@@ -296,9 +297,19 @@ class VoiceAgent(BaseAgent):
         self,
         in_context_messages: List[Message],
         agent_state: AgentState,
-        num_messages: int | None = None,
-        num_archival_memories: int | None = None,
     ) -> List[Message]:
+        self.num_messages, self.num_archival_memories = await asyncio.gather(
+            (
+                self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id)
+                if self.num_messages is None
+                else asyncio.sleep(0, result=self.num_messages)
+            ),
+            (
+                self.passage_manager.agent_passage_size_async(actor=self.actor, agent_id=agent_state.id)
+                if self.num_archival_memories is None
+                else asyncio.sleep(0, result=self.num_archival_memories)
+            ),
+        )
         return await super()._rebuild_memory_async(
             in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
         )
@@ -388,10 +399,14 @@ class VoiceAgent(BaseAgent):
             for t in tools
         ]
 
-    async def _execute_tool(self, user_query: str, tool_name: str, tool_args: dict, agent_state: AgentState) -> Tuple[str, bool]:
+    async def _execute_tool(self, user_query: str, tool_name: str, tool_args: dict, agent_state: AgentState) -> "ToolExecutionResult":
         """
         Executes a tool and returns (result, success_flag).
         """
+        from letta.schemas.tool_execution_result import ToolExecutionResult
+
+        print("EXECUTING TOOL")
+
         # Special memory case
         if tool_name == "search_memory":
             tool_result = await self._search_memory(
@@ -401,11 +416,17 @@ class VoiceAgent(BaseAgent):
                 end_minutes_ago=tool_args["end_minutes_ago"],
                 agent_state=agent_state,
             )
-            return tool_result, True
+            return ToolExecutionResult(
+                func_return=tool_result,
+                status="success",
+            )
         else:
             target_tool = next((x for x in agent_state.tools if x.name == tool_name), None)
             if not target_tool:
-                return f"Tool not found: {tool_name}", False
+                return ToolExecutionResult(
+                    func_return=f"Tool not found: {tool_name}",
+                    status="error",
+                )
 
             try:
                 tool_result, _ = execute_external_tool(
@@ -416,9 +437,9 @@ class VoiceAgent(BaseAgent):
                     actor=self.actor,
                     allow_agent_state_modifications=False,
                 )
-                return tool_result, True
+                return ToolExecutionResult(func_return=tool_result, status="success")
             except Exception as e:
-                return f"Failed to call tool. Error: {e}", False
+                return ToolExecutionResult(func_return=f"Failed to call tool. Error: {e}", status="error")
 
     async def _search_memory(
         self,

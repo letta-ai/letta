@@ -3,7 +3,7 @@ from typing import Optional
 from pydantic import Field, model_validator
 from typing_extensions import Self
 
-from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT
+from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT, DEFAULT_HUMAN_BLOCK_DESCRIPTION, DEFAULT_PERSONA_BLOCK_DESCRIPTION
 from letta.schemas.letta_base import LettaBase
 
 # block of the LLM context
@@ -21,6 +21,7 @@ class BaseBlock(LettaBase, validate_assignment=True):
     # template data (optional)
     template_name: Optional[str] = Field(None, description="Name of the block if it is a template.", alias="name")
     is_template: bool = Field(False, description="Whether the block is a template (e.g. saved human/persona options).")
+    preserve_on_migration: Optional[bool] = Field(False, description="Preserve the block on template migration.")
 
     # context window label
     label: Optional[str] = Field(None, description="Label of the block (e.g. 'human', 'persona') in the context window.")
@@ -85,12 +86,17 @@ class Human(Block):
     """Human block of the LLM context"""
 
     label: str = "human"
+    description: Optional[str] = Field(DEFAULT_HUMAN_BLOCK_DESCRIPTION, description="Description of the block.")
 
 
 class Persona(Block):
     """Persona block of the LLM context"""
 
     label: str = "persona"
+    description: Optional[str] = Field(DEFAULT_PERSONA_BLOCK_DESCRIPTION, description="Description of the block.")
+
+
+DEFAULT_BLOCKS = [Human(value=""), Persona(value="")]
 
 
 class BlockUpdate(BaseBlock):

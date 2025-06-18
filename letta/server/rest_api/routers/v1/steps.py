@@ -12,7 +12,7 @@ router = APIRouter(prefix="/steps", tags=["steps"])
 
 
 @router.get("/", response_model=List[Step], operation_id="list_steps")
-def list_steps(
+async def list_steps(
     before: Optional[str] = Query(None, description="Return steps before this step ID"),
     after: Optional[str] = Query(None, description="Return steps after this step ID"),
     limit: Optional[int] = Query(50, description="Maximum number of steps to return"),
@@ -21,6 +21,7 @@ def list_steps(
     end_date: Optional[str] = Query(None, description='Return steps before this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")'),
     model: Optional[str] = Query(None, description="Filter by the name of the model used for the step"),
     agent_id: Optional[str] = Query(None, description="Filter by the ID of the agent that performed the step"),
+    trace_ids: Optional[list[str]] = Query(None, description="Filter by trace ids returned by the server"),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
@@ -28,13 +29,13 @@ def list_steps(
     List steps with optional pagination and date filters.
     Dates should be provided in ISO 8601 format (e.g. 2025-01-29T15:01:19-08:00)
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     # Convert ISO strings to datetime objects if provided
     start_dt = datetime.fromisoformat(start_date) if start_date else None
     end_dt = datetime.fromisoformat(end_date) if end_date else None
 
-    return server.step_manager.list_steps(
+    return await server.step_manager.list_steps_async(
         actor=actor,
         before=before,
         after=after,
@@ -44,11 +45,12 @@ def list_steps(
         order=order,
         model=model,
         agent_id=agent_id,
+        trace_ids=trace_ids,
     )
 
 
 @router.get("/{step_id}", response_model=Step, operation_id="retrieve_step")
-def retrieve_step(
+async def retrieve_step(
     step_id: str,
     actor_id: Optional[str] = Header(None, alias="user_id"),
     server: SyncServer = Depends(get_letta_server),
@@ -57,8 +59,8 @@ def retrieve_step(
     Get a step by ID.
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=actor_id)
-        return server.step_manager.get_step(step_id=step_id, actor=actor)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        return await server.step_manager.get_step_async(step_id=step_id, actor=actor)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Step not found")
 
