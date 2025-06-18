@@ -81,6 +81,7 @@ export function ExecuteToolEvent(props: SendMessageEventProps) {
             message_type: 'tool_return_message',
           }}
           inputs={inputs}
+          status={status}
         />
       </VStack>
     </EventItem>

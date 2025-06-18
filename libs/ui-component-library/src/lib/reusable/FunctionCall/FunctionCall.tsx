@@ -3,20 +3,16 @@ import * as React from 'react';
 import { VStack } from '../../framing/VStack/VStack';
 import { HStack } from '../../framing/HStack/HStack';
 import {
-  CheckCircleFilledIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   ContextWindowIcon,
   FunctionIcon,
-  WarningIcon,
 } from '../../icons';
 import { Typography } from '../../core/Typography/Typography';
 import { RawCodeEditor } from '../../core/Code/Code';
 import { useTranslations } from '@letta-cloud/translations';
-import { Spinner } from '../../core/Spinner/Spinner';
 import { useCallback, useMemo, useState } from 'react';
 import { useAtom } from 'jotai';
-import { Badge } from '../../core/Badge/Badge';
 import type { ToolReturnMessageSchemaType } from '@letta-cloud/sdk-core';
 import { TabGroup } from '../../core/TabGroup/TabGroup';
 import { functionCallOpenStatusAtom } from './functionCallOpenStatusAtom';
@@ -24,6 +20,7 @@ import { Dialog } from '../../core/Dialog/Dialog';
 import { VirtualizedCodeViewer } from '../../core/VirtualizedCodeViewer/VirtualizedCodeViewer';
 import { Button } from '../../core/Button/Button';
 import { useCopyToClipboard } from '../../hooks';
+import { StatusBadge } from '../StatusBadge/StatusBadge';
 
 interface FunctionCallDataViewerDialogProps {
   content: string;
@@ -82,30 +79,7 @@ export function FunctionCall(props: FunctionCallProps) {
 
   const t = useTranslations('ui-component-library/FunctionCall');
 
-  const statusInfo = useMemo(() => {
-    if (status === 'success') {
-      return {
-        message: t('success'),
-        color: 'success' as const,
-        icon: <CheckCircleFilledIcon size="small" />,
-      };
-    }
-
-    if (!response?.tool_return && status !== 'error') {
-      return {
-        message: t('isExecuting'),
-        color: 'warning' as const,
-        icon: <Spinner size="small" />,
-      };
-    }
-
-    return {
-      message: t('error'),
-      color: 'destructive' as const,
-      icon: <WarningIcon />,
-    }
-
-  }, [response?.tool_return, status, t]);
+  const toolReturn = response?.tool_return;
 
   const [responseView, setResponseView] = useState<ResponseViews>('response');
 
@@ -172,10 +146,9 @@ export function FunctionCall(props: FunctionCallProps) {
                 {name}
               </Typography>
             </HStack>
-            <Badge
-              preIcon={statusInfo.icon}
-              content={statusInfo.message}
-              variant={statusInfo.color}
+            <StatusBadge
+              status={status}
+              toolReturn={toolReturn}
             />
           </HStack>
         </HStack>
