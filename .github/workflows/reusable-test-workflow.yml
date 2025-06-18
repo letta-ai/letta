@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       poetry-core-directory:
-        description: 'Working directory for commands. Defaults to apps/core and expects poetry functionality.'  
+        description: 'Working directory for commands. Defaults to apps/core and expects poetry functionality.'
         required: false
         type: string
         default: 'apps/core'
@@ -61,7 +61,7 @@ on:
 
 jobs:
   changed-files:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(inputs.runner) }}
     name: changed-files
     outputs:
       all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
@@ -76,61 +76,14 @@ jobs:
         with:
           files: ${{ inputs.changed-files-pattern }}
 
-  generate-sdk:
-    runs-on: ${{ fromJSON(inputs.runner) }}
-    timeout-minutes: 10
-    outputs:
-      cache-key: ${{ steps.cache-key.outputs.key }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Generate cache key
-        id: cache-key
-        run: |
-          echo "key=sdk-${{ hashFiles('apps/fern/*', 'apps/core/pyproject.toml') }}" >> $GITHUB_OUTPUT
-
-      - name: Try to restore SDK cache
-        id: restore-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            apps/fern/.preview/fern-python-sdk/
-          key: ${{ steps.cache-key.outputs.key }}
-
-      - name: Generate SDK with Fern
-        if: steps.restore-cache.outputs.cache-hit != 'true' && inputs.skip-fern-generation != true
-        uses: nick-fields/retry@v3
-        env:
-          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
-        with:
-          max_attempts: 3
-          timeout_minutes: 5
-          command: |
-            set -o xtrace
-            cd apps
-            fern generate --group python-sdk --preview
-            cd fern/.preview/fern-python-sdk
-            poetry install
-            poetry run mypy .
-
-      - name: Save SDK cache
-        if: steps.restore-cache.outputs.cache-hit != 'true' && inputs.skip-fern-generation != true
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            apps/fern/.preview/fern-python-sdk/
-          key: ${{ steps.cache-key.outputs.key }}
-
   test-run:
-    needs: [changed-files, generate-sdk]
+    needs: [changed-files]
     if: |
-      needs.changed-files.outputs.any_changed == 'true' &&
-      (needs.generate-sdk.result == 'success' || needs.generate-sdk.result == 'skipped')
+      needs.changed-files.outputs.any_changed == 'true'
     runs-on: ${{ fromJSON(inputs.runner) }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     strategy: ${{ fromJSON(inputs.matrix-strategy) }}
-    
+
     services:
       postgres:
         image: pgvector/pgvector:pg17
@@ -151,13 +104,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Generate cache key
+        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi-overrides.yml'))
+        id: cache-key
+        run: |
+          echo "key=sdk-${{ github.ref_name }}-${{ hashFiles('apps/fern/*', 'apps/core/pyproject.toml') }}" >> $GITHUB_OUTPUT
+
       - name: Restore SDK cache
-        if: inputs.skip-fern-generation != true
+        # skip if "skip-fern-generation" is true or if the upstream workflow would've generated an sdk preview (changes to openapi files)
+        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi-overrides.yml'))
         uses: actions/cache/restore@v4
         with:
           path: |
             apps/fern/.preview/fern-python-sdk/
-          key: ${{ needs.generate-sdk.outputs.cache-key }}
+          key: ${{ steps.cache-key.outputs.key }}
           fail-on-cache-miss: true
 
       - name: Install dependencies
@@ -184,7 +144,6 @@ jobs:
         run: |
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
           poetry run alembic upgrade head
-
       - name: Inject env vars into environment
         working-directory: ${{ inputs.poetry-core-directory }}
         run: |
@@ -208,7 +167,7 @@ jobs:
         if: inputs.use-docker
         env:
           LETTA_PG_DB: letta
-          LETTA_PG_USER: letta 
+          LETTA_PG_USER: letta
           LETTA_PG_PASSWORD: letta
           LETTA_PG_PORT: 5432
           OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
@@ -231,10 +190,10 @@ jobs:
           LETTA_PG_PASSWORD: ${{ inputs.use-docker && 'letta' || 'postgres' }}
           LETTA_PG_DB: ${{ inputs.use-docker && 'letta' || 'postgres' }}
           LETTA_PG_HOST: localhost
-          
+
           # Server configuration (conditional)
           LETTA_SERVER_PASS: test_server_token
-          
+
           # LLM Provider API Keys (shared across all test types)
           OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
@@ -244,8 +203,8 @@ jobs:
           AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
           DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
           LETTA_MISTRAL_API_KEY: ${{ secrets.LETTA_MISTRAL_API_KEY }}
-          
-          # External service API Keys (shared across all test types)  
+
+          # External service API Keys (shared across all test types)
           COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
           E2B_API_KEY: ${{ env.E2B_API_KEY }}
           E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
@@ -253,30 +212,30 @@ jobs:
           PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
           PINECONE_INDEX_HOST: ${{ secrets.PINECONE_INDEX_HOST }}
           PINECONE_NAMESPACE: ${{ secrets.PINECONE_NAMESPACE }}
-          
+
           # Google Cloud (shared across all test types)
           GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
           GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}
-          
+
           # Feature flags (shared across all test types)
           LETTA_ENABLE_BATCH_JOB_POLLING: true
           LETTA_USE_EXPERIMENTAL: ${{ secrets.LETTA_USE_EXPERIMENTAL }}
-          
+
           # Docker-specific environment variables
           PYTHONPATH: ${{ inputs.use-docker && format('{0}:{1}', github.workspace, env.PYTHONPATH) || '' }}
         run: |
           set -o xtrace
-          
+
           # Set LETTA_SERVER_URL only for Docker tests
           if [[ "${{ inputs.use-docker }}" == "true" ]]; then
             export LETTA_SERVER_URL="http://localhost:8083"
           fi
-          
+
           # Set LLM_CONFIG_FILE only for send-message tests
           if [[ "${{ inputs.test-type }}" == "send-message" ]]; then
             export LLM_CONFIG_FILE="${{ matrix.config_file }}"
           fi
-          
+
           # Handle different matrix variable names and test commands based on test type
           if [[ "${{ inputs.test-type }}" == "integration" ]]; then
             poetry run pip install letta

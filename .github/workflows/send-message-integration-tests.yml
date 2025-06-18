@@ -1,8 +1,9 @@
 name: 🐍🧪 [Core] Send Message SDK Tests
 
 on:
-  pull_request:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["🌿 Preview Python SDK"]
+    types: [completed]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

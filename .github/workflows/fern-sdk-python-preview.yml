@@ -35,9 +35,10 @@ jobs:
             apps/fern/openapi-overrides.yml
 
   preview-python-sdk:
-    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     needs: [changed-files]
     runs-on: [self-hosted, medium]
+    outputs:
+      cache-key: ${{ steps.cache-key.outputs.key }}
     services:
       postgres:
         image: pgvector/pgvector:pg17
@@ -57,6 +58,19 @@ jobs:
 
       - name: Checkout repo
         uses: actions/checkout@v3
+
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          echo "key=sdk-${{ github.ref_name }}-${{ hashFiles('apps/fern/*', 'apps/core/pyproject.toml') }}" >> $GITHUB_OUTPUT
+
+      - name: Try to restore SDK cache
+        id: restore-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            apps/fern/.preview/fern-python-sdk/
+          key: ${{ steps.cache-key.outputs.key }}
 
       - name: Inject env vars into environment
         working-directory: apps/core
@@ -103,6 +117,7 @@ jobs:
           timeout 60 bash -c 'until curl -s http://localhost:8283/health; do sleep 1; done'
 
       - name: Generate Python SDK Preview
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         working-directory: apps
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
@@ -112,3 +127,11 @@ jobs:
           poetry install
           poetry run mypy .
           poetry run pytest -rP tests/custom/test_client.py --env localhost
+
+      - name: Save SDK to cache
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            apps/fern/.preview/fern-python-sdk/
+          key: ${{ steps.cache-key.outputs.key }}
