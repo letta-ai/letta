@@ -104,6 +104,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Wait for Preview SDK workflow
+        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi-overrides.yml'))
+        uses: fountainhead/action-wait-for-check@v1.1.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: "preview-python-sdk"
+          ref: ${{ github.event.pull_request.head.sha }}
+          timeoutSeconds: 1800
+
       - name: Generate cache key
         if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi-overrides.yml'))
         id: cache-key

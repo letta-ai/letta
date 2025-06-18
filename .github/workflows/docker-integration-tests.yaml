@@ -1,9 +1,9 @@
 name: Run Docker integration tests
 
 on:
-  workflow_run:
-    workflows: ["🌿 Preview Python SDK"]
-    types: [completed]
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: docker-tests-${{ github.ref }}

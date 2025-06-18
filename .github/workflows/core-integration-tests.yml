@@ -1,9 +1,9 @@
 name: 🐍🧪 [Core] Integration Tests
 
 on:
-  workflow_run:
-    workflows: ["🌿 Preview Python SDK"]
-    types: [completed]
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
