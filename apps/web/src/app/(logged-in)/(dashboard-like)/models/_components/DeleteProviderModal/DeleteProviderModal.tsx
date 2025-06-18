@@ -55,7 +55,7 @@ export function DeleteProviderModal(props: DeleteProviderModalProps) {
         },
         (oldData) => {
           if (oldData) {
-            return oldData.filter((provider) => provider.id !== provider.id);
+            return oldData.filter((p) => p.id !== provider.id);
           }
 
           return [];
