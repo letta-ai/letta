@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import AsyncExitStack
 from typing import Optional, Tuple
 
@@ -18,6 +19,9 @@ class AsyncBaseMCPClient:
         self.exit_stack = AsyncExitStack()
         self.session: Optional[ClientSession] = None
         self.initialized = False
+        # Track the task that created this client
+        self._creation_task = asyncio.current_task()
+        self._cleanup_queue = asyncio.Queue(maxsize=1)
 
     async def connect_to_server(self):
         try:
@@ -74,8 +78,29 @@ class AsyncBaseMCPClient:
             raise RuntimeError("MCPClient has not been initialized")
 
     async def cleanup(self):
-        """Clean up resources"""
+        """Clean up resources - ensure this runs in the same task"""
+        if hasattr(self, "_cleanup_task"):
+            # If we're in a different task, schedule cleanup in original task
+            current_task = asyncio.current_task()
+            if current_task != self._creation_task:
+                # Create a future to signal completion
+                cleanup_done = asyncio.Future()
+                self._cleanup_queue.put_nowait((self.exit_stack, cleanup_done))
+                await cleanup_done
+                return
+
+        # Normal cleanup
         await self.exit_stack.aclose()
 
     def to_sync_client(self):
         raise NotImplementedError("Subclasses must implement to_sync_client")
+
+    async def __aenter__(self):
+        """Enter the async context manager."""
+        await self.connect_to_server()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Exit the async context manager."""
+        await self.cleanup()
+        return False  # Don't suppress exceptions
