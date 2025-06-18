@@ -75,23 +75,23 @@ class MCPManager:
             server_config = mcp_config[mcp_server_name]
 
         if isinstance(server_config, SSEServerConfig):
-            mcp_client = AsyncSSEMCPClient(server_config=server_config)
+            # mcp_client = AsyncSSEMCPClient(server_config=server_config)
+            async with AsyncSSEMCPClient(server_config=server_config) as mcp_client:
+                result, success = await mcp_client.execute_tool(tool_name, tool_args)
+                logger.info(f"MCP Result: {result}, Success: {success}")
+                return result, success
         elif isinstance(server_config, StdioServerConfig):
-            mcp_client = AsyncStdioMCPClient(server_config=server_config)
+            async with AsyncStdioMCPClient(server_config=server_config) as mcp_client:
+                result, success = await mcp_client.execute_tool(tool_name, tool_args)
+                logger.info(f"MCP Result: {result}, Success: {success}")
+                return result, success
         elif isinstance(server_config, StreamableHTTPServerConfig):
-            mcp_client = AsyncStreamableHTTPMCPClient(server_config=server_config)
+            async with AsyncStreamableHTTPMCPClient(server_config=server_config) as mcp_client:
+                result, success = await mcp_client.execute_tool(tool_name, tool_args)
+                logger.info(f"MCP Result: {result}, Success: {success}")
+                return result, success
         else:
             raise ValueError(f"Unsupported server config type: {type(server_config)}")
-        await mcp_client.connect_to_server()
-
-        # call tool
-        result, success = await mcp_client.execute_tool(tool_name, tool_args)
-        logger.info(f"MCP Result: {result}, Success: {success}")
-        # TODO: change to pydantic tool
-
-        await mcp_client.cleanup()
-
-        return result, success
 
     @enforce_types
     async def add_tool_from_mcp_server(self, mcp_server_name: str, mcp_tool_name: str, actor: PydanticUser) -> PydanticTool:
