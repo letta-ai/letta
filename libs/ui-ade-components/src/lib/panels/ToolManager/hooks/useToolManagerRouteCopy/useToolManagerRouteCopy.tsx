@@ -18,7 +18,7 @@ import { useMemo } from 'react';
 export function useToolManagerRouteCopy() {
   const t = useTranslations('ToolManager');
 
-  const { data: tools } = useToolsServiceListTools({ limit: 100 });
+  const { data: tools } = useToolsServiceListTools({ limit: 250 });
 
   const counts = useMemo(() => {
     if (!tools) {

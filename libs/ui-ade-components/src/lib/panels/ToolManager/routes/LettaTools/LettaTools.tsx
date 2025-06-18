@@ -15,7 +15,7 @@ export function LettaTools(props: LettaToolsProps) {
     data: tools,
     isError,
     isLoading,
-  } = useToolsServiceListTools({ limit: 100 });
+  } = useToolsServiceListTools({ limit: 250 });
   const [search, setSearch] = useState<string>('');
 
   const t = useTranslations('ToolsEditor/LettaTools');
