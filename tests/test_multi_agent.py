@@ -66,7 +66,7 @@ def participant_agents(server, actor):
                 ),
             ],
             model="openai/gpt-4o-mini",
-            embedding="openai/text-embedding-ada-002",
+            embedding="openai/text-embedding-3-small",
         ),
         actor=actor,
     )
@@ -80,7 +80,7 @@ def participant_agents(server, actor):
                 ),
             ],
             model="openai/gpt-4o-mini",
-            embedding="openai/text-embedding-ada-002",
+            embedding="openai/text-embedding-3-small",
         ),
         actor=actor,
     )
@@ -94,7 +94,7 @@ def participant_agents(server, actor):
                 ),
             ],
             model="openai/gpt-4o-mini",
-            embedding="openai/text-embedding-ada-002",
+            embedding="openai/text-embedding-3-small",
         ),
         actor=actor,
     )
@@ -108,7 +108,7 @@ def participant_agents(server, actor):
                 ),
             ],
             model="openai/gpt-4o-mini",
-            embedding="openai/text-embedding-ada-002",
+            embedding="openai/text-embedding-3-small",
         ),
         actor=actor,
     )
@@ -137,7 +137,7 @@ def manager_agent(server, actor):
                 ),
             ],
             model="openai/gpt-4o-mini",
-            embedding="openai/text-embedding-ada-002",
+            embedding="openai/text-embedding-3-small",
         ),
         actor=actor,
     )
@@ -350,7 +350,7 @@ async def test_supervisor(server, actor, participant_agents):
                 ),
             ],
             model="openai/gpt-4o-mini",
-            embedding="openai/text-embedding-ada-002",
+            embedding="openai/text-embedding-3-small",
         ),
         actor=actor,
     )
@@ -420,7 +420,7 @@ async def test_dynamic_group_chat(server, actor, manager_agent, participant_agen
         request=CreateAgent(
             name="shaggy",
             model="openai/gpt-4o-mini",
-            embedding="openai/text-embedding-ada-002",
+            embedding="openai/text-embedding-3-small",
         ),
         actor=actor,
     )

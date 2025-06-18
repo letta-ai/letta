@@ -63,6 +63,14 @@ class EmbeddingConfig(BaseModel):
                 embedding_dim=1536,
                 embedding_chunk_size=300,
             )
+        if model_name == "text-embedding-3-small" and provider == "openai":
+            return cls(
+                embedding_model="text-embedding-3-small",
+                embedding_endpoint_type="openai",
+                embedding_endpoint="https://api.openai.com/v1",
+                embedding_dim=2000,
+                embedding_chunk_size=300,
+            )
         elif model_name == "letta":
             return cls(
                 embedding_endpoint="https://embeddings.memgpt.ai",

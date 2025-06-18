@@ -87,7 +87,7 @@ def create_test_module(
         agent = client.agents.create(
             name="caren_agent",
             model="openai/gpt-4o-mini",
-            embedding="openai/text-embedding-ada-002",
+            embedding="openai/text-embedding-3-small",
         )
 
         # Add finalizer to ensure cleanup happens in the right order

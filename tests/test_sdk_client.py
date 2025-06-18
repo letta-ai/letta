@@ -48,7 +48,7 @@ def agent(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
     )
     yield agent_state
 
@@ -74,7 +74,7 @@ def test_shared_blocks(client: LettaSDKClient):
         ],
         block_ids=[block.id],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
     )
     agent_state2 = client.agents.create(
         name="agent2",
@@ -86,7 +86,7 @@ def test_shared_blocks(client: LettaSDKClient):
         ],
         block_ids=[block.id],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
     )
 
     # update memory
@@ -132,7 +132,7 @@ def test_read_only_block(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
     )
 
     # make sure agent cannot update read-only block
@@ -175,7 +175,7 @@ def test_add_and_manage_tags_for_agent(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
     )
     assert len(agent.tags) == 0
 
@@ -227,7 +227,7 @@ def test_agent_tags(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
         tags=["test", "agent1", "production"],
     )
 
@@ -239,7 +239,7 @@ def test_agent_tags(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
         tags=["test", "agent2", "development"],
     )
 
@@ -251,7 +251,7 @@ def test_agent_tags(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
         tags=["test", "agent3", "production"],
     )
 
@@ -556,7 +556,7 @@ def test_agent_creation(client: LettaSDKClient):
         name=f"test_agent_{str(uuid.uuid4())}",
         memory_blocks=[sleeptime_persona_block, mindy_block],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
         tool_ids=[tool1.id, tool2.id],
         include_base_tools=False,
         tags=["test"],
@@ -595,7 +595,7 @@ def test_many_blocks(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
         include_base_tools=False,
         tags=["test"],
     )
@@ -612,7 +612,7 @@ def test_many_blocks(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
         include_base_tools=False,
         tags=["test"],
     )

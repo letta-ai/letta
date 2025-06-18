@@ -65,7 +65,7 @@ DEFAULT_EMBEDDING_CHUNK_SIZE = 300
 
 # tokenizers
 EMBEDDING_TO_TOKENIZER_MAP = {
-    "text-embedding-ada-002": "cl100k_base",
+    "text-embedding-3-small": "cl100k_base",
 }
 EMBEDDING_TO_TOKENIZER_DEFAULT = "cl100k_base"
 

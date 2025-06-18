@@ -30,7 +30,7 @@ agent_state = client.agents.create(
     model="openai/gpt-4o-mini",
     context_window_limit=8000,
     # embedding model & endpoint configuration (cannot be changed)
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
     # system instructions for the agent (defaults to `memgpt_chat`)
     system=gpt_system.get_system_text("memgpt_chat"),
     # whether to include base letta tools (default: True)
