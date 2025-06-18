@@ -104,7 +104,10 @@ export async function getLettaUserFeatureFlags(user: UserDetails) {
   };
 
   ldClient.identify(context);
-  const response = await ldClient.allFlagsState(context);
+  const response = await ldClient.allFlagsState(context, {
+    withReasons: true,
+    detailsOnlyForTrackedFlags: false // Set to false to get reasons for all flags
+  });
   const allFlags = response.toJSON();
 
   const explicitFlags: Record<string, any> = {};
