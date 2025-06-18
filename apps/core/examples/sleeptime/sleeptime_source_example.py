@@ -30,7 +30,7 @@ source_name = "employee_handbook"
 source = client.sources.create(
     name=source_name,
     description="Provides reference information for the employee handbook",
-    embedding="openai/text-embedding-ada-002" # must match agent
+    embedding="openai/text-embedding-3-small" # must match agent
 )
 # attach the source to the agent
 client.agents.sources.attach(

@@ -21,7 +21,7 @@ agent = client.agents.create(
         ),
     ],
     model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
 )
 
 print(f"Created agent with name {agent.name}")
@@ -120,7 +120,7 @@ for chunk in stream:
 
 agent_copy = client.agents.create(
     model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
 )
 block = client.agents.blocks.retrieve(agent.id, block_label="human")
 agent_copy = client.agents.blocks.attach(agent_copy.id, block.id)
