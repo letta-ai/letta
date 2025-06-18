@@ -4694,7 +4694,6 @@ export const PassageUpdate = z.object({
 export type ProviderType = z.infer<typeof ProviderType>;
 export const ProviderType = z.union([
   z.literal('anthropic'),
-  z.literal('bedrock'),
   z.literal('google_ai'),
   z.literal('google_vertex'),
   z.literal('openai'),
@@ -4740,6 +4739,22 @@ export const Provider = z.object({
       z.undefined(),
     ])
     .optional(),
+  access_key: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  region: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   organization_id: z
     .union([
       z.string(),
@@ -4758,11 +4773,49 @@ export const Provider = z.object({
     .optional(),
 });
 
+export type ProviderCheck = z.infer<typeof ProviderCheck>;
+export const ProviderCheck = z.object({
+  provider_type: ProviderType,
+  api_key: z.string(),
+  access_key: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  region: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type ProviderCreate = z.infer<typeof ProviderCreate>;
 export const ProviderCreate = z.object({
   name: z.string(),
   provider_type: ProviderType,
   api_key: z.string(),
+  access_key: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  region: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ProviderTrace = z.infer<typeof ProviderTrace>;
@@ -4809,6 +4862,22 @@ export const ProviderTrace = z.object({
 export type ProviderUpdate = z.infer<typeof ProviderUpdate>;
 export const ProviderUpdate = z.object({
   api_key: z.string(),
+  access_key: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  region: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type Run = z.infer<typeof Run>;
@@ -8132,29 +8201,7 @@ export const get_Check_provider = {
   path: z.literal('/v1/providers/check'),
   requestFormat: z.literal('json'),
   parameters: z.object({
-    query: z.object({
-      provider_type: z.union([
-        z.literal('anthropic'),
-        z.literal('bedrock'),
-        z.literal('google_ai'),
-        z.literal('google_vertex'),
-        z.literal('openai'),
-        z.literal('letta'),
-        z.literal('deepseek'),
-        z.literal('lmstudio_openai'),
-        z.literal('xai'),
-        z.literal('mistral'),
-        z.literal('ollama'),
-        z.literal('groq'),
-        z.literal('together'),
-        z.literal('azure'),
-        z.literal('vllm'),
-        z.literal('bedrock'),
-      ]),
-    }),
-    header: z.object({
-      'x-api-key': z.string(),
-    }),
+    body: ProviderCheck,
   }),
   response: z.unknown(),
 };

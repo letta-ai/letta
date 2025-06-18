@@ -30,6 +30,7 @@ import {
   ManagerType,
   MessageRole,
   ProviderCategory,
+  ProviderCheck,
   ProviderType,
   SandboxType,
 } from '../requests/types.gen';
@@ -1908,8 +1909,7 @@ export const useProvidersServiceListProvidersSuspense = <
 /**
  * Check Provider
  * @param data The data for the request.
- * @param data.providerType
- * @param data.xApiKey
+ * @param data.requestBody
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -1919,22 +1919,19 @@ export const useProvidersServiceCheckProviderSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    providerType,
-    xApiKey,
+    requestBody,
   }: {
-    providerType: ProviderType;
-    xApiKey: string;
+    requestBody: ProviderCheck;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseProvidersServiceCheckProviderKeyFn(
-      { providerType, xApiKey },
+      { requestBody },
       queryKey,
     ),
-    queryFn: () =>
-      ProvidersService.checkProvider({ providerType, xApiKey }) as TData,
+    queryFn: () => ProvidersService.checkProvider({ requestBody }) as TData,
     ...options,
   });
 /**

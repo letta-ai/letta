@@ -7844,7 +7844,7 @@ export const $Provider = {
         },
       ],
       title: 'Api Key',
-      description: 'API key used for requests to the provider.',
+      description: 'API key or secret key used for requests to the provider.',
     },
     base_url: {
       anyOf: [
@@ -7857,6 +7857,30 @@ export const $Provider = {
       ],
       title: 'Base Url',
       description: 'Base URL for the provider.',
+    },
+    access_key: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Access Key',
+      description: 'Access key used for requests to the provider.',
+    },
+    region: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Region',
+      description: 'Region used for requests to the provider.',
     },
     organization_id: {
       anyOf: [
@@ -7896,6 +7920,47 @@ export const $ProviderCategory = {
   title: 'ProviderCategory',
 } as const;
 
+export const $ProviderCheck = {
+  properties: {
+    provider_type: {
+      $ref: '#/components/schemas/ProviderType',
+      description: 'The type of the provider.',
+    },
+    api_key: {
+      type: 'string',
+      title: 'Api Key',
+      description: 'API key or secret key used for requests to the provider.',
+    },
+    access_key: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Access Key',
+      description: 'Access key used for requests to the provider.',
+    },
+    region: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Region',
+      description: 'Region used for requests to the provider.',
+    },
+  },
+  type: 'object',
+  required: ['provider_type', 'api_key'],
+  title: 'ProviderCheck',
+} as const;
+
 export const $ProviderCreate = {
   properties: {
     name: {
@@ -7910,7 +7975,31 @@ export const $ProviderCreate = {
     api_key: {
       type: 'string',
       title: 'Api Key',
-      description: 'API key used for requests to the provider.',
+      description: 'API key or secret key used for requests to the provider.',
+    },
+    access_key: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Access Key',
+      description: 'Access key used for requests to the provider.',
+    },
+    region: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Region',
+      description: 'Region used for requests to the provider.',
     },
   },
   additionalProperties: false,
@@ -8020,7 +8109,6 @@ export const $ProviderType = {
   type: 'string',
   enum: [
     'anthropic',
-    'bedrock',
     'google_ai',
     'google_vertex',
     'openai',
@@ -8044,7 +8132,31 @@ export const $ProviderUpdate = {
     api_key: {
       type: 'string',
       title: 'Api Key',
-      description: 'API key used for requests to the provider.',
+      description: 'API key or secret key used for requests to the provider.',
+    },
+    access_key: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Access Key',
+      description: 'Access key used for requests to the provider.',
+    },
+    region: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Region',
+      description: 'Region used for requests to the provider.',
     },
   },
   additionalProperties: false,

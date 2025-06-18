@@ -47,20 +47,32 @@ function TestConnectionButton() {
   const { watch } = useFormContext();
 
   const testConnection = useCallback(
-    async (apiKey: string, providerType: ProviderType) => {
+    async ({
+      providerType,
+      apiKey,
+      accessKey,
+      region,
+    }: {
+      providerType: ProviderType;
+      apiKey: string;
+      accessKey?: string;
+      region?: string;
+    }) => {
       try {
         setIsTesting(true);
         setTestingStatus(null);
-        const res = await fetch(
-          `/v1/providers/check?provider_type=${providerType}`,
-          {
-            method: 'GET',
-            headers: {
-              'x-api-key': apiKey,
-              'Content-Type': 'application/json',
-            },
+        const res = await fetch(`/v1/providers/check`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        );
+          body: JSON.stringify({
+            api_key: apiKey,
+            provider_type: providerType,
+            access_key: accessKey,
+            region: region,
+          }),
+        });
 
         if (res.status !== 200) {
           throw new Error('Failed to connect');
@@ -78,6 +90,8 @@ function TestConnectionButton() {
 
   const apiKey = watch('apiKey');
   const providerType = watch('providerType');
+  const accessKey = watch('accessKey');
+  const region = watch('region');
 
   return (
     <HStack
@@ -89,11 +103,14 @@ function TestConnectionButton() {
       fullWidth
     >
       <Button
+        type="button"
         color="secondary"
         busy={isTesting}
         label={t('TestConnectionButton.label')}
-        onClick={() => {
-          void testConnection(apiKey, providerType);
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          void testConnection({ providerType, apiKey, accessKey, region });
         }}
       />
       <HStack>
@@ -141,9 +158,11 @@ interface CreateProviderModalProps {
 }
 
 const AddModelProviderSchema = z.object({
-  providerType: z.enum(['anthropic', 'openai', 'google_ai']),
+  providerType: z.enum(['anthropic', 'openai', 'google_ai', 'bedrock']),
   name: z.string().min(1),
   apiKey: z.string().min(1),
+  accessKey: z.string().optional(),
+  region: z.string().optional(),
 });
 
 type AddModelProviderSchema = z.infer<typeof AddModelProviderSchema>;
@@ -164,8 +183,12 @@ export function AddProviderModal(props: CreateProviderModalProps) {
       providerType: 'openai',
       name: '',
       apiKey: '',
+      accessKey: '',
+      region: '',
     },
   });
+
+  const { watch } = form;
 
   const handleOpenChange = useCallback(
     (isOpen: boolean) => {
@@ -185,6 +208,8 @@ export function AddProviderModal(props: CreateProviderModalProps) {
             provider_type: data.providerType,
             name: data.name,
             api_key: data.apiKey,
+            access_key: data.accessKey,
+            region: data.region,
           },
         },
         {
@@ -246,7 +271,7 @@ export function AddProviderModal(props: CreateProviderModalProps) {
         isOpen={open}
         onOpenChange={handleOpenChange}
         onSubmit={form.handleSubmit(handleSubmit)}
-        size="medium"
+        size="large"
         isConfirmBusy={isPending}
         errorMessage={errorMessage}
         title={t('title')}
@@ -276,6 +301,11 @@ export function AddProviderModal(props: CreateProviderModalProps) {
                       value: 'google_ai',
                       icon: brandKeyToLogo('gemini'),
                     },
+                    {
+                      label: brandKeyToName('bedrock'),
+                      value: 'bedrock',
+                      icon: brandKeyToLogo('bedrock'),
+                    },
                   ]}
                   onValueChange={(result) => {
                     if (result) {
@@ -303,7 +333,11 @@ export function AddProviderModal(props: CreateProviderModalProps) {
             name="apiKey"
             render={({ field }) => (
               <Input
-                label={t('apiKey.label')}
+                label={
+                  watch('providerType') === 'bedrock'
+                    ? t('bedrock.secretKey')
+                    : t('apiKey.label')
+                }
                 placeholder="••••••••••••••••••••••"
                 type="password"
                 fullWidth
@@ -312,6 +346,32 @@ export function AddProviderModal(props: CreateProviderModalProps) {
               />
             )}
           ></FormField>
+          {watch('providerType') === 'bedrock' && (
+            <>
+              <FormField
+                name="accessKey"
+                render={({ field }) => (
+                  <Input
+                    label={t('bedrock.accessKey.label')}
+                    placeholder={t('bedrock.accessKey.placeholder')}
+                    fullWidth
+                    {...field}
+                  />
+                )}
+              ></FormField>
+              <FormField
+                name="region"
+                render={({ field }) => (
+                  <Input
+                    label={t('region.label')}
+                    placeholder={t('region.placeholder')}
+                    fullWidth
+                    {...field}
+                  />
+                )}
+              ></FormField>
+            </>
+          )}
           <TestConnectionButton />
         </VStack>
       </Dialog>

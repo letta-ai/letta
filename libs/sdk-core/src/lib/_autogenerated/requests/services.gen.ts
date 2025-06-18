@@ -3441,8 +3441,7 @@ export class ProvidersService {
   /**
    * Check Provider
    * @param data The data for the request.
-   * @param data.providerType
-   * @param data.xApiKey
+   * @param data.requestBody
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -3453,9 +3452,8 @@ export class ProvidersService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/providers/check',
-      query: {
-        provider_type: data.providerType,
-      },
+      body: data.requestBody,
+      mediaType: 'application/json',
       errors: {
         422: 'Validation Error',
       },

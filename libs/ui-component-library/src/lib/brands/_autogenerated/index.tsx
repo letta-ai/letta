@@ -1,5 +1,6 @@
 export * from './anthropic';
 export * from './azure';
+export * from './bedrock';
 export * from './claude';
 export * from './composio';
 export * from './discord';
@@ -23,6 +24,7 @@ export * from './zapier';
 export type BrandKeys =
   | 'anthropic'
   | 'azure'
+  | 'bedrock'
   | 'claude'
   | 'composio'
   | 'discord'

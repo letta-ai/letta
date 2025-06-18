@@ -2811,13 +2811,21 @@ export type Provider = {
    */
   provider_category: ProviderCategory;
   /**
-   * API key used for requests to the provider.
+   * API key or secret key used for requests to the provider.
    */
   api_key?: string | null;
   /**
    * Base URL for the provider.
    */
   base_url?: string | null;
+  /**
+   * Access key used for requests to the provider.
+   */
+  access_key?: string | null;
+  /**
+   * Region used for requests to the provider.
+   */
+  region?: string | null;
   /**
    * The organization id of the user
    */
@@ -2830,6 +2838,25 @@ export type Provider = {
 
 export type ProviderCategory = 'base' | 'byok';
 
+export type ProviderCheck = {
+  /**
+   * The type of the provider.
+   */
+  provider_type: ProviderType;
+  /**
+   * API key or secret key used for requests to the provider.
+   */
+  api_key: string;
+  /**
+   * Access key used for requests to the provider.
+   */
+  access_key?: string | null;
+  /**
+   * Region used for requests to the provider.
+   */
+  region?: string | null;
+};
+
 export type ProviderCreate = {
   /**
    * The name of the provider.
@@ -2840,9 +2867,17 @@ export type ProviderCreate = {
    */
   provider_type: ProviderType;
   /**
-   * API key used for requests to the provider.
+   * API key or secret key used for requests to the provider.
    */
   api_key: string;
+  /**
+   * Access key used for requests to the provider.
+   */
+  access_key?: string | null;
+  /**
+   * Region used for requests to the provider.
+   */
+  region?: string | null;
 };
 
 /**
@@ -2901,7 +2936,6 @@ export type ProviderTrace = {
 
 export type ProviderType =
   | 'anthropic'
-  | 'bedrock'
   | 'google_ai'
   | 'google_vertex'
   | 'openai'
@@ -2914,13 +2948,22 @@ export type ProviderType =
   | 'groq'
   | 'together'
   | 'azure'
-  | 'vllm';
+  | 'vllm'
+  | 'bedrock';
 
 export type ProviderUpdate = {
   /**
-   * API key used for requests to the provider.
+   * API key or secret key used for requests to the provider.
    */
   api_key: string;
+  /**
+   * Access key used for requests to the provider.
+   */
+  access_key?: string | null;
+  /**
+   * Region used for requests to the provider.
+   */
+  region?: string | null;
 };
 
 export type ReasoningContent = {
@@ -5499,8 +5542,7 @@ export type DeleteProviderData = {
 export type DeleteProviderResponse = unknown;
 
 export type CheckProviderData = {
-  providerType: ProviderType;
-  xApiKey: string;
+  requestBody: ProviderCheck;
 };
 
 export type CheckProviderResponse = unknown;

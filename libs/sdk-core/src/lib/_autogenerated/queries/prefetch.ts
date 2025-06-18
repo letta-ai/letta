@@ -30,6 +30,7 @@ import {
   ManagerType,
   MessageRole,
   ProviderCategory,
+  ProviderCheck,
   ProviderType,
   SandboxType,
 } from '../requests/types.gen';
@@ -1578,27 +1579,21 @@ export const prefetchUseProvidersServiceListProviders = (
 /**
  * Check Provider
  * @param data The data for the request.
- * @param data.providerType
- * @param data.xApiKey
+ * @param data.requestBody
  * @returns unknown Successful Response
  * @throws ApiError
  */
 export const prefetchUseProvidersServiceCheckProvider = (
   queryClient: QueryClient,
   {
-    providerType,
-    xApiKey,
+    requestBody,
   }: {
-    providerType: ProviderType;
-    xApiKey: string;
+    requestBody: ProviderCheck;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseProvidersServiceCheckProviderKeyFn({
-      providerType,
-      xApiKey,
-    }),
-    queryFn: () => ProvidersService.checkProvider({ providerType, xApiKey }),
+    queryKey: Common.UseProvidersServiceCheckProviderKeyFn({ requestBody }),
+    queryFn: () => ProvidersService.checkProvider({ requestBody }),
   });
 /**
  * List Runs

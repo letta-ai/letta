@@ -5810,25 +5810,16 @@
         "tags": ["providers"],
         "summary": "Check Provider",
         "operationId": "check_provider",
-        "parameters": [
-          {
-            "name": "provider_type",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/ProviderType"
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderCheck"
+              }
             }
           },
-          {
-            "name": "x-api-key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "X-Api-Key"
-            }
-          }
-        ],
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -15398,7 +15389,7 @@
               }
             ],
             "title": "Api Key",
-            "description": "API key used for requests to the provider."
+            "description": "API key or secret key used for requests to the provider."
           },
           "base_url": {
             "anyOf": [
@@ -15411,6 +15402,30 @@
             ],
             "title": "Base Url",
             "description": "Base URL for the provider."
+          },
+          "access_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access Key",
+            "description": "Access key used for requests to the provider."
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region",
+            "description": "Region used for requests to the provider."
           },
           "updated_at": {
             "anyOf": [
@@ -15436,6 +15451,46 @@
         "enum": ["base", "byok"],
         "title": "ProviderCategory"
       },
+      "ProviderCheck": {
+        "properties": {
+          "provider_type": {
+            "$ref": "#/components/schemas/ProviderType",
+            "description": "The type of the provider."
+          },
+          "api_key": {
+            "type": "string",
+            "title": "Api Key",
+            "description": "API key or secret key used for requests to the provider."
+          },
+          "access_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access Key",
+            "description": "Access key used for requests to the provider."
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region",
+            "description": "Region used for requests to the provider."
+          }
+        },
+        "type": "object",
+        "required": ["provider_type", "api_key"],
+        "title": "ProviderCheck"
+      },
       "ProviderCreate": {
         "properties": {
           "name": {
@@ -15450,7 +15505,31 @@
           "api_key": {
             "type": "string",
             "title": "Api Key",
-            "description": "API key used for requests to the provider."
+            "description": "API key or secret key used for requests to the provider."
+          },
+          "access_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access Key",
+            "description": "Access key used for requests to the provider."
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region",
+            "description": "Region used for requests to the provider."
           }
         },
         "additionalProperties": false,
@@ -15545,7 +15624,6 @@
         "type": "string",
         "enum": [
           "anthropic",
-          "bedrock",
           "google_ai",
           "google_vertex",
           "openai",
@@ -15568,7 +15646,31 @@
           "api_key": {
             "type": "string",
             "title": "Api Key",
-            "description": "API key used for requests to the provider."
+            "description": "API key or secret key used for requests to the provider."
+          },
+          "access_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access Key",
+            "description": "Access key used for requests to the provider."
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region",
+            "description": "Region used for requests to the provider."
           }
         },
         "additionalProperties": false,

@@ -297,6 +297,17 @@
     },
     "apiKey": {
       "label": "API密钥"
+    },
+    "bedrock": {
+      "secretKey": "密钥",
+      "accessKey": {
+        "label": "访问密钥",
+        "placeholder": "例如：'AKIAIOSFODNN7EXAMPLE'"
+      }
+    },
+    "region": {
+      "label": "区域",
+      "placeholder": "例如：'us-east-1'"
     }
   },
   "pages/models/DeleteProviderModal": {

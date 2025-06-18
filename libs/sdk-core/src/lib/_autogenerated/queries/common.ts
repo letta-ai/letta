@@ -32,6 +32,7 @@ import {
   ManagerType,
   MessageRole,
   ProviderCategory,
+  ProviderCheck,
   ProviderType,
   SandboxType,
 } from '../requests/types.gen';
@@ -1201,17 +1202,12 @@ export const useProvidersServiceCheckProviderKey =
   'ProvidersServiceCheckProvider';
 export const UseProvidersServiceCheckProviderKeyFn = (
   {
-    providerType,
-    xApiKey,
+    requestBody,
   }: {
-    providerType: ProviderType;
-    xApiKey: string;
+    requestBody: ProviderCheck;
   },
   queryKey?: Array<unknown>,
-) => [
-  useProvidersServiceCheckProviderKey,
-  ...(queryKey ?? [{ providerType, xApiKey }]),
-];
+) => [useProvidersServiceCheckProviderKey, ...(queryKey ?? [{ requestBody }])];
 export type RunsServiceListRunsDefaultResponse = Awaited<
   ReturnType<typeof RunsService.listRuns>
 >;

@@ -57,6 +57,7 @@ import {
   OrganizationUpdate,
   PassageUpdate,
   ProviderCategory,
+  ProviderCheck,
   ProviderCreate,
   ProviderType,
   ProviderUpdate,
@@ -1957,8 +1958,7 @@ export const useProvidersServiceListProviders = <
 /**
  * Check Provider
  * @param data The data for the request.
- * @param data.providerType
- * @param data.xApiKey
+ * @param data.requestBody
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -1968,22 +1968,19 @@ export const useProvidersServiceCheckProvider = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    providerType,
-    xApiKey,
+    requestBody,
   }: {
-    providerType: ProviderType;
-    xApiKey: string;
+    requestBody: ProviderCheck;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseProvidersServiceCheckProviderKeyFn(
-      { providerType, xApiKey },
+      { requestBody },
       queryKey,
     ),
-    queryFn: () =>
-      ProvidersService.checkProvider({ providerType, xApiKey }) as TData,
+    queryFn: () => ProvidersService.checkProvider({ requestBody }) as TData,
     ...options,
   });
 /**

@@ -316,6 +316,17 @@
     },
     "apiKey": {
       "label": "Custom API key"
+    },
+    "bedrock": {
+      "secretKey": "Secret key",
+      "accessKey": {
+        "label": "Access key",
+        "placeholder": "Example: 'AKIAIOSFODNN7EXAMPLE'"
+      }
+    },
+    "region": {
+      "label": "Region",
+      "placeholder": "Example: 'us-east-1'"
     }
   },
   "pages/models/DeleteProviderModal": {

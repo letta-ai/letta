@@ -3,7 +3,6 @@ from enum import Enum
 
 class ProviderType(str, Enum):
     anthropic = "anthropic"
-    anthropic_bedrock = "bedrock"
     google_ai = "google_ai"
     google_vertex = "google_vertex"
     openai = "openai"
