@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from anthropic import AnthropicBedrock
 
@@ -14,7 +14,11 @@ def has_valid_aws_credentials() -> bool:
     return valid_aws_credentials
 
 
-def get_bedrock_client():
+def get_bedrock_client(
+    access_key: Optional[str] = None,
+    secret_key: Optional[str] = None,
+    region: Optional[str] = None,
+):
     """
     Get a Bedrock client
     """
@@ -22,9 +26,9 @@ def get_bedrock_client():
 
     sts_client = boto3.client(
         "sts",
-        aws_access_key_id=model_settings.aws_access_key,
-        aws_secret_access_key=model_settings.aws_secret_access_key,
-        region_name=model_settings.aws_region,
+        aws_access_key_id=access_key or model_settings.aws_access_key,
+        aws_secret_access_key=secret_key or model_settings.aws_secret_access_key,
+        region_name=region or model_settings.aws_region,
     )
     credentials = sts_client.get_session_token()["Credentials"]
 
@@ -32,7 +36,7 @@ def get_bedrock_client():
         aws_access_key=credentials["AccessKeyId"],
         aws_secret_key=credentials["SecretAccessKey"],
         aws_session_token=credentials["SessionToken"],
-        aws_region=model_settings.aws_region,
+        aws_region=region or model_settings.aws_region,
     )
     return bedrock
 
