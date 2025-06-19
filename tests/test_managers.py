@@ -50,7 +50,7 @@ from letta.orm.enums import ToolType
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.orm.file import FileContent as FileContentModel
 from letta.orm.file import FileMetadata as FileMetadataModel
-from letta.schemas.agent import AgentStepState, CreateAgent, UpdateAgent
+from letta.schemas.agent import CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -64,7 +64,7 @@ from letta.schemas.job import Job as PydanticJob
 from letta.schemas.job import JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import UpdateAssistantMessage, UpdateReasoningMessage, UpdateSystemMessage, UpdateUserMessage
 from letta.schemas.letta_message_content import TextContent
-from letta.schemas.llm_batch_job import LLMBatchItem
+from letta.schemas.llm_batch_job import AgentStepState, LLMBatchItem
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate

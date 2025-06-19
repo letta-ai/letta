@@ -5,7 +5,6 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING, DEFAULT_EMBEDDING_CHUNK_SIZE
-from letta.helpers import ToolRulesSolver
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.environment_variables import AgentEnvironmentVariable
@@ -299,11 +298,6 @@ class AgentStepResponse(BaseModel):
         ..., description="Whether the agent step ended because the in-context memory is near its limit."
     )
     usage: UsageStatistics = Field(..., description="Usage statistics of the LLM call during the agent's step.")
-
-
-class AgentStepState(BaseModel):
-    step_number: int = Field(..., description="The current step number in the agent loop")
-    tool_rules_solver: ToolRulesSolver = Field(..., description="The current state of the ToolRulesSolver")
 
 
 def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
