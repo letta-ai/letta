@@ -248,6 +248,11 @@ class NoopAsyncRedisClient(AsyncRedisClient):
     def __init__(self):
         self._client = None
         self._lock = asyncio.Lock()
+        self.pool = None
+        self._data = {}
+
+    async def get_client(self):
+        return None
 
     async def set(
         self,
@@ -264,28 +269,67 @@ class NoopAsyncRedisClient(AsyncRedisClient):
         return default
 
     async def exists(self, *keys: str) -> int:
-        return 0
+        count = 0
+        for key in keys:
+            if key in self._data:
+                count += 1
+        return count
 
     async def sadd(self, key: str, *members: Union[str, int, float]) -> int:
-        return 0
+        if key not in self._data:
+            self._data[key] = set()
+        for member in members:
+            self._data[key].add(str(member))
+        return len(members)
 
     async def smismember(self, key: str, values: list[Any] | Any) -> list[int] | int:
-        return [0] * len(values) if isinstance(values, list) else 0
+        if key not in self._data:
+            return [0] * len(values) if isinstance(values, list) else 0
+        
+        if isinstance(values, list):
+            return [1 if str(val) in self._data[key] else 0 for val in values]
+        else:
+            return 1 if str(values) in self._data[key] else 0
 
     async def delete(self, *keys: str) -> int:
         return 0
 
     async def check_inclusion_and_exclusion(self, member: str, group: str) -> bool:
-        return False
+        exclude_key = self._get_group_exclusion_key(group)
+        include_key = self._get_group_inclusion_key(group)
+        
+        # 1. if the member IS excluded from the group
+        if await self.exists(exclude_key) and await self.scard(exclude_key) > 1:
+            return bool(await self.smismember(exclude_key, member))
+        
+        # 2. if the group HAS an include set, is the member in that set?  
+        if await self.exists(include_key) and await self.scard(include_key) > 1:
+            return bool(await self.smismember(include_key, member))
+        
+        # 3. if the group does NOT HAVE an include set and member NOT excluded
+        return True
 
     async def create_inclusion_exclusion_keys(self, group: str) -> None:
-        return None
+        include_key = self._get_group_inclusion_key(group)
+        exclude_key = self._get_group_exclusion_key(group)
+        await self.sadd(include_key, REDIS_SET_DEFAULT_VAL)
+        await self.sadd(exclude_key, REDIS_SET_DEFAULT_VAL)
 
     async def scard(self, key: str) -> int:
-        return 0
+        return len(self._data.get(key, set()))
 
-    # async def smembers(self, key: str) -> Set[str]:
-    #     return set()
+    async def smembers(self, key: str) -> Set[str]:
+        return self._data.get(key, set()).copy()
+
+    async def srem(self, key: str, *members: Union[str, int, float]) -> int:
+        if key not in self._data:
+            return 0
+        removed = 0
+        for member in members:
+            if str(member) in self._data[key]:
+                self._data[key].remove(str(member))
+                removed += 1
+        return removed
 
 
 async def get_redis_client() -> AsyncRedisClient:
