@@ -1184,6 +1184,22 @@ export const AgentState = z.object({
       z.undefined(),
     ])
     .optional(),
+  last_run_completion: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  last_run_duration_ms: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type AuthSchemeField = z.infer<typeof AuthSchemeField>;
@@ -5613,6 +5629,12 @@ export const UpdateAgent = z.object({
       ),
     ])
     .optional(),
+  last_run_completion: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  last_run_duration_ms: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
 });
 
 export type UpdateAssistantMessage = z.infer<typeof UpdateAssistantMessage>;
@@ -6411,6 +6433,9 @@ export const get_List_agents = {
         ])
         .optional(),
       ascending: z.boolean().optional(),
+      sort_by: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     header: z.object({
       user_id: z

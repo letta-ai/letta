@@ -1725,6 +1725,25 @@
               "title": "Ascending"
             },
             "description": "Whether to sort agents oldest to newest (True) or newest to oldest (False, default)"
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Field to sort by. Options: 'created_at' (default), 'last_run_completion'",
+              "default": "created_at",
+              "title": "Sort By"
+            },
+            "description": "Field to sort by. Options: 'created_at' (default), 'last_run_completion'"
           }
         ],
         "responses": {
@@ -7164,6 +7183,13 @@
                   "after": {
                     "type": "string",
                     "nullable": true
+                  },
+                  "sortBy": {
+                    "type": "string",
+                    "enum": ["created_at", "last_run_completion"]
+                  },
+                  "ascending": {
+                    "type": "boolean"
                   }
                 }
               }
@@ -8739,6 +8765,31 @@
               }
             ],
             "description": "The multi-agent group that this agent manages"
+          },
+          "last_run_completion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run Completion",
+            "description": "The timestamp when the agent last completed a run."
+          },
+          "last_run_duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run Duration Ms",
+            "description": "The duration in milliseconds of the agent's last run."
           }
         },
         "additionalProperties": false,
@@ -18658,6 +18709,31 @@
             ],
             "title": "Response Format",
             "description": "The response format for the agent."
+          },
+          "last_run_completion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run Completion",
+            "description": "The timestamp when the agent last completed a run."
+          },
+          "last_run_duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run Duration Ms",
+            "description": "The duration in milliseconds of the agent's last run."
           }
         },
         "type": "object",

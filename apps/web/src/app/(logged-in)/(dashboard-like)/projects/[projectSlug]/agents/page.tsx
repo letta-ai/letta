@@ -621,6 +621,7 @@ function DeployedAgentsPage() {
         body: {
           ...compiledQuery,
           after: pageParam?.after,
+          sortBy: 'last_run_completion',
         },
       });
 
@@ -765,6 +766,39 @@ function DeployedAgentsPage() {
               />
             </HStack>
           );
+        },
+      },
+      {
+        id: 'lastRunCompletion',
+        header: t('table.columns.lastRunCompletion'),
+        cell: ({ row }) => {
+          if (
+            !row.original?.last_run_completion ||
+            Array.isArray(row.original?.last_run_completion)
+          ) {
+            return '-';
+          }
+
+          return formatDateAndTime(row.original.last_run_completion);
+        },
+      },
+      {
+        id: 'lastRunDuration',
+        header: t('table.columns.lastRunDuration'),
+        cell: ({ row }) => {
+          if (
+            !row.original?.last_run_duration_ms ||
+            Array.isArray(row.original?.last_run_duration_ms)
+          ) {
+            return '-';
+          }
+
+          const durationSec = row.original.last_run_duration_ms / 1000;
+          if (durationSec < 60) {
+            return `${durationSec.toFixed(1)}s`;
+          }
+          const durationMin = durationSec / 60;
+          return `${durationMin.toFixed(1)}m`;
         },
       },
       {

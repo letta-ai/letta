@@ -331,6 +331,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
     name,
     projectId,
     queryText,
+    sortBy,
     tags,
     templateId,
     userId,
@@ -347,6 +348,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
     name?: string;
     projectId?: string;
     queryText?: string;
+    sortBy?: string;
     tags?: string[];
     templateId?: string;
     userId?: string;
@@ -368,6 +370,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
       name,
       projectId,
       queryText,
+      sortBy,
       tags,
       templateId,
       userId,

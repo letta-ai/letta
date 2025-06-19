@@ -199,6 +199,8 @@ export const SearchDeployedAgentsSchema = z.object({
   combinator: z.enum(['AND']).optional(),
   limit: z.number().optional(),
   after: z.string().optional().nullable(),
+  sortBy: z.enum(['created_at', 'last_run_completion']).optional(),
+  ascending: z.boolean().optional(),
 });
 
 const ExtendedAgentStateSchema = AgentState.extend({

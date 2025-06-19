@@ -1076,6 +1076,7 @@ export class AgentsService {
    * @param data.identifierKeys Search agents by identifier keys
    * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
    * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
+   * @param data.sortBy Field to sort by. Options: 'created_at' (default), 'last_run_completion'
    * @param data.userId
    * @returns AgentState Successful Response
    * @throws ApiError
@@ -1102,6 +1103,7 @@ export class AgentsService {
         identifier_keys: data.identifierKeys,
         include_relationships: data.includeRelationships,
         ascending: data.ascending,
+        sort_by: data.sortBy,
       },
       errors: {
         422: 'Validation Error',

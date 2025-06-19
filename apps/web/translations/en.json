@@ -1947,7 +1947,9 @@
         "id": "ID",
         "name": "Name",
         "actions": "Actions",
-        "lastUpdatedAt": "Last Updated At"
+        "lastUpdatedAt": "Last Updated At",
+        "lastRunCompletion": "Last Run Completion",
+        "lastRunDuration": "Last Run Duration"
       },
       "openInADE": "Open in ADE",
       "preview": "Preview",

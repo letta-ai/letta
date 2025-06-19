@@ -257,6 +257,14 @@ export type AgentState = {
    * The multi-agent group that this agent manages
    */
   multi_agent_group?: Group | null;
+  /**
+   * The timestamp when the agent last completed a run.
+   */
+  last_run_completion?: string | null;
+  /**
+   * The duration in milliseconds of the agent's last run.
+   */
+  last_run_duration_ms?: number | null;
 };
 
 /**
@@ -4142,6 +4150,14 @@ export type UpdateAgent = {
     | JsonSchemaResponseFormat
     | JsonObjectResponseFormat
     | null;
+  /**
+   * The timestamp when the agent last completed a run.
+   */
+  last_run_completion?: string | null;
+  /**
+   * The duration in milliseconds of the agent's last run.
+   */
+  last_run_duration_ms?: number | null;
 };
 
 export type UpdateAssistantMessage = {
@@ -4713,6 +4729,10 @@ export type ListAgentsData = {
    * Search agents by name
    */
   queryText?: string | null;
+  /**
+   * Field to sort by. Options: 'created_at' (default), 'last_run_completion'
+   */
+  sortBy?: string | null;
   /**
    * List of tags to filter agents by
    */

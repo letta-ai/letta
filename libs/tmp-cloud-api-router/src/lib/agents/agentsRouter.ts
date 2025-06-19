@@ -390,7 +390,14 @@ async function searchDeployedAgents(
   req: SearchDeployedAgentsRequest,
   context: SDKContext,
 ): Promise<SearchDeployedAgentsResponse> {
-  const { search = [], project_id, limit = 5, after } = req.body;
+  const {
+    search = [],
+    project_id,
+    limit = 5,
+    after,
+    sortBy,
+    ascending,
+  } = req.body;
 
   if (!project_id) {
     return {
@@ -443,6 +450,8 @@ async function searchDeployedAgents(
       projectId: project_id,
       after,
       includeRelationships: ['tags'],
+      ...(sortBy && { sortBy }),
+      ...(ascending !== undefined && { ascending }),
     },
     {
       user_id: getContextDataHack(req, context).lettaAgentsUserId,

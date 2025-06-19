@@ -769,6 +769,31 @@ export const $AgentState = {
       ],
       description: 'The multi-agent group that this agent manages',
     },
+    last_run_completion: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Run Completion',
+      description: 'The timestamp when the agent last completed a run.',
+    },
+    last_run_duration_ms: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Run Duration Ms',
+      description: "The duration in milliseconds of the agent's last run.",
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -11375,6 +11400,31 @@ export const $UpdateAgent = {
       ],
       title: 'Response Format',
       description: 'The response format for the agent.',
+    },
+    last_run_completion: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Run Completion',
+      description: 'The timestamp when the agent last completed a run.',
+    },
+    last_run_duration_ms: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Run Duration Ms',
+      description: "The duration in milliseconds of the agent's last run.",
     },
   },
   type: 'object',

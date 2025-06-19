@@ -1,8 +1,9 @@
 import asyncio
 import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional, Set
 
-from sqlalchemy import JSON, Boolean, Index, String
+from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -78,6 +79,14 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
     )
     enable_sleeptime: Mapped[Optional[bool]] = mapped_column(
         Boolean, doc="If set to True, memory management will move to a background agent thread."
+    )
+
+    # Run metrics
+    last_run_completion: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, doc="The timestamp when the agent last completed a run."
+    )
+    last_run_duration_ms: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True, doc="The duration in milliseconds of the agent's last run."
     )
 
     # relationships
@@ -176,6 +185,8 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
             "updated_at": self.updated_at,
             "enable_sleeptime": self.enable_sleeptime,
             "response_format": self.response_format,
+            "last_run_completion": self.last_run_completion,
+            "last_run_duration_ms": self.last_run_duration_ms,
             # optional field defaults
             "tags": [],
             "tools": [],
@@ -252,6 +263,8 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
             "updated_at": self.updated_at,
             "enable_sleeptime": self.enable_sleeptime,
             "response_format": self.response_format,
+            "last_run_completion": self.last_run_completion,
+            "last_run_duration_ms": self.last_run_duration_ms,
         }
         optional_fields = {
             "tags": [],

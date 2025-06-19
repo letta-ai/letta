@@ -449,41 +449,69 @@ def _cursor_filter(created_at_col, id_col, ref_created_at, ref_id, forward: bool
         )
 
 
-def _apply_pagination(query, before: Optional[str], after: Optional[str], session, ascending: bool = True) -> any:
+def _apply_pagination(
+    query, before: Optional[str], after: Optional[str], session, ascending: bool = True, sort_by: str = "created_at"
+) -> any:
+    # Determine the sort column
+    if sort_by == "last_run_completion":
+        sort_column = AgentModel.last_run_completion
+    else:
+        sort_column = AgentModel.created_at
+
     if after:
-        result = session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == after)).first()
+        if sort_by == "last_run_completion":
+            result = session.execute(select(AgentModel.last_run_completion, AgentModel.id).where(AgentModel.id == after)).first()
+        else:
+            result = session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == after)).first()
         if result:
-            after_created_at, after_id = result
-            query = query.where(_cursor_filter(AgentModel.created_at, AgentModel.id, after_created_at, after_id, forward=ascending))
+            after_sort_value, after_id = result
+            query = query.where(_cursor_filter(sort_column, AgentModel.id, after_sort_value, after_id, forward=ascending))
 
     if before:
-        result = session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == before)).first()
+        if sort_by == "last_run_completion":
+            result = session.execute(select(AgentModel.last_run_completion, AgentModel.id).where(AgentModel.id == before)).first()
+        else:
+            result = session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == before)).first()
         if result:
-            before_created_at, before_id = result
-            query = query.where(_cursor_filter(AgentModel.created_at, AgentModel.id, before_created_at, before_id, forward=not ascending))
+            before_sort_value, before_id = result
+            query = query.where(_cursor_filter(sort_column, AgentModel.id, before_sort_value, before_id, forward=not ascending))
 
     # Apply ordering
     order_fn = asc if ascending else desc
-    query = query.order_by(order_fn(AgentModel.created_at), order_fn(AgentModel.id))
+    query = query.order_by(order_fn(sort_column), order_fn(AgentModel.id))
     return query
 
 
-async def _apply_pagination_async(query, before: Optional[str], after: Optional[str], session, ascending: bool = True) -> any:
+async def _apply_pagination_async(
+    query, before: Optional[str], after: Optional[str], session, ascending: bool = True, sort_by: str = "created_at"
+) -> any:
+    # Determine the sort column
+    if sort_by == "last_run_completion":
+        sort_column = AgentModel.last_run_completion
+    else:
+        sort_column = AgentModel.created_at
+
     if after:
-        result = (await session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == after))).first()
+        if sort_by == "last_run_completion":
+            result = (await session.execute(select(AgentModel.last_run_completion, AgentModel.id).where(AgentModel.id == after))).first()
+        else:
+            result = (await session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == after))).first()
         if result:
-            after_created_at, after_id = result
-            query = query.where(_cursor_filter(AgentModel.created_at, AgentModel.id, after_created_at, after_id, forward=ascending))
+            after_sort_value, after_id = result
+            query = query.where(_cursor_filter(sort_column, AgentModel.id, after_sort_value, after_id, forward=ascending))
 
     if before:
-        result = (await session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == before))).first()
+        if sort_by == "last_run_completion":
+            result = (await session.execute(select(AgentModel.last_run_completion, AgentModel.id).where(AgentModel.id == before))).first()
+        else:
+            result = (await session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == before))).first()
         if result:
-            before_created_at, before_id = result
-            query = query.where(_cursor_filter(AgentModel.created_at, AgentModel.id, before_created_at, before_id, forward=not ascending))
+            before_sort_value, before_id = result
+            query = query.where(_cursor_filter(sort_column, AgentModel.id, before_sort_value, before_id, forward=not ascending))
 
     # Apply ordering
     order_fn = asc if ascending else desc
-    query = query.order_by(order_fn(AgentModel.created_at), order_fn(AgentModel.id))
+    query = query.order_by(order_fn(sort_column), order_fn(AgentModel.id))
     return query
 
 
