@@ -16,7 +16,7 @@ type GetActiveAgentsPerDayResponse = ServerInferResponses<
 export async function getActiveAgentsPerDay(
   request: GetActiveAgentsPerDayRequest,
 ): Promise<GetActiveAgentsPerDayResponse> {
-  const { projectId, startDate, endDate } = request.query;
+  const { projectId, startDate, endDate, baseTemplateId } = request.query;
 
   const client = getClickhouseClient('default');
 
@@ -38,10 +38,12 @@ export async function getActiveAgentsPerDay(
       WHERE messaged_at >= {startDate: DateTime}
         AND messaged_at <= {endDate: DateTime}
         AND project_id = {projectId: String}
+        ${baseTemplateId ? ' AND base_template_id = {baseTemplateId: String} ' : ''}
       GROUP BY date
       ORDER BY date;
     `,
     query_params: {
+      baseTemplateId: baseTemplateId?.value,
       startDate: Math.round(new Date(startDate).getTime() / 1000),
       endDate: Math.round(new Date(endDate).getTime() / 1000),
       projectId,

@@ -17,7 +17,7 @@ interface LLMLatencyChartProps {
 }
 
 export function LLMLatencyChart(props: LLMLatencyChartProps) {
-  const { startDate, endDate } = useObservabilityContext();
+  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
   const { analysisLink } = props;
   const { id: projectId } = useCurrentProject();
 
@@ -28,9 +28,11 @@ export function LLMLatencyChart(props: LLMLatencyChartProps) {
       projectId,
       startDate,
       endDate,
+      baseTemplateId: baseTemplateId?.value,
     }),
     queryData: {
       query: {
+        baseTemplateId: baseTemplateId?.value,
         projectId,
         startDate,
         endDate,

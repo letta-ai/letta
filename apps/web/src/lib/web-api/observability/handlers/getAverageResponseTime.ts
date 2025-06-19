@@ -5,6 +5,7 @@ import {
   getClickhouseData,
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
+import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 
 const DEFAULT_SPAN_SEARCH = `(SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
                    SpanName = 'POST /v1/agents/{agent_id}/messages' OR
@@ -21,7 +22,7 @@ type GetAverageResponseTimeResponse = ServerInferResponses<
 export async function getAverageResponseTime(
   request: GetAverageResponseTimeRequest,
 ): Promise<GetAverageResponseTimeResponse> {
-  const { projectId, startDate, endDate } = request.query;
+  const { projectId, startDate, endDate, baseTemplateId } = request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
   const client = getClickhouseClient();
@@ -51,11 +52,13 @@ export async function getAverageResponseTime(
           AND SpanAttributes['organization.id'] = {organizationId: String}
           AND Timestamp >= {startDate: DateTime}
           AND Timestamp <= {endDate: DateTime}
-      )
+          ${attachFilterByBaseTemplateIdToOtels(request.query)}
+        )
       GROUP BY toDate(Timestamp)
       ORDER BY date;
     `,
     query_params: {
+      baseTemplateId: baseTemplateId?.value,
       startDate: Math.round(new Date(startDate).getTime() / 1000),
       endDate: Math.round(new Date(endDate).getTime() / 1000),
       projectId,

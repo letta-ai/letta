@@ -5,6 +5,7 @@ import {
   getClickhouseData,
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
+import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 
 const DEFAULT_SPAN_SEARCH = `(SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
                    SpanName = 'POST /v1/agents/{agent_id}/messages' OR
@@ -27,6 +28,7 @@ export async function getToolErrorMessages(
     endDate,
     functionName,
     limit = 10,
+    baseTemplateId,
     offset = 0,
   } = request.query;
 
@@ -70,6 +72,7 @@ export async function getToolErrorMessages(
           AND ParentSpanId = ''
           AND SpanAttributes['project.id'] = {projectId: String}
           AND SpanAttributes['organization.id'] = {organizationId: String}
+          ${attachFilterByBaseTemplateIdToOtels(request.query)}
           AND Timestamp >= {startDate: DateTime}
           AND Timestamp <= {endDate: DateTime}
         )
@@ -79,6 +82,7 @@ export async function getToolErrorMessages(
       endDate: Math.round(new Date(endDate).getTime() / 1000),
       organizationId: user.activeOrganizationId,
       projectId,
+      baseTemplateId,
       ...(functionName && { functionName }),
     },
     format: 'JSONEachRow',

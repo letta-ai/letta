@@ -79,7 +79,7 @@ export function transformToParentSpanResponse(
     requestStatus,
     executionStatus,
     statusMessage: parsedRecord.parent_status_message || '',
-    durationNs: parseInt(parsedRecord.parent_duration, 10) || 0,
+    D: parseInt(parsedRecord.parent_duration, 10) || 0,
     steps,
     agentId,
     inputPayload: parsedRecord.parent_attributes['http.request.body.messages'],

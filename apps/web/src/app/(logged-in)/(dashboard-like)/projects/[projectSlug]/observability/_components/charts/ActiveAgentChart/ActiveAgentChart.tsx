@@ -14,7 +14,7 @@ import { useObservabilityContext } from '../../hooks/useObservabilityContext/use
 
 export function ActiveAgentChart() {
   const { id: projectId } = useCurrentProject();
-  const { startDate, endDate } = useObservabilityContext();
+  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
 
   const t = useTranslations('pages/projects/observability/ActiveAgentChart');
 
@@ -23,12 +23,14 @@ export function ActiveAgentChart() {
       projectId,
       startDate,
       endDate,
+      baseTemplateId: baseTemplateId?.value,
     }),
     queryData: {
       query: {
         projectId,
         startDate,
         endDate,
+        baseTemplateId: baseTemplateId?.value,
       },
     },
   });

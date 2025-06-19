@@ -6,6 +6,7 @@ import {
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import type { MessageCreate } from '@letta-cloud/sdk-core';
+import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 
 type GetTimeToFirstTokenMessagesRequest = ServerInferRequest<
   typeof contracts.observability.getTimeToFirstTokenMessages
@@ -24,6 +25,7 @@ export async function getTimeToFirstTokenMessages(
     endDate,
     limit = 10,
     offset = 0,
+    baseTemplateId,
   } = request.query;
 
   const client = getClickhouseClient();
@@ -50,10 +52,12 @@ export async function getTimeToFirstTokenMessages(
               AND SpanAttributes['organization.id'] = {organizationId: String}
               AND Timestamp >= {startDate: DateTime}
               AND Timestamp <= {endDate: DateTime}
+              ${attachFilterByBaseTemplateIdToOtels(request.query)}
               LIMIT {limit: Int64}
             OFFSET {offset: Int64}`,
     query_params: {
       projectId,
+      baseTemplateId,
       startDate: Math.round(new Date(startDate).getTime() / 1000),
       endDate: Math.round(new Date(endDate).getTime() / 1000),
       organizationId: user.activeOrganizationId,

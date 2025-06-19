@@ -5,6 +5,7 @@ import {
   getClickhouseData,
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
+import { attachFilterByBaseTemplateIdToMetricsCounters } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToMetricsCounters/attachFilterByBaseTemplateIdToMetricsCounters';
 
 type GetToolErrorRateByNameRequest = ServerInferRequest<
   typeof contracts.observability.getToolErrorRateByName
@@ -17,7 +18,7 @@ type GetToolErrorRateByNameResponse = ServerInferResponses<
 export async function getToolErrorRateByName(
   request: GetToolErrorRateByNameRequest,
 ): Promise<GetToolErrorRateByNameResponse> {
-  const { projectId, startDate, endDate } = request.query;
+  const { projectId, startDate, endDate, baseTemplateId } = request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
   const client = getClickhouseClient();
@@ -50,10 +51,12 @@ export async function getToolErrorRateByName(
         AND time_window >= toDateTime({startDate: UInt32})
         AND time_window <= toDateTime({endDate: UInt32})
         AND tool_name != ''
+        ${attachFilterByBaseTemplateIdToMetricsCounters(request.query)}
       GROUP BY toDate(time_window), tool_name
       ORDER BY date DESC, tool_name
     `,
     query_params: {
+      baseTemplateId,
       startDate: Math.round(new Date(startDate).getTime() / 1000),
       endDate: Math.round(new Date(endDate).getTime() / 1000),
       organizationId: user.activeOrganizationId,

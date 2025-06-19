@@ -23,7 +23,7 @@ interface ToolLatencyByToolNameChartProps {
 export function LLMLatencyByModelNameChart(
   props: ToolLatencyByToolNameChartProps,
 ) {
-  const { startDate, endDate } = useObservabilityContext();
+  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
   const { analysisLink, type = 'p50' } = props;
   const { id: projectId } = useCurrentProject();
 
@@ -35,12 +35,14 @@ export function LLMLatencyByModelNameChart(
     queryKey: webApiQueryKeys.observability.getLLMLatencyByModel({
       projectId,
       startDate,
+      baseTemplateId: baseTemplateId?.value,
       endDate,
     }),
     queryData: {
       query: {
         projectId,
         startDate,
+        baseTemplateId: baseTemplateId?.value,
         endDate,
       },
     },

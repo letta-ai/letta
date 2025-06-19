@@ -44,6 +44,7 @@ function applyRefine(schema: z.ZodObject<any>) {
 
 export const DefaultMetricsQuery = applyRefine(
   z.object({
+    baseTemplateId: z.string().optional(),
     projectId: z.string(),
     startDate: z.string(),
     endDate: z.string(),
@@ -52,6 +53,7 @@ export const DefaultMetricsQuery = applyRefine(
 
 const DefaultPagedMetricsQuery = applyRefine(
   z.object({
+    baseTemplateId: z.string().optional(),
     projectId: z.string(),
     startDate: z.string(),
     endDate: z.string(),

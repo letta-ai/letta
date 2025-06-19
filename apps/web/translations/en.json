@@ -1452,6 +1452,16 @@
       "createAgentTemplate": "New agent template"
     }
   },
+  "pages/projects/observability/useEmptyBaseTemplateValue": {
+    "none": "No template"
+  },
+  "pages/projects/observability/AdvancedObservabilityFilter": {
+    "TemplateSelectorDropdown": {
+      "title": "Template",
+      "description": "Filter by template",
+      "trigger": "Advanced Filter ({count})"
+    }
+  },
   "pages/projects/observability/ObservabilityOverview": {
     "title": "Overview",
     "totalMessages": {

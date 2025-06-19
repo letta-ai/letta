@@ -3,6 +3,7 @@ import { getClickhouseData } from '../getClickhouseData/getClickhouseData';
 import { getDate, getMonth, getYear } from 'date-fns';
 import { db, deployedAgentMetadata } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
+import { AgentsService } from '@letta-cloud/sdk-core';
 
 interface ClickhouseQueryResponse {
   data: Array<{
@@ -39,6 +40,11 @@ export async function trackDailyAgentUsage(agentId: string) {
       },
     });
 
+    const coreAgent = await AgentsService.retrieveAgent({
+      agentId,
+      includeRelationships: [],
+    });
+
     const response =
       await getClickhouseData<ClickhouseQueryResponse>(agentExistsResult);
 
@@ -59,6 +65,7 @@ export async function trackDailyAgentUsage(agentId: string) {
         {
           agent_id: agentId,
           project_id: agent.projectId,
+          base_template_id: coreAgent.base_template_id,
           is_first_usage: isFirstUsage,
           messaged_at: new Date(), // or your timestamp variable
           date: today, // assuming today is in YYYY-MM-DD format

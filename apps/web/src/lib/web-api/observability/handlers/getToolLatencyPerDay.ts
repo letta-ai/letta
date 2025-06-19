@@ -5,6 +5,7 @@ import {
   getClickhouseData,
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
+import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 
 type GetToolLatencyPerDayRequest = ServerInferRequest<
   typeof contracts.observability.getToolLatencyPerDay
@@ -17,7 +18,7 @@ type GetToolLatencyPerDayResponse = ServerInferResponses<
 export async function getToolLatencyPerDay(
   request: GetToolLatencyPerDayRequest,
 ): Promise<GetToolLatencyPerDayResponse> {
-  const { projectId, startDate, endDate } = request.query;
+  const { projectId, startDate, endDate, baseTemplateId } = request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
   const client = getClickhouseClient();
@@ -59,6 +60,7 @@ export async function getToolLatencyPerDay(
         AND SpanAttributes['project.id'] = {projectId: String}
         AND SpanAttributes['organization.id'] = {organizationId: String}
         AND ParentSpanId = ''
+        ${attachFilterByBaseTemplateIdToOtels(request.query)}
         AND Timestamp >= {startDate: DateTime}
         AND Timestamp <= {endDate: DateTime}
         )
@@ -72,6 +74,7 @@ export async function getToolLatencyPerDay(
       ORDER BY date
     `,
     query_params: {
+      baseTemplateId,
       startDate: Math.round(new Date(startDate).getTime() / 1000),
       endDate: Math.round(new Date(endDate).getTime() / 1000),
       organizationId: user.activeOrganizationId,

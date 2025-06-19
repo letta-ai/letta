@@ -19,7 +19,7 @@ interface ToolUsageFrequencyChartProps {
 }
 
 export function ToolUsageFrequencyChart(props: ToolUsageFrequencyChartProps) {
-  const { startDate, endDate } = useObservabilityContext();
+  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
   const { analysisLink } = props;
   const { id: projectId } = useCurrentProject();
 
@@ -30,11 +30,13 @@ export function ToolUsageFrequencyChart(props: ToolUsageFrequencyChartProps) {
   const { data } = webApi.observability.getToolUsageByFrequency.useQuery({
     queryKey: webApiQueryKeys.observability.getToolUsageByFrequency({
       projectId,
+      baseTemplateId: baseTemplateId?.value,
       startDate,
       endDate,
     }),
     queryData: {
       query: {
+        baseTemplateId: baseTemplateId?.value,
         projectId,
         startDate,
         endDate,

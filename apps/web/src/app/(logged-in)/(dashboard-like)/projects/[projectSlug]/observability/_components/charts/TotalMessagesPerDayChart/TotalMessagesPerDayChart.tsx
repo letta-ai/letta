@@ -15,7 +15,7 @@ import { useObservabilityContext } from '../../hooks/useObservabilityContext/use
 
 export function TotalMessagesPerDayChart() {
   const { id: projectId } = useCurrentProject();
-  const { startDate, endDate } = useObservabilityContext();
+  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
   const t = useTranslations(
     'pages/projects/observability/TotalMessagesPerDayChart',
   );
@@ -25,9 +25,11 @@ export function TotalMessagesPerDayChart() {
       projectId: projectId, // Replace with actual project slug
       startDate,
       endDate,
+      baseTemplateId: baseTemplateId?.value,
     }),
     queryData: {
       query: {
+        baseTemplateId: baseTemplateId?.value,
         projectId: projectId,
         startDate,
         endDate,

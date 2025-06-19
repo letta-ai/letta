@@ -11,6 +11,7 @@ import { useObservabilityContext } from '../hooks/useObservabilityContext/useObs
 import { useCallback, useMemo } from 'react';
 import { differenceInDays } from 'date-fns';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
+import AdvancedObservabilityFilter from './AdvancedObservabilityFilter/AdvancedObservabilityFilter';
 
 type DateTypes =
   | '7Days'
@@ -186,7 +187,10 @@ export function ObservabilityHeader(props: ObservabilityHeaderProps) {
               : []),
           ]}
         />
-        <DateRangeSelector />
+        <HStack>
+          <DateRangeSelector />
+          <AdvancedObservabilityFilter />
+        </HStack>
       </HStack>
     </HStack>
   );

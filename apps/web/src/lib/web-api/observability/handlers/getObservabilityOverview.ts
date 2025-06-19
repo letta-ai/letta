@@ -5,6 +5,8 @@ import {
   getClickhouseData,
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
+import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
+import { attachFilterByBaseTemplateIdToMetricsCounters } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToMetricsCounters/attachFilterByBaseTemplateIdToMetricsCounters';
 
 type GetObservabilityOverviewRequest = ServerInferRequest<
   typeof contracts.observability.getObservabilityOverview
@@ -21,7 +23,7 @@ const DEFAULT_SPAN_SEARCH = `(SpanName = 'POST /v1/agents/{agent_id}/messages/st
 export async function getObservabilityOverview(
   request: GetObservabilityOverviewRequest,
 ): Promise<GetObservabilityOverviewResponse> {
-  const { projectId, startDate, endDate } = request.query;
+  const { projectId, startDate, endDate, baseTemplateId } = request.query;
 
   const client = getClickhouseClient();
 
@@ -58,12 +60,14 @@ export async function getObservabilityOverview(
           AND SpanAttributes['organization.id'] = {organizationId: String}
           AND Timestamp >= {startDate: DateTime}
           AND Timestamp <= {endDate: DateTime}
+          ${attachFilterByBaseTemplateIdToOtels(request.query)}
           )`,
         query_params: {
           projectId,
           organizationId: user.activeOrganizationId,
           startDate: Math.round(new Date(startDate).getTime() / 1000),
           endDate: Math.round(new Date(endDate).getTime() / 1000),
+          baseTemplateId: baseTemplateId?.value,
         },
         format: 'JSONEachRow',
       })
@@ -97,9 +101,11 @@ export async function getObservabilityOverview(
             AND project_id = {projectId: String}
             AND time_window >= toDateTime({startDate: UInt32})
             AND time_window <= toDateTime({endDate: UInt32})
+            ${attachFilterByBaseTemplateIdToMetricsCounters(request.query)}
         `,
         query_params: {
           projectId,
+          baseTemplateId: baseTemplateId?.value,
           organizationId: user.activeOrganizationId,
           startDate: Math.round(new Date(startDate).getTime() / 1000),
           endDate: Math.round(new Date(endDate).getTime() / 1000),
@@ -128,9 +134,11 @@ export async function getObservabilityOverview(
             AND project_id = {projectId: String}
             AND time_window >= toDateTime({startDate: UInt32})
             AND time_window <= toDateTime({endDate: UInt32})
+            ${attachFilterByBaseTemplateIdToMetricsCounters(request.query)}
         `,
         query_params: {
           projectId,
+          baseTemplateId: baseTemplateId?.value,
           organizationId: user.activeOrganizationId,
           startDate: Math.round(new Date(startDate).getTime() / 1000),
           endDate: Math.round(new Date(endDate).getTime() / 1000),
@@ -157,9 +165,11 @@ export async function getObservabilityOverview(
             AND time_window <= toDateTime({endDate: UInt32})
             AND tool_name != ''
             AND tool_name != 'send_message'
+            ${attachFilterByBaseTemplateIdToMetricsCounters(request.query)}
         `,
         query_params: {
           projectId,
+          baseTemplateId: baseTemplateId?.value,
           organizationId: user.activeOrganizationId,
           startDate: Math.round(new Date(startDate).getTime() / 1000),
           endDate: Math.round(new Date(endDate).getTime() / 1000),

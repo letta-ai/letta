@@ -2,6 +2,8 @@
 import { createContext, useContext, useMemo, useState } from 'react';
 import { endOfDay, startOfDay, subDays } from 'date-fns';
 import { useSessionStorage } from '@mantine/hooks';
+import type { OptionType } from '@letta-cloud/ui-component-library';
+import { useEmptyBaseTemplateValue } from '../useEmptyBaseTemplateValue/useEmptyBaseTemplateValue';
 
 export type ChartType = 'activity' | 'all' | 'errors' | 'performance';
 
@@ -11,6 +13,8 @@ interface ObservabilityContextType {
   setDateRange: (startDate: Date, endDate: Date) => void;
   chartType: ChartType;
   setChartType: (type: ChartType) => void;
+  baseTemplateId: OptionType;
+  setBaseTemplateId: (templateId: OptionType) => void;
 }
 
 const ObservabilityContext = createContext<ObservabilityContextType>({
@@ -22,6 +26,13 @@ const ObservabilityContext = createContext<ObservabilityContextType>({
   },
   setChartType: () => {
     return;
+  },
+  setBaseTemplateId: () => {
+    return;
+  },
+  baseTemplateId: {
+    label: '',
+    value: '',
   },
 });
 
@@ -41,6 +52,9 @@ export function ObservabilityProvider({
     startOfDay(subDays(new Date(), 30)),
   );
 
+  const emptyValue = useEmptyBaseTemplateValue();
+  const [baseTemplateId, setBaseTemplateId] = useState<OptionType>(emptyValue);
+
   const [chartType, setChartType] = useSessionStorage<ChartType>({
     key: 'observability-chart-type',
     defaultValue: 'all',
@@ -50,6 +64,8 @@ export function ObservabilityProvider({
     () => ({
       startDate: new Date(startDate).toISOString(),
       endDate: new Date(endDate).toISOString(),
+      setBaseTemplateId,
+      baseTemplateId,
       chartType,
       setDateRange: (startDate: Date, endDate: Date) => {
         setStartTime(startOfDay(startDate));
@@ -59,7 +75,7 @@ export function ObservabilityProvider({
         setChartType(type);
       },
     }),
-    [startDate, endDate, chartType, setChartType],
+    [startDate, endDate, baseTemplateId, chartType, setChartType],
   );
 
   return (

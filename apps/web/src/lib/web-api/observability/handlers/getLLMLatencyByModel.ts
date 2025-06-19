@@ -5,6 +5,7 @@ import {
   getClickhouseData,
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
+import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 
 type GetLLMLatencyByModelRequest = ServerInferRequest<
   typeof contracts.observability.getLLMLatencyByModel
@@ -17,7 +18,7 @@ type GetLLMLatencyByModelResponse = ServerInferResponses<
 export async function getLLMLatencyByModel(
   request: GetLLMLatencyByModelRequest,
 ): Promise<GetLLMLatencyByModelResponse> {
-  const { projectId, startDate, endDate } = request.query;
+  const { projectId, startDate, endDate, baseTemplateId } = request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
   const client = getClickhouseClient();
@@ -65,6 +66,7 @@ export async function getLLMLatencyByModel(
         AND SpanAttributes['organization.id'] = {organizationId: String}
         AND SpanAttributes['project.id'] = {projectId: String}
         AND ParentSpanId = ''
+        ${attachFilterByBaseTemplateIdToOtels(request.query)}
         )
         )
       WHERE duration_ms_float IS NOT NULL AND llm_handle IS NOT NULL
@@ -75,6 +77,7 @@ export async function getLLMLatencyByModel(
       startDate: Math.round(new Date(startDate).getTime() / 1000),
       endDate: Math.round(new Date(endDate).getTime() / 1000),
       organizationId: user.activeOrganizationId,
+      baseTemplateId: baseTemplateId?.value,
       projectId,
     },
     format: 'JSONEachRow',

@@ -5,6 +5,7 @@ import {
   getClickhouseData,
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
+import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 
 type GetLLMLatencyPerDayRequest = ServerInferRequest<
   typeof contracts.observability.getLLMLatencyPerDay
@@ -17,7 +18,7 @@ type GetLLMLatencyPerDayResponse = ServerInferResponses<
 export async function getLLMLatencyPerDay(
   request: GetLLMLatencyPerDayRequest,
 ): Promise<GetLLMLatencyPerDayResponse> {
-  const { projectId, startDate, endDate } = request.query;
+  const { projectId, startDate, endDate, baseTemplateId } = request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
   const client = getClickhouseClient();
@@ -54,7 +55,8 @@ export async function getLLMLatencyPerDay(
             AND ParentSpanId = ''
             AND Timestamp >= {startDate: DateTime}
             AND Timestamp <= {endDate: DateTime}
-            )
+            ${attachFilterByBaseTemplateIdToOtels(request.query)}
+          )
             AND arrayExists(
             event -> event.Name = 'llm_request_ms',
             Events
@@ -68,6 +70,7 @@ export async function getLLMLatencyPerDay(
       startDate: Math.round(new Date(startDate).getTime() / 1000),
       endDate: Math.round(new Date(endDate).getTime() / 1000),
       organizationId: user.activeOrganizationId,
+      baseTemplateId: baseTemplateId?.value,
       projectId,
     },
     format: 'JSONEachRow',

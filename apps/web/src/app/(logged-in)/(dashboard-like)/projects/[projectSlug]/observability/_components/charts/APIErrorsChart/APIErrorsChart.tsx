@@ -16,7 +16,7 @@ interface TimeToFirstTokenChartProps {
 }
 
 export function APIErrorsChart(props: TimeToFirstTokenChartProps) {
-  const { startDate, endDate } = useObservabilityContext();
+  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
   const { analysisLink } = props;
   const { id: projectId } = useCurrentProject();
 
@@ -27,12 +27,14 @@ export function APIErrorsChart(props: TimeToFirstTokenChartProps) {
       projectId,
       startDate,
       endDate,
+      baseTemplateId: baseTemplateId?.value,
     }),
     queryData: {
       query: {
         projectId,
         startDate,
         endDate,
+        baseTemplateId: baseTemplateId?.value,
       },
     },
   });

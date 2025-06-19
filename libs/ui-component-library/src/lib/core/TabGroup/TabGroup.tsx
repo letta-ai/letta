@@ -33,7 +33,7 @@ const listVariant = cva('flex items-center gap-2 flex-row', {
     size: {
       small: 'px-4 h-biHeight',
       xsmall: 'px-2 h-[28px]',
-      xxsmall: 'px-2 h-[24px]',
+      xxsmall: 'px-2 h-[26px]',
     },
     fullWidth: {
       true: 'flex-1 justify-center',

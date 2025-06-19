@@ -17,7 +17,7 @@ interface ToolErrorRateChartProps {
 }
 
 export function ToolErrorRateChart(props: ToolErrorRateChartProps) {
-  const { startDate, endDate } = useObservabilityContext();
+  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
   const { analysisLink } = props;
   const { id: projectId } = useCurrentProject();
 
@@ -28,11 +28,13 @@ export function ToolErrorRateChart(props: ToolErrorRateChartProps) {
       projectId,
       startDate,
       endDate,
+      baseTemplateId: baseTemplateId?.value,
     }),
     queryData: {
       query: {
         projectId,
         startDate,
+        baseTemplateId: baseTemplateId?.value,
         endDate,
       },
     },

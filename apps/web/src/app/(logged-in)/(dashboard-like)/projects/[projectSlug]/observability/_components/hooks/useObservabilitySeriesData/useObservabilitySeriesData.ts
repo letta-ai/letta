@@ -32,7 +32,6 @@ export function useObservabilitySeriesData<T extends BaseType>(
     const labels = [];
     const dates = [];
 
-    console.log(startDate, endDate);
     for (
       let date = new Date(startDate);
       date < new Date(endDate);
