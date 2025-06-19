@@ -1227,7 +1227,8 @@
       "stdout": "stdout",
       "stderr": "stderr",
       "toolReturn": "Response",
-      "noOutput": "Press 'Run tool' to see the output of your tool"
+      "noOutput": "Press 'Run tool' to see the output of your tool",
+      "runningTool": "Tool is running..."
     },
     "ArgumentEditor": {
       "newArgument": "A new argument has been detected in your code, but has not been added to the schema. Please add it to the schema to use it in the simulator."

@@ -424,7 +424,8 @@ function ToolInput(props: ToolInputProps) {
             busy={isToolRunning}
             preIcon={<PlayIcon />}
             color="tertiary"
-          ></Button>
+            hideLabel={isToolRunning}
+          />
         </HStack>
       </HStack>
       <VStack collapseHeight flex overflowY="auto">
@@ -476,10 +477,11 @@ interface ResponseContentProps {
   outputType: ToolOutputType;
   response?: ToolReturnMessage;
   error?: string;
+  isToolRunning?: boolean; // Add this prop
 }
 
 function ResponseContent(props: ResponseContentProps) {
-  const { outputType, error, response } = props;
+  const { outputType, error, response, isToolRunning } = props;
 
   const stdout = useMemo(() => {
     return response?.stdout || [];
@@ -493,6 +495,17 @@ function ResponseContent(props: ResponseContentProps) {
 
   if (error) {
     return <ResponseCode language="javascript" code={error} />;
+  }
+
+  // Add this condition for running state
+  if (isToolRunning) {
+    return (
+      <HStack fullHeight fullWidth align="center" justify="center">
+        <Typography variant="body2" color="muted">
+          {t('ToolOutput.runningTool')}
+        </Typography>
+      </HStack>
+    );
   }
 
   if (!response) {
@@ -532,10 +545,11 @@ function ResponseContent(props: ResponseContentProps) {
 interface ToolOutputProps {
   response?: ToolReturnMessage;
   error: string;
+  isToolRunning?: boolean; // Add this prop
 }
 
 function ToolOutput(props: ToolOutputProps) {
-  const { response, error } = props;
+  const { response, error, isToolRunning } = props;
   const t = useTranslations('ToolsEditor/ToolsSimulator');
   const [type, setType] = useState<ToolOutputType>('tool_return');
 
@@ -586,7 +600,12 @@ function ToolOutput(props: ToolOutputProps) {
         <StatusBadge status={status} />
       </HStack>
       <VStack collapseHeight flex overflowY="auto">
-        <ResponseContent outputType={type} error={error} response={response} />
+        <ResponseContent
+          outputType={type}
+          error={error}
+          response={response}
+          isToolRunning={isToolRunning} // Pass the prop
+        />
       </VStack>
     </VStack>
   );
@@ -708,6 +727,7 @@ export function ToolSimulator(props: ToolSimulatorProps) {
           <ToolOutput
             response={data}
             error={error ? JSON.stringify(error, null, 2) : ''}
+            isToolRunning={isPending}
           />
         </Panel>
       </PanelGroup>
