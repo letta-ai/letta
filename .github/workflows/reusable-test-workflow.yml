@@ -126,7 +126,7 @@ jobs:
 
           # Wait for the check to complete with timeout
           timeout_seconds=1800
-          interval_seconds=10
+          interval_seconds=60
           elapsed=0
 
           while [ $elapsed -lt $timeout_seconds ]; do
