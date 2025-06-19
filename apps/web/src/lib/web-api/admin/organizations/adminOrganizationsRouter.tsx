@@ -3,6 +3,7 @@ import type { contracts } from '$web/web-api/contracts';
 import {
   agentTemplates,
   db,
+  deployedAgentMetadata,
   inferenceModelsMetadata,
   lettaAPIKeys,
   organizationBillingDetails,
@@ -521,24 +522,31 @@ async function adminGetOrganizationStatistics(
     };
   }
 
-  const [[{ count: totalMembers }], [{ count: totalTemplates }]] =
-    await Promise.all([
-      db
-        .select({ count: count() })
-        .from(organizationUsers)
-        .where(eq(organizationUsers.organizationId, organizationId)),
-      db
-        .select({ count: count() })
-        .from(agentTemplates)
-        .where(eq(agentTemplates.organizationId, organizationId)),
-    ]);
+  const [
+    [{ count: totalMembers }],
+    [{ count: totalTemplates }],
+    [{ count: totalDeployedAgents }],
+  ] = await Promise.all([
+    db
+      .select({ count: count() })
+      .from(organizationUsers)
+      .where(eq(organizationUsers.organizationId, organizationId)),
+    db
+      .select({ count: count() })
+      .from(agentTemplates)
+      .where(eq(agentTemplates.organizationId, organizationId)),
+    db
+      .select({ count: count() })
+      .from(deployedAgentMetadata)
+      .where(eq(deployedAgentMetadata.organizationId, organizationId)),
+  ]);
 
   return {
     status: 200,
     body: {
       totalMembers,
       totalTemplates,
-      totalDeployedAgents: 0,
+      totalDeployedAgents,
     },
   };
 }
