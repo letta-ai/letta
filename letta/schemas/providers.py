@@ -1516,12 +1516,12 @@ class CohereProvider(OpenAIProvider):
 class AnthropicBedrockProvider(Provider):
     provider_type: Literal[ProviderType.bedrock] = Field(ProviderType.bedrock, description="The type of the provider.")
     provider_category: ProviderCategory = Field(ProviderCategory.base, description="The category of the provider (base or byok)")
-    aws_region: str = Field(..., description="AWS region for Bedrock")
+    region: str = Field(..., description="AWS region for Bedrock")
 
     def list_llm_models(self):
         from letta.llm_api.aws_bedrock import bedrock_get_model_list
 
-        models = bedrock_get_model_list(self.aws_region)
+        models = bedrock_get_model_list(self.region)
 
         configs = []
         for model_summary in models:

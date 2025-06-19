@@ -365,11 +365,11 @@ class SyncServer(Server):
                     base_url=model_settings.vllm_api_base,
                 )
             )
-        if model_settings.aws_access_key and model_settings.aws_secret_access_key and model_settings.aws_region:
+        if model_settings.aws_access_key_id and model_settings.aws_secret_access_key and model_settings.aws_default_region:
             self._enabled_providers.append(
                 AnthropicBedrockProvider(
                     name="bedrock",
-                    aws_region=model_settings.aws_region,
+                    region=model_settings.aws_default_region,
                 )
             )
         # Attempt to enable LM Studio by default
