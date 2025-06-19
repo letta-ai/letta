@@ -16,7 +16,12 @@ class OpenAIEmbedder:
     """OpenAI-based embedding generation"""
 
     def __init__(self, embedding_config: Optional[EmbeddingConfig] = None):
-        self.embedding_config = embedding_config or EmbeddingConfig.default_config(provider="openai")
+        self.default_embedding_config = (
+            EmbeddingConfig.default_config(model_name="text-embedding-3-small", provider="openai")
+            if model_settings.openai_api_key
+            else EmbeddingConfig.default_config(model_name="letta")
+        )
+        self.embedding_config = embedding_config or self.default_embedding_config
 
         # TODO: Unify to global OpenAI client
         self.client = openai.AsyncOpenAI(api_key=model_settings.openai_api_key)

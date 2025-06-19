@@ -4,6 +4,8 @@ import os
 import threading
 import time
 import uuid
+from contextlib import contextmanager
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any, Dict, List
 
 import httpx
@@ -28,8 +30,11 @@ from letta_client.types import (
 )
 
 from letta.llm_api.openai_client import is_openai_reasoning_model
+from letta.log import get_logger
 from letta.schemas.agent import AgentState
 from letta.schemas.llm_config import LLMConfig
+
+logger = get_logger(__name__)
 
 # ------------------------------
 # Helper Functions and Constants
@@ -99,9 +104,9 @@ all_configs = [
     "openai-o1.json",
     "openai-o1-mini.json",
     "openai-o3.json",
-    "openai-o3-mini.json",
-    # "azure-gpt-4o-mini.json", # TODO: Re-enable on new agent loop
+    "openai-o4-mini.json",
     "azure-gpt-4o-mini.json",
+    "claude-4-sonnet.json",
     "claude-3-5-sonnet.json",
     "claude-3-7-sonnet.json",
     "claude-3-7-sonnet-extended.json",
@@ -441,7 +446,10 @@ def agent_state(client: Letta) -> AgentState:
     )
     yield agent_state_instance
 
-    client.agents.delete(agent_state_instance.id)
+    try:
+        client.agents.delete(agent_state_instance.id)
+    except Exception as e:
+        logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
 
 
 @pytest.fixture(scope="function")
@@ -460,7 +468,10 @@ def agent_state_no_tools(client: Letta) -> AgentState:
     )
     yield agent_state_instance
 
-    client.agents.delete(agent_state_instance.id)
+    try:
+        client.agents.delete(agent_state_instance.id)
+    except Exception as e:
+        logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
 
 
 # ------------------------------
@@ -894,6 +905,199 @@ def test_async_greeting_with_assistant_message(
     assert_tool_response_dict_messages(messages)
 
 
+class CallbackServer:
+    """Mock HTTP server for testing callback functionality."""
+
+    def __init__(self):
+        self.received_callbacks = []
+        self.server = None
+        self.thread = None
+        self.port = None
+
+    def start(self):
+        """Start the mock server on an available port."""
+
+        class CallbackHandler(BaseHTTPRequestHandler):
+            def __init__(self, callback_server, *args, **kwargs):
+                self.callback_server = callback_server
+                super().__init__(*args, **kwargs)
+
+            def do_POST(self):
+                content_length = int(self.headers["Content-Length"])
+                post_data = self.rfile.read(content_length)
+                try:
+                    callback_data = json.loads(post_data.decode("utf-8"))
+                    self.callback_server.received_callbacks.append(
+                        {"data": callback_data, "headers": dict(self.headers), "timestamp": time.time()}
+                    )
+                    # Respond with success
+                    self.send_response(200)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"status": "received"}).encode())
+                except Exception as e:
+                    # Respond with error
+                    self.send_response(400)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": str(e)}).encode())
+
+            def log_message(self, format, *args):
+                # Suppress log messages during tests
+                pass
+
+        # Bind to available port
+        self.server = HTTPServer(("localhost", 0), lambda *args: CallbackHandler(self, *args))
+        self.port = self.server.server_address[1]
+
+        # Start server in background thread
+        self.thread = threading.Thread(target=self.server.serve_forever)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def stop(self):
+        """Stop the mock server."""
+        if self.server:
+            self.server.shutdown()
+            self.server.server_close()
+        if self.thread:
+            self.thread.join(timeout=1)
+
+    @property
+    def url(self):
+        """Get the callback URL for this server."""
+        return f"http://localhost:{self.port}/callback"
+
+    def wait_for_callback(self, timeout=10):
+        """Wait for at least one callback to be received."""
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            if self.received_callbacks:
+                return True
+            time.sleep(0.1)
+        return False
+
+
+@contextmanager
+def callback_server():
+    """Context manager for callback server."""
+    server = CallbackServer()
+    try:
+        server.start()
+        yield server
+    finally:
+        server.stop()
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_async_greeting_with_callback_url(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending a message as an asynchronous job with callback URL functionality.
+    Validates that callbacks are properly sent with correct payload structure.
+    """
+    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+
+    with callback_server() as server:
+        # Create async job with callback URL
+        run = client.agents.messages.create_async(
+            agent_id=agent_state.id,
+            messages=USER_MESSAGE_FORCE_REPLY,
+            callback_url=server.url,
+        )
+
+        # Wait for job completion
+        run = wait_for_run_completion(client, run.id)
+
+        # Validate job completed successfully
+        result = run.metadata.get("result")
+        assert result is not None, "Run metadata missing 'result' key"
+        messages = result["messages"]
+        assert_tool_response_dict_messages(messages)
+
+        # Validate callback was received
+        assert server.wait_for_callback(timeout=15), "Callback was not received within timeout"
+        assert len(server.received_callbacks) == 1, f"Expected 1 callback, got {len(server.received_callbacks)}"
+
+        # Validate callback payload structure
+        callback = server.received_callbacks[0]
+        callback_data = callback["data"]
+
+        # Check required fields
+        assert "job_id" in callback_data, "Callback missing 'job_id' field"
+        assert "status" in callback_data, "Callback missing 'status' field"
+        assert "completed_at" in callback_data, "Callback missing 'completed_at' field"
+        assert "metadata" in callback_data, "Callback missing 'metadata' field"
+
+        # Validate field values
+        assert callback_data["job_id"] == run.id, f"Job ID mismatch: {callback_data['job_id']} != {run.id}"
+        assert callback_data["status"] == "completed", f"Expected status 'completed', got {callback_data['status']}"
+        assert callback_data["completed_at"] is not None, "completed_at should not be None"
+        assert callback_data["metadata"] is not None, "metadata should not be None"
+
+        # Validate that callback metadata contains the result
+        assert "result" in callback_data["metadata"], "Callback metadata missing 'result' field"
+        callback_result = callback_data["metadata"]["result"]
+        assert callback_result == result, "Callback result doesn't match job result"
+
+        # Validate HTTP headers
+        headers = callback["headers"]
+        assert headers.get("Content-Type") == "application/json", "Callback should have JSON content type"
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_async_callback_failure_scenarios(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests that job completion works even when callback URLs fail.
+    This ensures callback failures don't affect job processing.
+    """
+    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+
+    # Test with invalid callback URL - job should still complete
+    run = client.agents.messages.create_async(
+        agent_id=agent_state.id,
+        messages=USER_MESSAGE_FORCE_REPLY,
+        callback_url="http://invalid-domain-that-does-not-exist.com/callback",
+    )
+
+    # Wait for job completion - should work despite callback failure
+    run = wait_for_run_completion(client, run.id)
+
+    # Validate job completed successfully
+    result = run.metadata.get("result")
+    assert result is not None, "Run metadata missing 'result' key"
+    messages = result["messages"]
+    assert_tool_response_dict_messages(messages)
+
+    # Job should be marked as completed even if callback failed
+    assert run.status == "completed", f"Expected status 'completed', got {run.status}"
+
+    # Validate callback failure was properly recorded
+    assert run.callback_sent_at is not None, "callback_sent_at should be set even for failed callbacks"
+    assert run.callback_error is not None, "callback_error should be set to error message for failed callbacks"
+    assert isinstance(run.callback_error, str), "callback_error should be error message string for failed callbacks"
+    assert "Failed to dispatch callback" in run.callback_error, "callback_error should contain error details"
+    assert run.id in run.callback_error, "callback_error should contain job ID"
+    assert "invalid-domain-that-does-not-exist.com" in run.callback_error, "callback_error should contain failed URL"
+
+
 @pytest.mark.parametrize(
     "llm_config",
     TESTED_LLM_CONFIGS,
@@ -915,15 +1119,9 @@ def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, llm_config: LLM
         tags=["supervisor"],
     )
 
-    philosophical_question = """
-You know, sometimes I wonder if the entire structure of our lives is built on a series of unexamined assumptions we just silently agreed to somewhere along the way—like how we all just decided that five days a week of work and two days of "rest" constitutes balance, or how 9-to-5 became the default rhythm of a meaningful life, or even how the idea of "success" got boiled down to job titles and property ownership and productivity metrics on a LinkedIn profile, when maybe none of that is actually what makes a life feel full, or grounded, or real. And then there's the weird paradox of ambition, how we're taught to chase it like a finish line that keeps moving, constantly redefining itself right as you're about to grasp it—because even when you get the job, or the degree, or the validation, there's always something next, something more, like a treadmill with invisible settings you didn't realize were turned up all the way.
-
-And have you noticed how we rarely stop to ask who set those definitions for us? Like was there ever a council that decided, yes, owning a home by thirty-five and retiring by sixty-five is the universal template for fulfillment? Or did it just accumulate like cultural sediment over generations, layered into us so deeply that questioning it feels uncomfortable, even dangerous? And isn't it strange that we spend so much of our lives trying to optimize things—our workflows, our diets, our sleep, our morning routines—as though the point of life is to operate more efficiently rather than to experience it more richly? We build these intricate systems, these rulebooks for being a "high-functioning" human, but where in all of that is the space for feeling lost, for being soft, for wandering without a purpose just because it's a sunny day and your heart is tugging you toward nowhere in particular?
-
-Sometimes I lie awake at night and wonder if all the noise we wrap around ourselves—notifications, updates, performance reviews, even our internal monologues—might be crowding out the questions we were meant to live into slowly, like how to love better, or how to forgive ourselves, or what the hell we're even doing here in the first place. And when you strip it all down—no goals, no KPIs, no curated identity—what's actually left of us? Are we just a sum of the roles we perform, or is there something quieter underneath that we've forgotten how to hear?
-
-And if there is something underneath all of it—something real, something worth listening to—then how do we begin to uncover it, gently, without rushing or reducing it to another task on our to-do list?
-    """
+    philosophical_question_path = os.path.join(os.path.dirname(__file__), "data", "philosophical_question.txt")
+    with open(philosophical_question_path, "r", encoding="utf-8") as f:
+        philosophical_question = f.read().strip()
 
     MAX_ATTEMPTS = 10
     prev_length = None

@@ -569,6 +569,9 @@ def create(
                 # NOTE: max_tokens is required for Anthropic API
                 max_tokens=llm_config.max_tokens,
             ),
+            provider_name=llm_config.provider_name,
+            provider_category=llm_config.provider_category,
+            user_id=user_id,
         )
 
     elif llm_config.model_endpoint_type == "deepseek":

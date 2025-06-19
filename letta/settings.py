@@ -18,6 +18,9 @@ class ToolSettings(BaseSettings):
     # Tavily search
     tavily_api_key: Optional[str] = None
 
+    # Firecrawl search
+    firecrawl_api_key: Optional[str] = None
+
     # Local Sandbox configurations
     tool_exec_dir: Optional[str] = None
     tool_sandbox_timeout: float = 180

@@ -48,7 +48,7 @@ def agent(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
     )
     yield agent_state
 
@@ -74,7 +74,7 @@ def test_shared_blocks(client: LettaSDKClient):
         ],
         block_ids=[block.id],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
     )
     agent_state2 = client.agents.create(
         name="agent2",
@@ -86,7 +86,7 @@ def test_shared_blocks(client: LettaSDKClient):
         ],
         block_ids=[block.id],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
     )
 
     # update memory
@@ -132,7 +132,7 @@ def test_read_only_block(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
     )
 
     # make sure agent cannot update read-only block
@@ -175,7 +175,7 @@ def test_add_and_manage_tags_for_agent(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
     )
     assert len(agent.tags) == 0
 
@@ -227,7 +227,7 @@ def test_agent_tags(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
         tags=["test", "agent1", "production"],
     )
 
@@ -239,7 +239,7 @@ def test_agent_tags(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
         tags=["test", "agent2", "development"],
     )
 
@@ -251,7 +251,7 @@ def test_agent_tags(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
         tags=["test", "agent3", "production"],
     )
 
@@ -404,7 +404,7 @@ def test_send_system_message(client: LettaSDKClient, agent: AgentState):
     assert send_system_message_response, "Sending message failed"
 
 
-def test_function_return_limit(client: LettaSDKClient, agent: AgentState):
+def test_function_return_limit(disable_e2b_api_key, client: LettaSDKClient, agent: AgentState):
     """Test to see if the function return limit works"""
 
     def big_return():
@@ -556,7 +556,7 @@ def test_agent_creation(client: LettaSDKClient):
         name=f"test_agent_{str(uuid.uuid4())}",
         memory_blocks=[sleeptime_persona_block, mindy_block],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
         tool_ids=[tool1.id, tool2.id],
         include_base_tools=False,
         tags=["test"],
@@ -595,7 +595,7 @@ def test_many_blocks(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
         include_base_tools=False,
         tags=["test"],
     )
@@ -612,7 +612,7 @@ def test_many_blocks(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
         include_base_tools=False,
         tags=["test"],
     )
@@ -717,3 +717,47 @@ def test_include_return_message_types(client: LettaSDKClient, agent: AgentState,
 
     # cleanup
     client.agents.delete(agent.id)
+
+
+def test_base_tools_upsert_on_list(client: LettaSDKClient):
+    """Test that base tools are automatically upserted when missing on tools list call"""
+    from letta.constants import LETTA_TOOL_SET
+
+    # First, get the initial list of tools to establish baseline
+    initial_tools = client.tools.list()
+    initial_tool_names = {tool.name for tool in initial_tools}
+
+    # Find which base tools might be missing initially
+    missing_base_tools = LETTA_TOOL_SET - initial_tool_names
+
+    # If all base tools are already present, we need to delete some to test the upsert functionality
+    # We'll delete a few base tools if they exist to create the condition for testing
+    tools_to_delete = []
+    if not missing_base_tools:
+        # Pick a few base tools to delete for testing
+        test_base_tools = ["send_message", "conversation_search"]
+        for tool_name in test_base_tools:
+            for tool in initial_tools:
+                if tool.name == tool_name:
+                    tools_to_delete.append(tool)
+                    client.tools.delete(tool_id=tool.id)
+                    break
+
+    # Now call list_tools() which should trigger the base tools check and upsert
+    updated_tools = client.tools.list()
+    updated_tool_names = {tool.name for tool in updated_tools}
+
+    # Verify that all base tools are now present
+    missing_after_upsert = LETTA_TOOL_SET - updated_tool_names
+    assert not missing_after_upsert, f"Base tools still missing after upsert: {missing_after_upsert}"
+
+    # Verify that the base tools are actually in the list
+    for base_tool_name in LETTA_TOOL_SET:
+        assert base_tool_name in updated_tool_names, f"Base tool {base_tool_name} not found after upsert"
+
+    # Cleanup: restore any tools we deleted for testing (they should already be restored by the upsert)
+    # This is just a double-check that our test cleanup is proper
+    final_tools = client.tools.list()
+    final_tool_names = {tool.name for tool in final_tools}
+    for deleted_tool in tools_to_delete:
+        assert deleted_tool.name in final_tool_names, f"Deleted tool {deleted_tool.name} was not properly restored"

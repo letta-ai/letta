@@ -2912,7 +2912,7 @@ def test_get_tool_with_actor(server: SyncServer, print_tool, default_user):
 @pytest.mark.asyncio
 async def test_list_tools(server: SyncServer, print_tool, default_user, event_loop):
     # List tools (should include the one created by the fixture)
-    tools = await server.tool_manager.list_tools_async(actor=default_user)
+    tools = await server.tool_manager.list_tools_async(actor=default_user, upsert_base_tools=False)
 
     # Assertions to check that the created tool is listed
     assert len(tools) == 1
@@ -3041,7 +3041,7 @@ async def test_delete_tool_by_id(server: SyncServer, print_tool, default_user, e
     # Delete the print_tool using the manager method
     server.tool_manager.delete_tool_by_id(print_tool.id, actor=default_user)
 
-    tools = await server.tool_manager.list_tools_async(actor=default_user)
+    tools = await server.tool_manager.list_tools_async(actor=default_user, upsert_base_tools=False)
     assert len(tools) == 0
 
 

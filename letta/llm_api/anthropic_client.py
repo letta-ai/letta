@@ -316,9 +316,11 @@ class AnthropicClient(LLMClientBase):
 
         if isinstance(e, anthropic.BadRequestError):
             logger.warning(f"[Anthropic] Bad request: {str(e)}")
-            if "prompt is too long" in str(e).lower():
-                # If the context window is too large, we expect to receive:
+            error_str = str(e).lower()
+            if "prompt is too long" in error_str or "exceed context limit" in error_str:
+                # If the context window is too large, we expect to receive either:
                 # 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'prompt is too long: 200758 tokens > 200000 maximum'}}
+                # 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'input length and `max_tokens` exceed context limit: 173298 + 32000 > 200000, decrease input length or `max_tokens` and try again'}}
                 return ContextWindowExceededError(
                     message=f"Bad request to Anthropic (context window exceeded): {str(e)}",
                 )
@@ -490,23 +492,18 @@ class AnthropicClient(LLMClientBase):
             )
 
         return chat_completion_response
+
     def _add_cache_control_to_system_message(self, system_content):
         """Add cache control to system message content"""
         if isinstance(system_content, str):
             # For string content, convert to list format with cache control
-            return [
-                {
-                    'type': 'text',
-                    'text': system_content,
-                    'cache_control': {'type': 'ephemeral'}
-                }
-            ]
+            return [{"type": "text", "text": system_content, "cache_control": {"type": "ephemeral"}}]
         elif isinstance(system_content, list):
             # For list content, add cache control to the last text block
             cached_content = system_content.copy()
             for i in range(len(cached_content) - 1, -1, -1):
-                if cached_content[i].get('type') == 'text':
-                    cached_content[i]['cache_control'] = {'type': 'ephemeral'}
+                if cached_content[i].get("type") == "text":
+                    cached_content[i]["cache_control"] = {"type": "ephemeral"}
                     break
             return cached_content
 

@@ -37,7 +37,7 @@ agent = client.agents.create(
         }
     ],
     model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
     tool_ids=[mcp_tool.id]
 )
 print(f"Created agent id {agent.id}")

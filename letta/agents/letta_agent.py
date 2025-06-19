@@ -1,6 +1,7 @@
 import asyncio
 import json
 import uuid
+from datetime import datetime
 from typing import AsyncGenerator, Dict, List, Optional, Tuple, Union
 
 from openai import AsyncStream
@@ -13,7 +14,7 @@ from letta.agents.helpers import _create_letta_response, _prepare_in_context_mes
 from letta.constants import DEFAULT_MAX_STEPS
 from letta.errors import ContextWindowExceededError
 from letta.helpers import ToolRulesSolver
-from letta.helpers.datetime_helpers import AsyncTimer, get_utc_timestamp_ns, ns_to_ms
+from letta.helpers.datetime_helpers import AsyncTimer, get_utc_time, get_utc_timestamp_ns, ns_to_ms
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
@@ -25,7 +26,7 @@ from letta.orm.enums import ToolType
 from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
 from letta.otel.tracing import log_event, trace_method, tracer
-from letta.schemas.agent import AgentState
+from letta.schemas.agent import AgentState, UpdateAgent
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
@@ -283,8 +284,13 @@ class LettaAgent(BaseAgent):
         # log request time
         if request_start_timestamp_ns:
             now = get_utc_timestamp_ns()
-            request_ns = now - request_start_timestamp_ns
-            request_span.add_event(name="letta_request_ms", attributes={"duration_ms": ns_to_ms(request_ns)})
+            duration_ms = ns_to_ms(now - request_start_timestamp_ns)
+            request_span.add_event(name="letta_request_ms", attributes={"duration_ms": duration_ms})
+
+            # update agent's last run metrics
+            now_datetime = get_utc_time()
+            await self._update_agent_last_run_metrics(now_datetime, duration_ms)
+
         request_span.end()
 
         # Return back usage
@@ -410,8 +416,13 @@ class LettaAgent(BaseAgent):
         # log request time
         if request_start_timestamp_ns:
             now = get_utc_timestamp_ns()
-            request_ns = now - request_start_timestamp_ns
-            request_span.add_event(name="request_ms", attributes={"duration_ms": ns_to_ms(request_ns)})
+            duration_ms = ns_to_ms(now - request_start_timestamp_ns)
+            request_span.add_event(name="request_ms", attributes={"duration_ms": duration_ms})
+
+            # update agent's last run metrics
+            now_datetime = get_utc_time()
+            await self._update_agent_last_run_metrics(now_datetime, duration_ms)
+
         request_span.end()
 
         # Extend the in context message ids
@@ -425,6 +436,16 @@ class LettaAgent(BaseAgent):
             )
 
         return current_in_context_messages, new_in_context_messages, usage, stop_reason
+
+    async def _update_agent_last_run_metrics(self, completion_time: datetime, duration_ms: float) -> None:
+        try:
+            await self.agent_manager.update_agent_async(
+                agent_id=self.agent_id,
+                agent_update=UpdateAgent(last_run_completion=completion_time, last_run_duration_ms=duration_ms),
+                actor=self.actor,
+            )
+        except Exception as e:
+            logger.error(f"Failed to update agent's last run metrics: {e}")
 
     @trace_method
     async def step_stream(
@@ -631,8 +652,13 @@ class LettaAgent(BaseAgent):
         # log time of entire request
         if request_start_timestamp_ns:
             now = get_utc_timestamp_ns()
-            request_ns = now - request_start_timestamp_ns
-            request_span.add_event(name="letta_request_ms", attributes={"duration_ms": ns_to_ms(request_ns)})
+            duration_ms = ns_to_ms(now - request_start_timestamp_ns)
+            request_span.add_event(name="letta_request_ms", attributes={"duration_ms": duration_ms})
+
+            # update agent's last run metrics
+            completion_time = get_utc_time()
+            await self._update_agent_last_run_metrics(completion_time, duration_ms)
+
         request_span.end()
 
         for finish_chunk in self.get_finish_chunks_for_stream(usage, stop_reason):
@@ -913,13 +939,13 @@ class LettaAgent(BaseAgent):
         except AssertionError:
             tool_args = json.loads(tool_args)
 
+        # Get request heartbeats and coerce to bool
+        request_heartbeat = tool_args.pop("request_heartbeat", False)
         if is_final_step:
             stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
             logger.info("Agent has reached max steps.")
             request_heartbeat = False
         else:
-            # Get request heartbeats and coerce to bool
-            request_heartbeat = tool_args.pop("request_heartbeat", False)
             # Pre-emptively pop out inner_thoughts
             tool_args.pop(INNER_THOUGHTS_KWARG, "")
 
@@ -940,7 +966,10 @@ class LettaAgent(BaseAgent):
             tool_call_id=tool_call_id,
             request_heartbeat=request_heartbeat,
         )
-        if tool_call_name not in valid_tool_names:
+        # Check if tool rule is violated - if so, we'll force continuation
+        tool_rule_violated = tool_call_name not in valid_tool_names
+
+        if tool_rule_violated:
             base_error_message = f"[ToolConstraintError] Cannot call {tool_call_name}, valid tools to call include: {valid_tool_names}."
             violated_rule_messages = tool_rules_solver.guess_rule_violation(tool_call_name)
             if violated_rule_messages:
@@ -969,7 +998,7 @@ class LettaAgent(BaseAgent):
 
         # get the function response limit
         target_tool = next((x for x in agent_state.tools if x.name == tool_call_name), None)
-        return_char_limit = target_tool.return_char_limit
+        return_char_limit = target_tool.return_char_limit if target_tool else None
         function_response_string = validate_function_response(
             tool_execution_result.func_return, return_char_limit=return_char_limit, truncate=truncate
         )
@@ -981,15 +1010,20 @@ class LettaAgent(BaseAgent):
         # 4. Register tool call with tool rule solver
         # Resolve whether or not to continue stepping
         continue_stepping = request_heartbeat
-        tool_rules_solver.register_tool_call(tool_name=tool_call_name)
-        if tool_rules_solver.is_terminal_tool(tool_name=tool_call_name):
-            if continue_stepping:
-                stop_reason = LettaStopReason(stop_reason=StopReasonType.tool_rule.value)
-            continue_stepping = False
-        elif tool_rules_solver.has_children_tools(tool_name=tool_call_name):
+
+        # Force continuation if tool rule was violated to give the model another chance
+        if tool_rule_violated:
             continue_stepping = True
-        elif tool_rules_solver.is_continue_tool(tool_name=tool_call_name):
-            continue_stepping = True
+        else:
+            tool_rules_solver.register_tool_call(tool_name=tool_call_name)
+            if tool_rules_solver.is_terminal_tool(tool_name=tool_call_name):
+                if continue_stepping:
+                    stop_reason = LettaStopReason(stop_reason=StopReasonType.tool_rule.value)
+                continue_stepping = False
+            elif tool_rules_solver.has_children_tools(tool_name=tool_call_name):
+                continue_stepping = True
+            elif tool_rules_solver.is_continue_tool(tool_name=tool_call_name):
+                continue_stepping = True
 
         # 5a. Persist Steps to DB
         # Following agent loop to persist this before messages

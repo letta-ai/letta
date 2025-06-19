@@ -27,8 +27,10 @@ class Provider(ProviderBase):
     name: str = Field(..., description="The name of the provider")
     provider_type: ProviderType = Field(..., description="The type of the provider")
     provider_category: ProviderCategory = Field(..., description="The category of the provider (base or byok)")
-    api_key: Optional[str] = Field(None, description="API key used for requests to the provider.")
+    api_key: Optional[str] = Field(None, description="API key or secret key used for requests to the provider.")
     base_url: Optional[str] = Field(None, description="Base URL for the provider.")
+    access_key: Optional[str] = Field(None, description="Access key used for requests to the provider.")
+    region: Optional[str] = Field(None, description="Region used for requests to the provider.")
     organization_id: Optional[str] = Field(None, description="The organization id of the user")
     updated_at: Optional[datetime] = Field(None, description="The last update timestamp of the provider.")
 
@@ -95,7 +97,7 @@ class Provider(ProviderBase):
                 return OpenAIProvider(**self.model_dump(exclude_none=True))
             case ProviderType.anthropic:
                 return AnthropicProvider(**self.model_dump(exclude_none=True))
-            case ProviderType.anthropic_bedrock:
+            case ProviderType.bedrock:
                 return AnthropicBedrockProvider(**self.model_dump(exclude_none=True))
             case ProviderType.ollama:
                 return OllamaProvider(**self.model_dump(exclude_none=True))
@@ -122,16 +124,22 @@ class Provider(ProviderBase):
 class ProviderCreate(ProviderBase):
     name: str = Field(..., description="The name of the provider.")
     provider_type: ProviderType = Field(..., description="The type of the provider.")
-    api_key: str = Field(..., description="API key used for requests to the provider.")
+    api_key: str = Field(..., description="API key or secret key used for requests to the provider.")
+    access_key: Optional[str] = Field(None, description="Access key used for requests to the provider.")
+    region: Optional[str] = Field(None, description="Region used for requests to the provider.")
 
 
 class ProviderUpdate(ProviderBase):
-    api_key: str = Field(..., description="API key used for requests to the provider.")
+    api_key: str = Field(..., description="API key or secret key used for requests to the provider.")
+    access_key: Optional[str] = Field(None, description="Access key used for requests to the provider.")
+    region: Optional[str] = Field(None, description="Region used for requests to the provider.")
 
 
 class ProviderCheck(BaseModel):
     provider_type: ProviderType = Field(..., description="The type of the provider.")
-    api_key: str = Field(..., description="API key used for requests to the provider.")
+    api_key: str = Field(..., description="API key or secret key used for requests to the provider.")
+    access_key: Optional[str] = Field(None, description="Access key used for requests to the provider.")
+    region: Optional[str] = Field(None, description="Region used for requests to the provider.")
 
 
 class LettaProvider(Provider):

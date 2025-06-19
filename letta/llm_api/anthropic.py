@@ -823,12 +823,20 @@ def anthropic_chat_completions_request(
 def anthropic_bedrock_chat_completions_request(
     data: ChatCompletionRequest,
     inner_thoughts_xml_tag: Optional[str] = "thinking",
+    provider_name: Optional[str] = None,
+    provider_category: Optional[ProviderCategory] = None,
+    user_id: Optional[str] = None,
 ) -> ChatCompletionResponse:
     """Make a chat completion request to Anthropic via AWS Bedrock."""
     data = _prepare_anthropic_request(data, inner_thoughts_xml_tag, bedrock=True)
 
     # Get the client
-    client = get_bedrock_client()
+    if provider_category == ProviderCategory.byok:
+        actor = UserManager().get_user_or_default(user_id=user_id)
+        access_key, secret_key, region = ProviderManager().get_bedrock_credentials_async(provider_name, actor=actor)
+        client = get_bedrock_client(access_key, secret_key, region)
+    else:
+        client = get_bedrock_client()
 
     # Make the request
     try:

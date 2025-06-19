@@ -622,6 +622,8 @@ class AgentManager:
                 "message_buffer_autoclear": agent_update.message_buffer_autoclear,
                 "enable_sleeptime": agent_update.enable_sleeptime,
                 "response_format": agent_update.response_format,
+                "last_run_completion": agent_update.last_run_completion,
+                "last_run_duration_ms": agent_update.last_run_duration_ms,
             }
             for col, val in scalar_updates.items():
                 if val is not None:
@@ -742,6 +744,8 @@ class AgentManager:
                 "message_buffer_autoclear": agent_update.message_buffer_autoclear,
                 "enable_sleeptime": agent_update.enable_sleeptime,
                 "response_format": agent_update.response_format,
+                "last_run_completion": agent_update.last_run_completion,
+                "last_run_duration_ms": agent_update.last_run_duration_ms,
             }
             for col, val in scalar_updates.items():
                 if val is not None:
@@ -844,6 +848,7 @@ class AgentManager:
         identifier_keys: Optional[List[str]] = None,
         include_relationships: Optional[List[str]] = None,
         ascending: bool = True,
+        sort_by: Optional[str] = "created_at",
     ) -> List[PydanticAgentState]:
         """
         Retrieves agents with optimized filtering and optional field selection.
@@ -876,7 +881,7 @@ class AgentManager:
             query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id)
             query = _apply_identity_filters(query, identity_id, identifier_keys)
             query = _apply_tag_filter(query, tags, match_all_tags)
-            query = _apply_pagination(query, before, after, session, ascending=ascending)
+            query = _apply_pagination(query, before, after, session, ascending=ascending, sort_by=sort_by)
 
             if limit:
                 query = query.limit(limit)
@@ -903,6 +908,7 @@ class AgentManager:
         identifier_keys: Optional[List[str]] = None,
         include_relationships: Optional[List[str]] = None,
         ascending: bool = True,
+        sort_by: Optional[str] = "created_at",
     ) -> List[PydanticAgentState]:
         """
         Retrieves agents with optimized filtering and optional field selection.
@@ -935,7 +941,7 @@ class AgentManager:
             query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id)
             query = _apply_identity_filters(query, identity_id, identifier_keys)
             query = _apply_tag_filter(query, tags, match_all_tags)
-            query = await _apply_pagination_async(query, before, after, session, ascending=ascending)
+            query = await _apply_pagination_async(query, before, after, session, ascending=ascending, sort_by=sort_by)
 
             if limit:
                 query = query.limit(limit)

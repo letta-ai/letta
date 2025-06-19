@@ -68,7 +68,7 @@ def agent_state(client: LettaSDKClient):
             ),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
         tool_ids=[open_file_tool.id, close_file_tool.id, search_files_tool.id, grep_tool.id],
     )
     yield agent_state
@@ -85,7 +85,7 @@ def test_auto_attach_detach_files_tools(client: LettaSDKClient):
             CreateBlock(label="human", value="username: sarah"),
         ],
         model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
     )
 
     # Helper function to get file tools from agent
@@ -106,14 +106,14 @@ def test_auto_attach_detach_files_tools(client: LettaSDKClient):
     assert_no_file_tools(agent)
 
     # Create and attach first source
-    source_1 = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
+    source_1 = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
     assert len(client.sources.list()) == 1
 
     agent = client.agents.sources.attach(source_id=source_1.id, agent_id=agent.id)
     assert_file_tools_present(agent, set(FILES_TOOLS))
 
     # Create and attach second source
-    source_2 = client.sources.create(name="another_test_source", embedding="openai/text-embedding-ada-002")
+    source_2 = client.sources.create(name="another_test_source", embedding="openai/text-embedding-3-small")
     assert len(client.sources.list()) == 2
 
     agent = client.agents.sources.attach(source_id=source_2.id, agent_id=agent.id)
@@ -152,7 +152,7 @@ def test_file_upload_creates_source_blocks_correctly(
     expected_label_regex: str,
 ):
     # Create a new source
-    source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
     assert len(client.sources.list()) == 1
 
     # Attach
@@ -196,7 +196,7 @@ def test_file_upload_creates_source_blocks_correctly(
 
 def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
-    source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
     assert len(client.sources.list()) == 1
 
     # Load files into the source
@@ -240,7 +240,7 @@ def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKC
 
 def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
-    source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
     assert len(client.sources.list()) == 1
 
     # Attach
@@ -279,7 +279,7 @@ def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, a
 
 def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
-    source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
 
     sources_list = client.sources.list()
     assert len(sources_list) == 1
@@ -388,7 +388,7 @@ def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_stat
 
 def test_agent_uses_search_files_correctly(client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
-    source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
 
     sources_list = client.sources.list()
     assert len(sources_list) == 1
@@ -440,7 +440,7 @@ def test_agent_uses_search_files_correctly(client: LettaSDKClient, agent_state: 
 
 def test_agent_uses_grep_correctly(client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
-    source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
 
     sources_list = client.sources.list()
     assert len(sources_list) == 1
@@ -490,7 +490,7 @@ def test_agent_uses_grep_correctly(client: LettaSDKClient, agent_state: AgentSta
 
 def test_view_ranges_have_metadata(client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
-    source = client.sources.create(name="test_source", embedding="openai/text-embedding-ada-002")
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
 
     sources_list = client.sources.list()
     assert len(sources_list) == 1

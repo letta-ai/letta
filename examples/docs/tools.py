@@ -46,7 +46,7 @@ agent_state = client.agents.create(
     ],
     # set automatic defaults for LLM/embedding config
     model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
     # create the agent with an additional tool
     tool_ids=[tool.id],
     tool_rules=[
@@ -89,7 +89,7 @@ agent_state = client.agents.create(
         ),
     ],
     model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
     include_base_tools=False, 
     tool_ids=[tool.id, send_message_tool.id],
 )

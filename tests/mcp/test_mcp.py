@@ -107,8 +107,8 @@ def agent_state(client):
 
 @pytest.mark.asyncio
 async def test_sse_mcp_server(client, agent_state):
-    mcp_server_name = "github_composio"
-    server_url = "https://mcp.composio.dev/composio/server/3c44733b-75ae-4ba8-9a68-7153265fadd8/sse?useComposioHelperActions=true"
+    mcp_server_name = "deepwiki"
+    server_url = "https://mcp.deepwiki.com/sse"
     sse_mcp_config = SSEServerConfig(server_name=mcp_server_name, server_url=server_url)
     client.tools.add_mcp_server(request=sse_mcp_config)
 
@@ -120,12 +120,15 @@ async def test_sse_mcp_server(client, agent_state):
     tools = client.tools.list_mcp_tools_by_server(mcp_server_name=mcp_server_name)
     assert len(tools) > 0
     assert isinstance(tools[0], McpTool)
-    star_mcp_tool = next((t for t in tools if t.name == "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"), None)
 
-    # Check that one of the tools are executable
-    letta_tool = client.tools.add_mcp_tool(mcp_server_name=mcp_server_name, mcp_tool_name=star_mcp_tool.name)
+    # Test with the ask_question tool which is one of the available deepwiki tools
+    ask_question_tool = next((t for t in tools if t.name == "ask_question"), None)
+    assert ask_question_tool is not None, f"ask_question tool not found. Available tools: {[t.name for t in tools]}"
 
-    tool_args = {"owner": "letta-ai", "repo": "letta"}
+    # Check that the tool is executable
+    letta_tool = client.tools.add_mcp_tool(mcp_server_name=mcp_server_name, mcp_tool_name=ask_question_tool.name)
+
+    tool_args = {"repoName": "facebook/react", "question": "What is React?"}
 
     # Add to agent, have agent invoke tool
     client.agents.tools.attach(agent_id=agent_state.id, tool_id=letta_tool.id)
@@ -141,18 +144,15 @@ async def test_sse_mcp_server(client, agent_state):
     seq = response.messages
     calls = [m for m in seq if isinstance(m, ToolCallMessage)]
     assert calls, "Expected a ToolCallMessage"
-    assert calls[0].tool_call.name == "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"
+    assert calls[0].tool_call.name == "ask_question"
 
     returns = [m for m in seq if isinstance(m, ToolReturnMessage)]
     assert returns, "Expected a ToolReturnMessage"
     tr = returns[0]
     # status field
     assert tr.status == "success", f"Bad status: {tr.status}"
-    # parse JSON payload
-    full_payload = json.loads(tr.tool_return)
-
-    assert full_payload.get("successful", False), f"Tool returned failure payload: {full_payload}"
-    assert full_payload["data"]["details"] == "Action executed successfully", f"Unexpected details: {full_payload}"
+    # Check that we got some content back
+    assert len(tr.tool_return.strip()) > 0, f"Expected non-empty tool return, got: {tr.tool_return}"
 
 
 def test_stdio_mcp_server(client, agent_state):

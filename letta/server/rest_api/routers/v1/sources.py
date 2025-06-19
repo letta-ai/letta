@@ -11,6 +11,7 @@ from starlette import status
 import letta.constants as constants
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.file import FileMetadata
 from letta.schemas.job import Job
 from letta.schemas.passage import Passage
@@ -21,9 +22,14 @@ from letta.server.server import SyncServer
 from letta.services.file_processor.chunker.llama_index_chunker import LlamaIndexChunker
 from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
 from letta.services.file_processor.file_processor import FileProcessor
-from letta.services.file_processor.file_types import get_allowed_media_types, get_extension_to_mime_type_map, register_mime_types
+from letta.services.file_processor.file_types import (
+    get_allowed_media_types,
+    get_extension_to_mime_type_map,
+    is_simple_text_mime_type,
+    register_mime_types,
+)
 from letta.services.file_processor.parser.mistral_parser import MistralFileParser
-from letta.settings import model_settings, settings
+from letta.settings import settings
 from letta.utils import safe_create_task, sanitize_filename
 
 logger = get_logger(__name__)
@@ -184,7 +190,7 @@ async def upload_file_to_source(
     raw_ct = file.content_type or ""
     media_type = raw_ct.split(";", 1)[0].strip().lower()
 
-    # If client didn’t supply a Content-Type or it’s not one of the allowed types,
+    # If client didn't supply a Content-Type or it's not one of the allowed types,
     #    attempt to infer from filename extension.
     if media_type not in allowed_media_types and file.filename:
         guessed, _ = mimetypes.guess_type(file.filename)
@@ -211,6 +217,7 @@ async def upload_file_to_source(
     source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     if source is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Source with id={source_id} not found.")
+
     content = await file.read()
 
     # sanitize filename
@@ -228,20 +235,26 @@ async def upload_file_to_source(
     agent_states = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
 
     # NEW: Cloud based file processing
-    if settings.mistral_api_key and model_settings.openai_api_key:
-        logger.info("Running experimental cloud based file processing...")
-        safe_create_task(
-            load_file_to_source_cloud(server, agent_states, content, file, job, source_id, actor),
-            logger=logger,
-            label="file_processor.process",
+    # Determine file's MIME type
+    file_mime_type = mimetypes.guess_type(file.filename)[0] or "application/octet-stream"
+
+    # Check if it's a simple text file
+    is_simple_file = is_simple_text_mime_type(file_mime_type)
+
+    # For complex files, require Mistral API key
+    if not is_simple_file and not settings.mistral_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Mistral API key is required to process this file type {file_mime_type}. Please configure your Mistral API key to upload complex file formats.",
         )
-    else:
-        # create background tasks
-        safe_create_task(
-            load_file_to_source_async(server, source_id=source.id, filename=file.filename, job_id=job.id, bytes=content, actor=actor),
-            logger=logger,
-            label="load_file_to_source_async",
-        )
+
+    # Use cloud processing for all files (simple files always, complex files with Mistral key)
+    logger.info("Running experimental cloud based file processing...")
+    safe_create_task(
+        load_file_to_source_cloud(server, agent_states, content, file, job, source_id, actor, source.embedding_config),
+        logger=logger,
+        label="file_processor.process",
+    )
     safe_create_task(sleeptime_document_ingest_async(server, source_id, actor), logger=logger, label="sleeptime_document_ingest_async")
 
     return job
@@ -336,10 +349,17 @@ async def sleeptime_document_ingest_async(server: SyncServer, source_id: str, ac
 
 
 async def load_file_to_source_cloud(
-    server: SyncServer, agent_states: List[AgentState], content: bytes, file: UploadFile, job: Job, source_id: str, actor: User
+    server: SyncServer,
+    agent_states: List[AgentState],
+    content: bytes,
+    file: UploadFile,
+    job: Job,
+    source_id: str,
+    actor: User,
+    embedding_config: EmbeddingConfig,
 ):
     file_processor = MistralFileParser()
-    text_chunker = LlamaIndexChunker()
-    embedder = OpenAIEmbedder()
+    text_chunker = LlamaIndexChunker(chunk_size=embedding_config.embedding_chunk_size)
+    embedder = OpenAIEmbedder(embedding_config=embedding_config)
     file_processor = FileProcessor(file_parser=file_processor, text_chunker=text_chunker, embedder=embedder, actor=actor)
     await file_processor.process(server=server, agent_states=agent_states, source_id=source_id, content=content, file=file, job=job)
