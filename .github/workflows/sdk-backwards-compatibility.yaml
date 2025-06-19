@@ -28,7 +28,7 @@ jobs:
             apps/fern/openapi.json
             apps/fern/openapi-overrides.yml
 
-  preview-python-sdk:
+  backwards-compatibility-test:
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     needs: [changed-files]
     runs-on: ubuntu-latest
