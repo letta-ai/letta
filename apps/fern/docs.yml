@@ -129,10 +129,10 @@ navigation:
           - section: Voice Agents
             path: pages/voice/voice.mdx
             icon: fa-sharp fa-light fa-headset
-            contents: 
-              - page: Connecting to LiveKit Agents 
+            contents:
+              - page: Connecting to LiveKit Agents
                 path: pages/voice/voice_livekit.mdx
-              - page: Connecting to Vapi 
+              - page: Connecting to Vapi
                 path: pages/voice/voice_vapi.mdx
 
       #- section: Tool Execution
@@ -297,6 +297,8 @@ navigation:
           #  path: pages/server/pip.mdx
       - section: Connecting Model Providers
         contents:
+          - page: Supported Models
+            path: pages/selfhosting/supported-models.mdx
           - page: OpenAI
             path: pages/models/openai.mdx
           - page: Anthropic
