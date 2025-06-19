@@ -247,6 +247,7 @@ class NoopAsyncRedisClient(AsyncRedisClient):
     # noinspection PyMissingConstructor
     def __init__(self):
         self._client = None
+        self._lock = asyncio.Lock()
 
     async def set(
         self,
