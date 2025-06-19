@@ -102,6 +102,8 @@ build {
       "${path.root}/scripts/pull_service_containers.sh",
       "${path.root}/scripts/install_gh_actions.sh",
       "${path.root}/scripts/install_build_tools.sh",
+      "${path.root}/scripts/install_deploy_tools.sh",
+      "${path.root}/scripts/install_ops_agent.sh",
     ]
   }
 
