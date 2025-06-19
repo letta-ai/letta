@@ -14,6 +14,10 @@ jobs:
     uses: ./.github/workflows/reusable-test-workflow.yml
     with:
       test-type: 'unit'
+      changed-files-pattern: |
+        apps/core/**
+        .github/workflows/reusable-test-workflow.yml
+        .github/workflows/core-unit-test.yml
       install-args: '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google'
       timeout-minutes: 15
       ref: ${{ github.event.pull_request.head.sha || github.sha }}

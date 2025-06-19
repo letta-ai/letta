@@ -21,5 +21,6 @@ jobs:
       changed-files-pattern: |
         apps/core/**
         libs/config-core-deploy/**
+        .github/workflows/reusable-test-workflow.yml
         .github/workflows/docker-integration-tests.yaml
     secrets: inherit

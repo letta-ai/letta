@@ -47,7 +47,7 @@ on:
         type: string
         default: |
           apps/core/**
-          .github/workflows/*.yml
+          .github/workflows/reusable-test-workflow.yml
       skip-fern-generation:
         description: 'Skip Fern SDK generation'
         required: false
