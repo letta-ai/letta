@@ -246,7 +246,7 @@ class AsyncRedisClient:
 class NoopAsyncRedisClient(AsyncRedisClient):
     # noinspection PyMissingConstructor
     def __init__(self):
-        pass
+        self._client = None
 
     async def set(
         self,
@@ -282,6 +282,9 @@ class NoopAsyncRedisClient(AsyncRedisClient):
 
     async def scard(self, key: str) -> int:
         return 0
+
+    # async def smembers(self, key: str) -> Set[str]:
+    #     return set()
 
 
 async def get_redis_client() -> AsyncRedisClient:
