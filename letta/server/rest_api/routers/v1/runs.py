@@ -92,7 +92,7 @@ async def list_run_messages(
     after: Optional[str] = Query(None, description="Cursor for pagination"),
     limit: Optional[int] = Query(100, description="Maximum number of messages to return"),
     order: str = Query(
-        "desc", description="Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order."
+        "asc", description="Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order."
     ),
     role: Optional[MessageRole] = Query(None, description="Filter by role"),
 ):

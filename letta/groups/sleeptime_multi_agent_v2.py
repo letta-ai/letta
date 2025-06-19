@@ -63,6 +63,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
         self,
         input_messages: List[MessageCreate],
         max_steps: int = DEFAULT_MAX_STEPS,
+        run_id: Optional[str] = None,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: Optional[int] = None,
         include_return_message_types: Optional[List[MessageType]] = None,
@@ -83,6 +84,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
             message_manager=self.message_manager,
             agent_manager=self.agent_manager,
             block_manager=self.block_manager,
+            job_manager=self.job_manager,
             passage_manager=self.passage_manager,
             actor=self.actor,
             step_manager=self.step_manager,
@@ -92,6 +94,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
         response = await foreground_agent.step(
             input_messages=new_messages,
             max_steps=max_steps,
+            run_id=run_id,
             use_assistant_message=use_assistant_message,
             include_return_message_types=include_return_message_types,
         )
@@ -170,6 +173,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
             message_manager=self.message_manager,
             agent_manager=self.agent_manager,
             block_manager=self.block_manager,
+            job_manager=self.job_manager,
             passage_manager=self.passage_manager,
             actor=self.actor,
             step_manager=self.step_manager,
@@ -283,6 +287,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
                 message_manager=self.message_manager,
                 agent_manager=self.agent_manager,
                 block_manager=self.block_manager,
+                job_manager=self.job_manager,
                 passage_manager=self.passage_manager,
                 actor=self.actor,
                 step_manager=self.step_manager,
@@ -296,6 +301,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
             result = await sleeptime_agent.step(
                 input_messages=sleeptime_agent_messages,
                 use_assistant_message=use_assistant_message,
+                run_id=run_id,
             )
 
             # Update job status

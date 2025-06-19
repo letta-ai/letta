@@ -1000,11 +1000,12 @@ class Agent(BaseAgent):
             )
             if job_id:
                 for message in all_new_messages:
-                    self.job_manager.add_message_to_job(
-                        job_id=job_id,
-                        message_id=message.id,
-                        actor=self.user,
-                    )
+                    if message.role != "user":
+                        self.job_manager.add_message_to_job(
+                            job_id=job_id,
+                            message_id=message.id,
+                            actor=self.user,
+                        )
 
             return AgentStepResponse(
                 messages=all_new_messages,

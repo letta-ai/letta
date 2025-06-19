@@ -43,6 +43,7 @@ from letta.server.rest_api.utils import create_letta_messages_from_llm_response
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
+from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.step_manager import NoopStepManager, StepManager
@@ -66,6 +67,7 @@ class LettaAgent(BaseAgent):
         message_manager: MessageManager,
         agent_manager: AgentManager,
         block_manager: BlockManager,
+        job_manager: JobManager,
         passage_manager: PassageManager,
         actor: User,
         step_manager: StepManager = NoopStepManager(),
@@ -81,6 +83,7 @@ class LettaAgent(BaseAgent):
         # TODO: Make this more general, factorable
         # Summarizer settings
         self.block_manager = block_manager
+        self.job_manager = job_manager
         self.passage_manager = passage_manager
         self.step_manager = step_manager
         self.telemetry_manager = telemetry_manager
@@ -120,6 +123,7 @@ class LettaAgent(BaseAgent):
         self,
         input_messages: List[MessageCreate],
         max_steps: int = DEFAULT_MAX_STEPS,
+        run_id: Optional[str] = None,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: Optional[int] = None,
         include_return_message_types: Optional[List[MessageType]] = None,
@@ -131,6 +135,7 @@ class LettaAgent(BaseAgent):
             agent_state=agent_state,
             input_messages=input_messages,
             max_steps=max_steps,
+            run_id=run_id,
             request_start_timestamp_ns=request_start_timestamp_ns,
         )
         return _create_letta_response(
@@ -193,7 +198,6 @@ class LettaAgent(BaseAgent):
             response = llm_client.convert_response_to_chat_completion(response_data, in_context_messages, agent_state.llm_config)
 
             # update usage
-            # TODO: add run_id
             usage.step_count += 1
             usage.completion_tokens += response.usage.completion_tokens
             usage.prompt_tokens += response.usage.prompt_tokens
@@ -302,6 +306,7 @@ class LettaAgent(BaseAgent):
         agent_state: AgentState,
         input_messages: List[MessageCreate],
         max_steps: int = DEFAULT_MAX_STEPS,
+        run_id: Optional[str] = None,
         request_start_timestamp_ns: Optional[int] = None,
     ) -> Tuple[List[Message], List[Message], Optional[LettaStopReason], LettaUsageStatistics]:
         """
@@ -345,11 +350,11 @@ class LettaAgent(BaseAgent):
 
             response = llm_client.convert_response_to_chat_completion(response_data, in_context_messages, agent_state.llm_config)
 
-            # TODO: add run_id
             usage.step_count += 1
             usage.completion_tokens += response.usage.completion_tokens
             usage.prompt_tokens += response.usage.prompt_tokens
             usage.total_tokens += response.usage.total_tokens
+            usage.run_ids = [run_id] if run_id else None
             MetricRegistry().message_output_tokens.record(
                 response.usage.completion_tokens, dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model})
             )
@@ -385,6 +390,7 @@ class LettaAgent(BaseAgent):
                 initial_messages=initial_messages,
                 agent_step_span=agent_step_span,
                 is_final_step=(i == max_steps - 1),
+                run_id=run_id,
             )
             self.response_messages.extend(persisted_messages)
             new_in_context_messages.extend(persisted_messages)
@@ -916,6 +922,7 @@ class LettaAgent(BaseAgent):
         initial_messages: Optional[List[Message]] = None,
         agent_step_span: Optional["Span"] = None,
         is_final_step: Optional[bool] = None,
+        run_id: Optional[str] = None,
     ) -> Tuple[List[Message], bool, Optional[LettaStopReason]]:
         """
         Now that streaming is done, handle the final AI response.
@@ -1027,7 +1034,7 @@ class LettaAgent(BaseAgent):
 
         # 5a. Persist Steps to DB
         # Following agent loop to persist this before messages
-        # TODO (cliandy): determine what should match old loop w/provider_id, job_id
+        # TODO (cliandy): determine what should match old loop w/provider_id
         # TODO (cliandy): UsageStatistics and LettaUsageStatistics are used in many places, but are not the same.
         logged_step = await self.step_manager.log_step_async(
             actor=self.actor,
@@ -1039,7 +1046,7 @@ class LettaAgent(BaseAgent):
             context_window_limit=agent_state.llm_config.context_window,
             usage=usage,
             provider_id=None,
-            job_id=None,
+            job_id=run_id,
             step_id=step_id,
         )
 
@@ -1064,6 +1071,13 @@ class LettaAgent(BaseAgent):
             (initial_messages or []) + tool_call_messages, actor=self.actor
         )
         self.last_function_response = function_response
+
+        if run_id:
+            await self.job_manager.add_messages_to_job_async(
+                job_id=run_id,
+                message_ids=[message.id for message in persisted_messages if message.role != "user"],
+                actor=self.actor,
+            )
 
         return persisted_messages, continue_stepping, stop_reason
 
@@ -1102,6 +1116,7 @@ class LettaAgent(BaseAgent):
             message_manager=self.message_manager,
             agent_manager=self.agent_manager,
             block_manager=self.block_manager,
+            job_manager=self.job_manager,
             passage_manager=self.passage_manager,
             sandbox_env_vars=sandbox_env_vars,
             actor=self.actor,

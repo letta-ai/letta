@@ -50,7 +50,9 @@ class BaseAgent(ABC):
         self.logger = get_logger(agent_id)
 
     @abstractmethod
-    async def step(self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS) -> LettaResponse:
+    async def step(
+        self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS, run_id: Optional[str] = None
+    ) -> LettaResponse:
         """
         Main execution loop for the agent.
         """
