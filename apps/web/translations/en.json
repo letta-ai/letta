@@ -318,15 +318,15 @@
       "label": "Custom API key"
     },
     "bedrock": {
-      "secretKey": "Secret key",
+      "secretKey": "Secret access key",
       "accessKey": {
-        "label": "Access key",
+        "label": "Access key ID",
         "placeholder": "Example: 'AKIAIOSFODNN7EXAMPLE'"
+      },
+      "region": {
+        "label": "Default region",
+        "placeholder": "Example: 'us-east-1'"
       }
-    },
-    "region": {
-      "label": "Region",
-      "placeholder": "Example: 'us-east-1'"
     }
   },
   "pages/models/DeleteProviderModal": {

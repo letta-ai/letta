@@ -303,11 +303,11 @@
       "accessKey": {
         "label": "访问密钥",
         "placeholder": "例如：'AKIAIOSFODNN7EXAMPLE'"
+      },
+      "region": {
+        "label": "默认区域",
+        "placeholder": "例如：'us-east-1'"
       }
-    },
-    "region": {
-      "label": "区域",
-      "placeholder": "例如：'us-east-1'"
     }
   },
   "pages/models/DeleteProviderModal": {

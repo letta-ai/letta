@@ -363,8 +363,8 @@ export function AddProviderModal(props: CreateProviderModalProps) {
                 name="region"
                 render={({ field }) => (
                   <Input
-                    label={t('region.label')}
-                    placeholder={t('region.placeholder')}
+                    label={t('bedrock.region.label')}
+                    placeholder={t('bedrock.region.placeholder')}
                     fullWidth
                     {...field}
                   />
