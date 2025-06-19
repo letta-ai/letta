@@ -110,6 +110,7 @@ all_configs = [
     "claude-3-5-sonnet.json",
     "claude-3-7-sonnet.json",
     "claude-3-7-sonnet-extended.json",
+    "bedrock-claude-4-sonnet.json",
     "gemini-1.5-pro.json",
     "gemini-2.5-flash-vertex.json",
     "gemini-2.5-pro-vertex.json",

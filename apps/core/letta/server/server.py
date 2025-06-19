@@ -54,9 +54,9 @@ from letta.schemas.memory import ArchivalMemorySummary, Memory, RecallMemorySumm
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
 from letta.schemas.passage import Passage, PassageUpdate
 from letta.schemas.providers import (
-    AnthropicBedrockProvider,
     AnthropicProvider,
     AzureProvider,
+    BedrockProvider,
     DeepSeekProvider,
     GoogleAIProvider,
     GoogleVertexProvider,
@@ -367,7 +367,7 @@ class SyncServer(Server):
             )
         if model_settings.aws_access_key_id and model_settings.aws_secret_access_key and model_settings.aws_default_region:
             self._enabled_providers.append(
-                AnthropicBedrockProvider(
+                BedrockProvider(
                     name="bedrock",
                     region=model_settings.aws_default_region,
                 )

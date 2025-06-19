@@ -27,7 +27,7 @@ from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
 from letta.otel.tracing import log_event, trace_method, tracer
 from letta.schemas.agent import AgentState, UpdateAgent
-from letta.schemas.enums import MessageRole
+from letta.schemas.enums import MessageRole, ProviderType
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
@@ -512,12 +512,12 @@ class LettaAgent(BaseAgent):
 
             # TODO: THIS IS INCREDIBLY UGLY
             # TODO: THERE ARE MULTIPLE COPIES OF THE LLM_CONFIG EVERYWHERE THAT ARE GETTING MANIPULATED
-            if agent_state.llm_config.model_endpoint_type == "anthropic":
+            if agent_state.llm_config.model_endpoint_type in [ProviderType.anthropic, ProviderType.bedrock]:
                 interface = AnthropicStreamingInterface(
                     use_assistant_message=use_assistant_message,
                     put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs,
                 )
-            elif agent_state.llm_config.model_endpoint_type == "openai":
+            elif agent_state.llm_config.model_endpoint_type == ProviderType.openai:
                 interface = OpenAIStreamingInterface(
                     use_assistant_message=use_assistant_message,
                     put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs,

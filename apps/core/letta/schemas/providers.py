@@ -98,7 +98,7 @@ class Provider(ProviderBase):
             case ProviderType.anthropic:
                 return AnthropicProvider(**self.model_dump(exclude_none=True))
             case ProviderType.bedrock:
-                return AnthropicBedrockProvider(**self.model_dump(exclude_none=True))
+                return BedrockProvider(**self.model_dump(exclude_none=True))
             case ProviderType.ollama:
                 return OllamaProvider(**self.model_dump(exclude_none=True))
             case ProviderType.google_ai:
@@ -1513,7 +1513,7 @@ class CohereProvider(OpenAIProvider):
     pass
 
 
-class AnthropicBedrockProvider(Provider):
+class BedrockProvider(Provider):
     provider_type: Literal[ProviderType.bedrock] = Field(ProviderType.bedrock, description="The type of the provider.")
     provider_category: ProviderCategory = Field(ProviderCategory.base, description="The category of the provider (base or byok)")
     region: str = Field(..., description="AWS region for Bedrock")
@@ -1539,6 +1539,32 @@ class AnthropicBedrockProvider(Provider):
             )
         return configs
 
+    async def list_llm_models_async(self) -> List[LLMConfig]:
+        from letta.llm_api.aws_bedrock import bedrock_get_model_list_async
+
+        models = await bedrock_get_model_list_async(
+            self.access_key,
+            self.api_key,
+            self.region,
+        )
+
+        configs = []
+        for model_summary in models:
+            model_arn = model_summary["inferenceProfileArn"]
+            configs.append(
+                LLMConfig(
+                    model=model_arn,
+                    model_endpoint_type=self.provider_type.value,
+                    model_endpoint=None,
+                    context_window=self.get_model_context_window(model_arn),
+                    handle=self.get_handle(model_arn),
+                    provider_name=self.name,
+                    provider_category=self.provider_category,
+                )
+            )
+
+        return configs
+
     def list_embedding_models(self):
         return []
 
@@ -1548,7 +1574,7 @@ class AnthropicBedrockProvider(Provider):
 
         return bedrock_get_model_context_window(model_name)
 
-    def get_handle(self, model_name: str) -> str:
+    def get_handle(self, model_name: str, is_embedding: bool = False, base_name: Optional[str] = None) -> str:
         print(model_name)
         model = model_name.split(".")[-1]
-        return f"bedrock/{model}"
+        return f"{self.name}/{model}"
