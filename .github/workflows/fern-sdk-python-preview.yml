@@ -36,6 +36,7 @@ jobs:
 
   preview-python-sdk:
     needs: [changed-files]
+    name: preview-python-sdk
     runs-on: [self-hosted, medium]
     outputs:
       cache-key: ${{ steps.cache-key.outputs.key }}

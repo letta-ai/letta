@@ -16,6 +16,7 @@ jobs:
       test-type: 'integration'
       install-args: '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox'
       timeout-minutes: 15
+      ref: ${{ github.event.pull_request.head.sha || github.sha }}
       matrix-strategy: |
         {
           "fail-fast": false,
