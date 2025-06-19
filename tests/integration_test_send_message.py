@@ -30,8 +30,11 @@ from letta_client.types import (
 )
 
 from letta.llm_api.openai_client import is_openai_reasoning_model
+from letta.log import get_logger
 from letta.schemas.agent import AgentState
 from letta.schemas.llm_config import LLMConfig
+
+logger = get_logger(__name__)
 
 # ------------------------------
 # Helper Functions and Constants
@@ -443,7 +446,10 @@ def agent_state(client: Letta) -> AgentState:
     )
     yield agent_state_instance
 
-    client.agents.delete(agent_state_instance.id)
+    try:
+        client.agents.delete(agent_state_instance.id)
+    except Exception as e:
+        logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
 
 
 @pytest.fixture(scope="function")
@@ -462,7 +468,10 @@ def agent_state_no_tools(client: Letta) -> AgentState:
     )
     yield agent_state_instance
 
-    client.agents.delete(agent_state_instance.id)
+    try:
+        client.agents.delete(agent_state_instance.id)
+    except Exception as e:
+        logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
 
 
 # ------------------------------

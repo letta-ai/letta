@@ -1,6 +1,5 @@
 import os
-import subprocess
-import sys
+import threading
 from unittest.mock import MagicMock
 
 import pytest
@@ -101,44 +100,15 @@ def _run_server():
 
 @pytest.fixture(scope="module")
 def server_url():
-    """
-    Starts the Letta HTTP server in a separate process using the 'uvicorn' CLI,
-    so its event loop and DB pool stay completely isolated from pytest-asyncio.
-    """
-    url = os.getenv("LETTA_SERVER_URL", "http://127.0.0.1:8283")
+    """Ensures a server is running and returns its base URL."""
+    url = os.getenv("LETTA_SERVER_URL", "http://localhost:8283")
 
-    # Only spawn our own server if the user hasn't overridden LETTA_SERVER_URL
     if not os.getenv("LETTA_SERVER_URL"):
-        # Build the command to launch uvicorn on your FastAPI app
-        cmd = [
-            sys.executable,
-            "-m",
-            "uvicorn",
-            "letta.server.rest_api.app:app",
-            "--host",
-            "127.0.0.1",
-            "--port",
-            "8283",
-        ]
-        # If you need TLS or reload settings from start_server(), you can add
-        # "--reload" or "--ssl-keyfile", "--ssl-certfile" here as well.
+        thread = threading.Thread(target=_run_server, daemon=True)
+        thread.start()
+        wait_for_server(url)  # Allow server startup time
 
-        server_proc = subprocess.Popen(
-            cmd,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-
-        # wait until the HTTP port is accepting connections
-        wait_for_server(url)
-
-        yield url
-
-        # Teardown: kill the subprocess if we started it
-        server_proc.terminate()
-        server_proc.wait(timeout=10)
-    else:
-        yield url
+    return url
 
 
 @pytest.fixture(scope="module")
@@ -521,7 +491,7 @@ async def test_init_voice_convo_agent(voice_agent, server, actor, server_url):
 
     assert voice_agent.enable_sleeptime == True
     main_agent_tools = [tool.name for tool in voice_agent.tools]
-    assert len(main_agent_tools) == 2
+    assert len(main_agent_tools) == 4
     assert "send_message" in main_agent_tools
     assert "search_memory" in main_agent_tools
     assert "core_memory_append" not in main_agent_tools

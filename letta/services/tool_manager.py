@@ -239,14 +239,16 @@ class ToolManager:
 
     @enforce_types
     @trace_method
-    async def list_tools_async(self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticTool]:
+    async def list_tools_async(
+        self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, upsert_base_tools: bool = True
+    ) -> List[PydanticTool]:
         """List all tools with optional pagination."""
         tools = await self._list_tools_async(actor=actor, after=after, limit=limit)
 
         # Check if all base tools are present if we requested all the tools w/o cursor
         # TODO: This is a temporary hack to resolve this issue
         # TODO: This requires a deeper rethink about how we keep all our internal tools up-to-date
-        if not after:
+        if not after and upsert_base_tools:
             existing_tool_names = {tool.name for tool in tools}
             missing_base_tools = LETTA_TOOL_SET - existing_tool_names
 
