@@ -49,20 +49,20 @@ class AnthropicClient(LLMClientBase):
     @trace_method
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         client = self._get_anthropic_client(llm_config, async_client=False)
-        response = client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
+        response = client.beta.messages.create(**request_data)
         return response.model_dump()
 
     @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         client = await self._get_anthropic_client_async(llm_config, async_client=True)
-        response = await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
+        response = await client.beta.messages.create(**request_data)
         return response.model_dump()
 
     @trace_method
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[BetaRawMessageStreamEvent]:
         client = await self._get_anthropic_client_async(llm_config, async_client=True)
         request_data["stream"] = True
-        return await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
+        return await client.beta.messages.create(**request_data)
 
     @trace_method
     async def send_llm_batch_request_async(

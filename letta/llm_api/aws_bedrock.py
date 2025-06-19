@@ -64,6 +64,28 @@ def bedrock_get_model_list(region_name: str) -> List[dict]:
         raise e
 
 
+async def bedrock_get_model_list_async(
+    access_key_id: Optional[str] = None,
+    secret_access_key: Optional[str] = None,
+    default_region: Optional[str] = None,
+) -> List[dict]:
+    from aioboto3.session import Session
+
+    try:
+        session = Session()
+        async with session.client(
+            "bedrock",
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=secret_access_key,
+            region_name=default_region,
+        ) as bedrock:
+            response = await bedrock.list_inference_profiles()
+            return response["inferenceProfileSummaries"]
+    except Exception as e:
+        print(f"Error getting model list: {str(e)}")
+        raise e
+
+
 def bedrock_get_model_details(region_name: str, model_id: str) -> Dict[str, Any]:
     """
     Get details for a specific model from Bedrock.
