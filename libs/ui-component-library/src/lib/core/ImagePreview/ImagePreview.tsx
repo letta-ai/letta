@@ -109,10 +109,7 @@ export function ImagePreview({
             aria-label={error}
             title={error}
           >
-            <DisabledByDefaultIcon
-              size="small"
-              className="text-white bg-black"
-            />
+            <DisabledByDefaultIcon size="small" color="black" />
           </div>
         </Tooltip>
       )}

@@ -19,7 +19,7 @@ import { Button } from '../../core/Button/Button';
 import {
   ChevronDownIcon,
   ChevronUpIcon,
-  ImageIcon,
+  ImagesModeIcon,
   SendIcon,
   ThinkingIcon,
 } from '../../icons';
@@ -528,7 +528,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                   type="button"
                   color="tertiary"
                   hideLabel
-                  preIcon={<ImageIcon />}
+                  preIcon={<ImagesModeIcon />}
                   onClick={handleImageUploadClick}
                   disabled={isSendingMessage || disabled || isDraggedOver}
                   label={t('image.uploadImages')}
