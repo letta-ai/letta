@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional
 
@@ -104,6 +105,10 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     )
 
     multi_agent_group: Optional[Group] = Field(None, description="The multi-agent group that this agent manages")
+
+    # Run metrics
+    last_run_completion: Optional[datetime] = Field(None, description="The timestamp when the agent last completed a run.")
+    last_run_duration_ms: Optional[int] = Field(None, description="The duration in milliseconds of the agent's last run.")
 
     def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
         # Get environment variables for this agent specifically
@@ -279,6 +284,8 @@ class UpdateAgent(BaseModel):
     )
     enable_sleeptime: Optional[bool] = Field(None, description="If set to True, memory management will move to a background agent thread.")
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the agent.")
+    last_run_completion: Optional[datetime] = Field(None, description="The timestamp when the agent last completed a run.")
+    last_run_duration_ms: Optional[int] = Field(None, description="The duration in milliseconds of the agent's last run.")
 
     class Config:
         extra = "ignore"  # Ignores extra fields

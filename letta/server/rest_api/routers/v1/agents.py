@@ -80,6 +80,10 @@ async def list_agents(
         False,
         description="Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
     ),
+    sort_by: Optional[str] = Query(
+        "created_at",
+        description="Field to sort by. Options: 'created_at' (default), 'last_run_completion'",
+    ),
 ):
     """
     List all agents associated with a given user.
@@ -108,6 +112,7 @@ async def list_agents(
         identifier_keys=identifier_keys,
         include_relationships=include_relationships,
         ascending=ascending,
+        sort_by=sort_by,
     )
 
 
