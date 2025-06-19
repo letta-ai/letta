@@ -30,25 +30,29 @@ export function Server(props: ServerProps) {
       gap="large"
       onClick={() => onSelect?.(server)}
     >
-      <VStack flex collapseWidth gap={false}>
-        <HStack align="center">
+      <HStack align="center" flex collapseWidth>
+        <VStack align="center" gap={false}>
           {server.statusIndicator}
-          <Typography fullWidth noWrap overflow="ellipsis" variant="body2">
+          <div style={{ height: '1.05em' }} />{' '}
+          {/* Invisible spacer matching URL line height */}
+        </VStack>
+        <VStack flex collapseWidth gap={false} align="start">
+          <Typography fullWidth noWrap overflow="ellipsis" variant="body2" bold>
             {server.name}
           </Typography>
-        </HStack>
-        {server.url && (
-          <Typography
-            fullWidth
-            noWrap
-            overflow="ellipsis"
-            color="muted"
-            variant="body3"
-          >
-            {server.url}
-          </Typography>
-        )}
-      </VStack>
+          {server.url && (
+            <Typography
+              fullWidth
+              noWrap
+              overflow="ellipsis"
+              color="lighter"
+              variant="body3"
+            >
+              {server.url}
+            </Typography>
+          )}
+        </VStack>
+      </HStack>
       {postIcon}
     </HStack>
   );
