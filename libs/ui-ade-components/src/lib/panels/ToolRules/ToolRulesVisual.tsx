@@ -527,6 +527,8 @@ export function ToolRulesVisual() {
     return <LoadingEmptyStatusComponent isLoading />;
   }
 
+  const proOptions = { hideAttribution: true };
+
   return (
     <div className="tool-rules-visual">
       <Legend
@@ -547,6 +549,7 @@ export function ToolRulesVisual() {
         nodesDraggable={true}
         elementsSelectable={false}
         fitView
+        proOptions={proOptions}
       >
         <Controls />
         <Background gap={20} size={1} color="hsl(var(--muted))" />
