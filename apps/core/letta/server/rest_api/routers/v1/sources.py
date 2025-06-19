@@ -11,6 +11,7 @@ from starlette import status
 import letta.constants as constants
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.file import FileMetadata
 from letta.schemas.job import Job
 from letta.schemas.passage import Passage
@@ -189,7 +190,7 @@ async def upload_file_to_source(
     raw_ct = file.content_type or ""
     media_type = raw_ct.split(";", 1)[0].strip().lower()
 
-    # If client didn’t supply a Content-Type or it’s not one of the allowed types,
+    # If client didn't supply a Content-Type or it's not one of the allowed types,
     #    attempt to infer from filename extension.
     if media_type not in allowed_media_types and file.filename:
         guessed, _ = mimetypes.guess_type(file.filename)
@@ -216,6 +217,7 @@ async def upload_file_to_source(
     source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     if source is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Source with id={source_id} not found.")
+
     content = await file.read()
 
     # sanitize filename
@@ -249,7 +251,7 @@ async def upload_file_to_source(
     # Use cloud processing for all files (simple files always, complex files with Mistral key)
     logger.info("Running experimental cloud based file processing...")
     safe_create_task(
-        load_file_to_source_cloud(server, agent_states, content, file, job, source_id, actor),
+        load_file_to_source_cloud(server, agent_states, content, file, job, source_id, actor, source.embedding_config),
         logger=logger,
         label="file_processor.process",
     )
@@ -347,10 +349,17 @@ async def sleeptime_document_ingest_async(server: SyncServer, source_id: str, ac
 
 
 async def load_file_to_source_cloud(
-    server: SyncServer, agent_states: List[AgentState], content: bytes, file: UploadFile, job: Job, source_id: str, actor: User
+    server: SyncServer,
+    agent_states: List[AgentState],
+    content: bytes,
+    file: UploadFile,
+    job: Job,
+    source_id: str,
+    actor: User,
+    embedding_config: EmbeddingConfig,
 ):
     file_processor = MistralFileParser()
-    text_chunker = LlamaIndexChunker()
-    embedder = OpenAIEmbedder()
+    text_chunker = LlamaIndexChunker(chunk_size=embedding_config.embedding_chunk_size)
+    embedder = OpenAIEmbedder(embedding_config=embedding_config)
     file_processor = FileProcessor(file_parser=file_processor, text_chunker=text_chunker, embedder=embedder, actor=actor)
     await file_processor.process(server=server, agent_states=agent_states, source_id=source_id, content=content, file=file, job=job)
