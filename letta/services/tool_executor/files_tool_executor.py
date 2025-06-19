@@ -14,6 +14,7 @@ from letta.services.block_manager import BlockManager
 from letta.services.file_manager import FileManager
 from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.files_agents_manager import FileAgentManager
+from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
@@ -38,6 +39,7 @@ class LettaFileToolExecutor(ToolExecutor):
         message_manager: MessageManager,
         agent_manager: AgentManager,
         block_manager: BlockManager,
+        job_manager: JobManager,
         passage_manager: PassageManager,
         actor: User,
     ):
@@ -45,6 +47,7 @@ class LettaFileToolExecutor(ToolExecutor):
             message_manager=message_manager,
             agent_manager=agent_manager,
             block_manager=block_manager,
+            job_manager=job_manager,
             passage_manager=passage_manager,
             actor=actor,
         )
