@@ -38,6 +38,7 @@ from letta.server.rest_api.utils import (
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import compile_system_message
+from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.summarizer.enums import SummarizationMode
@@ -64,6 +65,7 @@ class VoiceAgent(BaseAgent):
         message_manager: MessageManager,
         agent_manager: AgentManager,
         block_manager: BlockManager,
+        job_manager: JobManager,
         passage_manager: PassageManager,
         actor: User,
     ):
@@ -73,6 +75,7 @@ class VoiceAgent(BaseAgent):
 
         # Summarizer settings
         self.block_manager = block_manager
+        self.job_manager = job_manager
         self.passage_manager = passage_manager
         # TODO: This is not guaranteed to exist!
         self.summary_block_label = "human"
@@ -98,6 +101,7 @@ class VoiceAgent(BaseAgent):
                 agent_manager=self.agent_manager,
                 actor=self.actor,
                 block_manager=self.block_manager,
+                job_manager=self.job_manager,
                 passage_manager=self.passage_manager,
                 target_block_label=self.summary_block_label,
             ),
@@ -439,6 +443,7 @@ class VoiceAgent(BaseAgent):
             message_manager=self.message_manager,
             agent_manager=self.agent_manager,
             block_manager=self.block_manager,
+            job_manager=self.job_manager,
             passage_manager=self.passage_manager,
             sandbox_env_vars=sandbox_env_vars,
             actor=self.actor,

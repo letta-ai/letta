@@ -131,7 +131,7 @@ class LettaAgent(BaseAgent):
         agent_state = await self.agent_manager.get_agent_by_id_async(
             agent_id=self.agent_id, include_relationships=["tools", "memory", "tool_exec_environment_variables"], actor=self.actor
         )
-        _, new_in_context_messages, usage, stop_reason = await self._step(
+        _, new_in_context_messages, stop_reason, usage = await self._step(
             agent_state=agent_state,
             input_messages=input_messages,
             max_steps=max_steps,
@@ -441,7 +441,7 @@ class LettaAgent(BaseAgent):
                 force=False,
             )
 
-        return current_in_context_messages, new_in_context_messages, usage, stop_reason
+        return current_in_context_messages, new_in_context_messages, stop_reason, usage
 
     async def _update_agent_last_run_metrics(self, completion_time: datetime, duration_ms: float) -> None:
         try:
