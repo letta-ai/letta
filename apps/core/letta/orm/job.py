@@ -4,10 +4,9 @@ from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy import JSON, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from letta.orm.enums import JobType
 from letta.orm.mixins import UserMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
-from letta.schemas.enums import JobStatus
+from letta.schemas.enums import JobStatus, JobType
 from letta.schemas.job import Job as PydanticJob
 from letta.schemas.job import LettaRequestConfig
 

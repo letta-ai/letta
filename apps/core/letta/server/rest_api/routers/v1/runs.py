@@ -3,9 +3,8 @@ from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import Field
 
-from letta.orm.enums import JobType
 from letta.orm.errors import NoResultFound
-from letta.schemas.enums import JobStatus, MessageRole
+from letta.schemas.enums import JobStatus, JobType, MessageRole
 from letta.schemas.letta_message import LettaMessageUnion
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.run import Run

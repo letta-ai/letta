@@ -4,9 +4,10 @@ from sqlalchemy import JSON, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 # TODO everything in functions should live in this model
-from letta.orm.enums import ToolSourceType, ToolType
+from letta.orm.enums import ToolType
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
+from letta.schemas.enums import ToolSourceType
 from letta.schemas.tool import Tool as PydanticTool
 
 if TYPE_CHECKING:

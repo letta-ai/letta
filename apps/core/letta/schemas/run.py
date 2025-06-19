@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import Field
 
-from letta.orm.enums import JobType
+from letta.schemas.enums import JobType
 from letta.schemas.job import Job, JobBase, LettaRequestConfig
 
 
