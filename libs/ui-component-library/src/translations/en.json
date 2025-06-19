@@ -61,8 +61,8 @@
     },
     "CollapseController": {
       "tooltip": {
-        "collapse": "Expand memory block",
-        "expanded": "Collapse memory block"
+        "collapse": "Collapse memory block",
+        "expanded": "Expand memory block"
       }
     },
     "CoreMemoryEditorHeader": {
