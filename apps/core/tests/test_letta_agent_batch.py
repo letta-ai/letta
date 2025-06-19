@@ -19,11 +19,12 @@ from letta.config import LettaConfig
 from letta.helpers import ToolRulesSolver
 from letta.jobs.llm_batch_job_polling import poll_running_llm_batches
 from letta.orm import Base
-from letta.schemas.agent import AgentState, AgentStepState, CreateAgent
+from letta.schemas.agent import AgentState, CreateAgent
 from letta.schemas.enums import AgentStepStatus, JobStatus, MessageRole, ProviderType
 from letta.schemas.job import BatchJob
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_request import LettaBatchRequest
+from letta.schemas.llm_batch_job import AgentStepState
 from letta.schemas.message import MessageCreate
 from letta.schemas.tool_rule import InitToolRule
 from letta.server.db import db_context

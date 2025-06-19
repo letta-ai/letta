@@ -18,14 +18,14 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.log import get_logger
 from letta.orm.enums import ToolType
 from letta.otel.tracing import log_event, trace_method
-from letta.schemas.agent import AgentState, AgentStepState
+from letta.schemas.agent import AgentState
 from letta.schemas.enums import AgentStepStatus, JobStatus, MessageStreamStatus, ProviderType
 from letta.schemas.job import JobUpdate
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_request import LettaBatchRequest
 from letta.schemas.letta_response import LettaBatchResponse, LettaResponse
-from letta.schemas.llm_batch_job import LLMBatchItem
+from letta.schemas.llm_batch_job import AgentStepState, LLMBatchItem
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import ToolCall as OpenAIToolCall
 from letta.schemas.sandbox_config import SandboxConfig, SandboxType

@@ -2,12 +2,17 @@ from datetime import datetime
 from typing import Optional, Union
 
 from anthropic.types.beta.messages import BetaMessageBatch, BetaMessageBatchIndividualResponse
-from pydantic import Field
+from pydantic import BaseModel, Field
 
-from letta.schemas.agent import AgentStepState
+from letta.helpers import ToolRulesSolver
 from letta.schemas.enums import AgentStepStatus, JobStatus, ProviderType
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.llm_config import LLMConfig
+
+
+class AgentStepState(BaseModel):
+    step_number: int = Field(..., description="The current step number in the agent loop")
+    tool_rules_solver: ToolRulesSolver = Field(..., description="The current state of the ToolRulesSolver")
 
 
 class LLMBatchItemBase(OrmMetadataBase, validate_assignment=True):
