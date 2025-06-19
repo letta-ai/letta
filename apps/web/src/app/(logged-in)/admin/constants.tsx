@@ -1,6 +1,5 @@
 import type { AdminNavigationItemProps } from './types';
 import {
-  ListIcon,
   LayoutIcon,
   CompanyIcon,
   InferenceModelsIcon,
@@ -12,13 +11,6 @@ import {
 import React from 'react';
 
 export const NavigationItems: AdminNavigationItemProps[] = [
-  {
-    id: 'whitelist',
-    label: 'Manage Whitelist',
-    icon: <ListIcon />,
-    href: '/admin/whitelist',
-    description: 'Manage the whitelist of users who can access the app',
-  },
   {
     id: 'view-organizations',
     label: 'View Organizations',
