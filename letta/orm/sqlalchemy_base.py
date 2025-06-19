@@ -490,16 +490,21 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         Raises:
             NoResultFound: if the object is not found
         """
+        from letta.settings import settings
+
         identifiers = [] if identifier is None else [identifier]
         query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, check_is_deleted, **kwargs)
         if query is None:
             raise NoResultFound(f"{cls.__name__} not found with identifier {identifier}")
-        await db_session.execute(text("SET LOCAL enable_seqscan = OFF"))
+
+        if settings.letta_pg_uri_no_default:
+            await db_session.execute(text("SET LOCAL enable_seqscan = OFF"))
         try:
             result = await db_session.execute(query)
             item = result.scalar_one_or_none()
         finally:
-            await db_session.execute(text("SET LOCAL enable_seqscan = ON"))
+            if settings.letta_pg_uri_no_default:
+                await db_session.execute(text("SET LOCAL enable_seqscan = ON"))
 
         if item is None:
             raise NoResultFound(f"{cls.__name__} not found with {', '.join(query_conditions if query_conditions else ['no conditions'])}")

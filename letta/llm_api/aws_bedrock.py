@@ -3,14 +3,19 @@ from typing import Any, Dict, List, Optional
 
 from anthropic import AnthropicBedrock
 
+from letta.log import get_logger
 from letta.settings import model_settings
+
+logger = get_logger(__name__)
 
 
 def has_valid_aws_credentials() -> bool:
     """
     Check if AWS credentials are properly configured.
     """
-    valid_aws_credentials = os.getenv("AWS_ACCESS_KEY") and os.getenv("AWS_SECRET_ACCESS_KEY") and os.getenv("AWS_REGION")
+    valid_aws_credentials = (
+        os.getenv("AWS_ACCESS_KEY") is not None and os.getenv("AWS_SECRET_ACCESS_KEY") is not None and os.getenv("AWS_REGION") is not None
+    )
     return valid_aws_credentials
 
 
@@ -24,6 +29,7 @@ def get_bedrock_client(
     """
     import boto3
 
+    logger.debug(f"Getting Bedrock client for {model_settings.aws_region}")
     sts_client = boto3.client(
         "sts",
         aws_access_key_id=access_key or model_settings.aws_access_key,
@@ -55,12 +61,13 @@ def bedrock_get_model_list(region_name: str) -> List[dict]:
     """
     import boto3
 
+    logger.debug(f"Getting model list for {region_name}")
     try:
         bedrock = boto3.client("bedrock", region_name=region_name)
         response = bedrock.list_inference_profiles()
         return response["inferenceProfileSummaries"]
     except Exception as e:
-        print(f"Error getting model list: {str(e)}")
+        logger.exception(f"Error getting model list: {str(e)}", e)
         raise e
 
 
@@ -71,6 +78,7 @@ def bedrock_get_model_details(region_name: str, model_id: str) -> Dict[str, Any]
     import boto3
     from botocore.exceptions import ClientError
 
+    logger.debug(f"Getting model details for {model_id}")
     try:
         bedrock = boto3.client("bedrock", region_name=region_name)
         response = bedrock.get_foundation_model(modelIdentifier=model_id)
