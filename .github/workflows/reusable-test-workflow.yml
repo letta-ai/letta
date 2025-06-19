@@ -81,34 +81,12 @@ jobs:
         with:
           files: ${{ inputs.changed-files-pattern }}
 
-  test-run:
+  block-until-sdk-preview-finishes:
     needs: [changed-files]
-    if: |
-      needs.changed-files.outputs.any_changed == 'true'
-    runs-on: ${{ fromJSON(inputs.runner) }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
-    strategy: ${{ fromJSON(inputs.matrix-strategy) }}
-
-    services:
-      postgres:
-        image: pgvector/pgvector:pg17
-        ports:
-          # avoids conflict with docker postgres
-          - ${{ inputs.use-docker && '9999:5432' || '5432:5432' }}
-        env:
-          POSTGRES_HOST_AUTH_METHOD: trust
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    name: block-until-sdk-preview-finishes
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Debug ref information
         run: |
           echo "Input ref: ${{ inputs.ref }}"
@@ -159,6 +137,34 @@ jobs:
 
           echo "Timeout waiting for check to complete"
           exit 1
+
+  test-run:
+    needs: [changed-files, block-until-sdk-preview-finishes]
+    if: |
+      needs.changed-files.outputs.any_changed == 'true'
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    strategy: ${{ fromJSON(inputs.matrix-strategy) }}
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        ports:
+          # avoids conflict with docker postgres
+          - ${{ inputs.use-docker && '9999:5432' || '5432:5432' }}
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Generate cache key
         if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi-overrides.yml'))
