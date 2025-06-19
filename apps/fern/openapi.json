@@ -3460,24 +3460,6 @@
               "type": "string",
               "title": "Agent Id"
             }
-          },
-          {
-            "name": "callback_url",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Optional callback URL to POST to when the job completes",
-              "title": "Callback Url"
-            },
-            "description": "Optional callback URL to POST to when the job completes"
           }
         ],
         "requestBody": {
@@ -3485,7 +3467,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LettaRequest"
+                "$ref": "#/components/schemas/LettaAsyncRequest"
               }
             }
           }
@@ -6133,7 +6115,7 @@
             "schema": {
               "type": "string",
               "description": "Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.",
-              "default": "desc",
+              "default": "asc",
               "title": "Order"
             },
             "description": "Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order."
@@ -13832,6 +13814,72 @@
         "title": "LLMConfig",
         "description": "Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.\n\nAttributes:\n    model (str): The name of the LLM model.\n    model_endpoint_type (str): The endpoint type for the model.\n    model_endpoint (str): The endpoint for the model.\n    model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.\n    context_window (int): The context window size for the model.\n    put_inner_thoughts_in_kwargs (bool): Puts `inner_thoughts` as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.\n    temperature (float): The temperature to use when generating text with the model. A higher temperature will result in more random text.\n    max_tokens (int): The maximum number of tokens to generate."
       },
+      "LettaAsyncRequest": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageCreate"
+            },
+            "type": "array",
+            "title": "Messages",
+            "description": "The messages to be sent to the agent."
+          },
+          "max_steps": {
+            "type": "integer",
+            "title": "Max Steps",
+            "description": "Maximum number of steps the agent should take to process the request.",
+            "default": 50
+          },
+          "use_assistant_message": {
+            "type": "boolean",
+            "title": "Use Assistant Message",
+            "description": "Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.",
+            "default": true
+          },
+          "assistant_message_tool_name": {
+            "type": "string",
+            "title": "Assistant Message Tool Name",
+            "description": "The name of the designated message tool.",
+            "default": "send_message"
+          },
+          "assistant_message_tool_kwarg": {
+            "type": "string",
+            "title": "Assistant Message Tool Kwarg",
+            "description": "The name of the message argument in the designated message tool.",
+            "default": "message"
+          },
+          "include_return_message_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MessageType"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include Return Message Types",
+            "description": "Only return specified message types in the response. If `None` (default) returns all messages."
+          },
+          "callback_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Callback Url",
+            "description": "Optional callback URL to POST to when the job completes"
+          }
+        },
+        "type": "object",
+        "required": ["messages"],
+        "title": "LettaAsyncRequest"
+      },
       "LettaBatchMessages": {
         "properties": {
           "messages": {
@@ -14033,6 +14081,21 @@
             "title": "Assistant Message Tool Kwarg",
             "description": "The name of the message argument in the designated message tool.",
             "default": "message"
+          },
+          "include_return_message_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MessageType"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include Return Message Types",
+            "description": "Only return specified message types in the response. If `None` (default) returns all messages."
           }
         },
         "type": "object",

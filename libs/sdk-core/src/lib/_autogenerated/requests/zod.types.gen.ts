@@ -4036,6 +4036,31 @@ export const Job = z.object({
     .optional(),
 });
 
+export type LettaAsyncRequest = z.infer<typeof LettaAsyncRequest>;
+export const LettaAsyncRequest = z.object({
+  messages: z.array(MessageCreate),
+  max_steps: z.union([z.number(), z.undefined()]).optional(),
+  use_assistant_message: z.union([z.boolean(), z.undefined()]).optional(),
+  assistant_message_tool_name: z.union([z.string(), z.undefined()]).optional(),
+  assistant_message_tool_kwarg: z.union([z.string(), z.undefined()]).optional(),
+  include_return_message_types: z
+    .union([
+      z.array(MessageType),
+      z.null(),
+      z.array(z.union([z.array(MessageType), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  callback_url: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type LettaBatchMessages = z.infer<typeof LettaBatchMessages>;
 export const LettaBatchMessages = z.object({
   messages: z.array(Message),
@@ -4063,6 +4088,13 @@ export const LettaRequestConfig = z.object({
   use_assistant_message: z.boolean().optional(),
   assistant_message_tool_name: z.string().optional(),
   assistant_message_tool_kwarg: z.string().optional(),
+  include_return_message_types: z
+    .union([
+      z.array(MessageType),
+      z.null(),
+      z.array(z.union([z.array(MessageType), z.null()])),
+    ])
+    .optional(),
 });
 
 export type SystemMessage = z.infer<typeof SystemMessage>;
@@ -7057,11 +7089,6 @@ export const post_Create_agent_message_async = {
   path: z.literal('/v1/agents/{agent_id}/messages/async'),
   requestFormat: z.literal('json'),
   parameters: z.object({
-    query: z.object({
-      callback_url: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
     path: z.object({
       agent_id: z.string(),
     }),
@@ -7070,7 +7097,7 @@ export const post_Create_agent_message_async = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
-    body: LettaRequest,
+    body: LettaAsyncRequest,
   }),
   response: Run,
 };

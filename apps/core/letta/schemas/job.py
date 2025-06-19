@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -7,6 +7,7 @@ from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.orm.enums import JobType
 from letta.schemas.enums import JobStatus
 from letta.schemas.letta_base import OrmMetadataBase
+from letta.schemas.letta_message import MessageType
 
 
 class JobBase(OrmMetadataBase):
@@ -93,4 +94,7 @@ class LettaRequestConfig(BaseModel):
     assistant_message_tool_kwarg: str = Field(
         default=DEFAULT_MESSAGE_TOOL_KWARG,
         description="The name of the message argument in the designated message tool.",
+    )
+    include_return_message_types: Optional[List[MessageType]] = Field(
+        default=None, description="Only return specified message types in the response. If `None` (default) returns all messages."
     )

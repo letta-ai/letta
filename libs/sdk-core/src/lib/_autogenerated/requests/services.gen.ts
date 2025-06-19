@@ -1934,7 +1934,6 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.requestBody
-   * @param data.callbackUrl Optional callback URL to POST to when the job completes
    * @param data.userId
    * @returns Run Successful Response
    * @throws ApiError
@@ -1948,9 +1947,6 @@ export class AgentsService {
       url: '/v1/agents/{agent_id}/messages/async',
       path: {
         agent_id: data.agentId,
-      },
-      query: {
-        callback_url: data.callbackUrl,
       },
       body: data.requestBody,
       mediaType: 'application/json',

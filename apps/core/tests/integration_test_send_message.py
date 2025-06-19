@@ -19,6 +19,7 @@ from letta_client.types import (
     Base64Image,
     HiddenReasoningMessage,
     ImageContent,
+    LettaMessageUnion,
     LettaStopReason,
     LettaUsageStatistics,
     ReasoningMessage,
@@ -351,20 +352,24 @@ def accumulate_chunks(chunks: List[Any]) -> List[Any]:
     return [m for m in messages if m is not None]
 
 
-def assert_tool_response_dict_messages(messages: List[Dict[str, Any]]) -> None:
-    """
-    Asserts that a list of message dictionaries contains the expected types and statuses.
+def cast_message_dict_to_messages(messages: List[Dict[str, Any]]) -> List[LettaMessageUnion]:
+    def cast_message(message: Dict[str, Any]) -> LettaMessageUnion:
+        if message["message_type"] == "reasoning_message":
+            return ReasoningMessage(**message)
+        elif message["message_type"] == "assistant_message":
+            return AssistantMessage(**message)
+        elif message["message_type"] == "tool_call_message":
+            return ToolCallMessage(**message)
+        elif message["message_type"] == "tool_return_message":
+            return ToolReturnMessage(**message)
+        elif message["message_type"] == "user_message":
+            return UserMessage(**message)
+        elif message["message_type"] == "hidden_reasoning_message":
+            return HiddenReasoningMessage(**message)
+        else:
+            raise ValueError(f"Unknown message type: {message['message_type']}")
 
-    Expected order:
-        1. reasoning_message
-        2. tool_call_message
-        3. tool_return_message (with status 'success')
-        4. reasoning_message
-        5. assistant_message
-    """
-    assert isinstance(messages, list)
-    assert messages[0]["message_type"] == "reasoning_message"
-    assert messages[1]["message_type"] == "assistant_message"
+    return [cast_message(message) for message in messages]
 
 
 # ------------------------------
@@ -870,6 +875,7 @@ def wait_for_run_completion(client: Letta, run_id: str, timeout: float = 30.0, i
         if run.status == "completed":
             return run
         if run.status == "failed":
+            print(run)
             raise RuntimeError(f"Run {run_id} did not complete: status = {run.status}")
         if time.time() - start > timeout:
             raise TimeoutError(f"Run {run_id} did not complete within {timeout} seconds (last status: {run.status})")
@@ -891,6 +897,7 @@ def test_async_greeting_with_assistant_message(
     Tests sending a message as an asynchronous job using the synchronous client.
     Waits for job completion and asserts that the result messages are as expected.
     """
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
 
     run = client.agents.messages.create_async(
@@ -902,8 +909,86 @@ def test_async_greeting_with_assistant_message(
     result = run.metadata.get("result")
     assert result is not None, "Run metadata missing 'result' key"
 
-    messages = result["messages"]
-    assert_tool_response_dict_messages(messages)
+    messages = cast_message_dict_to_messages(result["messages"])
+    assert_greeting_with_assistant_message_response(messages, llm_config=llm_config)
+
+    messages = client.runs.messages.list(run_id=run.id)
+    assert_greeting_with_assistant_message_response(messages, llm_config=llm_config)
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_async_greeting_without_assistant_message(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending a message as an asynchronous job using the synchronous client.
+    Waits for job completion and asserts that the result messages are as expected.
+    """
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+
+    run = client.agents.messages.create_async(
+        agent_id=agent_state.id,
+        messages=USER_MESSAGE_FORCE_REPLY,
+        use_assistant_message=False,
+    )
+    run = wait_for_run_completion(client, run.id)
+
+    result = run.metadata.get("result")
+    assert result is not None, "Run metadata missing 'result' key"
+
+    messages = cast_message_dict_to_messages(result["messages"])
+    assert_greeting_without_assistant_message_response(messages, llm_config=llm_config)
+
+    messages = client.runs.messages.list(run_id=run.id)
+    assert_greeting_without_assistant_message_response(messages, llm_config=llm_config)
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id, use_assistant_message=False)
+    assert_greeting_without_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_async_tool_call(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending a message as an asynchronous job using the synchronous client.
+    Waits for job completion and asserts that the result messages are as expected.
+    """
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+
+    run = client.agents.messages.create_async(
+        agent_id=agent_state.id,
+        messages=USER_MESSAGE_ROLL_DICE,
+    )
+    run = wait_for_run_completion(client, run.id)
+
+    result = run.metadata.get("result")
+    assert result is not None, "Run metadata missing 'result' key"
+
+    messages = cast_message_dict_to_messages(result["messages"])
+    assert_tool_call_response(messages, llm_config=llm_config)
+
+    messages = client.runs.messages.list(run_id=run.id)
+    assert_tool_call_response(messages, llm_config=llm_config)
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
 class CallbackServer:
@@ -1021,8 +1106,9 @@ def test_async_greeting_with_callback_url(
         # Validate job completed successfully
         result = run.metadata.get("result")
         assert result is not None, "Run metadata missing 'result' key"
-        messages = result["messages"]
-        assert_tool_response_dict_messages(messages)
+
+        messages = cast_message_dict_to_messages(result["messages"])
+        assert_greeting_with_assistant_message_response(messages, llm_config=llm_config)
 
         # Validate callback was received
         assert server.wait_for_callback(timeout=15), "Callback was not received within timeout"
@@ -1084,8 +1170,9 @@ def test_async_callback_failure_scenarios(
     # Validate job completed successfully
     result = run.metadata.get("result")
     assert result is not None, "Run metadata missing 'result' key"
-    messages = result["messages"]
-    assert_tool_response_dict_messages(messages)
+
+    messages = cast_message_dict_to_messages(result["messages"])
+    assert_greeting_with_assistant_message_response(messages, llm_config=llm_config)
 
     # Job should be marked as completed even if callback failed
     assert run.status == "completed", f"Expected status 'completed', got {run.status}"

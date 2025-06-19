@@ -344,6 +344,33 @@ class JobManager:
 
     @enforce_types
     @trace_method
+    async def add_messages_to_job_async(self, job_id: str, message_ids: List[str], actor: PydanticUser) -> None:
+        """
+        Associate a message with a job by creating a JobMessage record.
+        Each message can only be associated with one job.
+
+        Args:
+            job_id: The ID of the job
+            message_id: The ID of the message to associate
+            actor: The user making the request
+
+        Raises:
+            NoResultFound: If the job does not exist or user does not have access
+        """
+        if not message_ids:
+            return
+
+        async with db_registry.async_session() as session:
+            # First verify job exists and user has access
+            await self._verify_job_access_async(session, job_id, actor, access=["write"])
+
+            # Create new JobMessage associations
+            job_messages = [JobMessage(job_id=job_id, message_id=message_id) for message_id in message_ids]
+            session.add_all(job_messages)
+            await session.commit()
+
+    @enforce_types
+    @trace_method
     def get_job_usage(self, job_id: str, actor: PydanticUser) -> LettaUsageStatistics:
         """
         Get usage statistics for a job.
@@ -463,13 +490,18 @@ class JobManager:
         )
 
         request_config = self._get_run_request_config(run_id)
+        print("request_config", request_config)
 
         messages = PydanticMessage.to_letta_messages_from_list(
             messages=messages,
             use_assistant_message=request_config["use_assistant_message"],
             assistant_message_tool_name=request_config["assistant_message_tool_name"],
             assistant_message_tool_kwarg=request_config["assistant_message_tool_kwarg"],
+            reverse=not ascending,
         )
+
+        if request_config["include_return_message_types"]:
+            messages = [msg for msg in messages if msg.message_type in request_config["include_return_message_types"]]
 
         return messages
 

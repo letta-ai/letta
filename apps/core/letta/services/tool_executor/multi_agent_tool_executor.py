@@ -101,6 +101,7 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
                 message_manager=self.message_manager,
                 agent_manager=self.agent_manager,
                 block_manager=self.block_manager,
+                job_manager=self.job_manager,
                 passage_manager=self.passage_manager,
                 actor=self.actor,
             )

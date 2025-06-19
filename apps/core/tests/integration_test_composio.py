@@ -71,6 +71,7 @@ async def test_composio_tool_execution_e2e(check_composio_key_set, composio_get_
         message_manager=server.message_manager,
         agent_manager=server.agent_manager,
         block_manager=server.block_manager,
+        job_manager=server.job_manager,
         passage_manager=server.passage_manager,
         agent_state=agent_state,
         actor=default_user,

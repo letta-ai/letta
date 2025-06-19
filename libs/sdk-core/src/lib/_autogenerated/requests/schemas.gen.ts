@@ -6101,6 +6101,77 @@ Attributes:
     max_tokens (int): The maximum number of tokens to generate.`,
 } as const;
 
+export const $LettaAsyncRequest = {
+  properties: {
+    messages: {
+      items: {
+        $ref: '#/components/schemas/MessageCreate',
+      },
+      type: 'array',
+      title: 'Messages',
+      description: 'The messages to be sent to the agent.',
+    },
+    max_steps: {
+      type: 'integer',
+      title: 'Max Steps',
+      description:
+        'Maximum number of steps the agent should take to process the request.',
+      default: 50,
+    },
+    use_assistant_message: {
+      type: 'boolean',
+      title: 'Use Assistant Message',
+      description:
+        'Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.',
+      default: true,
+    },
+    assistant_message_tool_name: {
+      type: 'string',
+      title: 'Assistant Message Tool Name',
+      description: 'The name of the designated message tool.',
+      default: 'send_message',
+    },
+    assistant_message_tool_kwarg: {
+      type: 'string',
+      title: 'Assistant Message Tool Kwarg',
+      description:
+        'The name of the message argument in the designated message tool.',
+      default: 'message',
+    },
+    include_return_message_types: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/MessageType',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Include Return Message Types',
+      description:
+        'Only return specified message types in the response. If `None` (default) returns all messages.',
+    },
+    callback_url: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Callback Url',
+      description: 'Optional callback URL to POST to when the job completes',
+    },
+  },
+  type: 'object',
+  required: ['messages'],
+  title: 'LettaAsyncRequest',
+} as const;
+
 export const $LettaBatchMessages = {
   properties: {
     messages: {
@@ -6318,6 +6389,22 @@ export const $LettaRequestConfig = {
       description:
         'The name of the message argument in the designated message tool.',
       default: 'message',
+    },
+    include_return_message_types: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/MessageType',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Include Return Message Types',
+      description:
+        'Only return specified message types in the response. If `None` (default) returns all messages.',
     },
   },
   type: 'object',

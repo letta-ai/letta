@@ -2110,6 +2110,37 @@ export type model_endpoint_type =
   | 'deepseek'
   | 'xai';
 
+export type LettaAsyncRequest = {
+  /**
+   * The messages to be sent to the agent.
+   */
+  messages: Array<MessageCreate>;
+  /**
+   * Maximum number of steps the agent should take to process the request.
+   */
+  max_steps?: number;
+  /**
+   * Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.
+   */
+  use_assistant_message?: boolean;
+  /**
+   * The name of the designated message tool.
+   */
+  assistant_message_tool_name?: string;
+  /**
+   * The name of the message argument in the designated message tool.
+   */
+  assistant_message_tool_kwarg?: string;
+  /**
+   * Only return specified message types in the response. If `None` (default) returns all messages.
+   */
+  include_return_message_types?: Array<MessageType> | null;
+  /**
+   * Optional callback URL to POST to when the job completes
+   */
+  callback_url?: string | null;
+};
+
 export type LettaBatchMessages = {
   messages: Array<Message>;
 };
@@ -2208,6 +2239,10 @@ export type LettaRequestConfig = {
    * The name of the message argument in the designated message tool.
    */
   assistant_message_tool_kwarg?: string;
+  /**
+   * Only return specified message types in the response. If `None` (default) returns all messages.
+   */
+  include_return_message_types?: Array<MessageType> | null;
 };
 
 /**
@@ -5042,11 +5077,7 @@ export type CreateAgentMessageStreamResponse = unknown;
 
 export type CreateAgentMessageAsyncData = {
   agentId: string;
-  /**
-   * Optional callback URL to POST to when the job completes
-   */
-  callbackUrl?: string | null;
-  requestBody: LettaRequest;
+  requestBody: LettaAsyncRequest;
   userId?: string | null;
 };
 
