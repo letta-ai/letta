@@ -11,5 +11,10 @@ declare namespace Cypress {
     revokeAllClientSideAccessTokens(): void;
     grantAdminAccess(): void;
     importModels(): void;
+    createProject(projectName: string): void;
+    createIdentity(identityName: string, uniqueIdentifier: string): void;
+    createAgentTemplate(templateType: string, agentName: string): void;
+    editMemoryBlock(content: string): void;
+    stageAndDeployAgent(): void;
   }
 }
