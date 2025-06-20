@@ -39,24 +39,28 @@ export function Tutorials() {
           title={t('createChatBotWithMemory.title')}
           description={t('createChatBotWithMemory.description')}
           href="https://github.com/letta-ai/letta-chatbot-example"
+          target="_blank"
         />
         <DashboardCard
           largeImage={<TutorialImage src={multiagent} />}
           title={t('buildMultiAgentSystems.title')}
           description={t('buildMultiAgentSystems.description')}
           href="https://docs.letta.com/cookbooks/multi-agent-async"
+          target="_blank"
         />
         <DashboardCard
           largeImage={<TutorialImage src={discord} />}
           title={t('discord.title')}
           description={t('discord.description')}
           href="https://github.com/letta-ai/letta-discord-bot-example"
+          target="_blank"
         />
         <DashboardCard
           largeImage={<TutorialImage src={voice} />}
           title={t('voice.title')}
           description={t('voice.description')}
           href="https://docs.letta.com/guides/voice/overview"
+          target="_blank"
         />
       </NiceGridDisplay>
     </DashboardPageSection>

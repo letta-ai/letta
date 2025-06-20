@@ -10,6 +10,7 @@ interface DashboardCardProps {
   onClick?: () => void;
   testId?: string;
   href?: string;
+  target?: '_blank' | '_self';
 }
 
 export function DashboardCard(props: DashboardCardProps) {
@@ -22,6 +23,7 @@ export function DashboardCard(props: DashboardCardProps) {
     badge,
     onClick,
     href,
+    target,
   } = props;
   return (
     <ActionCard
@@ -29,6 +31,7 @@ export function DashboardCard(props: DashboardCardProps) {
       largeImage={largeImage}
       isSkeleton={isSkeleton}
       href={href}
+      target={target}
       hideClickArrow
       testId={testId}
       badge={badge}

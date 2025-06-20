@@ -46,6 +46,7 @@ interface ToggleCardProps extends VariantProps<typeof actionCardVariants> {
   icon?: React.ReactNode;
   disableTooltip?: boolean;
   href?: string;
+  target?: '_blank' | '_self';
   color?: FrameProps['color'];
   smallImage?: React.ReactNode;
   largeImage?: React.ReactNode;
@@ -73,6 +74,7 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
       badge,
       testId,
       href,
+      target,
       isActive,
       onClick,
       noMobileViewChange,
@@ -89,6 +91,7 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
     return (
       <Card
         href={href}
+        target={target}
         testId={testId}
         ref={ref}
         color={color}
