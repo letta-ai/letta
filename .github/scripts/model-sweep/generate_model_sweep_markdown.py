@@ -145,17 +145,8 @@ def generate_test_details(model_info, feature_mapping):
     test_file_path = os.path.join(script_dir, 'model_sweep.py')
     test_line_numbers = get_test_function_line_numbers(test_file_path)
     
-    # Get GitHub repo info
-    repo_path = get_github_repo_info()
-    
-    # Get current commit hash for links
-    try:
-        import subprocess
-        result = subprocess.run(['git', 'rev-parse', 'HEAD'], 
-                              capture_output=True, text=True, cwd=script_dir)
-        commit_hash = result.stdout.strip() if result.returncode == 0 else 'main'
-    except:
-        commit_hash = 'main'
+    # Use the specific GitHub URL for the branch
+    base_github_url = "https://github.com/letta-ai/letta/blob/kian/add_model_sweep/.github/scripts/model-sweep/model_sweep.py"
     
     for feature, tests in model_info['categorized_tests'].items():
         if not tests:
@@ -173,9 +164,9 @@ def generate_test_details(model_info, feature_mapping):
                 status = "❓"
             
             # Create GitHub link if we have line number info
-            if test in test_line_numbers and repo_path:
+            if test in test_line_numbers:
                 line_num = test_line_numbers[test]
-                github_link = f"https://github.com/{repo_path}/blob/{commit_hash}/.github/scripts/model-sweep/model_sweep.py#L{line_num}"
+                github_link = f"{base_github_url}#L{line_num}"
                 details.append(f"- {status} [`{test}`]({github_link})")
             else:
                 details.append(f"- {status} `{test}`")
