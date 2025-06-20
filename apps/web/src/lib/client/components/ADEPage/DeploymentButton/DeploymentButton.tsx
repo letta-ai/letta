@@ -120,6 +120,7 @@ function FormFields(props: FormFieldsProps) {
           render={({ field }) => {
             return (
               <Checkbox
+                data-testid="version-agent-dialog-migrate-checkbox"
                 size="large"
                 checked={field.value}
                 description={t.rich('VersionAgentDialog.migrateDescription', {
@@ -190,7 +191,7 @@ function CreateNewTemplateVersionDialog(
   const form = useForm<VersionAgentFormValues>({
     resolver: zodResolver(versionAgentFormSchema),
     defaultValues: {
-      migrate: true,
+      migrate: false,
       message: '',
     },
   });

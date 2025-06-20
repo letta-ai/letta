@@ -108,6 +108,7 @@ describe('letta', () => {
     cy.clearPointerEventLock();
 
     cy.findByTestId('stage-new-version-button').click({ force: true });
+    cy.findByTestId('version-agent-dialog-migrate-checkbox').click();
     cy.findByTestId('deploy-agent-dialog-trigger', { timeout: 50000 }).click();
 
     cy.visit('/projects/deploymentest/agents');
@@ -184,6 +185,7 @@ describe('letta', () => {
     cy.findByTestId('stage-new-version-button', { timeout: 50000 }).click({
       force: true,
     });
+    cy.findByTestId('version-agent-dialog-migrate-checkbox').click();
     cy.findByTestId('deploy-agent-dialog-trigger', { timeout: 50000 }).click();
 
     cy.visit('/projects/deploymentest/agents');

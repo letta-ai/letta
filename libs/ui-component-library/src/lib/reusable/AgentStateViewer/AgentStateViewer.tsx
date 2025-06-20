@@ -186,35 +186,60 @@ function SectionWrapper(props: React.PropsWithChildren<SectionWrapperProps>) {
 interface ToolRuleViewerProps {
   toolRules: AgentState['tool_rules'];
   comparedToolRules?: AgentState['tool_rules'];
-  negative?: boolean;
+  orderedKeys: string[];
+}
+
+// TODO (cliandy): this is a quick fix, consolidate with AgentState tool_rules
+interface ToolRule {
+  tool_name?: string;
+  type?: string;
+}
+
+// unique key for tool rules based on the name and type
+function getToolRuleKey(rule: ToolRule): string {
+  if (!rule) return '';
+  return `${rule.tool_name || ''}-${rule.type || ''}`;
 }
 
 function ToolRuleViewer(props: ToolRuleViewerProps) {
-  const { toolRules = [], negative, comparedToolRules = [] } = props;
+  const { toolRules = [], comparedToolRules = [], orderedKeys } = props;
+
   const t = useTranslations('components/AgentStateViewer');
 
-  const maxRules = Math.max(
-    toolRules?.length || 0,
-    comparedToolRules?.length || 0,
-  );
+  const toolRuleMap = useMemo(() => {
+    return new Map(
+      toolRules?.map(item => [getToolRuleKey(item), item])
+    );
+  }, [toolRules]);
+
+  const comparedToolRulesMap = useMemo(() => {
+    return new Map(
+      comparedToolRules?.map(item => [getToolRuleKey(item), item])
+    );
+  }, [comparedToolRules]);
 
   return (
     <VStack gap={false}>
-      {new Array(maxRules).fill(0).map((_, index) => {
-        const comparedRule = comparedToolRules?.[index];
-        const rule = toolRules?.[index];
+      {orderedKeys.map((key, index) => {
+        const rule = toolRuleMap.get(key) || null;
+        const comparedRule = comparedToolRulesMap.get(key) || null;
 
-        if (!rule) {
+        // Skip if neither rule exists
+        if (!rule && !comparedRule) {
           return null;
         }
+
+        // Determine if this rule has changes
+        const hasChanges = comparedToolRulesMap.size > 0 && (!rule || !comparedRule);
+        const isAdditive = rule == null;
 
         return (
           <VStack
             className={cn(
-              comparedToolRules
+              comparedToolRulesMap.size > 0
                 ? getChangeClass({
-                    isChanged: !comparedRule,
-                    isAdditive: negative,
+                    isChanged: hasChanges,
+                    isAdditive: isAdditive,
                   })
                 : '',
             )}
@@ -622,6 +647,14 @@ function StateViewer(props: StateViewerProps) {
     );
   }, [state.toolRules, toCompare?.toolRules]);
 
+
+  const orderedToolRuleUnion = useMemo(() => {
+    return [...new Set([
+      ...state.toolRules?.map(getToolRuleKey) || [],
+      ...toCompare?.toolRules?.map(getToolRuleKey) || [],
+    ])];
+  }, [state.toolRules, toCompare?.toolRules]);
+
   const hasNoDifference = useMemo(() => {
     return (
       !hasMemoryBlocksDifference &&
@@ -786,9 +819,11 @@ function StateViewer(props: StateViewerProps) {
           hasDifference={!!hasToolRulesDifference}
           base={
             <ToolRuleViewer
-              negative
               toolRules={state.toolRules}
-              comparedToolRules={toCompare?.toolRules}
+              comparedToolRules={state.toolRules}
+              orderedKeys={orderedToolRuleUnion}
+              // This is to just show the base state without any comparison on the left side.
+              // comparedToolRules={toCompare?.toolRules}
             />
           }
           compared={
@@ -796,6 +831,7 @@ function StateViewer(props: StateViewerProps) {
               <ToolRuleViewer
                 toolRules={toCompare.toolRules}
                 comparedToolRules={state?.toolRules}
+                orderedKeys={orderedToolRuleUnion}
               />
             )
           }
