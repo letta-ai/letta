@@ -45,7 +45,7 @@ class JobStatus(str, Enum):
     Status of the job.
     """
 
-    not_started = "not_started"
+    #  TODO (cliandy): removed `not_started`, but what does `pending` or `expired` here mean and where do we use them?
     created = "created"
     running = "running"
     completed = "completed"
