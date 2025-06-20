@@ -622,6 +622,7 @@ function DeployedAgentsPage() {
           ...compiledQuery,
           after: pageParam?.after,
           sortBy: 'last_run_completion',
+          ascending: false,
         },
       });
 
