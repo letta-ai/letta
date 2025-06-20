@@ -1539,6 +1539,28 @@ class AnthropicBedrockProvider(Provider):
             )
         return configs
 
+    async def list_llm_models_async(self):
+        from letta.llm_api.aws_bedrock import bedrock_get_model_list_async
+
+        models = await bedrock_get_model_list_async(self.aws_region)
+
+        configs = []
+        for model_summary in models:
+            model_arn = model_summary["inferenceProfileArn"]
+            context_window = await self.get_model_context_window_async(model_arn)
+            configs.append(
+                LLMConfig(
+                    model=model_arn,
+                    model_endpoint_type=self.provider_type.value,
+                    model_endpoint=None,
+                    context_window=context_window,
+                    handle=self.get_handle(model_arn),
+                    provider_name=self.name,
+                    provider_category=self.provider_category,
+                )
+            )
+        return configs
+
     def list_embedding_models(self):
         return []
 
@@ -1547,6 +1569,12 @@ class AnthropicBedrockProvider(Provider):
         from letta.llm_api.aws_bedrock import bedrock_get_model_context_window
 
         return bedrock_get_model_context_window(model_name)
+
+    async def get_model_context_window_async(self, model_name: str) -> Optional[int]:
+        # Context windows for Claude models
+        from letta.llm_api.aws_bedrock import bedrock_get_model_context_window_async
+
+        return await bedrock_get_model_context_window_async(model_name)
 
     def get_handle(self, model_name: str) -> str:
         print(model_name)

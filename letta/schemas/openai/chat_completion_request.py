@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class SystemMessage(BaseModel):
@@ -116,6 +116,8 @@ FunctionCallChoice = Union[Literal["none", "auto"], FunctionCall]
 
 class ChatCompletionRequest(BaseModel):
     """https://platform.openai.com/docs/api-reference/chat/create"""
+
+    model_config = ConfigDict(extra="allow")
 
     model: str
     messages: List[Union[ChatMessage, Dict]]
