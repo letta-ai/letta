@@ -145,8 +145,8 @@ def generate_test_details(model_info, feature_mapping):
     test_file_path = os.path.join(script_dir, 'model_sweep.py')
     test_line_numbers = get_test_function_line_numbers(test_file_path)
     
-    # Use the specific GitHub URL for the branch
-    base_github_url = "https://github.com/letta-ai/letta/blob/kian/add_model_sweep/.github/scripts/model-sweep/model_sweep.py"
+    # Use the main branch GitHub URL
+    base_github_url = "https://github.com/letta-ai/letta/blob/main/.github/scripts/model-sweep/model_sweep.py"
     
     for feature, tests in model_info['categorized_tests'].items():
         if not tests:
