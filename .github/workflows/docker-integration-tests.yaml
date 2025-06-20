@@ -58,7 +58,6 @@ jobs:
       run: |
         pipx install poetry==2.1.3
         poetry install --all-extras
-        poetry run pytest -s tests/test_plugins.py
         poetry run pytest -s tests/test_*.py
 
     - name: Print docker logs if tests fail
