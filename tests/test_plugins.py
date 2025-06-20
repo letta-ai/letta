@@ -1,6 +1,6 @@
 import pytest
 
-from letta.data_sources.redis_client import get_redis_client
+from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
 from letta.helpers.decorators import experimental
 from letta.settings import settings
 
@@ -86,7 +86,11 @@ async def test_redis_flag(event_loop):
     await redis_client.create_inclusion_exclusion_keys(group=group_name)
     await redis_client.sadd(include_key, test_user)
 
-    assert await _new_feature(user_id=test_user) == "new_feature"
-    with pytest.raises(Exception):
-        assert await _new_feature(user_id=test_user + "1")
-    print("members: ", await redis_client.smembers(include_key))
+    if not isinstance(redis_client, NoopAsyncRedisClient):
+        assert await _new_feature(user_id=test_user) == "new_feature"
+        with pytest.raises(Exception):
+            await _new_feature(user_id=test_user + "1")
+        print("members: ", await redis_client.smembers(include_key))
+    else:
+        with pytest.raises(Exception):
+            await _new_feature(user_id=test_user)
