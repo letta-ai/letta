@@ -92,9 +92,70 @@ def calculate_provider_support_score(models_data, feature_order):
     total_score = sum(model['support_score'] for model in models_data)
     return total_score / len(models_data)
 
+def get_test_function_line_numbers(test_file_path):
+    """Extract line numbers for test functions from the test file."""
+    test_line_numbers = {}
+    
+    try:
+        with open(test_file_path, 'r') as f:
+            lines = f.readlines()
+        
+        for i, line in enumerate(lines, 1):
+            if 'def test_' in line and line.strip().startswith('def test_'):
+                # Extract function name
+                func_name = line.strip().split('def ')[1].split('(')[0]
+                test_line_numbers[func_name] = i
+    except FileNotFoundError:
+        print(f"Warning: Could not find test file at {test_file_path}")
+    
+    return test_line_numbers
+
+def get_github_repo_info():
+    """Get GitHub repository information from git remote."""
+    try:
+        # Try to get the GitHub repo URL from git remote
+        import subprocess
+        result = subprocess.run(['git', 'remote', 'get-url', 'origin'], 
+                              capture_output=True, text=True, cwd=os.path.dirname(__file__))
+        if result.returncode == 0:
+            remote_url = result.stdout.strip()
+            # Parse GitHub URL
+            if 'github.com' in remote_url:
+                if remote_url.startswith('https://'):
+                    # https://github.com/user/repo.git -> user/repo
+                    repo_path = remote_url.replace('https://github.com/', '').replace('.git', '')
+                elif remote_url.startswith('git@'):
+                    # git@github.com:user/repo.git -> user/repo
+                    repo_path = remote_url.split(':')[1].replace('.git', '')
+                else:
+                    return None
+                return repo_path
+    except:
+        pass
+    
+    # Default fallback
+    return "letta-ai/letta"
+
 def generate_test_details(model_info, feature_mapping):
     """Generate detailed test results for a model."""
     details = []
+    
+    # Get test function line numbers
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    test_file_path = os.path.join(script_dir, 'model_sweep.py')
+    test_line_numbers = get_test_function_line_numbers(test_file_path)
+    
+    # Get GitHub repo info
+    repo_path = get_github_repo_info()
+    
+    # Get current commit hash for links
+    try:
+        import subprocess
+        result = subprocess.run(['git', 'rev-parse', 'HEAD'], 
+                              capture_output=True, text=True, cwd=script_dir)
+        commit_hash = result.stdout.strip() if result.returncode == 0 else 'main'
+    except:
+        commit_hash = 'main'
     
     for feature, tests in model_info['categorized_tests'].items():
         if not tests:
@@ -110,7 +171,14 @@ def generate_test_details(model_info, feature_mapping):
                 status = "❌"
             else:
                 status = "❓"
-            details.append(f"- {status} `{test}`")
+            
+            # Create GitHub link if we have line number info
+            if test in test_line_numbers and repo_path:
+                line_num = test_line_numbers[test]
+                github_link = f"https://github.com/{repo_path}/blob/{commit_hash}/.github/scripts/model-sweep/model_sweep.py#L{line_num}"
+                details.append(f"- {status} [`{test}`]({github_link})")
+            else:
+                details.append(f"- {status} `{test}`")
         details.append("")
     
     return details

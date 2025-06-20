@@ -101,18 +101,18 @@ jobs:
         run: |
           poetry run pytest \
             -s -vv \
-            .github/scripts/model_sweep.py \
-            --json-report --json-report-file=.github/scripts/model_sweep_report.json --json-report-indent=4
+            .github/scripts/model-sweep/model_sweep.py \
+            --json-report --json-report-file=.github/scripts/model-sweep/model_sweep_report.json --json-report-indent=4
 
       - name: Convert report to markdown
         continue-on-error: true
         # file path args to generate_model_sweep_markdown.py are relative to the script
         run: |
           poetry run python \
-            .github/scripts/generate_model_sweep_markdown.py \
-            .github/scripts/model_sweep_report.json \
-            .github/scripts/supported-models.mdx
-          echo "Model sweep report saved to .github/scripts/supported-models.mdx"
+            .github/scripts/model-sweep/generate_model_sweep_markdown.py \
+            .github/scripts/model-sweep/model_sweep_report.json \
+            .github/scripts/model-sweep/supported-models.mdx
+          echo "Model sweep report saved to .github/scripts/model-sweep/supported-models.mdx"
 
       - id: date
         run: echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
@@ -126,7 +126,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b $BRANCH_NAME
-          git add .github/scripts/supported-models.mdx
+          git add .github/scripts/model-sweep/supported-models.mdx
           git commit -m "Update model sweep report"
           # only push if changes were made
           if git diff main --quiet; then
@@ -146,4 +146,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: model-sweep-report
-          path: .github/scripts/model_sweep_report.json
+          path: .github/scripts/model-sweep/model_sweep_report.json
