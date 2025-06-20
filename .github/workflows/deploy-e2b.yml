@@ -34,9 +34,10 @@ jobs:
           template_id="${{ inputs.template_id }}"
           echo "Using provided template ID: $template_id"
         else
-          template_id=$(gcloud secrets versions access latest --secret dev_ci_E2B_SANDBOX_TEMPLATE_ID)
-          echo "Using template ID from dev_ci_E2B_SANDBOX_TEMPLATE_ID secret"
+          template_id=$(gcloud secrets versions access latest --secret dev_e2b_E2B_SANDBOX_TEMPLATE_ID)
+          echo "Using template ID from dev_e2b_E2B_SANDBOX_TEMPLATE_ID secret"
         fi
+        template_id=$(echo "$template_id" | tr -d '\n\r ')
         echo "$template_id" | gcloud secrets versions add dev_ci_E2B_SANDBOX_TEMPLATE_ID --data-file=-
 
     - name: Fire alert
