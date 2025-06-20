@@ -60,13 +60,19 @@ class SourcePassage(BasePassage, FileMixin, SourceMixin):
 
     @declared_attr
     def __table_args__(cls):
+        # TODO (cliandy): investigate if this is necessary, may be for SQLite compatability or do we need to add as well?
         if settings.letta_pg_uri_no_default:
             return (
                 Index("source_passages_org_idx", "organization_id"),
                 Index("source_passages_created_at_id_idx", "created_at", "id"),
+                Index("source_passages_file_id_idx", "file_id"),
                 {"extend_existing": True},
             )
-        return (Index("source_passages_created_at_id_idx", "created_at", "id"), {"extend_existing": True})
+        return (
+            Index("source_passages_created_at_id_idx", "created_at", "id"),
+            Index("source_passages_file_id_idx", "file_id"),
+            {"extend_existing": True},
+        )
 
     @declared_attr
     def source(cls) -> Mapped["Source"]:

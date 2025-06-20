@@ -5864,7 +5864,6 @@ Parameters:
 export const $JobStatus = {
   type: 'string',
   enum: [
-    'not_started',
     'created',
     'running',
     'completed',

@@ -1477,7 +1477,6 @@ export const Base64Image = z.object({
 
 export type JobStatus = z.infer<typeof JobStatus>;
 export const JobStatus = z.union([
-  z.literal('not_started'),
   z.literal('created'),
   z.literal('running'),
   z.literal('completed'),

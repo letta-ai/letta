@@ -8,7 +8,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@letta-ai/letta-client": "^0.1.17"
+    "@letta-ai/letta-client": "^0.1.131"
   },
   "devDependencies": {
     "@types/node": "^22.12.0",

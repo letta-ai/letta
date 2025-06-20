@@ -1952,7 +1952,6 @@ export type Job = {
  * Status of the job.
  */
 export type JobStatus =
-  | 'not_started'
   | 'created'
   | 'running'
   | 'completed'

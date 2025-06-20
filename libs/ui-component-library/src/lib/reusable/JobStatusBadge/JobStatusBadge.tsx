@@ -15,7 +15,6 @@ export function JobStatusBadge(props: JobStatusBadgeProps) {
 
   const statusText = useMemo(() => {
     return {
-      not_started: t('not_started'),
       created: t('created'),
       running: t('running'),
       completed: t('completed'),
@@ -28,7 +27,6 @@ export function JobStatusBadge(props: JobStatusBadgeProps) {
 
   const statusVariant = useMemo(() => {
     const map: Record<JobStatus, BadgeProps['variant']> = {
-      not_started: 'info',
       created: 'info',
       running: 'info',
       completed: 'success',

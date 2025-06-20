@@ -128,7 +128,6 @@
     }
   },
   "components/JobStatusBadge": {
-    "not_started": "Not started",
     "created": "Created",
     "running": "Running",
     "completed": "Completed",
