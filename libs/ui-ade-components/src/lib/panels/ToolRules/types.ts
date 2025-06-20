@@ -52,12 +52,14 @@ export interface ToolColumn {
   offset: number;
   hasControlNode: boolean;
   controlNode?: Node;
+  startNode?: Node;
 }
 
 // Constants for control nodes
 export const CONTROL_NODES = {
-  AGENT: 'agent' as const,
-  DONE: 'done' as const,
+  START: 'start',
+  AGENT: 'agent',
+  DONE: 'done',
 } as const;
 
 // ===== CONSOLIDATED CONTEXT TYPES =====
@@ -224,11 +226,13 @@ export interface LegendProps {
 
 export const COLORS = {
   ARROW: {
-    DEFAULT: 'hsl(var(--muted))',
+    DEFAULT: 'hsl(var(--text-lighter))',
     OUTGOING: 'hsl(var(--brand))',
     INCOMING: 'hsl(var(--brand))',
   },
   NODE: {
+    START_BACKGROUND: 'var(--start-background)',
+    START_BACKGROUND_DIM: 'var(--start-background-dim)',
     AGENT_BACKGROUND: 'var(--agent-background)',
     AGENT_BACKGROUND_DIM: 'var(--agent-background-dim)',
     DONE_BACKGROUND: 'var(--done-background)',
@@ -236,6 +240,7 @@ export const COLORS = {
     TOOL_BACKGROUND: 'hsl(var(--background))',
     TOOL_BACKGROUND_DIM: 'hsl(var(--background) / 0.7)',
     BORDER: 'var(--node-border)',
+    START_BORDER: 'var(--start-border)',
     AGENT_BORDER: 'var(--agent-border)',
     DONE_BORDER: 'var(--done-border)',
   },
@@ -258,16 +263,16 @@ export const LAYOUT = {
   AGENT_X: 0,
   RUN_FIRST_X: 100,
   MAIN_TOOLS_X: 300,
-  CHILD_TOOLS_X: 525,
-  EXIT_LOOP_X: 750,
-  DONE_X: 775,
+  CHILD_TOOLS_X: 575,
+  EXIT_LOOP_X: 825,
+  DONE_X: 850,
   CONTROL_Y: 0,
   NODE_SPACING: 100,
   NO_CHILD_OFFSET: 50,
 } as const;
 
 export const NODE_OPACITY = {
-  DEFAULT: 0.4,
+  DEFAULT: 0.7,
   HIGHLIGHT: 0.8,
   FULL: 1.0,
 } as const;

@@ -79,7 +79,9 @@ export function getOutwardEdgeCount(
 
   const isParent = rules.some((r) => r.type === 'constrain_child_tools');
   const hasExitLoop = rules.some((r) => r.type === 'exit_loop');
-  const hasNoType = rules.length === 0 || rules.every((r) => !r.type);
+  const hasNoType =
+    rules.length === 0 ||
+    rules.every((r) => !r.type || r.type === 'continue_loop');
   const constrainRule = rules.find(isChildRule);
 
   if (hasExitLoop || hasNoType) count++;
@@ -98,9 +100,16 @@ export function getEdgeOpacity(
   const { focusedTool, rulesData } = context;
 
   if (!focusedTool) return 0.5;
-  if (focusedTool === 'agent' && sourceToolName === null) return 1;
-  if (focusedTool === 'done' && targetToolName === null && edgeType === 'exit')
-    return 1;
+
+  // Handle specific control node focused cases
+  if (focusedTool === 'start' && edgeType === 'start_to_agent') return 1;
+  if (focusedTool === 'start' && edgeType === 'start_to_tool') return 1;
+  if (focusedTool === 'agent' && edgeType === 'start_to_agent') return 1;
+  if (focusedTool === 'agent' && edgeType === 'agent_to_tool') return 1;
+  if (focusedTool === 'done' && edgeType === 'exit') return 1;
+
+  // Add this line to fade continue edges when done is focused
+  if (focusedTool === 'done' && edgeType === 'continue') return 0.3;
 
   // 1) child-edge highlight for constrain ALWAYS at 0.9
   if (edgeType === 'constrain') {
@@ -117,12 +126,12 @@ export function getEdgeOpacity(
     }
   }
 
-  // 2) now fallback to “exact focus ⇒ 1”
+  // 2) now fallback to "exact focus ⇒ 1"
   if (sourceToolName === focusedTool || targetToolName === focusedTool) {
     return 1;
   }
 
-  // 3) all other child edges (shouldn’t hit for constrain) or non-focused edges
+  // 3) all other child edges or non-focused edges
   const toolGroups = groupToolRules(rulesData);
   const focusedRules = toolGroups[focusedTool] || [];
   const constrainRule = focusedRules.find(isChildRule);
@@ -135,7 +144,7 @@ export function getEdgeOpacity(
     ? constrainChildren.includes(targetToolName)
     : false;
 
-  return hasSourceInChildren || hasTargetInChildren ? 0.9 : 0.1;
+  return hasSourceInChildren || hasTargetInChildren ? 0.9 : 0.3;
 }
 
 // Arrow color calculation
@@ -162,11 +171,27 @@ export function getControlNodeOpacity(params: {
   const { toolName, focusedTool, toolGroups, constants } = params;
   const { CONTROL_NODES, NODE_OPACITY } = constants;
 
+  if (toolName === CONTROL_NODES.START) {
+    const focusedRules = toolGroups[focusedTool] || [];
+    const hasExit = focusedRules.some((r) => r.type === 'exit_loop');
+    const hasNoType =
+      focusedRules.length === 0 ||
+      focusedRules.every((r) => !r.type || r.type === 'continue_loop');
+    const isParent = focusedRules.some(
+      (r) => r.type === 'constrain_child_tools',
+    );
+
+    return hasNoType || (!hasExit && !isParent)
+      ? NODE_OPACITY.FULL
+      : NODE_OPACITY.DEFAULT;
+  }
+
   if (toolName === CONTROL_NODES.AGENT) {
     const focusedRules = toolGroups[focusedTool] || [];
     const hasExit = focusedRules.some((r) => r.type === 'exit_loop');
     const hasNoType =
-      focusedRules.length === 0 || focusedRules.every((r) => !r.type);
+      focusedRules.length === 0 ||
+      focusedRules.every((r) => !r.type || r.type === 'continue_loop');
     const isParent = focusedRules.some(
       (r) => r.type === 'constrain_child_tools',
     );
@@ -180,7 +205,8 @@ export function getControlNodeOpacity(params: {
     const focusedRules = toolGroups[focusedTool] || [];
     const hasExit = focusedRules.some((r) => r.type === 'exit_loop');
     const hasNoType =
-      focusedRules.length === 0 || focusedRules.every((r) => !r.type);
+      focusedRules.length === 0 ||
+      focusedRules.every((r) => !r.type || r.type === 'continue_loop');
 
     return hasExit || hasNoType ? NODE_OPACITY.FULL : NODE_OPACITY.DEFAULT;
   }
@@ -197,13 +223,35 @@ export function getToolNodeOpacity(params: {
   const { toolName, focusedTool, toolGroups, constants } = params;
   const { CONTROL_NODES } = constants;
 
+  if (focusedTool === CONTROL_NODES.START) return 0.9;
   if (focusedTool === CONTROL_NODES.AGENT) return 0.9;
 
   if (focusedTool === CONTROL_NODES.DONE) {
     const rules = toolGroups[toolName] || [];
     const hasExit = rules.some((r) => r.type === 'exit_loop');
-    const hasNoType = rules.length === 0 || rules.every((r) => !r.type);
-    return hasExit || hasNoType ? 0.9 : 0.4;
+    const hasMaxCount = rules.some((r) => r.type === 'max_count_per_step');
+
+    // Check if tool has NO TYPE rules (truly empty or undefined types)
+    const hasNoTypeRules = rules.length === 0 || rules.every((r) => !r.type);
+
+    // Check if tool ONLY has continue_loop rules and nothing else
+    const hasOnlyContinue =
+      rules.length > 0 &&
+      rules.every((r) => r.type === 'continue_loop') &&
+      !hasExit &&
+      !hasMaxCount;
+
+    // Tools that can connect to exit should have high opacity:
+    // 1. Tools with explicit exit_loop rules
+    // 2. Tools with max_count_per_step rules
+    // 3. Tools with no type rules (can exit by default)
+    if (hasExit || hasMaxCount || hasNoTypeRules) return 0.9;
+
+    // Fade tools that only have continue_loop (can't exit)
+    if (hasOnlyContinue) return 0.4;
+
+    // Default case
+    return 0.4;
   }
 
   const focusedRules = toolGroups[focusedTool] || [];
@@ -249,6 +297,8 @@ export function getNodeBackgroundColor(params: {
   focusedTool: string | null;
   colors: {
     NODE: {
+      START_BACKGROUND: string;
+      START_BACKGROUND_DIM: string;
       AGENT_BACKGROUND: string;
       AGENT_BACKGROUND_DIM: string;
       DONE_BACKGROUND: string;
@@ -257,10 +307,16 @@ export function getNodeBackgroundColor(params: {
       TOOL_BACKGROUND_DIM: string;
     };
   };
-  controlNodes: { AGENT: string; DONE: string };
+  controlNodes: { START: string; AGENT: string; DONE: string };
 }): string {
   const { toolName, focusedTool, colors, controlNodes } = params;
   const isFocused = toolName === focusedTool;
+
+  if (toolName === controlNodes.START) {
+    return isFocused
+      ? colors.NODE.START_BACKGROUND
+      : colors.NODE.START_BACKGROUND_DIM;
+  }
 
   if (toolName === controlNodes.AGENT) {
     return isFocused
@@ -328,7 +384,7 @@ export function calculateNodeLayout(
           type: 'main' as const,
           tools: otherTools,
           x: layout.MAIN_TOOLS_X,
-          offset: -25,
+          // offset: -25,
           hasControlNode: false,
         },
         ...(hasChildTools
@@ -371,77 +427,154 @@ export function createEdgeData(
   const uniqueTools = Object.keys(toolGroups);
   const context: EdgeContext = { focusedTool, rulesData: rules };
 
+  // Get categorized tools to know which are run_first
+  const { runFirstTools } = categorizeTools(toolGroups);
+
   const edgeData: Array<{
     id: string;
     source: string;
     target: string;
-    edgeType: 'agent_to_tool' | 'constrain' | 'continue' | 'exit';
+    edgeType:
+      | 'agent_to_tool'
+      | 'constrain'
+      | 'continue'
+      | 'exit'
+      | 'start_to_agent'
+      | 'start_to_tool';
     opacity: number;
     shouldDash: boolean;
     arrowColor: string;
   }> = [];
 
-  uniqueTools.forEach((toolName) => {
-    const rules = toolGroups[toolName];
-    const outwardEdgeCount = getOutwardEdgeCount(toolName, toolGroups);
-    const shouldDashOutward = outwardEdgeCount > 1;
-
-    // Agent → Tool connections
+  // Conditional START connections
+  if (runFirstTools.length > 0) {
+    // If run_first tools exist, START → run_first tools
+    runFirstTools.forEach((toolName) => {
+      edgeData.push({
+        id: `start-${toolName}`,
+        source: 'start',
+        target: `tool-${toolName}`,
+        edgeType: 'start_to_tool',
+        opacity: getEdgeOpacity(
+          {
+            sourceToolName: 'start',
+            targetToolName: toolName,
+            edgeType: 'start_to_tool',
+          },
+          context,
+        ),
+        shouldDash: false,
+        arrowColor: getArrowColor(
+          focusedTool === 'start',
+          focusedTool === toolName,
+          {
+            OUTGOING: 'hsl(var(--brand))',
+            INCOMING: 'hsl(var(--brand))',
+            DEFAULT: 'hsl(var(--muted))',
+          },
+        ),
+      });
+    });
+  } else {
+    // If no run_first tools, START → AGENT
     edgeData.push({
-      id: `agent-${toolName}`,
-      source: 'agent',
-      target: `tool-${toolName}`,
-      edgeType: 'agent_to_tool',
+      id: 'start-agent',
+      source: 'start',
+      target: 'agent',
+      edgeType: 'start_to_agent',
       opacity: getEdgeOpacity(
         {
-          sourceToolName: null,
-          targetToolName: toolName,
-          edgeType: 'agent_to_tool',
+          sourceToolName: 'start',
+          targetToolName: 'agent',
+          edgeType: 'start_to_agent',
         },
         context,
       ),
       shouldDash: false,
       arrowColor: getArrowColor(
+        focusedTool === 'start',
         focusedTool === 'agent',
-        focusedTool === toolName,
         {
           OUTGOING: 'hsl(var(--brand))',
           INCOMING: 'hsl(var(--brand))',
-          DEFAULT: '',
+          DEFAULT: 'hsl(var(--muted))',
         },
       ),
     });
+  }
 
+  uniqueTools.forEach((toolName) => {
+    const rules = toolGroups[toolName];
     const isParent = rules.some((r) => r.type === 'constrain_child_tools');
     const hasExitLoop = rules.some((r) => r.type === 'exit_loop');
+    const hasContinueLoop = rules.some((r) => r.type === 'continue_loop');
+    const hasMaxCount = rules.some((r) => r.type === 'max_count_per_step');
     const hasNoType = rules.length === 0 || rules.every((r) => !r.type);
+    const isRunFirst = runFirstTools.includes(toolName);
+
+    // AGENT → Tool connections for all tools EXCEPT run_first tools
+    if (!isRunFirst) {
+      edgeData.push({
+        id: `agent-${toolName}`,
+        source: 'agent',
+        target: `tool-${toolName}`,
+        edgeType: 'agent_to_tool',
+        opacity: getEdgeOpacity(
+          {
+            sourceToolName: 'agent',
+            targetToolName: toolName,
+            edgeType: 'agent_to_tool',
+          },
+          context,
+        ),
+        shouldDash: false,
+        arrowColor: getArrowColor(
+          focusedTool === 'agent',
+          focusedTool === toolName,
+          {
+            OUTGOING: 'hsl(var(--brand))',
+            INCOMING: 'hsl(var(--brand))',
+            DEFAULT: 'hsl(var(--muted))',
+          },
+        ),
+      });
+    }
 
     // Exit connections
-    if (hasExitLoop || hasNoType) {
+    if (hasExitLoop || hasNoType || hasMaxCount) {
       edgeData.push({
         id: `${toolName}-done`,
         source: `tool-${toolName}`,
         target: 'done',
         edgeType: 'exit',
         opacity: getEdgeOpacity(
-          { sourceToolName: toolName, targetToolName: null, edgeType: 'exit' },
+          {
+            sourceToolName: toolName,
+            targetToolName: 'done',
+            edgeType: 'exit',
+          },
           context,
         ),
-        shouldDash: shouldDashOutward,
+        shouldDash: false,
         arrowColor: getArrowColor(
           focusedTool === toolName,
           focusedTool === 'done',
           {
             OUTGOING: 'hsl(var(--brand))',
             INCOMING: 'hsl(var(--brand))',
-            DEFAULT: '',
+            DEFAULT: 'hsl(var(--muted))',
           },
         ),
       });
     }
 
     // Continue connections
-    if (hasNoType || (!hasExitLoop && !isParent)) {
+    if (
+      hasContinueLoop ||
+      hasNoType ||
+      hasMaxCount ||
+      (!hasExitLoop && !isParent)
+    ) {
       edgeData.push({
         id: `${toolName}-agent`,
         source: `tool-${toolName}`,
@@ -450,16 +583,16 @@ export function createEdgeData(
         opacity: getEdgeOpacity(
           {
             sourceToolName: toolName,
-            targetToolName: null,
+            targetToolName: 'agent',
             edgeType: 'continue',
           },
           context,
         ),
-        shouldDash: shouldDashOutward,
+        shouldDash: false,
         arrowColor: getArrowColor(focusedTool === toolName, false, {
           OUTGOING: 'hsl(var(--brand))',
           INCOMING: 'hsl(var(--brand))',
-          DEFAULT: '',
+          DEFAULT: 'hsl(var(--muted))',
         }),
       });
     }
@@ -481,14 +614,14 @@ export function createEdgeData(
             },
             context,
           ),
-          shouldDash: shouldDashOutward,
+          shouldDash: false,
           arrowColor: getArrowColor(
             focusedTool === toolName,
             focusedTool === childTool,
             {
               OUTGOING: 'hsl(var(--brand))',
               INCOMING: 'hsl(var(--brand))',
-              DEFAULT: '',
+              DEFAULT: 'hsl(var(--muted))',
             },
           ),
         });

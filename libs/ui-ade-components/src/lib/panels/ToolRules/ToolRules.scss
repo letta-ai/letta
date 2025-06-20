@@ -3,9 +3,12 @@
 // Variables
 // Consolidated color map
 $color-vars: (
-  agent-background:       rgba(50, 205, 50, 0.33),
-  agent-background-dim:   rgba(50, 205, 50, 0.25),
-  agent-border:           #32cd32,
+  start-background:        rgba(50, 205, 50, 0.33),
+  start-background-dim:    rgba(50, 205, 50, 0.25),
+  start-border:            #32cd32,
+  agent-background:       rgba(59, 130, 246, 0.33),
+  agent-background-dim:   rgba(59, 130, 246, 0.25),
+  agent-border:           #3b82f6,
   done-background:        rgba(237, 53, 127, 0.33),
   done-background-dim:    rgba(237, 53, 127, 0.25),
   done-border:            #ed357f,
@@ -138,6 +141,15 @@ $rule-icon-colors: (
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     min-width: 80px;
 
+    &.start {
+      background: map.get($color-vars, start-background);
+      border: 1px solid map.get($color-vars, start-border);
+
+      &--dim {
+        background: map.get($color-vars, start-background-dim);
+      }
+    }
+
     &.agent {
       background: map.get($color-vars, agent-background);
       border: 1px solid map.get($color-vars, agent-border);
@@ -169,6 +181,10 @@ $rule-icon-colors: (
 
     &--dim {
       background: hsl(var(--background) / 0.7);
+    }
+
+    &.start-focused {
+      background: map.get($color-vars, start-background);
     }
 
     &.agent-focused {
@@ -299,6 +315,7 @@ $rule-icon-colors: (
 
 .tool-rules-node--focused {
   animation: node-focus 0.1s ease-out;
+  transform: scale(1.02);
 }
 
 // Loading state

@@ -64,6 +64,12 @@ function getNodeBackgroundColor(
 ): string {
   const isFocused = toolName === focusedTool;
 
+  if (toolName === CONTROL_NODES.START) {
+    return isFocused
+      ? COLORS.NODE.START_BACKGROUND
+      : COLORS.NODE.START_BACKGROUND_DIM;
+  }
+
   if (toolName === CONTROL_NODES.AGENT) {
     return isFocused
       ? COLORS.NODE.AGENT_BACKGROUND
@@ -245,15 +251,25 @@ function createNodesFromRules(
     : LAYOUT.EXIT_LOOP_X - offsetX;
   const doneX = hasChildTools ? LAYOUT.DONE_X : LAYOUT.DONE_X - offsetX;
 
-  // Create control nodes
+  // Create separate START and AGENT control nodes
+  const startNode = createControlNode({
+    id: CONTROL_NODES.START,
+    label: 'Start',
+    x: LAYOUT.AGENT_X, // Original position
+    borderColor: COLORS.NODE.START_BORDER,
+    focusedTool,
+    toolGroups,
+  });
+
   const agentNode = createControlNode({
     id: CONTROL_NODES.AGENT,
-    label: 'Start Constraint',
-    x: LAYOUT.AGENT_X,
+    label: 'Agent',
+    x: LAYOUT.AGENT_X, // Original position (will be shifted later)
     borderColor: COLORS.NODE.AGENT_BORDER,
     focusedTool,
     toolGroups,
   });
+
   const doneNode = createControlNode({
     id: CONTROL_NODES.DONE,
     label: 'Exit loop',
@@ -263,14 +279,15 @@ function createNodesFromRules(
     toolGroups,
   });
 
-  // Separate exit loop tools from terminal node
+  // Update tool columns - combine START and AGENT in same column
   const toolColumns: ToolColumn[] = [
     {
       tools: [...runFirstTools],
       x: LAYOUT.AGENT_X,
       offset: 0,
       hasControlNode: true,
-      controlNode: agentNode,
+      controlNode: agentNode, // This will be handled specially
+      startNode: startNode, // Add START node reference
     },
     {
       tools: otherTools,
@@ -308,73 +325,97 @@ function createNodesFromRules(
 
   const allNodes: Node[] = [];
 
-  toolColumns.forEach(({ tools, x, offset, hasControlNode, controlNode }) => {
-    if (hasControlNode && controlNode && controlNode.id === 'done') {
-      // Position the done node based on the number of exit loop tools
-      const exitLoopToolCount = exitLoopTools.length;
-      const doneYOffset =
-        exitLoopToolCount > 0 ? exitLoopToolCount * LAYOUT.NODE_SPACING : 0;
-      controlNode.position = { x, y: LAYOUT.CONTROL_Y + doneYOffset };
-      allNodes.push(controlNode);
-    } else if (hasControlNode && controlNode) {
-      // For other control nodes (like agent), calculate positions including the control node
-      const totalItems = tools.length + 1;
-      const yPositions = getCenteredYPositions(totalItems);
+  toolColumns.forEach(
+    ({ tools, x, offset, hasControlNode, controlNode, startNode }) => {
+      if (hasControlNode && controlNode && controlNode.id === 'done') {
+        // Position the done node based on the number of exit loop tools
+        const exitLoopToolCount = exitLoopTools.length;
+        const doneYOffset =
+          exitLoopToolCount > 0 ? exitLoopToolCount * LAYOUT.NODE_SPACING : 0;
+        controlNode.position = { x, y: LAYOUT.CONTROL_Y + doneYOffset };
+        allNodes.push(controlNode);
+      } else if (hasControlNode && controlNode && startNode) {
+        // Special handling for START + AGENT column
+        const totalItems = tools.length + 2; // +2 for START and AGENT nodes
+        const yPositions = getCenteredYPositions(totalItems);
 
-      controlNode.position = { x, y: yPositions[0] };
-      allNodes.push(controlNode);
+        // Position START node at the top
+        startNode.position = { x, y: yPositions[0] };
+        allNodes.push(startNode);
 
-      // Position tools starting from the second position
-      tools.forEach((toolName, index) => {
-        const rules = toolGroups[toolName] || [
-          { tool_name: toolName, type: 'continue_loop' },
-        ];
-        const position = { x: x + offset, y: yPositions[index + 1] };
-        allNodes.push(
-          createToolNode({
-            toolName,
-            rules,
-            position,
-            focusedTool,
-            toolGroups,
-          }),
-        );
-      });
-    } else {
-      // Regular column without control node (including exit loop tools)
-      const yPositions = getCenteredYPositions(tools.length);
-      tools.forEach((toolName, index) => {
-        const rules = toolGroups[toolName] || [
-          { tool_name: toolName, type: 'continue_loop' },
-        ];
-        const position = { x: x + offset, y: yPositions[index] };
-        allNodes.push(
-          createToolNode({
-            toolName,
-            rules,
-            position,
-            focusedTool,
-            toolGroups,
-          }),
-        );
-      });
-    }
-  });
+        // Position tools after START but before AGENT
+        tools.forEach((toolName, index) => {
+          const rules = toolGroups[toolName] || [
+            { tool_name: toolName, type: 'continue_loop' },
+          ];
+          const position = { x: x + offset, y: yPositions[index + 1] }; // +1 to skip START position
+          allNodes.push(
+            createToolNode({
+              toolName,
+              rules,
+              position,
+              focusedTool,
+              toolGroups,
+            }),
+          );
+        });
+
+        // Position AGENT node at the end - shift it 50px to the right
+        const agentYPosition = yPositions[yPositions.length - 1];
+        controlNode.position = { x: x, y: agentYPosition }; // Shift AGENT node to the right
+        allNodes.push(controlNode);
+      } else if (hasControlNode && controlNode) {
+        // Regular control node handling
+        const totalItems = tools.length + 1;
+        const yPositions = getCenteredYPositions(totalItems);
+
+        controlNode.position = { x, y: yPositions[0] };
+        allNodes.push(controlNode);
+
+        // Position tools starting from the second position
+        tools.forEach((toolName, index) => {
+          const rules = toolGroups[toolName] || [
+            { tool_name: toolName, type: 'continue_loop' },
+          ];
+          const position = { x: x + offset, y: yPositions[index + 1] };
+          allNodes.push(
+            createToolNode({
+              toolName,
+              rules,
+              position,
+              focusedTool,
+              toolGroups,
+            }),
+          );
+        });
+      } else {
+        // Regular column without control node
+        const yPositions = getCenteredYPositions(tools.length);
+        tools.forEach((toolName, index) => {
+          const rules = toolGroups[toolName] || [
+            { tool_name: toolName, type: 'continue_loop' },
+          ];
+          const position = { x: x + offset, y: yPositions[index] };
+          allNodes.push(
+            createToolNode({
+              toolName,
+              rules,
+              position,
+              focusedTool,
+              toolGroups,
+            }),
+          );
+        });
+      }
+    },
+  );
 
   return allNodes;
 }
 
 // Edge Creation Functions
 function createEdge(params: EdgeParams): Edge {
-  const {
-    id,
-    source,
-    target,
-    arrowColor,
-    opacity,
-    shouldDash = false,
-    data = {},
-  } = params;
+  const { id, source, target, arrowColor, opacity, data = {} } = params;
   return {
     id,
     source,
@@ -390,9 +431,8 @@ function createEdge(params: EdgeParams): Edge {
       stroke: arrowColor,
       strokeWidth: 1,
       opacity,
-      ...(shouldDash && { strokeDasharray: '5,5' }),
     },
-    ...(data as any), // IDK why this is needed, but removing this breaks the "markerEnd.type: arrowclosed". am very sad :(
+    ...(data as any),
     data,
   };
 }
@@ -409,10 +449,21 @@ function createEdgesFromRules(
     // Extract focus state and calculate arrow color here
     const sourceIsFocused =
       focusedTool ===
-      (source === 'agent' ? 'agent' : source.replace('tool-', ''));
+      (source === 'start'
+        ? 'start' // Handle START node
+        : source === 'agent'
+          ? 'agent' // Handle AGENT node
+          : source.replace('tool-', '')); // Handle tool nodes
+
     const targetIsFocused =
       focusedTool ===
-      (target === 'done' ? 'done' : target.replace('tool-', ''));
+      (target === 'start'
+        ? 'start' // Handle START node
+        : target === 'agent'
+          ? 'agent' // Handle AGENT node
+          : target === 'done'
+            ? 'done' // Handle DONE node
+            : target.replace('tool-', '')); // Handle tool nodes
 
     const arrowColor =
       sourceIsFocused || targetIsFocused
