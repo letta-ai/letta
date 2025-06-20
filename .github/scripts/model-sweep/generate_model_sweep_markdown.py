@@ -406,7 +406,7 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
             model_anchor = model_info['name'].replace('/', '_').replace(':', '_').replace('-', '_').lower()
             
             # Build row with left-aligned first column, centered others
-            row_parts = [f"[`{model_info['name']}`](#{provider_name.lower().replace(' ', '_')}_{model_anchor}_details)".ljust(column_widths['model'] + 20)]  # Add extra space for link syntax
+            row_parts = [f"`{model_info['name']}`".ljust(column_widths['model'])]
             for feature in feature_names:
                 row_parts.append(f"{model_info['feature_support'][feature]:^{column_widths[feature]}}")
             row_parts.extend([
@@ -421,7 +421,7 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
         
         for model_info in model_data:
             model_anchor = model_info['name'].replace('/', '_').replace(':', '_').replace('-', '_').lower()
-            mdx_lines.append(f"#### {model_info['name']} {{#{provider_name.lower().replace(' ', '_')}_{model_anchor}_details}}")
+            mdx_lines.append(f"#### {model_info['name']}")
             mdx_lines.append("")
             
             # Add test details
