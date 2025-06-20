@@ -2,9 +2,13 @@ name: Promote E2B from staging to production
 
 on:
   workflow_dispatch:
+    inputs:
+      template_id:
+        description: 'Template ID to deploy'
+        required: false
+        type: string
 
 jobs:
-
   promote-template-id:
 
     runs-on: ubuntu-latest
@@ -26,7 +30,13 @@ jobs:
     # but first we have to land kian/secrets-part-2 which will deploy prod secrets
     - name: Promote Template ID
       run: |
-        template_id=$(gcloud secrets versions access latest --secret dev_e2b_E2B_SANDBOX_TEMPLATE_ID)
+        if [ -n "${{ inputs.template_id }}" ]; then
+          template_id="${{ inputs.template_id }}"
+          echo "Using provided template ID: $template_id"
+        else
+          template_id=$(gcloud secrets versions access latest --secret dev_ci_E2B_SANDBOX_TEMPLATE_ID)
+          echo "Using template ID from dev_ci_E2B_SANDBOX_TEMPLATE_ID secret"
+        fi
         echo "$template_id" | gcloud secrets versions add dev_ci_E2B_SANDBOX_TEMPLATE_ID --data-file=-
 
     - name: Fire alert
