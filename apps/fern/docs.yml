@@ -387,6 +387,14 @@ navigation:
             # path: pages/cloud/variables.mdx
           # - page: Deploying via the ADE
             # path: pages/cloud/versions.mdx
+      - section: Observability
+        contents:
+          - page: Overview
+            path: pages/cloud/observability.mdx
+          - page: Monitoring
+            path: pages/cloud/monitoring.mdx
+          - page: Responses & Tracing
+            path: pages/cloud/responses.mdx
   - tab: ref
     layout:
       - link: Chat on Discord
