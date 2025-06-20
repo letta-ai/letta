@@ -32,16 +32,23 @@ async def close_file(agent_state: "AgentState", file_name: str) -> str:
     raise NotImplementedError("Tool not implemented. Please contact the Letta team.")
 
 
-async def grep(agent_state: "AgentState", pattern: str, include: Optional[str] = None) -> str:
+async def grep(
+    agent_state: "AgentState",
+    pattern: str,
+    include: Optional[str] = None,
+    context_lines: Optional[int] = 3,
+) -> str:
     """
-    Grep tool to search files across data sources with a keyword or regex pattern.
+    Grep tool to search files across data sources using a keyword or regex pattern.
 
     Args:
         pattern (str): Keyword or regex pattern to search within file contents.
         include (Optional[str]): Optional keyword or regex pattern to filter filenames to include in the search.
+        context_lines (Optional[int]): Number of lines of context to show before and after each match.
+                                       Equivalent to `-C` in grep. Defaults to 3.
 
     Returns:
-        str: Matching lines or summary output.
+        str: Matching lines with optional surrounding context or a summary output.
     """
     raise NotImplementedError("Tool not implemented. Please contact the Letta team.")
 
