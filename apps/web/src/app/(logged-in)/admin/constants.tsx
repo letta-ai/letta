@@ -1,6 +1,5 @@
 import type { AdminNavigationItemProps } from './types';
 import {
-  LayoutIcon,
   CompanyIcon,
   InferenceModelsIcon,
   EmbeddingModelsIcon,
@@ -24,13 +23,6 @@ export const NavigationItems: AdminNavigationItemProps[] = [
     icon: <UserFaceIcon />,
     href: '/admin/users',
     description: 'View and Manage Users',
-  },
-  {
-    id: 'flush-layouts',
-    label: 'Flush Layouts',
-    icon: <LayoutIcon />,
-    href: '/admin/flush-layouts',
-    description: 'Flush the cache of layouts',
   },
   {
     id: 'inference-models',
