@@ -1,6 +1,9 @@
 'use client';
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { InfoTooltip } from '@letta-cloud/ui-component-library';
+import {
+  DotsVerticalIcon,
+  InfoTooltip,
+} from '@letta-cloud/ui-component-library';
 import type {
   FieldDefinitions,
   QueryBuilderQuery,
@@ -14,6 +17,8 @@ import {
   MiddleTruncate,
   QueryBuilder,
   SearchIcon,
+  DropdownMenu,
+  DropdownMenuItem,
 } from '@letta-cloud/ui-component-library';
 import { Frame } from '@letta-cloud/ui-component-library';
 import {
@@ -47,7 +52,11 @@ import { DeployAgentDialog } from './DeployAgentDialog/DeployAgentDialog';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
-import { ImportAgentsDialog, Messages } from '@letta-cloud/ui-ade-components';
+import {
+  ImportAgentsDialog,
+  Messages,
+  DeleteAgentDialog,
+} from '@letta-cloud/ui-ade-components';
 import type { InfiniteData } from '@tanstack/query-core';
 import {
   type ExtendedAgentState,
@@ -56,6 +65,7 @@ import {
   cloudAPI,
   cloudQueryKeys,
 } from '@letta-cloud/sdk-cloud-api';
+import { TrashIcon } from '@letta-cloud/ui-component-library';
 
 interface AgentMessagesListProps {
   agentId: string;
@@ -80,10 +90,11 @@ function AgentMessagesList(props: AgentMessagesListProps) {
 interface DeployedAgentViewProps {
   agent: AgentState;
   onClose: () => void;
+  onAgentUpdate: () => void;
 }
 
 function DeployedAgentView(props: DeployedAgentViewProps) {
-  const { agent, onClose } = props;
+  const { agent, onClose, onAgentUpdate } = props; // Add onAgentUpdate
   const { name } = agent;
   const { slug: currentProjectSlug } = useCurrentProject();
   const t = useTranslations('projects/(projectSlug)/agents/page');
@@ -118,15 +129,50 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
           fullWidth
           justify="spaceBetween"
         >
-          <Typography align="left" bold variant="heading4">
-            {name}
-          </Typography>
+          <HStack align="center" gap="small">
+            <Typography align="left" bold variant="heading4">
+              {name}
+            </Typography>
+            <DropdownMenu
+              trigger={
+                <Button
+                  data-testid={`agent-actions-button:${agent.id}`}
+                  color="tertiary"
+                  label={t('actions')}
+                  preIcon={<DotsVerticalIcon />}
+                  size="default"
+                  hideLabel
+                  // _use_rarely_disableTooltip
+                />
+              }
+              triggerAsChild
+            >
+              <DeleteAgentDialog
+                agentId={agent.id || ''}
+                agentName={agent.name || ''}
+                trigger={
+                  <DropdownMenuItem
+                    doNotCloseOnSelect
+                    preIcon={<TrashIcon />}
+                    label="Delete Agent"
+                  />
+                }
+                onSuccess={() => {
+                  // Close the preview panel and potentially refresh the data
+                  onClose();
+                  onAgentUpdate(); // Call onAgentUpdate
+                }}
+              />
+            </DropdownMenu>
+          </HStack>
+
           <HStack>
             <Button
               href={`/projects/${currentProjectSlug}/agents/${agent.id}`}
               label={t('openInADE')}
               color="secondary"
             />
+
             <Button
               onClick={onClose}
               color="tertiary"
@@ -597,7 +643,7 @@ function DeployedAgentsPage() {
     return {};
   }, [currentProjectId, query, limit]);
 
-  const { data, isFetchingNextPage, fetchNextPage } = useInfiniteQuery<
+  const { data, isFetchingNextPage, fetchNextPage, refetch } = useInfiniteQuery<
     ServerInferResponses<
       typeof cloudContracts.agents.searchDeployedAgents,
       200
@@ -644,6 +690,13 @@ function DeployedAgentsPage() {
       return undefined;
     },
   });
+
+  // Handler for when agents are updated
+  const handleAgentUpdate = useCallback(() => {
+    // Reset to first page and refetch
+    setPage(0);
+    void refetch();
+  }, [refetch]);
 
   useEffect(() => {
     if (!data?.pages) {
@@ -953,6 +1006,7 @@ function DeployedAgentsPage() {
                   setSelectedAgent(undefined);
                 }}
                 agent={selectedAgent}
+                onAgentUpdate={handleAgentUpdate} // Add this prop
               />
             )}
           </HStack>

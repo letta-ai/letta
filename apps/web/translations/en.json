@@ -1981,7 +1981,8 @@
     "latestMessages": "Latest Messages",
     "openInADE": "Open in ADE",
     "agentId": "Agent ID",
-    "close": "Close"
+    "close": "Close",
+    "actions": "Actions"
   },
   "ComponentLibrary/InlineCode": {
     "copyButton": "Copy Code"
