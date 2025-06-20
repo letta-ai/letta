@@ -105,6 +105,9 @@ def main():
 
         env_var_name = convert_to_env_var_string(secret_name)
 
+        # Remove leading and trailing whitespace and newlines causing issues (e2b template encoded as base64)
+        secret_value = secret_value.strip()
+
         # e.g. private key is difficult to parse into an env var
         if '\n' in secret_value:
             logger.info(f"Secret {secret_name} contains newlines. Encoding as Base64")
