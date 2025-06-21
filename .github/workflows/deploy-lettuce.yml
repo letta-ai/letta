@@ -50,7 +50,7 @@ jobs:
     needs: changed-files
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    if: needs.changed-files.outputs.any_changed == 'true'
+    if: needs.changed-files.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
 
