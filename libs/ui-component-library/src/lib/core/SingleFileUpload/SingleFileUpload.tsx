@@ -1,6 +1,6 @@
 'use client';
 import * as React from 'react';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { makeInput, makeRawInput } from '../Form/Form';
 import { Typography } from '../Typography/Typography';
 import { VStack } from '../../framing/VStack/VStack';
@@ -9,6 +9,7 @@ import { Button } from '../Button/Button';
 import { HStack } from '../../framing/HStack/HStack';
 import { useTranslations } from '@letta-cloud/translations';
 import { Slot } from '@radix-ui/react-slot';
+import { cn } from '@letta-cloud/ui-styles';
 
 interface SingleFileUploadProps {
   onChange: (file: File | undefined) => void;
@@ -18,6 +19,7 @@ interface SingleFileUploadProps {
   chooseFileText?: string;
   fileIcon?: React.ReactNode;
   dropText?: string;
+  dropHereText?: string;
   accept?: string;
 }
 
@@ -28,6 +30,7 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
     onChange,
     value,
     dropText = t('dropFile'),
+    dropHereText = t('dropFileHere'),
     removeFileText = t('removeFile'),
     changeFileText = t('changeFile'),
     fileIcon = <FileIcon />,
@@ -35,11 +38,72 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
     accept,
   } = props;
 
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isMultipleFiles, setIsMultipleFiles] = useState(false);
+  const dragCounter = useRef(0);
+
+  const handleDragEnter = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      dragCounter.current++;
+
+      if (event.dataTransfer.items && event.dataTransfer.items.length > 0) {
+        const fileItems = Array.from(event.dataTransfer.items).filter(
+          (item) => item.kind === 'file',
+        );
+
+        if (fileItems.length > 0) {
+          setIsDragOver(true);
+          setIsMultipleFiles(fileItems.length > 1);
+        }
+      }
+    },
+    [],
+  );
+
+  const handleDragLeave = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      dragCounter.current--;
+      if (dragCounter.current === 0) {
+        setIsDragOver(false);
+        setIsMultipleFiles(false);
+      }
+    },
+    [],
+  );
+
+  const handleDragOver = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+
+      // Show not-allowed cursor for multiple files
+      if (event.dataTransfer.items) {
+        const fileItems = Array.from(event.dataTransfer.items).filter(
+          (item) => item.kind === 'file',
+        );
+        if (fileItems.length > 1) {
+          event.dataTransfer.dropEffect = 'none';
+        }
+      }
+    },
+    [],
+  );
+
   const handleDropFile = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
-      const file = event.dataTransfer.files[0];
-      onChange(file);
+      dragCounter.current = 0;
+      setIsDragOver(false);
+      setIsMultipleFiles(false);
+
+      const files = event.dataTransfer.files;
+
+      // Only accept the first file if multiple are dropped
+      if (files.length > 0) {
+        const file = files[0];
+        onChange(file);
+      }
     },
     [onChange],
   );
@@ -63,25 +127,51 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
     inputRef.current?.click();
   }, []);
 
+  function getDropText() {
+    if (isMultipleFiles) {
+      return t('onlyOneFile');
+    }
+    return isDragOver ? dropHereText : dropText;
+  }
+
+  function getDropZoneStyle() {
+    if (isMultipleFiles) {
+      return 'bg-destructive/10 border-destructive border-2 border-dashed';
+    }
+    if (isDragOver) {
+      return 'bg-primary/10 border-primary border-2 border-dashed';
+    }
+    return '';
+  }
+
   return (
     <VStack
       fullWidth
       color="background-grey"
-      className="w-full h-[250px] relative"
+      className={cn(
+        'w-full h-[250px] relative transition-colors duration-200',
+        getDropZoneStyle(),
+      )}
       onDrop={handleDropFile}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
       align="center"
       justify="center"
-      onDragOver={(event) => {
-        event.preventDefault();
-      }}
     >
       {!value ? (
         <>
           <VStack align="center">
             <Slot className="w-8">{fileIcon}</Slot>
             <VStack>
-              <Typography variant="body" className="text-center">
-                {dropText}
+              <Typography
+                variant="body"
+                className={cn(
+                  'text-center',
+                  isMultipleFiles && 'text-destructive',
+                )}
+              >
+                {getDropText()}
               </Typography>
               <Button
                 type="button"
@@ -128,7 +218,7 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
         ref={inputRef}
         type="file"
         accept={accept}
-        className="w-[0] h-[0] absolute opacity-0"
+        className="w-[0] h-0] absolute opacity-0"
         onChange={handleChooseFile}
       />
     </VStack>

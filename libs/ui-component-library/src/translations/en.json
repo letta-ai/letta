@@ -163,6 +163,8 @@
   },
   "components/SingleFileUpload": {
     "dropFile": "Drop a file here",
+    "dropFileHere": "Drop file here",
+    "onlyOneFile": "You can only upload one file at a time",
     "chooseFileText": "Choose a file",
     "changeFile": "Change file",
     "removeFile": "Remove file"
