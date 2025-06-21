@@ -145,8 +145,8 @@ def generate_test_details(model_info, feature_mapping):
     test_file_path = os.path.join(script_dir, 'model_sweep.py')
     test_line_numbers = get_test_function_line_numbers(test_file_path)
     
-    # Use the specific GitHub URL for the branch
-    base_github_url = "https://github.com/letta-ai/letta/blob/kian/add_model_sweep/.github/scripts/model-sweep/model_sweep.py"
+    # Use the main branch GitHub URL
+    base_github_url = "https://github.com/letta-ai/letta/blob/main/.github/scripts/model-sweep/model_sweep.py"
     
     for feature, tests in model_info['categorized_tests'].items():
         if not tests:
@@ -355,8 +355,9 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
         all_provider_data[provider_name] = model_data
         provider_support_scores[provider_name] = calculate_provider_support_score(model_data, list(feature_mapping.keys()))
 
-    # Calculate column widths for consistent formatting
+    # Calculate column widths for consistent formatting (add details column)
     column_widths = calculate_column_widths(all_provider_data, feature_mapping)
+    column_widths['details'] = len('Details')
 
     # Sort providers by support score (descending) then by name (ascending)
     sorted_providers = sorted(
@@ -364,7 +365,7 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
         key=lambda x: (-provider_support_scores[x], x)
     )
 
-    # Generate output for each provider
+    # Generate tables for all providers first
     for provider_name in sorted_providers:
         model_data = all_provider_data[provider_name]
         support_score = provider_support_scores[provider_name]
@@ -378,7 +379,8 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
             header_parts.append(f"{feature:^{column_widths[feature]}}")
         header_parts.extend([
             f"{'Context Window':^{column_widths['context_window']}}",
-            f"{'Last Scanned':^{column_widths['last_scanned']}}"
+            f"{'Last Scanned':^{column_widths['last_scanned']}}",
+            f"{'Details':^{column_widths['details']}}"
         ])
         header_row = "| " + " | ".join(header_parts) + " |"
 
@@ -388,7 +390,8 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
             separator_parts.append(f":{'-' * (column_widths[feature] - 2)}:")
         separator_parts.extend([
             f":{'-' * (column_widths['context_window'] - 2)}:",
-            f":{'-' * (column_widths['last_scanned'] - 2)}:"
+            f":{'-' * (column_widths['last_scanned'] - 2)}:",
+            f":{'-' * (column_widths['details'] - 2)}:"
         ])
         separator_row = "|" + "|".join(separator_parts) + "|"
 
@@ -404,6 +407,7 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
         for model_info in model_data:
             # Create anchor for model details
             model_anchor = model_info['name'].replace('/', '_').replace(':', '_').replace('-', '_').lower()
+            details_anchor = f"{provider_name.lower().replace(' ', '_')}_{model_anchor}_details"
             
             # Build row with left-aligned first column, centered others
             row_parts = [f"`{model_info['name']}`".ljust(column_widths['model'])]
@@ -411,25 +415,35 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
                 row_parts.append(f"{model_info['feature_support'][feature]:^{column_widths[feature]}}")
             row_parts.extend([
                 f"{model_info['context_window']:,}".center(column_widths['context_window']),
-                f"{model_info['last_scanned']}".center(column_widths['last_scanned'])
+                f"{model_info['last_scanned']}".center(column_widths['last_scanned']),
+                f"[View](#{details_anchor})".center(column_widths['details'])
             ])
             row = "| " + " | ".join(row_parts) + " |"
             mdx_lines.append(row)
 
-        # Add detailed test results for each model
-        mdx_lines.extend(["", "### Detailed Test Results", ""])
+        # Add spacing between provider tables
+        mdx_lines.extend(["", ""])
+
+    # Add detailed test results section after all tables
+    mdx_lines.extend(["---", "", "# Detailed Test Results", ""])
+    
+    for provider_name in sorted_providers:
+        model_data = all_provider_data[provider_name]
+        mdx_lines.extend([f"## {provider_name}", ""])
         
         for model_info in model_data:
             model_anchor = model_info['name'].replace('/', '_').replace(':', '_').replace('-', '_').lower()
-            mdx_lines.append(f"#### {model_info['name']}")
+            details_anchor = f"{provider_name.lower().replace(' ', '_')}_{model_anchor}_details"
+            mdx_lines.append(f"<a id=\"{details_anchor}\"></a>")
+            mdx_lines.append(f"### {model_info['name']}")
             mdx_lines.append("")
             
             # Add test details
             test_details = generate_test_details(model_info, feature_mapping)
             mdx_lines.extend(test_details)
         
-        # Add spacing between providers
-        mdx_lines.extend(["", "---", ""])
+        # Add spacing between providers in details section
+        mdx_lines.extend(["", ""])
 
     # Write the MDX file
     with open(output_file, 'w') as f:

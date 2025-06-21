@@ -1,10 +1,5 @@
 name: Model Sweep
 on:
-  schedule:
-    - cron: "0 * * * *"
-  push:
-    branches:
-      - kian/add_model_sweep
   workflow_dispatch:
     inputs:
       branch-name:
