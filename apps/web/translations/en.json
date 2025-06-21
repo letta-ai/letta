@@ -34,7 +34,7 @@
       "label": "Standard model requests"
     },
     "agentUsage": {
-      "label": "Active Agents",
+      "label": "Active agents",
       "tooltip": "This is the running count of agents that you have chatted with in the last billing period. This does not include agents that have not been communicated with anyone in the last billing period."
     },
     "resetDate": "Your limits will reset on {date}"

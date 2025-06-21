@@ -367,14 +367,14 @@
         "overage": "You have reached the maximum number of data sources for your plan, please <link>upgrade</link> or delete some data sources."
       },
       "creatingDataSource": "Creating data source...",
-      "title": "Create a new data source",
+      "title": "Attach a data source",
       "options": {
         "createANewDataSource": {
-          "title": "Create a new data source",
+          "title": "New data source",
           "description": "Create a new data source to use in your agent and other projects."
         },
         "attachAnExistingDataSource": {
-          "title": "Attach an existing data source",
+          "title": "Existing data source",
           "description": "Attach an existing data source that you have already created."
         }
       }
