@@ -64,4 +64,4 @@ jobs:
 
     - name: Run Autoflake
       working-directory: apps/core
-      run: poetry run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .
+      run: poetry run autoflake --remove-all-unused-imports --remove-unused-variables --check --recursive --ignore-init-module-imports .
