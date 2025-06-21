@@ -323,6 +323,7 @@ export function AddServerDialog(props: AddServerDialogProps) {
         {options.length > 1 && (
           <RawInputContainer label={t('AddServerDialog.type.label')}>
             <TabGroup
+              color="dark"
               extendBorder
               variant="chips"
               items={options}
