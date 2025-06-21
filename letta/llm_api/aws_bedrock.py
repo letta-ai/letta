@@ -63,12 +63,24 @@ def bedrock_get_model_list(region_name: str) -> List[dict]:
 
     logger.debug(f"Getting model list for {region_name}")
     try:
-        bedrock = boto3.client("bedrock", region_name=region_name)
+        bedrock = boto3.client(
+            "bedrock",
+            aws_access_key_id=model_settings.aws_access_key,
+            aws_secret_access_key=model_settings.aws_secret_access_key,
+            region_name=region_name or model_settings.aws_region,
+        )
         response = bedrock.list_inference_profiles()
         return response["inferenceProfileSummaries"]
     except Exception as e:
         logger.exception(f"Error getting model list: {str(e)}", e)
         raise e
+
+
+async def bedrock_get_model_list_async(region_name: str) -> List[dict]:
+    """Asynchronous version to get model list from Bedrock."""
+    import asyncio
+
+    return await asyncio.to_thread(bedrock_get_model_list, region_name)
 
 
 def bedrock_get_model_details(region_name: str, model_id: str) -> Dict[str, Any]:
@@ -88,6 +100,13 @@ def bedrock_get_model_details(region_name: str, model_id: str) -> Dict[str, Any]
         raise e
 
 
+async def bedrock_get_model_details_async(region_name: str, model_id: str) -> Dict[str, Any]:
+    """Asynchronous version to get model details for a specific model from Bedrock."""
+    import asyncio
+
+    return await asyncio.to_thread(bedrock_get_model_details, region_name, model_id)
+
+
 def bedrock_get_model_context_window(model_id: str) -> int:
     """
     Get context window size for a specific model.
@@ -102,6 +121,13 @@ def bedrock_get_model_context_window(model_id: str) -> int:
         "anthropic.claude-3-sonnet-20240229-v1:0": 200000,
     }
     return context_windows.get(model_id, 200000)  # default to 100k if unknown
+
+
+async def bedrock_get_model_context_window_async(model_id: str) -> int:
+    import asyncio
+
+    """Asynchronous version to get context window size for a specific model."""
+    return await asyncio.to_thread(bedrock_get_model_context_window, model_id)
 
 
 """
