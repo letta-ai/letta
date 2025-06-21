@@ -21,7 +21,6 @@ import { atom, useAtom } from 'jotai';
 import './ContextEditorPanel.scss';
 import { useCurrentAgent } from '../../hooks';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
-import { useTikTokenEncoder } from '@letta-cloud/utils-client';
 import { SummerizerDialog } from '../../SummerizerDialog/SummerizerDialog';
 
 const computedMemoryStringAtom = atom<string | null>(null);
@@ -55,8 +54,6 @@ function useContextWindowDetails() {
     },
   });
 
-  const { data: encoder } = useTikTokenEncoder();
-
   useEffect(() => {
     if (!memory) {
       return;
@@ -71,12 +68,8 @@ function useContextWindowDetails() {
   }, [memory, postMessage]);
 
   const systemPromptLength = useMemo(() => {
-    if (!encoder) {
-      return 0;
-    }
-
-    return encoder.encode(system || '').length;
-  }, [encoder, system]);
+    return contextWindow?.num_tokens_system || 0;
+  }, [contextWindow?.num_tokens_system]);
 
   const toolLength = useMemo(() => {
     return contextWindow?.num_tokens_functions_definitions || 0;
@@ -87,12 +80,8 @@ function useContextWindowDetails() {
   }, [contextWindow?.num_tokens_external_memory_summary]);
 
   const coreMemoryLength = useMemo(() => {
-    if (!encoder) {
-      return 0;
-    }
-
-    return encoder.encode(computedMemoryString || '').length;
-  }, [computedMemoryString, encoder]);
+    return contextWindow?.num_tokens_core_memory || 0;
+  }, [contextWindow?.num_tokens_core_memory]);
 
   const recursiveMemoryLength = useMemo(() => {
     return contextWindow?.num_tokens_summary_memory || 0;
@@ -129,6 +118,12 @@ function useContextWindowDetails() {
 
       return cleanedMessage;
     });
+
+  // Memoize the JSON stringification to avoid expensive re-renders
+  const messagesJsonString = useMemo(() => {
+    if (!messagesTokensSummary) return '';
+    return JSON.stringify(messagesTokensSummary, null, 2);
+  }, [messagesTokensSummary]);
 
   const totalUsedLength = useMemo(() => {
     return (
@@ -177,6 +172,7 @@ function useContextWindowDetails() {
     coreMemorySummary,
     recursiveMemorySummary,
     messagesTokensSummary,
+    messagesJsonString,
   };
 }
 
@@ -479,7 +475,7 @@ export function ContextWindowSimulator() {
     externalSummary,
     coreMemorySummary,
     recursiveMemorySummary,
-    messagesTokensSummary,
+    messagesJsonString,
   } = useContextWindowDetails();
 
   const t = useTranslations('ADE/ContextEditorPanel');
@@ -567,7 +563,7 @@ export function ContextWindowSimulator() {
         content: (
           <Code
             language="javascript"
-            code={JSON.stringify(messagesTokensSummary, null, 2)}
+            code={messagesJsonString}
             fontSize="small"
             showLineNumbers={false}
             variant="minimal"
@@ -580,7 +576,7 @@ export function ContextWindowSimulator() {
   }, [
     coreMemorySummary,
     externalSummary,
-    messagesTokensSummary,
+    messagesJsonString,
     recursiveMemorySummary,
     systemPromptSummary,
     toolSummary,
