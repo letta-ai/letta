@@ -107,7 +107,28 @@ function useContextWindowDetails() {
   const externalSummary = contextWindow?.external_memory_summary;
   const coreMemorySummary = contextWindow?.core_memory || computedMemoryString;
   const recursiveMemorySummary = contextWindow?.summary_memory;
-  const messagesTokensSummary = contextWindow?.messages?.slice(1);
+  const messagesTokensSummary = contextWindow?.messages
+    ?.slice(1)
+    ?.map((message) => {
+      // Filter to only standard OpenAI message fields
+      const cleanedMessage: any = {
+        role: message.role,
+        content: message.content,
+      };
+
+      // Include optional standard fields if present
+      if (message.tool_calls && message.tool_calls !== null) {
+        cleanedMessage.tool_calls = message.tool_calls;
+      }
+      if (message.name && message.name !== null) {
+        cleanedMessage.name = message.name;
+      }
+      if (message.tool_call_id && message.tool_call_id !== null) {
+        cleanedMessage.tool_call_id = message.tool_call_id;
+      }
+
+      return cleanedMessage;
+    });
 
   const totalUsedLength = useMemo(() => {
     return (
