@@ -8,6 +8,7 @@ from letta.helpers.decorators import async_redis_cache
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.organization import Organization as OrganizationModel
+from letta.orm.sqlalchemy_base import is_postgresql_session
 from letta.orm.user import User as UserModel
 from letta.otel.tracing import trace_method
 from letta.schemas.user import User as PydanticUser
@@ -157,13 +158,15 @@ class UserManager:
         """Fetch a user by ID asynchronously."""
         async with db_registry.async_session() as session:
             # Turn off seqscan to force use pk index
-            await session.execute(text("SET LOCAL enable_seqscan = OFF"))
+            if is_postgresql_session(session):
+                await session.execute(text("SET LOCAL enable_seqscan = OFF"))
             try:
                 stmt = select(UserModel).where(UserModel.id == actor_id)
                 result = await session.execute(stmt)
                 user = result.scalar_one_or_none()
             finally:
-                await session.execute(text("SET LOCAL enable_seqscan = ON"))
+                if is_postgresql_session(session):
+                    await session.execute(text("SET LOCAL enable_seqscan = ON"))
 
             if not user:
                 raise NoResultFound(f"User not found with id={actor_id}")
