@@ -112,6 +112,8 @@ navigation:
             path: pages/agents/data_sources.mdx
           - page: Streaming Responses
             path: pages/agents/streaming.mdx
+          - page: JSON Mode & Structured Output
+            path: pages/agents/json_mode.mdx
           - page: Multi-Modal
             path: pages/agents/multimodal.mdx
           - section: Multi-Agent
