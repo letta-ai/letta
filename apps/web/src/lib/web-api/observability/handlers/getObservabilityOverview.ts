@@ -127,7 +127,9 @@ export async function getObservabilityOverview(
     return client
       ?.query({
         query: `
-          SELECT SUM(CASE WHEN tool_execution_success = 'false' THEN value ELSE 0 END) as tool_error_count
+          SELECT
+            SUM(CASE WHEN tool_execution_success = 'false' THEN value ELSE 0 END) as tool_error_count,
+            SUM(value) as total_tool_count
           FROM otel.letta_metrics_counters_5min_view
           WHERE metric_name = 'count_tool_execution'
             AND organization_id = {organizationId: String}
@@ -146,9 +148,9 @@ export async function getObservabilityOverview(
         format: 'JSONEachRow',
       })
       .then((result) =>
-        getClickhouseData<Array<{ tool_error_count: string }>>(result),
+        getClickhouseData<Array<{ tool_error_count: string; total_tool_count: string }>>(result),
       )
-      .then((v) => v[0]);
+      .then((v) => v[0] || { tool_error_count: '0', total_tool_count: '0' });
   }
 
   function getAverageToolLatency() {
@@ -219,8 +221,12 @@ export async function getObservabilityOverview(
     toolErrorsDetails?.tool_error_count || '0',
     10,
   );
+  const toolTotalCount = parseInt(
+    toolErrorsDetails?.total_tool_count || '0',
+    10,
+  );
 
-  const toolErrorRate = toolErrorsCount / (totalMessageCount || 1);
+  const toolErrorRate = toolErrorsCount / (toolTotalCount || 1);
   const apiErrorRate = errorMessageCount / (totalMessageCount || 1);
 
   const avgToolLatencyNs = toolLatencyDetails?.averageLatencyNs || 0;
