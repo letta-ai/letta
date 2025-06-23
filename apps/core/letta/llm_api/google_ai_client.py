@@ -2,20 +2,24 @@ from typing import List, Optional, Tuple
 
 import httpx
 from google import genai
+from google.genai.types import HttpOptions
 
 from letta.errors import ErrorCode, LLMAuthenticationError, LLMError
 from letta.llm_api.google_constants import GOOGLE_MODEL_FOR_API_KEY_CHECK
 from letta.llm_api.google_vertex_client import GoogleVertexClient
 from letta.log import get_logger
-from letta.settings import model_settings
+from letta.settings import model_settings, settings
 
 logger = get_logger(__name__)
 
 
 class GoogleAIClient(GoogleVertexClient):
-
     def _get_client(self):
-        return genai.Client(api_key=model_settings.gemini_api_key)
+        timeout_ms = int(settings.llm_request_timeout_seconds * 1000)
+        return genai.Client(
+            api_key=model_settings.gemini_api_key,
+            http_options=HttpOptions(timeout=timeout_ms),
+        )
 
 
 def get_gemini_endpoint_and_headers(

@@ -270,7 +270,7 @@ class LettaAgent(BaseAgent):
                 if include_return_message_types is None or message.message_type in include_return_message_types:
                     yield f"data: {message.model_dump_json()}\n\n"
 
-            MetricRegistry().step_execution_time_ms_histogram.record(step_start - get_utc_timestamp_ns(), get_ctx_attributes())
+            MetricRegistry().step_execution_time_ms_histogram.record(get_utc_timestamp_ns() - step_start, get_ctx_attributes())
 
             if not should_continue:
                 break
