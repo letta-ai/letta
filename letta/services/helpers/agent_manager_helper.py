@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from typing import List, Literal, Optional
 
 import numpy as np
@@ -178,7 +178,7 @@ def derive_system_message(agent_type: AgentType, enable_sleeptime: Optional[bool
 
 # TODO: This code is kind of wonky and deserves a rewrite
 def compile_memory_metadata_block(
-    memory_edit_timestamp: datetime.datetime,
+    memory_edit_timestamp: datetime,
     previous_message_count: int = 0,
     archival_memory_size: int = 0,
 ) -> str:
@@ -223,7 +223,7 @@ def safe_format(template: str, variables: dict) -> str:
 def compile_system_message(
     system_prompt: str,
     in_context_memory: Memory,
-    in_context_memory_last_edit: datetime.datetime,  # TODO move this inside of BaseMemory?
+    in_context_memory_last_edit: datetime,  # TODO move this inside of BaseMemory?
     user_defined_variables: Optional[dict] = None,
     append_icm_if_missing: bool = True,
     template_format: Literal["f-string", "mustache", "jinja2"] = "f-string",
@@ -292,7 +292,7 @@ def compile_system_message(
 
 def initialize_message_sequence(
     agent_state: AgentState,
-    memory_edit_timestamp: Optional[datetime.datetime] = None,
+    memory_edit_timestamp: Optional[datetime] = None,
     include_initial_boot_message: bool = True,
     previous_message_count: int = 0,
     archival_memory_size: int = 0,

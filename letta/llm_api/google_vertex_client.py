@@ -3,7 +3,14 @@ import uuid
 from typing import List, Optional
 
 from google import genai
-from google.genai.types import FunctionCallingConfig, FunctionCallingConfigMode, GenerateContentResponse, ThinkingConfig, ToolConfig
+from google.genai.types import (
+    FunctionCallingConfig,
+    FunctionCallingConfigMode,
+    GenerateContentResponse,
+    HttpOptions,
+    ThinkingConfig,
+    ToolConfig,
+)
 
 from letta.constants import NON_USER_MSG_PREFIX
 from letta.helpers.datetime_helpers import get_utc_time_int
@@ -26,11 +33,12 @@ logger = get_logger(__name__)
 class GoogleVertexClient(LLMClientBase):
 
     def _get_client(self):
+        timeout_ms = int(settings.llm_request_timeout_seconds * 1000)
         return genai.Client(
             vertexai=True,
             project=model_settings.google_cloud_project,
             location=model_settings.google_cloud_location,
-            http_options={"api_version": "v1"},
+            http_options=HttpOptions(api_version="v1", timeout=timeout_ms),
         )
 
     @trace_method
@@ -59,7 +67,8 @@ class GoogleVertexClient(LLMClientBase):
         )
         return response.model_dump()
 
-    def add_dummy_model_messages(self, messages: List[dict]) -> List[dict]:
+    @staticmethod
+    def add_dummy_model_messages(messages: List[dict]) -> List[dict]:
         """Google AI API requires all function call returns are immediately followed by a 'model' role message.
 
         In Letta, the 'model' will often call a function (e.g. send_message) that itself yields to the user,
@@ -484,3 +493,8 @@ class GoogleVertexClient(LLMClientBase):
             "propertyOrdering": ["name", "args"],
             "required": ["name", "args"],
         }
+
+    @trace_method
+    def handle_llm_error(self, e: Exception) -> Exception:
+        # Fallback to base implementation
+        return super().handle_llm_error(e)

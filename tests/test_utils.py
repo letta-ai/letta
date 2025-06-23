@@ -249,7 +249,9 @@ def test_coerce_dict_args_unsupported_complex_annotation():
     annotations = {"f": "CustomClass[int]"}
     function_args = {"f": "CustomClass(42)"}
 
-    with pytest.raises(ValueError, match="Failed to coerce argument 'f' to CustomClass\[int\]: Unsupported annotation: CustomClass\[int\]"):
+    with pytest.raises(
+        ValueError, match=r"Failed to coerce argument 'f' to CustomClass\[int\]: Unsupported annotation: CustomClass\[int\]"
+    ):
         coerce_dict_args_by_annotations(function_args, annotations)
 
 

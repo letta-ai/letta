@@ -230,16 +230,6 @@ class Settings(BaseSettings):
     use_experimental: bool = False
     use_vertex_structured_outputs_experimental: bool = False
 
-    # LLM provider client settings
-    httpx_max_retries: int = 5
-    httpx_timeout_connect: float = 10.0
-    httpx_timeout_read: float = 60.0
-    httpx_timeout_write: float = 30.0
-    httpx_timeout_pool: float = 10.0
-    httpx_max_connections: int = 500
-    httpx_max_keepalive_connections: int = 500
-    httpx_keepalive_expiry: float = 120.0
-
     # cron job parameters
     enable_batch_job_polling: bool = False
     poll_running_llm_batches_interval_seconds: int = 5 * 60
@@ -249,6 +239,10 @@ class Settings(BaseSettings):
 
     # for OCR
     mistral_api_key: Optional[str] = None
+
+    # LLM request timeout settings (model + embedding model)
+    llm_request_timeout_seconds: float = Field(default=60.0, ge=10.0, le=1800.0, description="Timeout for LLM requests in seconds")
+    llm_stream_timeout_seconds: float = Field(default=60.0, ge=10.0, le=1800.0, description="Timeout for LLM streaming requests in seconds")
 
     @property
     def letta_pg_uri(self) -> str:
