@@ -150,9 +150,9 @@ navigation:
           - section: Connecting Letta to MCP
             path: pages/mcp/setup.mdx
             contents:
-              - page: SSE (Remote) MCP Servers
+              - page: Remote (SSE/HTTP) Servers
                 path: pages/mcp/sse.mdx
-              - page: stdio (Local) MCP Servers
+              - page: Local (stdio) Servers
                 path: pages/mcp/stdio.mdx
       #- section: Deploying a Letta Server
       #  contents:
@@ -570,6 +570,10 @@ redirects:
     destination: "/guides/ade/overview"
   - source: "/guides/agents/mcp"
     destination: "/guides/mcp/overview"
+  - source: "/guides/mcp/sse"
+    destination: "/guides/mcp/remote"
+  - source: "/guides/mcp/stdio"
+    destination: "/guides/mcp/local"
   - source: "/guides/server/quickstart"
     destination: "/quickstart"
   - source: "/agent-development-environment/troubleshooting"

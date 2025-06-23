@@ -1,71 +1,85 @@
 ---
-title: Connecting Letta to a stdio MCP Server
-slug: guides/mcp/stdio
+title: Connecting Letta to Local MCP Servers
+subtitle: Using stdio transport for local development
+slug: guides/mcp/local
 ---
 
 <Warning>
-If you're using Docker to run Letta, **local MCP** servers ("**command**" or "**stdio**" servers) are not natively supported.
-See workarounds below, or [use a remote MCP server](#connecting-letta-to-a-remote-mcp-server).
+stdio is self-hosted only. Letta Cloud does not support stdio.
 </Warning>
 
-The primary way to use MCP is to install an MCP server locally - see the [MCP example server GitHub repo](https://github.com/modelcontextprotocol/servers) for a list of example MCP servers.
+stdio transport launches MCP servers as local subprocesses, ideal for development and testing.
+Local (stdio) MCP servers can be useful for local development, testing, and situations where the MCP server you want to use is only available via stdio.
 
-When you run an MCP server locally, the MCP client will read the instructions on how to launch the server (the command to run) the MCP config file, then launch the server in a subprocess - so technically the client is running the server.
+## Setup
 
-## Connecting local MCP servers to a Letta server in Docker
+**ADE**: Tool Manager → Add MCP Server → stdio → specify command and args
 
-Local MCP servers pose an issue for Docker - since the MCP client (Letta) will attempt to start the MCP server using the command specified in the config, and because the Letta server is running inside of Docker, that means that the config file needs to specify a command that can be run inside of Docker.
+<CodeGroup>
+```python title="python" maxLines=50
+from letta_client import Letta
+from letta_client.types import StdioServerConfig
 
-There are three ways to solve this problem (in order of increasing difficulty):
-1. **Use [Letta Desktop](/quickstart/desktop)**. Letta Desktop runs a Letta server locally (not inside of Docker), so it will be able to run the command specified in the MCP config file to start the MCP server.
-2. **Don't use a local MCP server**, instead use an MCP server that uses the SSE protocol (see [instructions below](#connecting-letta-to-a-remote-mcp-server) on conecting Letta to a remote MCP server).
-3. **Run an MCP SSE proxy to turn your local MCP server into a remote one**. [This example repo](https://github.com/sparfenyuk/mcp-proxy) shows you how to run an MCP proxy to turn a local MCP server into a remote / SSE MCP server. If you follow this route, you will need to make sure you expose to appropriate ports during `docker run` to enable the Letta server to reach the MCP server URL.
-4. **Install the MCP server inside the Docker container** (e.g. at run-time via `docker exec`). If you install the MCP server inside the Docker container, the MCP client inside the Letta server will be able to execute the command specified in the config file. However, we don't recommend this approach since the MCP server will need to be reinstalled on each restart.
+# Self-hosted only
+client = Letta(base_url="http://localhost:8283")
 
-## Example: connecting to the Perplexity MCP server
+# Connect a stdio server (npx example - works in Docker!)
+stdio_config = StdioServerConfig(
+    server_name="github-server",
+    command="npx",
+    args=["-y", "@modelcontextprotocol/server-github"],
+    env={"GITHUB_PERSONAL_ACCESS_TOKEN": "your-token"}
+)
+client.tools.add_mcp_server(request=stdio_config)
 
-[Perplexity](https://www.perplexity.ai/) (the AI search company) has an official MCP server on [GitHub](https://github.com/ppl-ai/modelcontextprotocol) that enables agents to use Perplexity to search the web.
+# List available tools
+tools = client.tools.list_mcp_tools_by_server(
+    mcp_server_name="github-server"
+)
 
-<AccordionGroup>
-  <Accordion title="Step 1: Install the MCP server locally">
-To set their MCP server up with Letta, we first need to install the Perplexity MCP server locally. This requires a few steps (see their [README](https://github.com/ppl-ai/modelcontextprotocol) for the full instructions):
-1. Clone the Perplexity MCP repo
-2. Install it with `npm install`
-3. Get a Sonar API key
-4. Build the MCP server Docker image
-  </Accordion>
-  <Accordion title="Step 2: Modify your `~/.letta/mcp_config.json` file">
-Once we've installed the Perplexity MCP server, we need to modify our `~/.letta/mcp_config.json` file so that the Letta server will attempt to connect to it on startup:
-```json
-{
-  "mcpServers": {
-    "perplexity-ask": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e",
-        "PERPLEXITY_API_KEY",
-        "mcp/perplexity-ask"
-      ],
-      "env": {
-        "PERPLEXITY_API_KEY": "YOUR_API_KEY_HERE"
-      }
-    }
-  }
-}
+# Add a tool to use with agents
+tool = client.tools.add_mcp_tool(
+    mcp_server_name="github-server",
+    mcp_tool_name="create_repository"
+)
 ```
+```typescript title="node.js" maxLines=50
+import { LettaClient } from '@letta-ai/letta-client'
 
-The format of the JSON is taken directly from the Perplexity MCP server's README (it's the same as setting up the MCP server for use with Claude Desktop).
-The contents of the config tell the MCP client (Letta) how to start the MCP server (using the `command`, `args`, and `env`).
-</Accordion>
-  <Accordion title="Step 3: Start the Letta server">
-<Warning>
-This example will not work if you are using Docker to run Letta, since the command to run the MCP server (stored in the config) will not work from within the Docker container.
-</Warning>
-Once you start your Letta server, the Letta server will read the MCP config file and attempt to start then connect to the MCP server. If the connection is successful, the Letta server will then request a list of tools from the MCP server.
+// Self-hosted only
+const client = new LettaClient({
+    baseUrl: "http://localhost:8283"
+});
 
-Note that you **do not** have to start the MCP server separately from the Letta server - because the Letta server is an MCP client, it will automatically start the server using the provided `command` and `args`. This is different from a "remote (SSE) MCP server", where the MCP client assumes the server is already running (see below).
-  </Accordion>
-</AccordionGroup>
+// Connect a stdio server (npx example - works in Docker!)
+const stdioConfig = {
+    server_name: "github-server",
+    command: "npx",
+    args: ["-y", "@modelcontextprotocol/server-github"],
+    env: {"GITHUB_PERSONAL_ACCESS_TOKEN": "your-token"}
+};
+
+await client.tools.addMcpServer(stdioConfig);
+
+// List available tools
+const tools = await client.tools.listMcpToolsByServer("github-server");
+
+// Add a tool to use with agents
+const tool = await client.tools.addMcpTool("github-server", "create_repository");
+```
+</CodeGroup>
+
+## Docker Support
+
+Letta's Docker image includes `npx`, so npm-based MCP servers work out of the box. Custom Python scripts or missing dependencies require workarounds.
+
+- **Works in Docker**: `npx` servers from the [official MCP repository](https://github.com/modelcontextprotocol/servers)
+- **Challenging**: Custom scripts, local file paths, missing system dependencies
+- **Alternatives**: Use [remote servers](/guides/mcp/sse) or [mcp-proxy](https://github.com/sparfenyuk/mcp-proxy)
+
+
+## Troubleshooting
+
+- **Server won't start**: Check command path, dependencies, environment variables
+- **Connection fails**: Review Letta logs, test command manually
+- **Tools missing**: Verify MCP protocol implementation and tool registration
