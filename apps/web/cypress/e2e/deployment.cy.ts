@@ -49,7 +49,9 @@ describe('letta', () => {
     );
 
     cy.clearPointerEventLock();
-    cy.editMemoryBlock('The users name is {{name}}. Please include the word DeploymentMan at the end of every message.');
+    cy.editMemoryBlock(
+      'The users name is {{name}}. Please include the word DeploymentMan at the end of every message.',
+    );
 
     cy.stageAndDeployAgent();
 
@@ -107,8 +109,10 @@ describe('letta', () => {
       'match',
       /\/projects\/(.+)\/templates\/DEPLOYMENTAGENT/,
     );
-    
-    cy.editMemoryBlock('Extemely important, please also include WowCheese at the end of your response.');
+
+    cy.editMemoryBlock(
+      'Extemely important, please also include WowCheese at the end of your response.',
+    );
 
     cy.stageAndDeployAgent();
 

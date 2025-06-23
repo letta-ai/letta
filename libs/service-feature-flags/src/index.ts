@@ -106,7 +106,7 @@ export async function getLettaUserFeatureFlags(user: UserDetails) {
   ldClient.identify(context);
   const response = await ldClient.allFlagsState(context, {
     withReasons: true,
-    detailsOnlyForTrackedFlags: false // Set to false to get reasons for all flags
+    detailsOnlyForTrackedFlags: false, // Set to false to get reasons for all flags
   });
   const allFlags = response.toJSON();
 
@@ -114,7 +114,7 @@ export async function getLettaUserFeatureFlags(user: UserDetails) {
   // Only include flags that were explicitly set for this user
   Object.entries(allFlags).forEach(([key, value]) => {
     const reason = response.getFlagReason(key);
-    
+
     if (reason?.kind === 'TARGET_MATCH' || reason?.kind === 'RULE_MATCH') {
       explicitFlags[key] = value;
     }

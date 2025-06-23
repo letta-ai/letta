@@ -2,16 +2,12 @@ import { Badge } from '../../core/Badge/Badge';
 import { useTranslations } from '@letta-cloud/translations';
 import { Spinner } from '../../core/Spinner/Spinner';
 import { useMemo } from 'react';
-import {
-  CheckCircleFilledIcon,
-  WarningIcon,
-} from '../../icons';
+import { CheckCircleFilledIcon, WarningIcon } from '../../icons';
 
 interface StatusBadgeProps {
   status?: string;
   toolReturn?: string;
 }
-
 
 export function StatusBadge(props: StatusBadgeProps) {
   const { status, toolReturn } = props;
@@ -39,15 +35,14 @@ export function StatusBadge(props: StatusBadgeProps) {
       message: t('error'),
       color: 'destructive' as const,
       icon: <WarningIcon />,
-    }
-
+    };
   }, [toolReturn, status, t]);
 
-    return(
-      <Badge
-        preIcon={statusInfo.icon}
-        content={statusInfo.message}
-        variant={statusInfo.color}
-      />
-    )
+  return (
+    <Badge
+      preIcon={statusInfo.icon}
+      content={statusInfo.message}
+      variant={statusInfo.color}
+    />
+  );
 }

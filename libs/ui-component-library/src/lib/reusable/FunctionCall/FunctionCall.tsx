@@ -146,10 +146,7 @@ export function FunctionCall(props: FunctionCallProps) {
                 {name}
               </Typography>
             </HStack>
-            <StatusBadge
-              status={status}
-              toolReturn={toolReturn}
-            />
+            <StatusBadge status={status} toolReturn={toolReturn} />
           </HStack>
         </HStack>
       </HStack>

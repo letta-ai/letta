@@ -1370,13 +1370,17 @@ class SyncServer(Server):
             )
         await self.agent_manager.delete_agent_async(agent_id=sleeptime_agent_state.id, actor=actor)
 
-    async def _upsert_file_to_agent(self, agent_id: str, text: str, file_id: str, file_name: str, actor: User) -> None:
+    async def _upsert_file_to_agent(self, agent_id: str, text: str, file_id: str, file_name: str, actor: User) -> List[str]:
         """
         Internal method to create or update a file <-> agent association
+
+        Returns:
+            List of file names that were closed due to LRU eviction
         """
-        await self.file_agent_manager.attach_file(
+        file_agent, closed_files = await self.file_agent_manager.attach_file(
             agent_id=agent_id, file_id=file_id, file_name=file_name, actor=actor, visible_content=text
         )
+        return closed_files
 
     async def _remove_file_from_agent(self, agent_id: str, file_id: str, actor: User) -> None:
         """
@@ -1407,7 +1411,14 @@ class SyncServer(Server):
         logger.info(f"Inserting document into context window for source: {source_id}")
         logger.info(f"Attached agents: {[a.id for a in agent_states]}")
 
-        await asyncio.gather(*(self._upsert_file_to_agent(agent_state.id, text, file_id, file_name, actor) for agent_state in agent_states))
+        # Collect any files that were closed due to LRU eviction during bulk attach
+        all_closed_files = await asyncio.gather(
+            *(self._upsert_file_to_agent(agent_state.id, text, file_id, file_name, actor) for agent_state in agent_states)
+        )
+        # Flatten and log if any files were closed
+        closed_files = [file for closed_list in all_closed_files for file in closed_list]
+        if closed_files:
+            logger.info(f"LRU eviction closed {len(closed_files)} files during bulk attach: {closed_files}")
 
         return agent_states
 
@@ -1423,12 +1434,17 @@ class SyncServer(Server):
         if len(texts) != len(file_ids):
             raise ValueError(f"Mismatch between number of texts ({len(texts)}) and file ids ({len(file_ids)})")
 
-        await asyncio.gather(
+        # Collect any files that were closed due to LRU eviction during bulk insert
+        all_closed_files = await asyncio.gather(
             *(
                 self._upsert_file_to_agent(agent_state.id, text, file_id, file_name, actor)
                 for text, file_id, file_name in zip(texts, file_ids, file_names)
             )
         )
+        # Flatten and log if any files were closed
+        closed_files = [file for closed_list in all_closed_files for file in closed_list]
+        if closed_files:
+            logger.info(f"LRU eviction closed {len(closed_files)} files during bulk insert: {closed_files}")
 
     async def remove_file_from_context_windows(self, source_id: str, file_id: str, actor: User) -> None:
         """

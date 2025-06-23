@@ -207,14 +207,12 @@ function ToolRuleViewer(props: ToolRuleViewerProps) {
   const t = useTranslations('components/AgentStateViewer');
 
   const toolRuleMap = useMemo(() => {
-    return new Map(
-      toolRules?.map(item => [getToolRuleKey(item), item])
-    );
+    return new Map(toolRules?.map((item) => [getToolRuleKey(item), item]));
   }, [toolRules]);
 
   const comparedToolRulesMap = useMemo(() => {
     return new Map(
-      comparedToolRules?.map(item => [getToolRuleKey(item), item])
+      comparedToolRules?.map((item) => [getToolRuleKey(item), item]),
     );
   }, [comparedToolRules]);
 
@@ -230,7 +228,8 @@ function ToolRuleViewer(props: ToolRuleViewerProps) {
         }
 
         // Determine if this rule has changes
-        const hasChanges = comparedToolRulesMap.size > 0 && (!rule || !comparedRule);
+        const hasChanges =
+          comparedToolRulesMap.size > 0 && (!rule || !comparedRule);
         const isAdditive = rule == null;
 
         return (
@@ -647,12 +646,13 @@ function StateViewer(props: StateViewerProps) {
     );
   }, [state.toolRules, toCompare?.toolRules]);
 
-
   const orderedToolRuleUnion = useMemo(() => {
-    return [...new Set([
-      ...state.toolRules?.map(getToolRuleKey) || [],
-      ...toCompare?.toolRules?.map(getToolRuleKey) || [],
-    ])];
+    return [
+      ...new Set([
+        ...(state.toolRules?.map(getToolRuleKey) || []),
+        ...(toCompare?.toolRules?.map(getToolRuleKey) || []),
+      ]),
+    ];
   }, [state.toolRules, toCompare?.toolRules]);
 
   const hasNoDifference = useMemo(() => {
