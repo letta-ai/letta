@@ -6,10 +6,11 @@ interface MarkActiveAgentOptions {
   organizationId: string;
   agentId: string;
   isBilledAgent: boolean;
+  baseTemplateId: string;
 }
 
 export async function markActiveAgent(options: MarkActiveAgentOptions) {
-  const { organizationId, agentId, isBilledAgent } = options;
+  const { organizationId, baseTemplateId, agentId, isBilledAgent } = options;
 
   const lastActiveAt = new Date();
   await db
@@ -42,5 +43,5 @@ export async function markActiveAgent(options: MarkActiveAgentOptions) {
     },
   );
 
-  await trackDailyAgentUsage(agentId);
+  await trackDailyAgentUsage(agentId, baseTemplateId);
 }

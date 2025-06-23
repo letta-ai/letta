@@ -5,12 +5,19 @@ import { getActiveBillableAgentsCount } from '@letta-cloud/service-payments';
 interface GetIsAgentActiveOptions {
   agentId: string;
   organizationId: string;
+  baseTemplateId: string;
   billingPeriodStart: string;
   agentLimit: number;
 }
 
 export async function getCanAgentBeUsed(options: GetIsAgentActiveOptions) {
-  const { agentId, billingPeriodStart, organizationId, agentLimit } = options;
+  const {
+    agentId,
+    baseTemplateId,
+    billingPeriodStart,
+    organizationId,
+    agentLimit,
+  } = options;
 
   const activeAgent = await getRedisData('activeAgent', {
     agentId,
@@ -23,6 +30,7 @@ export async function getCanAgentBeUsed(options: GetIsAgentActiveOptions) {
         void markActiveAgent({
           organizationId,
           agentId,
+          baseTemplateId,
           isBilledAgent: true,
         });
 
@@ -44,6 +52,7 @@ export async function getCanAgentBeUsed(options: GetIsAgentActiveOptions) {
   void markActiveAgent({
     organizationId,
     agentId,
+    baseTemplateId,
     isBilledAgent: canAgentBeUsed,
   });
 

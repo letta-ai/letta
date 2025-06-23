@@ -49,6 +49,7 @@ const mockMarkActiveAgent = markActiveAgent as jest.MockedFunction<
 describe('getCanAgentBeUsed', () => {
   const mockOptions = {
     agentId: 'test-agent-id',
+    baseTemplateId: 'zadu',
     organizationId: 'test-org-id',
     billingPeriodStart: '2024-01-01T00:00:00Z',
     agentLimit: 5,
@@ -79,6 +80,7 @@ describe('getCanAgentBeUsed', () => {
       });
       expect(mockMarkActiveAgent).toHaveBeenCalledWith({
         organizationId: mockOptions.organizationId,
+        baseTemplateId: mockOptions.baseTemplateId,
         agentId: mockOptions.agentId,
         isBilledAgent: true,
       });
@@ -147,6 +149,7 @@ describe('getCanAgentBeUsed', () => {
       );
       expect(mockMarkActiveAgent).toHaveBeenCalledWith({
         organizationId: mockOptions.organizationId,
+        baseTemplateId: mockOptions.baseTemplateId,
         agentId: mockOptions.agentId,
         isBilledAgent: true,
       });
@@ -161,6 +164,7 @@ describe('getCanAgentBeUsed', () => {
       expect(result).toBe(false);
       expect(mockMarkActiveAgent).toHaveBeenCalledWith({
         organizationId: mockOptions.organizationId,
+        baseTemplateId: mockOptions.baseTemplateId,
         agentId: mockOptions.agentId,
         isBilledAgent: false,
       });
@@ -175,6 +179,7 @@ describe('getCanAgentBeUsed', () => {
       expect(result).toBe(false);
       expect(mockMarkActiveAgent).toHaveBeenCalledWith({
         organizationId: mockOptions.organizationId,
+        baseTemplateId: mockOptions.baseTemplateId,
         agentId: mockOptions.agentId,
         isBilledAgent: false,
       });
@@ -222,6 +227,7 @@ describe('getCanAgentBeUsed', () => {
       expect(mockMarkActiveAgent).toHaveBeenCalledWith({
         organizationId: mockOptions.organizationId,
         agentId: mockOptions.agentId,
+        baseTemplateId: mockOptions.baseTemplateId,
         isBilledAgent: false,
       });
 
@@ -237,6 +243,7 @@ describe('getCanAgentBeUsed', () => {
         organizationId: mockOptions.organizationId,
         agentId: mockOptions.agentId,
         isBilledAgent: true,
+        baseTemplateId: mockOptions.baseTemplateId,
       });
     });
   });

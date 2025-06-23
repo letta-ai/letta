@@ -11,7 +11,10 @@ interface ClickhouseQueryResponse {
   }>;
 }
 
-export async function trackDailyAgentUsage(agentId: string) {
+export async function trackDailyAgentUsage(
+  agentId: string,
+  baseTemplateId: string,
+) {
   const client = getClickhouseClient('default');
 
   if (!client) {
@@ -39,12 +42,6 @@ export async function trackDailyAgentUsage(agentId: string) {
         agentId: agentId,
       },
     });
-
-    const coreAgent = await AgentsService.retrieveAgent({
-      agentId,
-      includeRelationships: [],
-    });
-
     const response =
       await getClickhouseData<ClickhouseQueryResponse>(agentExistsResult);
 
@@ -65,7 +62,7 @@ export async function trackDailyAgentUsage(agentId: string) {
         {
           agent_id: agentId,
           project_id: agent.projectId,
-          base_template_id: coreAgent.base_template_id,
+          base_template_id: baseTemplateId,
           is_first_usage: isFirstUsage,
           messaged_at: new Date(), // or your timestamp variable
           date: today, // assuming today is in YYYY-MM-DD format

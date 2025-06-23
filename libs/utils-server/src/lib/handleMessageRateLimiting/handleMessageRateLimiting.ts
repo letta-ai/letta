@@ -228,6 +228,7 @@ export async function handleMessageRateLimiting(
     !isDeployedAgent?.isDeployed ||
     (await getCanAgentBeUsed({
       agentId,
+      baseTemplateId: agent.base_template_id || '',
       organizationId,
       agentLimit: usageLimits.agents,
       billingPeriodStart: subscription.billingPeriodStart,
