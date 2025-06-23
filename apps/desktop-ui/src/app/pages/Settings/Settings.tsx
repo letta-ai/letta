@@ -102,7 +102,7 @@ function EditDatabaseSettingsDialog(props: EditDatabaseSettingsDialogProps) {
         version: '1',
         databaseConfig: {
           type: values.type,
-          embeddedType: 'pgserver',
+          embeddedType: 'sqlite',
         },
       });
       return;

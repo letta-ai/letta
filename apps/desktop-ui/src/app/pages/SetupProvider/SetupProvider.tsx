@@ -150,7 +150,7 @@ function SetupDialog() {
         version: '1',
         databaseConfig: {
           type: 'embedded',
-          embeddedType: 'pgserver',
+          embeddedType: 'sqlite',
         },
       });
     },

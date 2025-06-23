@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const DesktopEmbeddedDatabaseSchema = z.object({
   type: z.literal('embedded'),
-  embeddedType: z.enum(['pgserver', 'pglite']),
+  embeddedType: z.enum(['pgserver', 'pglite', 'sqlite']),
 });
 
 export const DesktopExternalDatabaseSchema = z.object({

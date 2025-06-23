@@ -29,7 +29,10 @@ import datamodel_code_generator  # noqa
 import opentelemetry  # noqa
 import blib2to3.pgen2.tokenize  # noqa
 import blib2to3.pgen2.parse  # noqa
+import async_lru # noqa
 import mcp  # noqa
+import e2b # noqa
+import asyncpg # noqa
 import json
 
 
@@ -192,18 +195,20 @@ if __name__ == "__main__":
     config = get_desktop_config()
 
     try:
-        if config["databaseConfig"]["type"] != "embedded":
-            connection_string = config["databaseConfig"]["connectionString"]
-            with open(letta_dir / "pg_uri", "w") as f:
-                f.write(connection_string)
-
-            upgrade_db(connection_string)
-        else:
-            pg_uri = initialize_database()
-            upgrade_db(pg_uri)
-    except KeyError:
+      database_config = config.get("databaseConfig", {})
+      if database_config.get("type") != "embedded":
+        connection_string = database_config.get("connectionString", "")
+        if connection_string:
+          with open(letta_dir / "pg_uri", "w") as f:
+            f.write(connection_string)
+          upgrade_db(connection_string)
+      elif database_config.get("type") == "embedded" and database_config.get("embeddedType") != "sqlite":
         pg_uri = initialize_database()
         upgrade_db(pg_uri)
+      else:
+        pass  # do nothing
+    except KeyError:
+      pass  # do nothing, use sqlite
 
     from letta.server.rest_api.app import app
 

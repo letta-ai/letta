@@ -32,7 +32,7 @@ export function Agents() {
   const [search, setSearch] = useState<string>('');
 
   const [page, setPage] = useState<number>(0);
-  const [limit, setLimit] = useState(9);
+  const [limit, setLimit] = useState(10);
 
   const [debouncedSearch] = useDebouncedValue(search, 500);
   const { data, isFetchingNextPage, isError, fetchNextPage } = useInfiniteQuery<
@@ -167,23 +167,25 @@ export function Agents() {
       }
       title={t('title')}
     >
-      <VStack fullWidth fullHeight paddingX="small" paddingTop="small">
-        <DataTable
-          autofitHeight
-          onSetPage={setPage}
-          page={page}
-          searchValue={search}
-          onSearch={!isError ? setSearch : undefined}
-          onLimitChange={setLimit}
-          limit={limit}
-          hasNextPage={hasNextPage}
-          showPagination
-          columns={columns}
-          data={filteredData}
-          isLoading={isLoadingPage}
-          loadingText={t('table.loading')}
-          noResultsText={t('table.noResults')}
-        />
+      <VStack overflowY="auto" fullHeight paddingX="small" paddingTop="small">
+        <div className="min-h-[500px] h-full">
+          <DataTable
+            autofitHeight
+            onSetPage={setPage}
+            page={page}
+            searchValue={search}
+            onSearch={!isError ? setSearch : undefined}
+            onLimitChange={setLimit}
+            limit={limit}
+            hasNextPage={hasNextPage}
+            showPagination
+            columns={columns}
+            data={filteredData}
+            isLoading={isLoadingPage}
+            loadingText={t('table.loading')}
+            noResultsText={t('table.noResults')}
+          />
+        </div>
       </VStack>
     </DesktopPageLayout>
   );

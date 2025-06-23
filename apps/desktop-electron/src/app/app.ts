@@ -3,6 +3,7 @@ import { rendererAppName, rendererAppPort } from './constants';
 import { environment } from '../environments/environment';
 import { join } from 'path';
 import { format } from 'url';
+
 const fixPath = require('fix-path'); // This works with fix-path@3 (CJS)
 import * as electron from 'electron';
 import * as fs from 'fs';
@@ -85,6 +86,7 @@ const lettaServerLogs = new ServerLogs();
 })();
 
 import * as todesktop from '@todesktop/runtime';
+
 todesktop.init();
 
 function copyAlembicToLettaDir() {
@@ -610,7 +612,8 @@ export default class App {
           if (
             !process.env.IGNORE_POSTGRES &&
             (!desktopConfig ||
-              desktopConfig?.databaseConfig?.type === 'embedded')
+              (desktopConfig?.databaseConfig?.type === 'embedded' &&
+                desktopConfig.databaseConfig.embeddedType !== 'sqlite'))
           ) {
             try {
               await App.startPostgres();
@@ -619,9 +622,12 @@ export default class App {
               console.error('[postgres] Failed to start:', err);
             }
           } else {
-            console.log(
-              '[postgres] Detected external database config type, skipping embedded PG bootup',
-            );
+            if (desktopConfig?.databaseConfig.type === 'external') {
+              console.log(
+                '[postgres] Detected external database config type, skipping embedded PG bootup',
+              );
+            }
+
           }
 
           App.startLettaServer();
