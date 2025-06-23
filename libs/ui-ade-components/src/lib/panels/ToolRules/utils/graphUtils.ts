@@ -541,7 +541,7 @@ export function createEdgeData(
     }
 
     // Exit connections
-    if (hasExitLoop || hasNoType || hasMaxCount) {
+    if ((hasExitLoop || hasNoType || hasMaxCount) && !hasContinueLoop) {
       edgeData.push({
         id: `${toolName}-done`,
         source: `tool-${toolName}`,
