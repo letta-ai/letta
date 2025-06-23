@@ -127,10 +127,18 @@ class LettaFileToolExecutor(ToolExecutor):
         content_lines = LineChunker().chunk_text(text=file.content, file_metadata=file, start=start, end=end)
         visible_content = "\n".join(content_lines)
 
-        await self.files_agents_manager.update_file_agent_by_id(
-            agent_id=agent_state.id, file_id=file_id, actor=self.actor, is_open=True, visible_content=visible_content
+        # Efficiently handle LRU eviction and file opening in a single transaction
+        closed_files, was_already_open = await self.files_agents_manager.enforce_max_open_files_and_open(
+            agent_id=agent_state.id, file_id=file_id, file_name=file_name, actor=self.actor, visible_content=visible_content
         )
-        return f"Successfully opened file {file_name}, lines {start} to {end} are now visible in memory block <{file_name}>"
+
+        success_msg = f"Successfully opened file {file_name}, lines {start} to {end} are now visible in memory block <{file_name}>"
+        if closed_files:
+            success_msg += (
+                f"\nNote: Closed {len(closed_files)} least recently used file(s) due to open file limit: {', '.join(closed_files)}"
+            )
+
+        return success_msg
 
     @trace_method
     async def close_file(self, agent_state: AgentState, file_name: str) -> str:
@@ -256,10 +264,11 @@ class LettaFileToolExecutor(ToolExecutor):
         total_content_size = 0
         files_processed = 0
         files_skipped = 0
+        files_with_matches = set()  # Track files that had matches for LRU policy
 
         # Use asyncio timeout to prevent hanging
         async def _search_files():
-            nonlocal results, total_matches, total_content_size, files_processed, files_skipped
+            nonlocal results, total_matches, total_content_size, files_processed, files_skipped, files_with_matches
 
             for file_agent in file_agents:
                 # Load file content
@@ -336,6 +345,8 @@ class LettaFileToolExecutor(ToolExecutor):
                             continue
 
                         if pattern_regex.search(line_content):
+                            # Mark this file as having matches for LRU tracking
+                            files_with_matches.add(file.file_name)
                             context = self._get_context_lines(formatted_lines, match_line_num=line_num, context_lines=context_lines or 0)
 
                             # Format the match result
@@ -352,6 +363,10 @@ class LettaFileToolExecutor(ToolExecutor):
 
         # Execute with timeout
         await asyncio.wait_for(_search_files(), timeout=self.GREP_TIMEOUT_SECONDS)
+
+        # Mark access for files that had matches
+        if files_with_matches:
+            await self.files_agents_manager.mark_access_bulk(agent_id=agent_state.id, file_names=list(files_with_matches), actor=self.actor)
 
         # Format final results
         if not results or total_matches == 0:
@@ -442,6 +457,12 @@ class LettaFileToolExecutor(ToolExecutor):
 
                 passage_content = "\n".join(formatted_lines)
                 results.append(f"{passage_header}\n{passage_content}")
+
+        # Mark access for files that had matches
+        if files_with_passages:
+            matched_file_names = [name for name in files_with_passages.keys() if name != "Unknown File"]
+            if matched_file_names:
+                await self.files_agents_manager.mark_access_bulk(agent_id=agent_state.id, file_names=matched_file_names, actor=self.actor)
 
         # Create summary header
         file_count = len(files_with_passages)
