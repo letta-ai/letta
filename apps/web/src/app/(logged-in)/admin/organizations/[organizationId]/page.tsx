@@ -763,14 +763,16 @@ function RemoveUserFromOrganizationDialog(
 }
 
 const LIMIT = 5;
+
 function OrganizationMembers() {
   const [search, setSearch] = useState('');
-  const [offset, setOffset] = useState(0);
+  const [page, setPage] = useState(0); // Change to 0-based indexing
 
   const [debouncedSearch] = useDebouncedValue(search, 500);
   const organization = useCurrentAdminOrganization();
 
   const organizationId = organization?.id || '';
+  const offset = page * LIMIT; // Use page-based offset
 
   const { data, isLoading } =
     webApi.admin.organizations.adminListOrganizationUsers.useQuery({
@@ -799,15 +801,15 @@ function OrganizationMembers() {
   const columns: Array<ColumnDef<AdminOrganizationUserType>> = useMemo(
     () => [
       {
-        Header: 'Name',
+        header: 'Name',
         accessorKey: 'name',
       },
       {
-        Header: 'Email',
+        header: 'Email',
         accessorKey: 'email',
       },
       {
-        Header: 'Actions',
+        header: 'Actions',
         accessorKey: 'actions',
         meta: {
           style: {
@@ -845,14 +847,16 @@ function OrganizationMembers() {
       actions={<AddUserToOrganizationDialog />}
     >
       <DataTable
-        offset={offset}
-        onSetOffset={setOffset}
-        onSearch={setSearch}
-        limit={LIMIT}
-        searchValue={search}
-        isLoading={isLoading}
         columns={columns}
         data={data?.body.users || []}
+        isLoading={isLoading}
+        searchValue={search}
+        onSearch={setSearch}
+        page={page}
+        onSetPage={setPage}
+        limit={LIMIT}
+        hasNextPage={data?.body.hasNextPage || false}
+        showPagination
       />
     </DashboardPageSection>
   );

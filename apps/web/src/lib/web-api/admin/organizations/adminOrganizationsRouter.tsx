@@ -17,7 +17,7 @@ import {
   perModelPerOrganizationRateLimitOverrides,
   users,
 } from '@letta-cloud/service-database';
-import { and, count, desc, eq, ilike, inArray } from 'drizzle-orm';
+import { and, count, desc, eq, ilike, inArray, or } from 'drizzle-orm';
 import { getUsageByModelSummaryAndOrganizationId } from '$web/web-api/usage/usageRouter';
 import {
   addCreditsToOrganization,
@@ -448,7 +448,7 @@ async function adminListOrganizationUsers(
   req: AdminListOrganizationUsersRequest,
 ): Promise<AdminListOrganizationUsersResponse> {
   const { organizationId } = req.params;
-  const { offset, limit = 10 } = req.query;
+  const { offset, limit = 10, search } = req.query;
 
   const organization = await db.query.organizations.findFirst({
     where: eq(organizations.id, organizationId),
@@ -463,35 +463,45 @@ async function adminListOrganizationUsers(
     };
   }
 
-  const organizationUsersList = await db.query.organizationUsers.findMany({
-    offset,
-    limit: limit + 1,
+  // Get all organization users for mapping (no pagination here)
+  const allOrganizationUsers = await db.query.organizationUsers.findMany({
     where: eq(organizationUsers.organizationId, organizationId),
   });
 
   const organizationUsersMap = Object.fromEntries(
-    organizationUsersList.map((ou) => [ou.userId, ou]),
+    allOrganizationUsers.map((ou) => [ou.userId, ou]),
   );
 
-  const usersList = await db.query.users.findMany({
-    where: inArray(
+  const userWhereConditions = [
+    inArray(
       users.id,
-      organizationUsersList.map((ou) => ou.userId),
+      allOrganizationUsers.map((ou) => ou.userId),
     ),
+  ];
+
+  if (search) {
+    userWhereConditions.push(
+      or(ilike(users.name, `%${search}%`), ilike(users.email, `%${search}%`))!,
+    );
+  }
+
+  // Apply pagination to the users query
+  const usersList = await db.query.users.findMany({
+    where: and(...userWhereConditions),
+    offset,
+    limit: limit + 1,
   });
 
   return {
     status: 200,
     body: {
-      users: usersList
-        .map((user) => ({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          addedAt: organizationUsersMap[user.id].createdAt.toISOString(),
-        }))
-        .slice(0, limit),
-      hasNextPage: organizationUsersList.length > limit,
+      users: usersList.slice(0, limit).map((user) => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        addedAt: organizationUsersMap[user.id].createdAt.toISOString(),
+      })),
+      hasNextPage: usersList.length > limit,
     },
   };
 }
