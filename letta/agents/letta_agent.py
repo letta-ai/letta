@@ -236,8 +236,11 @@ class LettaAgent(BaseAgent):
                 agent_step_span=agent_step_span,
                 is_final_step=(i == max_steps - 1),
             )
-            self.response_messages.extend(persisted_messages)
-            new_in_context_messages.extend(persisted_messages)
+
+            # TODO (cliandy): handle message contexts with larger refactor and dedupe logic
+            new_message_idx = len(initial_messages) if initial_messages else 0
+            self.response_messages.extend(persisted_messages[new_message_idx:])
+            new_in_context_messages.extend(persisted_messages[new_message_idx:])
             initial_messages = None
             log_event("agent.stream_no_tokens.llm_response.processed")  # [4^]
 
@@ -391,8 +394,10 @@ class LettaAgent(BaseAgent):
                 is_final_step=(i == max_steps - 1),
                 run_id=run_id,
             )
-            self.response_messages.extend(persisted_messages)
-            new_in_context_messages.extend(persisted_messages)
+            new_message_idx = len(initial_messages) if initial_messages else 0
+            self.response_messages.extend(persisted_messages[new_message_idx:])
+            new_in_context_messages.extend(persisted_messages[new_message_idx:])
+
             initial_messages = None
             log_event("agent.step.llm_response.processed")  # [4^]
 
@@ -595,8 +600,10 @@ class LettaAgent(BaseAgent):
                 agent_step_span=agent_step_span,
                 is_final_step=(i == max_steps - 1),
             )
-            self.response_messages.extend(persisted_messages)
-            new_in_context_messages.extend(persisted_messages)
+            new_message_idx = len(initial_messages) if initial_messages else 0
+            self.response_messages.extend(persisted_messages[new_message_idx:])
+            new_in_context_messages.extend(persisted_messages[new_message_idx:])
+
             initial_messages = None
 
             # log total step time
