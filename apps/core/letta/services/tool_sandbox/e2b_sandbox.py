@@ -250,6 +250,13 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
 
         return sbx
 
+    def use_top_level_await(self) -> bool:
+        """
+        E2B sandboxes run in a Jupyter-like environment with an active event loop,
+        so they support top-level await.
+        """
+        return True
+
     @staticmethod
     async def list_running_e2b_sandboxes():
         # List running sandboxes and access metadata.

@@ -52,6 +52,9 @@ class AsyncToolSandboxBase(ABC):
         else:
             self.inject_agent_state = False
 
+        # Detect if the tool function is async
+        self.is_async_function = self._detect_async_function()
+
     # Lazily initialize the manager only when needed
     @property
     def sandbox_config_manager(self):
@@ -78,7 +81,8 @@ class AsyncToolSandboxBase(ABC):
         """
         from letta.templates.template_helper import render_template
 
-        TEMPLATE_NAME = "sandbox_code_file.py.j2"
+        # Select the appropriate template based on whether the function is async
+        TEMPLATE_NAME = "sandbox_code_file_async.py.j2" if self.is_async_function else "sandbox_code_file.py.j2"
 
         future_import = False
         schema_code = None
@@ -114,6 +118,7 @@ class AsyncToolSandboxBase(ABC):
             invoke_function_call=self.invoke_function_call(),
             wrap_print_with_markers=wrap_print_with_markers,
             start_marker=self.LOCAL_SANDBOX_RESULT_START_MARKER,
+            use_top_level_await=self.use_top_level_await(),
         )
 
     def initialize_param(self, name: str, raw_value: JsonValue) -> str:
@@ -149,6 +154,39 @@ class AsyncToolSandboxBase(ABC):
         params = ", ".join(param_list)
         func_call_str = self.tool.name + "(" + params + ")"
         return func_call_str
+
+    def _detect_async_function(self) -> bool:
+        """
+        Detect if the tool function is an async function by examining its source code.
+        Uses AST parsing to reliably detect 'async def' declarations.
+        """
+        import ast
+
+        try:
+            # Parse the source code to AST
+            tree = ast.parse(self.tool.source_code)
+
+            # Look for function definitions
+            for node in ast.walk(tree):
+                if isinstance(node, ast.AsyncFunctionDef) and node.name == self.tool.name:
+                    return True
+                elif isinstance(node, ast.FunctionDef) and node.name == self.tool.name:
+                    return False
+
+            # If we couldn't find the function definition, fall back to string matching
+            return "async def " + self.tool.name in self.tool.source_code
+
+        except SyntaxError:
+            # If source code can't be parsed, fall back to string matching
+            return "async def " + self.tool.name in self.tool.source_code
+
+    def use_top_level_await(self) -> bool:
+        """
+        Determine if this sandbox environment supports top-level await.
+        Should be overridden by subclasses to return True for environments
+        with running event loops (like E2B), False for local execution.
+        """
+        return False  # Default to False for local execution
 
     def _update_env_vars(self):
         pass  # TODO
