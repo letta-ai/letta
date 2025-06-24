@@ -287,7 +287,7 @@ class AgentManager:
                 tool_rules = list(agent_create.tool_rules or [])
                 if agent_create.include_base_tool_rules:
                     for tn in tool_names:
-                        if tn in {"send_message", "send_message_to_agent_async", "memory_finish_edits"}:
+                        if tn in {"send_message", "memory_finish_edits"}:
                             tool_rules.append(TerminalToolRule(tool_name=tn))
                         elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_SLEEPTIME_TOOLS):
                             tool_rules.append(ContinueToolRule(tool_name=tn))
@@ -451,7 +451,7 @@ class AgentManager:
                 tool_rules = list(agent_create.tool_rules or [])
                 if agent_create.include_base_tool_rules:
                     for tn in tool_names:
-                        if tn in {"send_message", "send_message_to_agent_async", "memory_finish_edits"}:
+                        if tn in {"send_message", "memory_finish_edits"}:
                             tool_rules.append(TerminalToolRule(tool_name=tn))
                         elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_MEMORY_TOOLS_V2 + BASE_SLEEPTIME_TOOLS):
                             tool_rules.append(ContinueToolRule(tool_name=tn))
