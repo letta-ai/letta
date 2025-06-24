@@ -196,8 +196,8 @@ class Settings(BaseSettings):
     pool_use_lifo: bool = True
     disable_sqlalchemy_pooling: bool = False
 
-    redis_host: Optional[str] = None
-    redis_port: Optional[int] = None
+    redis_host: Optional[str] = Field(default=None, description="Host for Redis instance")
+    redis_port: Optional[int] = Field(default=6379, description="Port for Redis instance")
 
     plugin_register: Optional[str] = None
 
