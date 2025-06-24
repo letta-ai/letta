@@ -64,6 +64,7 @@ const typographyVariants = cva('break-words', {
     },
     underline: {
       true: 'underline',
+      false: 'text-decoration: none',
     },
     italic: {
       true: 'italic',

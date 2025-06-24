@@ -27,6 +27,7 @@ export default [
         'error',
         {
           forbid: ['style', 'className'],
+
         },
       ],
       '@next/next/no-html-link-for-pages': ['error', 'apps/letta/pages'],

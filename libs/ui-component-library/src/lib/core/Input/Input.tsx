@@ -74,7 +74,7 @@ const inputIconVariants = cva('', {
     size: {
       small: 'h-4 w-4',
       default: 'h-5 w-5',
-      large: 'h-6 w-6',
+      large: 'h-5 w-5',
     },
   },
   defaultVariants: {
@@ -87,13 +87,26 @@ const innerInputVariants = cva('px-2 gap-2', {
     size: {
       default: 'h-inputHeight',
       small: 'h-biHeight-sm',
-      large: 'h-biHeight-lg',
+      large: 'h-biHeight-lg text-lg',
     },
   },
   defaultVariants: {
     size: 'default',
   },
 });
+
+const textInputVariants = cva(
+  'w-full h-full  focus:outline-none bg-transparent',
+  {
+    variants: {
+      size: {
+        default: 'text-xs',
+        small: 'text-xs',
+        large: 'text-base',
+      },
+    },
+  },
+);
 
 type InputPrimitiveProps = Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
@@ -230,7 +243,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
             onChange={handleOnChange}
             disabled={disabled || readOnly}
             type={typeOverride}
-            className="w-full h-full text-xs focus:outline-none bg-transparent"
+            className={textInputVariants({ size })}
             ref={ref}
           />
           {showVisibilityControls && (

@@ -4,25 +4,27 @@ import {
   Alert,
   Button,
   Form,
-  FormField,
   FormProvider,
-  HStack,
-  Input,
-  Logo,
   Typography,
   useForm,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { webApi, webApiContracts } from '@letta-cloud/sdk-web';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from '@letta-cloud/translations';
 import { useErrorTranslationMessage } from '@letta-cloud/utils-client';
 import { useSearchParams } from 'next/navigation';
+import {
+  EmailField,
+  PasswordAndConfirmationFields,
+} from '../_components/fields';
 
 export default function ForgotPasswordPage() {
   const t = useTranslations('reset-password');
+
+  const [passwordValue, setPasswordValue] = useState<string>('');
 
   const forgetPasswordSchema = z
     .object({
@@ -81,50 +83,22 @@ export default function ForgotPasswordPage() {
 
   return (
     <FormProvider {...form}>
-      <LoggedOutWrapper>
-        <VStack padding fullWidth align="center" paddingY>
-          <HStack>
-            <Logo size="large" />
-          </HStack>
+      <LoggedOutWrapper showSSOLogin={false} showTerms={false}>
+        <VStack fullWidth paddingY gap="xlarge">
           {errorMessage?.message && (
             <Alert title={errorMessage.message} variant="destructive" />
           )}
-          <Typography>{t('title')}</Typography>
+          <Typography variant="heading5" bold>
+            {t('title')}
+          </Typography>
           <Form onSubmit={form.handleSubmit(handleSubmit)}>
-            <FormField
-              name="email"
-              render={({ field }) => (
-                <Input fullWidth label={t('email.label')} disabled {...field} />
-              )}
-            />
-            <FormField
-              name="password"
-              render={({ field }) => (
-                <Input
-                  type="password"
-                  fullWidth
-                  label={t('password.label')}
-                  {...field}
-                />
-              )}
-            />
-            <FormField
-              name="confirmPassword"
-              render={({ field }) => (
-                <Input
-                  type="password"
-                  fullWidth
-                  label={t('confirmPassword.label')}
-                  {...field}
-                />
-              )}
-            />
-            <FormField
-              name="code"
-              render={({ field }) => (
-                <Input fullWidth label={t('code.label')} {...field} />
-              )}
-            />
+            <VStack gap="medium">
+              <EmailField disabled={true} />
+              <PasswordAndConfirmationFields
+                passwordValue={passwordValue}
+                setPasswordValue={setPasswordValue}
+              />
+            </VStack>
             <Button
               fullWidth
               type="submit"

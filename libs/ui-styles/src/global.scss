@@ -6,7 +6,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
 :root {
   --default-gap: 0.5rem;
 
@@ -19,7 +18,7 @@
   --font-size-lg: 1rem;
   --font-size-xl: 1.125rem;
 
-  --border: 210,10%,92.2%;
+  --border: 210, 10%, 92.2%;
   --border-drag: 0, 0%, 40%;
 
   --on-transparent: 0, 0%, 0%;
@@ -47,7 +46,7 @@
   --brand-light-hover: 240, 41%, 93%;
   --brand-light-border: 240, 100%, 88%;
 
-  --element-focus: 240, 50%, 97%;;
+  --element-focus: 240, 50%, 97%;
 
   --primary: 0 0% 0%;
   --primary-content: 0 0% 100%;
@@ -71,7 +70,7 @@
   --background-success: 120, 50%, 92%;
   --background-success-content: 120, 61%, 20%;
 
-  --button-border: 0.58	0.03	66%;
+  --button-border: 0.58 0.03 66%;
 
   --warning: 40, 100%, 50%;
   --warning-content: 40, 100%, 85%;
@@ -137,7 +136,7 @@
   --button-input-height: 36px;
   --button-input-height-xs: 26px;
   --button-input-height-sm: 28px;
-  --button-input-height-lg: 44px;
+  --button-input-height-lg: 36px;
 
   --input-height: 28px;
   --panel-row-height: 42px;
@@ -194,13 +193,10 @@
   --user-content-background: var(--background);
   --agent-content-background: var(--background);
 
-
   --grey3: 182, 100%, 30%;
   --grey3-content: var(--background-content);
 
   --element-focus: var(--background);
-
-
 
   --text-lighter: 0, 0%, 100%;
 
@@ -229,8 +225,6 @@
 
   --sidebar-color: var(--background);
   --dashboard-color: var(--background);
-
-
 }
 
 /* darkmode.scss */
@@ -278,10 +272,9 @@
   --background-grey2: 0, 0%, 13%;
   --background-grey2-content: var(--text-default);
 
-  --button-border: 0.56	0.03	17%;
+  --button-border: 0.56 0.03 17%;
 
   --project-card-background: 180, 3%, 13%;
-
 
   --card: 240 10% 3.9%;
   --card-content: 0 0% 98%;
@@ -346,7 +339,6 @@
   --list-item-background: 200, 4%, 13%;
 }
 
-
 html {
   background: hsl(var(--background));
 }
@@ -354,7 +346,6 @@ html {
 html.dark {
   background: hsl(var(--background-black));
 }
-
 
 /* use the dark mode when OS interface is light */
 @media (prefers-color-scheme: light) {
@@ -412,31 +403,36 @@ body {
   border-radius: 0px;
 }
 
-
 .shine {
   position: relative;
   overflow: hidden;
 }
 .shine:before {
-    content: '';
-    position: absolute;
-    width: 100px;
-    height: 100%;
-    background-image: linear-gradient(
-        120deg,
-        rgba(255,255,255, 0) 30%,
-        rgba(255,255,255, .8),
-        rgba(255,255,255, 0) 70%
-    );
-    top: 0;
-    left: -100px;
-    animation: shine 2s infinite linear 1s;
+  content: '';
+  position: absolute;
+  width: 100px;
+  height: 100%;
+  background-image: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0) 70%
+  );
+  top: 0;
+  left: -100px;
+  animation: shine 2s infinite linear 1s;
 }
 
 @keyframes shine {
-  0% {left: -50%}
-  60% {left: 100%}
-  100% {left: 100%}
+  0% {
+    left: -50%;
+  }
+  60% {
+    left: 100%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 
 @font-face {
@@ -457,8 +453,6 @@ body {
     url('../fonts/variable/FiraCode-VF.ttf')
       format('truetype supports variations');
 }
-
-
 
 * {
   box-sizing: border-box;

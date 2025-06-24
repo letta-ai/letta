@@ -3,18 +3,13 @@ import {
   Alert,
   Button,
   Form,
-  FormField,
   FormProvider,
-  HR,
-  HStack,
-  Input,
   LoadingEmptyStatusComponent,
-  Logo,
   Typography,
   useForm,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { webApi, webApiContracts, webApiQueryKeys } from '@letta-cloud/sdk-web';
@@ -25,6 +20,12 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useErrorTranslationMessage } from '@letta-cloud/utils-client';
 import { LoggedOutWrapper } from '../_components/LoggedOutWrapper/LoggedOutWrapper';
+import { Mode } from '../constants';
+import {
+  EmailField,
+  PasswordAndConfirmationFields,
+} from '../_components/fields';
+import { spinOnClickForLogo, useIsEmailSignupEnabled } from '../libs';
 
 function RedirectToLogin() {
   const { push } = useRouter();
@@ -36,8 +37,6 @@ function RedirectToLogin() {
   return null;
 }
 
-type SignupMode = 'email' | 'oauth';
-
 interface EmailRegistrationProps {
   email: string;
   code: string;
@@ -46,6 +45,9 @@ interface EmailRegistrationProps {
 function EmailRegistration(props: EmailRegistrationProps) {
   const { email, code } = props;
   const t = useTranslations('signup-via-invite');
+  const [isEmailEntered, setIsEmailEntered] = useState<boolean>(false);
+  const [passwordValue, setPasswordValue] = useState<string>('');
+  const extraFieldsRef = useRef<HTMLDivElement>(null);
 
   const { mutate, error, isPending, isSuccess } =
     webApi.user.createAccountWithPasswordAndInviteCode.useMutation();
@@ -107,77 +109,51 @@ function EmailRegistration(props: EmailRegistrationProps) {
   );
 
   return (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(handleSubmit)}>
-        {errorTranslation?.message && (
-          <Alert title={errorTranslation.message} variant="destructive" />
-        )}
-        <FormField
-          name="name"
-          render={({ field }) => (
-            <Input
-              fullWidth
-              label={t('EmailRegistration.name.label')}
-              placeholder={t('EmailRegistration.name.placeholder')}
-              {...field}
-            />
+    <VStack>
+      <FormProvider {...form}>
+        <Form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (isEmailEntered) {
+              void form.handleSubmit(handleSubmit)(e);
+            } else {
+              setIsEmailEntered(true);
+              if (extraFieldsRef.current) {
+                extraFieldsRef.current.classList.add('show');
+              }
+            }
+          }}
+        >
+          {errorTranslation?.message && (
+            <Alert title={errorTranslation.message} variant="destructive" />
           )}
-        />
-        <FormField
-          name="email"
-          render={({ field }) => (
-            <Input
-              fullWidth
-              label={t('EmailRegistration.email.label')}
-              placeholder={t('EmailRegistration.email.placeholder')}
-              disabled
-              {...field}
-            />
-          )}
-        />
-        <FormField
-          name="password"
-          render={({ field }) => (
-            <Input
-              fullWidth
-              label={t('EmailRegistration.password.label')}
-              placeholder={t('EmailRegistration.password.placeholder')}
-              type="password"
-              {...field}
-            />
-          )}
-        />
 
-        <FormField
-          name="confirmPassword"
-          render={({ field }) => (
-            <Input
-              fullWidth
-              label={t('EmailRegistration.confirmPassword.label')}
-              placeholder={t('EmailRegistration.confirmPassword.placeholder')}
-              type="password"
-              {...field}
+          <EmailField />
+
+          <div className="extra-fields" id="extraFields" ref={extraFieldsRef}>
+            <PasswordAndConfirmationFields
+              passwordValue={passwordValue}
+              setPasswordValue={setPasswordValue}
             />
-          )}
-        />
-        <VStack fullWidth paddingTop>
+          </div>
           <Button
             fullWidth
             busy={isPending || isSuccess}
-            label={t('EmailRegistration.submit')}
+            label={
+              isEmailEntered ? t('EmailRegistration.submit') : t('emailSignup')
+            }
             type="submit"
           />
-        </VStack>
-      </Form>
-    </FormProvider>
+        </Form>
+      </FormProvider>
+    </VStack>
   );
 }
 
 export default function SignupViaInvite() {
   const t = useTranslations('signup-via-invite');
   const params = useSearchParams();
-
-  const [mode, setMode] = React.useState<SignupMode>('oauth');
+  const logoRef = useRef<HTMLDivElement>(null);
 
   const code = params.get('code') || '';
 
@@ -234,12 +210,18 @@ export default function SignupViaInvite() {
 
   searchCode.set('inviteCode', code);
 
+  const isEmailEnabled = useIsEmailSignupEnabled();
+
+  const spinOnClick = useCallback(() => {
+    spinOnClickForLogo(logoRef);
+  }, []);
+
   if (!code) {
     return <RedirectToLogin />;
   }
 
   return (
-    <LoggedOutWrapper>
+    <LoggedOutWrapper showSSOLogin={false}>
       {!data ? (
         <LoadingEmptyStatusComponent
           isError={!!errorMessage}
@@ -248,46 +230,27 @@ export default function SignupViaInvite() {
           loadingMessage={t('loading')}
         />
       ) : (
-        <VStack>
-          {signupErrorMessage && (
-            <Alert title={signupErrorMessage} variant="destructive" />
-          )}
-          <VStack align="center" paddingY>
-            <HStack>
-              <Logo size="large" />
-            </HStack>
-            <Typography variant="heading5" as="h1">
-              {t('title')}
-            </Typography>
-            <Typography variant="body">
-              {t('description', {
-                organizationName: data.body.organizationName,
-              })}
-            </Typography>
-            <VStack gap="large" fullWidth paddingY="small">
-              <HR />
-              <Typography variant="body">{t('more')}</Typography>
+        <VStack align="center" position="relative" fullWidth>
+          <VStack fullWidth gap="xlarge">
+            <VStack gap="medium">
+              <Typography variant="heading5">
+                {t('title', {
+                  organizationName: data.body.organizationName,
+                })}
+              </Typography>
+              <Typography variant="body">{t('description')}</Typography>
             </VStack>
-
-            {mode === 'oauth' ? (
-              <>
-                <OAuthButtons type="signup" searchParams={searchCode} />
-                <Button
-                  onClick={() => setMode('email')}
-                  fullWidth
-                  color="secondary"
-                  label={t('emailSignup')}
-                />
-              </>
-            ) : (
+            {signupErrorMessage && (
+              <Alert title={signupErrorMessage} variant="destructive" />
+            )}
+            <OAuthButtons
+              type={Mode.SIGNUP}
+              spinOnClick={spinOnClick}
+              searchParams={searchCode}
+            />
+            {isEmailEnabled && (
               <>
                 <EmailRegistration email={data.body.email} code={code} />
-                <Button
-                  onClick={() => setMode('oauth')}
-                  fullWidth
-                  color="tertiary"
-                  label={t('oauthSignup')}
-                />
               </>
             )}
           </VStack>

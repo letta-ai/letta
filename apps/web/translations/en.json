@@ -2396,18 +2396,89 @@
   "login/LoginComponent": {
     "login": "Login",
     "signup": "Sign up",
+    "back": "Back",
+    "link": {
+      "haveAnAccount": "Have an account?",
+      "noAccount": "No account?",
+      "notCorporate": "Not in enterprise?"
+    },
     "title": "Welcome to Letta Cloud",
-    "corporateLogin": "Enterprise options",
-    "loginWithSSO": "Sign in with SSO",
-    "loginWithPassword": "Sign in with email",
+    "corporateLogin": "Enterprise login",
+    "loginWithSSO": "Continue with SSO",
     "signupWithPassword": "Sign up with email",
+    "signUpWithPasswordPlaceholder": "Your email",
+    "submit": "Sign in with email",
+    "continue": "Continue to login",
     "google": "{type} with Google",
     "github": "{type} with GitHub",
     "info": "By clicking the button above, you will be signed in to an existing account or have an new account created for you.",
-    "terms": "This will also mean you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>."
+    "terms": "This will also mean you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
+    "email": {
+      "label": "Email",
+      "placeholder": "email@email.com"
+    },
+    "password": {
+      "label": "Password",
+      "placeholder": "···················"
+    }
+  },
+  "auth/Generic": {
+    "email": {
+      "label": "Email",
+      "placeholder": "email@email.com"
+    },
+    "password": {
+      "label": "Password",
+      "placeholder": "···················"
+    },
+    "confirmPassword": {
+      "label": "Confirm password",
+      "placeholder": "···················"
+    },
+    "forgotPassword": "Forgot password?"
+  },
+  "login/AuthFlowSwitcher": {
+    "forgot-password": {
+      "labelText": "Have an account?",
+      "buttonText": "Login"
+    },
+    "reset-password": {
+      "buttonText": "Back to login"
+    },
+    "login": {
+      "labelText": "No account?",
+      "buttonText": "Sign up"
+    },
+    "signup": {
+      "labelText": "Have an account?",
+      "buttonText": "Login"
+    },
+    "sso": {
+      "labelText": "Not in an enterprise?",
+      "buttonText": "Back to login"
+    }
+  },
+  "password-login": {
+    "forgotPassword": "Forgot your password?",
+    "continue": "Continue to login",
+    "title": "Sign in to Letta Cloud",
+    "password": {
+      "label": "Password",
+      "placeholder": "···················"
+    },
+    "email": {
+      "label": "Email",
+      "placeholder": "email@email.com"
+    },
+    "submit": "Sign in",
+    "errors": {
+      "default": "There was an error signing in, please try again or contact support",
+      "invalidPassword": "Invalid password or account does not exist"
+    }
   },
   "sso-login": {
-    "title": "Sign in to Letta via SSO",
+    "title": "Sign in to Letta Enterprise",
+    "description": "Use your enterprise email to sign in",
     "email": {
       "label": "Email",
       "placeholder": "email@email.com"
@@ -2477,6 +2548,8 @@
   },
   "pages/password": {
     "title": "Sign up for Letta Cloud",
+    "description": "Access Letta for free with the options below",
+    "continue": "Continue to signup",
     "errors": {
       "passwordMinLength": "Password must be at least 6 characters",
       "passwordMismatch": "Passwords do not match",
@@ -2511,23 +2584,6 @@
       "status": "Status",
       "completedAt": "Completed at",
       "id": "ID"
-    }
-  },
-  "password-login": {
-    "forgotPassword": "Forgot your password?",
-    "title": "Sign in to Letta Cloud",
-    "password": {
-      "label": "Password",
-      "placeholder": "···················"
-    },
-    "email": {
-      "label": "Email",
-      "placeholder": "email@email.com"
-    },
-    "submit": "Sign in",
-    "errors": {
-      "default": "There was an error signing in, please try again or contact support",
-      "invalidPassword": "Invalid password"
     }
   },
   "reset-password": {
@@ -2569,7 +2625,10 @@
     "errors": {
       "default": "There was an error sending the reset link, please try again or contact support"
     },
-    "success": "We have sent you an email with a link to reset your password. Please check your inbox and follow the instructions in the email."
+    "success": {
+      "title": "Password reset instructions sent",
+      "description": "Please check your email for your reset link"
+    }
   },
   "signup-via-invite": {
     "emailSignup": "Sign up with email",
@@ -2607,9 +2666,8 @@
       "default": "There was an error accepting the invite, please try again or contact support."
     },
     "loading": "Loading...",
-    "title": "Welcome",
-    "description": "You've been invited to join {organizationName}!",
-    "more": "Use the buttons below to complete sign up."
+    "title": "You've been invited to join {organizationName}!",
+    "description": "Use the buttons below to complete sign up."
   },
   "data-sources/layout": {
     "navigation": {

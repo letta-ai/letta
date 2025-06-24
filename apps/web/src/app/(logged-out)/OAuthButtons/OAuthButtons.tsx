@@ -6,10 +6,11 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useMemo } from 'react';
+import { Mode, type LoginAndSignupType } from '../constants';
 
 interface OAuthButtonsProps {
   spinOnClick?: () => void;
-  type: 'login' | 'signup';
+  type: LoginAndSignupType;
   searchParams: URLSearchParams;
 }
 
@@ -22,8 +23,8 @@ export function OAuthButtons(props: OAuthButtonsProps) {
   const typeCopy = useMemo(
     () =>
       ({
-        login: t('login'),
-        signup: t('signup'),
+        [Mode.LOGIN]: t('login'),
+        [Mode.SIGNUP]: t('signup'),
       })[type],
     [t, type],
   );

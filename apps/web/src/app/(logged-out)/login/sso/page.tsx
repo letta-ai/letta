@@ -6,11 +6,7 @@ import {
   Alert,
   Button,
   Form,
-  FormField,
   FormProvider,
-  HStack,
-  Input,
-  Logo,
   Typography,
   useForm,
   VStack,
@@ -18,6 +14,8 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import React, { useCallback } from 'react';
 import { useErrorTranslationMessage } from '@letta-cloud/utils-client';
+import { LoggedOutWrapper } from '../../_components/LoggedOutWrapper/LoggedOutWrapper';
+import { EmailField } from '../../_components/fields';
 
 const SSOLoginSchema = z.object({
   email: z.string(),
@@ -65,64 +63,35 @@ export default function PasswordLogin() {
   );
 
   return (
-    // eslint-disable-next-line react/forbid-component-props
-    <HStack gap={false} className="h-[100dvh]" fullHeight>
-      <VStack
-        zIndex="rightAboveZero"
-        align="center"
-        justify="center"
-        fullHeight
-        fullWidth
-        color="background"
-      >
-        <VStack align="center" position="relative" fullWidth>
-          <VStack
-            /* eslint-disable-next-line react/forbid-component-props */
-            className="max-w-[350px] w-full py-[48px] h-full max-h-[498px] gap-[36px]"
-            align="center"
-            justify="center"
-            color="background-grey"
-          >
-            <VStack align="center" gap="xlarge">
-              <Logo size="xlarge" />
-              <Typography bold variant="heading5">
-                {t('title')}
-              </Typography>
-            </VStack>
-            <FormProvider {...form}>
-              <Form onSubmit={form.handleSubmit(handleSubmit)}>
-                <VStack paddingX="xlarge" fullWidth gap="form">
-                  {errorTranslation?.message && (
-                    <Alert
-                      title={errorTranslation.message}
-                      variant="destructive"
-                    />
-                  )}
-                  <FormField
-                    name="email"
-                    render={({ field }) => (
-                      <Input
-                        fullWidth
-                        label={t('email.label')}
-                        placeholder={t('email.placeholder')}
-                        type="email"
-                        {...field}
-                      />
-                    )}
-                  />
-                  <VStack>
-                    <Button
-                      fullWidth
-                      busy={isPending || isSuccess}
-                      label={t('submit')}
-                    />
-                  </VStack>
-                </VStack>
-              </Form>
-            </FormProvider>
-          </VStack>
+    <LoggedOutWrapper showSSOLogin={false}>
+      <VStack fullWidth gap="xlarge">
+        <VStack gap="small">
+          <Typography variant="heading5" bold>
+            {t('title')}
+          </Typography>
+          <Typography variant="body" color="muted">
+            {t('description')}
+          </Typography>
         </VStack>
+
+        <FormProvider {...form}>
+          <Form onSubmit={form.handleSubmit(handleSubmit)}>
+            <VStack fullWidth gap="medium">
+              {errorTranslation?.message && (
+                <Alert title={errorTranslation.message} variant="destructive" />
+              )}
+              <EmailField />
+              <VStack>
+                <Button
+                  fullWidth
+                  busy={isPending || isSuccess}
+                  label={t('submit')}
+                />
+              </VStack>
+            </VStack>
+          </Form>
+        </FormProvider>
       </VStack>
-    </HStack>
+    </LoggedOutWrapper>
   );
 }
