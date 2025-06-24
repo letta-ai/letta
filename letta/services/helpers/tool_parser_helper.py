@@ -28,7 +28,8 @@ def parse_function_arguments(source_code: str, tool_name: str):
     tree = ast.parse(source_code)
     args = []
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name == tool_name:
+        # Handle both sync and async functions
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == tool_name:
             for arg in node.args.args:
                 args.append(arg.arg)
     return args
