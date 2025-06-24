@@ -68,6 +68,20 @@ docker run \
   -e OLLAMA_BASE_URL="http://host.docker.internal:11434" \
   letta/letta:latest
 ```
+
+<Note>
+**Linux users:** Use `--network host` and `localhost` instead of `host.docker.internal`:
+```sh
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  --network host \
+  -e OPENAI_API_KEY="your_openai_api_key" \
+  -e ANTHROPIC_API_KEY="your_anthropic_api_key" \
+  -e OLLAMA_BASE_URL="http://localhost:11434" \
+  letta/letta:latest
+```
+</Note>
+
 The example above will make all compatible models running on OpenAI, Anthropic, and Ollama available to your Letta server.
 
 

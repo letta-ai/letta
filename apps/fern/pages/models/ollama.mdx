@@ -42,6 +42,8 @@ success
 To enable the Ollama provider, you must set the `OLLAMA_BASE_URL` environment variable. When this is set, Letta will use available LLM and embedding models running on Ollama.
 
 ### Using the `docker run` server with Ollama
+
+**macOS/Windows:**
 Since Ollama is running on the host network, you will need to use `host.docker.internal` to connect to the Ollama server instead of `localhost`.
 ```bash
 # replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
@@ -49,6 +51,16 @@ docker run \
   -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
   -p 8283:8283 \
   -e OLLAMA_BASE_URL="http://host.docker.internal:11434" \
+  letta/letta:latest
+```
+
+**Linux:**
+Use `--network host` and `localhost`:
+```bash
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  --network host \
+  -e OLLAMA_BASE_URL="http://localhost:11434" \
   letta/letta:latest
 ```
 
@@ -71,7 +83,7 @@ To select the model used by the server, use the dropdown in the ADE or specify a
 When creating agents, you must specify the LLM and embedding models to use via a *handle*. You can additionally specify a context window limit (which must be less than or equal to the maximum size).
 
 ```python
-from letta_client import Letta 
+from letta_client import Letta
 
 client = Letta(base_url="http://localhost:8283")
 

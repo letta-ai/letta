@@ -22,16 +22,26 @@ vLLM will automatically download the model (if it's not already downloaded) and 
 ## Enabling vLLM as a provider
 To enable the vLLM provider, you must set the `VLLM_API_BASE` environment variable. When this is set, Letta will use available LLM and embedding models running on vLLM.
 
-### Using the `docker compose` server with vLLM
+### Using the `docker run` server with vLLM
+
+**macOS/Windows:**
 Since vLLM is running on the host network, you will need to use `host.docker.internal` to connect to the vLLM server instead of `localhost`.
-You'll also want to make sure to open the port 8000 (the default port for vLLM) on your host machine.
 ```bash
 # replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
 docker run \
   -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
   -p 8283:8283 \
-  -p 8000:8000 \
   -e VLLM_API_BASE="http://host.docker.internal:8000" \
+  letta/letta:latest
+```
+
+**Linux:**
+Use `--network host` and `localhost`:
+```bash
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  --network host \
+  -e VLLM_API_BASE="http://localhost:8000" \
   letta/letta:latest
 ```
 

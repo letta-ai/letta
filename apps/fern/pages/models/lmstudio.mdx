@@ -20,6 +20,8 @@ Models marked as ["native tool use"](https://lmstudio.ai/docs/advanced/tool-use#
 To enable the LM Studio provider, you must set the `LMSTUDIO_BASE_URL` environment variable. When this is set, Letta will use available LLM and embedding models running on LM Studio.
 
 ### Using the `docker run` server with LM Studio
+
+**macOS/Windows:**
 Since LM Studio is running on the host network, you will need to use `host.docker.internal` to connect to the LM Studio server instead of `localhost`.
 ```bash
 # replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
@@ -27,6 +29,16 @@ docker run \
   -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
   -p 8283:8283 \
   -e LMSTUDIO_BASE_URL="http://host.docker.internal:1234" \
+  letta/letta:latest
+```
+
+**Linux:**
+Use `--network host` and `localhost`:
+```bash
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  --network host \
+  -e LMSTUDIO_BASE_URL="http://localhost:1234" \
   letta/letta:latest
 ```
 
