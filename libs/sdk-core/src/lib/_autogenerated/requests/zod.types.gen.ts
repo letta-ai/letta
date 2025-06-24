@@ -650,6 +650,22 @@ export const ContinueToolRule = z.object({
     .optional(),
 });
 
+export type RequiredBeforeExitToolRule = z.infer<
+  typeof RequiredBeforeExitToolRule
+>;
+export const RequiredBeforeExitToolRule = z.object({
+  tool_name: z.string(),
+  type: z.union([z.string(), z.undefined()]).optional(),
+  prompt_template: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type MaxCountPerStepToolRule = z.infer<typeof MaxCountPerStepToolRule>;
 export const MaxCountPerStepToolRule = z.object({
   tool_name: z.string(),
@@ -1058,6 +1074,7 @@ export const AgentState = z.object({
           TerminalToolRule,
           ConditionalToolRule,
           ContinueToolRule,
+          RequiredBeforeExitToolRule,
           MaxCountPerStepToolRule,
           ParentToolRule,
         ]),
@@ -1072,6 +1089,7 @@ export const AgentState = z.object({
               TerminalToolRule,
               ConditionalToolRule,
               ContinueToolRule,
+              RequiredBeforeExitToolRule,
               MaxCountPerStepToolRule,
               ParentToolRule,
             ]),
@@ -3262,6 +3280,7 @@ export const CreateAgentRequest = z.object({
           TerminalToolRule,
           ConditionalToolRule,
           ContinueToolRule,
+          RequiredBeforeExitToolRule,
           MaxCountPerStepToolRule,
           ParentToolRule,
         ]),
@@ -3276,6 +3295,7 @@ export const CreateAgentRequest = z.object({
               TerminalToolRule,
               ConditionalToolRule,
               ContinueToolRule,
+              RequiredBeforeExitToolRule,
               MaxCountPerStepToolRule,
               ParentToolRule,
             ]),
@@ -5567,6 +5587,7 @@ export const UpdateAgent = z.object({
           TerminalToolRule,
           ConditionalToolRule,
           ContinueToolRule,
+          RequiredBeforeExitToolRule,
           MaxCountPerStepToolRule,
           ParentToolRule,
         ]),
@@ -5581,6 +5602,7 @@ export const UpdateAgent = z.object({
               TerminalToolRule,
               ConditionalToolRule,
               ContinueToolRule,
+              RequiredBeforeExitToolRule,
               MaxCountPerStepToolRule,
               ParentToolRule,
             ]),

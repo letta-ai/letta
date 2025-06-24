@@ -164,6 +164,7 @@ export type AgentState = {
     | TerminalToolRule
     | ConditionalToolRule
     | ContinueToolRule
+    | RequiredBeforeExitToolRule
     | MaxCountPerStepToolRule
     | ParentToolRule
   > | null;
@@ -1135,6 +1136,7 @@ export type CreateAgentRequest = {
     | TerminalToolRule
     | ConditionalToolRule
     | ContinueToolRule
+    | RequiredBeforeExitToolRule
     | MaxCountPerStepToolRule
     | ParentToolRule
   > | null;
@@ -3068,6 +3070,21 @@ export type RedactedReasoningContent = {
   data: string;
 };
 
+/**
+ * Represents a tool rule configuration where this tool must be called before the agent loop can exit.
+ */
+export type RequiredBeforeExitToolRule = {
+  /**
+   * The name of the tool. Must exist in the database for the user's organization.
+   */
+  tool_name: string;
+  type?: 'required_before_exit';
+  /**
+   * Optional Jinja2 template for generating agent prompt about this tool rule.
+   */
+  prompt_template?: string | null;
+};
+
 export type ResponseFormatJSONObject = {
   type: 'json_object';
 };
@@ -4113,6 +4130,7 @@ export type UpdateAgent = {
     | TerminalToolRule
     | ConditionalToolRule
     | ContinueToolRule
+    | RequiredBeforeExitToolRule
     | MaxCountPerStepToolRule
     | ParentToolRule
   > | null;

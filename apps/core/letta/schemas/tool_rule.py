@@ -181,6 +181,25 @@ class ContinueToolRule(BaseToolRule):
     )
 
 
+class RequiredBeforeExitToolRule(BaseToolRule):
+    """
+    Represents a tool rule configuration where this tool must be called before the agent loop can exit.
+    """
+
+    type: Literal[ToolRuleType.required_before_exit] = ToolRuleType.required_before_exit
+    prompt_template: Optional[str] = Field(
+        default="<tool_constraint>{{ tool_name }} must be called before ending the conversation</tool_constraint>",
+        description="Optional Jinja2 template for generating agent prompt about this tool rule.",
+    )
+
+    def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
+        """Returns all available tools - the logic for preventing exit is handled elsewhere."""
+        return available_tools
+
+    def _get_default_template(self) -> Optional[str]:
+        return "<tool_constraint>{{ tool_name }} must be called before ending the conversation</tool_constraint>"
+
+
 class MaxCountPerStepToolRule(BaseToolRule):
     """
     Represents a tool rule configuration which constrains the total number of times this tool can be invoked in a single step.
@@ -208,6 +227,15 @@ class MaxCountPerStepToolRule(BaseToolRule):
 
 
 ToolRule = Annotated[
-    Union[ChildToolRule, InitToolRule, TerminalToolRule, ConditionalToolRule, ContinueToolRule, MaxCountPerStepToolRule, ParentToolRule],
+    Union[
+        ChildToolRule,
+        InitToolRule,
+        TerminalToolRule,
+        ConditionalToolRule,
+        ContinueToolRule,
+        RequiredBeforeExitToolRule,
+        MaxCountPerStepToolRule,
+        ParentToolRule,
+    ],
     Field(discriminator="type"),
 ]

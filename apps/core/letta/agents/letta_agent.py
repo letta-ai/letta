@@ -11,7 +11,7 @@ from opentelemetry.trace import Span
 from letta.agents.base_agent import BaseAgent
 from letta.agents.ephemeral_summary_agent import EphemeralSummaryAgent
 from letta.agents.helpers import _create_letta_response, _prepare_in_context_messages_no_persist_async, generate_step_id
-from letta.constants import DEFAULT_MAX_STEPS
+from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX
 from letta.errors import ContextWindowExceededError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import AsyncTimer, get_utc_time, get_utc_timestamp_ns, ns_to_ms
@@ -56,8 +56,6 @@ from letta.system import package_function_response
 from letta.types import JsonDict
 from letta.utils import log_telemetry, validate_function_response
 
-logger = get_logger(__name__)
-
 
 class LettaAgent(BaseAgent):
 
@@ -98,6 +96,7 @@ class LettaAgent(BaseAgent):
         self.summarization_agent = None
         self.summary_block_label = summary_block_label
         self.max_summarization_retries = max_summarization_retries
+        self.logger = get_logger(agent_id)
 
         # TODO: Expand to more
         if enable_summarization and model_settings.openai_api_key:
@@ -223,7 +222,7 @@ class LettaAgent(BaseAgent):
             elif response.choices[0].message.content:
                 reasoning = [TextContent(text=response.choices[0].message.content)]  # reasoning placed into content for legacy reasons
             else:
-                logger.info("No reasoning content found.")
+                self.logger.info("No reasoning content found.")
                 reasoning = None
 
             persisted_messages, should_continue, stop_reason = await self._handle_ai_response(
@@ -376,7 +375,7 @@ class LettaAgent(BaseAgent):
             elif response.choices[0].message.omitted_reasoning_content:
                 reasoning = [OmittedReasoningContent()]
             else:
-                logger.info("No reasoning content found.")
+                self.logger.info("No reasoning content found.")
                 reasoning = None
 
             persisted_messages, should_continue, stop_reason = await self._handle_ai_response(
@@ -451,7 +450,7 @@ class LettaAgent(BaseAgent):
                 actor=self.actor,
             )
         except Exception as e:
-            logger.error(f"Failed to update agent's last run metrics: {e}")
+            self.logger.error(f"Failed to update agent's last run metrics: {e}")
 
     @trace_method
     async def step_stream(
@@ -950,7 +949,7 @@ class LettaAgent(BaseAgent):
         request_heartbeat = tool_args.pop("request_heartbeat", False)
         if is_final_step:
             stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
-            logger.info("Agent has reached max steps.")
+            self.logger.info("Agent has reached max steps.")
             request_heartbeat = False
         else:
             # Pre-emptively pop out inner_thoughts
@@ -1032,6 +1031,20 @@ class LettaAgent(BaseAgent):
             elif tool_rules_solver.is_continue_tool(tool_name=tool_call_name):
                 continue_stepping = True
 
+        # Check if required-before-exit tools have been called before allowing exit
+        heartbeat_reason = None  # Default
+        uncalled_required_tools = tool_rules_solver.get_uncalled_required_tools()
+        if not continue_stepping and uncalled_required_tools:
+            continue_stepping = True
+            heartbeat_reason = (
+                f"{NON_USER_MSG_PREFIX}Cannot finish, still need to call the following required tools: {', '.join(uncalled_required_tools)}"
+            )
+
+            # TODO: @caren is this right?
+            # reset stop reason since we ain't stopping!
+            stop_reason = None
+            self.logger.info(f"RequiredBeforeExitToolRule: Forcing agent continuation. Missing required tools: {uncalled_required_tools}")
+
         # 5a. Persist Steps to DB
         # Following agent loop to persist this before messages
         # TODO (cliandy): determine what should match old loop w/provider_id
@@ -1062,6 +1075,7 @@ class LettaAgent(BaseAgent):
             function_response=function_response_string,
             actor=self.actor,
             add_heartbeat_request_system_message=continue_stepping,
+            heartbeat_reason=heartbeat_reason,
             reasoning_content=reasoning_content,
             pre_computed_assistant_message_id=pre_computed_assistant_message_id,
             step_id=logged_step.id if logged_step else None,  # TODO (cliandy): eventually move over other agent loops

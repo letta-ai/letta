@@ -526,6 +526,9 @@ export const $AgentState = {
                 $ref: '#/components/schemas/ContinueToolRule',
               },
               {
+                $ref: '#/components/schemas/RequiredBeforeExitToolRule',
+              },
+              {
                 $ref: '#/components/schemas/MaxCountPerStepToolRule',
               },
               {
@@ -542,6 +545,8 @@ export const $AgentState = {
                 max_count_per_step:
                   '#/components/schemas/MaxCountPerStepToolRule',
                 parent_last_tool: '#/components/schemas/ParentToolRule',
+                required_before_exit:
+                  '#/components/schemas/RequiredBeforeExitToolRule',
                 run_first: '#/components/schemas/InitToolRule',
               },
             },
@@ -3595,6 +3600,9 @@ export const $CreateAgentRequest = {
                 $ref: '#/components/schemas/ContinueToolRule',
               },
               {
+                $ref: '#/components/schemas/RequiredBeforeExitToolRule',
+              },
+              {
                 $ref: '#/components/schemas/MaxCountPerStepToolRule',
               },
               {
@@ -3611,6 +3619,8 @@ export const $CreateAgentRequest = {
                 max_count_per_step:
                   '#/components/schemas/MaxCountPerStepToolRule',
                 parent_last_tool: '#/components/schemas/ParentToolRule',
+                required_before_exit:
+                  '#/components/schemas/RequiredBeforeExitToolRule',
                 run_first: '#/components/schemas/InitToolRule',
               },
             },
@@ -8433,6 +8443,44 @@ export const $RedactedReasoningContent = {
   title: 'RedactedReasoningContent',
 } as const;
 
+export const $RequiredBeforeExitToolRule = {
+  properties: {
+    tool_name: {
+      type: 'string',
+      title: 'Tool Name',
+      description:
+        "The name of the tool. Must exist in the database for the user's organization.",
+    },
+    type: {
+      type: 'string',
+      const: 'required_before_exit',
+      title: 'Type',
+      default: 'required_before_exit',
+    },
+    prompt_template: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Prompt Template',
+      description:
+        'Optional Jinja2 template for generating agent prompt about this tool rule.',
+      default:
+        '<tool_constraint>{{ tool_name }} must be called before ending the conversation</tool_constraint>',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['tool_name'],
+  title: 'RequiredBeforeExitToolRule',
+  description:
+    'Represents a tool rule configuration where this tool must be called before the agent loop can exit.',
+} as const;
+
 export const $ResponseFormatJSONObject = {
   properties: {
     type: {
@@ -11247,6 +11295,9 @@ export const $UpdateAgent = {
                 $ref: '#/components/schemas/ContinueToolRule',
               },
               {
+                $ref: '#/components/schemas/RequiredBeforeExitToolRule',
+              },
+              {
                 $ref: '#/components/schemas/MaxCountPerStepToolRule',
               },
               {
@@ -11263,6 +11314,8 @@ export const $UpdateAgent = {
                 max_count_per_step:
                   '#/components/schemas/MaxCountPerStepToolRule',
                 parent_last_tool: '#/components/schemas/ParentToolRule',
+                required_before_exit:
+                  '#/components/schemas/RequiredBeforeExitToolRule',
                 run_first: '#/components/schemas/InitToolRule',
               },
             },

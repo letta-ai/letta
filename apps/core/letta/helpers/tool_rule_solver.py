@@ -12,6 +12,7 @@ from letta.schemas.tool_rule import (
     InitToolRule,
     MaxCountPerStepToolRule,
     ParentToolRule,
+    RequiredBeforeExitToolRule,
     TerminalToolRule,
 )
 
@@ -41,6 +42,9 @@ class ToolRulesSolver(BaseModel):
     terminal_tool_rules: List[TerminalToolRule] = Field(
         default_factory=list, description="Terminal tool rules that end the agent loop if called."
     )
+    required_before_exit_tool_rules: List[RequiredBeforeExitToolRule] = Field(
+        default_factory=list, description="Tool rules that must be called before the agent can exit."
+    )
     tool_call_history: List[str] = Field(default_factory=list, description="History of tool calls, updated with each tool call.")
 
     def __init__(
@@ -51,6 +55,7 @@ class ToolRulesSolver(BaseModel):
         child_based_tool_rules: Optional[List[Union[ChildToolRule, ConditionalToolRule, MaxCountPerStepToolRule]]] = None,
         parent_tool_rules: Optional[List[ParentToolRule]] = None,
         terminal_tool_rules: Optional[List[TerminalToolRule]] = None,
+        required_before_exit_tool_rules: Optional[List[RequiredBeforeExitToolRule]] = None,
         tool_call_history: Optional[List[str]] = None,
         **kwargs,
     ):
@@ -60,6 +65,7 @@ class ToolRulesSolver(BaseModel):
             child_based_tool_rules=child_based_tool_rules or [],
             parent_tool_rules=parent_tool_rules or [],
             terminal_tool_rules=terminal_tool_rules or [],
+            required_before_exit_tool_rules=required_before_exit_tool_rules or [],
             tool_call_history=tool_call_history or [],
             **kwargs,
         )
@@ -88,6 +94,9 @@ class ToolRulesSolver(BaseModel):
                 elif rule.type == ToolRuleType.parent_last_tool:
                     assert isinstance(rule, ParentToolRule)
                     self.parent_tool_rules.append(rule)
+                elif rule.type == ToolRuleType.required_before_exit:
+                    assert isinstance(rule, RequiredBeforeExitToolRule)
+                    self.required_before_exit_tool_rules.append(rule)
 
     def register_tool_call(self, tool_name: str):
         """Update the internal state to track tool call history."""
@@ -131,8 +140,10 @@ class ToolRulesSolver(BaseModel):
             return list(final_allowed_tools)
 
     def is_terminal_tool(self, tool_name: str) -> bool:
-        """Check if the tool is defined as a terminal tool in the terminal tool rules."""
-        return any(rule.tool_name == tool_name for rule in self.terminal_tool_rules)
+        """Check if the tool is defined as a terminal tool in the terminal tool rules or required-before-exit tool rules."""
+        return any(rule.tool_name == tool_name for rule in self.terminal_tool_rules) or any(
+            rule.tool_name == tool_name for rule in self.required_before_exit_tool_rules
+        )
 
     def has_children_tools(self, tool_name):
         """Check if the tool has children tools"""
@@ -141,6 +152,24 @@ class ToolRulesSolver(BaseModel):
     def is_continue_tool(self, tool_name):
         """Check if the tool is defined as a continue tool in the tool rules."""
         return any(rule.tool_name == tool_name for rule in self.continue_tool_rules)
+
+    def has_required_tools_been_called(self) -> bool:
+        """Check if all required-before-exit tools have been called."""
+        return len(self.get_uncalled_required_tools()) == 0
+
+    def get_uncalled_required_tools(self) -> List[str]:
+        """Get the list of required-before-exit tools that have not been called yet."""
+        if not self.required_before_exit_tool_rules:
+            return []  # No required tools means no uncalled tools
+
+        required_tool_names = {rule.tool_name for rule in self.required_before_exit_tool_rules}
+        called_tool_names = set(self.tool_call_history)
+
+        return list(required_tool_names - called_tool_names)
+
+    def get_ending_tool_names(self) -> List[str]:
+        """Get the names of tools that are required before exit."""
+        return [rule.tool_name for rule in self.required_before_exit_tool_rules]
 
     def compile_tool_rule_prompts(self) -> Optional[Block]:
         """

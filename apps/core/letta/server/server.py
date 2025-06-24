@@ -710,6 +710,7 @@ class SyncServer(Server):
         # Run the agent state forward
         return self._step(actor=actor, agent_id=agent_id, input_messages=message)
 
+    # TODO: Deprecate this
     def send_messages(
         self,
         actor: User,
