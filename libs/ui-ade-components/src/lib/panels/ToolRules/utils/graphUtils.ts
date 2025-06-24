@@ -475,33 +475,33 @@ export function createEdgeData(
         ),
       });
     });
-  } else {
-    // If no run_first tools, START → AGENT
-    edgeData.push({
-      id: 'start-agent',
-      source: 'start',
-      target: 'agent',
-      edgeType: 'start_to_agent',
-      opacity: getEdgeOpacity(
-        {
-          sourceToolName: 'start',
-          targetToolName: 'agent',
-          edgeType: 'start_to_agent',
-        },
-        context,
-      ),
-      shouldDash: false,
-      arrowColor: getArrowColor(
-        focusedTool === 'start',
-        focusedTool === 'agent',
-        {
-          OUTGOING: 'hsl(var(--brand))',
-          INCOMING: 'hsl(var(--brand))',
-          DEFAULT: 'hsl(var(--muted))',
-        },
-      ),
-    });
   }
+
+  // Always create START → AGENT connection
+  edgeData.push({
+    id: 'start-agent',
+    source: 'start',
+    target: 'agent',
+    edgeType: 'start_to_agent',
+    opacity: getEdgeOpacity(
+      {
+        sourceToolName: 'start',
+        targetToolName: 'agent',
+        edgeType: 'start_to_agent',
+      },
+      context,
+    ),
+    shouldDash: false,
+    arrowColor: getArrowColor(
+      focusedTool === 'start',
+      focusedTool === 'agent',
+      {
+        OUTGOING: 'hsl(var(--brand))',
+        INCOMING: 'hsl(var(--brand))',
+        DEFAULT: 'hsl(var(--muted))',
+      },
+    ),
+  });
 
   uniqueTools.forEach((toolName) => {
     const rules = toolGroups[toolName];
@@ -509,39 +509,42 @@ export function createEdgeData(
     const hasExitLoop = rules.some((r) => r.type === 'exit_loop');
     const hasContinueLoop = rules.some((r) => r.type === 'continue_loop');
     const hasMaxCount = rules.some((r) => r.type === 'max_count_per_step');
+    const hasRequiredBeforeExit = rules.some(
+      (r) => r.type === 'required_before_exit',
+    );
     const hasNoType = rules.length === 0 || rules.every((r) => !r.type);
-    const isRunFirst = runFirstTools.includes(toolName);
 
-    // AGENT → Tool connections for all tools EXCEPT run_first tools
-    if (!isRunFirst) {
-      edgeData.push({
-        id: `agent-${toolName}`,
-        source: 'agent',
-        target: `tool-${toolName}`,
-        edgeType: 'agent_to_tool',
-        opacity: getEdgeOpacity(
-          {
-            sourceToolName: 'agent',
-            targetToolName: toolName,
-            edgeType: 'agent_to_tool',
-          },
-          context,
-        ),
-        shouldDash: false,
-        arrowColor: getArrowColor(
-          focusedTool === 'agent',
-          focusedTool === toolName,
-          {
-            OUTGOING: 'hsl(var(--brand))',
-            INCOMING: 'hsl(var(--brand))',
-            DEFAULT: 'hsl(var(--muted))',
-          },
-        ),
-      });
-    }
+    // AGENT → Tool connections for ALL tools (including run_first tools)
+    edgeData.push({
+      id: `agent-${toolName}`,
+      source: 'agent',
+      target: `tool-${toolName}`,
+      edgeType: 'agent_to_tool',
+      opacity: getEdgeOpacity(
+        {
+          sourceToolName: 'agent',
+          targetToolName: toolName,
+          edgeType: 'agent_to_tool',
+        },
+        context,
+      ),
+      shouldDash: false,
+      arrowColor: getArrowColor(
+        focusedTool === 'agent',
+        focusedTool === toolName,
+        {
+          OUTGOING: 'hsl(var(--brand))',
+          INCOMING: 'hsl(var(--brand))',
+          DEFAULT: 'hsl(var(--muted))',
+        },
+      ),
+    });
 
     // Exit connections
-    if ((hasExitLoop || hasNoType || hasMaxCount) && !hasContinueLoop) {
+    if (
+      (hasExitLoop || hasNoType || hasMaxCount || hasRequiredBeforeExit) &&
+      !hasContinueLoop
+    ) {
       edgeData.push({
         id: `${toolName}-done`,
         source: `tool-${toolName}`,
