@@ -68,7 +68,7 @@ jobs:
       - name: Install dependencies
         shell: bash
         working-directory: apps/core
-        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google' }}
+        run: poetry install --no-interaction ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google' }}
       - name: Migrate database
         working-directory: apps/core
         env:
@@ -134,18 +134,21 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b $BRANCH_NAME
           git add selfhosting/supported-models.mdx
-          git commit -m "Update model sweep report"
-          # only push if changes were made
-          if git diff main --quiet; then
-            echo "No changes detected, skipping push"
-            exit 0
-          else
+
+          # Check if there are meaningful changes (not just timestamps)
+          if git diff --cached selfhosting/supported-models.mdx | grep -E '^[+-]' | grep -v -E '^[+-]generated:|^[+-]Ran.*on|Last Scanned' | grep -q '[+-]'; then
+            echo "Meaningful changes detected, creating PR"
+            git commit -m "Update model sweep report"
             git push origin $BRANCH_NAME
             gh pr create \
               --base main \
               --head $BRANCH_NAME \
               --title "chore: update model sweep report" \
               --body "Automated PR to update model sweep report"
+            just alert "Model sweep detected a meaningful change" kianjones9
+          else
+            echo "Only timestamp changes detected, skipping PR creation"
+            exit 0
           fi
 
       - name: Upload model sweep report
