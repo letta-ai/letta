@@ -417,7 +417,13 @@ class LettaFileToolExecutor(ToolExecutor):
         self.logger.info(f"Semantic search started for agent {agent_state.id} with query '{query}' (limit: {limit})")
 
         # Get semantic search results
-        passages = await self.agent_manager.list_source_passages_async(actor=self.actor, agent_id=agent_state.id, query_text=query)
+        passages = await self.agent_manager.list_source_passages_async(
+            actor=self.actor,
+            agent_id=agent_state.id,
+            query_text=query,
+            embed_query=True,
+            embedding_config=agent_state.embedding_config,
+        )
 
         if not passages:
             return f"No semantic matches found for query: '{query}'"
