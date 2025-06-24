@@ -799,6 +799,18 @@ export const $AgentState = {
       title: 'Last Run Duration Ms',
       description: "The duration in milliseconds of the agent's last run.",
     },
+    timezone: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Timezone',
+      description: 'The timezone of the agent (IANA format).',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -4003,6 +4015,18 @@ export const $CreateAgentRequest = {
       ],
       title: 'Response Format',
       description: 'The response format for the agent.',
+    },
+    timezone: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Timezone',
+      description: 'The timezone of the agent (IANA format).',
     },
     actor_id: {
       anyOf: [
@@ -11564,6 +11588,18 @@ export const $UpdateAgent = {
       ],
       title: 'Last Run Duration Ms',
       description: "The duration in milliseconds of the agent's last run.",
+    },
+    timezone: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Timezone',
+      description: 'The timezone of the agent (IANA format).',
     },
   },
   type: 'object',

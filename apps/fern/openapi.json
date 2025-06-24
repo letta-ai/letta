@@ -8776,6 +8776,18 @@
             ],
             "title": "Last Run Duration Ms",
             "description": "The duration in milliseconds of the agent's last run."
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone",
+            "description": "The timezone of the agent (IANA format)."
           }
         },
         "additionalProperties": false,
@@ -11854,6 +11866,18 @@
             ],
             "title": "Response Format",
             "description": "The response format for the agent."
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone",
+            "description": "The timezone of the agent (IANA format)."
           }
         },
         "type": "object",
@@ -18841,6 +18865,18 @@
             ],
             "title": "Last Run Duration Ms",
             "description": "The duration in milliseconds of the agent's last run."
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone",
+            "description": "The timezone of the agent (IANA format)."
           }
         },
         "type": "object",

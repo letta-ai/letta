@@ -309,15 +309,15 @@ def initialize_message_sequence(
         previous_message_count=previous_message_count,
         archival_memory_size=archival_memory_size,
     )
-    first_user_message = get_login_event()  # event letting Letta know the user just logged in
+    first_user_message = get_login_event(agent_state.timezone)  # event letting Letta know the user just logged in
 
     if include_initial_boot_message:
         if agent_state.agent_type == AgentType.sleeptime_agent:
             initial_boot_messages = []
         elif agent_state.llm_config.model is not None and "gpt-3.5" in agent_state.llm_config.model:
-            initial_boot_messages = get_initial_boot_messages("startup_with_send_message_gpt35")
+            initial_boot_messages = get_initial_boot_messages("startup_with_send_message_gpt35", agent_state.timezone)
         else:
-            initial_boot_messages = get_initial_boot_messages("startup_with_send_message")
+            initial_boot_messages = get_initial_boot_messages("startup_with_send_message", agent_state.timezone)
         messages = (
             [
                 {"role": "system", "content": full_system_message},
@@ -338,7 +338,7 @@ def initialize_message_sequence(
 
 
 def package_initial_message_sequence(
-    agent_id: str, initial_message_sequence: List[MessageCreate], model: str, actor: User
+    agent_id: str, initial_message_sequence: List[MessageCreate], model: str, timezone: str, actor: User
 ) -> List[Message]:
     # create the agent object
     init_messages = []
@@ -347,6 +347,7 @@ def package_initial_message_sequence(
         if message_create.role == MessageRole.user:
             packed_message = system.package_user_message(
                 user_message=message_create.content,
+                timezone=timezone,
             )
             init_messages.append(
                 Message(
@@ -361,6 +362,7 @@ def package_initial_message_sequence(
         elif message_create.role == MessageRole.system:
             packed_message = system.package_system_message(
                 system_message=message_create.content,
+                timezone=timezone,
             )
             init_messages.append(
                 Message(
@@ -402,7 +404,7 @@ def package_initial_message_sequence(
             )
 
             # add tool return
-            function_response = package_function_response(True, "None")
+            function_response = package_function_response(True, "None", timezone)
             init_messages.append(
                 Message(
                     role=MessageRole.tool,

@@ -548,6 +548,7 @@ class LettaAgentBatch(BaseAgent):
             function_call_success=success_flag,
             function_response=tool_exec_result,
             tool_execution_result=tool_exec_result_obj,
+            timezone=agent_state.timezone,
             actor=self.actor,
             add_heartbeat_request_system_message=False,
             reasoning_content=reasoning_content,

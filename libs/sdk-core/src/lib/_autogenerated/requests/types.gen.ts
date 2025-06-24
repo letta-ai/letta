@@ -266,6 +266,10 @@ export type AgentState = {
    * The duration in milliseconds of the agent's last run.
    */
   last_run_duration_ms?: number | null;
+  /**
+   * The timezone of the agent (IANA format).
+   */
+  timezone?: string | null;
 };
 
 /**
@@ -1271,6 +1275,10 @@ export type CreateAgentRequest = {
     | JsonSchemaResponseFormat
     | JsonObjectResponseFormat
     | null;
+  /**
+   * The timezone of the agent (IANA format).
+   */
+  timezone?: string | null;
   actor_id?: string | null;
 };
 
@@ -4210,6 +4218,10 @@ export type UpdateAgent = {
    * The duration in milliseconds of the agent's last run.
    */
   last_run_duration_ms?: number | null;
+  /**
+   * The timezone of the agent (IANA format).
+   */
+  timezone?: string | null;
 };
 
 export type UpdateAssistantMessage = {

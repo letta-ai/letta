@@ -631,7 +631,7 @@ class SyncServer(Server):
 
             packaged_user_message = system.package_user_message(
                 user_message=message,
-                time=timestamp.isoformat() if timestamp else None,
+                timezone=agent.timezone,
             )
 
             # NOTE: eventually deprecate and only allow passing Message types

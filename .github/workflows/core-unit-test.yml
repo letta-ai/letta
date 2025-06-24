@@ -47,6 +47,7 @@ jobs:
               {"test_suite": "test_sources.py"},
               {"test_suite": "sdk/"},
               {"test_suite": "mcp/", "use_experimental": true}
+              {"test_suite": "test_timezone_formatting.py"}
             ]
           }
         }

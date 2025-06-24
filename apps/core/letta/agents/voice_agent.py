@@ -153,7 +153,9 @@ class VoiceAgent(BaseAgent):
             previous_message_count=self.num_messages,
             archival_memory_size=self.num_archival_memories,
         )
-        letta_message_db_queue = create_input_messages(input_messages=input_messages, agent_id=agent_state.id, actor=self.actor)
+        letta_message_db_queue = create_input_messages(
+            input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=self.actor
+        )
         in_memory_message_history = self.pre_process_input_message(input_messages)
 
         # TODO: Define max steps here
@@ -212,6 +214,7 @@ class VoiceAgent(BaseAgent):
                 agent_id=agent_state.id,
                 model=agent_state.llm_config.model,
                 actor=self.actor,
+                timezone=agent_state.timezone,
             )
             letta_message_db_queue.extend(assistant_msgs)
 
@@ -272,6 +275,7 @@ class VoiceAgent(BaseAgent):
                 function_call_success=success_flag,
                 function_response=tool_result,
                 tool_execution_result=tool_execution_result,
+                timezone=agent_state.timezone,
                 actor=self.actor,
                 add_heartbeat_request_system_message=True,
             )

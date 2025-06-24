@@ -109,6 +109,9 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     last_run_completion: Optional[datetime] = Field(None, description="The timestamp when the agent last completed a run.")
     last_run_duration_ms: Optional[int] = Field(None, description="The duration in milliseconds of the agent's last run.")
 
+    # timezone
+    timezone: Optional[str] = Field(None, description="The timezone of the agent (IANA format).")
+
     def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
         # Get environment variables for this agent specifically
         per_agent_env_vars = {}
@@ -192,6 +195,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     )
     enable_sleeptime: Optional[bool] = Field(None, description="If set to True, memory management will move to a background agent thread.")
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the agent.")
+    timezone: Optional[str] = Field(None, description="The timezone of the agent (IANA format).")
 
     @field_validator("name")
     @classmethod
@@ -285,6 +289,7 @@ class UpdateAgent(BaseModel):
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the agent.")
     last_run_completion: Optional[datetime] = Field(None, description="The timestamp when the agent last completed a run.")
     last_run_duration_ms: Optional[int] = Field(None, description="The duration in milliseconds of the agent's last run.")
+    timezone: Optional[str] = Field(None, description="The timezone of the agent (IANA format).")
 
     class Config:
         extra = "ignore"  # Ignores extra fields
