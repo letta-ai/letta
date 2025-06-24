@@ -1265,3 +1265,18 @@ export const activeAgents = pgTable('active_agents', {
   lastActiveAt: timestamp('last_active_at').notNull().defaultNow(),
   isBilledAgent: boolean('is_billed_agent').notNull().default(false),
 });
+
+export const agentfilePermissionsEnum = pgEnum('agentfile_access_level', [
+  'public',
+  'logged-in',
+  'none',
+]);
+
+export const agentfilePermissions = pgTable('agentfile_permissions', {
+  agentId: text('agent_id').primaryKey(),
+  accessLevel: agentfilePermissionsEnum('agentfile_access_level').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
