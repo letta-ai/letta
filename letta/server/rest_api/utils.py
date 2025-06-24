@@ -169,7 +169,7 @@ def log_error_to_sentry(e):
         sentry_sdk.capture_exception(e)
 
 
-def create_input_messages(input_messages: List[MessageCreate], agent_id: str, actor: User) -> List[Message]:
+def create_input_messages(input_messages: List[MessageCreate], agent_id: str, timezone: str, actor: User) -> List[Message]:
     """
     Converts a user input message into the internal structured format.
 
@@ -177,7 +177,7 @@ def create_input_messages(input_messages: List[MessageCreate], agent_id: str, ac
     we should unify this when it's clear what message attributes we need.
     """
 
-    messages = convert_message_creates_to_messages(input_messages, agent_id, wrap_user_message=False, wrap_system_message=False)
+    messages = convert_message_creates_to_messages(input_messages, agent_id, timezone, wrap_user_message=False, wrap_system_message=False)
     for message in messages:
         message.organization_id = actor.organization_id
     return messages
@@ -192,6 +192,7 @@ def create_letta_messages_from_llm_response(
     tool_call_id: str,
     function_call_success: bool,
     function_response: Optional[str],
+    timezone: str,
     actor: User,
     add_heartbeat_request_system_message: bool = False,
     heartbeat_reason: Optional[str] = None,
@@ -233,7 +234,7 @@ def create_letta_messages_from_llm_response(
     # TODO: This helps preserve ordering
     tool_message = Message(
         role=MessageRole.tool,
-        content=[TextContent(text=package_function_response(function_call_success, function_response))],
+        content=[TextContent(text=package_function_response(function_call_success, function_response, timezone))],
         organization_id=actor.organization_id,
         agent_id=agent_id,
         model=model,
@@ -259,7 +260,7 @@ def create_letta_messages_from_llm_response(
             model=model,
             function_call_success=function_call_success,
             actor=actor,
-            llm_batch_item_id=llm_batch_item_id,
+            timezone=timezone,
             heartbeat_reason=heartbeat_reason,
         )
         messages.append(heartbeat_system_message)
@@ -274,6 +275,7 @@ def create_heartbeat_system_message(
     agent_id: str,
     model: str,
     function_call_success: bool,
+    timezone: str,
     actor: User,
     llm_batch_item_id: Optional[str] = None,
     heartbeat_reason: Optional[str] = None,
@@ -285,7 +287,7 @@ def create_heartbeat_system_message(
 
     heartbeat_system_message = Message(
         role=MessageRole.user,
-        content=[TextContent(text=get_heartbeat(text_content))],
+        content=[TextContent(text=get_heartbeat(timezone, text_content))],
         organization_id=actor.organization_id,
         agent_id=agent_id,
         model=model,
@@ -302,6 +304,7 @@ def create_assistant_messages_from_openai_response(
     agent_id: str,
     model: str,
     actor: User,
+    timezone: str,
 ) -> List[Message]:
     """
     Converts an OpenAI response into Messages that follow the internal
@@ -318,6 +321,7 @@ def create_assistant_messages_from_openai_response(
         tool_call_id=tool_call_id,
         function_call_success=True,
         function_response=None,
+        timezone=timezone,
         actor=actor,
         add_heartbeat_request_system_message=False,
     )

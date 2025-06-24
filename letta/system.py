@@ -13,7 +13,7 @@ from .helpers.datetime_helpers import get_local_time
 from .helpers.json_helpers import json_dumps
 
 
-def get_initial_boot_messages(version="startup"):
+def get_initial_boot_messages(version, timezone):
     if version == "startup":
         initial_boot_message = INITIAL_BOOT_MESSAGE
         messages = [
@@ -47,7 +47,7 @@ def get_initial_boot_messages(version="startup"):
                 # "role": "function",
                 "role": "tool",
                 "name": "send_message",  # NOTE: technically not up to spec, this is old functions style
-                "content": package_function_response(True, None),
+                "content": package_function_response(True, None, timezone),
                 "tool_call_id": tool_call_id,
             },
         ]
@@ -76,7 +76,7 @@ def get_initial_boot_messages(version="startup"):
                 # "role": "function",
                 "role": "tool",
                 "name": "send_message",
-                "content": package_function_response(True, None),
+                "content": package_function_response(True, None, timezone),
                 "tool_call_id": tool_call_id,
             },
         ]
@@ -87,9 +87,9 @@ def get_initial_boot_messages(version="startup"):
     return messages
 
 
-def get_heartbeat(reason: str = "Automated timer", include_location: bool = False, location_name: str = "San Francisco, CA, USA"):
+def get_heartbeat(timezone, reason: str = "Automated timer", include_location: bool = False, location_name: str = "San Francisco, CA, USA"):
     # Package the message with time and location
-    formatted_time = get_local_time()
+    formatted_time = get_local_time(timezone=timezone)
     packaged_message = {
         "type": "heartbeat",
         "reason": reason,
@@ -102,9 +102,9 @@ def get_heartbeat(reason: str = "Automated timer", include_location: bool = Fals
     return json_dumps(packaged_message)
 
 
-def get_login_event(last_login="Never (first login)", include_location=False, location_name="San Francisco, CA, USA"):
+def get_login_event(timezone, last_login="Never (first login)", include_location=False, location_name="San Francisco, CA, USA"):
     # Package the message with time and location
-    formatted_time = get_local_time()
+    formatted_time = get_local_time(timezone=timezone)
     packaged_message = {
         "type": "login",
         "last_login": last_login,
@@ -119,13 +119,13 @@ def get_login_event(last_login="Never (first login)", include_location=False, lo
 
 def package_user_message(
     user_message: str,
-    time: Optional[str] = None,
+    timezone: str,
     include_location: bool = False,
     location_name: Optional[str] = "San Francisco, CA, USA",
     name: Optional[str] = None,
 ):
     # Package the message with time and location
-    formatted_time = time if time else get_local_time()
+    formatted_time = get_local_time(timezone=timezone)
     packaged_message = {
         "type": "user_message",
         "message": user_message,
@@ -141,8 +141,8 @@ def package_user_message(
     return json_dumps(packaged_message)
 
 
-def package_function_response(was_success, response_string, timestamp=None):
-    formatted_time = get_local_time() if timestamp is None else timestamp
+def package_function_response(was_success, response_string, timezone):
+    formatted_time = get_local_time(timezone=timezone)
     packaged_message = {
         "status": "OK" if was_success else "Failed",
         "message": response_string,
@@ -152,7 +152,7 @@ def package_function_response(was_success, response_string, timestamp=None):
     return json_dumps(packaged_message)
 
 
-def package_system_message(system_message, message_type="system_alert", time=None):
+def package_system_message(system_message, timezone, message_type="system_alert"):
     # error handling for recursive packaging
     try:
         message_json = json.loads(system_message)
@@ -162,7 +162,7 @@ def package_system_message(system_message, message_type="system_alert", time=Non
     except:
         pass  # do nothing, expected behavior that the message is not JSON
 
-    formatted_time = time if time else get_local_time()
+    formatted_time = get_local_time(timezone=timezone)
     packaged_message = {
         "type": message_type,
         "message": system_message,
@@ -172,13 +172,13 @@ def package_system_message(system_message, message_type="system_alert", time=Non
     return json.dumps(packaged_message)
 
 
-def package_summarize_message(summary, summary_message_count, hidden_message_count, total_message_count, timestamp=None):
+def package_summarize_message(summary, summary_message_count, hidden_message_count, total_message_count, timezone):
     context_message = (
         f"Note: prior messages ({hidden_message_count} of {total_message_count} total messages) have been hidden from view due to conversation memory constraints.\n"
         + f"The following is a summary of the previous {summary_message_count} messages:\n {summary}"
     )
 
-    formatted_time = get_local_time() if timestamp is None else timestamp
+    formatted_time = get_local_time(timezone=timezone)
     packaged_message = {
         "type": "system_alert",
         "message": context_message,
@@ -188,11 +188,11 @@ def package_summarize_message(summary, summary_message_count, hidden_message_cou
     return json_dumps(packaged_message)
 
 
-def package_summarize_message_no_summary(hidden_message_count, timestamp=None, message=None):
+def package_summarize_message_no_summary(hidden_message_count, message=None, timezone=None):
     """Add useful metadata to the summary message"""
 
     # Package the message with time and location
-    formatted_time = get_local_time() if timestamp is None else timestamp
+    formatted_time = get_local_time(timezone=timezone)
     context_message = (
         message
         if message

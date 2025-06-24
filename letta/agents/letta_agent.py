@@ -1011,6 +1011,7 @@ class LettaAgent(BaseAgent):
         function_response = package_function_response(
             was_success=tool_execution_result.success_flag,
             response_string=function_response_string,
+            timezone=agent_state.timezone,
         )
 
         # 4. Register tool call with tool rule solver
@@ -1073,6 +1074,7 @@ class LettaAgent(BaseAgent):
             tool_call_id=tool_call_id,
             function_call_success=tool_execution_result.success_flag,
             function_response=function_response_string,
+            timezone=agent_state.timezone,
             actor=self.actor,
             add_heartbeat_request_system_message=continue_stepping,
             heartbeat_reason=heartbeat_reason,

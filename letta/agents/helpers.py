@@ -69,7 +69,8 @@ def _prepare_in_context_messages(
 
     # Create a new user message from the input and store it
     new_in_context_messages = message_manager.create_many_messages(
-        create_input_messages(input_messages=input_messages, agent_id=agent_state.id, actor=actor), actor=actor
+        create_input_messages(input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=actor),
+        actor=actor,
     )
 
     return current_in_context_messages, new_in_context_messages
@@ -106,7 +107,8 @@ async def _prepare_in_context_messages_async(
 
     # Create a new user message from the input and store it
     new_in_context_messages = await message_manager.create_many_messages_async(
-        create_input_messages(input_messages=input_messages, agent_id=agent_state.id, actor=actor), actor=actor
+        create_input_messages(input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=actor),
+        actor=actor,
     )
 
     return current_in_context_messages, new_in_context_messages
@@ -141,7 +143,9 @@ async def _prepare_in_context_messages_no_persist_async(
         current_in_context_messages = await message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor)
 
     # Create a new user message from the input but dont store it yet
-    new_in_context_messages = create_input_messages(input_messages=input_messages, agent_id=agent_state.id, actor=actor)
+    new_in_context_messages = create_input_messages(
+        input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=actor
+    )
 
     return current_in_context_messages, new_in_context_messages
 

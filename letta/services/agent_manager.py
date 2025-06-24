@@ -317,6 +317,7 @@ class AgentManager:
                     response_format=agent_create.response_format,
                     created_by_id=actor.id,
                     last_updated_by_id=actor.id,
+                    timezone=agent_create.timezone,
                 )
 
                 if _test_only_force_id:
@@ -480,6 +481,7 @@ class AgentManager:
                     response_format=agent_create.response_format,
                     created_by_id=actor.id,
                     last_updated_by_id=actor.id,
+                    timezone=agent_create.timezone,
                 )
 
                 if _test_only_force_id:
@@ -539,6 +541,7 @@ class AgentManager:
                 new_agent.message_ids = [msg.id for msg in init_messages]
 
             await session.refresh(new_agent)
+
             result = await new_agent.to_pydantic_async()
 
         await self.message_manager.create_many_messages_async(pydantic_msgs=init_messages, actor=actor)
@@ -561,7 +564,9 @@ class AgentManager:
             # Don't use anything else in the pregen sequence, instead use the provided sequence
             init_messages = [system_message_obj]
             init_messages.extend(
-                package_initial_message_sequence(agent_state.id, supplied_initial_message_sequence, agent_state.llm_config.model, actor)
+                package_initial_message_sequence(
+                    agent_state.id, supplied_initial_message_sequence, agent_state.llm_config.model, agent_state.timezone, actor
+                )
             )
         else:
             init_messages = [
