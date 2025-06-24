@@ -1,17 +1,16 @@
-import {
-  Button,
-  Logo,
-  OfficesIcon,
-  VStack,
-} from '@letta-cloud/ui-component-library';
+import { Button, OfficesIcon, VStack } from '@letta-cloud/ui-component-library';
 import { HStack } from '@letta-cloud/ui-component-library';
 import { Typography } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
+import { useEffect, useState } from 'react';
 import type { Ref } from 'react';
 import { usePathname } from 'next/navigation';
 import { AuthFlowSwitch } from './AuthFlowSwitch';
 import './Login.scss';
 import type { Mode } from '../../constants';
+import Lottie from 'react-lottie';
+import darkLogo from '../../_logo/dark-sygnetrotate.json';
+import lightLogo from '../../_logo/light-sygnetrotate.json';
 
 interface LoggedOutWrapperProps {
   children: React.ReactNode;
@@ -32,6 +31,35 @@ export function LoggedOutWrapper(props: LoggedOutWrapperProps) {
 
   const mode = usePathname().substring(1) as Mode;
   const t = useTranslations('login/LoginComponent');
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setIsDarkMode(true);
+      return;
+    } else {
+      setIsDarkMode(false);
+      return;
+    }
+  }, [setIsDarkMode]);
+
+  const darkLogoOptions = {
+    loop: true,
+    autoplay: true,
+    animationData: darkLogo,
+    rendererSettings: {
+      preserveAspectRatio: 'xMidYMid slice',
+    },
+  };
+
+  const lightLogoOptions = {
+    loop: true,
+    autoplay: true,
+    animationData: lightLogo,
+    rendererSettings: {
+      preserveAspectRatio: 'xMidYMid slice',
+    },
+  };
 
   return (
     // eslint-disable-next-line react/forbid-component-props
@@ -59,7 +87,11 @@ export function LoggedOutWrapper(props: LoggedOutWrapperProps) {
           <VStack paddingBottom="small" gap="xlarge" align="center" fullWidth>
             <HStack justify="spaceBetween" align="center" fullWidth>
               <div className="relative" ref={logoRef}>
-                <Logo size="big" />
+                {isDarkMode ? (
+                  <Lottie options={darkLogoOptions} height={36} width={36} />
+                ) : (
+                  <Lottie options={lightLogoOptions} height={36} width={36} />
+                )}
               </div>
               {showAuthFlowSwitcher && <AuthFlowSwitch mode={mode} />}
             </HStack>
