@@ -90,6 +90,11 @@
       "toolName": "Tool name",
       "save": "Save"
     },
+    "RequiredBeforeExitToolEditor": {
+      "sentence": "<tool></tool> must be called before the agent exits the loop",
+      "toolName": "Tool name",
+      "save": "Save"
+    },
     "ChildToolRuleEditor": {
       "sentence": "<tool></tool> must be followed by calling the tool:",
       "toolName": "Tool name",
@@ -139,6 +144,10 @@
         "title": "Continue loop",
         "description": "Prevent a tool from being the start or end of a loop"
       },
+      "requiredBeforeExit": {
+        "title": "Required before exit",
+        "description": "Require a tool to be called before the agent exits the loop"
+      },
       "maxCountPerStep": {
         "title": "Max count per step",
         "description": "Limit the number of times a tool can be called in a loop"
@@ -151,7 +160,8 @@
     "constrain": "Constrain Tools",
     "maxCount": "Max Count",
     "continueLoop": "Continue Loop",
-    "exitLoop": "Exit Loop"
+    "exitLoop": "Exit Loop",
+    "RequiredBeforeExit": "Required Before Exit"
   },
   "ADE/AgentVariablesModal": {
     "noVariablesInDeployedAgent": "No variables in this agent",

@@ -117,6 +117,11 @@ function getRuleTypeIcons(
       icon: <EndIcon />,
       color: COLORS.RULE_ICONS.EXIT,
     },
+    {
+      type: 'required_before_exit',
+      icon: <EndIcon />,
+      color: COLORS.RULE_ICONS.REQUIRED_BEFORE_EXIT,
+    },
   ];
 
   return iconConfigs
@@ -533,6 +538,12 @@ function Legend({
                 <EndIcon />
               </div>
               <span>{t('exitLoop')}</span>
+            </div>
+            <div className="tool-rules-legend__item">
+              <div style={{ color: COLORS.RULE_ICONS.REQUIRED_BEFORE_EXIT }}>
+                <EndIcon />
+              </div>
+              <span>{t('RequiredBeforeExit')}</span>
             </div>
           </div>
         </div>

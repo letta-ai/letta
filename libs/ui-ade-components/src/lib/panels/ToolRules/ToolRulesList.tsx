@@ -40,6 +40,7 @@ import {
   type ConditionalToolRule,
   type InitToolRule,
   type TerminalToolRule,
+  type RequiredBeforeExitToolRule,
 } from '@letta-cloud/sdk-core';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -51,6 +52,7 @@ import type {
   SupportedToolRuleNameTypes,
   ToolRules,
 } from './types';
+// import { useMergedToolData } from './hooks/useMergedToolData';
 
 // Hooks
 function useToolTitleFromType(type: SupportedToolRuleNameTypes) {
@@ -70,6 +72,8 @@ function useToolTitleFromType(type: SupportedToolRuleNameTypes) {
         return t('toolTypes.continueLoop.title');
       case 'max_count_per_step':
         return t('toolTypes.maxCountPerStep.title');
+      case 'required_before_exit':
+        return t('toolTypes.requiredBeforeExit.title');
     }
 
     return '';
@@ -91,6 +95,8 @@ function useToolIconsFromType(type: SupportedToolRuleNameTypes) {
         return <ArrowRightIcon />;
       case 'max_count_per_step':
         return <RuleIcon />;
+      case 'required_before_exit':
+        return <EndIcon />;
     }
 
     return null;
@@ -873,6 +879,102 @@ function MaxCountPerStepToolRuleEditor(
   );
 }
 
+// Add the schema for RequiredBeforeExitToolRule
+const requiredBeforeExitToolRuleSchema = z.object({
+  toolName: z.string(),
+  type: z.literal('required_before_exit'),
+});
+
+type RequiredBeforeExitToolRuleType = z.infer<
+  typeof requiredBeforeExitToolRuleSchema
+>;
+
+// Add the editor interface
+interface RequiredBeforeExitToolEditorProps extends ToolEditorDefaultProps {
+  defaultRule: RequiredBeforeExitToolRule;
+}
+
+// Add the editor component
+function RequiredBeforeExitToolEditor(
+  props: RequiredBeforeExitToolEditorProps,
+) {
+  const { defaultRule, onRemove, onSubmit } = props;
+
+  const form = useForm<RequiredBeforeExitToolRuleType>({
+    resolver: zodResolver(requiredBeforeExitToolRuleSchema),
+    defaultValues: {
+      toolName: defaultRule.tool_name,
+      type: 'required_before_exit',
+    },
+  });
+
+  const { tools } = useCurrentAgent();
+  const t = useTranslations('ADE/ToolRules');
+
+  const handleSubmit = useCallback(
+    (data: RequiredBeforeExitToolRuleType) => {
+      onSubmit({
+        tool_name: data.toolName,
+        type: 'required_before_exit',
+      });
+      form.reset({
+        toolName: data.toolName,
+        type: 'required_before_exit',
+      });
+    },
+    [form, onSubmit],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)}>
+        <ToolRuleItemWrapper
+          isValid={form.formState.isValid}
+          isDirty={form.formState.isDirty}
+          type="required_before_exit"
+          onRemove={onRemove}
+        >
+          <FormField
+            name="toolName"
+            render={({ field }) => (
+              <HStack align="center">
+                {t.rich('RequiredBeforeExitToolEditor.sentence', {
+                  tool: () => (
+                    <Select
+                      label={t('RequiredBeforeExitToolEditor.toolName')}
+                      value={
+                        field.value
+                          ? {
+                              value: field.value,
+                              label: field.value,
+                            }
+                          : undefined
+                      }
+                      inline
+                      hideLabel
+                      placeholder={t('RequiredBeforeExitToolEditor.toolName')}
+                      options={(tools || []).map((tool) => ({
+                        value: tool.name || '',
+                        label: tool.name || '',
+                      }))}
+                      onSelect={(value) => {
+                        if (isMultiValue(value)) {
+                          return;
+                        }
+                        field.onChange(value?.value);
+                      }}
+                    />
+                  ),
+                })}
+              </HStack>
+            )}
+          />
+        </ToolRuleItemWrapper>
+      </form>
+    </FormProvider>
+  );
+}
+
 // New Rule Button Components
 interface NewRuleButtonProps {
   onSelect: () => void;
@@ -933,6 +1035,14 @@ function NewToolRuleButton(props: NewToolRuleButtonProps) {
       />
       <NewRuleButton
         onSelect={() => {
+          onSelect('required_before_exit');
+        }}
+        title={t('toolTypes.requiredBeforeExit.title')}
+        description={t('toolTypes.requiredBeforeExit.description')}
+        icon={<EndIcon />}
+      />
+      <NewRuleButton
+        onSelect={() => {
           onSelect('constrain_child_tools');
         }}
         title={t('toolTypes.constrainChildTools.title')}
@@ -967,7 +1077,8 @@ interface ToolRulesListProps {
 export function ToolRulesList(props: ToolRulesListProps) {
   const { defaultToolRules } = props;
   const [search, setSearch] = React.useState('');
-  const { id: agentId } = useCurrentAgent();
+  const currentAgent = useCurrentAgent();
+  const { id: agentId } = currentAgent;
   const t = useTranslations('ADE/ToolRules');
   const [toolRules, setToolRules] = useState(() => {
     return Array.isArray(defaultToolRules) ? defaultToolRules : [];
@@ -1025,7 +1136,8 @@ export function ToolRulesList(props: ToolRulesListProps) {
       if (
         rule === 'run_first' ||
         rule === 'exit_loop' ||
-        rule === 'continue_loop'
+        rule === 'continue_loop' ||
+        rule === 'required_before_exit'
       ) {
         return [...prev, { type: rule, tool_name: '' }];
       }
@@ -1128,6 +1240,21 @@ export function ToolRulesList(props: ToolRulesListProps) {
             if (rule.type === 'exit_loop') {
               return (
                 <ExitLoopToolEditor
+                  onRemove={() => {
+                    handleRemoveRule(index);
+                  }}
+                  key={index}
+                  onSubmit={(data) => {
+                    handleSaveRule(index, data);
+                  }}
+                  defaultRule={rule}
+                />
+              );
+            }
+
+            if (rule.type === 'required_before_exit') {
+              return (
+                <RequiredBeforeExitToolEditor
                   onRemove={() => {
                     handleRemoveRule(index);
                   }}

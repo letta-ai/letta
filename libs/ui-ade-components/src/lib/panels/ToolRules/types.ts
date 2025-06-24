@@ -6,6 +6,7 @@ import type {
   InitToolRule,
   MaxCountPerStepToolRule,
   TerminalToolRule,
+  RequiredBeforeExitToolRule,
 } from '@letta-cloud/sdk-core';
 import type { Node } from '@xyflow/react';
 
@@ -16,6 +17,7 @@ export type SupportedToolRuleTypes =
   | ContinueToolRule
   | InitToolRule
   | MaxCountPerStepToolRule
+  | RequiredBeforeExitToolRule
   | TerminalToolRule;
 
 export type {
@@ -25,6 +27,7 @@ export type {
   InitToolRule,
   MaxCountPerStepToolRule,
   TerminalToolRule,
+  RequiredBeforeExitToolRule,
 };
 
 export type SupportedToolRuleNameTypes =
@@ -33,6 +36,7 @@ export type SupportedToolRuleNameTypes =
   | 'continue_loop'
   | 'exit_loop'
   | 'max_count_per_step'
+  | 'required_before_exit'
   | 'run_first';
 
 // Control node types
@@ -122,6 +126,11 @@ export interface ExitLoopToolEditorProps extends ToolEditorDefaultProps {
   defaultRule: TerminalToolRule;
 }
 
+export interface RequiredBeforeExitToolEditorProps
+  extends ToolEditorDefaultProps {
+  defaultRule: RequiredBeforeExitToolRule;
+}
+
 export interface MaxCountPerStepToolRuleEditorProps
   extends ToolEditorDefaultProps {
   defaultRule: MaxCountPerStepToolRule;
@@ -155,6 +164,11 @@ export interface ContinueToolRuleForm {
 export interface ExitLoopToolRuleForm {
   toolName: string;
   type: 'exit_loop';
+}
+
+export interface RequiredBeforeExitToolRuleForm {
+  toolName: string;
+  type: 'required_before_exit';
 }
 
 export interface MaxCountPerStepToolRuleForm {
@@ -250,6 +264,7 @@ export const COLORS = {
     MAX_COUNT: 'var(--rule-icon-max-count)',
     CONTINUE: 'var(--rule-icon-continue)',
     EXIT: 'var(--rule-icon-exit)',
+    REQUIRED_BEFORE_EXIT: 'var(--rule-icon-required-before-exit)',
   },
 } as const;
 
