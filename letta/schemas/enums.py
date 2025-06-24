@@ -86,6 +86,7 @@ class ToolRuleType(str, Enum):
     constrain_child_tools = "constrain_child_tools"
     max_count_per_step = "max_count_per_step"
     parent_last_tool = "parent_last_tool"
+    required_before_exit = "required_before_exit"  # tool must be called before loop can exit
 
 
 class FileProcessingStatus(str, Enum):

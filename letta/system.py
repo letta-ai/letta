@@ -87,7 +87,7 @@ def get_initial_boot_messages(version="startup"):
     return messages
 
 
-def get_heartbeat(reason="Automated timer", include_location=False, location_name="San Francisco, CA, USA"):
+def get_heartbeat(reason: str = "Automated timer", include_location: bool = False, location_name: str = "San Francisco, CA, USA"):
     # Package the message with time and location
     formatted_time = get_local_time()
     packaged_message = {

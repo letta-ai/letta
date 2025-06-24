@@ -194,6 +194,7 @@ def create_letta_messages_from_llm_response(
     function_response: Optional[str],
     actor: User,
     add_heartbeat_request_system_message: bool = False,
+    heartbeat_reason: Optional[str] = None,
     reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
     pre_computed_assistant_message_id: Optional[str] = None,
     llm_batch_item_id: Optional[str] = None,
@@ -254,7 +255,12 @@ def create_letta_messages_from_llm_response(
 
     if add_heartbeat_request_system_message:
         heartbeat_system_message = create_heartbeat_system_message(
-            agent_id=agent_id, model=model, function_call_success=function_call_success, actor=actor, llm_batch_item_id=llm_batch_item_id
+            agent_id=agent_id,
+            model=model,
+            function_call_success=function_call_success,
+            actor=actor,
+            llm_batch_item_id=llm_batch_item_id,
+            heartbeat_reason=heartbeat_reason,
         )
         messages.append(heartbeat_system_message)
 
@@ -265,9 +271,18 @@ def create_letta_messages_from_llm_response(
 
 
 def create_heartbeat_system_message(
-    agent_id: str, model: str, function_call_success: bool, actor: User, llm_batch_item_id: Optional[str] = None
+    agent_id: str,
+    model: str,
+    function_call_success: bool,
+    actor: User,
+    llm_batch_item_id: Optional[str] = None,
+    heartbeat_reason: Optional[str] = None,
 ) -> Message:
-    text_content = REQ_HEARTBEAT_MESSAGE if function_call_success else FUNC_FAILED_HEARTBEAT_MESSAGE
+    if heartbeat_reason:
+        text_content = heartbeat_reason
+    else:
+        text_content = REQ_HEARTBEAT_MESSAGE if function_call_success else FUNC_FAILED_HEARTBEAT_MESSAGE
+
     heartbeat_system_message = Message(
         role=MessageRole.user,
         content=[TextContent(text=get_heartbeat(text_content))],

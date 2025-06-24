@@ -61,6 +61,7 @@ def agent_state(client: LettaSDKClient):
     grep_tool = client.tools.list(name="grep")[0]
 
     agent_state = client.agents.create(
+        name="test_sources_agent",
         memory_blocks=[
             CreateBlock(
                 label="human",

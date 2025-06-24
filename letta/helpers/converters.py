@@ -39,6 +39,7 @@ from letta.schemas.tool_rule import (
     InitToolRule,
     MaxCountPerStepToolRule,
     ParentToolRule,
+    RequiredBeforeExitToolRule,
     TerminalToolRule,
     ToolRule,
 )
@@ -131,6 +132,8 @@ def deserialize_tool_rule(
         return MaxCountPerStepToolRule(**data)
     elif rule_type == ToolRuleType.parent_last_tool:
         return ParentToolRule(**data)
+    elif rule_type == ToolRuleType.required_before_exit:
+        return RequiredBeforeExitToolRule(**data)
     raise ValueError(f"Unknown ToolRule type: {rule_type}")
 
 
