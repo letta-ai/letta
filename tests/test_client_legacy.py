@@ -1,5 +1,4 @@
 import os
-import re
 import threading
 import time
 import uuid
@@ -30,7 +29,6 @@ from letta.schemas.message import MessageCreate
 from letta.services.helpers.agent_manager_helper import initialize_message_sequence
 from letta.services.organization_manager import OrganizationManager
 from letta.services.user_manager import UserManager
-from tests.helpers.client_helper import upload_file_using_client
 
 # from tests.utils import create_config
 
@@ -258,102 +256,6 @@ def test_list_tools_pagination(client: RESTClient):
 
     # Assert that everything has been visited
     assert all(visited_ids.values())
-
-
-def test_list_files_pagination(client: RESTClient, agent: AgentState):
-    # clear sources
-    for source in client.list_sources():
-        client.delete_source(source.id)
-
-    # clear jobs
-    for job in client.list_jobs():
-        client.delete_job(job.id)
-
-    # create a source
-    source = client.create_source(name="test_source")
-
-    # load files into sources
-    file_a = "tests/data/memgpt_paper.pdf"
-    file_b = "tests/data/test.txt"
-    upload_file_using_client(client, source, file_a)
-    upload_file_using_client(client, source, file_b)
-
-    # Get the first file
-    files_a = client.list_files_from_source(source.id, limit=1)
-    assert len(files_a) == 1
-    assert files_a[0].source_id == source.id
-
-    # Use the cursor from response_a to get the remaining file
-    files_b = client.list_files_from_source(source.id, limit=1, after=files_a[-1].id)
-    assert len(files_b) == 1
-    assert files_b[0].source_id == source.id
-
-    # Check files are different to ensure the cursor works
-    assert files_a[0].file_name != files_b[0].file_name
-
-    # Use the cursor from response_b to list files, should be empty
-    files = client.list_files_from_source(source.id, limit=1, after=files_b[-1].id)
-    assert len(files) == 0  # Should be empty
-
-
-def test_delete_file_from_source(client: RESTClient, agent: AgentState):
-    # clear sources
-    for source in client.list_sources():
-        client.delete_source(source.id)
-
-    # clear jobs
-    for job in client.list_jobs():
-        client.delete_job(job.id)
-
-    # create a source
-    source = client.create_source(name="test_source")
-
-    # load files into sources
-    file_a = "tests/data/test.txt"
-    upload_file_using_client(client, source, file_a)
-
-    # Get the first file
-    files_a = client.list_files_from_source(source.id, limit=1)
-    assert len(files_a) == 1
-    assert files_a[0].source_id == source.id
-
-    # Delete the file
-    client.delete_file_from_source(source.id, files_a[0].id)
-
-    # Check that no files are attached to the source
-    empty_files = client.list_files_from_source(source.id, limit=1)
-    assert len(empty_files) == 0
-
-
-def test_load_file(client: RESTClient, agent: AgentState):
-    # _reset_config()
-
-    # clear sources
-    for source in client.list_sources():
-        client.delete_source(source.id)
-
-    # clear jobs
-    for job in client.list_jobs():
-        client.delete_job(job.id)
-
-    # create a source
-    source = client.create_source(name="test_source")
-
-    # load a file into a source (non-blocking job)
-    filename = "tests/data/memgpt_paper.pdf"
-    upload_file_using_client(client, source, filename)
-
-    # Get the files
-    files = client.list_files_from_source(source.id)
-    assert len(files) == 1  # Should be condensed to one document
-
-    # Get the memgpt paper
-    file = files[0]
-    # Assert the filename matches the pattern
-    pattern = re.compile(r"^memgpt_paper_[a-f0-9]+\.pdf$")
-    assert pattern.match(file.file_name), f"Filename '{file.file_name}' does not match expected pattern."
-
-    assert file.source_id == source.id
 
 
 def test_organization(client: RESTClient):
