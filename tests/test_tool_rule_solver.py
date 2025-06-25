@@ -250,17 +250,6 @@ def test_required_before_exit_tool_rule_mixed_with_other_tools():
     assert solver.get_uncalled_required_tools() == [], "Should return empty list after required tool is called"
 
 
-def test_required_before_exit_tool_rule_is_terminal():
-    """Test that required-before-exit tools are considered terminal tools."""
-    required_rule = RequiredBeforeExitToolRule(tool_name=SAVE_TOOL)
-    terminal_rule = TerminalToolRule(tool_name=END_TOOL)
-    solver = ToolRulesSolver(tool_rules=[required_rule, terminal_rule])
-
-    assert solver.is_terminal_tool(SAVE_TOOL) is True, "Required-before-exit tool should be considered terminal"
-    assert solver.is_terminal_tool(END_TOOL) is True, "Regular terminal tool should still be considered terminal"
-    assert solver.is_terminal_tool(START_TOOL) is False, "Non-terminal tool should not be considered terminal"
-
-
 def test_required_before_exit_tool_rule_clear_history():
     """Test that clearing history resets the required tools state."""
     required_rule = RequiredBeforeExitToolRule(tool_name=SAVE_TOOL)

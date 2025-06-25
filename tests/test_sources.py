@@ -182,6 +182,7 @@ def test_file_upload_creates_source_blocks_correctly(
     blocks = agent_state.memory.file_blocks
     assert len(blocks) == 1
     assert any(expected_value in b.value for b in blocks)
+    assert any(b.value.startswith("[Viewing file start") for b in blocks)
     assert any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
 
     # Remove file from source
@@ -226,6 +227,7 @@ def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKC
     blocks = agent_state.memory.file_blocks
     assert len(blocks) == 1
     assert any("test" in b.value for b in blocks)
+    assert any(b.value.startswith("[Viewing file start") for b in blocks)
     assert any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
     # Detach the source
@@ -545,6 +547,60 @@ def test_agent_uses_grep_correctly_advanced(client: LettaSDKClient, agent_state:
     assert "511:" in tool_return_message.tool_return
     assert "512:" in tool_return_message.tool_return
     assert "513:" in tool_return_message.tool_return
+
+
+def test_create_agent_with_source_ids_creates_source_blocks_correctly(client: LettaSDKClient):
+    """Test that creating an agent with source_ids parameter correctly creates source blocks."""
+    # Create a new source
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
+    assert len(client.sources.list()) == 1
+
+    # Upload a file to the source before attaching
+    file_path = "tests/data/long_test.txt"
+    with open(file_path, "rb") as f:
+        job = client.sources.files.upload(source_id=source.id, file=f)
+
+    # Wait for the job to complete
+    while job.status != "completed" and job.status != "failed":
+        time.sleep(1)
+        job = client.jobs.retrieve(job_id=job.id)
+        print("Waiting for file upload job to complete...", job.status)
+
+    if job.status == "failed":
+        pytest.fail("File upload job failed. Check error logs.")
+
+    # Get uploaded files to verify
+    files = client.sources.files.list(source_id=source.id, limit=1)
+    assert len(files) == 1
+    assert files[0].source_id == source.id
+
+    # Create agent with source_ids parameter
+    temp_agent_state = client.agents.create(
+        name="test_agent_with_sources",
+        memory_blocks=[
+            CreateBlock(
+                label="human",
+                value="username: sarah",
+            ),
+        ],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-3-small",
+        source_ids=[source.id],  # Attach source during creation
+    )
+
+    # Verify agent was created successfully
+    assert temp_agent_state is not None
+    assert temp_agent_state.name == "test_agent_with_sources"
+
+    # Check that source blocks were created correctly
+    blocks = temp_agent_state.memory.file_blocks
+    assert len(blocks) == 1
+    assert any(b.value.startswith("[Viewing file start (out of 554 chunks)]") for b in blocks)
+    assert any(re.fullmatch(r"long_test_[a-z0-9]+\.txt", b.label) for b in blocks)
+
+    # Verify file tools were automatically attached
+    file_tools = {tool.name for tool in temp_agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
+    assert file_tools == set(FILES_TOOLS)
 
 
 def test_view_ranges_have_metadata(client: LettaSDKClient, agent_state: AgentState):
