@@ -1273,7 +1273,10 @@ export const agentfilePermissionsEnum = pgEnum('agentfile_access_level', [
 ]);
 
 export const agentfilePermissions = pgTable('agentfile_permissions', {
-  agentId: text('agent_id').primaryKey(),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  agentId: text('agent_id').notNull().primaryKey(),
   accessLevel: agentfilePermissionsEnum('agentfile_access_level').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
