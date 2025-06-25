@@ -2,7 +2,6 @@ import type { ProviderTrace } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   Badge,
-  Code,
   EventDetailRow,
   EventItem,
   HStack,
@@ -22,13 +21,6 @@ interface RequestEventProps {
   responsePayload: ProviderTrace['response_json'];
   traces: OtelTrace[];
   stepId: string;
-}
-
-function getIfString(value: unknown): string | undefined {
-  if (typeof value === 'string') {
-    return value;
-  }
-  return undefined;
 }
 
 interface Usage {
@@ -117,10 +109,6 @@ export function ResponseEvent(props: RequestEventProps) {
 
   const usage = getIfUsage(responsePayload?.usage);
 
-  const response = getIfString(
-    JSON.stringify(responsePayload?.content, null, 2),
-  );
-
   const timeToFirstToken = useMemo(() => {
     return traces.find((trace) =>
       trace['Events.Name'].includes('time_to_first_token_ms'),
@@ -150,24 +138,6 @@ export function ResponseEvent(props: RequestEventProps) {
           <EventDetailRow
             label={t('attributes.timeToFirstSecond')}
             value={formatSmallDuration(timeToFirstToken)}
-          />
-        )}
-        {response && (
-          <EventDetailRow
-            label={t('attributes.raw')}
-            value=""
-            details={
-              <div className="pt-2 max-h-[300px] border overflow-y-auto">
-                <Code
-                  fontSize="small"
-                  border={false}
-                  variant="minimal"
-                  showLineNumbers={false}
-                  code={response}
-                  language="javascript"
-                />
-              </div>
-            }
           />
         )}
       </VStack>

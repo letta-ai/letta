@@ -837,6 +837,13 @@
       "hide": "Hide child spans"
     }
   },
+  "ADE/AgentSimulator/DetailedMessageView/TelemetryDetailsViewer/RawDetailViewer": {
+    "trigger": "View raw LLM details",
+    "title": "Messages input",
+    "request": "Request",
+    "response": "Response",
+    "copy": "Copy {label}"
+  },
   "ADE/AgentSimulator/DetailedMessageView/TelemetryDetailsViewer/RequestEvent": {
     "name": "Step input",
     "attributes": {

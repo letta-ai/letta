@@ -69,6 +69,7 @@ export function TelemetryDetailsViewer(props: TelemetryDetailsViewerProps) {
         stepId={stepId}
         inputTokens={inputTokens}
         requestPayload={data.request_json}
+        responsePayload={data.response_json}
       />
       <ResponseEvent
         stepId={stepId}

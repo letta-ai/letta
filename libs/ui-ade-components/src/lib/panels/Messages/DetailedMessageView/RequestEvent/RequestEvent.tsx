@@ -1,7 +1,6 @@
 import type { ProviderTrace } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
 import {
-  Code,
   CopyButton,
   EventDetailRow,
   EventItem,
@@ -13,9 +12,11 @@ import {
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useFormatters } from '@letta-cloud/utils-client';
+import { RawDetailViewer } from '../RawDetailViewer/RawDetailViewer';
 
 interface RequestEventProps {
   requestPayload: ProviderTrace['request_json'];
+  responsePayload: ProviderTrace['response_json'];
   stepId: string;
   inputTokens?: number;
 }
@@ -66,7 +67,7 @@ function getIfNumber(value: unknown): number | undefined {
 }
 
 export function RequestEvent(props: RequestEventProps) {
-  const { requestPayload, inputTokens, stepId } = props;
+  const { requestPayload, responsePayload, inputTokens, stepId } = props;
 
   const t = useTranslations(
     'ADE/AgentSimulator/DetailedMessageView/TelemetryDetailsViewer/RequestEvent',
@@ -84,13 +85,19 @@ export function RequestEvent(props: RequestEventProps) {
   return (
     <EventItem
       rightContent={
-        <HStack align="center">
-          <Typography color="muted" variant="body3">
-            <MiddleTruncate visibleStart={3} visibleEnd={10}>
-              {stepId}
-            </MiddleTruncate>
-          </Typography>
-          <CopyButton textToCopy={stepId} size="xsmall" hideLabel />
+        <HStack gap={false} align="center">
+          <HStack align="center">
+            <Typography color="muted" variant="body3">
+              <MiddleTruncate visibleStart={3} visibleEnd={10}>
+                {stepId}
+              </MiddleTruncate>
+            </Typography>
+            <CopyButton textToCopy={stepId} size="xsmall" hideLabel />
+          </HStack>
+          <RawDetailViewer
+            requestPayload={requestPayload}
+            responsePayload={responsePayload}
+          />
         </HStack>
       }
       name={t('name')}
@@ -127,36 +134,12 @@ export function RequestEvent(props: RequestEventProps) {
                 <InfoTooltip text={t('attributes.messages.tooltip')} />
               </HStack>
             }
-            details={
-              <div className="pt-2 max-h-[300px] border overflow-y-auto">
-                <Code
-                  fontSize="small"
-                  border={false}
-                  variant="minimal"
-                  showLineNumbers={false}
-                  code={JSON.stringify(messages, null, 2)}
-                  language="javascript"
-                />
-              </div>
-            }
           />
         )}
         {tools && tools.length > 0 && (
           <EventDetailRow
             label={t('attributes.tools.label')}
             value={t('attributes.tools.value', { count: tools.length })}
-            details={
-              <div className="pt-2 max-h-[300px] border overflow-y-auto">
-                <Code
-                  fontSize="small"
-                  border={false}
-                  variant="minimal"
-                  showLineNumbers={false}
-                  code={JSON.stringify(messages, null, 2)}
-                  language="javascript"
-                />
-              </div>
-            }
           />
         )}
       </VStack>

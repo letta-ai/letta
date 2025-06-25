@@ -30,8 +30,7 @@ import {
   InnerMonologueIcon,
   AnthropicLogoMarkDynamic,
   InteractiveSystemMessage,
-  CaretRightIcon,
-  CaretUpIcon,
+  StepIcon,
 } from '@letta-cloud/ui-component-library';
 import type {
   AgentMessage,
@@ -188,10 +187,6 @@ function Message({ message }: MessageProps) {
   const [showDetails, setShowDetails] = useState(false);
   const t = useTranslations('components/Messages');
 
-  const { data: isAdvancedDebugView } = useFeatureFlag(
-    'ADVANCED_MESSAGE_DEBUG',
-  );
-
   const { data: isDetailedMessagesViewable } = useFeatureFlag(
     'DETAILED_MESSAGE_VIEW',
   );
@@ -204,31 +199,17 @@ function Message({ message }: MessageProps) {
           className="absolute top-0 flex flex-col gap-1 transition-all duration-500"
         >
           <Button
-            preIcon={!showDetails ? <CaretRightIcon /> : <CaretUpIcon />}
+            preIcon={<StepIcon />}
             onClick={() => {
               setShowDetails((prev) => !prev);
             }}
             size="xsmall"
             hideLabel
             square
+            active={showDetails}
             label={showDetails ? t('details.hide') : t('details.show')}
             color="tertiary"
           />
-          {isAdvancedDebugView && (
-            <DebugTraceSidebar
-              stepId={message.stepId}
-              trigger={
-                <Button
-                  label={t('traceViewer')}
-                  size="xsmall"
-                  preIcon={<SystemIcon />}
-                  hideLabel
-                  square
-                  color="tertiary"
-                />
-              }
-            />
-          )}
         </div>
       )}
       <div
@@ -297,10 +278,21 @@ function MessageGroup({ group }: MessageGroupType) {
     return null;
   }, [name]);
 
+  const t = useTranslations('components/Messages');
+
+  const { data: isAdvancedDebugView } = useFeatureFlag(
+    'ADVANCED_MESSAGE_DEBUG',
+  );
+
+  const firstMessageWithStepId = useMemo(() => {
+    return messages.find((message) => !!message.stepId);
+  }, [messages]);
+
   return (
     <HStack
       paddingY="medium"
       paddingLeft="medium"
+      position="relative"
       paddingRight="xlarge"
       /* eslint-disable-next-line react/forbid-component-props */
       style={{
@@ -313,6 +305,23 @@ function MessageGroup({ group }: MessageGroupType) {
       data-testid="message-group"
       gap="medium"
     >
+      {isAdvancedDebugView && firstMessageWithStepId?.stepId && (
+        <div className="absolute right-[5px] top-[5px]">
+          <DebugTraceSidebar
+            stepId={firstMessageWithStepId.stepId}
+            trigger={
+              <Button
+                label={t('traceViewer')}
+                size="xsmall"
+                preIcon={<SystemIcon />}
+                hideLabel
+                square
+                color="tertiary"
+              />
+            }
+          />
+        </div>
+      )}
       <IconAvatar
         textColor={textColor}
         backgroundColor={backgroundColor}

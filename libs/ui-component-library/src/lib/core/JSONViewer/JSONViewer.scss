@@ -4,6 +4,7 @@
   background: var(--background);
   overflow: auto;
   font-size: var(--font-size-xs);
+  white-space: pre-wrap;
 }
 
 .__json-pretty__ .__json-key__ {
