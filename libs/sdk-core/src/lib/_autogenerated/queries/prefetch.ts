@@ -391,6 +391,46 @@ export const prefetchUseSourcesServiceListSourceFiles = (
       }),
   });
 /**
+ * Get File Metadata
+ * Retrieve metadata for a specific file by its ID.
+ * @param data The data for the request.
+ * @param data.sourceId
+ * @param data.fileId
+ * @param data.includeContent Whether to include full file content
+ * @param data.userId
+ * @returns FileMetadata Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseSourcesServiceGetFileMetadata = (
+  queryClient: QueryClient,
+  {
+    fileId,
+    includeContent,
+    sourceId,
+    userId,
+  }: {
+    fileId: string;
+    includeContent?: boolean;
+    sourceId: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseSourcesServiceGetFileMetadataKeyFn({
+      fileId,
+      includeContent,
+      sourceId,
+      userId,
+    }),
+    queryFn: () =>
+      SourcesService.getFileMetadata({
+        fileId,
+        includeContent,
+        sourceId,
+        userId,
+      }),
+  });
+/**
  * List Agents
  * List all agents associated with a given user.
  *

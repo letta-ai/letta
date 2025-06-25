@@ -525,6 +525,50 @@ export const useSourcesServiceListSourceFiles = <
     ...options,
   });
 /**
+ * Get File Metadata
+ * Retrieve metadata for a specific file by its ID.
+ * @param data The data for the request.
+ * @param data.sourceId
+ * @param data.fileId
+ * @param data.includeContent Whether to include full file content
+ * @param data.userId
+ * @returns FileMetadata Successful Response
+ * @throws ApiError
+ */
+export const useSourcesServiceGetFileMetadata = <
+  TData = Common.SourcesServiceGetFileMetadataDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    fileId,
+    includeContent,
+    sourceId,
+    userId,
+  }: {
+    fileId: string;
+    includeContent?: boolean;
+    sourceId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseSourcesServiceGetFileMetadataKeyFn(
+      { fileId, includeContent, sourceId, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      SourcesService.getFileMetadata({
+        fileId,
+        includeContent,
+        sourceId,
+        userId,
+      }) as TData,
+    ...options,
+  });
+/**
  * List Agents
  * List all agents associated with a given user.
  *

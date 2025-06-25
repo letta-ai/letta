@@ -6423,6 +6423,28 @@ export const get_List_source_files = {
   response: z.array(FileMetadata),
 };
 
+export type get_Get_file_metadata = typeof get_Get_file_metadata;
+export const get_Get_file_metadata = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/sources/{source_id}/files/{file_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      include_content: z.boolean().optional(),
+    }),
+    path: z.object({
+      source_id: z.string(),
+      file_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: FileMetadata,
+};
+
 export type delete_Delete_file_from_source =
   typeof delete_Delete_file_from_source;
 export const delete_Delete_file_from_source = {
@@ -8885,6 +8907,7 @@ export const EndpointByMethod = {
     '/v1/sources/': get_List_sources,
     '/v1/sources/{source_id}/passages': get_List_source_passages,
     '/v1/sources/{source_id}/files': get_List_source_files,
+    '/v1/sources/{source_id}/files/{file_id}': get_Get_file_metadata,
     '/v1/agents/': get_List_agents,
     '/v1/agents/count': get_Count_agents,
     '/v1/agents/{agent_id}/export': get_Export_agent_serialized,

@@ -309,6 +309,32 @@ export const UseSourcesServiceListSourceFilesKeyFn = (
   useSourcesServiceListSourceFilesKey,
   ...(queryKey ?? [{ after, includeContent, limit, sourceId, userId }]),
 ];
+export type SourcesServiceGetFileMetadataDefaultResponse = Awaited<
+  ReturnType<typeof SourcesService.getFileMetadata>
+>;
+export type SourcesServiceGetFileMetadataQueryResult<
+  TData = SourcesServiceGetFileMetadataDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useSourcesServiceGetFileMetadataKey =
+  'SourcesServiceGetFileMetadata';
+export const UseSourcesServiceGetFileMetadataKeyFn = (
+  {
+    fileId,
+    includeContent,
+    sourceId,
+    userId,
+  }: {
+    fileId: string;
+    includeContent?: boolean;
+    sourceId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useSourcesServiceGetFileMetadataKey,
+  ...(queryKey ?? [{ fileId, includeContent, sourceId, userId }]),
+];
 export type AgentsServiceListAgentsDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgents>
 >;

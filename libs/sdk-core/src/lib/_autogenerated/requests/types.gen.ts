@@ -4736,6 +4736,18 @@ export type ListSourceFilesData = {
 
 export type ListSourceFilesResponse = Array<FileMetadata>;
 
+export type GetFileMetadataData = {
+  fileId: string;
+  /**
+   * Whether to include full file content
+   */
+  includeContent?: boolean;
+  sourceId: string;
+  userId?: string | null;
+};
+
+export type GetFileMetadataResponse = FileMetadata;
+
 export type DeleteFileFromSourceData = {
   fileId: string;
   sourceId: string;
@@ -6329,6 +6341,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Array<FileMetadata>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/sources/{source_id}/files/{file_id}': {
+    get: {
+      req: GetFileMetadataData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: FileMetadata;
         /**
          * Validation Error
          */

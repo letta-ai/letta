@@ -1426,6 +1426,68 @@
         }
       }
     },
+    "/v1/sources/{source_id}/files/{file_id}": {
+      "get": {
+        "tags": ["sources"],
+        "summary": "Get File Metadata",
+        "description": "Retrieve metadata for a specific file by its ID.",
+        "operationId": "get_file_metadata",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          },
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "include_content",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Whether to include full file content",
+              "default": false,
+              "title": "Include Content"
+            },
+            "description": "Whether to include full file content"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sources/{source_id}/{file_id}": {
       "delete": {
         "tags": ["sources"],

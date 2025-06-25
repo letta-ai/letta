@@ -60,6 +60,8 @@ import type {
   ListSourcePassagesResponse,
   ListSourceFilesData,
   ListSourceFilesResponse,
+  GetFileMetadataData,
+  GetFileMetadataResponse,
   DeleteFileFromSourceData,
   DeleteFileFromSourceResponse,
   ListAgentsData,
@@ -1016,6 +1018,38 @@ export class SourcesService {
       query: {
         limit: data.limit,
         after: data.after,
+        include_content: data.includeContent,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get File Metadata
+   * Retrieve metadata for a specific file by its ID.
+   * @param data The data for the request.
+   * @param data.sourceId
+   * @param data.fileId
+   * @param data.includeContent Whether to include full file content
+   * @param data.userId
+   * @returns FileMetadata Successful Response
+   * @throws ApiError
+   */
+  public static getFileMetadata(
+    data: GetFileMetadataData,
+    headers?: { user_id: string },
+  ): CancelablePromise<GetFileMetadataResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/sources/{source_id}/files/{file_id}',
+      path: {
+        source_id: data.sourceId,
+        file_id: data.fileId,
+      },
+      query: {
         include_content: data.includeContent,
       },
       errors: {

@@ -304,6 +304,37 @@ async def list_source_files(
     )
 
 
+@router.get("/{source_id}/files/{file_id}", response_model=FileMetadata, operation_id="get_file_metadata")
+async def get_file_metadata(
+    source_id: str,
+    file_id: str,
+    include_content: bool = Query(False, description="Whether to include full file content"),
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Retrieve metadata for a specific file by its ID.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+
+    # Verify the source exists and user has access
+    source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
+    if not source:
+        raise HTTPException(status_code=404, detail=f"Source with id={source_id} not found.")
+
+    # Get file metadata using the file manager
+    file_metadata = await server.file_manager.get_file_by_id(file_id=file_id, actor=actor, include_content=include_content)
+
+    if not file_metadata:
+        raise HTTPException(status_code=404, detail=f"File with id={file_id} not found.")
+
+    # Verify the file belongs to the specified source
+    if file_metadata.source_id != source_id:
+        raise HTTPException(status_code=404, detail=f"File with id={file_id} not found in source {source_id}.")
+
+    return file_metadata
+
+
 # it's redundant to include /delete in the URL path. The HTTP verb DELETE already implies that action.
 # it's still good practice to return a status indicating the success or failure of the deletion
 @router.delete("/{source_id}/{file_id}", status_code=204, operation_id="delete_file_from_source")
