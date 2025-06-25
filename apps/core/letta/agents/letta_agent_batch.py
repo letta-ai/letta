@@ -550,7 +550,7 @@ class LettaAgentBatch(BaseAgent):
             tool_execution_result=tool_exec_result_obj,
             timezone=agent_state.timezone,
             actor=self.actor,
-            add_heartbeat_request_system_message=False,
+            continue_stepping=False,
             reasoning_content=reasoning_content,
             pre_computed_assistant_message_id=None,
             llm_batch_item_id=llm_batch_item_id,

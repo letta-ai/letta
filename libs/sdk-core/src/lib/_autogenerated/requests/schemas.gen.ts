@@ -2318,7 +2318,7 @@ export const $ChildToolRule = {
       description:
         'Optional Jinja2 template for generating agent prompt about this tool rule.',
       default: `<tool_rule>
-After using {{ tool_name }}, you can only use these tools: {{ children | join(', ') }}
+After using {{ tool_name }}, you must use one of these tools: {{ children | join(', ') }}
 </tool_rule>`,
     },
     children: {

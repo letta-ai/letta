@@ -277,7 +277,7 @@ class VoiceAgent(BaseAgent):
                 tool_execution_result=tool_execution_result,
                 timezone=agent_state.timezone,
                 actor=self.actor,
-                add_heartbeat_request_system_message=True,
+                continue_stepping=True,
             )
             letta_message_db_queue.extend(tool_call_messages)
 

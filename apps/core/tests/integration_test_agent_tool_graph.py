@@ -1,4 +1,5 @@
 import asyncio
+import json
 import uuid
 
 import pytest
@@ -996,3 +997,53 @@ async def test_required_tools_called_during_normal_flow(server, disable_e2b_api_
     assert len(send_message_calls) == 1, "Should call send_message exactly once"
 
     print(f"✓ Agent '{agent_name}' exited cleanly after calling required tool normally")
+
+
+@pytest.mark.timeout(60)
+@pytest.mark.asyncio
+async def test_terminal_tool_rule_send_message_request_heartbeat_false(server, disable_e2b_api_key, default_user):
+    """Test that when there's a terminal tool rule on send_message, the tool call has request_heartbeat=False."""
+    agent_name = "terminal_send_message_heartbeat_test"
+    config_file = "tests/configs/llm_model_configs/openai-gpt-4o.json"
+
+    # Set up tool rules with terminal rule on send_message
+    tool_rules = [
+        TerminalToolRule(tool_name="send_message"),
+    ]
+
+    # Create agent
+    agent_state = setup_agent(server, config_file, agent_uuid=agent_name, tool_ids=[], tool_rules=tool_rules)
+
+    # Send message that should trigger send_message tool call
+    response = await run_agent_step(
+        server=server,
+        agent_id=agent_state.id,
+        input_messages=[MessageCreate(role="user", content="Please send me a simple message.")],
+        actor=default_user,
+    )
+
+    # Assertions
+    assert_sanity_checks(response)
+    assert_invoked_function_call(response.messages, "send_message")
+
+    # Find the send_message tool call and check request_heartbeat is False
+    send_message_call = None
+    for message in response.messages:
+        if isinstance(message, ToolCallMessage) and message.tool_call.name == "send_message":
+            send_message_call = message
+            break
+
+    assert send_message_call is not None, "send_message tool call should be found"
+
+    # Parse the arguments and check request_heartbeat
+    try:
+        arguments = json.loads(send_message_call.tool_call.arguments)
+    except json.JSONDecodeError:
+        pytest.fail("Failed to parse tool call arguments as JSON")
+
+    assert "request_heartbeat" in arguments, "request_heartbeat should be present in send_message arguments"
+    assert arguments["request_heartbeat"] is False, "request_heartbeat should be False for terminal tool rule"
+
+    print(f"✓ Agent '{agent_name}' correctly set request_heartbeat=False for terminal send_message")
+
+    cleanup(server=server, agent_uuid=agent_name, actor=default_user)
