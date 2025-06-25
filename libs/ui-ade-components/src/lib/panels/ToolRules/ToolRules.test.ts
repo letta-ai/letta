@@ -205,17 +205,20 @@ describe('ToolRules - Core Functions', () => {
   });
 
   describe('createEdgeData', () => {
-    it('should create agent-to-tool edges for non-run_first tools', () => {
+    it('should create agent-to-tool edges for ALL tools including run_first', () => {
       const rules: SupportedToolRuleTypes[] = [
-        { tool_name: 'tool1', type: 'run_first' }, // This gets start-to-tool, not agent-to-tool
-        { tool_name: 'tool2', type: 'continue_loop' }, // This gets agent-to-tool
+        { tool_name: 'tool1', type: 'run_first' },
+        { tool_name: 'tool2', type: 'continue_loop' },
       ];
 
       const result = createEdgeData(rules);
 
       const agentEdges = result.filter((edge) => edge.source === 'agent');
-      expect(agentEdges).toHaveLength(1); // Only tool2 gets agent-to-tool
-      expect(agentEdges[0].target).toBe('tool-tool2');
+      expect(agentEdges).toHaveLength(2); // Both tools get agent-to-tool edges
+      expect(agentEdges.map((e) => e.target)).toEqual([
+        'tool-tool1',
+        'tool-tool2',
+      ]);
     });
 
     it('should create start-to-tool edges for run_first tools', () => {
@@ -225,13 +228,15 @@ describe('ToolRules - Core Functions', () => {
 
       const result = createEdgeData(rules);
 
-      const startEdges = result.filter((edge) => edge.source === 'start');
-      expect(startEdges).toHaveLength(1);
-      expect(startEdges[0].target).toBe('tool-runFirstTool');
-      expect(startEdges[0].edgeType).toBe('start_to_tool');
+      const startToToolEdges = result.filter(
+        (edge) => edge.source === 'start' && edge.target.startsWith('tool-'),
+      );
+      expect(startToToolEdges).toHaveLength(1);
+      expect(startToToolEdges[0].target).toBe('tool-runFirstTool');
+      expect(startToToolEdges[0].edgeType).toBe('start_to_tool');
     });
 
-    it('should create start-to-agent edge when no run_first tools exist', () => {
+    it('should always create start-to-agent edge', () => {
       const rules: SupportedToolRuleTypes[] = [
         { tool_name: 'tool1', type: 'continue_loop' },
       ];
@@ -245,7 +250,7 @@ describe('ToolRules - Core Functions', () => {
       expect(startToAgentEdges[0].edgeType).toBe('start_to_agent');
     });
 
-    it('should create exit edges for exit_loop tools', () => {
+    it('should create exit edges for exit_loop tools without continue_loop', () => {
       const rules: SupportedToolRuleTypes[] = [
         { tool_name: 'exitTool', type: 'exit_loop' },
       ];
@@ -258,6 +263,17 @@ describe('ToolRules - Core Functions', () => {
       expect(exitEdges[0].edgeType).toBe('exit');
     });
 
+    it('should NOT create exit edges for tools with continue_loop', () => {
+      const rules: SupportedToolRuleTypes[] = [
+        { tool_name: 'continueTool', type: 'continue_loop' },
+      ];
+
+      const result = createEdgeData(rules);
+
+      const exitEdges = result.filter((edge) => edge.target === 'done');
+      expect(exitEdges).toHaveLength(0);
+    });
+
     it('should create continue edges for continue_loop tools', () => {
       const rules: SupportedToolRuleTypes[] = [
         { tool_name: 'continueTool', type: 'continue_loop' },
@@ -265,7 +281,6 @@ describe('ToolRules - Core Functions', () => {
 
       const result = createEdgeData(rules);
 
-      // Filter out start-to-agent edge
       const continueEdges = result.filter(
         (edge) => edge.target === 'agent' && edge.source.startsWith('tool-'),
       );
@@ -359,7 +374,7 @@ describe('ToolRules - Core Functions', () => {
       expect(focusedEdges).toHaveLength(1);
       expect(unfocusedEdges).toHaveLength(1);
       expect(focusedEdges[0].opacity).toBe(1);
-      expect(unfocusedEdges[0].opacity).toBe(0.3); // Changed from 0.1 to 0.3
+      expect(unfocusedEdges[0].opacity).toBe(0.3);
     });
   });
 });
