@@ -6555,6 +6555,46 @@
               "title": "Trace Ids"
             },
             "description": "Filter by trace ids returned by the server"
+          },
+          {
+            "name": "feedback",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": ["positive", "negative"],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by feedback",
+              "title": "Feedback"
+            },
+            "description": "Filter by feedback"
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by tags",
+              "title": "Tags"
+            },
+            "description": "Filter by tags"
           }
         ],
         "responses": {
@@ -6599,6 +6639,64 @@
             "schema": {
               "type": "string",
               "title": "Step Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Step"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/steps/{step_id}/feedback": {
+      "patch": {
+        "tags": ["steps"],
+        "summary": "Add Feedback",
+        "description": "Add feedback to a step.",
+        "operationId": "add_feedback",
+        "parameters": [
+          {
+            "name": "step_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Step Id"
+            }
+          },
+          {
+            "name": "feedback",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": ["positive", "negative"],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Feedback"
             }
           }
         ],
@@ -17239,6 +17337,19 @@
             "title": "Messages",
             "description": "The messages generated during this step.",
             "default": []
+          },
+          "feedback": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["positive", "negative"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feedback",
+            "description": "The feedback for this step. Must be either 'positive' or 'negative'."
           }
         },
         "additionalProperties": false,

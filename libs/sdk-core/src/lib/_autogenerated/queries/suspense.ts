@@ -2256,6 +2256,8 @@ export const useRunsServiceListRunStepsSuspense = <
  * @param data.model Filter by the name of the model used for the step
  * @param data.agentId Filter by the ID of the agent that performed the step
  * @param data.traceIds Filter by trace ids returned by the server
+ * @param data.feedback Filter by feedback
+ * @param data.tags Filter by tags
  * @param data.userId
  * @returns Step Successful Response
  * @throws ApiError
@@ -2270,10 +2272,12 @@ export const useStepsServiceListStepsSuspense = <
     agentId,
     before,
     endDate,
+    feedback,
     limit,
     model,
     order,
     startDate,
+    tags,
     traceIds,
     userId,
   }: {
@@ -2281,10 +2285,12 @@ export const useStepsServiceListStepsSuspense = <
     agentId?: string;
     before?: string;
     endDate?: string;
+    feedback?: 'positive' | 'negative';
     limit?: number;
     model?: string;
     order?: string;
     startDate?: string;
+    tags?: string[];
     traceIds?: string[];
     userId?: string;
   } = {},
@@ -2298,10 +2304,12 @@ export const useStepsServiceListStepsSuspense = <
         agentId,
         before,
         endDate,
+        feedback,
         limit,
         model,
         order,
         startDate,
+        tags,
         traceIds,
         userId,
       },
@@ -2313,10 +2321,12 @@ export const useStepsServiceListStepsSuspense = <
         agentId,
         before,
         endDate,
+        feedback,
         limit,
         model,
         order,
         startDate,
+        tags,
         traceIds,
         userId,
       }) as TData,

@@ -5395,6 +5395,17 @@ export const Step = z.object({
     ])
     .optional(),
   messages: z.union([z.array(Message), z.undefined()]).optional(),
+  feedback: z
+    .union([
+      z.literal('positive'),
+      z.literal('negative'),
+      z.null(),
+      z.array(
+        z.union([z.literal('positive'), z.literal('negative'), z.null()]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type StreamableHTTPServerConfig = z.infer<
@@ -8522,6 +8533,23 @@ export const get_List_steps = {
           z.array(z.union([z.array(z.string()), z.null()])),
         ])
         .optional(),
+      feedback: z
+        .union([
+          z.literal('positive'),
+          z.literal('negative'),
+          z.null(),
+          z.array(
+            z.union([z.literal('positive'), z.literal('negative'), z.null()]),
+          ),
+        ])
+        .optional(),
+      tags: z
+        .union([
+          z.array(z.string()),
+          z.null(),
+          z.array(z.union([z.array(z.string()), z.null()])),
+        ])
+        .optional(),
     }),
     header: z.object({
       user_id: z
@@ -8538,6 +8566,34 @@ export const get_Retrieve_step = {
   path: z.literal('/v1/steps/{step_id}'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    path: z.object({
+      step_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Step,
+};
+
+export type patch_Add_feedback = typeof patch_Add_feedback;
+export const patch_Add_feedback = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/steps/{step_id}/feedback'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      feedback: z.union([
+        z.literal('positive'),
+        z.literal('negative'),
+        z.null(),
+        z.array(
+          z.union([z.literal('positive'), z.literal('negative'), z.null()]),
+        ),
+      ]),
+    }),
     path: z.object({
       step_id: z.string(),
     }),
@@ -8991,6 +9047,7 @@ export const EndpointByMethod = {
     '/v1/sandbox-config/environment-variable/{env_var_id}':
       patch_Update_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__patch,
     '/v1/providers/{provider_id}': patch_Modify_provider,
+    '/v1/steps/{step_id}/feedback': patch_Add_feedback,
     '/v1/steps/{step_id}/transaction/{transaction_id}':
       patch_Update_step_transaction_id,
     '/v1/messages/batches/{batch_id}/cancel': patch_Cancel_batch_run,

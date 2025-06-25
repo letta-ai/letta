@@ -3591,6 +3591,10 @@ export type Step = {
    * The messages generated during this step.
    */
   messages?: Array<Message>;
+  /**
+   * The feedback for this step. Must be either 'positive' or 'negative'.
+   */
+  feedback?: 'positive' | 'negative' | null;
 };
 
 export type StopReasonType =
@@ -5748,6 +5752,10 @@ export type ListStepsData = {
    */
   endDate?: string | null;
   /**
+   * Filter by feedback
+   */
+  feedback?: 'positive' | 'negative' | null;
+  /**
    * Maximum number of steps to return
    */
   limit?: number | null;
@@ -5764,6 +5772,10 @@ export type ListStepsData = {
    */
   startDate?: string | null;
   /**
+   * Filter by tags
+   */
+  tags?: Array<string> | null;
+  /**
    * Filter by trace ids returned by the server
    */
   traceIds?: Array<string> | null;
@@ -5778,6 +5790,14 @@ export type RetrieveStepData = {
 };
 
 export type RetrieveStepResponse = Step;
+
+export type AddFeedbackData = {
+  feedback: 'positive' | 'negative' | null;
+  stepId: string;
+  userId?: string | null;
+};
+
+export type AddFeedbackResponse = Step;
 
 export type UpdateStepTransactionIdData = {
   stepId: string;
@@ -7703,6 +7723,21 @@ export type $OpenApiTs = {
   '/v1/steps/{step_id}': {
     get: {
       req: RetrieveStepData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Step;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/steps/{step_id}/feedback': {
+    patch: {
+      req: AddFeedbackData;
       res: {
         /**
          * Successful Response

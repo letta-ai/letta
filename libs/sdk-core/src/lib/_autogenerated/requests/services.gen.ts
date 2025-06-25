@@ -247,6 +247,8 @@ import type {
   ListStepsResponse,
   RetrieveStepData,
   RetrieveStepResponse,
+  AddFeedbackData,
+  AddFeedbackResponse,
   UpdateStepTransactionIdData,
   UpdateStepTransactionIdResponse,
   ListTagsData,
@@ -3738,6 +3740,8 @@ export class StepsService {
    * @param data.model Filter by the name of the model used for the step
    * @param data.agentId Filter by the ID of the agent that performed the step
    * @param data.traceIds Filter by trace ids returned by the server
+   * @param data.feedback Filter by feedback
+   * @param data.tags Filter by tags
    * @param data.userId
    * @returns Step Successful Response
    * @throws ApiError
@@ -3759,6 +3763,8 @@ export class StepsService {
         model: data.model,
         agent_id: data.agentId,
         trace_ids: data.traceIds,
+        feedback: data.feedback,
+        tags: data.tags,
       },
       errors: {
         422: 'Validation Error',
@@ -3785,6 +3791,36 @@ export class StepsService {
       url: '/v1/steps/{step_id}',
       path: {
         step_id: data.stepId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Add Feedback
+   * Add feedback to a step.
+   * @param data The data for the request.
+   * @param data.stepId
+   * @param data.feedback
+   * @param data.userId
+   * @returns Step Successful Response
+   * @throws ApiError
+   */
+  public static addFeedback(
+    data: AddFeedbackData,
+    headers?: { user_id: string },
+  ): CancelablePromise<AddFeedbackResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/steps/{step_id}/feedback',
+      path: {
+        step_id: data.stepId,
+      },
+      query: {
+        feedback: data.feedback,
       },
       errors: {
         422: 'Validation Error',

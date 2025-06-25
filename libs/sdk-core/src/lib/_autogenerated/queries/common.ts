@@ -1383,10 +1383,12 @@ export const UseStepsServiceListStepsKeyFn = (
     agentId,
     before,
     endDate,
+    feedback,
     limit,
     model,
     order,
     startDate,
+    tags,
     traceIds,
     userId,
   }: {
@@ -1394,10 +1396,12 @@ export const UseStepsServiceListStepsKeyFn = (
     agentId?: string;
     before?: string;
     endDate?: string;
+    feedback?: 'positive' | 'negative';
     limit?: number;
     model?: string;
     order?: string;
     startDate?: string;
+    tags?: string[];
     traceIds?: string[];
     userId?: string;
   } = {},
@@ -1410,10 +1414,12 @@ export const UseStepsServiceListStepsKeyFn = (
       agentId,
       before,
       endDate,
+      feedback,
       limit,
       model,
       order,
       startDate,
+      tags,
       traceIds,
       userId,
     },
@@ -1880,6 +1886,9 @@ export type SandboxConfigServiceUpdateSandboxEnvVarV1SandboxConfigEnvironmentVar
   >;
 export type ProvidersServiceModifyProviderMutationResult = Awaited<
   ReturnType<typeof ProvidersService.modifyProvider>
+>;
+export type StepsServiceAddFeedbackMutationResult = Awaited<
+  ReturnType<typeof StepsService.addFeedback>
 >;
 export type StepsServiceUpdateStepTransactionIdMutationResult = Awaited<
   ReturnType<typeof StepsService.updateStepTransactionId>

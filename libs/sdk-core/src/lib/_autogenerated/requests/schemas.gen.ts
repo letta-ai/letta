@@ -9804,6 +9804,20 @@ export const $Step = {
       description: 'The messages generated during this step.',
       default: [],
     },
+    feedback: {
+      anyOf: [
+        {
+          type: 'string',
+          enum: ['positive', 'negative'],
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Feedback',
+      description:
+        "The feedback for this step. Must be either 'positive' or 'negative'.",
+    },
   },
   additionalProperties: false,
   type: 'object',
