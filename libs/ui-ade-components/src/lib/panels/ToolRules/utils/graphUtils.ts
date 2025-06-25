@@ -543,7 +543,8 @@ export function createEdgeData(
     // Exit connections
     if (
       (hasExitLoop || hasNoType || hasMaxCount || hasRequiredBeforeExit) &&
-      !hasContinueLoop
+      !hasContinueLoop &&
+      !isParent
     ) {
       edgeData.push({
         id: `${toolName}-done`,
