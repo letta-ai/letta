@@ -6,11 +6,12 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns, ns_to_ms
+from letta.llm_api.openai_client import is_openai_reasoning_model
 from letta.log import get_logger
 from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.letta_message import AssistantMessage, LettaMessage, ReasoningMessage, ToolCallDelta, ToolCallMessage
-from letta.schemas.letta_message_content import TextContent
+from letta.schemas.letta_message_content import OmittedReasoningContent, TextContent
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
@@ -61,7 +62,13 @@ class OpenAIStreamingInterface:
 
     def get_reasoning_content(self) -> List[TextContent]:
         content = "".join(self.reasoning_messages).strip()
-        return [TextContent(text=content)]
+
+        # Right now we assume that all models omit reasoning content for OAI,
+        # if this changes, we should return the reasoning content
+        if is_openai_reasoning_model(self.model):
+            return [OmittedReasoningContent()]
+        else:
+            return [TextContent(text=content)]
 
     def get_tool_call_object(self) -> ToolCall:
         """Useful for agent loop"""
