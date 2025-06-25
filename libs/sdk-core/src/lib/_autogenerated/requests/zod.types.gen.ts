@@ -6368,7 +6368,7 @@ export const post_Upload_file_to_source = {
     }),
     body: Body_upload_file_to_source,
   }),
-  response: Job,
+  response: FileMetadata,
 };
 
 export type get_List_source_passages = typeof get_List_source_passages;

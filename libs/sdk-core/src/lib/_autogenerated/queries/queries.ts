@@ -3047,7 +3047,7 @@ export const useSourcesServiceCreateSource = <
  * @param data.sourceId
  * @param data.formData
  * @param data.userId
- * @returns Job Successful Response
+ * @returns FileMetadata Successful Response
  * @throws ApiError
  */
 export const useSourcesServiceUploadFileToSource = <

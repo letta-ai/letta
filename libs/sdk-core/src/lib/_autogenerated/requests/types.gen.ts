@@ -4696,7 +4696,7 @@ export type UploadFileToSourceData = {
   userId?: string | null;
 };
 
-export type UploadFileToSourceResponse = Job;
+export type UploadFileToSourceResponse = FileMetadata;
 
 export type ListSourcePassagesData = {
   /**
@@ -6310,7 +6310,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Job;
+        200: FileMetadata;
         /**
          * Validation Error
          */

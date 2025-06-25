@@ -937,7 +937,7 @@ export class SourcesService {
    * @param data.sourceId
    * @param data.formData
    * @param data.userId
-   * @returns Job Successful Response
+   * @returns FileMetadata Successful Response
    * @throws ApiError
    */
   public static uploadFileToSource(

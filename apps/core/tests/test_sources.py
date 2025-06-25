@@ -19,14 +19,10 @@ SERVER_PORT = 8283
 
 
 @pytest.fixture(autouse=True)
-def clear_sources_jobs(client: LettaSDKClient):
+def clear_sources(client: LettaSDKClient):
     # Clear existing sources
     for source in client.sources.list():
         client.sources.delete(source_id=source.id)
-
-    # Clear existing jobs
-    for job in client.jobs.list():
-        client.jobs.delete(job_id=job.id)
 
 
 def run_server():
@@ -51,6 +47,26 @@ def client() -> LettaSDKClient:
     client = LettaSDKClient(base_url=server_url, token=None)
     client.tools.upsert_base_tools()
     yield client
+
+
+def upload_file_and_wait(client: LettaSDKClient, source_id: str, file_path: str, max_wait: int = 30):
+    """Helper function to upload a file and wait for processing to complete"""
+    with open(file_path, "rb") as f:
+        file_metadata = client.sources.files.upload(source_id=source_id, file=f)
+
+    # Wait for the file to be processed
+    start_time = time.time()
+    while file_metadata.processing_status != "completed" and file_metadata.processing_status != "error":
+        if time.time() - start_time > max_wait:
+            pytest.fail(f"File processing timed out after {max_wait} seconds")
+        time.sleep(1)
+        file_metadata = client.sources.get_file_metadata(source_id=source_id, file_id=file_metadata.id)
+        print("Waiting for file processing to complete...", file_metadata.processing_status)
+
+    if file_metadata.processing_status == "error":
+        pytest.fail(f"File processing failed: {file_metadata.error_message}")
+
+    return file_metadata
 
 
 @pytest.fixture
@@ -160,17 +176,7 @@ def test_file_upload_creates_source_blocks_correctly(
     client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
 
     # Upload the file
-    with open(file_path, "rb") as f:
-        job = client.sources.files.upload(source_id=source.id, file=f)
-
-    # Wait for the job to complete
-    while job.status != "completed" and job.status != "failed":
-        time.sleep(1)
-        job = client.jobs.retrieve(job_id=job.id)
-        print("Waiting for jobs to complete...", job.status)
-
-    if job.status == "failed":
-        pytest.fail("Job failed. Check error logs.")
+    upload_file_and_wait(client, source.id, file_path)
 
     # Get uploaded files
     files = client.sources.files.list(source_id=source.id, limit=1)
@@ -205,14 +211,7 @@ def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKC
     file_path = "tests/data/test.txt"
 
     # Upload the files
-    with open(file_path, "rb") as f:
-        job = client.sources.files.upload(source_id=source.id, file=f)
-
-    # Wait for the jobs to complete
-    while job.status != "completed":
-        time.sleep(1)
-        job = client.jobs.retrieve(job_id=job.id)
-        print("Waiting for jobs to complete...", job.status)
+    upload_file_and_wait(client, source.id, file_path)
 
     # Get the first file with pagination
     files = client.sources.files.list(source_id=source.id, limit=1)
@@ -253,14 +252,7 @@ def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, a
     file_path = "tests/data/test.txt"
 
     # Upload the files
-    with open(file_path, "rb") as f:
-        job = client.sources.files.upload(source_id=source.id, file=f)
-
-    # Wait for the jobs to complete
-    while job.status != "completed":
-        time.sleep(1)
-        job = client.jobs.retrieve(job_id=job.id)
-        print("Waiting for jobs to complete...", job.status)
+    upload_file_and_wait(client, source.id, file_path)
 
     # Get the agent state, check blocks exist
     agent_state = client.agents.retrieve(agent_id=agent_state.id)
@@ -294,14 +286,7 @@ def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_stat
     file_path = "tests/data/long_test.txt"
 
     # Upload the files
-    with open(file_path, "rb") as f:
-        job = client.sources.files.upload(source_id=source.id, file=f)
-
-    # Wait for the jobs to complete
-    while job.status != "completed":
-        print(f"Waiting for job {job.id} to complete... Current status: {job.status}")
-        time.sleep(1)
-        job = client.jobs.retrieve(job_id=job.id)
+    upload_file_and_wait(client, source.id, file_path)
 
     # Get uploaded files
     files = client.sources.files.list(source_id=source.id, limit=1)
@@ -404,16 +389,8 @@ def test_agent_uses_search_files_correctly(client: LettaSDKClient, agent_state: 
     print(f"Uploading file: {file_path}")
 
     # Upload the files
-    with open(file_path, "rb") as f:
-        job = client.sources.files.upload(source_id=source.id, file=f)
-
-    print(f"File upload job created with ID: {job.id}, initial status: {job.status}")
-
-    # Wait for the jobs to complete
-    while job.status != "completed":
-        print(f"Waiting for job {job.id} to complete... Current status: {job.status}")
-        time.sleep(1)
-        job = client.jobs.retrieve(job_id=job.id)
+    file_metadata = upload_file_and_wait(client, source.id, file_path)
+    print(f"File uploaded and processed: {file_metadata.file_name}")
 
     # Get uploaded files
     files = client.sources.files.list(source_id=source.id, limit=1)
@@ -456,16 +433,8 @@ def test_agent_uses_grep_correctly_basic(client: LettaSDKClient, agent_state: Ag
     print(f"Uploading file: {file_path}")
 
     # Upload the files
-    with open(file_path, "rb") as f:
-        job = client.sources.files.upload(source_id=source.id, file=f)
-
-    print(f"File upload job created with ID: {job.id}, initial status: {job.status}")
-
-    # Wait for the jobs to complete
-    while job.status != "completed":
-        print(f"Waiting for job {job.id} to complete... Current status: {job.status}")
-        time.sleep(1)
-        job = client.jobs.retrieve(job_id=job.id)
+    file_metadata = upload_file_and_wait(client, source.id, file_path)
+    print(f"File uploaded and processed: {file_metadata.file_name}")
 
     # Get uploaded files
     files = client.sources.files.list(source_id=source.id, limit=1)
@@ -506,16 +475,8 @@ def test_agent_uses_grep_correctly_advanced(client: LettaSDKClient, agent_state:
     print(f"Uploading file: {file_path}")
 
     # Upload the files
-    with open(file_path, "rb") as f:
-        job = client.sources.files.upload(source_id=source.id, file=f)
-
-    print(f"File upload job created with ID: {job.id}, initial status: {job.status}")
-
-    # Wait for the jobs to complete
-    while job.status != "completed":
-        print(f"Waiting for job {job.id} to complete... Current status: {job.status}")
-        time.sleep(1)
-        job = client.jobs.retrieve(job_id=job.id)
+    file_metadata = upload_file_and_wait(client, source.id, file_path)
+    print(f"File uploaded and processed: {file_metadata.file_name}")
 
     # Get uploaded files
     files = client.sources.files.list(source_id=source.id, limit=1)
@@ -557,17 +518,7 @@ def test_create_agent_with_source_ids_creates_source_blocks_correctly(client: Le
 
     # Upload a file to the source before attaching
     file_path = "tests/data/long_test.txt"
-    with open(file_path, "rb") as f:
-        job = client.sources.files.upload(source_id=source.id, file=f)
-
-    # Wait for the job to complete
-    while job.status != "completed" and job.status != "failed":
-        time.sleep(1)
-        job = client.jobs.retrieve(job_id=job.id)
-        print("Waiting for file upload job to complete...", job.status)
-
-    if job.status == "failed":
-        pytest.fail("File upload job failed. Check error logs.")
+    upload_file_and_wait(client, source.id, file_path)
 
     # Get uploaded files to verify
     files = client.sources.files.list(source_id=source.id, limit=1)
@@ -617,14 +568,7 @@ def test_view_ranges_have_metadata(client: LettaSDKClient, agent_state: AgentSta
     file_path = "tests/data/0_to_99.py"
 
     # Upload the files
-    with open(file_path, "rb") as f:
-        job = client.sources.files.upload(source_id=source.id, file=f)
-
-    # Wait for the jobs to complete
-    while job.status != "completed":
-        print(f"Waiting for job {job.id} to complete... Current status: {job.status}")
-        time.sleep(1)
-        job = client.jobs.retrieve(job_id=job.id)
+    upload_file_and_wait(client, source.id, file_path)
 
     # Get uploaded files
     files = client.sources.files.list(source_id=source.id, limit=1)
