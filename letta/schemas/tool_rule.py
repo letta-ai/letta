@@ -52,7 +52,7 @@ class ChildToolRule(BaseToolRule):
     type: Literal[ToolRuleType.constrain_child_tools] = ToolRuleType.constrain_child_tools
     children: List[str] = Field(..., description="The children tools that can be invoked.")
     prompt_template: Optional[str] = Field(
-        default="<tool_rule>\nAfter using {{ tool_name }}, you can only use these tools: {{ children | join(', ') }}\n</tool_rule>",
+        default="<tool_rule>\nAfter using {{ tool_name }}, you must use one of these tools: {{ children | join(', ') }}\n</tool_rule>",
         description="Optional Jinja2 template for generating agent prompt about this tool rule.",
     )
 
@@ -61,7 +61,7 @@ class ChildToolRule(BaseToolRule):
         return set(self.children) if last_tool == self.tool_name else available_tools
 
     def _get_default_template(self) -> Optional[str]:
-        return "<tool_rule>\nAfter using {{ tool_name }}, you can only use these tools: {{ children | join(', ') }}\n</tool_rule>"
+        return "<tool_rule>\nAfter using {{ tool_name }}, you must use one of these tools: {{ children | join(', ') }}\n</tool_rule>"
 
 
 class ParentToolRule(BaseToolRule):

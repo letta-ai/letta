@@ -13,7 +13,13 @@ from openai.types.chat.chat_completion_message_tool_call import Function as Open
 from openai.types.chat.completion_create_params import CompletionCreateParams
 from pydantic import BaseModel
 
-from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE
+from letta.constants import (
+    DEFAULT_MESSAGE_TOOL,
+    DEFAULT_MESSAGE_TOOL_KWARG,
+    FUNC_FAILED_HEARTBEAT_MESSAGE,
+    REQ_HEARTBEAT_MESSAGE,
+    REQUEST_HEARTBEAT_PARAM,
+)
 from letta.errors import ContextWindowExceededError, RateLimitExceededError
 from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns, ns_to_ms
 from letta.helpers.message_helper import convert_message_creates_to_messages
@@ -194,7 +200,7 @@ def create_letta_messages_from_llm_response(
     function_response: Optional[str],
     timezone: str,
     actor: User,
-    add_heartbeat_request_system_message: bool = False,
+    continue_stepping: bool = False,
     heartbeat_reason: Optional[str] = None,
     reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
     pre_computed_assistant_message_id: Optional[str] = None,
@@ -202,9 +208,9 @@ def create_letta_messages_from_llm_response(
     step_id: str | None = None,
 ) -> List[Message]:
     messages = []
-
     # Construct the tool call with the assistant's message
-    function_arguments["request_heartbeat"] = True
+    # Force set request_heartbeat in tool_args to calculated continue_stepping
+    function_arguments[REQUEST_HEARTBEAT_PARAM] = continue_stepping
     tool_call = OpenAIToolCall(
         id=tool_call_id,
         function=OpenAIFunction(
@@ -254,7 +260,7 @@ def create_letta_messages_from_llm_response(
     )
     messages.append(tool_message)
 
-    if add_heartbeat_request_system_message:
+    if continue_stepping:
         heartbeat_system_message = create_heartbeat_system_message(
             agent_id=agent_id,
             model=model,
@@ -323,7 +329,7 @@ def create_assistant_messages_from_openai_response(
         function_response=None,
         timezone=timezone,
         actor=actor,
-        add_heartbeat_request_system_message=False,
+        continue_stepping=False,
     )
 
 

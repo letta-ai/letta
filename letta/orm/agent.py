@@ -265,11 +265,11 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
             "last_updated_by_id": self.last_updated_by_id,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "timezone": self.timezone,
             "enable_sleeptime": self.enable_sleeptime,
             "response_format": self.response_format,
             "last_run_completion": self.last_run_completion,
             "last_run_duration_ms": self.last_run_duration_ms,
-            "timezone": self.timezone,
         }
         optional_fields = {
             "tags": [],

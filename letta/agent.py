@@ -1246,6 +1246,7 @@ class Agent(BaseAgent):
         message_manager_size = self.message_manager.size(actor=self.user, agent_id=self.agent_state.id)
         external_memory_summary = compile_memory_metadata_block(
             memory_edit_timestamp=get_utc_time(),
+            timezone=self.agent_state.timezone,
             previous_message_count=self.message_manager.size(actor=self.user, agent_id=self.agent_state.id),
             archival_memory_size=self.agent_manager.passage_size(actor=self.user, agent_id=self.agent_state.id),
         )

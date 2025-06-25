@@ -150,6 +150,7 @@ class VoiceAgent(BaseAgent):
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
+            timezone=agent_state.timezone,
             previous_message_count=self.num_messages,
             archival_memory_size=self.num_archival_memories,
         )
@@ -277,7 +278,7 @@ class VoiceAgent(BaseAgent):
                 tool_execution_result=tool_execution_result,
                 timezone=agent_state.timezone,
                 actor=self.actor,
-                add_heartbeat_request_system_message=True,
+                continue_stepping=True,
             )
             letta_message_db_queue.extend(tool_call_messages)
 

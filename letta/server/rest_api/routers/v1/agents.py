@@ -323,17 +323,7 @@ async def attach_source(
     agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=actor)
 
     files = await server.file_manager.list_files(source_id, actor, include_content=True)
-    texts = []
-    file_ids = []
-    file_names = []
-    for f in files:
-        texts.append(f.content if f.content else "")
-        file_ids.append(f.id)
-        file_names.append(f.file_name)
-
-    await server.insert_files_into_context_window(
-        agent_state=agent_state, texts=texts, file_ids=file_ids, file_names=file_names, actor=actor
-    )
+    await server.insert_files_into_context_window(agent_state=agent_state, file_metadata_with_content=files, actor=actor)
 
     if agent_state.enable_sleeptime:
         source = await server.source_manager.get_source_by_id(source_id=source_id)

@@ -410,3 +410,89 @@ async def test_sleeptime_edit(server, actor):
     fact_block = server.agent_manager.get_block_with_label(agent_id=sleeptime_agent.id, block_label="fact_block", actor=actor)
     print(fact_block.value)
     assert fact_block.value.count("Inter Miami") > 1
+
+
+@pytest.mark.asyncio(loop_scope="module")
+async def test_sleeptime_agent_new_block_attachment(server, actor):
+    """Test that a new block created after agent creation is properly attached to both main and sleeptime agents."""
+    # 0. Refresh base tools
+    server.tool_manager.upsert_base_tools(actor=actor)
+
+    # 1. Create sleeptime agent
+    main_agent = server.create_agent(
+        request=CreateAgent(
+            name="main_agent",
+            memory_blocks=[
+                CreateBlock(
+                    label="persona",
+                    value="You are a personal assistant that helps users with requests.",
+                ),
+                CreateBlock(
+                    label="human",
+                    value="My favorite plant is the fiddle leaf\nMy favorite color is lavender",
+                ),
+            ],
+            model="anthropic/claude-3-5-sonnet-20240620",
+            embedding="openai/text-embedding-ada-002",
+            enable_sleeptime=True,
+        ),
+        actor=actor,
+    )
+
+    assert main_agent.enable_sleeptime == True
+
+    # 2. Get the sleeptime agent ID
+    group = main_agent.multi_agent_group
+    sleeptime_agent_id = group.agent_ids[0]
+
+    # 3. Verify initial shared blocks
+    main_agent_refreshed = server.agent_manager.get_agent_by_id(agent_id=main_agent.id, actor=actor)
+    initial_blocks = main_agent_refreshed.memory.blocks
+    initial_block_count = len(initial_blocks)
+
+    # Verify both agents share the initial blocks
+    for block in initial_blocks:
+        agents = await server.block_manager.get_agents_for_block_async(block_id=block.id, actor=actor)
+        assert len(agents) == 2
+        assert sleeptime_agent_id in [agent.id for agent in agents]
+        assert main_agent.id in [agent.id for agent in agents]
+
+    # 4. Create a new block after agent creation
+    from letta.schemas.block import Block as PydanticBlock
+
+    new_block = server.block_manager.create_or_update_block(
+        PydanticBlock(
+            label="preferences",
+            value="My favorite season is autumn\nI prefer tea over coffee",
+        ),
+        actor=actor,
+    )
+
+    # 5. Attach the new block to the main agent
+    server.agent_manager.attach_block(agent_id=main_agent.id, block_id=new_block.id, actor=actor)
+
+    # 6. Verify the new block is attached to the main agent
+    main_agent_refreshed = server.agent_manager.get_agent_by_id(agent_id=main_agent.id, actor=actor)
+    main_agent_blocks = main_agent_refreshed.memory.blocks
+    assert len(main_agent_blocks) == initial_block_count + 1
+    main_agent_block_ids = [block.id for block in main_agent_blocks]
+    assert new_block.id in main_agent_block_ids
+
+    # 7. Check if the new block is also attached to the sleeptime agent (this is where the bug might be)
+    sleeptime_agent = server.agent_manager.get_agent_by_id(agent_id=sleeptime_agent_id, actor=actor)
+    sleeptime_agent_blocks = sleeptime_agent.memory.blocks
+    sleeptime_agent_block_ids = [block.id for block in sleeptime_agent_blocks]
+
+    # This assertion should pass if the bug is fixed
+    assert new_block.id in sleeptime_agent_block_ids, f"New block {new_block.id} not attached to sleeptime agent {sleeptime_agent_id}"
+
+    # 8. Verify that agents sharing the new block include both main and sleeptime agents
+    agents_with_new_block = await server.block_manager.get_agents_for_block_async(block_id=new_block.id, actor=actor)
+    agent_ids_with_new_block = [agent.id for agent in agents_with_new_block]
+
+    assert main_agent.id in agent_ids_with_new_block, "Main agent should have access to the new block"
+    assert sleeptime_agent_id in agent_ids_with_new_block, "Sleeptime agent should have access to the new block"
+    assert len(agents_with_new_block) == 2, "Both main and sleeptime agents should share the new block"
+
+    # 9. Clean up
+    server.agent_manager.delete_agent(agent_id=main_agent.id, actor=actor)

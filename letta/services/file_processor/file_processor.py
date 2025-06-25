@@ -75,21 +75,14 @@ class FileProcessor:
 
             # update file with raw text
             raw_markdown_text = "".join([page.markdown for page in ocr_response.pages])
-            file_metadata = await self.file_manager.upsert_file_content(file_id=file_metadata.id, text=raw_markdown_text, actor=self.actor)
             file_metadata = await self.file_manager.update_file_status(
                 file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.EMBEDDING
             )
-
-            # Insert to agent context window
-            # TODO: Rethink this line chunking mechanism
-            content_lines = self.line_chunker.chunk_text(text=raw_markdown_text, file_metadata=file_metadata)
-            visible_content = "\n".join(content_lines)
+            file_metadata = await self.file_manager.upsert_file_content(file_id=file_metadata.id, text=raw_markdown_text, actor=self.actor)
 
             await server.insert_file_into_context_windows(
                 source_id=source_id,
-                text=visible_content,
-                file_id=file_metadata.id,
-                file_name=file_metadata.file_name,
+                file_metadata_with_content=file_metadata,
                 actor=self.actor,
                 agent_states=agent_states,
             )

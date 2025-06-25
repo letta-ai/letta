@@ -124,7 +124,7 @@ class LettaFileToolExecutor(ToolExecutor):
         # TODO: Inefficient, maybe we can pre-compute this
         # TODO: This is also not the best way to split things - would be cool to have "content aware" splitting
         # TODO: Split code differently from large text blurbs
-        content_lines = LineChunker().chunk_text(text=file.content, file_metadata=file, start=start, end=end)
+        content_lines = LineChunker().chunk_text(file_metadata=file, start=start, end=end)
         visible_content = "\n".join(content_lines)
 
         # Efficiently handle LRU eviction and file opening in a single transaction
@@ -304,7 +304,7 @@ class LettaFileToolExecutor(ToolExecutor):
 
                 # Use LineChunker to get all lines with proper formatting
                 chunker = LineChunker()
-                formatted_lines = chunker.chunk_text(file.content, file_metadata=file)
+                formatted_lines = chunker.chunk_text(file_metadata=file)
 
                 # Remove metadata header
                 if formatted_lines and formatted_lines[0].startswith("[Viewing"):

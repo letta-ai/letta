@@ -208,10 +208,7 @@ class FileAgentManager:
     @enforce_types
     @trace_method
     async def list_files_for_agent(
-        self,
-        agent_id: str,
-        actor: PydanticUser,
-        is_open_only: bool = False,
+        self, agent_id: str, actor: PydanticUser, is_open_only: bool = False, return_as_blocks: bool = False
     ) -> List[PydanticFileAgent]:
         """Return associations for *agent_id* (filtering by `is_open` if asked)."""
         async with db_registry.async_session() as session:
@@ -223,7 +220,11 @@ class FileAgentManager:
                 conditions.append(FileAgentModel.is_open.is_(True))
 
             rows = (await session.execute(select(FileAgentModel).where(and_(*conditions)))).scalars().all()
-            return [r.to_pydantic() for r in rows]
+
+            if return_as_blocks:
+                return [r.to_pydantic_block() for r in rows]
+            else:
+                return [r.to_pydantic() for r in rows]
 
     @enforce_types
     @trace_method

@@ -9,7 +9,7 @@ from letta import system
 from letta.constants import IN_CONTEXT_MEMORY_KEYWORD, MAX_EMBEDDING_DIM, STRUCTURED_OUTPUT_MODELS
 from letta.embeddings import embedding_model
 from letta.helpers import ToolRulesSolver
-from letta.helpers.datetime_helpers import get_local_time, get_local_time_fast
+from letta.helpers.datetime_helpers import format_datetime, get_local_time, get_local_time_fast
 from letta.orm import AgentPassage, SourcePassage, SourcesAgents
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.agents_tags import AgentsTags
@@ -179,17 +179,18 @@ def derive_system_message(agent_type: AgentType, enable_sleeptime: Optional[bool
 # TODO: This code is kind of wonky and deserves a rewrite
 def compile_memory_metadata_block(
     memory_edit_timestamp: datetime,
+    timezone: str,
     previous_message_count: int = 0,
     archival_memory_size: int = 0,
 ) -> str:
     # Put the timestamp in the local timezone (mimicking get_local_time())
-    timestamp_str = memory_edit_timestamp.astimezone().strftime("%Y-%m-%d %I:%M:%S %p %Z%z").strip()
+    timestamp_str = format_datetime(memory_edit_timestamp, timezone)
 
     # Create a metadata block of info so the agent knows about the metadata of out-of-context memories
     memory_metadata_block = "\n".join(
         [
             "<memory_metadata>",
-            f"- The current time is: {get_local_time_fast()}",
+            f"- The current time is: {get_local_time_fast(timezone)}",
             f"- Memory blocks were last modified: {timestamp_str}",
             f"- {previous_message_count} previous messages between you and the user are stored in recall memory (use tools to access them)",
             f"- {archival_memory_size} total memories you created are stored in archival memory (use tools to access them)",
@@ -224,6 +225,7 @@ def compile_system_message(
     system_prompt: str,
     in_context_memory: Memory,
     in_context_memory_last_edit: datetime,  # TODO move this inside of BaseMemory?
+    timezone: str,
     user_defined_variables: Optional[dict] = None,
     append_icm_if_missing: bool = True,
     template_format: Literal["f-string", "mustache", "jinja2"] = "f-string",
@@ -258,6 +260,7 @@ def compile_system_message(
             memory_edit_timestamp=in_context_memory_last_edit,
             previous_message_count=previous_message_count,
             archival_memory_size=archival_memory_size,
+            timezone=timezone,
         )
         full_memory_string = in_context_memory.compile(tool_usage_rules=tool_constraint_block) + "\n\n" + memory_metadata_string
 
@@ -303,6 +306,7 @@ def initialize_message_sequence(
         system_prompt=agent_state.system,
         in_context_memory=agent_state.memory,
         in_context_memory_last_edit=memory_edit_timestamp,
+        timezone=agent_state.timezone,
         user_defined_variables=None,
         append_icm_if_missing=True,
         previous_message_count=previous_message_count,
