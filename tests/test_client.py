@@ -654,3 +654,36 @@ def test_initial_sequence(client: Letta):
     assert messages[0].message_type == "system_message"
     assert messages[1].message_type == "assistant_message"
     assert messages[2].message_type == "user_message"
+
+
+# def test_timezone(client: Letta):
+#    # create an agent
+#    agent = client.agents.create(
+#        memory_blocks=[{"label": "human", "value": ""}, {"label": "persona", "value": ""}],
+#        model="letta/letta-free",
+#        embedding="letta/letta-free",
+#        timezone="America/Los_Angeles",
+#    )
+#
+#    # get the timzone
+#    agent = client.agents.retrieve(agent_id=agent.id)
+#    assert agent.timezone == "America/Los_Angeles"
+#
+#    response = client.agents.messages.create(
+#        agent_id=agent.id,
+#        messages=[
+#            MessageCreate(
+#                role="user",
+#                content="What timezone are you in?",
+#            )
+#        ],
+#    )
+#    # second message is assistant message
+#    assert response.messages[1].message_type == "assistant_message"
+#    # content is similar to current timezone
+#    assert (
+#        "America/Los_Angeles" in response.messages[1].content
+#        or "PDT" in response.messages[1].content
+#        or "PST" in response.messages[1].content
+#    )
+#
