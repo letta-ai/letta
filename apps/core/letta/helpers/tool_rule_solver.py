@@ -141,9 +141,7 @@ class ToolRulesSolver(BaseModel):
 
     def is_terminal_tool(self, tool_name: str) -> bool:
         """Check if the tool is defined as a terminal tool in the terminal tool rules or required-before-exit tool rules."""
-        return any(rule.tool_name == tool_name for rule in self.terminal_tool_rules) or any(
-            rule.tool_name == tool_name for rule in self.required_before_exit_tool_rules
-        )
+        return any(rule.tool_name == tool_name for rule in self.terminal_tool_rules)
 
     def has_children_tools(self, tool_name):
         """Check if the tool has children tools"""
