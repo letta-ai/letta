@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Literal, Optional
 
 from pydantic import Field
 
@@ -32,3 +32,6 @@ class Step(StepBase):
     tid: Optional[str] = Field(None, description="The unique identifier of the transaction that processed this step.")
     trace_id: Optional[str] = Field(None, description="The trace id of the agent step.")
     messages: List[Message] = Field([], description="The messages generated during this step.")
+    feedback: Optional[Literal["positive", "negative"]] = Field(
+        None, description="The feedback for this step. Must be either 'positive' or 'negative'."
+    )

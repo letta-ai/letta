@@ -34,6 +34,7 @@ class StepManager:
         model: Optional[str] = None,
         agent_id: Optional[str] = None,
         trace_ids: Optional[list[str]] = None,
+        feedback: Optional[Literal["positive", "negative"]] = None,
     ) -> List[PydanticStep]:
         """List all jobs with optional pagination and status filter."""
         async with db_registry.async_session() as session:
@@ -44,7 +45,8 @@ class StepManager:
                 filter_kwargs["agent_id"] = agent_id
             if trace_ids:
                 filter_kwargs["trace_id"] = trace_ids
-
+            if feedback:
+                filter_kwargs["feedback"] = feedback
             steps = await StepModel.list_async(
                 db_session=session,
                 before=before,
@@ -148,6 +150,19 @@ class StepManager:
     async def get_step_async(self, step_id: str, actor: PydanticUser) -> PydanticStep:
         async with db_registry.async_session() as session:
             step = await StepModel.read_async(db_session=session, identifier=step_id, actor=actor)
+            return step.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def add_feedback_async(
+        self, step_id: str, feedback: Optional[Literal["positive", "negative"]], actor: PydanticUser
+    ) -> PydanticStep:
+        async with db_registry.async_session() as session:
+            step = await StepModel.read_async(db_session=session, identifier=step_id, actor=actor)
+            if not step:
+                raise NoResultFound(f"Step with id {step_id} does not exist")
+            step.feedback = feedback
+            step = await step.update_async(session)
             return step.to_pydantic()
 
     @enforce_types

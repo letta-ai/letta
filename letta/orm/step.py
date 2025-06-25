@@ -48,6 +48,9 @@ class Step(SqlalchemyBase):
     tags: Mapped[Optional[List]] = mapped_column(JSON, doc="Metadata tags.")
     tid: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="Transaction ID that processed the step.")
     trace_id: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="The trace id of the agent step.")
+    feedback: Mapped[Optional[str]] = mapped_column(
+        None, nullable=True, doc="The feedback for this step. Must be either 'positive' or 'negative'."
+    )
 
     # Relationships (foreign keys)
     organization: Mapped[Optional["Organization"]] = relationship("Organization")
