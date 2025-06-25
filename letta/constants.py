@@ -130,6 +130,11 @@ BUILTIN_TOOLS = ["run_code", "web_search"]
 # Built in tools
 FILES_TOOLS = ["open_file", "close_file", "grep", "search_files"]
 
+FILE_MEMORY_EXISTS_MESSAGE = "The following files are currently accessible in memory:"
+FILE_MEMORY_EMPTY_MESSAGE = (
+    "There are no files currently available in memory. Files will appear here once they are uploaded directly to your system."
+)
+
 # Set of all built-in Letta tools
 LETTA_TOOL_SET = set(
     BASE_TOOLS

@@ -4,7 +4,12 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING, DEFAULT_EMBEDDING_CHUNK_SIZE
+from letta.constants import (
+    CORE_MEMORY_LINE_NUMBER_WARNING,
+    DEFAULT_EMBEDDING_CHUNK_SIZE,
+    FILE_MEMORY_EMPTY_MESSAGE,
+    FILE_MEMORY_EXISTS_MESSAGE,
+)
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.environment_variables import AgentEnvironmentVariable
@@ -332,7 +337,13 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% if not loop.last %}\n{% endif %}"
             "{% endfor %}"
             "\n</memory_blocks>"
-            "<files>\nThe following memory files are currently accessible:\n\n"
+            "\n\n{% if tool_usage_rules %}"
+            "<tool_usage_rules>\n"
+            "{{ tool_usage_rules.description }}\n\n"
+            "{{ tool_usage_rules.value }}\n"
+            "</tool_usage_rules>"
+            "{% endif %}"
+            f"\n\n<files>\n{{% if file_blocks %}}{FILE_MEMORY_EXISTS_MESSAGE}\n{{% else %}}{FILE_MEMORY_EMPTY_MESSAGE}{{% endif %}}"
             "{% for block in file_blocks %}"
             f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\">\n"
             "<{{ block.label }}>\n"
@@ -378,7 +389,13 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% if not loop.last %}\n{% endif %}"
             "{% endfor %}"
             "\n</memory_blocks>"
-            "<files>\nThe following memory files are currently accessible:\n\n"
+            "\n\n{% if tool_usage_rules %}"
+            "<tool_usage_rules>\n"
+            "{{ tool_usage_rules.description }}\n\n"
+            "{{ tool_usage_rules.value }}\n"
+            "</tool_usage_rules>"
+            "{% endif %}"
+            f"\n\n<files>\n{{% if file_blocks %}}{FILE_MEMORY_EXISTS_MESSAGE}\n{{% else %}}{FILE_MEMORY_EMPTY_MESSAGE}{{% endif %}}"
             "{% for block in file_blocks %}"
             f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\">\n"
             "<{{ block.label }}>\n"
