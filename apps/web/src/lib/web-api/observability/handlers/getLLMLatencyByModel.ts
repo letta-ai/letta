@@ -77,8 +77,8 @@ export async function getLLMLatencyByModel(
       startDate: Math.round(new Date(startDate).getTime() / 1000),
       endDate: Math.round(new Date(endDate).getTime() / 1000),
       organizationId: user.activeOrganizationId,
-      baseTemplateId: baseTemplateId?.value,
       projectId,
+      baseTemplateId,
     },
     format: 'JSONEachRow',
   });

@@ -50,11 +50,11 @@ export async function getToolUsageByFrequency(
       ORDER BY date DESC, usage_count DESC
     `,
     query_params: {
-      baseTemplateId,
       startDate: Math.round(new Date(startDate).getTime() / 1000),
       endDate: Math.round(new Date(endDate).getTime() / 1000),
       organizationId: user.activeOrganizationId,
       projectId,
+      baseTemplateId,
     },
     format: 'JSONEachRow',
   });

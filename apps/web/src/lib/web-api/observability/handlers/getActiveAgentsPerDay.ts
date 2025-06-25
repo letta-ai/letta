@@ -4,6 +4,7 @@ import {
   getClickhouseClient,
   getClickhouseData,
 } from '@letta-cloud/service-clickhouse';
+import { attachFilterByBaseTemplateIdToMetricsCounters } from '../utils/attachFilterByBaseTemplateIdToMetricsCounters/attachFilterByBaseTemplateIdToMetricsCounters';
 
 type GetActiveAgentsPerDayRequest = ServerInferRequest<
   typeof contracts.observability.getActiveAgentsPerDay
@@ -38,15 +39,15 @@ export async function getActiveAgentsPerDay(
       WHERE messaged_at >= {startDate: DateTime}
         AND messaged_at <= {endDate: DateTime}
         AND project_id = {projectId: String}
-        ${baseTemplateId ? ' AND base_template_id = {baseTemplateId: String} ' : ''}
+        ${attachFilterByBaseTemplateIdToMetricsCounters(request.query)}
       GROUP BY date
       ORDER BY date;
     `,
     query_params: {
-      baseTemplateId: baseTemplateId,
       startDate: Math.round(new Date(startDate).getTime() / 1000),
       endDate: Math.round(new Date(endDate).getTime() / 1000),
       projectId,
+      baseTemplateId,
     },
     format: 'JSONEachRow',
   });

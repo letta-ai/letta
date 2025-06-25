@@ -39,7 +39,7 @@ export async function getApiErrorCount(
         toDate(time_window) as date,
         SUM(CASE WHEN status_code != '200' THEN value ELSE 0 END) as error_count
       FROM otel.letta_metrics_counters_1hour_view
-      WHERE metric_name = 'count_tool_execution'
+      WHERE metric_name = 'count_endpoint_requests'
         AND organization_id = {organizationId: String}
         AND project_id = {projectId: String}
         AND time_window >= toDateTime({startDate: UInt32})
@@ -49,18 +49,18 @@ export async function getApiErrorCount(
       ORDER BY date DESC
     `,
     query_params: {
-      baseTemplateId: baseTemplateId?.value,
       startDate: Math.round(new Date(startDate).getTime() / 1000),
       endDate: Math.round(new Date(endDate).getTime() / 1000),
       organizationId: user.activeOrganizationId,
       projectId,
+      baseTemplateId,
     },
     format: 'JSONEachRow',
   });
 
   const response = await getClickhouseData<
     Array<{
-      error_date: string;
+      date: string;
       error_count: string;
     }>
   >(result);
@@ -69,7 +69,7 @@ export async function getApiErrorCount(
     status: 200,
     body: {
       items: response.map((item) => ({
-        date: item.error_date,
+        date: item.date,
         errorCount: parseInt(item.error_count, 10),
       })),
     },

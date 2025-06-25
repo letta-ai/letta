@@ -67,7 +67,7 @@ export async function getObservabilityOverview(
           organizationId: user.activeOrganizationId,
           startDate: Math.round(new Date(startDate).getTime() / 1000),
           endDate: Math.round(new Date(endDate).getTime() / 1000),
-          baseTemplateId: baseTemplateId?.value,
+          baseTemplateId,
         },
         format: 'JSONEachRow',
       })
@@ -105,10 +105,10 @@ export async function getObservabilityOverview(
         `,
         query_params: {
           projectId,
-          baseTemplateId: baseTemplateId?.value,
           organizationId: user.activeOrganizationId,
           startDate: Math.round(new Date(startDate).getTime() / 1000),
           endDate: Math.round(new Date(endDate).getTime() / 1000),
+          baseTemplateId,
         },
         format: 'JSONEachRow',
       })
@@ -121,6 +121,41 @@ export async function getObservabilityOverview(
         >(result),
       )
       .then((v) => ({ ...v[0], error_message_count: '0' })); // API errors not available in metrics
+  }
+
+  function getApiErrorRate() {
+    return client
+      ?.query({
+        query: `
+          SELECT
+            SUM(CASE WHEN status_code != '200' THEN value ELSE 0 END) as error_count,
+            SUM(CASE WHEN status_code = '200' THEN value ELSE 0 END) as success_count
+          FROM otel.letta_metrics_counters_1hour_view
+          WHERE metric_name = 'count_endpoint_requests'
+            AND organization_id = {organizationId: String}
+            AND project_id = {projectId: String}
+            AND time_window >= toDateTime({startDate: UInt32})
+            AND time_window <= toDateTime({endDate: UInt32})
+            ${attachFilterByBaseTemplateIdToMetricsCounters(request.query)}
+        `,
+        query_params: {
+          projectId,
+          organizationId: user.activeOrganizationId,
+          startDate: Math.round(new Date(startDate).getTime() / 1000),
+          endDate: Math.round(new Date(endDate).getTime() / 1000),
+          baseTemplateId,
+        },
+        format: 'JSONEachRow',
+      })
+      .then((result) =>
+        getClickhouseData<
+          Array<{
+            success_count: string;
+            error_count: string;
+          }>
+        >(result),
+      )
+      .then((v) => v[0] || { success_count: '0', error_count: '0' });
   }
 
   function getToolErrorsCount() {
@@ -140,10 +175,10 @@ export async function getObservabilityOverview(
         `,
         query_params: {
           projectId,
-          baseTemplateId: baseTemplateId?.value,
           organizationId: user.activeOrganizationId,
           startDate: Math.round(new Date(startDate).getTime() / 1000),
           endDate: Math.round(new Date(endDate).getTime() / 1000),
+          baseTemplateId,
         },
         format: 'JSONEachRow',
       })
@@ -171,10 +206,10 @@ export async function getObservabilityOverview(
         `,
         query_params: {
           projectId,
-          baseTemplateId: baseTemplateId?.value,
           organizationId: user.activeOrganizationId,
           startDate: Math.round(new Date(startDate).getTime() / 1000),
           endDate: Math.round(new Date(endDate).getTime() / 1000),
+          baseTemplateId,
         },
         format: 'JSONEachRow',
       })
@@ -199,24 +234,18 @@ export async function getObservabilityOverview(
 
   const [
     allMessagesDetails,
+    apiErrorDetails,
     toolErrorsDetails,
     toolLatencyDetails,
     p50P99ResponseTimes,
   ] = await Promise.all([
     getAllMessagesCount(),
+    getApiErrorRate(),
     getToolErrorsCount(),
     getAverageToolLatency(),
     getP50P99ResponseTimes(),
   ]);
 
-  const totalMessageCount = parseInt(
-    allMessagesDetails?.total_message_count || '0',
-    10,
-  );
-  const errorMessageCount = parseInt(
-    allMessagesDetails?.error_message_count || '0',
-    10,
-  );
   const toolErrorsCount = parseInt(
     toolErrorsDetails?.tool_error_count || '0',
     10,
@@ -225,9 +254,18 @@ export async function getObservabilityOverview(
     toolErrorsDetails?.total_tool_count || '0',
     10,
   );
+  const apiErrorCount = parseInt(
+    apiErrorDetails?.error_count || '0',
+    10,
+  );
+  const apiSuccessCount = parseInt(
+    apiErrorDetails?.success_count || '0',
+    10,
+  );
 
   const toolErrorRate = toolErrorsCount / (toolTotalCount || 1);
-  const apiErrorRate = errorMessageCount / (totalMessageCount || 1);
+
+  const apiErrorRate = apiErrorCount / ((apiSuccessCount + apiErrorCount) || 1);
 
   const avgToolLatencyNs = toolLatencyDetails?.averageLatencyNs || 0;
 

@@ -49,6 +49,7 @@ export async function getToolErrorRatePerDay(
         AND project_id = {projectId: String}
         AND time_window >= toDateTime({startDate: UInt32})
         AND time_window <= toDateTime({endDate: UInt32})
+        AND tool_name != 'send_message'
         ${attachFilterByBaseTemplateIdToMetricsCounters(request.query)}
       GROUP BY toDate(time_window)
       ORDER BY date DESC

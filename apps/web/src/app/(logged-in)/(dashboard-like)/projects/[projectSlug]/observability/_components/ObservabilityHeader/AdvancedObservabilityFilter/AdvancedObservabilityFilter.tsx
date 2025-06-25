@@ -55,8 +55,6 @@ function TemplateSelectorDropdown() {
     [formatOptions],
   );
 
-  console.log('a', baseTemplateId);
-
   return (
     <RawAsyncSelect
       fullWidth
@@ -66,7 +64,6 @@ function TemplateSelectorDropdown() {
       isLoading={!data}
       onSelect={(option) => {
         if (!isMultiValue(option) && option) {
-          console.log('sfd');
           setBaseTemplateId(option);
         }
       }}

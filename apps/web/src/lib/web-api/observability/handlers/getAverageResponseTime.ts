@@ -58,11 +58,11 @@ export async function getAverageResponseTime(
       ORDER BY date;
     `,
     query_params: {
-      baseTemplateId: baseTemplateId?.value,
       startDate: Math.round(new Date(startDate).getTime() / 1000),
       endDate: Math.round(new Date(endDate).getTime() / 1000),
       projectId,
       organizationId: user.activeOrganizationId,
+      baseTemplateId,
     },
     format: 'JSONEachRow',
   });

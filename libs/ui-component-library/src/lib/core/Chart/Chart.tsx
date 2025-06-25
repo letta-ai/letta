@@ -137,6 +137,9 @@ export function Chart(props: ChartOptions) {
         legend: {
           show: false,
         },
+      }, {
+        notMerge: true,
+        lazyUpdate: true
       });
 
       requestAnimationFrame(() => {

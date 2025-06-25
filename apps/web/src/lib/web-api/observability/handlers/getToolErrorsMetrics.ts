@@ -44,6 +44,7 @@ export async function getToolErrorsMetrics(
         AND time_window >= toDateTime({startDate: UInt32})
         AND time_window <= toDateTime({endDate: UInt32})
         AND tool_execution_success = 'false'
+        AND tool_name != 'send_message'
         ${attachFilterByBaseTemplateIdToMetricsCounters(request.query)}
       GROUP BY toDate(time_window)
       ORDER BY error_date DESC

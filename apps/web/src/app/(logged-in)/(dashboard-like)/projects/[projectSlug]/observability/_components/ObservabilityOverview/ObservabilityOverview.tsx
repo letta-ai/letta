@@ -42,7 +42,7 @@ export function ObservabilityOverview() {
   const t = useTranslations(
     'pages/projects/observability/ObservabilityOverview',
   );
-  const { startDate, endDate } = useObservabilityContext();
+  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
 
   const { id: projectId } = useCurrentProject();
 
@@ -51,12 +51,14 @@ export function ObservabilityOverview() {
       projectId,
       startDate,
       endDate,
+      baseTemplateId: baseTemplateId?.value,
     }),
     queryData: {
       query: {
         projectId,
         startDate,
         endDate,
+        baseTemplateId: baseTemplateId?.value,
       },
     },
   });

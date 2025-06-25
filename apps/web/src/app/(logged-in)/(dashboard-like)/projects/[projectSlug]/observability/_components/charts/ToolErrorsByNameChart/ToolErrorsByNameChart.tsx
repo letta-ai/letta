@@ -100,6 +100,7 @@ export function ToolErrorsByNameChart(props: ToolErrorsByNameChartProps) {
       });
     },
   });
+
   // Customize options to add series names
   const chartOptions: Partial<EChartsOption> = useMemo(
     () => ({
