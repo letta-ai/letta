@@ -197,7 +197,7 @@ class ToolRulesSolver(BaseModel):
             return Block(
                 label="tool_usage_rules",
                 value="\n".join(compiled_prompts),
-                description="The following constraints define rules for tool usage and guide desired behavior. These rules must be followed to ensure proper tool execution and workflow.",
+                description="The following constraints define rules for tool usage and guide desired behavior. These rules must be followed to ensure proper tool execution and workflow. A single response may contain multiple tool calls.",
             )
         return None
 

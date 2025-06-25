@@ -2317,8 +2317,9 @@ export const $ChildToolRule = {
       title: 'Prompt Template',
       description:
         'Optional Jinja2 template for generating agent prompt about this tool rule.',
-      default:
-        "<tool_constraint>After using {{ tool_name }}, you can only use these tools: {{ children | join(', ') }}</tool_constraint>",
+      default: `<tool_rule>
+After using {{ tool_name }}, you can only use these tools: {{ children | join(', ') }}
+</tool_rule>`,
     },
     children: {
       items: {
@@ -3178,8 +3179,9 @@ export const $ConditionalToolRule = {
       title: 'Prompt Template',
       description:
         'Optional Jinja2 template for generating agent prompt about this tool rule.',
-      default:
-        '<tool_constraint>{{ tool_name }} will determine which tool to use next based on its output</tool_constraint>',
+      default: `<tool_rule>
+{{ tool_name }} will determine which tool to use next based on its output
+</tool_rule>`,
     },
     default_child: {
       anyOf: [
@@ -3422,8 +3424,9 @@ export const $ContinueToolRule = {
       title: 'Prompt Template',
       description:
         'Optional Jinja2 template for generating agent prompt about this tool rule.',
-      default:
-        '<tool_constraint>{{ tool_name }} requires continuing the conversation when called</tool_constraint>',
+      default: `<tool_rule>
+{{ tool_name }} requires continuing your response when called
+</tool_rule>`,
     },
   },
   additionalProperties: false,
@@ -6766,8 +6769,9 @@ export const $MaxCountPerStepToolRule = {
       title: 'Prompt Template',
       description:
         'Optional Jinja2 template for generating agent prompt about this tool rule.',
-      default:
-        '<tool_constraint>{{ tool_name }}: max {{ max_count_limit }} use(s) per turn</tool_constraint>',
+      default: `<tool_rule>
+{{ tool_name }}: max {{ max_count_limit }} use(s) per response
+</tool_rule>`,
     },
     max_count_limit: {
       type: 'integer',
@@ -7535,8 +7539,9 @@ export const $ParentToolRule = {
       title: 'Prompt Template',
       description:
         'Optional Jinja2 template for generating agent prompt about this tool rule.',
-      default:
-        "<tool_constraint>{{ children | join(', ') }} can only be used after {{ tool_name }}</tool_constraint>",
+      default: `<tool_rule>
+{{ children | join(', ') }} can only be used after {{ tool_name }}
+</tool_rule>`,
     },
     children: {
       items: {
@@ -8494,7 +8499,7 @@ export const $RequiredBeforeExitToolRule = {
       description:
         'Optional Jinja2 template for generating agent prompt about this tool rule.',
       default:
-        '<tool_constraint>{{ tool_name }} must be called before ending the conversation</tool_constraint>',
+        '<tool_rule>{{ tool_name }} must be called before ending the conversation</tool_rule>',
     },
   },
   additionalProperties: false,
@@ -10056,8 +10061,9 @@ export const $TerminalToolRule = {
       title: 'Prompt Template',
       description:
         'Optional Jinja2 template for generating agent prompt about this tool rule.',
-      default:
-        '<tool_constraint>{{ tool_name }} ends the conversation when called</tool_constraint>',
+      default: `<tool_rule>
+{{ tool_name }} ends your response (yields control) when called
+</tool_rule>`,
     },
   },
   additionalProperties: false,

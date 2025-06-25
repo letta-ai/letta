@@ -10206,7 +10206,7 @@
             ],
             "title": "Prompt Template",
             "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_constraint>After using {{ tool_name }}, you can only use these tools: {{ children | join(', ') }}</tool_constraint>"
+            "default": "<tool_rule>\nAfter using {{ tool_name }}, you can only use these tools: {{ children | join(', ') }}\n</tool_rule>"
           },
           "children": {
             "items": {
@@ -11060,7 +11060,7 @@
             ],
             "title": "Prompt Template",
             "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_constraint>{{ tool_name }} will determine which tool to use next based on its output</tool_constraint>"
+            "default": "<tool_rule>\n{{ tool_name }} will determine which tool to use next based on its output\n</tool_rule>"
           },
           "default_child": {
             "anyOf": [
@@ -11292,7 +11292,7 @@
             ],
             "title": "Prompt Template",
             "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_constraint>{{ tool_name }} requires continuing the conversation when called</tool_constraint>"
+            "default": "<tool_rule>\n{{ tool_name }} requires continuing your response when called\n</tool_rule>"
           }
         },
         "additionalProperties": false,
@@ -14422,7 +14422,7 @@
             ],
             "title": "Prompt Template",
             "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_constraint>{{ tool_name }}: max {{ max_count_limit }} use(s) per turn</tool_constraint>"
+            "default": "<tool_rule>\n{{ tool_name }}: max {{ max_count_limit }} use(s) per response\n</tool_rule>"
           },
           "max_count_limit": {
             "type": "integer",
@@ -15128,7 +15128,7 @@
             ],
             "title": "Prompt Template",
             "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_constraint>{{ children | join(', ') }} can only be used after {{ tool_name }}</tool_constraint>"
+            "default": "<tool_rule>\n{{ children | join(', ') }} can only be used after {{ tool_name }}\n</tool_rule>"
           },
           "children": {
             "items": {
@@ -15991,7 +15991,7 @@
             ],
             "title": "Prompt Template",
             "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_constraint>{{ tool_name }} must be called before ending the conversation</tool_constraint>"
+            "default": "<tool_rule>{{ tool_name }} must be called before ending the conversation</tool_rule>"
           }
         },
         "additionalProperties": false,
@@ -17410,7 +17410,7 @@
             ],
             "title": "Prompt Template",
             "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_constraint>{{ tool_name }} ends the conversation when called</tool_constraint>"
+            "default": "<tool_rule>\n{{ tool_name }} ends your response (yields control) when called\n</tool_rule>"
           }
         },
         "additionalProperties": false,

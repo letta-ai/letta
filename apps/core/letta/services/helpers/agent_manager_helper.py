@@ -239,10 +239,9 @@ def compile_system_message(
       - CORE_MEMORY: the in-context memory of the LLM
     """
     # Add tool rule constraints if available
+    tool_constraint_block = None
     if tool_rules_solver is not None:
         tool_constraint_block = tool_rules_solver.compile_tool_rule_prompts()
-        if tool_constraint_block:  # There may not be any depending on if there are tool rules attached
-            in_context_memory.blocks.append(tool_constraint_block)
 
     if user_defined_variables is not None:
         # TODO eventually support the user defining their own variables to inject
@@ -260,7 +259,7 @@ def compile_system_message(
             previous_message_count=previous_message_count,
             archival_memory_size=archival_memory_size,
         )
-        full_memory_string = in_context_memory.compile() + "\n\n" + memory_metadata_string
+        full_memory_string = in_context_memory.compile(tool_usage_rules=tool_constraint_block) + "\n\n" + memory_metadata_string
 
         # Add to the variables list to inject
         variables[IN_CONTEXT_MEMORY_KEYWORD] = full_memory_string
