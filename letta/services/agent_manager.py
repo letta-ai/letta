@@ -15,6 +15,7 @@ from letta.constants import (
     BASE_TOOLS,
     BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
     BASE_VOICE_SLEEPTIME_TOOLS,
+    DEFAULT_TIMEZONE,
     FILES_TOOLS,
     MULTI_AGENT_TOOLS,
 )
@@ -481,7 +482,7 @@ class AgentManager:
                     response_format=agent_create.response_format,
                     created_by_id=actor.id,
                     last_updated_by_id=actor.id,
-                    timezone=agent_create.timezone,
+                    timezone=agent_create.timezone if agent_create.timezone else DEFAULT_TIMEZONE,
                 )
 
                 if _test_only_force_id:
@@ -1429,6 +1430,7 @@ class AgentManager:
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
+            timezone=agent_state.timezone,
             previous_message_count=num_messages - len(agent_state.message_ids),
             archival_memory_size=num_archival_memories,
         )
@@ -1503,6 +1505,7 @@ class AgentManager:
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
+            timezone=agent_state.timezone,
             previous_message_count=num_messages - len(agent_state.message_ids),
             archival_memory_size=num_archival_memories,
             tool_rules_solver=tool_rules_solver,
