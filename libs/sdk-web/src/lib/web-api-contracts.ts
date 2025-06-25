@@ -85,6 +85,8 @@ import {
   observabilityQueryKeys,
 } from './public/observabilityContracts';
 
+import { agentfileContracts } from './public/agentfileContracts';
+
 export const contracts = {
   user: userContract,
   projects: projectsContract,
@@ -117,6 +119,7 @@ export const contracts = {
     organizations: adminOrganizationsContracts,
     contentViolations: adminContentViolationsContracts,
   },
+  agentfile: agentfileContracts,
 };
 
 export const queryClientKeys = {

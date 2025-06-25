@@ -27,6 +27,7 @@ import { transactionsRoutes } from '$web/web-api/transactions/transactionsRoutes
 import { tracesRoutes } from '$web/web-api/traces/tracesRouter';
 import { adminContentViolationsRouter } from '$web/web-api/admin/contentViolations/adminContentViolationsRouter';
 import { observabilityRouter } from '$web/web-api/observability/observabilityRouter';
+import { agentfileRouter } from '$web/web-api/agentfile/agentfileRouter';
 
 export const router = {
   user: userRouter,
@@ -60,6 +61,7 @@ export const router = {
     organizations: adminOrganizationsRouter,
     contentViolations: adminContentViolationsRouter,
   },
+  agentfile: agentfileRouter,
 };
 
 export * from './user/userRouter';

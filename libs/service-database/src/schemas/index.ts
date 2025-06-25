@@ -1268,6 +1268,7 @@ export const activeAgents = pgTable('active_agents', {
 
 export const agentfilePermissionsEnum = pgEnum('agentfile_access_level', [
   'public',
+  'organization',
   'logged-in',
   'none',
 ]);
