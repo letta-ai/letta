@@ -36,10 +36,8 @@ export function LoggedOutWrapper(props: LoggedOutWrapperProps) {
   useEffect(() => {
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setIsDarkMode(true);
-      return;
     } else {
       setIsDarkMode(false);
-      return;
     }
   }, [setIsDarkMode]);
 
@@ -88,9 +86,9 @@ export function LoggedOutWrapper(props: LoggedOutWrapperProps) {
             <HStack justify="spaceBetween" align="center" fullWidth>
               <div className="relative" ref={logoRef}>
                 {isDarkMode ? (
-                  <Lottie options={darkLogoOptions} height={36} width={36} />
-                ) : (
                   <Lottie options={lightLogoOptions} height={36} width={36} />
+                ) : (
+                  <Lottie options={darkLogoOptions} height={36} width={36} />
                 )}
               </div>
               {showAuthFlowSwitcher && <AuthFlowSwitch mode={mode} />}
