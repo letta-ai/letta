@@ -43,6 +43,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 # openai schemas
 from letta.schemas.enums import JobStatus, MessageStreamStatus, ProviderCategory, ProviderType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
+from letta.schemas.file import FileMetadata
 from letta.schemas.group import GroupCreate, ManagerType, SleeptimeManager, VoiceSleeptimeManager
 from letta.schemas.job import Job, JobUpdate
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, MessageType, ToolReturnMessage
@@ -82,6 +83,7 @@ from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.file_manager import FileManager
+from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.files_agents_manager import FileAgentManager
 from letta.services.group_manager import GroupManager
 from letta.services.helpers.tool_execution_helper import prepare_local_sandbox
@@ -827,8 +829,6 @@ class SyncServer(Server):
         self,
         request: CreateAgent,
         actor: User,
-        # interface
-        interface: Union[AgentInterface, None] = None,
     ) -> AgentState:
         if request.llm_config is None:
             if request.model is None:
@@ -867,6 +867,16 @@ class SyncServer(Server):
             actor=actor,
         )
         log_event(name="end create_agent db")
+
+        log_event(name="start insert_files_into_context_window db")
+        if request.source_ids:
+            for source_id in request.source_ids:
+                files = await self.file_manager.list_files(source_id, actor, include_content=True)
+                await self.insert_files_into_context_window(agent_state=main_agent, file_metadata_with_content=files, actor=actor)
+
+            main_agent = await self.agent_manager.refresh_file_blocks(agent_state=main_agent, actor=actor)
+            main_agent = await self.agent_manager.attach_missing_files_tools_async(agent_state=main_agent, actor=actor)
+        log_event(name="end insert_files_into_context_window db")
 
         if request.enable_sleeptime:
             if request.agent_type == AgentType.voice_convo_agent:
@@ -1371,15 +1381,23 @@ class SyncServer(Server):
             )
         await self.agent_manager.delete_agent_async(agent_id=sleeptime_agent_state.id, actor=actor)
 
-    async def _upsert_file_to_agent(self, agent_id: str, text: str, file_id: str, file_name: str, actor: User) -> List[str]:
+    async def _upsert_file_to_agent(self, agent_id: str, file_metadata_with_content: FileMetadata, actor: User) -> List[str]:
         """
         Internal method to create or update a file <-> agent association
 
         Returns:
             List of file names that were closed due to LRU eviction
         """
+        # TODO: Maybe have LineChunker object be on the server level?
+        content_lines = LineChunker().chunk_text(file_metadata=file_metadata_with_content)
+        visible_content = "\n".join(content_lines)
+
         file_agent, closed_files = await self.file_agent_manager.attach_file(
-            agent_id=agent_id, file_id=file_id, file_name=file_name, actor=actor, visible_content=text
+            agent_id=agent_id,
+            file_id=file_metadata_with_content.id,
+            file_name=file_metadata_with_content.file_name,
+            actor=actor,
+            visible_content=visible_content,
         )
         return closed_files
 
@@ -1397,7 +1415,7 @@ class SyncServer(Server):
             logger.info(f"File {file_id} already removed from agent {agent_id}, skipping...")
 
     async def insert_file_into_context_windows(
-        self, source_id: str, text: str, file_id: str, file_name: str, actor: User, agent_states: Optional[List[AgentState]] = None
+        self, source_id: str, file_metadata_with_content: FileMetadata, actor: User, agent_states: Optional[List[AgentState]] = None
     ) -> List[AgentState]:
         """
         Insert the uploaded document into the context window of all agents
@@ -1414,7 +1432,7 @@ class SyncServer(Server):
 
         # Collect any files that were closed due to LRU eviction during bulk attach
         all_closed_files = await asyncio.gather(
-            *(self._upsert_file_to_agent(agent_state.id, text, file_id, file_name, actor) for agent_state in agent_states)
+            *(self._upsert_file_to_agent(agent_state.id, file_metadata_with_content, actor) for agent_state in agent_states)
         )
         # Flatten and log if any files were closed
         closed_files = [file for closed_list in all_closed_files for file in closed_list]
@@ -1424,7 +1442,7 @@ class SyncServer(Server):
         return agent_states
 
     async def insert_files_into_context_window(
-        self, agent_state: AgentState, texts: List[str], file_ids: List[str], file_names: List[str], actor: User
+        self, agent_state: AgentState, file_metadata_with_content: List[FileMetadata], actor: User
     ) -> None:
         """
         Insert the uploaded documents into the context window of an agent
@@ -1432,15 +1450,9 @@ class SyncServer(Server):
         """
         logger.info(f"Inserting documents into context window for agent_state: {agent_state.id}")
 
-        if len(texts) != len(file_ids):
-            raise ValueError(f"Mismatch between number of texts ({len(texts)}) and file ids ({len(file_ids)})")
-
         # Collect any files that were closed due to LRU eviction during bulk insert
         all_closed_files = await asyncio.gather(
-            *(
-                self._upsert_file_to_agent(agent_state.id, text, file_id, file_name, actor)
-                for text, file_id, file_name in zip(texts, file_ids, file_names)
-            )
+            *(self._upsert_file_to_agent(agent_state.id, file_metadata, actor) for file_metadata in file_metadata_with_content)
         )
         # Flatten and log if any files were closed
         closed_files = [file for closed_list in all_closed_files for file in closed_list]

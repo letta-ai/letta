@@ -1704,6 +1704,13 @@ class AgentManager:
 
         return agent_state
 
+    @trace_method
+    @enforce_types
+    async def refresh_file_blocks(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
+        file_blocks = await self.file_agent_manager.list_files_for_agent(agent_id=agent_state.id, actor=actor, return_as_blocks=True)
+        agent_state.memory.file_blocks = [b for b in file_blocks if b is not None]
+        return agent_state
+
     # ======================================================================================================================
     # Source Management
     # ======================================================================================================================

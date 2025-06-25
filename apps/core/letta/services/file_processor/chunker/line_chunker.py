@@ -99,10 +99,11 @@ class LineChunker:
         return [line for line in lines if line.strip()]
 
     def chunk_text(
-        self, text: str, file_metadata: FileMetadata, start: Optional[int] = None, end: Optional[int] = None, add_metadata: bool = True
+        self, file_metadata: FileMetadata, start: Optional[int] = None, end: Optional[int] = None, add_metadata: bool = True
     ) -> List[str]:
         """Content-aware text chunking based on file type"""
         strategy = self._determine_chunking_strategy(file_metadata)
+        text = file_metadata.content
 
         # Apply the appropriate chunking strategy
         if strategy == ChunkingStrategy.DOCUMENTATION:

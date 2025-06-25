@@ -170,7 +170,10 @@ def test_together():
     )
     models = provider.list_llm_models()
     assert len(models) > 0
-    assert models[0].handle == f"{provider.name}/{models[0].model}"
+    # Handle may be different from raw model name due to LLM_HANDLE_OVERRIDES
+    assert models[0].handle.startswith(f"{provider.name}/")
+    # Verify the handle is properly constructed via get_handle method
+    assert models[0].handle == provider.get_handle(models[0].model)
 
     # TODO: We don't have embedding models on together for CI
     # embedding_models = provider.list_embedding_models()
@@ -187,7 +190,10 @@ async def test_together_async():
     )
     models = await provider.list_llm_models_async()
     assert len(models) > 0
-    assert models[0].handle == f"{provider.name}/{models[0].model}"
+    # Handle may be different from raw model name due to LLM_HANDLE_OVERRIDES
+    assert models[0].handle.startswith(f"{provider.name}/")
+    # Verify the handle is properly constructed via get_handle method
+    assert models[0].handle == provider.get_handle(models[0].model)
 
     # TODO: We don't have embedding models on together for CI
     # embedding_models = provider.list_embedding_models()
