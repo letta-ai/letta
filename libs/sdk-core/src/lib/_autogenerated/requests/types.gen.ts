@@ -2595,7 +2595,7 @@ export type MessageSchema = {
   model: string | null;
   name: string | null;
   role: string;
-  content: Array<TextContent>;
+  content: Array<LettaMessageContentUnion>;
   tool_call_id: string | null;
   tool_calls: Array<unknown>;
   tool_returns: Array<unknown>;

@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field
 
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.letta_message_content import TextContent
+from letta.schemas.letta_message_content import LettaMessageContentUnion
 from letta.schemas.llm_config import LLMConfig
 
 
@@ -25,7 +25,14 @@ class MessageSchema(BaseModel):
     model: Optional[str]
     name: Optional[str]
     role: str
-    content: List[TextContent]  # TODO: Expand to more in the future
+    content: List[LettaMessageContentUnion] = Field(
+        ...,
+        json_schema_extra={
+            "items": {
+                "$ref": "#/components/schemas/LettaMessageContentUnion",
+            }
+        },
+    )
     tool_call_id: Optional[str]
     tool_calls: List[Any]
     tool_returns: List[Any]

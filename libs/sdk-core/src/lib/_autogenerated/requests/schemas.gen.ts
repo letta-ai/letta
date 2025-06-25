@@ -7275,7 +7275,7 @@ export const $MessageSchema = {
     },
     content: {
       items: {
-        $ref: '#/components/schemas/TextContent',
+        $ref: '#/components/schemas/LettaMessageContentUnion',
       },
       type: 'array',
       title: 'Content',

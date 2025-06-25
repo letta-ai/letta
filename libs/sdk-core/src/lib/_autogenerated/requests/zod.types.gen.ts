@@ -350,6 +350,116 @@ export const TextContent = z.object({
   text: z.string(),
 });
 
+export type UrlImage = z.infer<typeof UrlImage>;
+export const UrlImage = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  url: z.string(),
+});
+
+export type Base64Image = z.infer<typeof Base64Image>;
+export const Base64Image = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  media_type: z.string(),
+  data: z.string(),
+  detail: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type LettaImage = z.infer<typeof LettaImage>;
+export const LettaImage = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  file_id: z.string(),
+  media_type: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  data: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  detail: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ImageContent = z.infer<typeof ImageContent>;
+export const ImageContent = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  source: z.union([UrlImage, Base64Image, LettaImage]),
+});
+
+export type ToolCallContent = z.infer<typeof ToolCallContent>;
+export const ToolCallContent = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  id: z.string(),
+  name: z.string(),
+  input: z.unknown(),
+});
+
+export type ToolReturnContent = z.infer<typeof ToolReturnContent>;
+export const ToolReturnContent = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  tool_call_id: z.string(),
+  content: z.string(),
+  is_error: z.boolean(),
+});
+
+export type ReasoningContent = z.infer<typeof ReasoningContent>;
+export const ReasoningContent = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  is_native: z.boolean(),
+  reasoning: z.string(),
+  signature: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type RedactedReasoningContent = z.infer<typeof RedactedReasoningContent>;
+export const RedactedReasoningContent = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  data: z.string(),
+});
+
+export type OmittedReasoningContent = z.infer<typeof OmittedReasoningContent>;
+export const OmittedReasoningContent = z.object({
+  type: z.string().optional(),
+});
+
+export type LettaMessageContentUnion = z.infer<typeof LettaMessageContentUnion>;
+export const LettaMessageContentUnion = z.union([
+  TextContent,
+  ImageContent,
+  ToolCallContent,
+  ToolReturnContent,
+  ReasoningContent,
+  RedactedReasoningContent,
+  OmittedReasoningContent,
+]);
+
 export type MessageSchema = z.infer<typeof MessageSchema>;
 export const MessageSchema = z.object({
   created_at: z.string(),
@@ -369,7 +479,7 @@ export const MessageSchema = z.object({
     z.array(z.union([z.string(), z.null()])),
   ]),
   role: z.string(),
-  content: z.array(TextContent),
+  content: z.array(LettaMessageContentUnion),
   tool_call_id: z.union([
     z.string(),
     z.null(),
@@ -1481,21 +1591,6 @@ export const AuthResponse = z.object({
       z.boolean(),
       z.null(),
       z.array(z.union([z.boolean(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type Base64Image = z.infer<typeof Base64Image>;
-export const Base64Image = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  media_type: z.string(),
-  data: z.string(),
-  detail: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -2838,90 +2933,6 @@ export const MessageRole = z.union([
   z.literal('system'),
 ]);
 
-export type UrlImage = z.infer<typeof UrlImage>;
-export const UrlImage = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  url: z.string(),
-});
-
-export type LettaImage = z.infer<typeof LettaImage>;
-export const LettaImage = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  file_id: z.string(),
-  media_type: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  data: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  detail: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type ImageContent = z.infer<typeof ImageContent>;
-export const ImageContent = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  source: z.union([UrlImage, Base64Image, LettaImage]),
-});
-
-export type ToolCallContent = z.infer<typeof ToolCallContent>;
-export const ToolCallContent = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  id: z.string(),
-  name: z.string(),
-  input: z.unknown(),
-});
-
-export type ToolReturnContent = z.infer<typeof ToolReturnContent>;
-export const ToolReturnContent = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  tool_call_id: z.string(),
-  content: z.string(),
-  is_error: z.boolean(),
-});
-
-export type ReasoningContent = z.infer<typeof ReasoningContent>;
-export const ReasoningContent = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  is_native: z.boolean(),
-  reasoning: z.string(),
-  signature: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type RedactedReasoningContent = z.infer<typeof RedactedReasoningContent>;
-export const RedactedReasoningContent = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  data: z.string(),
-});
-
-export type OmittedReasoningContent = z.infer<typeof OmittedReasoningContent>;
-export const OmittedReasoningContent = z.object({
-  type: z.string().optional(),
-});
-
 export type ToolReturn = z.infer<typeof ToolReturn>;
 export const ToolReturn = z.object({
   status: z.union([z.literal('success'), z.literal('error')]),
@@ -3175,17 +3186,6 @@ export const CreateBlock = z.object({
     ])
     .optional(),
 });
-
-export type LettaMessageContentUnion = z.infer<typeof LettaMessageContentUnion>;
-export const LettaMessageContentUnion = z.union([
-  TextContent,
-  ImageContent,
-  ToolCallContent,
-  ToolReturnContent,
-  ReasoningContent,
-  RedactedReasoningContent,
-  OmittedReasoningContent,
-]);
 
 export type MessageCreate = z.infer<typeof MessageCreate>;
 export const MessageCreate = z.object({
