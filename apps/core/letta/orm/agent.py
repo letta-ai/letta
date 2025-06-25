@@ -190,7 +190,6 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
             "response_format": self.response_format,
             "last_run_completion": self.last_run_completion,
             "last_run_duration_ms": self.last_run_duration_ms,
-            "timezone": self.timezone,
             # optional field defaults
             "tags": [],
             "tools": [],
@@ -269,7 +268,6 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
             "response_format": self.response_format,
             "last_run_completion": self.last_run_completion,
             "last_run_duration_ms": self.last_run_duration_ms,
-            "timezone": self.timezone,
         }
         optional_fields = {
             "tags": [],
