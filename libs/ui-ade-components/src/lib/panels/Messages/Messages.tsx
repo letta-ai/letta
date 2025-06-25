@@ -792,22 +792,11 @@ export function Messages(props: MessagesProps) {
               content: (
                 <BlockQuote fullWidth>
                   <VStack gap="small">
-                    <HStack align="center" justify="spaceBetween">
-                      <HStack align="center" gap="small">
-                        <InnerMonologueIcon color="violet" size="small" />
-                        <Typography bold color="violet" variant="body2">
-                          {t('reasoning')}
-                        </Typography>
-                      </HStack>
-                      <div className="pr-8">
-                        <Tooltip content={t('reasonerModel')}>
-                          <AnthropicLogoMarkDynamic
-                            color="violet"
-                            size="small"
-                            className="opacity-60"
-                          />
-                        </Tooltip>
-                      </div>
+                    <HStack align="center" gap="small">
+                      <InnerMonologueIcon color="violet" size="small" />
+                      <Typography bold color="violet" variant="body2">
+                        {t('reasoning')}
+                      </Typography>
                     </HStack>
                     <Typography
                       semibold
@@ -815,7 +804,9 @@ export function Messages(props: MessagesProps) {
                       variant="body3"
                       color="muted"
                     >
-                      {agentMessage.state + ' by model provider'}
+                      {(agentMessage.state === 'omitted'
+                        ? 'hidden'
+                        : agentMessage.state) + ' by model provider'}
                     </Typography>
                   </VStack>
                 </BlockQuote>
@@ -837,7 +828,9 @@ export function Messages(props: MessagesProps) {
                 }}
               >
                 <Typography>
-                  {agentMessage.state + ' by model provider'}
+                  {(agentMessage.state === 'omitted'
+                    ? 'hidden'
+                    : agentMessage.state) + ' by model provider'}
                 </Typography>
               </MessageWrapper>
             ),
