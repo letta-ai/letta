@@ -21,9 +21,11 @@ from letta.errors import (
     LLMPermissionDeniedError,
     LLMRateLimitError,
     LLMServerError,
+    LLMTimeoutError,
     LLMUnprocessableEntityError,
 )
 from letta.helpers.datetime_helpers import get_utc_time_int
+from letta.helpers.decorators import deprecated
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_inner_thoughts_from_kwargs
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
@@ -47,22 +49,23 @@ logger = get_logger(__name__)
 class AnthropicClient(LLMClientBase):
 
     @trace_method
+    @deprecated("Synchronous version of this is no longer valid. Will result in model_dump of coroutine")
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         client = self._get_anthropic_client(llm_config, async_client=False)
-        response = client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
+        response = client.beta.messages.create(**request_data)
         return response.model_dump()
 
     @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         client = await self._get_anthropic_client_async(llm_config, async_client=True)
-        response = await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
+        response = await client.beta.messages.create(**request_data)
         return response.model_dump()
 
     @trace_method
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[BetaRawMessageStreamEvent]:
         client = await self._get_anthropic_client_async(llm_config, async_client=True)
         request_data["stream"] = True
-        return await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
+        return await client.beta.messages.create(**request_data)
 
     @trace_method
     async def send_llm_batch_request_async(
@@ -299,6 +302,14 @@ class AnthropicClient(LLMClientBase):
 
     @trace_method
     def handle_llm_error(self, e: Exception) -> Exception:
+        if isinstance(e, anthropic.APITimeoutError):
+            logger.warning(f"[Anthropic] Request timeout: {e}")
+            return LLMTimeoutError(
+                message=f"Request to Anthropic timed out: {str(e)}",
+                code=ErrorCode.TIMEOUT,
+                details={"cause": str(e.__cause__) if e.__cause__ else None},
+            )
+
         if isinstance(e, anthropic.APIConnectionError):
             logger.warning(f"[Anthropic] API connection error: {e.__cause__}")
             return LLMConnectionError(

@@ -1,6 +1,6 @@
 {
   "context_window": 200000,
-  "model": "arn:aws:bedrock:us-west-2:850995572407:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+  "model": "arn:aws:bedrock:us-east-1:474668403324:inference-profile/us.anthropic.claude-sonnet-4-20250514-v1:0",
   "model_endpoint_type": "bedrock",
   "model_endpoint": null,
   "model_wrapper": null,

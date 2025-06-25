@@ -336,6 +336,141 @@ def core_memory_tools(test_user):
     yield tools
 
 
+@pytest.fixture
+def async_add_integers_tool(test_user):
+    async def async_add(x: int, y: int) -> int:
+        """
+        Async function that adds two integers.
+
+        Parameters:
+            x (int): The first integer to add.
+            y (int): The second integer to add.
+
+        Returns:
+            int: The result of adding x and y.
+        """
+        import asyncio
+
+        # Add a small delay to simulate async work
+        await asyncio.sleep(0.1)
+        return x + y
+
+    tool = create_tool_from_func(async_add)
+    tool = ToolManager().create_or_update_tool(tool, test_user)
+    yield tool
+
+
+@pytest.fixture
+def async_get_env_tool(test_user):
+    async def async_get_env() -> str:
+        """
+        Async function that returns the secret word env variable.
+
+        Returns:
+            str: The secret word
+        """
+        import asyncio
+        import os
+
+        # Add a small delay to simulate async work
+        await asyncio.sleep(0.1)
+        secret_word = os.getenv("secret_word")
+        print(secret_word)
+        return secret_word
+
+    tool = create_tool_from_func(async_get_env)
+    tool = ToolManager().create_or_update_tool(tool, test_user)
+    yield tool
+
+
+@pytest.fixture
+def async_stateful_tool(test_user):
+    async def async_clear_memory(agent_state: "AgentState"):
+        """Async function that clears the core memory"""
+        import asyncio
+
+        # Add a small delay to simulate async work
+        await asyncio.sleep(0.1)
+        agent_state.memory.get_block("human").value = ""
+        agent_state.memory.get_block("persona").value = ""
+
+    tool = create_tool_from_func(async_clear_memory)
+    tool = ToolManager().create_or_update_tool(tool, test_user)
+    yield tool
+
+
+@pytest.fixture
+def async_error_tool(test_user):
+    async def async_error() -> str:
+        """
+        Async function that errors
+
+        Returns:
+            str: not important
+        """
+        import asyncio
+
+        # Add some async work before erroring
+        await asyncio.sleep(0.1)
+        print("Going to error now")
+        raise ValueError("This is an intentional async error!")
+
+    tool = create_tool_from_func(async_error)
+    tool = ToolManager().create_or_update_tool(tool, test_user)
+    yield tool
+
+
+@pytest.fixture
+def async_list_tool(test_user):
+    async def async_create_list() -> list:
+        """Async function that returns a list"""
+        import asyncio
+
+        await asyncio.sleep(0.05)
+        return [1, 2, 3, 4, 5]
+
+    tool = create_tool_from_func(async_create_list)
+    tool = ToolManager().create_or_update_tool(tool, test_user)
+    yield tool
+
+
+@pytest.fixture
+def async_complex_tool(test_user):
+    async def async_complex_computation(iterations: int = 3) -> dict:
+        """
+        Async function that performs complex computation with multiple awaits.
+
+        Parameters:
+            iterations (int): Number of iterations to perform.
+
+        Returns:
+            dict: Results of the computation.
+        """
+        import asyncio
+        import time
+
+        results = []
+        start_time = time.time()
+
+        for i in range(iterations):
+            # Simulate async I/O
+            await asyncio.sleep(0.1)
+            results.append(i * 2)
+
+        end_time = time.time()
+
+        return {
+            "results": results,
+            "duration": end_time - start_time,
+            "iterations": iterations,
+            "average": sum(results) / len(results) if results else 0,
+        }
+
+    tool = create_tool_from_func(async_complex_computation)
+    tool = ToolManager().create_or_update_tool(tool, test_user)
+    yield tool
+
+
 @pytest.fixture(scope="session")
 def event_loop(request):
     """Create an instance of the default event loop for each test case."""
@@ -719,3 +854,257 @@ async def test_e2b_sandbox_with_broken_tool_pip_requirements_error_handling(
 
     # Should mention one of the problematic packages
     assert "numpy==1.24.0" in error_message or "nonexistent-package-12345" in error_message
+
+
+# Async function tests
+
+
+def test_async_function_detection(add_integers_tool, async_add_integers_tool, test_user):
+    """Test that async function detection works correctly"""
+    # Test sync function detection
+    sync_sandbox = AsyncToolSandboxE2B(add_integers_tool.name, {}, test_user, tool_object=add_integers_tool)
+    assert not sync_sandbox.is_async_function
+
+    # Test async function detection
+    async_sandbox = AsyncToolSandboxE2B(async_add_integers_tool.name, {}, test_user, tool_object=async_add_integers_tool)
+    assert async_sandbox.is_async_function
+
+
+def test_async_template_selection(add_integers_tool, async_add_integers_tool, test_user):
+    """Test that correct templates are selected for sync vs async functions"""
+    # Test sync function uses regular template
+    sync_sandbox = AsyncToolSandboxE2B(add_integers_tool.name, {}, test_user, tool_object=add_integers_tool)
+    sync_script = sync_sandbox.generate_execution_script(agent_state=None)
+    print("=== SYNC SCRIPT ===")
+    print(sync_script)
+    print("=== END SYNC SCRIPT ===")
+    assert "import asyncio" not in sync_script
+    assert "asyncio.run" not in sync_script
+
+    # Test async function uses async template
+    async_sandbox = AsyncToolSandboxE2B(async_add_integers_tool.name, {}, test_user, tool_object=async_add_integers_tool)
+    async_script = async_sandbox.generate_execution_script(agent_state=None)
+    print("=== ASYNC SCRIPT ===")
+    print(async_script)
+    print("=== END ASYNC SCRIPT ===")
+    assert "import asyncio" in async_script
+    assert "await _async_wrapper()" in async_script  # E2B uses top-level await
+    assert "_async_wrapper" in async_script
+
+
+@pytest.mark.asyncio
+@pytest.mark.local_sandbox
+async def test_local_sandbox_async_function_execution(disable_e2b_api_key, async_add_integers_tool, test_user, event_loop):
+    """Test that async functions execute correctly in local sandbox"""
+    args = {"x": 15, "y": 25}
+
+    sandbox = AsyncToolSandboxLocal(async_add_integers_tool.name, args, user=test_user)
+    result = await sandbox.run()
+    assert result.func_return == args["x"] + args["y"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.e2b_sandbox
+async def test_e2b_sandbox_async_function_execution(check_e2b_key_is_set, async_add_integers_tool, test_user, event_loop):
+    """Test that async functions execute correctly in E2B sandbox"""
+    args = {"x": 20, "y": 30}
+
+    sandbox = AsyncToolSandboxE2B(async_add_integers_tool.name, args, user=test_user)
+    result = await sandbox.run()
+    assert int(result.func_return) == args["x"] + args["y"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.local_sandbox
+async def test_local_sandbox_async_complex_computation(disable_e2b_api_key, async_complex_tool, test_user, event_loop):
+    """Test complex async computation with multiple awaits in local sandbox"""
+    args = {"iterations": 2}
+
+    sandbox = AsyncToolSandboxLocal(async_complex_tool.name, args, user=test_user)
+    result = await sandbox.run()
+
+    assert isinstance(result.func_return, dict)
+    assert result.func_return["results"] == [0, 2]
+    assert result.func_return["iterations"] == 2
+    assert result.func_return["average"] == 1.0
+    assert result.func_return["duration"] > 0.15  # Should take at least 0.2s due to sleep
+
+
+@pytest.mark.asyncio
+@pytest.mark.e2b_sandbox
+async def test_e2b_sandbox_async_complex_computation(check_e2b_key_is_set, async_complex_tool, test_user, event_loop):
+    """Test complex async computation with multiple awaits in E2B sandbox"""
+    args = {"iterations": 2}
+
+    sandbox = AsyncToolSandboxE2B(async_complex_tool.name, args, user=test_user)
+    result = await sandbox.run()
+
+    func_return = result.func_return
+    assert isinstance(func_return, dict)
+    assert func_return["results"] == [0, 2]
+    assert func_return["iterations"] == 2
+    assert func_return["average"] == 1.0
+    assert func_return["duration"] > 0.15
+
+
+@pytest.mark.asyncio
+@pytest.mark.local_sandbox
+async def test_local_sandbox_async_list_return(disable_e2b_api_key, async_list_tool, test_user, event_loop):
+    """Test async function returning list in local sandbox"""
+    sandbox = AsyncToolSandboxLocal(async_list_tool.name, {}, user=test_user)
+    result = await sandbox.run()
+    assert result.func_return == [1, 2, 3, 4, 5]
+
+
+@pytest.mark.asyncio
+@pytest.mark.e2b_sandbox
+async def test_e2b_sandbox_async_list_return(check_e2b_key_is_set, async_list_tool, test_user, event_loop):
+    """Test async function returning list in E2B sandbox"""
+    sandbox = AsyncToolSandboxE2B(async_list_tool.name, {}, user=test_user)
+    result = await sandbox.run()
+    assert result.func_return == [1, 2, 3, 4, 5]
+
+
+@pytest.mark.asyncio
+@pytest.mark.local_sandbox
+async def test_local_sandbox_async_with_env_vars(disable_e2b_api_key, async_get_env_tool, test_user, event_loop):
+    """Test async function with environment variables in local sandbox"""
+    manager = SandboxConfigManager()
+
+    # Create custom local sandbox config
+    sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
+    config_create = SandboxConfigCreate(config=LocalSandboxConfig(sandbox_dir=sandbox_dir).model_dump())
+    config = manager.create_or_update_sandbox_config(config_create, test_user)
+
+    # Create environment variable
+    key = "secret_word"
+    test_value = "async_local_test_value_789"
+    manager.create_sandbox_env_var(
+        SandboxEnvironmentVariableCreate(key=key, value=test_value), sandbox_config_id=config.id, actor=test_user
+    )
+
+    sandbox = AsyncToolSandboxLocal(async_get_env_tool.name, {}, user=test_user)
+    result = await sandbox.run()
+
+    assert test_value in result.func_return
+
+
+@pytest.mark.asyncio
+@pytest.mark.e2b_sandbox
+async def test_e2b_sandbox_async_with_env_vars(check_e2b_key_is_set, async_get_env_tool, test_user, event_loop):
+    """Test async function with environment variables in E2B sandbox"""
+    manager = SandboxConfigManager()
+    config_create = SandboxConfigCreate(config=E2BSandboxConfig().model_dump())
+    config = manager.create_or_update_sandbox_config(config_create, test_user)
+
+    # Create environment variable
+    key = "secret_word"
+    test_value = "async_e2b_test_value_456"
+    manager.create_sandbox_env_var(
+        SandboxEnvironmentVariableCreate(key=key, value=test_value), sandbox_config_id=config.id, actor=test_user
+    )
+
+    sandbox = AsyncToolSandboxE2B(async_get_env_tool.name, {}, user=test_user)
+    result = await sandbox.run()
+
+    assert test_value in result.func_return
+
+
+@pytest.mark.asyncio
+@pytest.mark.local_sandbox
+async def test_local_sandbox_async_with_agent_state(disable_e2b_api_key, async_stateful_tool, test_user, agent_state, event_loop):
+    """Test async function with agent state in local sandbox"""
+    sandbox = AsyncToolSandboxLocal(async_stateful_tool.name, {}, user=test_user)
+    result = await sandbox.run(agent_state=agent_state)
+
+    assert result.agent_state is not None
+    assert result.agent_state.memory.get_block("human").value == ""
+    assert result.agent_state.memory.get_block("persona").value == ""
+    assert result.func_return is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.e2b_sandbox
+async def test_e2b_sandbox_async_with_agent_state(check_e2b_key_is_set, async_stateful_tool, test_user, agent_state, event_loop):
+    """Test async function with agent state in E2B sandbox"""
+    sandbox = AsyncToolSandboxE2B(async_stateful_tool.name, {}, user=test_user)
+    result = await sandbox.run(agent_state=agent_state)
+
+    assert result.agent_state.memory.get_block("human").value == ""
+    assert result.agent_state.memory.get_block("persona").value == ""
+    assert result.func_return is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.local_sandbox
+async def test_local_sandbox_async_error_handling(disable_e2b_api_key, async_error_tool, test_user, event_loop):
+    """Test async function error handling in local sandbox"""
+    sandbox = AsyncToolSandboxLocal(async_error_tool.name, {}, user=test_user)
+    result = await sandbox.run()
+
+    # Check that error was captured
+    assert len(result.stdout) != 0, "stdout not empty"
+    assert "error" in result.stdout[0], "stdout contains printed string"
+    assert len(result.stderr) != 0, "stderr not empty"
+    assert "ValueError: This is an intentional async error!" in result.stderr[0], "stderr contains expected error"
+
+
+@pytest.mark.asyncio
+@pytest.mark.e2b_sandbox
+async def test_e2b_sandbox_async_error_handling(check_e2b_key_is_set, async_error_tool, test_user, event_loop):
+    """Test async function error handling in E2B sandbox"""
+    sandbox = AsyncToolSandboxE2B(async_error_tool.name, {}, user=test_user)
+    result = await sandbox.run()
+
+    # Check that error was captured
+    assert len(result.stdout) != 0, "stdout not empty"
+    assert "error" in result.stdout[0], "stdout contains printed string"
+    assert len(result.stderr) != 0, "stderr not empty"
+    assert "ValueError: This is an intentional async error!" in result.stderr[0], "stderr contains expected error"
+
+
+@pytest.mark.asyncio
+@pytest.mark.local_sandbox
+async def test_local_sandbox_async_per_agent_env(disable_e2b_api_key, async_get_env_tool, agent_state, test_user, event_loop):
+    """Test async function with per-agent environment variables in local sandbox"""
+    manager = SandboxConfigManager()
+    key = "secret_word"
+    sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
+    config_create = SandboxConfigCreate(config=LocalSandboxConfig(sandbox_dir=sandbox_dir).model_dump())
+    config = manager.create_or_update_sandbox_config(config_create, test_user)
+
+    wrong_val = "wrong_async_local_value"
+    manager.create_sandbox_env_var(SandboxEnvironmentVariableCreate(key=key, value=wrong_val), sandbox_config_id=config.id, actor=test_user)
+
+    correct_val = "correct_async_local_value"
+    agent_state.tool_exec_environment_variables = [AgentEnvironmentVariable(key=key, value=correct_val, agent_id=agent_state.id)]
+
+    sandbox = AsyncToolSandboxLocal(async_get_env_tool.name, {}, user=test_user)
+    result = await sandbox.run(agent_state=agent_state)
+    assert wrong_val not in result.func_return
+    assert correct_val in result.func_return
+
+
+@pytest.mark.asyncio
+@pytest.mark.e2b_sandbox
+async def test_e2b_sandbox_async_per_agent_env(check_e2b_key_is_set, async_get_env_tool, agent_state, test_user, event_loop):
+    """Test async function with per-agent environment variables in E2B sandbox"""
+    manager = SandboxConfigManager()
+    key = "secret_word"
+    wrong_val = "wrong_async_e2b_value"
+    correct_val = "correct_async_e2b_value"
+
+    config_create = SandboxConfigCreate(config=LocalSandboxConfig().model_dump())
+    config = manager.create_or_update_sandbox_config(config_create, test_user)
+    manager.create_sandbox_env_var(
+        SandboxEnvironmentVariableCreate(key=key, value=wrong_val),
+        sandbox_config_id=config.id,
+        actor=test_user,
+    )
+
+    agent_state.tool_exec_environment_variables = [AgentEnvironmentVariable(key=key, value=correct_val, agent_id=agent_state.id)]
+
+    sandbox = AsyncToolSandboxE2B(async_get_env_tool.name, {}, user=test_user)
+    result = await sandbox.run(agent_state=agent_state)
+    assert wrong_val not in result.func_return
+    assert correct_val in result.func_return

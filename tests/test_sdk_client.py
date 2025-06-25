@@ -637,7 +637,7 @@ def test_many_blocks(client: LettaSDKClient):
 
 
 # cases: steam, async, token stream, sync
-@pytest.mark.parametrize("message_create", ["stream_step", "token_stream", "sync"])
+@pytest.mark.parametrize("message_create", ["stream_step", "token_stream", "sync", "async"])
 def test_include_return_message_types(client: LettaSDKClient, agent: AgentState, message_create: str):
     """Test that the include_return_message_types parameter works"""
 

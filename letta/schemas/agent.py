@@ -4,8 +4,12 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING, DEFAULT_EMBEDDING_CHUNK_SIZE
-from letta.helpers import ToolRulesSolver
+from letta.constants import (
+    CORE_MEMORY_LINE_NUMBER_WARNING,
+    DEFAULT_EMBEDDING_CHUNK_SIZE,
+    FILE_MEMORY_EMPTY_MESSAGE,
+    FILE_MEMORY_EXISTS_MESSAGE,
+)
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.environment_variables import AgentEnvironmentVariable
@@ -110,6 +114,9 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     last_run_completion: Optional[datetime] = Field(None, description="The timestamp when the agent last completed a run.")
     last_run_duration_ms: Optional[int] = Field(None, description="The duration in milliseconds of the agent's last run.")
 
+    # timezone
+    timezone: Optional[str] = Field(None, description="The timezone of the agent (IANA format).")
+
     def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
         # Get environment variables for this agent specifically
         per_agent_env_vars = {}
@@ -193,6 +200,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     )
     enable_sleeptime: Optional[bool] = Field(None, description="If set to True, memory management will move to a background agent thread.")
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the agent.")
+    timezone: Optional[str] = Field(None, description="The timezone of the agent (IANA format).")
 
     @field_validator("name")
     @classmethod
@@ -286,6 +294,7 @@ class UpdateAgent(BaseModel):
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the agent.")
     last_run_completion: Optional[datetime] = Field(None, description="The timestamp when the agent last completed a run.")
     last_run_duration_ms: Optional[int] = Field(None, description="The duration in milliseconds of the agent's last run.")
+    timezone: Optional[str] = Field(None, description="The timezone of the agent (IANA format).")
 
     class Config:
         extra = "ignore"  # Ignores extra fields
@@ -299,11 +308,6 @@ class AgentStepResponse(BaseModel):
         ..., description="Whether the agent step ended because the in-context memory is near its limit."
     )
     usage: UsageStatistics = Field(..., description="Usage statistics of the LLM call during the agent's step.")
-
-
-class AgentStepState(BaseModel):
-    step_number: int = Field(..., description="The current step number in the agent loop")
-    tool_rules_solver: ToolRulesSolver = Field(..., description="The current state of the ToolRulesSolver")
 
 
 def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
@@ -333,7 +337,13 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% if not loop.last %}\n{% endif %}"
             "{% endfor %}"
             "\n</memory_blocks>"
-            "<files>\nThe following memory files are currently accessible:\n\n"
+            "\n\n{% if tool_usage_rules %}"
+            "<tool_usage_rules>\n"
+            "{{ tool_usage_rules.description }}\n\n"
+            "{{ tool_usage_rules.value }}\n"
+            "</tool_usage_rules>"
+            "{% endif %}"
+            f"\n\n<files>\n{{% if file_blocks %}}{FILE_MEMORY_EXISTS_MESSAGE}\n{{% else %}}{FILE_MEMORY_EMPTY_MESSAGE}{{% endif %}}"
             "{% for block in file_blocks %}"
             f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\">\n"
             "<{{ block.label }}>\n"
@@ -379,7 +389,13 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% if not loop.last %}\n{% endif %}"
             "{% endfor %}"
             "\n</memory_blocks>"
-            "<files>\nThe following memory files are currently accessible:\n\n"
+            "\n\n{% if tool_usage_rules %}"
+            "<tool_usage_rules>\n"
+            "{{ tool_usage_rules.description }}\n\n"
+            "{{ tool_usage_rules.value }}\n"
+            "</tool_usage_rules>"
+            "{% endif %}"
+            f"\n\n<files>\n{{% if file_blocks %}}{FILE_MEMORY_EXISTS_MESSAGE}\n{{% else %}}{FILE_MEMORY_EMPTY_MESSAGE}{{% endif %}}"
             "{% for block in file_blocks %}"
             f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\">\n"
             "<{{ block.label }}>\n"

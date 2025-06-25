@@ -3,38 +3,32 @@ from typing import Any, Dict, List, Optional
 
 from anthropic import AnthropicBedrock
 
-from letta.log import get_logger
 from letta.settings import model_settings
-
-logger = get_logger(__name__)
 
 
 def has_valid_aws_credentials() -> bool:
     """
     Check if AWS credentials are properly configured.
     """
-    valid_aws_credentials = (
-        os.getenv("AWS_ACCESS_KEY") is not None and os.getenv("AWS_SECRET_ACCESS_KEY") is not None and os.getenv("AWS_REGION") is not None
-    )
+    valid_aws_credentials = os.getenv("AWS_ACCESS_KEY_ID") and os.getenv("AWS_SECRET_ACCESS_KEY") and os.getenv("AWS_DEFAULT_REGION")
     return valid_aws_credentials
 
 
 def get_bedrock_client(
-    access_key: Optional[str] = None,
+    access_key_id: Optional[str] = None,
     secret_key: Optional[str] = None,
-    region: Optional[str] = None,
+    default_region: Optional[str] = None,
 ):
     """
     Get a Bedrock client
     """
     import boto3
 
-    logger.debug(f"Getting Bedrock client for {model_settings.aws_region}")
     sts_client = boto3.client(
         "sts",
-        aws_access_key_id=access_key or model_settings.aws_access_key,
+        aws_access_key_id=access_key_id or model_settings.aws_access_key_id,
         aws_secret_access_key=secret_key or model_settings.aws_secret_access_key,
-        region_name=region or model_settings.aws_region,
+        region_name=default_region or model_settings.aws_default_region,
     )
     credentials = sts_client.get_session_token()["Credentials"]
 
@@ -42,7 +36,7 @@ def get_bedrock_client(
         aws_access_key=credentials["AccessKeyId"],
         aws_secret_key=credentials["SecretAccessKey"],
         aws_session_token=credentials["SessionToken"],
-        aws_region=region or model_settings.aws_region,
+        aws_region=default_region or model_settings.aws_default_region,
     )
     return bedrock
 
@@ -61,13 +55,34 @@ def bedrock_get_model_list(region_name: str) -> List[dict]:
     """
     import boto3
 
-    logger.debug(f"Getting model list for {region_name}")
     try:
         bedrock = boto3.client("bedrock", region_name=region_name)
         response = bedrock.list_inference_profiles()
         return response["inferenceProfileSummaries"]
     except Exception as e:
-        logger.exception(f"Error getting model list: {str(e)}", e)
+        print(f"Error getting model list: {str(e)}")
+        raise e
+
+
+async def bedrock_get_model_list_async(
+    access_key_id: Optional[str] = None,
+    secret_access_key: Optional[str] = None,
+    default_region: Optional[str] = None,
+) -> List[dict]:
+    from aioboto3.session import Session
+
+    try:
+        session = Session()
+        async with session.client(
+            "bedrock",
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=secret_access_key,
+            region_name=default_region,
+        ) as bedrock:
+            response = await bedrock.list_inference_profiles()
+            return response["inferenceProfileSummaries"]
+    except Exception as e:
+        print(f"Error getting model list: {str(e)}")
         raise e
 
 
@@ -78,7 +93,6 @@ def bedrock_get_model_details(region_name: str, model_id: str) -> Dict[str, Any]
     import boto3
     from botocore.exceptions import ClientError
 
-    logger.debug(f"Getting model details for {model_id}")
     try:
         bedrock = boto3.client("bedrock", region_name=region_name)
         response = bedrock.get_foundation_model(modelIdentifier=model_id)

@@ -4,9 +4,9 @@ from typing import Optional
 from sqlalchemy import JSON, BigInteger, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from letta.orm.enums import ActorType
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
+from letta.schemas.enums import ActorType
 
 
 class BlockHistory(OrganizationMixin, SqlalchemyBase):

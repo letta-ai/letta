@@ -8,7 +8,6 @@ from openai.types.chat.chat_completion_message_tool_call import Function as Open
 from sqlalchemy import Dialect
 
 from letta.functions.mcp_client.types import StdioServerConfig
-from letta.schemas.agent import AgentStepState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderType, ToolRuleType
 from letta.schemas.letta_message_content import (
@@ -23,6 +22,7 @@ from letta.schemas.letta_message_content import (
     ToolCallContent,
     ToolReturnContent,
 )
+from letta.schemas.llm_batch_job import AgentStepState
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import ToolReturn
 from letta.schemas.response_format import (
@@ -39,6 +39,7 @@ from letta.schemas.tool_rule import (
     InitToolRule,
     MaxCountPerStepToolRule,
     ParentToolRule,
+    RequiredBeforeExitToolRule,
     TerminalToolRule,
     ToolRule,
 )
@@ -131,6 +132,8 @@ def deserialize_tool_rule(
         return MaxCountPerStepToolRule(**data)
     elif rule_type == ToolRuleType.parent_last_tool:
         return ParentToolRule(**data)
+    elif rule_type == ToolRuleType.required_before_exit:
+        return RequiredBeforeExitToolRule(**data)
     raise ValueError(f"Unknown ToolRule type: {rule_type}")
 
 

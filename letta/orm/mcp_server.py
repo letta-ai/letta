@@ -7,9 +7,9 @@ from letta.functions.mcp_client.types import StdioServerConfig
 from letta.orm.custom_columns import MCPStdioServerConfigColumn
 
 # TODO everything in functions should live in this model
-from letta.orm.enums import MCPServerType
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
+from letta.schemas.enums import MCPServerType
 from letta.schemas.mcp import MCPServer
 
 if TYPE_CHECKING:

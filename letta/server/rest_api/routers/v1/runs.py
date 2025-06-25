@@ -3,9 +3,8 @@ from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import Field
 
-from letta.orm.enums import JobType
 from letta.orm.errors import NoResultFound
-from letta.schemas.enums import JobStatus, MessageRole
+from letta.schemas.enums import JobStatus, JobType, MessageRole
 from letta.schemas.letta_message import LettaMessageUnion
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.run import Run
@@ -92,7 +91,7 @@ async def list_run_messages(
     after: Optional[str] = Query(None, description="Cursor for pagination"),
     limit: Optional[int] = Query(100, description="Maximum number of messages to return"),
     order: str = Query(
-        "desc", description="Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order."
+        "asc", description="Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order."
     ),
     role: Optional[MessageRole] = Query(None, description="Filter by role"),
 ):

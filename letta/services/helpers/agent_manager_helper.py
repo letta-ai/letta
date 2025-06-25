@@ -1,8 +1,8 @@
-import datetime
+from datetime import datetime
 from typing import List, Literal, Optional
 
 import numpy as np
-from sqlalchemy import Select, and_, asc, desc, func, literal, or_, select, union_all
+from sqlalchemy import Select, and_, asc, desc, func, literal, nulls_last, or_, select, union_all
 from sqlalchemy.sql.expression import exists
 
 from letta import system
@@ -178,7 +178,7 @@ def derive_system_message(agent_type: AgentType, enable_sleeptime: Optional[bool
 
 # TODO: This code is kind of wonky and deserves a rewrite
 def compile_memory_metadata_block(
-    memory_edit_timestamp: datetime.datetime,
+    memory_edit_timestamp: datetime,
     previous_message_count: int = 0,
     archival_memory_size: int = 0,
 ) -> str:
@@ -223,7 +223,7 @@ def safe_format(template: str, variables: dict) -> str:
 def compile_system_message(
     system_prompt: str,
     in_context_memory: Memory,
-    in_context_memory_last_edit: datetime.datetime,  # TODO move this inside of BaseMemory?
+    in_context_memory_last_edit: datetime,  # TODO move this inside of BaseMemory?
     user_defined_variables: Optional[dict] = None,
     append_icm_if_missing: bool = True,
     template_format: Literal["f-string", "mustache", "jinja2"] = "f-string",
@@ -239,10 +239,9 @@ def compile_system_message(
       - CORE_MEMORY: the in-context memory of the LLM
     """
     # Add tool rule constraints if available
+    tool_constraint_block = None
     if tool_rules_solver is not None:
         tool_constraint_block = tool_rules_solver.compile_tool_rule_prompts()
-        if tool_constraint_block:  # There may not be any depending on if there are tool rules attached
-            in_context_memory.blocks.append(tool_constraint_block)
 
     if user_defined_variables is not None:
         # TODO eventually support the user defining their own variables to inject
@@ -260,7 +259,7 @@ def compile_system_message(
             previous_message_count=previous_message_count,
             archival_memory_size=archival_memory_size,
         )
-        full_memory_string = in_context_memory.compile() + "\n\n" + memory_metadata_string
+        full_memory_string = in_context_memory.compile(tool_usage_rules=tool_constraint_block) + "\n\n" + memory_metadata_string
 
         # Add to the variables list to inject
         variables[IN_CONTEXT_MEMORY_KEYWORD] = full_memory_string
@@ -292,7 +291,7 @@ def compile_system_message(
 
 def initialize_message_sequence(
     agent_state: AgentState,
-    memory_edit_timestamp: Optional[datetime.datetime] = None,
+    memory_edit_timestamp: Optional[datetime] = None,
     include_initial_boot_message: bool = True,
     previous_message_count: int = 0,
     archival_memory_size: int = 0,
@@ -309,15 +308,15 @@ def initialize_message_sequence(
         previous_message_count=previous_message_count,
         archival_memory_size=archival_memory_size,
     )
-    first_user_message = get_login_event()  # event letting Letta know the user just logged in
+    first_user_message = get_login_event(agent_state.timezone)  # event letting Letta know the user just logged in
 
     if include_initial_boot_message:
         if agent_state.agent_type == AgentType.sleeptime_agent:
             initial_boot_messages = []
         elif agent_state.llm_config.model is not None and "gpt-3.5" in agent_state.llm_config.model:
-            initial_boot_messages = get_initial_boot_messages("startup_with_send_message_gpt35")
+            initial_boot_messages = get_initial_boot_messages("startup_with_send_message_gpt35", agent_state.timezone)
         else:
-            initial_boot_messages = get_initial_boot_messages("startup_with_send_message")
+            initial_boot_messages = get_initial_boot_messages("startup_with_send_message", agent_state.timezone)
         messages = (
             [
                 {"role": "system", "content": full_system_message},
@@ -338,7 +337,7 @@ def initialize_message_sequence(
 
 
 def package_initial_message_sequence(
-    agent_id: str, initial_message_sequence: List[MessageCreate], model: str, actor: User
+    agent_id: str, initial_message_sequence: List[MessageCreate], model: str, timezone: str, actor: User
 ) -> List[Message]:
     # create the agent object
     init_messages = []
@@ -347,6 +346,7 @@ def package_initial_message_sequence(
         if message_create.role == MessageRole.user:
             packed_message = system.package_user_message(
                 user_message=message_create.content,
+                timezone=timezone,
             )
             init_messages.append(
                 Message(
@@ -361,6 +361,7 @@ def package_initial_message_sequence(
         elif message_create.role == MessageRole.system:
             packed_message = system.package_system_message(
                 system_message=message_create.content,
+                timezone=timezone,
             )
             init_messages.append(
                 Message(
@@ -402,7 +403,7 @@ def package_initial_message_sequence(
             )
 
             # add tool return
-            function_response = package_function_response(True, "None")
+            function_response = package_function_response(True, "None", timezone)
             init_messages.append(
                 Message(
                     role=MessageRole.tool,
@@ -430,23 +431,47 @@ def check_supports_structured_output(model: str, tool_rules: List[ToolRule]) -> 
         return True
 
 
-def _cursor_filter(created_at_col, id_col, ref_created_at, ref_id, forward: bool):
+def _cursor_filter(sort_col, id_col, ref_sort_col, ref_id, forward: bool, nulls_last: bool = False):
     """
     Returns a SQLAlchemy filter expression for cursor-based pagination.
 
     If `forward` is True, returns records after the reference.
     If `forward` is False, returns records before the reference.
+
+    Handles NULL values in the sort column properly when nulls_last is True.
     """
-    if forward:
-        return or_(
-            created_at_col > ref_created_at,
-            and_(created_at_col == ref_created_at, id_col > ref_id),
-        )
+    if not nulls_last:
+        # Simple case: no special NULL handling needed
+        if forward:
+            return or_(
+                sort_col > ref_sort_col,
+                and_(sort_col == ref_sort_col, id_col > ref_id),
+            )
+        else:
+            return or_(
+                sort_col < ref_sort_col,
+                and_(sort_col == ref_sort_col, id_col < ref_id),
+            )
+
+    # Handle nulls_last case
+    # TODO: add tests to check if this works for ascending order but nulls are stil last?
+    if ref_sort_col is None:
+        # Reference cursor is at a NULL value
+        if forward:
+            # Moving forward (e.g. previous) from NULL: either other NULLs with greater IDs or non-NULLs
+            return or_(and_(sort_col.is_(None), id_col > ref_id), sort_col.isnot(None))
+        else:
+            # Moving backward (e.g. next) from NULL: NULLs with smaller IDs
+            return and_(sort_col.is_(None), id_col < ref_id)
     else:
-        return or_(
-            created_at_col < ref_created_at,
-            and_(created_at_col == ref_created_at, id_col < ref_id),
-        )
+        # Reference cursor is at a non-NULL value
+        if forward:
+            # Moving forward (e.g. previous) from non-NULL: only greater non-NULL values
+            # (NULLs are at the end, so we don't include them when moving forward from non-NULL)
+            return and_(sort_col.isnot(None), or_(sort_col > ref_sort_col, and_(sort_col == ref_sort_col, id_col > ref_id)))
+        else:
+            # Moving backward (e.g. next) from non-NULL: smaller non-NULL values or NULLs
+            return or_(sort_col.is_(None), or_(sort_col < ref_sort_col, and_(sort_col == ref_sort_col, id_col < ref_id)))
 
 
 def _apply_pagination(
@@ -455,30 +480,30 @@ def _apply_pagination(
     # Determine the sort column
     if sort_by == "last_run_completion":
         sort_column = AgentModel.last_run_completion
+        sort_nulls_last = True  # TODO: handle this as a query param eventually
     else:
         sort_column = AgentModel.created_at
+        sort_nulls_last = False
 
     if after:
-        if sort_by == "last_run_completion":
-            result = session.execute(select(AgentModel.last_run_completion, AgentModel.id).where(AgentModel.id == after)).first()
-        else:
-            result = session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == after)).first()
+        result = session.execute(select(sort_column, AgentModel.id).where(AgentModel.id == after)).first()
         if result:
             after_sort_value, after_id = result
-            query = query.where(_cursor_filter(sort_column, AgentModel.id, after_sort_value, after_id, forward=ascending))
+            query = query.where(
+                _cursor_filter(sort_column, AgentModel.id, after_sort_value, after_id, forward=ascending, nulls_last=sort_nulls_last)
+            )
 
     if before:
-        if sort_by == "last_run_completion":
-            result = session.execute(select(AgentModel.last_run_completion, AgentModel.id).where(AgentModel.id == before)).first()
-        else:
-            result = session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == before)).first()
+        result = session.execute(select(sort_column, AgentModel.id).where(AgentModel.id == before)).first()
         if result:
             before_sort_value, before_id = result
-            query = query.where(_cursor_filter(sort_column, AgentModel.id, before_sort_value, before_id, forward=not ascending))
+            query = query.where(
+                _cursor_filter(sort_column, AgentModel.id, before_sort_value, before_id, forward=not ascending, nulls_last=sort_nulls_last)
+            )
 
     # Apply ordering
     order_fn = asc if ascending else desc
-    query = query.order_by(order_fn(sort_column), order_fn(AgentModel.id))
+    query = query.order_by(nulls_last(order_fn(sort_column)) if sort_nulls_last else order_fn(sort_column), order_fn(AgentModel.id))
     return query
 
 
@@ -488,30 +513,30 @@ async def _apply_pagination_async(
     # Determine the sort column
     if sort_by == "last_run_completion":
         sort_column = AgentModel.last_run_completion
+        sort_nulls_last = True  # TODO: handle this as a query param eventually
     else:
         sort_column = AgentModel.created_at
+        sort_nulls_last = False
 
     if after:
-        if sort_by == "last_run_completion":
-            result = (await session.execute(select(AgentModel.last_run_completion, AgentModel.id).where(AgentModel.id == after))).first()
-        else:
-            result = (await session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == after))).first()
+        result = (await session.execute(select(sort_column, AgentModel.id).where(AgentModel.id == after))).first()
         if result:
             after_sort_value, after_id = result
-            query = query.where(_cursor_filter(sort_column, AgentModel.id, after_sort_value, after_id, forward=ascending))
+            query = query.where(
+                _cursor_filter(sort_column, AgentModel.id, after_sort_value, after_id, forward=ascending, nulls_last=sort_nulls_last)
+            )
 
     if before:
-        if sort_by == "last_run_completion":
-            result = (await session.execute(select(AgentModel.last_run_completion, AgentModel.id).where(AgentModel.id == before))).first()
-        else:
-            result = (await session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == before))).first()
+        result = (await session.execute(select(sort_column, AgentModel.id).where(AgentModel.id == before))).first()
         if result:
             before_sort_value, before_id = result
-            query = query.where(_cursor_filter(sort_column, AgentModel.id, before_sort_value, before_id, forward=not ascending))
+            query = query.where(
+                _cursor_filter(sort_column, AgentModel.id, before_sort_value, before_id, forward=not ascending, nulls_last=sort_nulls_last)
+            )
 
     # Apply ordering
     order_fn = asc if ascending else desc
-    query = query.order_by(order_fn(sort_column), order_fn(AgentModel.id))
+    query = query.order_by(nulls_last(order_fn(sort_column)) if sort_nulls_last else order_fn(sort_column), order_fn(AgentModel.id))
     return query
 
 

@@ -38,6 +38,7 @@ from letta.server.rest_api.utils import (
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import compile_system_message
+from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.summarizer.enums import SummarizationMode
@@ -64,6 +65,7 @@ class VoiceAgent(BaseAgent):
         message_manager: MessageManager,
         agent_manager: AgentManager,
         block_manager: BlockManager,
+        job_manager: JobManager,
         passage_manager: PassageManager,
         actor: User,
     ):
@@ -73,6 +75,7 @@ class VoiceAgent(BaseAgent):
 
         # Summarizer settings
         self.block_manager = block_manager
+        self.job_manager = job_manager
         self.passage_manager = passage_manager
         # TODO: This is not guaranteed to exist!
         self.summary_block_label = "human"
@@ -98,6 +101,7 @@ class VoiceAgent(BaseAgent):
                 agent_manager=self.agent_manager,
                 actor=self.actor,
                 block_manager=self.block_manager,
+                job_manager=self.job_manager,
                 passage_manager=self.passage_manager,
                 target_block_label=self.summary_block_label,
             ),
@@ -149,7 +153,9 @@ class VoiceAgent(BaseAgent):
             previous_message_count=self.num_messages,
             archival_memory_size=self.num_archival_memories,
         )
-        letta_message_db_queue = create_input_messages(input_messages=input_messages, agent_id=agent_state.id, actor=self.actor)
+        letta_message_db_queue = create_input_messages(
+            input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=self.actor
+        )
         in_memory_message_history = self.pre_process_input_message(input_messages)
 
         # TODO: Define max steps here
@@ -208,6 +214,7 @@ class VoiceAgent(BaseAgent):
                 agent_id=agent_state.id,
                 model=agent_state.llm_config.model,
                 actor=self.actor,
+                timezone=agent_state.timezone,
             )
             letta_message_db_queue.extend(assistant_msgs)
 
@@ -268,6 +275,7 @@ class VoiceAgent(BaseAgent):
                 function_call_success=success_flag,
                 function_response=tool_result,
                 tool_execution_result=tool_execution_result,
+                timezone=agent_state.timezone,
                 actor=self.actor,
                 add_heartbeat_request_system_message=True,
             )
@@ -439,6 +447,7 @@ class VoiceAgent(BaseAgent):
             message_manager=self.message_manager,
             agent_manager=self.agent_manager,
             block_manager=self.block_manager,
+            job_manager=self.job_manager,
             passage_manager=self.passage_manager,
             sandbox_env_vars=sandbox_env_vars,
             actor=self.actor,

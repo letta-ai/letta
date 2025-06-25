@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from sqlalchemy import and_, func, select, update
 
+from letta.constants import MAX_FILES_OPEN
 from letta.orm.errors import NoResultFound
 from letta.orm.files_agents import FileAgent as FileAgentModel
 from letta.otel.tracing import trace_method
@@ -27,51 +28,66 @@ class FileAgentManager:
         actor: PydanticUser,
         is_open: bool = True,
         visible_content: Optional[str] = None,
-    ) -> PydanticFileAgent:
+    ) -> tuple[PydanticFileAgent, List[str]]:
         """
-        Idempotently attach *file_id* to *agent_id*.
+        Idempotently attach *file_id* to *agent_id* with LRU enforcement.
 
         • If the row already exists → update `is_open`, `visible_content`
           and always refresh `last_accessed_at`.
         • Otherwise create a brand-new association.
+        • If is_open=True, enforces MAX_FILES_OPEN using LRU eviction.
+
+        Returns:
+            Tuple of (file_agent, closed_file_names)
         """
-        async with db_registry.async_session() as session:
-            query = select(FileAgentModel).where(
-                and_(
-                    FileAgentModel.agent_id == agent_id,
-                    FileAgentModel.file_id == file_id,
-                    FileAgentModel.file_name == file_name,
-                    FileAgentModel.organization_id == actor.organization_id,
+        if is_open:
+            # Use the efficient LRU + open method
+            closed_files, was_already_open = await self.enforce_max_open_files_and_open(
+                agent_id=agent_id, file_id=file_id, file_name=file_name, actor=actor, visible_content=visible_content or ""
+            )
+
+            # Get the updated file agent to return
+            file_agent = await self.get_file_agent_by_id(agent_id=agent_id, file_id=file_id, actor=actor)
+            return file_agent, closed_files
+        else:
+            # Original logic for is_open=False
+            async with db_registry.async_session() as session:
+                query = select(FileAgentModel).where(
+                    and_(
+                        FileAgentModel.agent_id == agent_id,
+                        FileAgentModel.file_id == file_id,
+                        FileAgentModel.file_name == file_name,
+                        FileAgentModel.organization_id == actor.organization_id,
+                    )
                 )
-            )
-            existing = await session.scalar(query)
+                existing = await session.scalar(query)
 
-            now_ts = datetime.now(timezone.utc)
+                now_ts = datetime.now(timezone.utc)
 
-            if existing:
-                # update only the fields that actually changed
-                if existing.is_open != is_open:
-                    existing.is_open = is_open
+                if existing:
+                    # update only the fields that actually changed
+                    if existing.is_open != is_open:
+                        existing.is_open = is_open
 
-                if visible_content is not None and existing.visible_content != visible_content:
-                    existing.visible_content = visible_content
+                    if visible_content is not None and existing.visible_content != visible_content:
+                        existing.visible_content = visible_content
 
-                existing.last_accessed_at = now_ts
+                    existing.last_accessed_at = now_ts
 
-                await existing.update_async(session, actor=actor)
-                return existing.to_pydantic()
+                    await existing.update_async(session, actor=actor)
+                    return existing.to_pydantic(), []
 
-            assoc = FileAgentModel(
-                agent_id=agent_id,
-                file_id=file_id,
-                file_name=file_name,
-                organization_id=actor.organization_id,
-                is_open=is_open,
-                visible_content=visible_content,
-                last_accessed_at=now_ts,
-            )
-            await assoc.create_async(session, actor=actor)
-            return assoc.to_pydantic()
+                assoc = FileAgentModel(
+                    agent_id=agent_id,
+                    file_id=file_id,
+                    file_name=file_name,
+                    organization_id=actor.organization_id,
+                    is_open=is_open,
+                    visible_content=visible_content,
+                    last_accessed_at=now_ts,
+                )
+                await assoc.create_async(session, actor=actor)
+                return assoc.to_pydantic(), []
 
     @enforce_types
     @trace_method
@@ -245,6 +261,129 @@ class FileAgentManager:
             )
             await session.execute(stmt)
             await session.commit()
+
+    @enforce_types
+    @trace_method
+    async def mark_access_bulk(self, *, agent_id: str, file_names: List[str], actor: PydanticUser) -> None:
+        """Update `last_accessed_at = now()` for multiple files by name without loading rows."""
+        if not file_names:
+            return
+
+        async with db_registry.async_session() as session:
+            stmt = (
+                update(FileAgentModel)
+                .where(
+                    FileAgentModel.agent_id == agent_id,
+                    FileAgentModel.file_name.in_(file_names),
+                    FileAgentModel.organization_id == actor.organization_id,
+                )
+                .values(last_accessed_at=func.now())
+            )
+            await session.execute(stmt)
+            await session.commit()
+
+    @enforce_types
+    @trace_method
+    async def enforce_max_open_files_and_open(
+        self, *, agent_id: str, file_id: str, file_name: str, actor: PydanticUser, visible_content: str
+    ) -> tuple[List[str], bool]:
+        """
+        Efficiently handle LRU eviction and file opening in a single transaction.
+
+        Args:
+            agent_id: ID of the agent
+            file_id: ID of the file to open
+            file_name: Name of the file to open
+            actor: User performing the action
+            visible_content: Content to set for the opened file
+
+        Returns:
+            Tuple of (closed_file_names, file_was_already_open)
+        """
+        async with db_registry.async_session() as session:
+            # Single query to get ALL open files for this agent, ordered by last_accessed_at (oldest first)
+            open_files_query = (
+                select(FileAgentModel)
+                .where(
+                    and_(
+                        FileAgentModel.agent_id == agent_id,
+                        FileAgentModel.organization_id == actor.organization_id,
+                        FileAgentModel.is_open.is_(True),
+                    )
+                )
+                .order_by(FileAgentModel.last_accessed_at.asc())  # Oldest first for LRU
+            )
+
+            all_open_files = (await session.execute(open_files_query)).scalars().all()
+
+            # Check if the target file exists (open or closed)
+            target_file_query = select(FileAgentModel).where(
+                and_(
+                    FileAgentModel.agent_id == agent_id,
+                    FileAgentModel.organization_id == actor.organization_id,
+                    FileAgentModel.file_name == file_name,
+                )
+            )
+            file_to_open = await session.scalar(target_file_query)
+
+            # Separate the file we're opening from others (only if it's currently open)
+            other_open_files = []
+            for file_agent in all_open_files:
+                if file_agent.file_name != file_name:
+                    other_open_files.append(file_agent)
+
+            file_was_already_open = file_to_open is not None and file_to_open.is_open
+
+            # Calculate how many files need to be closed
+            current_other_count = len(other_open_files)
+            target_other_count = MAX_FILES_OPEN - 1  # Reserve 1 slot for file we're opening
+
+            closed_file_names = []
+            if current_other_count > target_other_count:
+                files_to_close_count = current_other_count - target_other_count
+                files_to_close = other_open_files[:files_to_close_count]  # Take oldest
+
+                # Bulk close files using a single UPDATE query
+                file_ids_to_close = [f.file_id for f in files_to_close]
+                closed_file_names = [f.file_name for f in files_to_close]
+
+                if file_ids_to_close:
+                    close_stmt = (
+                        update(FileAgentModel)
+                        .where(
+                            and_(
+                                FileAgentModel.agent_id == agent_id,
+                                FileAgentModel.file_id.in_(file_ids_to_close),
+                                FileAgentModel.organization_id == actor.organization_id,
+                            )
+                        )
+                        .values(is_open=False, visible_content=None)
+                    )
+                    await session.execute(close_stmt)
+
+            # Open the target file (update or create)
+            now_ts = datetime.now(timezone.utc)
+
+            if file_to_open:
+                # Update existing file
+                file_to_open.is_open = True
+                file_to_open.visible_content = visible_content
+                file_to_open.last_accessed_at = now_ts
+                await file_to_open.update_async(session, actor=actor)
+            else:
+                # Create new file association
+                new_file_agent = FileAgentModel(
+                    agent_id=agent_id,
+                    file_id=file_id,
+                    file_name=file_name,
+                    organization_id=actor.organization_id,
+                    is_open=True,
+                    visible_content=visible_content,
+                    last_accessed_at=now_ts,
+                )
+                await new_file_agent.create_async(session, actor=actor)
+
+            return closed_file_names, file_was_already_open
 
     async def _get_association_by_file_id(self, session, agent_id: str, file_id: str, actor: PydanticUser) -> FileAgentModel:
         q = select(FileAgentModel).where(

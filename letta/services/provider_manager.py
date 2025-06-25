@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 from letta.orm.provider import Provider as ProviderModel
 from letta.otel.tracing import trace_method
@@ -196,10 +196,12 @@ class ProviderManager:
 
     @enforce_types
     @trace_method
-    async def get_bedrock_credentials_async(self, provider_name: Union[str, None], actor: PydanticUser) -> Optional[str]:
+    async def get_bedrock_credentials_async(
+        self, provider_name: Union[str, None], actor: PydanticUser
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         providers = await self.list_providers_async(name=provider_name, actor=actor)
-        access_key = providers[0].api_key if providers else None
-        secret_key = providers[0].api_secret if providers else None
+        access_key = providers[0].access_key if providers else None
+        secret_key = providers[0].api_key if providers else None
         region = providers[0].region if providers else None
         return access_key, secret_key, region
 

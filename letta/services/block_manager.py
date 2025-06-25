@@ -7,12 +7,12 @@ from sqlalchemy.orm import Session
 from letta.log import get_logger
 from letta.orm.block import Block as BlockModel
 from letta.orm.block_history import BlockHistory
-from letta.orm.enums import ActorType
 from letta.orm.errors import NoResultFound
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
+from letta.schemas.enums import ActorType
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.utils import enforce_types

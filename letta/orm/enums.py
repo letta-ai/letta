@@ -1,3 +1,9 @@
+"""Compatibility module for enums that were moved to address circular imports.
+
+This module maintains the old enum definitions for backwards compatibility,
+especially for pickled objects that reference the old import paths.
+"""
+
 from enum import Enum
 
 
@@ -14,28 +20,3 @@ class ToolType(str, Enum):
     EXTERNAL_LANGCHAIN = "external_langchain"
     # TODO is "external" the right name here? Since as of now, MCP is local / doesn't support remote?
     EXTERNAL_MCP = "external_mcp"
-
-
-class JobType(str, Enum):
-    JOB = "job"
-    RUN = "run"
-    BATCH = "batch"
-
-
-class ToolSourceType(str, Enum):
-    """Defines what a tool was derived from"""
-
-    python = "python"
-    json = "json"
-
-
-class ActorType(str, Enum):
-    LETTA_USER = "letta_user"
-    LETTA_AGENT = "letta_agent"
-    LETTA_SYSTEM = "letta_system"
-
-
-class MCPServerType(str, Enum):
-    SSE = "sse"
-    STDIO = "stdio"
-    STREAMABLE_HTTP = "streamable_http"

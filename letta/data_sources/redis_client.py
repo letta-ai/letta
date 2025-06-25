@@ -283,6 +283,12 @@ class NoopAsyncRedisClient(AsyncRedisClient):
     async def scard(self, key: str) -> int:
         return 0
 
+    async def smembers(self, key: str) -> Set[str]:
+        return set()
+
+    async def srem(self, key: str, *members: Union[str, int, float]) -> int:
+        return 0
+
 
 async def get_redis_client() -> AsyncRedisClient:
     global _client_instance

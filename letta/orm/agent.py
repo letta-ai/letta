@@ -89,6 +89,9 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
         Integer, nullable=True, doc="The duration in milliseconds of the agent's last run."
     )
 
+    # timezone
+    timezone: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The timezone of the agent (for the context window).")
+
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="agents")
     tool_exec_environment_variables: Mapped[List["AgentEnvironmentVariable"]] = relationship(
@@ -187,6 +190,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
             "response_format": self.response_format,
             "last_run_completion": self.last_run_completion,
             "last_run_duration_ms": self.last_run_duration_ms,
+            "timezone": self.timezone,
             # optional field defaults
             "tags": [],
             "tools": [],
@@ -265,6 +269,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
             "response_format": self.response_format,
             "last_run_completion": self.last_run_completion,
             "last_run_duration_ms": self.last_run_duration_ms,
+            "timezone": self.timezone,
         }
         optional_fields = {
             "tags": [],

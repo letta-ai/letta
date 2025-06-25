@@ -2,7 +2,14 @@ import pytest
 
 from letta.helpers import ToolRulesSolver
 from letta.helpers.tool_rule_solver import ToolRuleValidationError
-from letta.schemas.tool_rule import ChildToolRule, ConditionalToolRule, InitToolRule, MaxCountPerStepToolRule, TerminalToolRule
+from letta.schemas.tool_rule import (
+    ChildToolRule,
+    ConditionalToolRule,
+    InitToolRule,
+    MaxCountPerStepToolRule,
+    RequiredBeforeExitToolRule,
+    TerminalToolRule,
+)
 
 # Constants for tool names used in the tests
 START_TOOL = "start_tool"
@@ -12,6 +19,9 @@ HELPER_TOOL = "helper_tool"
 FINAL_TOOL = "final_tool"
 END_TOOL = "end_tool"
 UNRECOGNIZED_TOOL = "unrecognized_tool"
+REQUIRED_TOOL_1 = "required_tool_1"
+REQUIRED_TOOL_2 = "required_tool_2"
+SAVE_TOOL = "save_tool"
 
 
 def test_get_allowed_tool_names_with_init_rules():
@@ -175,3 +185,93 @@ def test_max_count_per_step_tool_rule_resets_on_clear():
     solver.clear_tool_history()
 
     assert solver.get_allowed_tool_names({START_TOOL}) == [START_TOOL], "Should allow 'start_tool' again after clearing history"
+
+
+def test_required_before_exit_tool_rule_has_required_tools_been_called():
+    """Test has_required_tools_been_called() with no required tools."""
+    solver = ToolRulesSolver(tool_rules=[])
+
+    assert solver.has_required_tools_been_called() is True, "Should return True when no required tools are defined"
+
+
+def test_required_before_exit_tool_rule_single_required_tool():
+    """Test with a single required-before-exit tool."""
+    required_rule = RequiredBeforeExitToolRule(tool_name=SAVE_TOOL)
+    solver = ToolRulesSolver(tool_rules=[required_rule])
+
+    assert solver.has_required_tools_been_called() is False, "Should return False when required tool hasn't been called"
+    assert solver.get_uncalled_required_tools() == [SAVE_TOOL], "Should return list with uncalled required tool"
+
+    solver.register_tool_call(SAVE_TOOL)
+
+    assert solver.has_required_tools_been_called() is True, "Should return True after required tool is called"
+    assert solver.get_uncalled_required_tools() == [], "Should return empty list after required tool is called"
+
+
+def test_required_before_exit_tool_rule_multiple_required_tools():
+    """Test with multiple required-before-exit tools."""
+    required_rule_1 = RequiredBeforeExitToolRule(tool_name=REQUIRED_TOOL_1)
+    required_rule_2 = RequiredBeforeExitToolRule(tool_name=REQUIRED_TOOL_2)
+    solver = ToolRulesSolver(tool_rules=[required_rule_1, required_rule_2])
+
+    assert solver.has_required_tools_been_called() is False, "Should return False when no required tools have been called"
+    uncalled_tools = solver.get_uncalled_required_tools()
+    assert set(uncalled_tools) == {REQUIRED_TOOL_1, REQUIRED_TOOL_2}, "Should return both uncalled required tools"
+
+    # Call first required tool
+    solver.register_tool_call(REQUIRED_TOOL_1)
+
+    assert solver.has_required_tools_been_called() is False, "Should return False when only one required tool has been called"
+    assert solver.get_uncalled_required_tools() == [REQUIRED_TOOL_2], "Should return remaining uncalled required tool"
+
+    # Call second required tool
+    solver.register_tool_call(REQUIRED_TOOL_2)
+
+    assert solver.has_required_tools_been_called() is True, "Should return True when all required tools have been called"
+    assert solver.get_uncalled_required_tools() == [], "Should return empty list when all required tools have been called"
+
+
+def test_required_before_exit_tool_rule_mixed_with_other_tools():
+    """Test required-before-exit tools mixed with other tool calls."""
+    required_rule = RequiredBeforeExitToolRule(tool_name=SAVE_TOOL)
+    solver = ToolRulesSolver(tool_rules=[required_rule])
+
+    # Call other tools first
+    solver.register_tool_call(START_TOOL)
+    solver.register_tool_call(HELPER_TOOL)
+
+    assert solver.has_required_tools_been_called() is False, "Should return False even after calling other tools"
+    assert solver.get_uncalled_required_tools() == [SAVE_TOOL], "Should still show required tool as uncalled"
+
+    # Call required tool
+    solver.register_tool_call(SAVE_TOOL)
+
+    assert solver.has_required_tools_been_called() is True, "Should return True after required tool is called"
+    assert solver.get_uncalled_required_tools() == [], "Should return empty list after required tool is called"
+
+
+def test_required_before_exit_tool_rule_is_terminal():
+    """Test that required-before-exit tools are considered terminal tools."""
+    required_rule = RequiredBeforeExitToolRule(tool_name=SAVE_TOOL)
+    terminal_rule = TerminalToolRule(tool_name=END_TOOL)
+    solver = ToolRulesSolver(tool_rules=[required_rule, terminal_rule])
+
+    assert solver.is_terminal_tool(SAVE_TOOL) is True, "Required-before-exit tool should be considered terminal"
+    assert solver.is_terminal_tool(END_TOOL) is True, "Regular terminal tool should still be considered terminal"
+    assert solver.is_terminal_tool(START_TOOL) is False, "Non-terminal tool should not be considered terminal"
+
+
+def test_required_before_exit_tool_rule_clear_history():
+    """Test that clearing history resets the required tools state."""
+    required_rule = RequiredBeforeExitToolRule(tool_name=SAVE_TOOL)
+    solver = ToolRulesSolver(tool_rules=[required_rule])
+
+    # Call required tool
+    solver.register_tool_call(SAVE_TOOL)
+    assert solver.has_required_tools_been_called() is True, "Should return True after required tool is called"
+
+    # Clear history
+    solver.clear_tool_history()
+
+    assert solver.has_required_tools_been_called() is False, "Should return False after clearing history"
+    assert solver.get_uncalled_required_tools() == [SAVE_TOOL], "Should show required tool as uncalled after clearing history"

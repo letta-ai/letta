@@ -39,6 +39,10 @@ class LettaStreamingRequest(LettaRequest):
     )
 
 
+class LettaAsyncRequest(LettaRequest):
+    callback_url: Optional[str] = Field(None, description="Optional callback URL to POST to when the job completes")
+
+
 class LettaBatchRequest(LettaRequest):
     agent_id: str = Field(..., description="The ID of the agent to send this batch request for")
 

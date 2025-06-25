@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
-from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, LETTA_MODEL_ENDPOINT
 from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
@@ -25,7 +25,7 @@ from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.group import Group
 from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
-from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
+from letta.schemas.letta_request import LettaAsyncRequest, LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
 from letta.schemas.message import MessageCreate
@@ -686,7 +686,7 @@ async def send_message(
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
+    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex", "bedrock"]
 
     if agent_eligible and model_compatible:
         if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
@@ -707,6 +707,7 @@ async def send_message(
                 message_manager=server.message_manager,
                 agent_manager=server.agent_manager,
                 block_manager=server.block_manager,
+                job_manager=server.job_manager,
                 passage_manager=server.passage_manager,
                 actor=actor,
                 step_manager=server.step_manager,
@@ -768,9 +769,9 @@ async def send_message_streaming(
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
-    model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
-    not_letta_endpoint = not ("inference.letta.com" in agent.llm_config.model_endpoint)
+    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex", "bedrock"]
+    model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"]
+    not_letta_endpoint = LETTA_MODEL_ENDPOINT != agent.llm_config.model_endpoint
 
     if agent_eligible and model_compatible:
         if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
@@ -793,6 +794,7 @@ async def send_message_streaming(
                 message_manager=server.message_manager,
                 agent_manager=server.agent_manager,
                 block_manager=server.block_manager,
+                job_manager=server.job_manager,
                 passage_manager=server.passage_manager,
                 actor=actor,
                 step_manager=server.step_manager,
@@ -857,7 +859,14 @@ async def process_message_background(
     try:
         agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
         agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-        model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
+        model_compatible = agent.llm_config.model_endpoint_type in [
+            "anthropic",
+            "openai",
+            "together",
+            "google_ai",
+            "google_vertex",
+            "bedrock",
+        ]
         if agent_eligible and model_compatible:
             if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
                 agent_loop = SleeptimeMultiAgentV2(
@@ -877,6 +886,7 @@ async def process_message_background(
                     message_manager=server.message_manager,
                     agent_manager=server.agent_manager,
                     block_manager=server.block_manager,
+                    job_manager=server.job_manager,
                     passage_manager=server.passage_manager,
                     actor=actor,
                     step_manager=server.step_manager,
@@ -886,6 +896,7 @@ async def process_message_background(
             result = await agent_loop.step(
                 messages,
                 max_steps=max_steps,
+                run_id=job_id,
                 use_assistant_message=use_assistant_message,
                 request_start_timestamp_ns=request_start_timestamp_ns,
                 include_return_message_types=include_return_message_types,
@@ -897,6 +908,7 @@ async def process_message_background(
                 input_messages=messages,
                 stream_steps=False,
                 stream_tokens=False,
+                metadata={"job_id": job_id},
                 # Support for AssistantMessage
                 use_assistant_message=use_assistant_message,
                 assistant_message_tool_name=assistant_message_tool_name,
@@ -929,9 +941,8 @@ async def process_message_background(
 async def send_message_async(
     agent_id: str,
     server: SyncServer = Depends(get_letta_server),
-    request: LettaRequest = Body(...),
+    request: LettaAsyncRequest = Body(...),
     actor_id: Optional[str] = Header(None, alias="user_id"),
-    callback_url: Optional[str] = Query(None, description="Optional callback URL to POST to when the job completes"),
 ):
     """
     Asynchronously process a user message and return a run object.
@@ -944,7 +955,7 @@ async def send_message_async(
     run = Run(
         user_id=actor.id,
         status=JobStatus.created,
-        callback_url=callback_url,
+        callback_url=request.callback_url,
         metadata={
             "job_type": "send_message_async",
             "agent_id": agent_id,
@@ -953,6 +964,7 @@ async def send_message_async(
             use_assistant_message=request.use_assistant_message,
             assistant_message_tool_name=request.assistant_message_tool_name,
             assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+            include_return_message_types=request.include_return_message_types,
         ),
     )
     run = await server.job_manager.create_job_async(pydantic_job=run, actor=actor)
@@ -1021,7 +1033,7 @@ async def summarize_agent_conversation(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex"]
+    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex", "bedrock"]
 
     if agent_eligible and model_compatible:
         agent = LettaAgent(
@@ -1029,6 +1041,7 @@ async def summarize_agent_conversation(
             message_manager=server.message_manager,
             agent_manager=server.agent_manager,
             block_manager=server.block_manager,
+            job_manager=server.job_manager,
             passage_manager=server.passage_manager,
             actor=actor,
             step_manager=server.step_manager,

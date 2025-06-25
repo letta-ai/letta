@@ -17,6 +17,7 @@ class ErrorCode(Enum):
     INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR"
     CONTEXT_WINDOW_EXCEEDED = "CONTEXT_WINDOW_EXCEEDED"
     RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED"
+    TIMEOUT = "TIMEOUT"
 
 
 class LettaError(Exception):
@@ -99,6 +100,10 @@ class LLMUnprocessableEntityError(LLMError):
 class LLMServerError(LLMError):
     """Error indicating an internal server error occurred within the LLM service itself
     while processing the request."""
+
+
+class LLMTimeoutError(LLMError):
+    """Error when LLM request times out"""
 
 
 class BedrockPermissionError(LettaError):
