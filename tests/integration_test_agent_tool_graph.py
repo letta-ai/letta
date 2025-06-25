@@ -967,7 +967,7 @@ async def test_required_tools_called_during_normal_flow(server, disable_e2b_api_
     tools = [save_data_tool]
     tool_rules = [
         InitToolRule(tool_name="save_data"),
-        RequiredBeforeExitToolRule(tool_name="send_message"),
+        RequiredBeforeExitToolRule(tool_name="save_data"),
         TerminalToolRule(tool_name="send_message"),
     ]
 
