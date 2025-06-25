@@ -64,4 +64,9 @@ jobs:
 
     - name: Run Autoflake
       working-directory: apps/core
-      run: poetry run autoflake --remove-all-unused-imports --remove-unused-variables --check --recursive --ignore-init-module-imports .
+      run: |
+        set +e
+        output=$(poetry run autoflake --remove-all-unused-imports --remove-unused-variables --check --recursive --ignore-init-module-imports . 2>&1)
+        exit_code=$?
+        echo "$output" | grep -v 'No issues detected!'
+        exit $exit_code
