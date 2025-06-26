@@ -378,7 +378,7 @@
     "error": "There was an error loading data sources, please try again or contact support.",
     "noDataSources": "You have no data sources attached to this agent. Click the + button to attach a data source.",
     "CreateDataSourceDialog": {
-      "titlev2": "Create a data new source",
+      "titlev2": "Create a new data source",
       "titles": "Add New Data Source",
       "trigger": "Create source",
       "goBack": "Go back",
@@ -492,7 +492,7 @@
       }
     },
     "DataSourceSelector": {
-      "createNewDataSource": "Create new datasource",
+      "createNewDataSource": "Create new data source",
       "incompatibleWarningTooltip": "This data source's embedding config does not match the agent config, this may lead to the agent not remembering data properly. Open this data source to see more details.",
       "attachExistingDataSource": "Attach existing data source"
     },
