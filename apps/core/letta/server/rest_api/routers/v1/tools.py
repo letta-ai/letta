@@ -13,7 +13,7 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
 from letta.errors import LettaToolCreateError
 from letta.functions.mcp_client.exceptions import MCPTimeoutError
-from letta.functions.mcp_client.types import MCPTool, SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
+from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
 from letta.helpers.composio_helpers import get_composio_api_key
 from letta.log import get_logger
 from letta.orm.errors import UniqueConstraintViolationError
@@ -22,6 +22,8 @@ from letta.schemas.mcp import UpdateSSEMCPServer, UpdateStreamableHTTPMCPServer
 from letta.schemas.tool import Tool, ToolCreate, ToolRunFromSource, ToolUpdate
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
+from letta.services.mcp.sse_client import AsyncSSEMCPClient
+from letta.services.mcp.streamable_http_client import AsyncStreamableHTTPMCPClient
 from letta.settings import tool_settings
 
 router = APIRouter(prefix="/tools", tags=["tools"])
@@ -588,3 +590,69 @@ async def delete_mcp_server_from_config(
         # TODO: don't do this in the future (just return MCPServer)
         all_servers = await server.mcp_manager.list_mcp_servers(actor=actor)
         return [server.to_config() for server in all_servers]
+
+
+@router.post("/mcp/servers/test", response_model=List[MCPTool], operation_id="test_mcp_server")
+async def test_mcp_server(
+    request: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig] = Body(...),
+):
+    """
+    Test connection to an MCP server without adding it.
+    Returns the list of available tools if successful.
+    """
+    client = None
+    try:
+        if isinstance(request, StdioServerConfig):
+            raise HTTPException(
+                status_code=400,
+                detail="stdio is not supported currently for testing connection",
+            )
+
+        # create a temporary MCP client based on the server type
+        if request.type == MCPServerType.SSE:
+            if not isinstance(request, SSEServerConfig):
+                request = SSEServerConfig(**request.model_dump())
+            client = AsyncSSEMCPClient(request)
+        elif request.type == MCPServerType.STREAMABLE_HTTP:
+            if not isinstance(request, StreamableHTTPServerConfig):
+                request = StreamableHTTPServerConfig(**request.model_dump())
+            client = AsyncStreamableHTTPMCPClient(request)
+        else:
+            raise ValueError(f"Invalid MCP server type: {request.type}")
+
+        await client.connect_to_server()
+        tools = await client.list_tools()
+        await client.cleanup()
+        return tools
+    except ConnectionError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "MCPServerConnectionError",
+                "message": str(e),
+                "server_name": request.server_name,
+            },
+        )
+    except MCPTimeoutError as e:
+        raise HTTPException(
+            status_code=408,
+            detail={
+                "code": "MCPTimeoutError",
+                "message": f"MCP server connection timed out: {str(e)}",
+                "server_name": request.server_name,
+            },
+        )
+    except Exception as e:
+        if client:
+            try:
+                await client.cleanup()
+            except:
+                pass
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "MCPServerTestError",
+                "message": f"Failed to test MCP server: {str(e)}",
+                "server_name": request.server_name,
+            },
+        )

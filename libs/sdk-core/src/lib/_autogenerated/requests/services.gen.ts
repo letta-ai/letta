@@ -40,6 +40,8 @@ import type {
   UpdateMcpServerResponse,
   DeleteMcpServerData,
   DeleteMcpServerResponse,
+  TestMcpServerData,
+  TestMcpServerResponse,
   CountSourcesData,
   CountSourcesResponse,
   RetrieveSourceData,
@@ -747,6 +749,31 @@ export class ToolsService {
       path: {
         mcp_server_name: data.mcpServerName,
       },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Test Mcp Server
+   * Test connection to an MCP server without adding it.
+   * Returns the list of available tools if successful.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns MCPTool Successful Response
+   * @throws ApiError
+   */
+  public static testMcpServer(
+    data: TestMcpServerData,
+    headers?: { user_id: string },
+  ): CancelablePromise<TestMcpServerResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/tools/mcp/servers/test',
+      body: data.requestBody,
+      mediaType: 'application/json',
       errors: {
         422: 'Validation Error',
       },

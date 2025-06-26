@@ -1695,6 +1695,9 @@ export type ToolsServiceAddComposioToolMutationResult = Awaited<
 export type ToolsServiceAddMcpToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.addMcpTool>
 >;
+export type ToolsServiceTestMcpServerMutationResult = Awaited<
+  ReturnType<typeof ToolsService.testMcpServer>
+>;
 export type SourcesServiceCreateSourceMutationResult = Awaited<
   ReturnType<typeof SourcesService.createSource>
 >;

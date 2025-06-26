@@ -3008,6 +3008,50 @@ export const useToolsServiceAddMcpTool = <
     ...options,
   });
 /**
+ * Test Mcp Server
+ * Test connection to an MCP server without adding it.
+ * Returns the list of available tools if successful.
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @returns MCPTool Successful Response
+ * @throws ApiError
+ */
+export const useToolsServiceTestMcpServer = <
+  TData = Common.ToolsServiceTestMcpServerMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody:
+          | StdioServerConfig
+          | SSEServerConfig
+          | StreamableHTTPServerConfig;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody:
+        | StdioServerConfig
+        | SSEServerConfig
+        | StreamableHTTPServerConfig;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody }) =>
+      ToolsService.testMcpServer({ requestBody }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
  * Create Source
  * Create a new data source.
  * @param data The data for the request.

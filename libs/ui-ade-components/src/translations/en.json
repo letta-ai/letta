@@ -1520,6 +1520,20 @@
       "submit": "Add",
       "cancel": "Cancel"
     },
+    "TestMCPConnectionButton": {
+      "label": "Test connection",
+      "pending": "Connecting...",
+      "availableTools": "Available tools",
+      "parameters": "Parameters",
+      "description": "Description",
+      "success": {
+        "label": "Connected"
+      },
+      "failed": {
+        "label": "Failed",
+        "tooltip": "Unable to connect, please verify your server URL and authentication configuration."
+      }
+    },
     "UpdateServerDialog": {
       "title": "Edit Server",
       "authToken": {

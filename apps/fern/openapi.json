@@ -920,6 +920,61 @@
         }
       }
     },
+    "/v1/tools/mcp/servers/test": {
+      "post": {
+        "tags": ["tools"],
+        "summary": "Test Mcp Server",
+        "description": "Test connection to an MCP server without adding it.\nReturns the list of available tools if successful.",
+        "operationId": "test_mcp_server",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/StdioServerConfig"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SSEServerConfig"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StreamableHTTPServerConfig"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MCPTool"
+                  },
+                  "type": "array",
+                  "title": "Response Test Mcp Server"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sources/count": {
       "get": {
         "tags": ["sources"],

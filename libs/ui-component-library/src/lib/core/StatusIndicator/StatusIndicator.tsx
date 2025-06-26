@@ -11,6 +11,7 @@ const statusIndicatorVariants = cva('relative w-2 h-2 rounded-full', {
       processing: 'bg-warning animate-pulse',
       inactive: 'bg-destructive',
       warning: 'bg-warning',
+      default: 'bg-black bg-opacity-50',
       brand: 'bg-brand',
     },
     animate: {
@@ -47,7 +48,11 @@ export function StatusIndicator(props: StatusIndicatorProps) {
   }
 
   return (
-    <MaybeTooltip asChild content={tooltipContent}>
+    <MaybeTooltip
+      asChild
+      renderTooltip={!!tooltipContent}
+      content={tooltipContent}
+    >
       <div>
         <div className={statusIndicatorVariants(rest)} />
       </div>

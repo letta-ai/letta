@@ -6245,6 +6245,28 @@ export const delete_Delete_mcp_server = {
   ),
 };
 
+export type post_Test_mcp_server = typeof post_Test_mcp_server;
+export const post_Test_mcp_server = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/tools/mcp/servers/test'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    body: z.union([
+      StdioServerConfig,
+      SSEServerConfig,
+      StreamableHTTPServerConfig,
+      z.array(
+        z.union([
+          StdioServerConfig,
+          SSEServerConfig,
+          StreamableHTTPServerConfig,
+        ]),
+      ),
+    ]),
+  }),
+  response: z.array(MCPTool),
+};
+
 export type get_Count_sources = typeof get_Count_sources;
 export const get_Count_sources = {
   method: z.literal('GET'),
@@ -9061,6 +9083,7 @@ export const EndpointByMethod = {
     '/v1/tools/composio/{composio_action_name}': post_Add_composio_tool,
     '/v1/tools/mcp/servers/{mcp_server_name}/{mcp_tool_name}':
       post_Add_mcp_tool,
+    '/v1/tools/mcp/servers/test': post_Test_mcp_server,
     '/v1/sources/': post_Create_source,
     '/v1/sources/{source_id}/upload': post_Upload_file_to_source,
     '/v1/agents/': post_Create_agent,

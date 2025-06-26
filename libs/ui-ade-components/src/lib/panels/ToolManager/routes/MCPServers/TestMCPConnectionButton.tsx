@@ -1,0 +1,151 @@
+import { useCallback, useState } from 'react';
+import { useTranslations } from '@letta-cloud/translations';
+import {
+  Button,
+  HStack,
+  VStack,
+  StatusIndicator,
+  Typography,
+} from '@letta-cloud/ui-component-library';
+import {
+  useToolsServiceTestMcpServer,
+  type SSEServerConfig,
+  type StdioServerConfig,
+  type StreamableHTTPServerConfig,
+  type MCPServerType,
+} from '@letta-cloud/sdk-core';
+import { MCPServerTypes, type MCPTool } from './types';
+import { AUTH_HEADER } from './constants';
+import { formatAuthToken } from './utils';
+import { MCPToolsList } from './MCPToolsList';
+
+interface TestMCPConnectionButtonProps {
+  serverType: string;
+  serverUrl?: string;
+  authToken?: string;
+}
+
+export function TestMCPConnectionButton({
+  serverType,
+  serverUrl,
+  authToken,
+}: TestMCPConnectionButtonProps) {
+  const [testingStatus, setTestingStatus] = useState<
+    'failed' | 'pending' | 'success' | null
+  >(null);
+  const [availableTools, setAvailableTools] = useState<MCPTool[]>([]);
+  const t = useTranslations('ToolsEditor/MCPServers');
+
+  const { mutate: testServer, isPending } = useToolsServiceTestMcpServer({
+    onSuccess: (tools) => {
+      setAvailableTools(tools as MCPTool[]);
+      setTestingStatus('success');
+    },
+    onError: (_error) => {
+      setAvailableTools([]);
+      setTestingStatus('failed');
+    },
+  });
+
+  const testConnection = useCallback(() => {
+    setTestingStatus('pending');
+    setAvailableTools([]);
+
+    let requestBody:
+      | SSEServerConfig
+      | StdioServerConfig
+      | StreamableHTTPServerConfig;
+
+    if (serverType === MCPServerTypes.Stdio) {
+      return;
+    } else if (serverType === MCPServerTypes.Sse) {
+      if (!serverUrl) {
+        setTestingStatus('failed');
+        return;
+      }
+      requestBody = {
+        server_name: 'test_server',
+        type: serverType as MCPServerType,
+        server_url: serverUrl,
+        auth_header: authToken ? AUTH_HEADER : undefined,
+        auth_token: formatAuthToken(authToken),
+      } as SSEServerConfig;
+    } else {
+      if (!serverUrl) {
+        setTestingStatus('failed');
+        return;
+      }
+      requestBody = {
+        server_name: 'test_server',
+        type: serverType as MCPServerType,
+        server_url: serverUrl,
+        auth_header: authToken ? AUTH_HEADER : undefined,
+        auth_token: formatAuthToken(authToken),
+      } as StreamableHTTPServerConfig;
+    }
+
+    testServer({ requestBody });
+  }, [serverType, serverUrl, authToken, testServer]);
+
+  const isDisabled =
+    isPending || serverType === MCPServerTypes.Stdio || !serverUrl;
+
+  return (
+    <VStack gap="large" padding="small" border fullWidth>
+      <HStack align="center" justify="spaceBetween" fullWidth>
+        <Button
+          type="button"
+          color="secondary"
+          disabled={isDisabled}
+          label={t('TestMCPConnectionButton.label')}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            testConnection();
+          }}
+        />
+        <HStack paddingRight="small">
+          {testingStatus === 'success' && (
+            <HStack align="center">
+              <Typography variant="body2" bold>
+                {t('TestMCPConnectionButton.success.label')}
+              </Typography>
+              <StatusIndicator status="active" animate />
+            </HStack>
+          )}
+          {testingStatus === 'failed' && (
+            <HStack align="center">
+              <Typography variant="body2" bold>
+                {t('TestMCPConnectionButton.failed.label')}
+              </Typography>
+              <StatusIndicator status="inactive" />
+            </HStack>
+          )}
+          {testingStatus === 'pending' && (
+            <HStack align="center">
+              {isPending && (
+                <Typography variant="body2" bold>
+                  {t('TestMCPConnectionButton.pending')}
+                </Typography>
+              )}
+              <StatusIndicator status="processing" />
+            </HStack>
+          )}
+          {testingStatus === null && (
+            <HStack align="center">
+              <StatusIndicator status="default" />
+            </HStack>
+          )}
+        </HStack>
+      </HStack>
+      {testingStatus === 'failed' && (
+        <HStack padding="xsmall">
+          <Typography variant="body2" color="muted">
+            {t('TestMCPConnectionButton.failed.tooltip')}
+          </Typography>
+        </HStack>
+      )}
+      <MCPToolsList tools={availableTools} />
+    </VStack>
+  );
+}

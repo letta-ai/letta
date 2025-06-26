@@ -33,3 +33,21 @@ export function getIsStreamableOrHttpServer(
     server.type === MCPServerTypes.StreamableHttp
   );
 }
+
+export interface MCPToolParameter {
+  type?: string;
+  description?: string;
+  enum?: string[];
+}
+
+export interface MCPToolInputSchema {
+  type?: string;
+  properties?: Record<string, MCPToolParameter>;
+  required?: string[];
+}
+
+export interface MCPTool {
+  name: string;
+  description?: string;
+  inputSchema?: MCPToolInputSchema;
+}

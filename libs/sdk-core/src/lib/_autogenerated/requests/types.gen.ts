@@ -4650,6 +4650,12 @@ export type DeleteMcpServerResponse = Array<
   StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig
 >;
 
+export type TestMcpServerData = {
+  requestBody: StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig;
+};
+
+export type TestMcpServerResponse = Array<MCPTool>;
+
 export type CountSourcesData = {
   userId?: string | null;
 };
@@ -6221,6 +6227,21 @@ export type $OpenApiTs = {
         200: Array<
           StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig
         >;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tools/mcp/servers/test': {
+    post: {
+      req: TestMcpServerData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<MCPTool>;
         /**
          * Validation Error
          */

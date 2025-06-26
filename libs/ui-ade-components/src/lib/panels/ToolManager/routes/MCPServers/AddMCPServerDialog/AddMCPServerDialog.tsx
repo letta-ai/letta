@@ -29,6 +29,7 @@ import {
   CommandField,
   ArgsField,
 } from '../FormFields';
+import { TestMCPConnectionButton } from '../TestMCPConnectionButton';
 import {
   useStdioServerSchema,
   useSSEServerSchema,
@@ -174,6 +175,10 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
     [mutate],
   );
 
+  const { watch } = form;
+  const watchedServerUrl = watch('serverUrl');
+  const watchedAuthToken = watch('authToken');
+
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(handleSubmit)}>
@@ -181,6 +186,11 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
           <ServerNameField />
           <ServerUrlField />
           <AuthTokenField />
+          <TestMCPConnectionButton
+            serverType={MCPServerTypes.Sse}
+            serverUrl={watchedServerUrl}
+            authToken={watchedAuthToken}
+          />
           <MCPFormActions
             errorMessage={isError ? getErrorMessage(error) : undefined}
             onCancel={handleReset}
@@ -252,6 +262,10 @@ function AddStreamableHttpServerForm(props: AddStdioServerFormProps) {
     [mutate],
   );
 
+  const { watch } = form;
+  const watchedServerUrl = watch('serverUrl');
+  const watchedAuthToken = watch('authToken');
+
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(handleSubmit)}>
@@ -259,6 +273,11 @@ function AddStreamableHttpServerForm(props: AddStdioServerFormProps) {
           <ServerNameField />
           <ServerUrlField />
           <AuthTokenField />
+          <TestMCPConnectionButton
+            serverType={MCPServerTypes.StreamableHttp}
+            serverUrl={watchedServerUrl}
+            authToken={watchedAuthToken}
+          />
           <MCPFormActions
             errorMessage={isError ? getErrorMessage(error) : undefined}
             onCancel={handleReset}
