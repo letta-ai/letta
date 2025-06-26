@@ -54,10 +54,10 @@
     "selectDataSource": "View attached data sources"
   },
   "ADE/DataSourcesPanel/NoDatasourceView": {
-    "title": "No datasources attached",
-    "new": "Create a datasource",
+    "title": "No data sources attached",
+    "new": "Create new",
     "or": "or",
-    "attach": "Attach an existing datasource"
+    "attach": "Attach existing"
   },
   "ADE/NetworkInspector": {
     "title": "Network Inspector",
@@ -378,7 +378,7 @@
     "error": "There was an error loading data sources, please try again or contact support.",
     "noDataSources": "You have no data sources attached to this agent. Click the + button to attach a data source.",
     "CreateDataSourceDialog": {
-      "titlev2": "Create a new source",
+      "titlev2": "Create a data new source",
       "titles": "Add New Data Source",
       "trigger": "Create source",
       "goBack": "Go back",
@@ -388,8 +388,8 @@
       },
       "instructions": {
         "label": "Instructions",
-        "details": "Add instructions and details for agent on how to use this data source. It’ll work together with the instructions for each file",
-        "placeholder": "Enter instructions for how this data source should be used"
+        "details": "Provide your agent with relevant instructions for how to use files uploaded to this data source.",
+        "placeholder": "For example: 'These are files that contain information about my startup plans'"
       },
       "name": {
         "label": "Name",
@@ -412,7 +412,7 @@
       }
     },
     "AttachDataSourceModal": {
-      "title": "Attach Data Source",
+      "title": "Attach data source",
       "support": "You can link multiple sources to an agent",
       "searchInput": {
         "label": "Search data sources",
