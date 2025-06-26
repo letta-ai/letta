@@ -131,3 +131,8 @@
 .text-link:hover {
   text-decoration: underline;
 }
+
+.lottie-non-interactive {
+  pointer-events: none;
+  cursor: default;
+}

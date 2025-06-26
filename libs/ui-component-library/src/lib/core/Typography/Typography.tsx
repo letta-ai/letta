@@ -54,6 +54,9 @@ const typographyVariants = cva('break-words', {
     noWrap: {
       true: 'whitespace-nowrap',
     },
+    preWrap: {
+      true: 'whitespace-pre-wrap',
+    },
     overflow: {
       ellipsis: 'overflow-ellipsis overflow-hidden',
     },
@@ -108,6 +111,7 @@ export const Typography = forwardRef<HTMLElement, TypographyProps>(
       italic,
       uppercase,
       noWrap,
+      preWrap,
       variant,
       semibold,
       bold,
@@ -124,6 +128,7 @@ export const Typography = forwardRef<HTMLElement, TypographyProps>(
           underline,
           italic,
           noWrap,
+          preWrap,
           bold,
           uppercase,
           semibold,

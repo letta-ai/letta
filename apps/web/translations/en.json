@@ -2414,7 +2414,7 @@
     "google": "{type} with Google",
     "github": "{type} with GitHub",
     "info": "By clicking the button above, you will be signed in to an existing account or have an new account created for you.",
-    "terms": "This will also mean you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
+    "terms": "By creating an account, you agree to the\n<terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
     "email": {
       "label": "Email",
       "placeholder": "email@email.com"

@@ -84,11 +84,21 @@ export function LoggedOutWrapper(props: LoggedOutWrapperProps) {
         >
           <VStack paddingBottom="small" gap="xlarge" align="center" fullWidth>
             <HStack justify="spaceBetween" align="center" fullWidth>
-              <div className="relative" ref={logoRef}>
+              <div className="relative lottie-non-interactive" ref={logoRef}>
                 {isDarkMode ? (
-                  <Lottie options={lightLogoOptions} height={36} width={36} />
+                  <Lottie
+                    options={lightLogoOptions}
+                    height={36}
+                    width={36}
+                    isClickToPauseDisabled={true}
+                  />
                 ) : (
-                  <Lottie options={darkLogoOptions} height={36} width={36} />
+                  <Lottie
+                    options={darkLogoOptions}
+                    height={36}
+                    width={36}
+                    isClickToPauseDisabled={true}
+                  />
                 )}
               </div>
               {showAuthFlowSwitcher && <AuthFlowSwitch mode={mode} />}
@@ -138,7 +148,7 @@ export function LoggedOutWrapper(props: LoggedOutWrapperProps) {
             <Typography variant="body2" align="center" color="lighter">
               {t('info')}
             </Typography>
-            <Typography variant="body2" align="center" color="lighter">
+            <Typography variant="body2" align="center" color="lighter" preWrap>
               {t.rich('terms', {
                 terms: (chunks) => (
                   <a
