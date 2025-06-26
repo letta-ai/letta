@@ -87,7 +87,7 @@ class CacheStats:
 
 
 def async_redis_cache(
-    key_func: Callable, prefix: str = REDIS_DEFAULT_CACHE_PREFIX, ttl_s: int = 300, model_class: type[BaseModel] | None = None
+    key_func: Callable, prefix: str = REDIS_DEFAULT_CACHE_PREFIX, ttl_s: int = 600, model_class: type[BaseModel] | None = None
 ):
     """
     Decorator for caching async function results in Redis. May be a Noop if redis is not available.
