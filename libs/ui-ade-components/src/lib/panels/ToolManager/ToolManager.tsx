@@ -1,3 +1,4 @@
+'use client';
 import { useToolManagerState } from './hooks/useToolManagerState/useToolManagerState';
 import {
   BillingLink,
@@ -56,7 +57,7 @@ function getCode(name: string) {
 `;
 }
 
-function CreateToolDialog(props: CreateToolDialogProps) {
+export function CreateToolDialog(props: CreateToolDialogProps) {
   const { trigger } = props;
   const t = useTranslations('ToolManager');
 

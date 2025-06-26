@@ -1,3 +1,4 @@
+'use client';
 import { ToolsEditor } from '../../components/ToolsEditor/ToolsEditor';
 import { useEffect, useMemo, useState } from 'react';
 import { useToolsServiceListTools } from '@letta-cloud/sdk-core';

@@ -1,6 +1,6 @@
+'use client';
 import React, { useEffect, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { ToolManagerPage } from '../../components/ToolManagerPage/ToolManagerPage';
 
 import {
   Badge,
@@ -178,7 +178,7 @@ export function MCPServers() {
   const { setPath } = useToolManagerState();
 
   return (
-    <ToolManagerPage border>
+    <>
       {!servers || serversAsArray.length === 0 ? (
         <LoadingEmptyStatusComponent
           isLoading={isLoading}
@@ -247,6 +247,6 @@ export function MCPServers() {
           </VStack>
         </HStack>
       )}
-    </ToolManagerPage>
+    </>
   );
 }

@@ -1,5 +1,11 @@
 'use client';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import ReactDOM from 'react-dom';
 import Link from 'next/link';
 import {
@@ -11,6 +17,7 @@ import {
   TokenIcon,
   GroupAddIcon,
   BetaTag,
+  ToolsIcon,
 } from '@letta-cloud/ui-component-library';
 import { HiddenOnMobile } from '@letta-cloud/ui-component-library';
 import {
@@ -51,6 +58,7 @@ import './DashboardNavigation.scss';
 import { OrganizationUsageBlock } from '$web/client/components/OrganizationUsageBlock/OrganizationUsageBlock';
 import { useGlobalSystemWarning } from '$web/client/hooks/useGlobalSystemWarning/useGlobalSystemWarning';
 import { show as startIntercom } from '@intercom/messenger-js-sdk';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface NavButtonProps {
   href: string;
@@ -171,6 +179,9 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
 
   const { subnavigationData } = useDashboardNavigationItems();
 
+  const { data: areToolsOnDashboardEnabled } =
+    useFeatureFlag('TOOLS_ON_DASHBOARD');
+
   const pathroot = pathname.split('/')[1];
 
   const [canReadAPIKeys] = useUserHasPermission(
@@ -197,6 +208,16 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         id: 'models',
         icon: <TokenIcon />,
       },
+      ...(areToolsOnDashboardEnabled
+        ? [
+            {
+              label: t('nav.tools'),
+              href: '/tools',
+              id: 'tools',
+              icon: <ToolsIcon />,
+            },
+          ]
+        : []),
 
       ...(canReadAPIKeys
         ? [
@@ -223,7 +244,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
 
       return hasCloudAccess;
     });
-  }, [t, hasCloudAccess, canReadAPIKeys]);
+  }, [t, areToolsOnDashboardEnabled, hasCloudAccess, canReadAPIKeys]);
 
   const baseNavBottomItems = [
     {
@@ -257,6 +278,10 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
     const isBase = baseNavItems.some((item) => item.href === pathname);
 
     if (pathname.includes('settings')) {
+      return false;
+    }
+
+    if (pathname.includes('tools')) {
       return false;
     }
 
@@ -428,15 +453,23 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
                           )}
                         </Frame>
                         <VStack gap="small">
-                          {groupItems.map((item) => (
-                            <NavButton
-                              id={item.id}
-                              key={item.href}
-                              href={item.href}
-                              icon={item.icon}
-                              label={item.label}
-                            />
-                          ))}
+                          {groupItems.map((item, index) => {
+                            if (isSubNavigationOverride(item)) {
+                              return (
+                                <Fragment key={index}>{item.override}</Fragment>
+                              );
+                            }
+
+                            return (
+                              <NavButton
+                                id={item.id}
+                                key={item.href}
+                                href={item.href}
+                                icon={item.icon}
+                                label={item.label}
+                              />
+                            );
+                          })}
                         </VStack>
                       </VStack>
                     );

@@ -431,7 +431,8 @@
       "localDev": "Self-hosted",
       "settings": "Settings",
       "billing": "Billing and usage",
-      "account": "Profile"
+      "account": "Profile",
+      "tools": "Tools"
     },
     "rootTitle": "Dashboard",
     "secondaryNav": {
@@ -1754,6 +1755,15 @@
     },
     "loadingMessage": "Loading responses...",
     "errorMessage": "There was an error loading responses, please try again or contact support."
+  },
+  "tools/layout": {
+    "createTool": "Create custom tool",
+    "addMCPServer": "Add MCP server",
+    "nav": {
+      "return": "Back",
+      "allTools": "Hosted tools",
+      "mcpServers": "MCP Servers"
+    }
   },
   "projects/(projectSlug)/layout": {
     "nav": {

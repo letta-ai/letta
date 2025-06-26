@@ -1,3 +1,4 @@
+'use client';
 import {
   type Tool,
   type ToolJSONSchema,

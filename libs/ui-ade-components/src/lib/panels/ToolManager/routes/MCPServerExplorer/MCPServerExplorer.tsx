@@ -1,3 +1,4 @@
+'use client';
 import {
   ActionCard,
   Alert,
@@ -10,7 +11,6 @@ import {
   useForm,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import { ToolManagerPage } from '../../components/ToolManagerPage/ToolManagerPage';
 import { useTranslations } from '@letta-cloud/translations';
 import { AddServerDialog } from '../MCPServers/AddMCPServerDialog/AddMCPServerDialog';
 import type { CustomUrlRecommendedServer } from './hooks/useRecommendedMCPServers/useRecommendedMCPServers';
@@ -143,7 +143,7 @@ export function MCPServerExplorer() {
   const recommendedServers = useRecommendedMCPServers();
 
   return (
-    <ToolManagerPage>
+    <>
       <VStack
         paddingTop="medium"
         fullHeight
@@ -177,6 +177,6 @@ export function MCPServerExplorer() {
           </NiceGridDisplay>
         </VStack>
       </VStack>
-    </ToolManagerPage>
+    </>
   );
 }

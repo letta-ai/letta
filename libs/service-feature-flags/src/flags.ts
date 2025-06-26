@@ -41,6 +41,11 @@ export const featureFlags = {
     expiryDate: '2024-07-01',
     flagValue: z.boolean(),
   },
+  TOOLS_ON_DASHBOARD: {
+    description: 'Tools on dashboard',
+    expiryDate: '2025-09-01',
+    flagValue: z.boolean(),
+  },
   MIGRATIONS_VIEWER: {
     description: 'Make managing agents more transparent',
     expiryDate: '2024-07-01',

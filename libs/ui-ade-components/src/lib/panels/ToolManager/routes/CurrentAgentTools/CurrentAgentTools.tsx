@@ -1,3 +1,4 @@
+'use client';
 import { useCurrentAgent } from '../../../../hooks';
 import { ToolsEditor } from '../../components/ToolsEditor/ToolsEditor';
 import { useMemo, useState } from 'react';

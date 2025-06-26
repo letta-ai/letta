@@ -19,7 +19,7 @@ interface SubNavigationOverride {
 interface SubNavigationGroup {
   title: string;
   titleOverride?: React.ReactNode;
-  items: SubNavigationItem[];
+  items: Array<SubNavigationItem | SubNavigationOverride>;
 }
 
 type SubNavigationDataItem =

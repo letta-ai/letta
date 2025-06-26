@@ -253,3 +253,5 @@ export * from './lib/core/HotKey/HotKey';
 export * from './lib/core/JSONViewer/JSONViewer';
 
 export * from './lib/core/ImagePreview/ImagePreview';
+
+export * from './lib/reusable/FullScreenDashboardPageLayout/FullScreenDashboardPageLayout';

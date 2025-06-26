@@ -9,6 +9,7 @@ import { ToolRulesEditor } from '../ToolRules/ToolRules';
 import { ToolVariables } from './routes/ToolVariables/ToolVariables';
 import { DependenciesPage } from './routes/DependenciesPage/DependenciesPage';
 import { MCPServerExplorer } from './routes/MCPServerExplorer/MCPServerExplorer';
+import { ToolManagerPage } from './components/ToolManagerPage/ToolManagerPage';
 
 interface Routes {
   path: string;
@@ -41,7 +42,11 @@ export const toolManagerRoutes = [
   {
     path: '/mcp-servers',
     key: 'mcpServers',
-    component: <MCPServers />,
+    component: (
+      <ToolManagerPage border>
+        <MCPServers />
+      </ToolManagerPage>
+    ),
   },
   {
     path: '/my-tools',
@@ -70,7 +75,11 @@ export const toolManagerRoutes = [
   {
     path: '/add-mcp-servers',
     key: 'addMCPServers',
-    component: <MCPServerExplorer />,
+    component: (
+      <ToolManagerPage>
+        <MCPServerExplorer />
+      </ToolManagerPage>
+    ),
   },
   {
     path: '/letta-multiagent-tools',

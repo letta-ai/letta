@@ -1,3 +1,4 @@
+'use client';
 import { useTranslations } from '@letta-cloud/translations';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useCallback, useState } from 'react';

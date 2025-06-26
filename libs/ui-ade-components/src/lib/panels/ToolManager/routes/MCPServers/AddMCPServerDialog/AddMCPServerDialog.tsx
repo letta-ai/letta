@@ -1,3 +1,4 @@
+'use client';
 import { useTranslations } from '@letta-cloud/translations';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { z } from 'zod';

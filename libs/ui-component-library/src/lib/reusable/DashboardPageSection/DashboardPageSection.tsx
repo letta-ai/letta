@@ -5,7 +5,6 @@ import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
 import { RawInput } from '../../core/Input/Input';
 import { SearchIcon } from '../../icons';
-import type { FrameProps } from '../../framing/Frame/Frame';
 import { Frame } from '../../framing/Frame/Frame';
 import { HiddenOnMobile } from '../../framing/HiddenOnMobile/HiddenOnMobile';
 import { VisibleOnMobile } from '../../framing/VisibleOnMobile/VisibleOnMobile';

@@ -1,3 +1,4 @@
+'use client';
 import { useTranslations } from '@letta-cloud/translations';
 import { useIsComposioConnected } from '../../hooks/useIsComposioConnected/useIsComposioConnected';
 import {
@@ -18,7 +19,7 @@ import {
   toast,
   Typography,
 } from '@letta-cloud/ui-component-library';
-import { useCurrentAgent } from '../../../../hooks';
+import { useCurrentAgent, useCurrentAgentMetaData } from '../../../../hooks';
 import { useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { get } from 'lodash-es';
@@ -344,6 +345,12 @@ interface AttachDetachButtonProps {
 
 export function AttachDetachButton(props: AttachDetachButtonProps) {
   const { idToAttach, toolType, attachedId } = props;
+
+  const { agentId } = useCurrentAgentMetaData();
+
+  if (!agentId) {
+    return null;
+  }
 
   return (
     <HStack>

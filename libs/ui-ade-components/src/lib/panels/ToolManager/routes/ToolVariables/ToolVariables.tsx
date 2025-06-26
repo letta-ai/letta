@@ -1,3 +1,4 @@
+'use client';
 import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../../../../hooks';
 import { useCallback, useState } from 'react';
 import type { VariableDefinition } from '@letta-cloud/ui-component-library';

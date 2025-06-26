@@ -1,3 +1,4 @@
+'use client';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import React, { useMemo, useState } from 'react';
 import {

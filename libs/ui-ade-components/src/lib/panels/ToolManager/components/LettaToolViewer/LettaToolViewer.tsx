@@ -1,3 +1,4 @@
+'use client';
 import type { Tool } from '@letta-cloud/sdk-core';
 import { useCurrentAgent } from '../../../../hooks';
 import React, { useMemo, useState } from 'react';
