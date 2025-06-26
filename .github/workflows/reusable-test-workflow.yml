@@ -81,8 +81,38 @@ jobs:
         with:
           files: ${{ inputs.changed-files-pattern }}
 
-  block-until-sdk-preview-finishes:
+  cache-check:
     needs: [changed-files]
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    name: Check cache key
+    outputs:
+      cache_key: ${{ steps.cache-key.outputs.key }}
+      cache_hit: ${{ steps.cache.outputs.cache-hit }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate cache key
+        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi-overrides.yml'))
+        id: cache-key
+        run: |
+          echo "key=sdk-${{ github.ref_name }}-${{ hashFiles('apps/fern/*', 'apps/core/pyproject.toml') }}" >> $GITHUB_OUTPUT
+
+      - name: Restore SDK cache
+        # skip if "skip-fern-generation" is true or if the upstream workflow would've generated an sdk preview (changes to openapi files)
+        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi-overrides.yml'))
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            apps/fern/.preview/fern-python-sdk/
+          key: ${{ steps.cache-key.outputs.key }}
+          fail-on-cache-miss: false
+
+  block-until-sdk-preview-finishes:
+    needs: [changed-files, cache-check]
+    if: |
+      needs.cache-check.outputs.cache_hit != 'true'
     timeout-minutes: ${{ inputs.timeout-minutes }}
     runs-on: ${{ fromJSON(inputs.runner) }}
     name: block-until-sdk-preview-finishes
@@ -141,7 +171,11 @@ jobs:
   test-run:
     needs: [changed-files, block-until-sdk-preview-finishes]
     if: |
-      needs.changed-files.outputs.any_changed == 'true'
+      always() &&
+      needs.changed-files.outputs.any_changed == 'true' &&
+      (needs.block-until-sdk-preview-finishes.result == 'success' ||
+       needs.block-until-sdk-preview-finishes.result == 'skipped')
+
     runs-on: ${{ fromJSON(inputs.runner) }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     strategy: ${{ fromJSON(inputs.matrix-strategy) }}
