@@ -171,7 +171,6 @@ function DevelopmentServersDashboardPage() {
   return (
     <DashboardPageLayout
       headerBottomPadding="large"
-      cappedWidth
       title={currentServer?.body.developmentServer.name || t('title')}
       subtitle={t('description')}
     >

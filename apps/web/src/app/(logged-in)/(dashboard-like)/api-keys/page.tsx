@@ -369,7 +369,6 @@ function APIKeysPage() {
   return (
     <DashboardPageLayout
       encapsulatedFullHeight
-      cappedWidth
       title="API keys"
       actions={
         canCreateKey ? (

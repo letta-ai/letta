@@ -9,6 +9,7 @@ import type { FrameProps } from '../../framing/Frame/Frame';
 import { Frame } from '../../framing/Frame/Frame';
 import { HiddenOnMobile } from '../../framing/HiddenOnMobile/HiddenOnMobile';
 import { VisibleOnMobile } from '../../framing/VisibleOnMobile/VisibleOnMobile';
+import { cn } from '@letta-cloud/ui-styles';
 
 interface DashboardSearchBarProps {
   onSearch: (searchTerm: string) => void;
@@ -43,7 +44,7 @@ type DashboardPageSectionProps = PropsWithChildren<
     borderBottom?: boolean;
     title?: string;
     description?: string;
-    width?: FrameProps['width'];
+    width?: 'capped' | 'full';
   }
 >;
 
@@ -70,7 +71,7 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
       fullHeight={fullHeight}
       flex={fullHeight}
       fullWidth
-      width={width}
+      className={cn(width === 'capped' ? 'max-w-[824px]' : 'w-full')}
       borderBottom={borderBottom}
     >
       {!title && !description ? null : (

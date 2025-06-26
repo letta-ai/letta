@@ -540,7 +540,7 @@ function Billing() {
   }
 
   return (
-    <DashboardPageLayout cappedWidth title={t('title')}>
+    <DashboardPageLayout title={t('title')}>
       <DashboardPageSection>
         <TabGroup
           color="transparent"

@@ -197,6 +197,7 @@ function InviteMemberDialog() {
               {t('InviteMemberDialog.inviteCode.description')}
             </Typography>
             <Input
+              size="large"
               fullWidth
               hideLabel
               label={t('InviteMemberDialog.inviteCode.label')}
@@ -223,6 +224,7 @@ function InviteMemberDialog() {
                   <Input
                     fullWidth
                     type="email"
+                    size="large"
                     placeholder={t('InviteMemberDialog.email.placeholder')}
                     label={t('InviteMemberDialog.email.label')}
                     {...field}
@@ -952,6 +954,7 @@ function InvitedMembersDialog() {
           onChange={(e) => {
             setSearch(e.target.value);
           }}
+          size="large"
           postIcon={<SearchIcon />}
           fullWidth
           hideLabel

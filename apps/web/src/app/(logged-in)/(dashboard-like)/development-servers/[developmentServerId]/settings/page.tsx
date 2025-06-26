@@ -217,11 +217,7 @@ export default function DevelopmentServerSettingsPage() {
     });
 
   return (
-    <DashboardPageLayout
-      headerBottomPadding="large"
-      cappedWidth
-      title={t('title')}
-    >
+    <DashboardPageLayout headerBottomPadding="large" title={t('title')}>
       <DashboardPageSection>
         {!currentServer ? (
           <LoadingEmptyStatusComponent emptyMessage="" isLoading />

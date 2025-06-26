@@ -189,7 +189,6 @@ function ProjectPage() {
 
   return (
     <DashboardPageLayout
-      cappedWidth
       headerBottomPadding="large"
       title={welcomeText || ''}
       subtitle={t('subtitle', { name })}

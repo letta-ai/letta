@@ -91,35 +91,34 @@ function EditOrganizationSettings(props: EditOrganizationSettingsProps) {
   return (
     <Section title={t('EditOrganizationSettings.title')}>
       <FormProvider {...form}>
-        <Form onSubmit={form.handleSubmit(handleSubmit)}>
-          <VStack paddingTop="small" gap="form">
-            <FormField
-              render={({ field }) => {
-                return (
-                  <Input
-                    fullWidth
-                    autoComplete="false"
-                    label={t('EditOrganizationSettings.name.label')}
-                    {...field}
-                  />
-                );
-              }}
-              name="name"
+        <Form variant="dashboard" onSubmit={form.handleSubmit(handleSubmit)}>
+          <FormField
+            render={({ field }) => {
+              return (
+                <Input
+                  fullWidth
+                  size="large"
+                  autoComplete="false"
+                  label={t('EditOrganizationSettings.name.label')}
+                  {...field}
+                />
+              );
+            }}
+            name="name"
+          />
+          <FormActions
+            align="start"
+            errorMessage={
+              isError ? t('EditOrganizationSettings.error') : undefined
+            }
+          >
+            <Button
+              busy={isPending}
+              color="secondary"
+              label="Save"
+              type="submit"
             />
-            <FormActions
-              align="start"
-              errorMessage={
-                isError ? t('EditOrganizationSettings.error') : undefined
-              }
-            >
-              <Button
-                busy={isPending}
-                color="secondary"
-                label="Save"
-                type="submit"
-              />
-            </FormActions>
-          </VStack>
+          </FormActions>
         </Form>
       </FormProvider>
     </Section>
@@ -160,12 +159,12 @@ function OrganizationSettingsPage() {
   const organization = useCurrentOrganization();
 
   return (
-    <DashboardPageLayout cappedWidth title={t('title')}>
+    <DashboardPageLayout title={t('title')}>
       <VStack gap={false}>
         {!organization ? (
           <LoadingEmptyStatusComponent emptyMessage="" isLoading />
         ) : (
-          <DashboardPageSection>
+          <DashboardPageSection width="capped">
             <VStack gap="xlarge">
               <EditOrganizationSettings name={organization.name} />
               <HR />

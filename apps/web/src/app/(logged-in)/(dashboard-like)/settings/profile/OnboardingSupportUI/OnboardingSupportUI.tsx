@@ -46,7 +46,6 @@ function RestartOnboarding() {
     >
       <Button
         color="secondary"
-        size="small"
         label={t('RestartOnboarding.button')}
         onClick={() => {
           setOnboardingStep({
@@ -67,7 +66,6 @@ function UnpauseOnboarding() {
     <StatusUI title={t('UnpauseOnboarding.title')}>
       <Button
         color="secondary"
-        size="small"
         label={t('UnpauseOnboarding.button')}
         onClick={() => {
           unpauseOnboarding();
@@ -86,7 +84,6 @@ function InOnboarding() {
     <StatusUI title={t('InOnboarding.title')}>
       <Button
         color="secondary"
-        size="small"
         label={t('InOnboarding.button')}
         onClick={() => {
           setOnboardingStep({

@@ -567,6 +567,7 @@ const formVariants = cva('contents', {
   variants: {
     variant: {
       contained: 'flex flex-col gap-6 w-full max-w-[610px]',
+      dashboard: 'flex flex-col gap-4 w-full max-w-[360px]',
     },
   },
   defaultVariants: {},

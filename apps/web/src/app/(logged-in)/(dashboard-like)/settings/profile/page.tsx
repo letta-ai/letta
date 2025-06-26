@@ -65,17 +65,23 @@ function UpdateUserProfileForm(props: UpdateUserProfileFormProps) {
 
   return (
     <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(handleSubmit)} variant="contained">
+      <Form onSubmit={form.handleSubmit(handleSubmit)} variant="dashboard">
         <FormField
           name="name"
           render={({ field }) => (
-            <Input fullWidth label={t('form.nameInput.label')} {...field} />
+            <Input
+              size="large"
+              fullWidth
+              label={t('form.nameInput.label')}
+              {...field}
+            />
           )}
         />
         <RawInput
           label={t('form.emailInput.label')}
           fullWidth
           value={email}
+          size="large"
           disabled
         />
         <div>
@@ -96,8 +102,8 @@ function ProfileSettingsPage() {
   const user = useCurrentUser();
 
   return (
-    <DashboardPageLayout cappedWidth title={t('title')}>
-      <DashboardPageSection>
+    <DashboardPageLayout title={t('title')}>
+      <DashboardPageSection width="capped">
         {!user ? (
           <LoadingEmptyStatusComponent emptyMessage="" isLoading />
         ) : (
