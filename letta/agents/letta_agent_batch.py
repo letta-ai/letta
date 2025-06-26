@@ -492,30 +492,32 @@ class LettaAgentBatch(BaseAgent):
         msg_map: Dict[str, List[Message]],
     ) -> Tuple[List[LettaBatchRequest], Dict[str, AgentStepState]]:
         # who continues?
-        continues = [aid for aid, cont in ctx.should_continue_map.items() if cont]
+        continues = [agent_id for agent_id, cont in ctx.should_continue_map.items() if cont]
 
         success_flag_map = {aid: result.success_flag for aid, result in exec_results}
 
         batch_reqs: List[LettaBatchRequest] = []
-        for aid in continues:
+        for agent_id in continues:
             heartbeat = create_heartbeat_system_message(
-                agent_id=aid,
-                model=ctx.agent_state_map[aid].llm_config.model,
-                function_call_success=success_flag_map[aid],
+                agent_id=agent_id,
+                model=ctx.agent_state_map[agent_id].llm_config.model,
+                function_call_success=success_flag_map[agent_id],
+                timezone=ctx.agent_state_map[agent_id].timezone,
                 actor=self.actor,
             )
             batch_reqs.append(
                 LettaBatchRequest(
-                    agent_id=aid, messages=[MessageCreate.model_validate(heartbeat.model_dump(include={"role", "content", "name", "otid"}))]
+                    agent_id=agent_id,
+                    messages=[MessageCreate.model_validate(heartbeat.model_dump(include={"role", "content", "name", "otid"}))],
                 )
             )
 
         # extend in‑context ids when necessary
-        for aid, new_msgs in msg_map.items():
-            ast = ctx.agent_state_map[aid]
+        for agent_id, new_msgs in msg_map.items():
+            ast = ctx.agent_state_map[agent_id]
             if not ast.message_buffer_autoclear:
                 await self.agent_manager.set_in_context_messages_async(
-                    agent_id=aid,
+                    agent_id=agent_id,
                     message_ids=ast.message_ids + [m.id for m in new_msgs],
                     actor=self.actor,
                 )
@@ -605,7 +607,8 @@ class LettaAgentBatch(BaseAgent):
 
         return tool_call_name, tool_args, continue_stepping
 
-    def _prepare_tools_per_agent(self, agent_state: AgentState, tool_rules_solver: ToolRulesSolver) -> List[dict]:
+    @staticmethod
+    def _prepare_tools_per_agent(agent_state: AgentState, tool_rules_solver: ToolRulesSolver) -> List[dict]:
         tools = [t for t in agent_state.tools if t.tool_type in {ToolType.CUSTOM, ToolType.LETTA_CORE, ToolType.LETTA_MEMORY_CORE}]
         valid_tool_names = tool_rules_solver.get_allowed_tool_names(available_tools=set([t.name for t in tools]))
         return [enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names)]
@@ -621,7 +624,9 @@ class LettaAgentBatch(BaseAgent):
         return in_context_messages
 
     # Not used in batch.
-    async def step(self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS) -> LettaResponse:
+    async def step(
+        self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS, run_id: str | None = None
+    ) -> LettaResponse:
         raise NotImplementedError
 
     async def step_stream(
