@@ -2201,8 +2201,11 @@
         "id": "ID",
         "name": "Name",
         "actions": "Actions",
-        "createdAt": "Created At"
+        "createdAt": "Created At",
+        "lastRunCompletion": "Last Run Completion",
+        "lastRunDuration": "Last Run Duration"
       },
+      "copyId": "Copy ID",
       "openInADE": "Open in ADE",
       "emptyMessage": "No agents found",
       "noResults": "No agents found",

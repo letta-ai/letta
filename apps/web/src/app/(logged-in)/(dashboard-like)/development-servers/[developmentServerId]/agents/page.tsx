@@ -2,10 +2,12 @@
 import {
   Button,
   Card,
+  CopyButton,
   DashboardPageLayout,
   DashboardPageSection,
   DataTable,
   HStack,
+  MiddleTruncate,
   PlusIcon,
   RawInput,
   Typography,
@@ -189,7 +191,7 @@ function LocalProjectPage() {
     return data.pages?.[page]?.slice(0, limit) || [];
   }, [data, page, limit]);
 
-  const { formatDateAndTime } = useFormatters();
+  const { formatDateAndTime, formatSmallDuration } = useFormatters();
   const user = useCurrentUser();
 
   const columns: Array<ColumnDef<AgentState>> = useMemo(
@@ -201,12 +203,54 @@ function LocalProjectPage() {
       {
         header: t('table.columns.id'),
         accessorKey: 'id',
+        cell: ({ row }) => (
+          <HStack align="center">
+            <MiddleTruncate visibleStart={4} visibleEnd={4}>
+              {row.original.id}
+            </MiddleTruncate>
+            <CopyButton
+              copyButtonText={t('table.copyId')}
+              color="tertiary"
+              size="small"
+              hideLabel
+              textToCopy={row.original.id}
+            />
+          </HStack>
+        ),
       },
       {
         header: t('table.columns.createdAt'),
         accessorKey: 'created_at',
         cell: ({ row }) => {
           return formatDateAndTime(row.original?.created_at || '');
+        },
+      },
+      {
+        id: 'lastRunCompletion',
+        header: t('table.columns.lastRunCompletion'),
+        cell: ({ row }) => {
+          if (
+            !row.original?.last_run_completion ||
+            Array.isArray(row.original?.last_run_completion)
+          ) {
+            return '-';
+          }
+          return formatDateAndTime(row.original.last_run_completion);
+        },
+      },
+      {
+        id: 'lastRunDuration',
+        header: t('table.columns.lastRunDuration'),
+        cell: ({ row }) => {
+          if (
+            !row.original?.last_run_duration_ms ||
+            Array.isArray(row.original?.last_run_duration_ms)
+          ) {
+            return '-';
+          }
+          const durationNanoseconds =
+            row.original.last_run_duration_ms * 1000 * 1000;
+          return formatSmallDuration(durationNanoseconds);
         },
       },
       {
@@ -234,7 +278,13 @@ function LocalProjectPage() {
         ),
       },
     ],
-    [t, formatDateAndTime, currentDevelopmentServerConfig?.id, user?.id],
+    [
+      t,
+      formatDateAndTime,
+      formatSmallDuration,
+      currentDevelopmentServerConfig?.id,
+      user?.id,
+    ],
   );
 
   const isLoadingPage = useMemo(() => {
