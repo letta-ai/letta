@@ -14,6 +14,7 @@ export function getBrandFromModelName(model: string) {
     google: 'google',
     nvidia: 'nvidia',
     together: 'together-ai',
+    anthropic: 'claude',
   };
 
   Object.entries(includerMapper).forEach(([key, value]) => {
