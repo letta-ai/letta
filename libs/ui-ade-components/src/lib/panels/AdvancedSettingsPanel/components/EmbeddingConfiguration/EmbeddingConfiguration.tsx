@@ -92,6 +92,7 @@ export function EmbeddingSelector(props: EmbeddingConfig) {
       {error && <Alert title={t('error')} variant="destructive" />}
       <RawSelect
         hideIconsOnOptions
+        size="small"
         fullWidth
         onSelect={(value) => {
           if (isMultiValue(value)) {
@@ -121,6 +122,7 @@ export function EmbeddingConfiguration() {
       <EmbeddingSelector embeddingConfig={currentAgent.embedding_config} />
       <RawInput
         fullWidth
+        size="small"
         label={t('AdvancedSettingsPanel.embeddingDimensions.label')}
         value={currentAgent.embedding_config?.embedding_dim || '0'}
         type="number"
@@ -128,6 +130,7 @@ export function EmbeddingConfiguration() {
       />
       <RawInput
         fullWidth
+        size="small"
         label={t('AdvancedSettingsPanel.embeddingChunkSize.label')}
         value={currentAgent.embedding_config?.embedding_chunk_size || '0'}
         type="number"

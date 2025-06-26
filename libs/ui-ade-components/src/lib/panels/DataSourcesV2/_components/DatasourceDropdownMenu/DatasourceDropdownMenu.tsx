@@ -121,6 +121,7 @@ function RenameDataSourceDialog({ source }: { source: Source }) {
               fullWidth
               {...field}
               hideLabel
+              size="small"
               label={t('name.label')}
               placeholder={t('name.placeholder')}
               data-testid="rename-data-source-input"
@@ -306,6 +307,7 @@ function DeleteDataSourceDialog({ source }: { source: Source }) {
               <RawInput
                 fullWidth
                 {...field}
+                size="small"
                 label={t('confirmName.label')}
                 placeholder={source.name}
                 data-testid="delete-data-source-confirm-input"

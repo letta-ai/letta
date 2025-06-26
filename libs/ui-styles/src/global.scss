@@ -138,7 +138,7 @@
   --button-input-height-sm: 28px;
   --button-input-height-lg: 36px;
 
-  --input-height: 28px;
+  --input-height: var(--button-input-height);
   --panel-row-height: 42px;
   --header-height: 43px;
   --header-height-sm: 43px;

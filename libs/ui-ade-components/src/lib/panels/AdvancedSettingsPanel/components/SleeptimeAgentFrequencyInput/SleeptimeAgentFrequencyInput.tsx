@@ -103,6 +103,7 @@ function SleeptimeAgentFrequencyInputInner(
   return (
     <RawInput
       fullWidth
+      size="small"
       errorMessage={
         invalidInputError
           ? t('AdvancedSettingsPanel.sleeptimeAgentFrequency.invalidInput')

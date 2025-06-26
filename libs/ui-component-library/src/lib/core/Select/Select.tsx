@@ -62,7 +62,9 @@ interface UseStylesArgs {
   size?: 'default' | 'large' | 'small';
 }
 
-interface BaseSelectProps extends GetClassNameArgs {
+type BaseArgs = GetClassNameArgs & VariantProps<typeof controlVariants>;
+
+interface BaseSelectProps extends BaseArgs {
   isMulti?: boolean;
   isClearable?: boolean;
   isSearchable?: boolean;
@@ -250,9 +252,15 @@ function useSelectComponents(selectProps: BaseSelectProps) {
 }
 
 const controlVariants = cva(
-  'border bg-panel-input-background text-panel-input-background-content border-solid h-inputHeight px-2 py-1 w-full',
+  'border bg-panel-input-background text-panel-input-background-content border-solid px-2 py-1 w-full',
   {
-    variants: {},
+    variants: {
+      size: {
+        default: 'h-inputHeight',
+        large: 'h-biHeight-lg',
+        small: 'h-biHeight-sm',
+      },
+    },
     defaultVariants: {},
   },
 );
@@ -318,10 +326,17 @@ function useStyles(args: UseStylesArgs) {
     control: (base: any) => ({
       ...base,
       height: 'auto',
-      minHeight:
-        args.size === 'large'
-          ? 'var(--button-input-height-lg)'
-          : 'var(--input-height)',
+      minHeight: (() => {
+        if (args.size === 'large') {
+          return 'var(--button-input-height-lg)';
+        }
+
+        if (args.size === 'small') {
+          return 'var(--button-input-height-sm)';
+        }
+
+        return 'var(--input-height)';
+      })(),
     }),
     option: () => ({ fontSize: 'var(--font-size-xs)' }),
     noOptionsMessage: () => ({ fontSize: 'var(--font-size-xs)' }),
@@ -340,8 +355,11 @@ export interface AsyncSelectProps extends BaseSelectProps {
 }
 
 function AsyncSelectPrimitive(_props: AsyncSelectProps) {
-  const { hideIconsOnOptions, ...props } = _props;
-  const styles = useStyles(props.styleConfig || {});
+  const { hideIconsOnOptions, size, ...props } = _props;
+  const styles = useStyles({
+    ...(props.styleConfig || {}),
+    size: size || 'default',
+  });
   const [open, setOpen] = React.useState(false);
   const { isInDialog } = useDialogContext();
 
@@ -411,7 +429,9 @@ function AsyncSelectPrimitive(_props: AsyncSelectProps) {
         // @ts-expect-error yest
         components={components}
         styles={styles}
-        classNames={getClassNames()}
+        classNames={getClassNames({
+          size,
+        })}
         {...props}
         loadOptions={loadOptions}
       />
@@ -449,9 +469,17 @@ export interface SelectProps extends BaseSelectProps {
 }
 
 function SelectPrimitive(_props: SelectProps) {
-  const { hideIconsOnOptions, disabled, __use_rarely_className, ...props } =
-    _props;
-  const styles = useStyles(props.styleConfig || {});
+  const {
+    hideIconsOnOptions,
+    disabled,
+    size,
+    __use_rarely_className,
+    ...props
+  } = _props;
+  const styles = useStyles({
+    ...(props.styleConfig || {}),
+    size: size || 'default',
+  });
   const { isInDialog } = useDialogContext();
   const [open, setOpen] = React.useState(false);
 
@@ -523,7 +551,9 @@ function SelectPrimitive(_props: SelectProps) {
         // @ts-expect-error yest
         components={components}
         styles={styles}
-        classNames={getClassNames()}
+        classNames={getClassNames({
+          size,
+        })}
         {...props}
       />
     </SelectOptionsProvider>
@@ -531,8 +561,11 @@ function SelectPrimitive(_props: SelectProps) {
 }
 
 function CreatableAsyncSelectPrimitive(_props: AsyncSelectProps) {
-  const { hideIconsOnOptions, ...props } = _props;
-  const styles = useStyles(props.styleConfig || {});
+  const { hideIconsOnOptions, size, ...props } = _props;
+  const styles = useStyles({
+    ...(props.styleConfig || {}),
+    size: size || 'default',
+  });
 
   const [mounted, setMounted] = React.useState(false);
   const [open, setOpen] = React.useState(false);
@@ -601,7 +634,9 @@ function CreatableAsyncSelectPrimitive(_props: AsyncSelectProps) {
         // @ts-expect-error yest
         components={components}
         styles={styles}
-        classNames={getClassNames()}
+        classNames={getClassNames({
+          size,
+        })}
         {...props}
         loadOptions={loadOptions}
       />

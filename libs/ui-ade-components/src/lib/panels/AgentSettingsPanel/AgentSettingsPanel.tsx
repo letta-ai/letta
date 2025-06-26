@@ -507,6 +507,7 @@ function IdentityViewer() {
         disabled
         data-testid="identity-viewer-input"
         fullWidth
+        size="small"
       />
       {isFromLaunchLink ? (
         <Tooltip asChild content={t('IdentityViewer.launchLink')}>
@@ -586,6 +587,7 @@ function AgentTags() {
   return (
     <RawCreatableAsyncSelect
       fullWidth
+      size="small"
       rightOfLabelContent={isPending ? <Spinner size="xsmall" /> : null}
       label={t('tags.label')}
       placeholder={t('tags.placeholder')}
@@ -670,6 +672,7 @@ export function AgentSettingsPanel() {
             label={t('agentName.label')}
             value={currentAgent.name}
             disabled
+            size="small"
           />
           <UpdateNameDialog
             trigger={
