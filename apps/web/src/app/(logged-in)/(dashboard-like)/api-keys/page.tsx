@@ -21,6 +21,7 @@ import {
   Typography,
   useForm,
   VStack,
+  HStack,
 } from '@letta-cloud/ui-component-library';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -252,6 +253,35 @@ function ViewAPIKeyDialog(props: ViewAPIKeyDialogProps) {
   );
 }
 
+interface CopyAPIKeyButtonProps {
+  apiKeyId: string;
+  name: string;
+}
+
+function CopyAPIKeyButton(props: CopyAPIKeyButtonProps) {
+  const { apiKeyId, name } = props;
+  const { data } = webApi.apiKeys.getAPIKey.useQuery({
+    queryKey: webApiQueryKeys.apiKeys.getApiKey(apiKeyId),
+    queryData: {
+      params: {
+        apiKeyId,
+      },
+    },
+  });
+
+  const t = useTranslations('api-keys/page');
+
+  return (
+    <CopyButton
+      data-testid={`copy-api-key-button:${name}`}
+      textToCopy={data?.body.apiKey || ''}
+      size="small"
+      hideLabel
+      copyButtonText={t('copyApiKeyButton.copyButtonText')}
+    />
+  );
+}
+
 function APIKeysPage() {
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState(10);
@@ -289,38 +319,39 @@ function APIKeysPage() {
       {
         header: '',
         accessorKey: 'id',
-        meta: {
-          style: {
-            columnAlign: 'right',
-          },
-        },
         id: 'actions',
         cell: ({ cell }) => {
           return (
-            <DropdownMenu
-              trigger={
-                <Button
-                  data-testid={`api-key-actions-button:${cell.row.original.name}`}
-                  color="tertiary"
-                  label={t('apiKeysColumns.actions')}
-                  preIcon={<DotsHorizontalIcon />}
-                  size="small"
-                  hideLabel
+            <HStack justify="end">
+              <DropdownMenu
+                trigger={
+                  <Button
+                    data-testid={`api-key-actions-button:${cell.row.original.name}`}
+                    color="tertiary"
+                    label={t('apiKeysColumns.actions')}
+                    preIcon={<DotsHorizontalIcon />}
+                    size="small"
+                    hideLabel
+                  />
+                }
+                triggerAsChild
+              >
+                <ViewAPIKeyDialog
+                  apiKeyId={cell.row.original.id}
+                  name={cell.row.original.name}
                 />
-              }
-              triggerAsChild
-            >
-              <ViewAPIKeyDialog
+                {canDeleteKey && (
+                  <DeleteAPIKeyDialog
+                    name={cell.row.original.name}
+                    apiKeyId={cell.row.original.id}
+                  />
+                )}
+              </DropdownMenu>
+              <CopyAPIKeyButton
                 apiKeyId={cell.row.original.id}
                 name={cell.row.original.name}
               />
-              {canDeleteKey && (
-                <DeleteAPIKeyDialog
-                  name={cell.row.original.name}
-                  apiKeyId={cell.row.original.id}
-                />
-              )}
-            </DropdownMenu>
+            </HStack>
           );
         },
       },
@@ -332,7 +363,6 @@ function APIKeysPage() {
     if (data?.status === 200) {
       return data.body.apiKeys;
     }
-
     return undefined;
   }, [data]);
 
