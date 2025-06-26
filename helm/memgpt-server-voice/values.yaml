@@ -4,7 +4,7 @@
 
 project_id: &project_id memgpt-428419
 lettaEnv: &lettaEnv prod
-replicaCount: 4
+replicaCount: 2
 
 image:
   # should be the same as core
@@ -95,7 +95,7 @@ readinessProbe:
 
 autoscaling:
   enabled: true
-  minReplicas: 4
+  minReplicas: 2
   maxReplicas: 4
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
