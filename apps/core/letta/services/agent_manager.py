@@ -262,6 +262,10 @@ class AgentManager:
                 tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
             elif agent_create.agent_type == AgentType.memgpt_v2_agent:
                 tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS_V2)
+            elif agent_create.agent_type == AgentType.react_agent:
+                pass  # no default tools
+            elif agent_create.agent_type == AgentType.workflow_agent:
+                pass  # no default tools
             else:
                 tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS)
         if agent_create.include_multi_agent_tools:
@@ -425,6 +429,10 @@ class AgentManager:
                 tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
             elif agent_create.agent_type == AgentType.memgpt_v2_agent:
                 tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS_V2)
+            elif agent_create.agent_type == AgentType.react_agent:
+                pass  # no default tools
+            elif agent_create.agent_type == AgentType.workflow_agent:
+                pass  # no default tools
             else:
                 tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS)
         if agent_create.include_multi_agent_tools:
@@ -445,6 +453,10 @@ class AgentManager:
 
         identity_ids = agent_create.identity_ids or []
         tag_values = agent_create.tags or []
+
+        # if the agent type is workflow, we set the autoclear to forced true
+        if agent_create.agent_type == AgentType.workflow_agent:
+            agent_create.message_buffer_autoclear = True
 
         async with db_registry.async_session() as session:
             async with session.begin():

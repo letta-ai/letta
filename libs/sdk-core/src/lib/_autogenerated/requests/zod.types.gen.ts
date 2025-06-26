@@ -810,6 +810,8 @@ export type AgentType = z.infer<typeof AgentType>;
 export const AgentType = z.union([
   z.literal('memgpt_agent'),
   z.literal('memgpt_v2_agent'),
+  z.literal('react_agent'),
+  z.literal('workflow_agent'),
   z.literal('split_thread_agent'),
   z.literal('sleeptime_agent'),
   z.literal('voice_convo_agent'),
