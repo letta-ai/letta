@@ -11756,6 +11756,12 @@
             "description": "If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed).",
             "default": true
           },
+          "include_default_source": {
+            "type": "boolean",
+            "title": "Include Default Source",
+            "description": "If true, automatically creates and attaches a default data source for this agent.",
+            "default": false
+          },
           "description": {
             "anyOf": [
               {

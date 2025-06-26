@@ -3344,6 +3344,7 @@ export const CreateAgentRequest = z.object({
   include_base_tools: z.boolean().optional(),
   include_multi_agent_tools: z.boolean().optional(),
   include_base_tool_rules: z.boolean().optional(),
+  include_default_source: z.boolean().optional(),
   description: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),

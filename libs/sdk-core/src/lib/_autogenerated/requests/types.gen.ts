@@ -1181,6 +1181,10 @@ export type CreateAgentRequest = {
    */
   include_base_tool_rules?: boolean;
   /**
+   * If true, automatically creates and attaches a default data source for this agent.
+   */
+  include_default_source?: boolean;
+  /**
    * The description of the agent.
    */
   description?: string | null;
