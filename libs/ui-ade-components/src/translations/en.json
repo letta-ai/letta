@@ -43,7 +43,7 @@
     "noInstructions": "No instructions",
     "editInstructions": "Edit instructions",
     "addInstructions": "Add instructions",
-    "instructionsTooltip": "Instructions for how the agent should use this data source"
+    "instructionsTooltip": "Optional instructions for how the agent should use this data source"
   },
   "AgentMobileNavigation": {
     "more": "More panels",
@@ -301,7 +301,7 @@
     "DeleteFileDialog": {
       "title": "Delete {fileName}",
       "areYouSure": "Are you sure you want to delete {fileName}?",
-      "trigger": "Delete File",
+      "trigger": "Delete file",
       "confirm": "Delete",
       "error": "There was an error deleting this file, please try again or contact support."
     },
@@ -432,7 +432,7 @@
     "NoFilesView": {
       "title": "No files uploaded yet",
       "description": "Upload files to add them to this data source",
-      "uploadButton": "Upload from Device",
+      "uploadButton": "Upload from device",
       "or": "or",
       "dragAndDrop": "Drop your file here",
       "errors": {
@@ -442,7 +442,7 @@
       }
     },
     "DeleteFileModal": {
-      "title": "Delete File",
+      "title": "Delete file",
       "areYouSure": "Are you sure you want to delete {fileName}?",
       "confirm": "Delete",
       "error": "There was an error deleting this file, please try again or contact support."
@@ -452,13 +452,13 @@
       "confirm": "Update",
       "error": "There was an error updating this data source, please try again or contact support.",
       "instructions": {
-        "details": "Instructions and details for agent on how to use this data source. It’ll work together with the instructions for each file",
-        "label": "Source Instructions",
-        "placeholder": "Enter instructions for how the agent should use this data source"
+        "details": "Provide your agent with relevant instructions for how to use files uploaded to this data source.",
+        "label": "Source instructions",
+        "placeholder": "For example: 'These are files that contain information about my startup plans'"
       }
     },
     "RenameDataSourceModal": {
-      "title": "Rename Data Source",
+      "title": "Rename data source",
       "trigger": "Rename data source",
       "confirm": "Rename",
       "error": "There was an error renaming this data source, please try again or contact support.",
@@ -481,7 +481,7 @@
       "error": "There was an error detaching this data source, please try again or contact support."
     },
     "DeleteDataSourceModal": {
-      "title": "Delete Data Source",
+      "title": "Delete data source",
       "trigger": "Delete data source",
       "description": "This will permanently delete {sourceName}. This action cannot be undone.",
       "confirm": "Delete",
@@ -497,7 +497,7 @@
       "attachExistingDataSource": "Attach existing data source"
     },
     "UploadFileModal": {
-      "title": "Upload File to {sourceName}"
+      "title": "Upload file to {sourceName}"
     }
   },
   "ADE/DataSources/FilesView": {
