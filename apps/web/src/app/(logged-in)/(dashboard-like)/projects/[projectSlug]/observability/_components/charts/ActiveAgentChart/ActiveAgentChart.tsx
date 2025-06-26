@@ -40,12 +40,12 @@ export function ActiveAgentChart() {
     endDate,
     seriesData: [
       {
-        data: data?.body.newActiveAgents,
+        data: data?.body.returningActiveAgents,
         getterFn: (item) => item.activeAgents,
         defaultValue: 0,
       },
       {
-        data: data?.body.returningActiveAgents,
+        data: data?.body.newActiveAgents,
         getterFn: (item) => item.activeAgents,
         defaultValue: 0,
       },
@@ -85,11 +85,11 @@ export function ActiveAgentChart() {
               return makeFormattedTooltip({
                 date,
                 label: t('tooltip', {
-                  newAgents: formatNumber(newAgents || 0, {
+                  returningAgents: formatNumber(returningAgents || 0, {
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 0,
                   }),
-                  returningAgents: formatNumber(returningAgents || 0, {
+                  newAgents: formatNumber(newAgents || 0, {
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 0,
                   }),
