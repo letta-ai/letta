@@ -84,6 +84,13 @@ variable "dev_ci_TOGETHER_API_KEY" {
   type        = string
   sensitive   = true
 }
+
+variable "dev_ci_FIRECRAWL_API_KEY" {
+  description = "Firecrawl API Key for dev CI"
+  type        = string
+  sensitive   = true
+}
+
 variable "dev_model_proxy_OPENAI_API_KEY" {
   description = "OpenAI API key for model-proxy"
   type        = string
