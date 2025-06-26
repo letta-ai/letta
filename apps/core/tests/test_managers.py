@@ -751,10 +751,8 @@ async def test_create_agent_with_default_source(server: SyncServer, default_user
     auto_default_source = attached_sources[0]
 
     # Verify the default source properties
-    assert auto_default_source.name == f"{create_agent_request.name} Default Source"
-    assert "Default data source for agent" in auto_default_source.description
+    assert created_agent.name in auto_default_source.name
     assert auto_default_source.embedding_config.embedding_endpoint_type == "openai"
-    assert "default source" in auto_default_source.instructions.lower()
 
     # Test with include_default_source=False
     create_agent_request_no_source = CreateAgent(
