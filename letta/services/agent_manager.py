@@ -433,6 +433,16 @@ class AgentManager:
         supplied_ids = set(agent_create.tool_ids or [])
 
         source_ids = agent_create.source_ids or []
+
+        # Create default source if requested
+        if agent_create.include_default_source:
+            default_source = PydanticSource(
+                name=f"{agent_create.name} External Data Source",
+                embedding_config=agent_create.embedding_config,
+            )
+            created_source = await self.source_manager.create_source(default_source, actor)
+            source_ids.append(created_source.id)
+
         identity_ids = agent_create.identity_ids or []
         tag_values = agent_create.tags or []
 

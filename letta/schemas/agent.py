@@ -159,6 +159,9 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     include_base_tool_rules: bool = Field(
         True, description="If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed)."
     )
+    include_default_source: bool = Field(
+        False, description="If true, automatically creates and attaches a default data source for this agent."
+    )
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
     model: Optional[str] = Field(

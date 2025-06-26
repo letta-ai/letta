@@ -716,6 +716,76 @@ async def test_create_get_list_agent(server: SyncServer, comprehensive_test_agen
     assert len(list_agents) == 0
 
 
+@pytest.mark.asyncio
+async def test_create_agent_with_default_source(server: SyncServer, default_user, print_tool, default_block, event_loop):
+    """Test agent creation with include_default_source=True"""
+    memory_blocks = [CreateBlock(label="human", value="TestUser"), CreateBlock(label="persona", value="I am a test assistant")]
+
+    create_agent_request = CreateAgent(
+        name="test_default_source_agent",
+        system="test system",
+        memory_blocks=memory_blocks,
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        tool_ids=[print_tool.id],
+        include_default_source=True,  # This is the key field we're testing
+        include_base_tools=False,
+    )
+
+    # Create the agent
+    created_agent = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+
+    # Verify agent was created
+    assert created_agent is not None
+    assert created_agent.name == "test_default_source_agent"
+
+    # Verify that a default source was created and attached
+    attached_sources = await server.agent_manager.list_attached_sources_async(agent_id=created_agent.id, actor=default_user)
+
+    # Should have exactly one source (the default one)
+    assert len(attached_sources) == 1
+    auto_default_source = attached_sources[0]
+
+    # Verify the default source properties
+    assert auto_default_source.name == f"{create_agent_request.name} Default Source"
+    assert "Default data source for agent" in auto_default_source.description
+    assert auto_default_source.embedding_config.embedding_endpoint_type == "openai"
+    assert "default source" in auto_default_source.instructions.lower()
+
+    # Test with include_default_source=False
+    create_agent_request_no_source = CreateAgent(
+        name="test_no_default_source_agent",
+        system="test system",
+        memory_blocks=memory_blocks,
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        tool_ids=[print_tool.id],
+        include_default_source=False,  # Explicitly set to False
+        include_base_tools=False,
+    )
+
+    created_agent_no_source = await server.agent_manager.create_agent_async(
+        create_agent_request_no_source,
+        actor=default_user,
+    )
+
+    # Verify no sources are attached
+    attached_sources_no_source = await server.agent_manager.list_attached_sources_async(
+        agent_id=created_agent_no_source.id, actor=default_user
+    )
+
+    assert len(attached_sources_no_source) == 0
+
+    # Clean up
+    server.agent_manager.delete_agent(created_agent.id, default_user)
+    server.agent_manager.delete_agent(created_agent_no_source.id, default_user)
+
+
 @pytest.fixture(params=["", "PRODUCTION"])
 def set_letta_environment(request):
     original = os.environ.get("LETTA_ENVIRONMENT")
