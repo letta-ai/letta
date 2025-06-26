@@ -441,6 +441,11 @@ async function searchDeployedAgents(
 
         return;
       }
+
+      if (searchTerm.field === 'templateName') {
+        query.baseTemplateId = searchTerm.value;
+        return;
+      }
     }),
   );
   const result = await AgentsService.listAgents(

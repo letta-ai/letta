@@ -174,6 +174,12 @@ const SearchByAgentTag = z.object({
   value: z.string().array(),
 });
 
+const SearchByTemplateNameSchema = z.object({
+  field: z.literal('templateName'),
+  operator: z.enum(['eq', 'neq']),
+  value: z.string(),
+});
+
 export const OrderByValuesEnum = z.enum(['created_at', 'updated_at']);
 
 export type OrderByValuesEnumType = z.infer<typeof OrderByValuesEnum>;
@@ -192,6 +198,7 @@ export const SearchDeployedAgentsSchema = z.object({
         SearchByAgentName,
         SearchByAgentTag,
         SearchByIdentitySchema,
+        SearchByTemplateNameSchema,
       ]),
     )
     .optional(),

@@ -59,7 +59,7 @@ function EditMemoryForm(props: EditMemoryFormProps) {
     undefined,
     {
       enabled: !!memory.id,
-    }
+    },
   );
 
   const { push } = useRouter();

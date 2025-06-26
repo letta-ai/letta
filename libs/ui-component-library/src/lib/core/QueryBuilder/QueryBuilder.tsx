@@ -228,7 +228,7 @@ interface QueryRowProps extends GenericQueryItem {
 function QueryCondition(props: QueryRowProps) {
   const { field = '', isFirstCondition, queryData = {}, path } = props;
 
-  const { setQuery } = useQueryBuilder();
+  const { setQuery, definition } = useQueryBuilder();
 
   const handleChange = useCallback(
     (key: string, nextValue: OptionType | OptionType[] | undefined) => {
@@ -249,15 +249,41 @@ function QueryCondition(props: QueryRowProps) {
         const newQuery = { ...prevQuery };
 
         set(newQuery, `${path}.field`, nextField);
-        set(newQuery, `${path}.queryData`, {});
+
+        // Get the field definition for the new field
+        const newFieldDefinition = definition[nextField];
+
+        // Reset queryData with default values for the new field
+        const defaultQueryData: Record<
+          string,
+          OptionType | OptionType[] | undefined
+        > = {};
+
+        if (newFieldDefinition) {
+          newFieldDefinition.queries.forEach((queryDef) => {
+            if (
+              queryDef.display === 'select' &&
+              queryDef.options?.options &&
+              queryDef.options.options.length > 0
+            ) {
+              // Set the first option as default for select fields (like operators)
+              defaultQueryData[queryDef.key] = queryDef.options.options[0];
+            } else if (queryDef.display === 'input') {
+              // Set empty string for input fields
+              defaultQueryData[queryDef.key] = { label: '', value: '' };
+            }
+          });
+        }
+
+        set(newQuery, `${path}.queryData`, defaultQueryData);
 
         return { ...newQuery };
       });
     },
-    [path, setQuery],
+    [path, setQuery, definition],
   );
 
-  const { definition, fieldsOptions } = useQueryBuilder();
+  const { fieldsOptions } = useQueryBuilder();
 
   const definitionType = useMemo(() => {
     return definition[field];
@@ -293,7 +319,7 @@ function QueryCondition(props: QueryRowProps) {
       {definitionType?.queries?.map((query, index) => {
         return (
           <InputConstructor
-            key={index}
+            key={`${field}-${query.key}`}
             structure={query}
             value={queryData[query.key] || undefined}
             onChange={(nextValue) => {

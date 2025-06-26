@@ -1918,8 +1918,8 @@
           "placeholder": "my-tag"
         }
       },
-      "agentTemplate": {
-        "name": "Agent Template",
+      "templateVersion": {
+        "name": "Template Version",
         "operator": {
           "operators": {
             "equals": "equals",
@@ -1929,7 +1929,21 @@
         },
         "value": {
           "label": "Value",
-          "placeholder": "my-template-name"
+          "placeholder": "my-template-version-name"
+        }
+      },
+      "templateFamily": {
+        "name": "Template Family",
+        "operator": {
+          "operators": {
+            "equals": "equals",
+            "notEquals": "does not equal"
+          },
+          "label": "Operator"
+        },
+        "value": {
+          "label": "Value",
+          "placeholder": "my-template-family-name"
         }
       },
       "agentName": {
@@ -1969,7 +1983,8 @@
       "searching": "Searching agents...",
       "loading": "Searching agents..."
     },
-    "anyVersion": "(Any Version)",
+    "anyVersion": "(Any Template Version)",
+    "anyFamily": "(Any Template Family)",
     "searchDropdown": {
       "label": "from version:",
       "placeholder": "Template version"

@@ -10,7 +10,6 @@ import {
   Card,
   CopyButton,
   isGenericQueryCondition,
-  isMultiValue,
   MiddleTruncate,
   QueryBuilder,
   SearchIcon,
@@ -41,7 +40,6 @@ import {
   IdentitiesService,
   useIdentitiesServiceListIdentities,
 } from '@letta-cloud/sdk-core';
-
 import { TagService, useTagServiceListTags } from '@letta-cloud/sdk-core';
 import { useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
@@ -63,6 +61,8 @@ import {
   cloudQueryKeys,
 } from '@letta-cloud/sdk-cloud-api';
 import { TrashIcon } from '@letta-cloud/ui-component-library';
+
+const TEMPLATE_SEARCH_LIMIT = 10;
 
 interface AgentMessagesListProps {
   agentId: string;
@@ -91,7 +91,7 @@ interface DeployedAgentViewProps {
 }
 
 function DeployedAgentView(props: DeployedAgentViewProps) {
-  const { agent, onClose, onAgentUpdate } = props; // Add onAgentUpdate
+  const { agent, onClose, onAgentUpdate } = props;
   const { name } = agent;
   const { slug: currentProjectSlug } = useCurrentProject();
   const t = useTranslations('projects/(projectSlug)/agents/page');
@@ -107,11 +107,11 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
         color="background-black"
         fullHeight
         fullWidth
-        /* eslint-disable-next-line react/forbid-component-props */
+        /*eslint-disable-next-line react/forbid-component-props */
         className="absolute z-[1] fade-in-5 opacity-10"
       />
       <VStack
-        /* eslint-disable-next-line react/forbid-component-props */
+        /*eslint-disable-next-line react/forbid-component-props */
         className="absolute z-10 sm:animate-in slide-in-from-right-10 sm:w-[70%] right-0"
         color="background"
         border
@@ -139,7 +139,6 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
                   preIcon={<DotsVerticalIcon />}
                   size="default"
                   hideLabel
-                  // _use_rarely_disableTooltip
                 />
               }
               triggerAsChild
@@ -155,9 +154,8 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
                   />
                 }
                 onSuccess={() => {
-                  // Close the preview panel and potentially refresh the data
                   onClose();
-                  onAgentUpdate(); // Call onAgentUpdate
+                  onAgentUpdate();
                 }}
               />
             </DropdownMenu>
@@ -196,9 +194,6 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
                     allowCopy
                     fullWidth
                   />
-                  {/*<HStack fullWidth justify="end">*/}
-                  {/*  <Button label="Connection instructions" preIcon={<BotIcon />} color="secondary" />*/}
-                  {/*</HStack>*/}
                 </VStack>
               </Card>
               <AgentMessagesList agentId={agent.id || ''} />
@@ -244,6 +239,7 @@ interface UseQueryDefinitionResponse {
 
 function useQueryDefinition() {
   const t = useTranslations('projects/(projectSlug)/agents/page');
+  const { id: currentProjectId } = useCurrentProject();
 
   const params = useSearchParams();
 
@@ -276,8 +272,6 @@ function useQueryDefinition() {
     }
   }, []);
 
-  const { id: currentProjectId } = useCurrentProject();
-
   const { data } = webApi.projects.getProjectDeployedAgentTemplates.useQuery({
     queryKey:
       webApiQueryKeys.projects.getProjectDeployedAgentTemplatesWithSearch(
@@ -294,7 +288,22 @@ function useQueryDefinition() {
     },
   });
 
+  const { data: templateData } =
+    webApi.agentTemplates.listAgentTemplates.useQuery({
+      queryKey: webApiQueryKeys.agentTemplates.listAgentTemplatesWithSearch({
+        projectId: currentProjectId,
+        limit: TEMPLATE_SEARCH_LIMIT,
+      }),
+      queryData: {
+        query: {
+          projectId: currentProjectId,
+          limit: TEMPLATE_SEARCH_LIMIT,
+        },
+      },
+    });
+
   const { defaultIdentities, handleLoadIdentities } = useQueryIdentities();
+
   const handleLoadOptions = useCallback(
     async (query: string) => {
       const response =
@@ -333,6 +342,49 @@ function useQueryDefinition() {
 
     return arr;
   }, [data?.body, t]);
+
+  const defaultTemplateNameOptions = useMemo(() => {
+    if (!templateData?.body) {
+      return null;
+    }
+
+    const arr = templateData.body.agentTemplates.map((template) => ({
+      label: template.name,
+      value: template.id,
+    }));
+
+    // Add "(Any Family)" option at the beginning
+    arr.unshift({ label: t('anyFamily'), value: '' });
+
+    return arr;
+  }, [templateData?.body, t]);
+
+  const handleLoadTemplateNames = useCallback(
+    async (query: string) => {
+      const response = await webApi.agentTemplates.listAgentTemplates.query({
+        query: {
+          search: query,
+          projectId: currentProjectId,
+          limit: TEMPLATE_SEARCH_LIMIT,
+        },
+      });
+
+      if (response.status !== 200) {
+        return [];
+      }
+
+      const options = response.body.agentTemplates.map((template) => ({
+        label: template.name,
+        value: template.id,
+      }));
+
+      // Add "(Any Family)" option at the beginning
+      options.unshift({ label: t('anyFamily'), value: '' });
+
+      return options;
+    },
+    [currentProjectId, t],
+  );
 
   return useMemo(() => {
     const fieldDefinitions = {
@@ -452,11 +504,11 @@ function useQueryDefinition() {
       },
       version: {
         id: 'version',
-        name: t('useQueryDefinition.agentTemplate.name'),
+        name: t('useQueryDefinition.templateVersion.name'),
         queries: [
           {
             key: 'operator',
-            label: t('useQueryDefinition.agentTemplate.operator.label'),
+            label: t('useQueryDefinition.templateVersion.operator.label'),
             display: 'select',
             options: {
               styleConfig: {
@@ -465,13 +517,13 @@ function useQueryDefinition() {
               options: [
                 {
                   label: t(
-                    'useQueryDefinition.agentTemplate.operator.operators.equals',
+                    'useQueryDefinition.templateVersion.operator.operators.equals',
                   ),
                   value: 'eq',
                 },
                 {
                   label: t(
-                    'useQueryDefinition.agentTemplate.operator.operators.notEquals',
+                    'useQueryDefinition.templateVersion.operator.operators.notEquals',
                   ),
                   value: 'neq',
                 },
@@ -480,11 +532,11 @@ function useQueryDefinition() {
           },
           {
             key: 'value',
-            label: t('useQueryDefinition.agentTemplate.value.label'),
+            label: t('useQueryDefinition.templateVersion.value.label'),
             display: 'async-select',
             options: {
               placeholder: t(
-                'useQueryDefinition.agentTemplate.value.placeholder',
+                'useQueryDefinition.templateVersion.value.placeholder',
               ),
               defaultOptions: defaultTemplateSearchOptions || [],
               loadOptions: handleLoadOptions,
@@ -492,8 +544,51 @@ function useQueryDefinition() {
           },
         ],
       },
+      templateName: {
+        id: 'templateName',
+        name: t('useQueryDefinition.templateFamily.name'),
+        queries: [
+          {
+            key: 'operator',
+            label: t('useQueryDefinition.templateFamily.operator.label'),
+            display: 'select',
+            options: {
+              styleConfig: {
+                containerWidth: 150,
+              },
+              options: [
+                {
+                  label: t(
+                    'useQueryDefinition.templateFamily.operator.operators.equals',
+                  ),
+                  value: 'eq',
+                },
+                {
+                  label: t(
+                    'useQueryDefinition.templateFamily.operator.operators.notEquals',
+                  ),
+                  value: 'neq',
+                },
+              ],
+            },
+          },
+          {
+            key: 'value',
+            label: t('useQueryDefinition.templateFamily.value.label'),
+            display: 'async-select',
+            options: {
+              placeholder: t(
+                'useQueryDefinition.templateFamily.value.placeholder',
+              ),
+              defaultOptions: defaultTemplateNameOptions || [],
+              loadOptions: handleLoadTemplateNames,
+            },
+          },
+        ],
+      },
     } as const satisfies FieldDefinitions;
 
+    // Fix the initial query to start with a default condition
     const initialQuery =
       queryFilter ||
       ({
@@ -503,7 +598,7 @@ function useQueryDefinition() {
             {
               field: fieldDefinitions.name.id,
               queryData: {
-                operator: fieldDefinitions.name.queries[0].options.options[0],
+                operator: fieldDefinitions.name.queries[0].options.options[0], // 'contains' operator
                 value: {
                   label: '',
                   value: '',
@@ -522,8 +617,10 @@ function useQueryDefinition() {
     defaultIdentities,
     handleLoadIdentities,
     defaultTemplateSearchOptions,
+    defaultTemplateNameOptions,
     queryFilter,
     handleLoadOptions,
+    handleLoadTemplateNames,
     t,
     defaultTags,
     handleLoadTags,
@@ -579,13 +676,14 @@ function DeployedAgentsPage() {
   const [query, setQuery] = useState<QueryBuilderQuery>(initialQuery);
   const t = useTranslations('projects/(projectSlug)/agents/page');
 
+  // Add this line to force QueryBuilder re-render when field definitions change
+  const queryBuilderKey = useMemo(() => {
+    return JSON.stringify(Object.keys(fieldDefinitions));
+  }, [fieldDefinitions]);
+
   useEffect(() => {
-    // set search params as JSON string of draftQuery
-
     const searchParams = new URLSearchParams();
-
     searchParams.set('query', JSON.stringify(draftQuery));
-
     window.history.replaceState(
       {},
       '',
@@ -595,42 +693,45 @@ function DeployedAgentsPage() {
 
   const [limit, setLimit] = useState(0);
   const [page, setPage] = useState<number>(0);
-
   const [selectedAgent, setSelectedAgent] = useState<AgentState>();
-
   const { id: currentProjectId } = useCurrentProject();
 
+  // FIXED: Updated compiledQuery to handle empty values properly
   const compiledQuery = useMemo(() => {
     const val = {
-      search: query.root.items.map((item) => {
-        if (isGenericQueryCondition(item) || !item.queryData) {
-          return null;
-        }
+      search: query.root.items
+        .map((item) => {
+          if (isGenericQueryCondition(item) || !item.queryData) {
+            return null;
+          }
 
-        return {
-          field: item.field,
-          ...Object.entries(item.queryData).reduce((acc, [key, value]) => {
-            if (!value) {
-              return acc;
-            }
+          return {
+            field: item.field,
+            ...Object.entries(item.queryData).reduce((acc, [key, value]) => {
+              if (!value) {
+                return acc;
+              }
 
-            if (isMultiValue(value)) {
+              if (Array.isArray(value)) {
+                // Handle multi-value fields (like tags)
+                const values = value.map((val) => val?.value).filter(Boolean);
+                return {
+                  ...acc,
+                  [key]: values,
+                };
+              }
+
               return {
                 ...acc,
-                [key]: value.map((val) => val.value),
+                [key]: value?.value || '',
               };
-            }
-
-            return {
-              ...acc,
-              [key]: value?.value || '',
-            };
-          }, {}),
-        };
-      }),
+            }, {}),
+          };
+        })
+        .filter(Boolean) as any[], // Type assertion to bypass strict typing
       limit,
       project_id: currentProjectId,
-      combinator: query.root.combinator,
+      combinator: 'AND' as const,
     };
 
     if (SearchDeployedAgentsSchema.safeParse(val).success) {
@@ -690,7 +791,6 @@ function DeployedAgentsPage() {
 
   // Handler for when agents are updated
   const handleAgentUpdate = useCallback(() => {
-    // Reset to first page and refetch
     setPage(0);
     void refetch();
   }, [refetch]);
@@ -907,10 +1007,8 @@ function DeployedAgentsPage() {
             onSuccess={(id, isTemplate) => {
               if (isTemplate) {
                 push(`/projects/${currentProjectSlug}/templates/${id}`);
-
                 return;
               }
-
               push(`/projects/${currentProjectSlug}/agents/${id}`);
             }}
             supportTemplateUploading
@@ -937,6 +1035,7 @@ function DeployedAgentsPage() {
               <VStack>
                 <Typography bold>{t('search.label')}</Typography>
                 <QueryBuilder
+                  key={queryBuilderKey}
                   query={draftQuery}
                   onSetQuery={(query) => {
                     setDraftQuery(query);
@@ -945,14 +1044,14 @@ function DeployedAgentsPage() {
                 />
               </VStack>
               <HStack
-                /* eslint-disable-next-line react/forbid-component-props */
+                /*eslint-disable-next-line react/forbid-component-props */
                 className="mt-[-26px] pointer-events-none"
                 fullWidth
                 align="center"
                 justify="end"
               >
                 <HStack
-                  /* eslint-disable-next-line react/forbid-component-props */
+                  /*eslint-disable-next-line react/forbid-component-props */
                   className="pointer-events-auto"
                   align="center"
                   justify="end"
@@ -990,7 +1089,7 @@ function DeployedAgentsPage() {
                   setSelectedAgent(undefined);
                 }}
                 agent={selectedAgent}
-                onAgentUpdate={handleAgentUpdate} // Add this prop
+                onAgentUpdate={handleAgentUpdate}
               />
             )}
           </HStack>
