@@ -1,9 +1,6 @@
 'use client';
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import {
-  DotsVerticalIcon,
-  InfoTooltip,
-} from '@letta-cloud/ui-component-library';
+import { DotsVerticalIcon } from '@letta-cloud/ui-component-library';
 import type {
   FieldDefinitions,
   QueryBuilderQuery,
@@ -977,19 +974,6 @@ function DeployedAgentsPage() {
               minHeight={400}
               limit={limit}
               onLimitChange={setLimit}
-              bottomLeftContent={
-                agents &&
-                agents.length > 0 && (
-                  <>
-                    <HStack align="center">
-                      <Typography variant="body2" color="muted">
-                        {t('table.wipResults')}
-                      </Typography>
-                      <InfoTooltip text={t('table.wipResultsInfo')} />
-                    </HStack>
-                  </>
-                )
-              }
               onSetPage={setPage}
               hasNextPage={hasNextPage}
               showPagination
