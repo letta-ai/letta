@@ -6,6 +6,7 @@ import { CloseIcon, PlusIcon } from '../../icons';
 import { cn } from '@letta-cloud/ui-styles';
 import type { ButtonProps } from '../Button/Button';
 import { Button } from '../Button/Button';
+import type { ComponentPropsWithoutRef, Ref } from 'react';
 import { useCallback } from 'react';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
@@ -61,9 +62,11 @@ type DialogContentProps = React.ComponentPropsWithoutRef<
   typeof DialogPrimitive.Content
 > & {
   color?: 'background-grey' | 'background';
+  headerVariant?: HeaderVariants;
   size?: VariantProps<typeof dialogVariants>['size'];
   errorMessage?: React.ReactNode;
   errorAdditionalMessage?: string;
+  additionalActions?: React.ReactNode;
 };
 
 const DialogContent = React.forwardRef<
@@ -77,7 +80,9 @@ const DialogContent = React.forwardRef<
       children,
       size,
       errorMessage,
+      headerVariant,
       errorAdditionalMessage,
+      additionalActions,
       ...props
     },
     ref,
@@ -121,10 +126,27 @@ const DialogContent = React.forwardRef<
                   fullHeight={isFull}
                 >
                   {children}
-                  <DialogPrimitive.Close className="absolute right-4 top-[13px] opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-                    <CloseIcon className="h-5 w-5" />
-                    <span className="sr-only">Close</span>
-                  </DialogPrimitive.Close>
+                  <HStack
+                    align="center"
+                    gap={false}
+                    className={cn(
+                      'absolute right-4',
+                      headerVariant === 'emphasis'
+                        ? 'top-[23px]'
+                        : 'top-[13px]',
+                    )}
+                  >
+                    {additionalActions}
+                    <DialogPrimitive.Close asChild>
+                      <Button
+                        preIcon={<CloseIcon />}
+                        hideLabel
+                        size="xsmall"
+                        color="tertiary"
+                        label="Close"
+                      />
+                    </DialogPrimitive.Close>
+                  </HStack>
                 </VStack>
               </VStack>
             </div>
@@ -136,19 +158,36 @@ const DialogContent = React.forwardRef<
 );
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
+const headerVariants = cva(
+  'flex flex-col space-y-1.5 text-center sm:text-left',
+  {
+    variants: {
+      variant: {
+        emphasis: 'text-xl pt-5',
+        default: 'bg-background-grey2',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  },
+);
+
+interface DialogHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant: HeaderVariants;
+}
+
 function DialogHeader({
   className,
+  variant,
+  color: _color,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: DialogHeaderProps) {
   return (
     <HStack
       paddingX="xlarge"
-      className={cn(
-        'flex flex-col space-y-1.5 text-center sm:text-left',
-        className,
-      )}
+      className={cn(headerVariants({ variant }), className)}
       {...props}
-      color="background-grey2"
     />
   );
 }
@@ -175,20 +214,36 @@ function DialogFooter({
 
 DialogFooter.displayName = 'DialogFooter';
 
-const DialogTitle = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Title>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Title
-    ref={ref}
-    className={cn(
-      'text-base font-bold h-[48px] flex items-center justify-start leading-none tracking-tight',
-      className,
-    )}
-    {...props}
-  />
-));
-DialogTitle.displayName = DialogPrimitive.Title.displayName;
+const titleVariants = cva(
+  'text-base  flex items-center text-nowrap justify-start leading-none tracking-tight',
+  {
+    variants: {
+      variant: {
+        emphasis: 'text-[20px] font-bold',
+        default: 'h-[48px] font-bold',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  },
+);
+
+interface DialogTitleProps
+  extends ComponentPropsWithoutRef<typeof DialogPrimitive.Title> {
+  variant: HeaderVariants;
+  ref?: Ref<HTMLDivElement>;
+}
+
+function DialogTitle({ className, variant, ref, ...props }: DialogTitleProps) {
+  return (
+    <DialogPrimitive.Title
+      ref={ref}
+      className={cn(titleVariants({ variant }), className)}
+      {...props}
+    />
+  );
+}
 
 const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
@@ -345,6 +400,8 @@ export function DialogContentWithCategories(
   );
 }
 
+type HeaderVariants = 'default' | 'emphasis';
+
 interface DialogProps extends VariantProps<typeof dialogVariants> {
   isOpen?: boolean;
   testId?: string;
@@ -357,6 +414,7 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
   confirmText?: string;
   confirmColor?: ButtonProps['color'];
   padding?: boolean;
+  headerVariant?: HeaderVariants;
   preventCloseFromOutside?: boolean;
   isConfirmBusy?: boolean;
   // if you do not want the dialog to be on the window but encapsulated in the parent component
@@ -371,6 +429,7 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
   hideFooter?: boolean;
   maintainAspectRatio?: boolean;
   color?: 'background-grey' | 'background';
+  additionalActions?: React.ReactNode;
   reverseButtons?: boolean;
 }
 
@@ -390,8 +449,10 @@ export function Dialog(props: DialogProps) {
     children,
     reverseButtons,
     isConfirmBusy,
+    additionalActions,
     disableForm,
     padding = true,
+    headerVariant = 'default',
     trigger,
     confirmColor = 'primary',
     preventCloseFromOutside,
@@ -436,6 +497,8 @@ export function Dialog(props: DialogProps) {
       <DialogContent
         color={color}
         size={size}
+        additionalActions={additionalActions}
+        headerVariant={headerVariant}
         errorMessage={errorMessage}
         errorAdditionalMessage={errorAdditionalMessage}
         className={dialogVariants({ size, maintainAspectRatio })}
@@ -451,8 +514,8 @@ export function Dialog(props: DialogProps) {
         aria-describedby=""
       >
         <DialogContext.Provider value={{ isInDialog: true }}>
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
+          <DialogHeader variant={headerVariant}>
+            <DialogTitle variant={headerVariant}>{title}</DialogTitle>
           </DialogHeader>
           <Element
             className={cn(

@@ -39,9 +39,25 @@
     "tools": "<strong>Tools included:</strong> {toolsList}",
     "newArchitecture": "New Architecture"
   },
+  "ADE/InstructionsView": {
+    "noInstructions": "No instructions",
+    "editInstructions": "Edit instructions",
+    "addInstructions": "Add instructions",
+    "instructionsTooltip": "Instructions for how the agent should use this data source"
+  },
   "AgentMobileNavigation": {
     "more": "More panels",
     "less": "Less panels"
+  },
+  "ADE/DataSourceViewHeader": {
+    "addFile": "Add file",
+    "selectDataSource": "View attached data sources"
+  },
+  "ADE/DataSourcesPanel/NoDatasourceView": {
+    "title": "No datasources attached",
+    "new": "Create a datasource",
+    "or": "or",
+    "attach": "Attach an existing datasource"
   },
   "ADE/NetworkInspector": {
     "title": "Network Inspector",
@@ -260,6 +276,10 @@
       }
     }
   },
+  "ADE/EditDataSourcesPanel/DataSourceCompatibilityWarning": {
+    "title": "Compatibility error",
+    "description": "This data source's embedding config <embedding></embedding> does not match the agent config <agent></agent> you will not be able to use this data source until the models match. Edit embedding config in the advanced settings tab."
+  },
   "ADE/EditDataSourcesPanel": {
     "mobileTitle": "Data Sources",
     "infoTooltip": "External files loaded into the agent's archival memory for RAG",
@@ -358,24 +378,26 @@
     "error": "There was an error loading data sources, please try again or contact support.",
     "noDataSources": "You have no data sources attached to this agent. Click the + button to attach a data source.",
     "CreateDataSourceDialog": {
+      "titlev2": "Create a new source",
       "titles": "Add New Data Source",
       "trigger": "Create source",
       "goBack": "Go back",
+      "errors": {
+        "default": "There was an error creating the data source, please try again or contact support.",
+        "overage": "You have reached the maximum number of data sources for your plan, please <link>upgrade</link> or delete some data sources."
+      },
       "instructions": {
         "label": "Instructions",
-        "placeholder": "Enter instructions for how this data source should be used",
-        "tooltip": "How the agent should ingest this data source"
+        "details": "Add instructions and details for agent on how to use this data source. It’ll work together with the instructions for each file",
+        "placeholder": "Enter instructions for how this data source should be used"
       },
       "name": {
         "label": "Name",
         "placeholder": "my-data-source-name"
       },
-      "cancel": "Go back",
-      "create": "Create",
-      "errors": {
-        "default": "There was an error creating the data source, please try again or contact support.",
-        "overage": "You have reached the maximum number of data sources for your plan, please <link>upgrade</link> or delete some data sources."
-      },
+      "cancel": "Cancel",
+      "create": "Create source",
+
       "creatingDataSource": "Creating data source...",
       "title": "Attach a data source",
       "options": {
@@ -388,7 +410,127 @@
           "description": "Attach an existing data source that you have already created."
         }
       }
+    },
+    "AttachDataSourceModal": {
+      "title": "Attach Data Source",
+      "support": "You can link multiple sources to an agent",
+      "searchInput": {
+        "label": "Search data sources",
+        "placeholder": "Search data sources"
+      },
+      "loading": "Loading data sources...",
+      "error": "Failed to load data sources",
+      "emptyMessage": "No data sources available",
+      "emptySearchMessage": "No data sources found",
+      "attach": "Attach",
+      "attached": "Attached",
+      "notCompatible": {
+        "title": "Not Compatible",
+        "details": "This data source's embedding model is not compatible with your current model."
+      }
+    },
+    "NoFilesView": {
+      "title": "No files uploaded yet",
+      "description": "Upload files to add them to this data source",
+      "uploadButton": "Upload from Device",
+      "or": "or",
+      "dragAndDrop": "Drop your file here",
+      "errors": {
+        "fileSizeExceeded": "File size exceeds the limit of {limit}",
+        "storageExceeded": "Storage limit exceeded ({limit}). <link>Upgrade your plan</link>",
+        "genericError": "Failed to upload file. Please try again."
+      }
+    },
+    "DeleteFileModal": {
+      "title": "Delete File",
+      "areYouSure": "Are you sure you want to delete {fileName}?",
+      "confirm": "Delete",
+      "error": "There was an error deleting this file, please try again or contact support."
+    },
+    "UpdateSourceInstructionsModal": {
+      "title": "Update source instructions",
+      "confirm": "Update",
+      "error": "There was an error updating this data source, please try again or contact support.",
+      "instructions": {
+        "details": "Instructions and details for agent on how to use this data source. It’ll work together with the instructions for each file",
+        "label": "Source Instructions",
+        "placeholder": "Enter instructions for how the agent should use this data source"
+      }
+    },
+    "RenameDataSourceModal": {
+      "title": "Rename Data Source",
+      "trigger": "Rename data source",
+      "confirm": "Rename",
+      "error": "There was an error renaming this data source, please try again or contact support.",
+      "name": {
+        "label": "Data Source Name",
+        "placeholder": "Enter data source name"
+      }
+    },
+    "DatasourceDropdownMenu": {
+      "menuLabel": "Data source actions",
+      "rename": "Rename data source",
+      "detach": "Detach data source",
+      "delete": "Delete data source"
+    },
+    "DetachDataSourceModal": {
+      "title": "Detach {sourceName}",
+      "trigger": "Detach data source",
+      "areYouSure": "Are you sure you want to detach {sourceName}?",
+      "confirm": "Detach",
+      "error": "There was an error detaching this data source, please try again or contact support."
+    },
+    "DeleteDataSourceModal": {
+      "title": "Delete Data Source",
+      "trigger": "Delete data source",
+      "description": "This will permanently delete {sourceName}. This action cannot be undone.",
+      "confirm": "Delete",
+      "error": "There was an error deleting this data source, please try again or contact support.",
+      "confirmName": {
+        "label": "Type the data source name to confirm",
+        "error": "Name does not match"
+      }
+    },
+    "DataSourceSelector": {
+      "createNewDataSource": "Create new datasource",
+      "incompatibleWarningTooltip": "This data source's embedding config does not match the agent config, this may lead to the agent not remembering data properly. Open this data source to see more details.",
+      "attachExistingDataSource": "Attach existing data source"
+    },
+    "UploadFileModal": {
+      "title": "Upload File to {sourceName}"
     }
+  },
+  "ADE/DataSources/FilesView": {
+    "error": "There was an error loading files, please try again or contact support."
+  },
+  "ADE/DataSources/FileViewActions": {
+    "delete": "Delete file",
+    "view": "View file"
+  },
+  "ADE/DataSources/ErrorViewDialog": {
+    "title": "View error"
+  },
+  "ADE/DataSources/FileStatus": {
+    "errorTooltip": "Error processing file, click to view error",
+    "statuses": {
+      "parsing": "Parsing",
+      "error": "Upload error",
+      "pending": "Pending",
+      "embedding": "Embedding"
+    }
+  },
+  "ADE/DataSources/FileViewFooter": {
+    "removeFile": "Remove file"
+  },
+  "ADE/DataSources/FileStats": {
+    "lines": "{count} lines"
+  },
+  "ADE/DataSources/ExpandedFileView": {
+    "delete": "Delete file",
+    "untitled": "Untitled",
+    "loading": "Loading content",
+    "noFileGrep": "This file does not have content or content is not available",
+    "warning": "Formatting may be inconsistent from source"
   },
   "StepsViewer": {
     "messages": "Messages",

@@ -4,6 +4,7 @@ import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-cloud/ui-styles';
 import { Slot } from '@radix-ui/react-slot';
+import { Spinner } from '../Spinner/Spinner';
 
 const badgeVariants = cva(
   'items-center px-1.5 inline-flex font-semibold tracking-wide',
@@ -24,7 +25,7 @@ const badgeVariants = cva(
         warning:
           'bg-background-warning text-background-warning-content border-background-warning-border',
         destructive:
-          'bg-background-destructive text-background-destructive-content',
+          'bg-chip-destructive text-chip-destructive-content border-chip-destructive-border',
         success: 'bg-background-success text-background-success-content',
         info: 'text-brand-light-content bg-brand-light',
         chipStandard:
@@ -49,7 +50,7 @@ const iconVariants = cva('', {
   variants: {
     size: {
       default: 'w-3 h-3',
-      small: 'max-w-3 max-h-3',
+      small: 'max-w-3 max-h-3 min-w-2 min-w-2',
       large: 'w-4 h-4',
     },
   },
@@ -62,13 +63,23 @@ export interface BadgeProps extends VariantProps<typeof badgeVariants> {
   content: React.ReactNode;
   preIcon?: React.ReactNode;
   className?: string;
+  busy?: boolean;
   uppercase?: boolean;
   ref?: React.Ref<HTMLDivElement>;
 }
 
 export function Badge(props: BadgeProps) {
-  const { size, className, border, ref, preIcon, variant, uppercase, content } =
-    props;
+  const {
+    size,
+    busy,
+    className,
+    border,
+    ref,
+    preIcon,
+    variant,
+    uppercase,
+    content,
+  } = props;
 
   return (
     <HStack
@@ -81,6 +92,11 @@ export function Badge(props: BadgeProps) {
     >
       {preIcon && <Slot className={iconVariants({ size })}>{preIcon}</Slot>}
       <span className="whitespace-nowrap bold">{content}</span>
+      {busy && (
+        <Slot className={iconVariants({ size })}>
+          <Spinner />
+        </Slot>
+      )}
     </HStack>
   );
 }

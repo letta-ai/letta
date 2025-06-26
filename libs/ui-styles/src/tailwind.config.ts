@@ -223,6 +223,11 @@ export function buildConfig(appDir: string): Config {
             border: 'rgba(var(--chip-usage-based-border))',
             content: 'rgba(var(--chip-usage-based-content))',
           },
+          'chip-destructive': {
+            DEFAULT: 'hsl(var(--chip-destructive))',
+            border: 'hsl(var(--chip-destructive-border))',
+            content: 'hsl(var(--chip-destructive-content))',
+          },
         },
         borderRadius: {
           DEFAULT: `var(--radius)`,

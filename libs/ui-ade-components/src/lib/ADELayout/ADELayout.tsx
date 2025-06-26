@@ -90,9 +90,11 @@ import { createPortal } from 'react-dom';
 import { useADETour } from '../hooks/useADETour/useADETour';
 import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 import { NetworkInspector } from '../NetworkInspector/NetworkInspector';
-import { useNetworkInspectorVisibility } from '../hooks/useNetworkInspectorVisibility/useNetworkInspectorVisibility';
+import { useNetworkInspectorVisibility } from '../hooks';
 import { useHotkeys } from '@mantine/hooks';
 import { adeKeyMap } from '../adeKeyMap';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import { DataSourcesPanel } from '../panels/DataSourcesV2/DataSourcesPanel';
 
 function DesktopLayout() {
   const t = useTranslations('ADELayout');
@@ -104,6 +106,7 @@ function DesktopLayout() {
     archivalMemoriesTitle,
   } = useADETitleTranslations();
 
+  const { data: isDatasourcesV2Enabled } = useFeatureFlag('DATASOURCES_V2');
   const { isTemplate, isLocal } = useCurrentAgentMetaData();
 
   const [networkInspectorOpen, setNetworkInspectorOpen] =
@@ -162,7 +165,11 @@ function DesktopLayout() {
                 {
                   title: datasourcesTitle,
                   id: 'datasources',
-                  content: <EditDataSourcesPanel />,
+                  content: isDatasourcesV2Enabled ? (
+                    <DataSourcesPanel />
+                  ) : (
+                    <EditDataSourcesPanel />
+                  ),
                 },
               ]}
             />

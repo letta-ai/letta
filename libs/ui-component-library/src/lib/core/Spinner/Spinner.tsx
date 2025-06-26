@@ -19,8 +19,10 @@ const spinnerVariants = cva('', {
   },
 });
 
-type SpinnerProps = VariantProps<typeof spinnerVariants>;
+type SpinnerProps = VariantProps<typeof spinnerVariants> & {
+  className?: string;
+};
 
-export function Spinner(props: SpinnerProps) {
-  return <SpinnerPrimitive className={cn(spinnerVariants(props))} />;
+export function Spinner({ className, ...props }: SpinnerProps) {
+  return <SpinnerPrimitive className={cn(spinnerVariants(props), className)} />;
 }

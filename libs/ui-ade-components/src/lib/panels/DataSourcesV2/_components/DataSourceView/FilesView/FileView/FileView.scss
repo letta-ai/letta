@@ -1,0 +1,18 @@
+
+
+.fileview-inner, .fileview-status {
+  position: absolute;
+  right: 0.25rem;
+  display: none;
+
+  top: 0.25rem;
+}
+
+.fileview:hover .fileview-inner {
+  display: flex;
+}
+
+
+.fileview-status {
+  display: block;
+}

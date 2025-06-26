@@ -18,6 +18,7 @@ interface LoadingEmptyStatusComponentProps {
   hideText?: boolean;
   isLoading?: boolean;
   isError?: boolean;
+  iconOverride?: React.ReactNode;
 }
 
 export function LoadingEmptyStatusComponent(
@@ -35,6 +36,7 @@ export function LoadingEmptyStatusComponent(
     isLoading,
     className,
     emptyAction,
+    iconOverride,
   } = props;
 
   const message = useMemo(() => {
@@ -95,16 +97,20 @@ export function LoadingEmptyStatusComponent(
         align="center"
         justify="center"
       >
-        <LettaLoader
-          variant={loaderVariant}
-          stopAnimation={!isLoading}
-          color={stateColor}
-          size="large"
-        />
+        {iconOverride ? (
+          <VStack paddingBottom="medium">{iconOverride}</VStack>
+        ) : (
+          <LettaLoader
+            variant={loaderVariant}
+            stopAnimation={!isLoading}
+            color={stateColor}
+            size="large"
+          />
+        )}
         {!hideText && (
           <div
             style={{ whiteSpace: 'normal' }}
-            className="max-w-[400px] text-sm text-muted whitespace-normal	text-wrap text-center"
+            className="max-w-[400px] text-sm text-lighter whitespace-normal	text-wrap text-center"
           >
             {message || 'Reticulating splines...'}
           </div>

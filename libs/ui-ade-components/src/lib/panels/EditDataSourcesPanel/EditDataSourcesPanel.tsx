@@ -378,26 +378,24 @@ function CreateNewDataSource(props: CreateNewDataSourceProps) {
             )}
             name="name"
           />
-          <Tooltip
-            asChild
-            content={t('CreateDataSourceDialog.instructions.tooltip')}
-          >
-            <FormField
-              render={({ field }) => (
-                <TextArea
-                  autosize
-                  minRows={3}
-                  fullWidth
-                  {...field}
-                  label={t('CreateDataSourceDialog.instructions.label')}
-                  placeholder={t(
-                    'CreateDataSourceDialog.instructions.placeholder',
-                  )}
-                />
-              )}
-              name="instructions"
-            />
-          </Tooltip>
+          <FormField
+            render={({ field }) => (
+              <TextArea
+                autosize
+                minRows={3}
+                infoTooltip={{
+                  text: t('CreateDataSourceDialog.instructions.details'),
+                }}
+                fullWidth
+                {...field}
+                label={t('CreateDataSourceDialog.instructions.label')}
+                placeholder={t(
+                  'CreateDataSourceDialog.instructions.placeholder',
+                )}
+              />
+            )}
+            name="instructions"
+          />
           <FormActions errorMessage={errorMessage}>
             <Button
               color="tertiary"

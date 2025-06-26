@@ -8,6 +8,19 @@ interface FormatFileSizeOptions {
 export function useFormatters() {
   // Number Formatters
 
+  function dynamicFileSize(value: number) {
+    if (value >= 1_099_511_627_776) {
+      return `${formatFileSize(value, { unit: 'TB' })} TB`;
+    } else if (value >= 1_073_741_824) {
+      return `${formatFileSize(value, { unit: 'GB' })} GB`;
+    } else if (value >= 1_048_576) {
+      return `${formatFileSize(value, { unit: 'MB' })} MB`;
+    } else if (value >= 1024) {
+      return `${formatFileSize(value, { unit: 'kB' })} kB`;
+    }
+    return `${formatFileSize(value, { unit: 'bytes' })} bytes`;
+  }
+
   function formatFileSize(
     value: number,
     options: FormatFileSizeOptions = { unit: 'bytes' },
@@ -15,25 +28,25 @@ export function useFormatters() {
     const { unit, ...rest } = options;
     switch (options.unit) {
       case 'GB':
-        return formatNumber(value / 1_073_741_824, {
+        return formatNumber(value / 1.25e8, {
           style: 'decimal',
           maximumFractionDigits: 2,
           ...rest,
         });
       case 'kB':
-        return formatNumber(value / 1024, {
+        return formatNumber(value / 1000, {
           style: 'decimal',
           maximumFractionDigits: 2,
           ...rest,
         });
       case 'MB':
-        return formatNumber(value / 1_048_576, {
+        return formatNumber(value / 1e6, {
           style: 'decimal',
           maximumFractionDigits: 2,
           ...rest,
         });
       case 'TB':
-        return formatNumber(value / 1_099_511_627_776, {
+        return formatNumber(value / 1e12, {
           style: 'decimal',
           maximumFractionDigits: 2,
           ...rest,
@@ -183,6 +196,7 @@ export function useFormatters() {
     formatNumber,
     formatSmallDuration,
     formatFileSize,
+    dynamicFileSize,
     formatCurrency,
     formatTime,
     formatShorthandNumber,
