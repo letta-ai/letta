@@ -1,9 +1,15 @@
 import { AgentsService } from '@letta-cloud/sdk-core';
-import type { ServerInferResponses } from '@ts-rest/core';
-import { db, agentfilePermissions } from '@letta-cloud/service-database';
-import { getUser } from '$web/server/auth';
-import { eq } from 'drizzle-orm';
 import type { contracts } from '@letta-cloud/sdk-web';
+import type { ServerInferResponses } from '@ts-rest/core';
+import {
+  userHasAgentfileAccess,
+  getAgentfilePermissions,
+  formatSerializedAgentfile,
+  getAgentUrl,
+} from './helpers';
+import { getUser } from '$web/server/auth';
+import { getOrganizationLettaServiceAccountId } from '$web/server/lib/getOrganizationLettaServiceAccountId/getOrganizationLettaServiceAccountId';
+import { getDefaultProject } from '@letta-cloud/utils-server';
 
 interface AgentfileRequest {
   params: {
@@ -15,60 +21,28 @@ type AgentfileResponse = ServerInferResponses<
   typeof contracts.agentfile.getAgentfile
 >;
 
-enum AccessLevel {
-  PUBLIC = 'public',
-  ORGANIZATION = 'organization',
-  LOGGED_IN = 'logged-in',
-  NONE = 'none',
-}
-
-async function userHasAgentfileAccess(agentId: string): Promise<boolean> {
-  let downloadIsAllowed = false;
-
-  const permissions = await db.query.agentfilePermissions.findFirst({
-    where: eq(agentfilePermissions.agentId, agentId),
-    columns: {
-      accessLevel: true,
-      organizationId: true,
-    },
-  });
-
-  const user = await getUser();
-  const isOwner = user?.activeOrganizationId === permissions?.organizationId;
-
-  const accessStatus = permissions?.accessLevel;
-
-  switch (accessStatus) {
-    case AccessLevel.PUBLIC:
-      downloadIsAllowed = true;
-      break;
-    case AccessLevel.LOGGED_IN:
-      if (user) {
-        downloadIsAllowed = true;
-      } else {
-        downloadIsAllowed = false;
-      }
-      break;
-    case AccessLevel.NONE:
-      if (isOwner) {
-        downloadIsAllowed = true;
-      } else {
-        downloadIsAllowed = false;
-      }
-      break;
-    default:
-      downloadIsAllowed = false;
-      break;
-  }
-  return downloadIsAllowed;
-}
-
 export async function getAgentfile(
   request: AgentfileRequest,
 ): Promise<AgentfileResponse> {
   const { agentId } = request.params;
-  const downloadIsAllowed = await userHasAgentfileAccess(agentId);
+  if (!agentId) {
+    return {
+      status: 400,
+      body: 'Agent ID is required',
+    };
+  }
 
+  const user = await getUser();
+  const permissions = await getAgentfilePermissions(agentId);
+
+  if (!permissions) {
+    return {
+      status: 404,
+      body: 'Agent permissions not found',
+    };
+  }
+
+  const downloadIsAllowed = await userHasAgentfileAccess(user, permissions);
   if (!downloadIsAllowed) {
     return {
       status: 401,
@@ -76,9 +50,24 @@ export async function getAgentfile(
     };
   }
 
-  const exportedAgentfile = await AgentsService.exportAgentSerialized({
-    agentId,
-  });
+  const serviceAccountId = await getOrganizationLettaServiceAccountId(
+    permissions.organizationId,
+  );
+  if (!serviceAccountId) {
+    return {
+      status: 401,
+      body: 'Service Account ID not found',
+    };
+  }
+
+  const exportedAgentfile = await AgentsService.exportAgentSerialized(
+    {
+      agentId,
+    },
+    {
+      user_id: serviceAccountId,
+    },
+  );
 
   if (!exportedAgentfile) {
     return {
@@ -93,10 +82,50 @@ export async function getAgentfile(
   };
 }
 
+export async function cloneAgentfile(
+  request: AgentfileRequest,
+): Promise<AgentfileResponse> {
+  const { agentId } = request.params;
+  const user = await getUser();
+  if (!user) {
+    return {
+      status: 400,
+      body: 'Must be logged in to use agent in Letta Cloud',
+    };
+  }
+
+  const response = await getAgentfile({ params: { agentId } });
+  const formattedAgentfile = await formatSerializedAgentfile(response.body);
+
+  const projectId = (
+    await getDefaultProject({
+      organizationId: user.activeOrganizationId || '',
+    })
+  ).id;
+  const agent = await AgentsService.importAgentSerialized(
+    {
+      formData: formattedAgentfile,
+      projectId: projectId,
+    },
+    {
+      user_id: user.lettaAgentsId,
+    },
+  );
+
+  const url = getAgentUrl(projectId, agent.id);
+
+  return {
+    status: 200,
+    body: url,
+  };
+}
+
 interface AgentfileRouter {
   getAgentfile: (request: AgentfileRequest) => Promise<AgentfileResponse>;
+  cloneAgentfile: (request: AgentfileRequest) => Promise<AgentfileResponse>;
 }
 
 export const agentfileRouter: AgentfileRouter = {
   getAgentfile,
+  cloneAgentfile,
 };

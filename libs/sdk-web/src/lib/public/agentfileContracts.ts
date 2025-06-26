@@ -14,10 +14,24 @@ const getAgentfileContract = c.query({
   },
 });
 
+const cloneAgentfileContract = c.mutation({
+  method: 'POST',
+  path: '/agentfiles/:agentId/clone',
+  pathParams: z.object({
+    agentId: z.string(),
+  }),
+  body: z.undefined(),
+  responses: {
+    200: z.string(),
+  },
+});
+
 export const agentfileContracts = c.router({
   getAgentfile: getAgentfileContract,
+  cloneAgentfile: cloneAgentfileContract,
 });
 
 export const agentfileQueryClientKeys = {
   getAgentfile: (agentId: string) => ['agentId', agentId],
+  cloneAgentfile: (agentId: string) => ['agentId', agentId],
 };
