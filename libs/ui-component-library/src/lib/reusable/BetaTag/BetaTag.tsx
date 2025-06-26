@@ -8,6 +8,7 @@ export function BetaTag() {
       border
       content="Beta"
       size="small"
+      variant="chipStandard"
     />
   );
 }
