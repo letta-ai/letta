@@ -41,6 +41,7 @@ class StepManager:
         agent_id: Optional[str] = None,
         trace_ids: Optional[list[str]] = None,
         feedback: Optional[Literal["positive", "negative"]] = None,
+        has_feedback: Optional[bool] = None,
     ) -> List[PydanticStep]:
         """List all jobs with optional pagination and status filter."""
         async with db_registry.async_session() as session:
@@ -61,6 +62,7 @@ class StepManager:
                 end_date=end_date,
                 limit=limit,
                 ascending=True if order == "asc" else False,
+                has_feedback=has_feedback,
                 **filter_kwargs,
             )
             return [step.to_pydantic() for step in steps]
