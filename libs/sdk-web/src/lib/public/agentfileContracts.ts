@@ -3,6 +3,10 @@ import { z } from 'zod';
 
 const c = initContract();
 
+const UpdateAgentfileAccessLevelRequestBodySchema = z.object({
+  accessLevel: z.string(),
+});
+
 const getAgentfileContract = c.query({
   method: 'GET',
   path: '/agentfiles/:agentId/download',
@@ -26,9 +30,22 @@ const cloneAgentfileContract = c.mutation({
   },
 });
 
+const updateAgentfileAccessLevelContract = c.mutation({
+  method: 'PATCH',
+  path: '/agentfiles/:agentId/access-level',
+  pathParams: z.object({
+    agentId: z.string(),
+  }),
+  body: UpdateAgentfileAccessLevelRequestBodySchema,
+  responses: {
+    200: z.string(),
+  },
+});
+
 export const agentfileContracts = c.router({
   getAgentfile: getAgentfileContract,
   cloneAgentfile: cloneAgentfileContract,
+  updateAgentfileAccessLevel: updateAgentfileAccessLevelContract,
 });
 
 export const agentfileQueryClientKeys = {

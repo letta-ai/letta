@@ -2,18 +2,31 @@ import { db, agentfilePermissions } from '@letta-cloud/service-database';
 import type { GetUserDataResponse } from '$web/server/auth';
 import { eq } from 'drizzle-orm';
 
-enum AccessLevel {
+export const SERVER_CODE = {
+  OK: 200,
+  CLIENT_ERROR: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  FAILED_DEPENDENCY: 424,
+} as const;
+
+export enum AccessLevel {
   ORGANIZATION = 'organization',
   LOGGED_IN = 'logged-in',
   PUBLIC = 'public',
   NONE = 'none',
 }
 
-type AccessLevelType = `${AccessLevel}`;
+export type AccessLevelType = `${AccessLevel}`;
 
 interface GetAgentfilePermissionsResponse {
   organizationId: string;
   accessLevel: AccessLevelType;
+}
+
+export async function isValidAccessLevelType(input: string) {
+  return Object.values(AccessLevel).includes(input as AccessLevel);
 }
 
 export async function userHasAgentfileAccess(
@@ -39,14 +52,8 @@ export async function userHasAgentfileAccess(
         downloadIsAllowed = false;
       }
       break;
-    case AccessLevel.NONE:
-      if (isOwner) {
-        downloadIsAllowed = true;
-      } else {
-        downloadIsAllowed = false;
-      }
-      break;
     case AccessLevel.ORGANIZATION:
+    case AccessLevel.NONE:
       if (isOwner) {
         downloadIsAllowed = true;
       } else {
