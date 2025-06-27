@@ -108,7 +108,7 @@ navigation:
                 path: pages/agents/tool_variables.mdx
               - page: Composio Integration
                 path: pages/agents/composio.mdx
-          - page: Data Sources
+          - page: Data Sources & Files
             path: pages/agents/data_sources.mdx
           - page: Streaming Responses
             path: pages/agents/streaming.mdx

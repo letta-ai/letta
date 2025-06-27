@@ -1,11 +1,66 @@
 ---
-title: Connecting agents to data sources
+title: Data Sources & Files
+subtitle: Connecting agents to external data and files
 slug: guides/agents/sources
 ---
 
-Data sources allow you to load files into an agent's archival memory. Agents' archival memory is a set of `Passage` objects, which consist of a chunk of `text` and a corresponding `embedding`. Data sources consist of a group of `Passage` objects which can be copied into an agent's archival memory.
+Data sources allow you to easily connect your agents to external files, for example: research papers, reports, medical records, or any other data in common text formats (`.pdf`, `.txt`, `.md`, `.json`, etc.).
+A data source can consist of many files, which can be uploaded via the ADE or API.
 
-# Creating a data source
+```mermaid
+graph TB
+    subgraph "Data Sources"
+        DS1[Data Source 1<br/>Research Papers]
+        DS2[Data Source 2<br/>Medical Records]
+    end
+
+    subgraph "Files"
+        F1[paper1.pdf]
+        F2[paper2.pdf]
+        F3[patient_record.txt]
+        F4[lab_results.json]
+    end
+
+    subgraph "Letta Agents"
+        A1[Agent 1]
+        A2[Agent 2]
+        A3[Agent 3]
+    end
+
+    DS1 --> F1
+    DS1 --> F2
+    DS2 --> F3
+    DS2 --> F4
+
+    A2 -.->|attached to| DS1
+    A2 -.->|attached to| DS2
+    A3 -.->|attached to| DS2
+```
+
+Once a file has been uploaded to a data source, the agent can access it using a set of **file tools**.
+The file is automatically chunked and embedded to allow the agent to use semantic search to find relevant information in the file (in addition to standard text-based search).
+
+<Tip>
+If you've used [Claude Projects](https://www.anthropic.com/news/projects) before, you can think of a **data source** in Letta as a "project", except in Letta you can connect a single agent to multiple projects (in Claude Projects, a chat session can only be associated with a single project).
+</Tip>
+
+## File tools
+
+When a data source is attached to an agent, Letta automatically attaches a set of file tools to the agent:
+* `open_file`: Open a file to a specific location
+* `grep_file`: Search a file using a regular expression
+* `search_file`: Search a file using semantic (embedding-based) search
+
+To detach these tools from your agent, simply detach all your data sources, the file tools will be automatically removed.
+
+## Creating a data source
+
+### ADE
+
+To create a data source click the "data sources" tab in the bottom-left of the ADE, then click the "create data source" button. When you create a data source inside the ADE, it will be automatically attached to your agent.
+
+### API / SDK
+
 To create a data source, you will need to specify a unique `name` as well as an `EmbeddingConfig`:
 <CodeGroup>
 ```python title="python"
@@ -34,6 +89,14 @@ const source = await client.sources.create({
 Now that you've created the source, you can start loading data into the source.
 
 ## Uploading a file into a data source
+
+### ADE
+
+Click the "data sources" tab in the bottom-left of the ADE to view your attached data sources.
+To upload a file, simply drag and drop the file into the data sources tab, or click the upload (+) button.
+
+### API / SDK
+
 Uploading a file to a source will create an async job for processing the file, which will split the file into chunks and embed them.
 <CodeGroup>
 ```python title="python"
@@ -109,10 +172,20 @@ const sources = await client.sources.list();
 ```
 </CodeGroup>
 
-# Connecting a data source to an agent
-When you attach a data source to an agent, the passages in that data source will be copied into the agent's archival memory. Note that if you load new data into your data source, it will *not* be copied into the agent's archival memory unless you re-attach the data sources (detach then attach it again)
+## Connecting a data source to an agent
+
+When you attach a data source to an agent, the files inside the data source will become visible inside the agent's context window.
+By default, only a limited "window" of the file will be visible to prevent context window overflow - the agent can use the file tools to browse through the files and search for information.
 
 ## Attaching the data source
+
+### ADE
+
+When you create a data source inside the ADE, it will be automatically attached to your agent.
+You can also attach existing data sources by clicking the "attach existing" button in the data sources tab.
+
+### API / SDK
+
 You can attach a source to an agent by specifying both the source and agent IDs:
 <CodeGroup>
 ```python title="python"
@@ -125,7 +198,14 @@ await client.agents.sources.attach(agent.id, source.id);
 Note that your agent and source must be configured with the same embedding model, to ensure that the agent is able to search accross a common embedding space for archival memory.
 
 ## Detaching the data source
-Detaching a data source will remove the passages in an agent's archival memory that was loaded from that source:
+
+### ADE
+
+To detach a data source from an agent, click the "detach" button in the data sources tab.
+
+### API / SDK
+
+Detaching a data source will remove the files from the agent's context window:
 <CodeGroup>
 ```python title="python"
 client.agents.sources.detach(agent_id=agent.id, source_id=source.id)

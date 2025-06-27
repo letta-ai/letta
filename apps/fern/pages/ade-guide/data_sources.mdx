@@ -1,53 +1,44 @@
 ---
 title: Data Sources
-subtitle: Manage the agent's data sources
+subtitle: Managing data sources in the ADE
 slug: guides/ade/data-sources
 ---
 
-Data sources provide a powerful way to enrich your agent with external knowledge, documentation, or specialized information without manually adding it to memory. This feature allows your agent to access and reference large collections of content seamlessly.
+The Data Sources panel in the ADE allows you to connect external files to your agent. When attached, your agent automatically gains file tools to search and access the content.
 
-## What Are Data Sources?
+## Creating Data Sources
 
-Data sources are collections of documents or information that:
+To create a new data source:
 
-- Exist independently from any specific agent
-- Can be attached to or detached from agents as needed
-- Are automatically processed and made searchable
-- Serve as knowledge bases for your agents to reference
+1. Click the **"data sources"** tab in the bottom-left of the ADE
+2. Click the **"create data source"** button
+3. Give your data source a descriptive name
 
-Common examples include company documentation, product manuals, research papers, knowledge articles, and curated datasets.
+New data sources created in the ADE are automatically attached to your current agent.
 
-## Managing Data Sources in the ADE
+## Uploading Files
 
-### Creating and Populating Data Sources
+To upload files to a data source:
 
-To connect your agent to a data source:
+1. Navigate to the **"data sources"** tab
+2. **Drag and drop** files directly into the data sources area, or
+3. Click the **upload (+)** button to select files
 
-1. **Create a new data source** (or select an existing one), e.g., *Business Guidelines*
-2. **Upload your content** to the data source in supported formats:
-   - PDF documents
-   - Text files (.txt)
-   - Markdown files (.md)
-   - Word documents (.docx)
-   - HTML files
-3. **Attach the data source** to your agent through the Data Sources panel
+**Supported formats:** `.pdf`, `.txt`, `.md`, `.json`, `.docx`, `.html`
 
-### How Agents Access Data Sources
+## Attaching Existing Data Sources
 
-When a data source is attached to an agent:
+To attach an existing data source:
 
-- The data is automatically processed and embedded in the vector database
-- The agent can retrieve information using the standard `archival_memory_search` tool
-- Results from data sources are labeled with their source for better attribution
-- You can detach a data source at any time if the information is no longer relevant
+1. Click the **"data sources"** tab
+2. Click **"attach existing"**
+3. Select the data source to attach
 
-## Viewing Connected Data Sources
+## Detaching Data Sources
 
-The Data Sources panel in the ADE shows:
+To detach a data source:
 
-- All data sources currently connected to your agent
-- The option to attach new data sources
-- The ability to detach sources that are no longer needed
-- Information about the content within each data source
+1. Navigate to the **"data sources"** tab
+2. Click the **"detach"** button next to the data source
 
-This visibility helps you manage what external knowledge your agent can access during conversations.
+When you detach all data sources, the file tools are automatically removed from your agent.
