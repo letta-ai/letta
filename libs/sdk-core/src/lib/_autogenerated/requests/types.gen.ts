@@ -1171,7 +1171,7 @@ export type CreateAgentRequest = {
    */
   initial_message_sequence?: Array<MessageCreate> | null;
   /**
-   * If true, attaches the Letta core tools (e.g. archival_memory and core_memory related functions).
+   * If true, attaches the Letta core tools (e.g. core_memory related functions).
    */
   include_base_tools?: boolean;
   /**

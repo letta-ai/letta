@@ -3724,7 +3724,7 @@ export const $CreateAgentRequest = {
       type: 'boolean',
       title: 'Include Base Tools',
       description:
-        'If true, attaches the Letta core tools (e.g. archival_memory and core_memory related functions).',
+        'If true, attaches the Letta core tools (e.g. core_memory related functions).',
       default: true,
     },
     include_multi_agent_tools: {

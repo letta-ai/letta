@@ -11814,7 +11814,7 @@
           "include_base_tools": {
             "type": "boolean",
             "title": "Include Base Tools",
-            "description": "If true, attaches the Letta core tools (e.g. archival_memory and core_memory related functions).",
+            "description": "If true, attaches the Letta core tools (e.g. core_memory related functions).",
             "default": true
           },
           "include_multi_agent_tools": {
