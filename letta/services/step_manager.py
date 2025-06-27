@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import List, Literal, Optional
 
 from sqlalchemy import select
@@ -18,6 +19,11 @@ from letta.server.db import db_registry
 from letta.utils import enforce_types
 
 
+class FeedbackType(str, Enum):
+    POSITIVE = "positive"
+    NEGATIVE = "negative"
+
+
 class StepManager:
 
     @enforce_types
@@ -35,6 +41,7 @@ class StepManager:
         agent_id: Optional[str] = None,
         trace_ids: Optional[list[str]] = None,
         feedback: Optional[Literal["positive", "negative"]] = None,
+        has_feedback: Optional[bool] = None,
     ) -> List[PydanticStep]:
         """List all jobs with optional pagination and status filter."""
         async with db_registry.async_session() as session:
@@ -55,6 +62,7 @@ class StepManager:
                 end_date=end_date,
                 limit=limit,
                 ascending=True if order == "asc" else False,
+                has_feedback=has_feedback,
                 **filter_kwargs,
             )
             return [step.to_pydantic() for step in steps]
@@ -154,9 +162,7 @@ class StepManager:
 
     @enforce_types
     @trace_method
-    async def add_feedback_async(
-        self, step_id: str, feedback: Optional[Literal["positive", "negative"]], actor: PydanticUser
-    ) -> PydanticStep:
+    async def add_feedback_async(self, step_id: str, feedback: Optional[FeedbackType], actor: PydanticUser) -> PydanticStep:
         async with db_registry.async_session() as session:
             step = await StepModel.read_async(db_session=session, identifier=step_id, actor=actor)
             if not step:
@@ -250,6 +256,7 @@ class StepManager:
         return job
 
 
+# noinspection PyTypeChecker
 @singleton
 class NoopStepManager(StepManager):
     """
@@ -292,29 +299,4 @@ class NoopStepManager(StepManager):
         job_id: Optional[str] = None,
         step_id: Optional[str] = None,
     ) -> PydanticStep:
-        step_data = {
-            "origin": None,
-            "organization_id": actor.organization_id,
-            "agent_id": agent_id,
-            "provider_id": provider_id,
-            "provider_name": provider_name,
-            "provider_category": provider_category,
-            "model": model,
-            "model_endpoint": model_endpoint,
-            "context_window_limit": context_window_limit,
-            "completion_tokens": usage.completion_tokens,
-            "prompt_tokens": usage.prompt_tokens,
-            "total_tokens": usage.total_tokens,
-            "job_id": job_id,
-            "tags": [],
-            "tid": None,
-            "trace_id": get_trace_id(),  # Get the current trace ID
-        }
-        if step_id:
-            step_data["id"] = step_id
-        async with db_registry.async_session() as session:
-            if job_id:
-                await self._verify_job_access_async(session, job_id, actor, access=["write"])
-            new_step = StepModel(**step_data)
-            await new_step.create_async(session)
-            return new_step.to_pydantic()
+        return

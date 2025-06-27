@@ -546,7 +546,7 @@ def enforce_types(func):
         for arg_name, arg_value in kwargs.items():
             hint = hints.get(arg_name)
             if hint and not matches_type(arg_value, hint):
-                raise ValueError(f"Argument {arg_name} does not match type {hint}; is {arg_value}")
+                raise ValueError(f"Argument {arg_name} does not match type {hint}; is {arg_value} of type {type(arg_value)}")
 
         return func(*args, **kwargs)
 

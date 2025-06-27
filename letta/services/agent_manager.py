@@ -16,6 +16,7 @@ from letta.constants import (
     BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
     BASE_VOICE_SLEEPTIME_TOOLS,
     DEFAULT_TIMEZONE,
+    DEPRECATED_BASE_TOOLS,
     FILES_TOOLS,
     MULTI_AGENT_TOOLS,
 )
@@ -77,6 +78,7 @@ from letta.services.helpers.agent_manager_helper import (
     build_agent_passage_query,
     build_passage_query,
     build_source_passage_query,
+    calculate_base_tools,
     check_supports_structured_output,
     compile_system_message,
     derive_system_message,
@@ -261,13 +263,13 @@ class AgentManager:
             elif agent_create.enable_sleeptime:
                 tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
             elif agent_create.agent_type == AgentType.memgpt_v2_agent:
-                tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS_V2)
+                tool_names |= calculate_base_tools(is_v2=True)
             elif agent_create.agent_type == AgentType.react_agent:
                 pass  # no default tools
             elif agent_create.agent_type == AgentType.workflow_agent:
                 pass  # no default tools
             else:
-                tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS)
+                tool_names |= calculate_base_tools(is_v2=False)
         if agent_create.include_multi_agent_tools:
             tool_names |= set(MULTI_AGENT_TOOLS)
 
@@ -428,15 +430,18 @@ class AgentManager:
             elif agent_create.enable_sleeptime:
                 tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
             elif agent_create.agent_type == AgentType.memgpt_v2_agent:
-                tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS_V2)
+                tool_names |= calculate_base_tools(is_v2=True)
             elif agent_create.agent_type == AgentType.react_agent:
                 pass  # no default tools
             elif agent_create.agent_type == AgentType.workflow_agent:
                 pass  # no default tools
             else:
-                tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS)
+                tool_names |= calculate_base_tools(is_v2=False)
         if agent_create.include_multi_agent_tools:
             tool_names |= set(MULTI_AGENT_TOOLS)
+
+        # take out the deprecated tool names
+        tool_names.difference_update(set(DEPRECATED_BASE_TOOLS))
 
         supplied_ids = set(agent_create.tool_ids or [])
 
