@@ -95,8 +95,13 @@ navigation:
         contents:
           - page: Overview
             path: pages/agents/overview.mdx
-          - page: Context & Memory Management
+          - section: Memory
             path: pages/agents/memory.mdx
+            contents:
+              - page: Memory Blocks
+                path: pages/agents/memory_blocks.mdx
+              - page: Agentic Context Engineering
+                path: pages/agents/context_engineering.mdx
           - section: Tools
             path: pages/agents/tools.mdx
             contents:
