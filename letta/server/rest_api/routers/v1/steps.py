@@ -7,6 +7,7 @@ from letta.orm.errors import NoResultFound
 from letta.schemas.step import Step
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
+from letta.services.step_manager import FeedbackType
 
 router = APIRouter(prefix="/steps", tags=["steps"])
 
@@ -72,7 +73,7 @@ async def retrieve_step(
 @router.patch("/{step_id}/feedback", response_model=Step, operation_id="add_feedback")
 async def add_feedback(
     step_id: str,
-    feedback: Optional[Literal["positive", "negative"]],
+    feedback: Optional[FeedbackType],
     actor_id: Optional[str] = Header(None, alias="user_id"),
     server: SyncServer = Depends(get_letta_server),
 ):

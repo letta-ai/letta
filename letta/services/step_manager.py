@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import List, Literal, Optional
 
 from sqlalchemy import select
@@ -16,6 +17,11 @@ from letta.schemas.step import Step as PydanticStep
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.utils import enforce_types
+
+
+class FeedbackType(str, Enum):
+    POSITIVE = "positive"
+    NEGATIVE = "negative"
 
 
 class StepManager:
@@ -154,9 +160,7 @@ class StepManager:
 
     @enforce_types
     @trace_method
-    async def add_feedback_async(
-        self, step_id: str, feedback: Optional[Literal["positive", "negative"]], actor: PydanticUser
-    ) -> PydanticStep:
+    async def add_feedback_async(self, step_id: str, feedback: Optional[FeedbackType], actor: PydanticUser) -> PydanticStep:
         async with db_registry.async_session() as session:
             step = await StepModel.read_async(db_session=session, identifier=step_id, actor=actor)
             if not step:
