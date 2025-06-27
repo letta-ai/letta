@@ -9,6 +9,56 @@ from typing_extensions import Literal
 
 from letta.constants import REQUEST_HEARTBEAT_DESCRIPTION, REQUEST_HEARTBEAT_PARAM
 from letta.functions.mcp_client.types import MCPTool
+from letta.log import get_logger
+
+logger = get_logger(__name__)
+
+
+def validate_google_style_docstring(function):
+    """Validate that a function's docstring follows Google Python style format.
+
+    Args:
+        function: The function to validate
+
+    Raises:
+        ValueError: If the docstring is not in Google Python style format
+    """
+    if not function.__doc__:
+        raise ValueError(
+            f"Function '{function.__name__}' has no docstring. Expected Google Python style docstring with Args and Returns sections."
+        )
+
+    docstring = function.__doc__.strip()
+
+    # Basic Google style requirements:
+    # 1. Should have Args: section if function has parameters (excluding self, agent_state)
+    # 2. Should have Returns: section if function returns something other than None
+    # 3. Args and Returns sections should be properly formatted
+
+    sig = inspect.signature(function)
+    has_params = any(param.name not in ["self", "agent_state"] for param in sig.parameters.values())
+
+    # Check for Args section if function has parameters
+    if has_params and "Args:" not in docstring:
+        raise ValueError(f"Function '{function.__name__}' with parameters must have 'Args:' section in Google Python style docstring")
+
+    # NOTE: No check for Returns section - this is irrelevant to the LLM
+    # In proper Google Python format, the Returns: is required
+
+    # Validate Args section format if present
+    if "Args:" in docstring:
+        args_start = docstring.find("Args:")
+        args_end = docstring.find("Returns:", args_start) if "Returns:" in docstring[args_start:] else len(docstring)
+        args_section = docstring[args_start:args_end].strip()
+
+        # Check that each parameter is documented
+        for param in sig.parameters.values():
+            if param.name in ["self", "agent_state"]:
+                continue
+            if f"{param.name} (" not in args_section and f"{param.name}:" not in args_section:
+                raise ValueError(
+                    f"Function '{function.__name__}' parameter '{param.name}' not documented in Args section of Google Python style docstring"
+                )
 
 
 def is_optional(annotation):
@@ -277,6 +327,20 @@ def pydantic_model_to_json_schema(model: Type[BaseModel]) -> dict:
                 "description": prop["description"],
             }
 
+        # Handle the case where the property uses anyOf (e.g., Optional types)
+        if "anyOf" in prop:
+            # For Optional types, extract the non-null type
+            non_null_types = [t for t in prop["anyOf"] if t.get("type") != "null"]
+            if len(non_null_types) == 1:
+                # Simple Optional[T] case - use the non-null type
+                return {
+                    "type": non_null_types[0]["type"],
+                    "description": prop["description"],
+                }
+            else:
+                # Complex anyOf case - not supported yet
+                raise ValueError(f"Complex anyOf patterns are not supported: {prop}")
+
         # If it's a regular property with a direct type (e.g., string, number)
         return {
             "type": "string" if prop["type"] == "string" else prop["type"],
@@ -344,7 +408,18 @@ def pydantic_model_to_json_schema(model: Type[BaseModel]) -> dict:
     return clean_schema(schema_part=schema, full_schema=schema)
 
 
-def generate_schema(function, name: Optional[str] = None, description: Optional[str] = None) -> dict:
+def generate_schema(function, name: Optional[str] = None, description: Optional[str] = None, tool_id: Optional[str] = None) -> dict:
+    # Validate that the function has a Google Python style docstring
+    try:
+        validate_google_style_docstring(function)
+    except ValueError:
+        logger.warning(
+            f"Function `{function.__name__}` in module `{function.__module__}` "
+            f"{'(tool_id=' + tool_id + ') ' if tool_id else ''}"
+            f"is not in Google style docstring format. "
+            f"Docstring received:\n{repr(function.__doc__[:200]) if function.__doc__ else 'None'}"
+        )
+
     # Get the signature of the function
     sig = inspect.signature(function)
 
@@ -353,10 +428,19 @@ def generate_schema(function, name: Optional[str] = None, description: Optional[
 
     if not description:
         # Support multiline docstrings for complex functions, TODO (cliandy): consider having this as a setting
-        if docstring.long_description:
+        # Always prefer combining short + long description when both exist
+        if docstring.short_description and docstring.long_description:
+            description = f"{docstring.short_description}\n\n{docstring.long_description}"
+        elif docstring.short_description:
+            description = docstring.short_description
+        elif docstring.long_description:
             description = docstring.long_description
         else:
-            description = docstring.short_description
+            description = "No description available"
+
+        examples_section = extract_examples_section(function.__doc__)
+        if examples_section and "Examples:" not in description:
+            description = f"{description}\n\n{examples_section}"
 
     # Prepare the schema dictionary
     schema = {
@@ -441,6 +525,38 @@ def generate_schema(function, name: Optional[str] = None, description: Optional[
         if param.annotation == inspect.Parameter.empty:
             schema["parameters"]["required"].append(param.name)
     return schema
+
+
+def extract_examples_section(docstring: Optional[str]) -> Optional[str]:
+    """Extracts the 'Examples:' section from a Google-style docstring.
+
+    Args:
+        docstring (Optional[str]): The full docstring of a function.
+
+    Returns:
+        Optional[str]: The extracted examples section, or None if not found.
+    """
+    if not docstring or "Examples:" not in docstring:
+        return None
+
+    lines = docstring.strip().splitlines()
+    in_examples = False
+    examples_lines = []
+
+    for line in lines:
+        stripped = line.strip()
+
+        if not in_examples and stripped.startswith("Examples:"):
+            in_examples = True
+            examples_lines.append(line)
+            continue
+
+        if in_examples:
+            if stripped and not line.startswith(" ") and stripped.endswith(":"):
+                break
+            examples_lines.append(line)
+
+    return "\n".join(examples_lines).strip() if examples_lines else None
 
 
 def generate_schema_from_args_schema_v2(
