@@ -69,19 +69,13 @@ function UpdateUserProfileForm(props: UpdateUserProfileFormProps) {
         <FormField
           name="name"
           render={({ field }) => (
-            <Input
-              size="large"
-              fullWidth
-              label={t('form.nameInput.label')}
-              {...field}
-            />
+            <Input fullWidth label={t('form.nameInput.label')} {...field} />
           )}
         />
         <RawInput
           label={t('form.emailInput.label')}
           fullWidth
           value={email}
-          size="large"
           disabled
         />
         <div>

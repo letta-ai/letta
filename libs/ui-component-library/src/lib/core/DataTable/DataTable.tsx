@@ -285,7 +285,6 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
         <RawInput
           preIcon={<SearchIcon />}
           fullWidth
-          size="large"
           placeholder="Search"
           label="Search"
           hideLabel
