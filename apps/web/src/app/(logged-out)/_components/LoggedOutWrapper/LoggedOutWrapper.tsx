@@ -34,12 +34,32 @@ export function LoggedOutWrapper(props: LoggedOutWrapperProps) {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
 
   useEffect(() => {
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setIsDarkMode(true);
-    } else {
-      setIsDarkMode(false);
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    function handleThemeChange(e: MediaQueryList | MediaQueryListEvent) {
+      const isDark = e.matches;
+      setIsDarkMode(isDark);
+
+      // Apply dark mode classes/attributes to html element for proper styling
+      if (isDark) {
+        document.documentElement.setAttribute('data-mode', 'dark');
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.setAttribute('data-mode', 'light');
+        document.documentElement.classList.remove('dark');
+      }
     }
-  }, [setIsDarkMode]);
+
+    // Set initial theme
+    handleThemeChange(mediaQuery);
+
+    // Listen for theme changes
+    mediaQuery.addEventListener('change', handleThemeChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleThemeChange);
+    };
+  }, []);
 
   const darkLogoOptions = {
     loop: true,

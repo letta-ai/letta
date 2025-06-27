@@ -63,7 +63,12 @@ function PasswordField() {
           <Input
             fullWidth
             rightOfLabelContent={
-              <Typography underline={false} variant="body3" bold>
+              <Typography
+                underline={false}
+                variant="body3"
+                bold
+                color="default"
+              >
                 <a href={forgotPasswordUrl}>{t('forgotPassword')}</a>
               </Typography>
             }

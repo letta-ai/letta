@@ -2490,7 +2490,7 @@
   },
   "password-login": {
     "forgotPassword": "Forgot your password?",
-    "continue": "Continue to login",
+    "continue": "Login",
     "title": "Sign in to Letta Cloud",
     "password": {
       "label": "Password",
@@ -2500,7 +2500,7 @@
       "label": "Email",
       "placeholder": "email@email.com"
     },
-    "submit": "Sign in",
+    "submit": "Login",
     "errors": {
       "default": "There was an error signing in, please try again or contact support",
       "invalidPassword": "Invalid password or account does not exist"

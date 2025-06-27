@@ -50,9 +50,11 @@ export function AuthFlowSwitch({ mode }: AuthFlowSwitchProps) {
 
   return (
     <HStack gap={'small'}>
-      <Typography variant="body2">{modeConfig?.linkText}</Typography>
+      <Typography variant="body2" color="default">
+        {modeConfig?.linkText}
+      </Typography>
       {modeConfig?.preButtonIcon}
-      <Typography variant="body2" bold>
+      <Typography variant="body2" bold color="default">
         <a className="text-link" href={modeConfig?.href}>
           {modeConfig?.buttonText}
         </a>
