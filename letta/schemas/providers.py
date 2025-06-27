@@ -152,7 +152,7 @@ class LettaProvider(Provider):
                 model="letta-free",  # NOTE: renamed
                 model_endpoint_type="openai",
                 model_endpoint=LETTA_MODEL_ENDPOINT,
-                context_window=8192,
+                context_window=30000,
                 handle=self.get_handle("letta-free"),
                 provider_name=self.name,
                 provider_category=self.provider_category,
@@ -165,7 +165,7 @@ class LettaProvider(Provider):
                 model="letta-free",  # NOTE: renamed
                 model_endpoint_type="openai",
                 model_endpoint=LETTA_MODEL_ENDPOINT,
-                context_window=8192,
+                context_window=30000,
                 handle=self.get_handle("letta-free"),
                 provider_name=self.name,
                 provider_category=self.provider_category,

@@ -262,6 +262,10 @@ class AgentManager:
                 tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
             elif agent_create.agent_type == AgentType.memgpt_v2_agent:
                 tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS_V2)
+            elif agent_create.agent_type == AgentType.react_agent:
+                pass  # no default tools
+            elif agent_create.agent_type == AgentType.workflow_agent:
+                pass  # no default tools
             else:
                 tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS)
         if agent_create.include_multi_agent_tools:
@@ -425,6 +429,10 @@ class AgentManager:
                 tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
             elif agent_create.agent_type == AgentType.memgpt_v2_agent:
                 tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS_V2)
+            elif agent_create.agent_type == AgentType.react_agent:
+                pass  # no default tools
+            elif agent_create.agent_type == AgentType.workflow_agent:
+                pass  # no default tools
             else:
                 tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS)
         if agent_create.include_multi_agent_tools:
@@ -433,8 +441,22 @@ class AgentManager:
         supplied_ids = set(agent_create.tool_ids or [])
 
         source_ids = agent_create.source_ids or []
+
+        # Create default source if requested
+        if agent_create.include_default_source:
+            default_source = PydanticSource(
+                name=f"{agent_create.name} External Data Source",
+                embedding_config=agent_create.embedding_config,
+            )
+            created_source = await self.source_manager.create_source(default_source, actor)
+            source_ids.append(created_source.id)
+
         identity_ids = agent_create.identity_ids or []
         tag_values = agent_create.tags or []
+
+        # if the agent type is workflow, we set the autoclear to forced true
+        if agent_create.agent_type == AgentType.workflow_agent:
+            agent_create.message_buffer_autoclear = True
 
         async with db_registry.async_session() as session:
             async with session.begin():
@@ -2006,6 +2028,7 @@ class AgentManager:
 
             # Attach block to the main agent
             agent.core_memory.append(block)
+            # await agent.update_async(session, actor=actor, no_commit=True)
             await agent.update_async(session)
 
             # If agent is part of a sleeptime group, attach block to the sleeptime_agent
@@ -2018,7 +2041,8 @@ class AgentManager:
                             other_agent = await AgentModel.read_async(db_session=session, identifier=other_agent_id, actor=actor)
                             if other_agent.agent_type == AgentType.sleeptime_agent and block not in other_agent.core_memory:
                                 other_agent.core_memory.append(block)
-                                await other_agent.update_async(session, actor=actor, no_commit=True)
+                                # await other_agent.update_async(session, actor=actor, no_commit=True)
+                                await other_agent.update_async(session, actor=actor)
                         except NoResultFound:
                             # Agent might not exist anymore, skip
                             continue

@@ -1,13 +1,9 @@
-import mimetypes
-from typing import List, Optional
-
-from fastapi import UploadFile
+from typing import List
 
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
-from letta.schemas.enums import FileProcessingStatus, JobStatus
+from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.file import FileMetadata
-from letta.schemas.job import Job, JobUpdate
 from letta.schemas.passage import Passage
 from letta.schemas.user import User
 from letta.server.server import SyncServer
@@ -47,15 +43,8 @@ class FileProcessor:
 
     # TODO: Factor this function out of SyncServer
     async def process(
-        self,
-        server: SyncServer,
-        agent_states: List[AgentState],
-        source_id: str,
-        content: bytes,
-        file: UploadFile,
-        job: Optional[Job] = None,
+        self, server: SyncServer, agent_states: List[AgentState], source_id: str, content: bytes, file_metadata: FileMetadata
     ) -> List[Passage]:
-        file_metadata = self._extract_upload_file_metadata(file, source_id=source_id)
         filename = file_metadata.file_name
 
         # Create file as early as possible with no content
@@ -111,11 +100,6 @@ class FileProcessor:
             logger.info(f"Successfully processed {filename}: {len(all_passages)} passages")
 
             # update job status
-            if job:
-                job.status = JobStatus.completed
-                job.metadata["num_passages"] = len(all_passages)
-                await self.job_manager.update_job_by_id_async(job_id=job.id, job_update=JobUpdate(**job.model_dump()), actor=self.actor)
-
             await self.file_manager.update_file_status(
                 file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.COMPLETED
             )
@@ -124,24 +108,8 @@ class FileProcessor:
 
         except Exception as e:
             logger.error(f"File processing failed for {filename}: {str(e)}")
-
-            # update job status
-            if job:
-                job.status = JobStatus.failed
-                job.metadata["error"] = str(e)
-                await self.job_manager.update_job_by_id_async(job_id=job.id, job_update=JobUpdate(**job.model_dump()), actor=self.actor)
-
             await self.file_manager.update_file_status(
                 file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.ERROR, error_message=str(e)
             )
 
             return []
-
-    def _extract_upload_file_metadata(self, file: UploadFile, source_id: str) -> FileMetadata:
-        file_metadata = {
-            "file_name": file.filename,
-            "file_path": None,
-            "file_type": mimetypes.guess_type(file.filename)[0] or file.content_type or "unknown",
-            "file_size": file.size if file.size is not None else None,
-        }
-        return FileMetadata(**file_metadata, source_id=source_id)

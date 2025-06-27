@@ -170,6 +170,14 @@ def derive_system_message(agent_type: AgentType, enable_sleeptime: Optional[bool
             # v2 drops references to specific blocks, and instead relies on the block description injections
             system = gpt_system.get_system_text("sleeptime_v2")
 
+        # ReAct
+        elif agent_type == AgentType.react_agent:
+            system = gpt_system.get_system_text("react")
+
+        # Workflow
+        elif agent_type == AgentType.workflow_agent:
+            system = gpt_system.get_system_text("workflow")
+
         else:
             raise ValueError(f"Invalid agent type: {agent_type}")
 

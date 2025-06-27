@@ -1,9 +1,9 @@
+import atexit
 import os
-import threading
+import subprocess
 from unittest.mock import MagicMock
 
 import pytest
-from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionChunk
 
@@ -91,24 +91,26 @@ You’re a memory-recall helper for an AI that can only keep the last 4 messages
 # --- Server Management --- #
 
 
-def _run_server():
-    """Starts the Letta server in a background thread."""
-    load_dotenv()
-    from letta.server.rest_api.app import start_server
-
-    start_server(debug=True)
-
-
 @pytest.fixture(scope="module")
 def server_url():
     """Ensures a server is running and returns its base URL."""
     url = os.getenv("LETTA_SERVER_URL", "http://localhost:8283")
 
     if not os.getenv("LETTA_SERVER_URL"):
-        thread = threading.Thread(target=_run_server, daemon=True)
-        thread.start()
-        wait_for_server(url)  # Allow server startup time
+        # Start server in subprocess to isolate async event loops
+        server_process = subprocess.Popen(["letta", "server", "--port", "8283"], env={**os.environ, "PYTHONUNBUFFERED": "1"}, text=True)
 
+        def cleanup():
+            server_process.terminate()
+            try:
+                server_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                server_process.kill()
+                server_process.wait()
+
+        atexit.register(cleanup)
+
+        wait_for_server(url)
     return url
 
 
@@ -129,7 +131,7 @@ def server():
 
 
 @pytest.fixture(scope="module")
-async def roll_dice_tool(server, actor):
+def roll_dice_tool(server, actor):
     def roll_dice():
         """
         Rolls a 6 sided die.
@@ -266,7 +268,6 @@ async def test_model_compatibility(model, message, server, server_url, actor, ro
 
     # Get the messages and assert based on the message type
     messages = await server.message_manager.list_messages_for_agent_async(agent_id=main_agent.id, actor=actor)
-
     # Find user message with our request
     user_messages = [msg for msg in messages if msg.role == MessageRole.user and message in str(msg.content)]
     assert len(user_messages) >= 1, f"Should find user message containing: {message}"
@@ -423,7 +424,7 @@ async def test_summarization(disable_e2b_api_key, voice_agent, server_url):
 
 
 @pytest.mark.asyncio(loop_scope="module")
-async def test_voice_sleeptime_agent(disable_e2b_api_key, voice_agent, server_url):
+async def test_voice_sleeptime_agent(disable_e2b_api_key, voice_agent):
     """Tests chat completion streaming using the Async OpenAI client."""
     agent_manager = AgentManager()
     tool_manager = ToolManager()
@@ -490,7 +491,7 @@ async def test_voice_sleeptime_agent(disable_e2b_api_key, voice_agent, server_ur
 
 
 @pytest.mark.asyncio(loop_scope="module")
-async def test_init_voice_convo_agent(voice_agent, server, actor, server_url):
+async def test_init_voice_convo_agent(voice_agent, server, actor):
 
     assert voice_agent.enable_sleeptime == True
     main_agent_tools = [tool.name for tool in voice_agent.tools]

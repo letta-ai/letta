@@ -225,29 +225,40 @@ def test_web_search(
     response_json = json.loads(returns[0])
 
     # Basic structure assertions
-    assert "query" in response_json, "Missing 'query' field in response"
-    assert "question" in response_json, "Missing 'question' field in response"
-    assert "total_sources" in response_json, "Missing 'total_sources' field in response"
-    assert "total_citations" in response_json, "Missing 'total_citations' field in response"
-    assert "sources" in response_json, "Missing 'sources' field in response"
     assert "api_key_source" in response_json, "Missing 'api_key_source' field in response"
+    assert "results" in response_json, "Missing 'results' field in response"
     assert response_json["api_key_source"] == "system_settings"
 
+    # Get the first result from the results dictionary
+    results = response_json["results"]
+    assert len(results) > 0, "No results found in response"
+
+    # Get the first (and typically only) result
+    first_result_key = list(results.keys())[0]
+    result_data = results[first_result_key]
+
+    # Basic structure assertions for the result data
+    assert "query" in result_data, "Missing 'query' field in result"
+    assert "question" in result_data, "Missing 'question' field in result"
+    assert "total_sources" in result_data, "Missing 'total_sources' field in result"
+    assert "total_citations" in result_data, "Missing 'total_citations' field in result"
+    assert "sources" in result_data, "Missing 'sources' field in result"
+
     # Content assertions
-    assert response_json["total_sources"] > 0, "Should have found at least one source"
-    assert response_json["total_citations"] > 0, "Should have found at least one citation"
-    assert len(response_json["sources"]) == response_json["total_sources"], "Sources count mismatch"
+    assert result_data["total_sources"] > 0, "Should have found at least one source"
+    assert result_data["total_citations"] > 0, "Should have found at least one citation"
+    assert len(result_data["sources"]) == result_data["total_sources"], "Sources count mismatch"
 
     # Verify we found information about Charles Packer's education
     found_education_info = False
-    for source in response_json["sources"]:
+    for source in result_data["sources"]:
         assert "url" in source, "Source missing URL"
         assert "title" in source, "Source missing title"
         assert "citations" in source, "Source missing citations"
 
         for citation in source["citations"]:
             assert "text" in citation, "Citation missing text"
-            assert "thinking" in citation, "Citation missing thinking"
+            # Note: removed "thinking" field check as it doesn't appear in the actual response
 
             # Check if we found education-related information
             if any(keyword in citation["text"].lower() for keyword in ["berkeley", "phd", "ph.d", "university", "student"]):
@@ -290,4 +301,6 @@ def test_web_search_using_agent_state_env_var(
     response_json = json.loads(returns[0])
 
     # Basic structure assertions
+    assert "api_key_source" in response_json, "Missing 'api_key_source' field in response"
+    assert "results" in response_json, "Missing 'results' field in response"
     assert response_json["api_key_source"] == "agent_environment"

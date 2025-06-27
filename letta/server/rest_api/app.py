@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
@@ -12,10 +13,11 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
-from letta.__init__ import __version__
+from letta.__init__ import __version__ as letta_version
 from letta.agents.exceptions import IncompatibleAgentType
 from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
 from letta.errors import BedrockPermissionError, LettaAgentNotFoundError, LettaUserNotFoundError
+from letta.jobs.scheduler import start_scheduler_with_leader_election
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.schemas.letta_message import create_letta_message_union_schema
@@ -25,6 +27,7 @@ from letta.schemas.letta_message_content import (
     create_letta_user_message_content_union_schema,
 )
 from letta.server.constants import REST_DEFAULT_PORT
+from letta.server.db import db_registry
 
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
 from letta.server.rest_api.auth.index import setup_auth_router  # TODO: probably remove right?
@@ -94,9 +97,7 @@ random_password = os.getenv("LETTA_SERVER_PASSWORD") or generate_password()
 
 
 class CheckPasswordMiddleware(BaseHTTPMiddleware):
-
     async def dispatch(self, request, call_next):
-
         # Exclude health check endpoint from password protection
         if request.url.path in {"/v1/health", "/v1/health/", "/latest/health/"}:
             return await call_next(request)
@@ -113,11 +114,46 @@ class CheckPasswordMiddleware(BaseHTTPMiddleware):
         )
 
 
+@asynccontextmanager
+async def lifespan(app_: FastAPI):
+    """
+    FastAPI lifespan context manager with setup before the app starts pre-yield and on shutdown after the yield.
+    """
+    worker_id = os.getpid()
+
+    logger.info(f"[Worker {worker_id}] Starting lifespan initialization")
+    logger.info(f"[Worker {worker_id}] Initializing database connections")
+    db_registry.initialize_sync()
+    db_registry.initialize_async()
+    logger.info(f"[Worker {worker_id}] Database connections initialized")
+
+    logger.info(f"[Worker {worker_id}] Starting scheduler with leader election")
+    global server
+    try:
+        await start_scheduler_with_leader_election(server)
+        logger.info(f"[Worker {worker_id}] Scheduler initialization completed")
+    except Exception as e:
+        logger.error(f"[Worker {worker_id}] Scheduler initialization failed: {e}", exc_info=True)
+    logger.info(f"[Worker {worker_id}] Lifespan startup completed")
+    yield
+
+    # Cleanup on shutdown
+    logger.info(f"[Worker {worker_id}] Starting lifespan shutdown")
+    try:
+        from letta.jobs.scheduler import shutdown_scheduler_and_release_lock
+
+        await shutdown_scheduler_and_release_lock()
+        logger.info(f"[Worker {worker_id}] Scheduler shutdown completed")
+    except Exception as e:
+        logger.error(f"[Worker {worker_id}] Scheduler shutdown failed: {e}", exc_info=True)
+    logger.info(f"[Worker {worker_id}] Lifespan shutdown completed")
+
+
 def create_application() -> "FastAPI":
     """the application start routine"""
     # global server
     # server = SyncServer(default_interface_factory=lambda: interface())
-    print(f"\n[[ Letta server // v{__version__} ]]")
+    print(f"\n[[ Letta server // v{letta_version} ]]")
 
     if (os.getenv("SENTRY_DSN") is not None) and (os.getenv("SENTRY_DSN") != ""):
         import sentry_sdk
@@ -136,8 +172,9 @@ def create_application() -> "FastAPI":
         # openapi_tags=TAGS_METADATA,
         title="Letta",
         summary="Create LLM agents with long-term memory and custom tools 📚🦙",
-        version="1.0.0",  # TODO wire this up to the version in the package
+        version=letta_version,
         debug=debug_mode,  # if True, the stack trace will be printed in the response
+        lifespan=lifespan,
     )
 
     @app.exception_handler(IncompatibleAgentType)

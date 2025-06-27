@@ -3,12 +3,12 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from typing import List, Optional
 
-from async_lru import alru_cache
 from openai import AsyncOpenAI, OpenAI
 from sqlalchemy import select
 
 from letta.constants import MAX_EMBEDDING_DIM
 from letta.embeddings import embedding_model, parse_and_chunk_text
+from letta.helpers.decorators import async_redis_cache
 from letta.orm.errors import NoResultFound
 from letta.orm.passage import AgentPassage, SourcePassage
 from letta.otel.tracing import trace_method
@@ -30,9 +30,8 @@ def get_openai_embedding(text: str, model: str, endpoint: str) -> List[float]:
     return response.data[0].embedding
 
 
-# TODO: Add redis-backed caching for backend
-@alru_cache(maxsize=8192)
-async def get_openai_embedding_async(text: str, model: str, endpoint: str) -> List[float]:
+@async_redis_cache(key_func=lambda text, model, endpoint: f"{model}:{endpoint}:{text}")
+async def get_openai_embedding_async(text: str, model: str, endpoint: str) -> list[float]:
     from letta.settings import model_settings
 
     client = AsyncOpenAI(api_key=model_settings.openai_api_key, base_url=endpoint, max_retries=0)

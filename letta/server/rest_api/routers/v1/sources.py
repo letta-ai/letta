@@ -12,8 +12,8 @@ import letta.constants as constants
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.file import FileMetadata
-from letta.schemas.job import Job
 from letta.schemas.passage import Passage
 from letta.schemas.source import Source, SourceCreate, SourceUpdate
 from letta.schemas.user import User
@@ -174,7 +174,7 @@ async def delete_source(
     await server.delete_source(source_id=source_id, actor=actor)
 
 
-@router.post("/{source_id}/upload", response_model=Job, operation_id="upload_file_to_source")
+@router.post("/{source_id}/upload", response_model=FileMetadata, operation_id="upload_file_to_source")
 async def upload_file_to_source(
     file: UploadFile,
     source_id: str,
@@ -223,13 +223,16 @@ async def upload_file_to_source(
     # sanitize filename
     file.filename = sanitize_filename(file.filename)
 
-    # create job
-    job = Job(
-        user_id=actor.id,
-        metadata={"type": "embedding", "filename": file.filename, "source_id": source_id},
-        completed_at=None,
+    # create file metadata
+    file_metadata = FileMetadata(
+        source_id=source_id,
+        file_name=file.filename,
+        file_path=None,
+        file_type=mimetypes.guess_type(file.filename)[0] or file.content_type or "unknown",
+        file_size=file.size if file.size is not None else None,
+        processing_status=FileProcessingStatus.PARSING,
     )
-    job = await server.job_manager.create_job_async(job, actor=actor)
+    file_metadata = await server.file_manager.create_file(file_metadata, actor=actor)
 
     # TODO: Do we need to pull in the full agent_states? Can probably simplify here right?
     agent_states = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
@@ -251,13 +254,13 @@ async def upload_file_to_source(
     # Use cloud processing for all files (simple files always, complex files with Mistral key)
     logger.info("Running experimental cloud based file processing...")
     safe_create_task(
-        load_file_to_source_cloud(server, agent_states, content, file, job, source_id, actor, source.embedding_config),
+        load_file_to_source_cloud(server, agent_states, content, source_id, actor, source.embedding_config, file_metadata),
         logger=logger,
         label="file_processor.process",
     )
     safe_create_task(sleeptime_document_ingest_async(server, source_id, actor), logger=logger, label="sleeptime_document_ingest_async")
 
-    return job
+    return file_metadata
 
 
 @router.get("/{source_id}/passages", response_model=List[Passage], operation_id="list_source_passages")
@@ -383,14 +386,15 @@ async def load_file_to_source_cloud(
     server: SyncServer,
     agent_states: List[AgentState],
     content: bytes,
-    file: UploadFile,
-    job: Job,
     source_id: str,
     actor: User,
     embedding_config: EmbeddingConfig,
+    file_metadata: FileMetadata,
 ):
     file_processor = MistralFileParser()
     text_chunker = LlamaIndexChunker(chunk_size=embedding_config.embedding_chunk_size)
     embedder = OpenAIEmbedder(embedding_config=embedding_config)
     file_processor = FileProcessor(file_parser=file_processor, text_chunker=text_chunker, embedder=embedder, actor=actor)
-    await file_processor.process(server=server, agent_states=agent_states, source_id=source_id, content=content, file=file, job=job)
+    await file_processor.process(
+        server=server, agent_states=agent_states, source_id=source_id, content=content, file_metadata=file_metadata
+    )

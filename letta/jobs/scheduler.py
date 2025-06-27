@@ -36,25 +36,44 @@ async def _try_acquire_lock_and_start_scheduler(server: SyncServer) -> bool:
         # Use a temporary connection context for the attempt initially
         with db_context() as session:
             engine = session.get_bind()
-            # Get raw connection - MUST be kept open if lock is acquired
-            raw_conn = engine.raw_connection()
-            cur = raw_conn.cursor()
+            engine_name = engine.name
+            logger.info(f"Database engine type: {engine_name}")
 
-        cur.execute("SELECT pg_try_advisory_lock(CAST(%s AS bigint))", (ADVISORY_LOCK_KEY,))
-        acquired_lock = cur.fetchone()[0]
+            if engine_name != "postgresql":
+                logger.warning(f"Advisory locks not supported for {engine_name} database. Starting scheduler without leader election.")
+                acquired_lock = True  # For SQLite, assume we can start the scheduler
+            else:
+                # Get raw connection - MUST be kept open if lock is acquired
+                raw_conn = engine.raw_connection()
+                cur = raw_conn.cursor()
+
+                cur.execute("SELECT pg_try_advisory_lock(CAST(%s AS bigint))", (ADVISORY_LOCK_KEY,))
+                acquired_lock = cur.fetchone()[0]
 
         if not acquired_lock:
-            cur.close()
-            raw_conn.close()
+            if cur:
+                cur.close()
+            if raw_conn:
+                raw_conn.close()
             logger.info("Scheduler lock held by another instance.")
             return False
 
         # --- Lock Acquired ---
-        logger.info("Acquired scheduler lock.")
-        _advisory_lock_conn = raw_conn  # Keep connection for lock duration
-        _advisory_lock_cur = cur  # Keep cursor for lock duration
-        raw_conn = None  # Prevent closing in finally block
-        cur = None  # Prevent closing in finally block
+        if engine_name == "postgresql":
+            logger.info("Acquired PostgreSQL advisory lock.")
+            _advisory_lock_conn = raw_conn  # Keep connection for lock duration
+            _advisory_lock_cur = cur  # Keep cursor for lock duration
+            raw_conn = None  # Prevent closing in finally block
+            cur = None  # Prevent closing in finally block
+        else:
+            logger.info("Starting scheduler for non-PostgreSQL database.")
+            # For SQLite, we don't need to keep the connection open
+            if cur:
+                cur.close()
+            if raw_conn:
+                raw_conn.close()
+            raw_conn = None
+            cur = None
 
         trigger = IntervalTrigger(
             seconds=settings.poll_running_llm_batches_interval_seconds,
@@ -157,35 +176,30 @@ async def _release_advisory_lock():
     _advisory_lock_conn = None  # Clear global immediately
 
     if lock_cur is not None and lock_conn is not None:
-        logger.info(f"Attempting to release advisory lock {ADVISORY_LOCK_KEY}")
+        logger.info(f"Attempting to release PostgreSQL advisory lock {ADVISORY_LOCK_KEY}")
         try:
-            if not lock_conn.closed:
-                if not lock_cur.closed:
-                    lock_cur.execute("SELECT pg_advisory_unlock(CAST(%s AS bigint))", (ADVISORY_LOCK_KEY,))
-                    lock_cur.fetchone()  # Consume result
-                    lock_conn.commit()
-                    logger.info(f"Executed pg_advisory_unlock for lock {ADVISORY_LOCK_KEY}")
-                else:
-                    logger.warning("Advisory lock cursor closed before unlock.")
-            else:
-                logger.warning("Advisory lock connection closed before unlock.")
+            # Try to execute unlock - connection/cursor validity is checked by attempting the operation
+            lock_cur.execute("SELECT pg_advisory_unlock(CAST(%s AS bigint))", (ADVISORY_LOCK_KEY,))
+            lock_cur.fetchone()  # Consume result
+            lock_conn.commit()
+            logger.info(f"Executed pg_advisory_unlock for lock {ADVISORY_LOCK_KEY}")
         except Exception as e:
             logger.error(f"Error executing pg_advisory_unlock: {e}", exc_info=True)
         finally:
             # Ensure resources are closed regardless of unlock success
             try:
-                if lock_cur and not lock_cur.closed:
+                if lock_cur:
                     lock_cur.close()
             except Exception as e:
                 logger.error(f"Error closing advisory lock cursor: {e}", exc_info=True)
             try:
-                if lock_conn and not lock_conn.closed:
+                if lock_conn:
                     lock_conn.close()
                 logger.info("Closed database connection that held advisory lock.")
             except Exception as e:
                 logger.error(f"Error closing advisory lock connection: {e}", exc_info=True)
     else:
-        logger.warning("Attempted to release lock, but connection/cursor not found.")
+        logger.info("No PostgreSQL advisory lock to release (likely using SQLite or non-PostgreSQL database).")
 
 
 async def start_scheduler_with_leader_election(server: SyncServer):
@@ -236,10 +250,18 @@ async def shutdown_scheduler_and_release_lock():
         logger.info("Shutting down: Leader instance stopping scheduler and releasing lock.")
         if scheduler.running:
             try:
-                scheduler.shutdown()  # wait=True by default
+                # Force synchronous shutdown to prevent callback scheduling
+                scheduler.shutdown(wait=True)
+
+                # wait for any internal cleanup to complete
+                await asyncio.sleep(0.1)
+
                 logger.info("APScheduler shut down.")
             except Exception as e:
-                logger.error(f"Error shutting down APScheduler: {e}", exc_info=True)
+                # Handle SchedulerNotRunningError and other shutdown exceptions
+                logger.warning(f"Exception during APScheduler shutdown: {e}")
+                if "not running" not in str(e).lower():
+                    logger.error(f"Unexpected error shutting down APScheduler: {e}", exc_info=True)
 
         await _release_advisory_lock()
         _is_scheduler_leader = False  # Update state after cleanup
@@ -247,9 +269,11 @@ async def shutdown_scheduler_and_release_lock():
         logger.info("Shutting down: Non-leader instance.")
 
     # Final cleanup check for scheduler state (belt and suspenders)
-    if scheduler.running:
-        logger.warning("Scheduler still running after shutdown logic completed? Forcing shutdown.")
-        try:
+    # This should rarely be needed if shutdown logic above worked correctly
+    try:
+        if scheduler.running:
+            logger.warning("Scheduler still running after shutdown logic completed? Forcing shutdown.")
             scheduler.shutdown(wait=False)
-        except:
-            pass
+    except Exception as e:
+        # Catch SchedulerNotRunningError and other shutdown exceptions
+        logger.debug(f"Expected exception during final scheduler cleanup: {e}")
