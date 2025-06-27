@@ -420,7 +420,15 @@ function createNodesFromRules(
 
 // Edge Creation Functions
 function createEdge(params: EdgeParams): Edge {
-  const { id, source, target, arrowColor, opacity, data = {} } = params;
+  const {
+    id,
+    source,
+    target,
+    arrowColor,
+    opacity,
+    shouldDash = false,
+    data = {},
+  } = params;
   return {
     id,
     source,
@@ -436,6 +444,10 @@ function createEdge(params: EdgeParams): Edge {
       stroke: arrowColor,
       strokeWidth: 1,
       opacity,
+      ...(shouldDash && {
+        strokeDasharray: '8,2',
+        animation: 'dashdraw 0.7s linear infinite',
+      }),
     },
     ...(data as any),
     data,
@@ -449,9 +461,9 @@ function createEdgesFromRules(
   const edgeData = createEdgeData(rules, focusedTool);
 
   return edgeData.map((edgeInfo) => {
-    const { id, source, target, opacity, shouldDash } = edgeInfo;
+    const { id, source, target, opacity } = edgeInfo;
 
-    // Extract focus state and calculate arrow color here
+    // Extract focus state and calculate arrow color here :D
     const sourceIsFocused =
       focusedTool ===
       (source === 'start'
@@ -475,13 +487,17 @@ function createEdgesFromRules(
         ? COLORS.ARROW.INCOMING // Incoming and outgoing edges currently use the same color
         : COLORS.ARROW.DEFAULT;
 
+    // Only show dash animation when a node is focused AND this edge is connected to it
+    const shouldShowDash =
+      focusedTool !== null && (sourceIsFocused || targetIsFocused);
+
     return createEdge({
       id,
       source,
       target,
       arrowColor,
       opacity,
-      shouldDash,
+      shouldDash: shouldShowDash,
     });
   });
 }
@@ -569,7 +585,22 @@ export function ToolRulesVisual() {
   );
 
   useEffect(() => {
-    setNodes(createNodesFromRules(rulesData, focusedTool));
+    // Preserve existing node positions when updating
+    setNodes((currentNodes) => {
+      const newNodes = createNodesFromRules(rulesData, focusedTool);
+
+      // Create a map of existing positions
+      const existingPositions = new Map(
+        currentNodes.map((node) => [node.id, node.position]),
+      );
+
+      // Apply existing positions to new nodes
+      return newNodes.map((newNode) => ({
+        ...newNode,
+        position: existingPositions.get(newNode.id) || newNode.position,
+      }));
+    });
+
     setEdges(createEdgesFromRules(rulesData, focusedTool));
   }, [focusedTool, setNodes, setEdges, rulesData]);
 
