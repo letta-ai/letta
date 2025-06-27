@@ -152,9 +152,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     initial_message_sequence: Optional[List[MessageCreate]] = Field(
         None, description="The initial set of messages to put in the agent's in-context memory."
     )
-    include_base_tools: bool = Field(
-        True, description="If true, attaches the Letta core tools (e.g. archival_memory and core_memory related functions)."
-    )
+    include_base_tools: bool = Field(True, description="If true, attaches the Letta core tools (e.g. core_memory related functions).")
     include_multi_agent_tools: bool = Field(
         False, description="If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent)."
     )
