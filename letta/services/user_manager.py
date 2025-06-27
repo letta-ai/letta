@@ -14,6 +14,7 @@ from letta.otel.tracing import trace_method
 from letta.schemas.user import User as PydanticUser
 from letta.schemas.user import UserUpdate
 from letta.server.db import db_registry
+from letta.settings import settings
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
