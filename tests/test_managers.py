@@ -87,6 +87,7 @@ from letta.server.db import db_registry
 from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import calculate_base_tools
+from letta.services.step_manager import FeedbackType
 from letta.settings import tool_settings
 from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
 from tests.utils import random_string
@@ -6186,7 +6187,7 @@ async def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, def
     step_manager = server.step_manager
 
     # Add feedback to first step
-    await step_manager.add_feedback_async(step_id=steps[0].id, feedback="positive", actor=default_user)
+    await step_manager.add_feedback_async(step_id=steps[0].id, feedback=FeedbackType.POSITIVE, actor=default_user)
 
     # Test has_feedback filtering
     steps_with_feedback = await step_manager.list_steps_async(agent_id=sarah_agent.id, has_feedback=True, actor=default_user)
