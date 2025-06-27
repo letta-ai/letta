@@ -677,7 +677,8 @@
       "deleteMemory": "Delete Memory",
       "deleteConfirm": "Delete Memory",
       "deleteConfirmation": "Are you sure you want to delete this memory? This is permanent and cannot be undone.",
-      "memoryText": "Memory at {date}"
+      "memoryText": "Memory at {date}",
+      "error": "There was an error removing this memory, please try again or contact support."
     },
     "CreateMemoryDialog": {
       "trigger": "Create memory",

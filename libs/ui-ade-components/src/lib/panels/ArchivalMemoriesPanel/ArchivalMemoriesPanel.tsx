@@ -106,7 +106,7 @@ function MemoryItem(props: MemoryItemProps) {
 
   const { formatDateAndTime } = useFormatters();
 
-  const { mutate: deleteMemory, isPending: isDeletingMemory } =
+  const { mutate: deleteMemory, isPending: isDeletingMemory, isError } =
     useAgentsServiceDeletePassage({
       onSuccess: async () => {
         setOpen(false);
@@ -166,6 +166,7 @@ function MemoryItem(props: MemoryItemProps) {
           />
           {canUpdateAgent && (
             <Dialog
+              errorMessage={isError ? t('MemoryItem.error') : undefined}
               onOpenChange={setOpen}
               isOpen={open}
               trigger={
