@@ -255,7 +255,10 @@ export function NetworkInspector() {
         response: response.data,
       };
 
-      setNetworkLogs((prevLogs) => [networkRequest, ...prevLogs]);
+      setNetworkLogs((prevLogs) => {
+        const newLogs = [networkRequest, ...prevLogs];
+        return newLogs.slice(0, 400);
+      });
       return response;
     }
 

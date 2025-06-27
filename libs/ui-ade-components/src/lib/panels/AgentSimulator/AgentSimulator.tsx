@@ -95,6 +95,7 @@ import { useADETour } from '../../hooks/useADETour/useADETour';
 import type { InfiniteData } from '@tanstack/query-core';
 import { ErrorBoundary } from 'react-error-boundary';
 import type { RateLimitReason } from '@letta-cloud/types';
+import { useNetworkRequest } from '../../hooks/useNetworkRequest/useNetworkRequest';
 
 type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
@@ -143,6 +144,7 @@ export function useSendMessage(
   const { isLocal } = useCurrentAgentMetaData();
   const [failedToSendMessage, setFailedToSendMessage] = useState(false);
   const [errorCode, setErrorCode] = useState<ErrorCode | undefined>(undefined);
+  const { addNetworkRequest, updateNetworkRequest } = useNetworkRequest();
 
   const { baseUrl, password } = useLettaAgentsAPI();
 
@@ -263,6 +265,33 @@ export function useSendMessage(
 
       abortController.current = new AbortController();
 
+      const requestBody = {
+        // extra config to turn off the AssistantMessage parsing for the ADE
+        config: {
+          use_assistant_message: false,
+        },
+        stream_steps: true,
+        stream_tokens: true,
+        use_assistant_message: false,
+        messages: [
+          {
+            role: role.value !== 'system' ? 'user' : 'system',
+            ...(role.identityId ? { sender_id: role.identityId } : {}),
+            content: content,
+            otid: userMessageOtid,
+          },
+        ],
+      };
+
+      const requestId = addNetworkRequest({
+        date: new Date(),
+        url: `${baseUrl}/v1/agents/${agentId}/messages/stream`,
+        method: 'POST',
+        status: 200,
+        payload: requestBody,
+        response: {},
+      });
+
       const eventsource = new EventSource(
         `${baseUrl}/v1/agents/${agentId}/messages/stream`,
         {
@@ -281,27 +310,12 @@ export function useSendMessage(
                 }
               : {}),
           },
-          body: JSON.stringify({
-            // extra config to turn off the AssistantMessage parsing for the ADE
-            config: {
-              use_assistant_message: false,
-            },
-            stream_steps: true,
-            stream_tokens: true,
-            use_assistant_message: false,
-            messages: [
-              {
-                role: role.value !== 'system' ? 'user' : 'system',
-                ...(role.identityId ? { sender_id: role.identityId } : {}),
-                content: content,
-                otid: userMessageOtid,
-              },
-            ],
-          }),
+          body: JSON.stringify(requestBody),
         },
       );
 
       eventsource.addEventListener('error', async (e) => {
+        //turn off core to test
         e.stopPropagation();
         e.preventDefault();
         // tag user sent message as errored
@@ -311,28 +325,53 @@ export function useSendMessage(
 
           if (body.reasons?.includes('free-usage-exceeded')) {
             handleError(message, 'FREE_USAGE_EXCEEDED');
+            updateNetworkRequest(requestId, {
+              status: e.response.status,
+              response: body,
+            });
             return;
           }
 
           if (body.reasons?.includes('agents-limit-exceeded')) {
             handleError(message, 'AGENT_LIMIT_EXCEEDED');
+            updateNetworkRequest(requestId, {
+              status: e.response.status,
+              response: body,
+            });
             return;
           }
 
           if (body.reasons?.includes('premium-usage-exceeded')) {
             handleError(message, 'PREMIUM_USAGE_EXCEEDED');
+            updateNetworkRequest(requestId, {
+              status: e.response.status,
+              response: body,
+            });
             return;
           }
 
           if (e.response.status === 429) {
             handleError(message, 'RATE_LIMIT_EXCEEDED');
+            updateNetworkRequest(requestId, {
+              status: e.response.status,
+              response: body,
+            });
             return;
           }
 
           if (e.response.status === 402) {
             handleError(message, 'CREDIT_LIMIT_EXCEEDED');
+            updateNetworkRequest(requestId, {
+              status: e.response.status,
+              response: body,
+            });
             return;
           }
+
+          updateNetworkRequest(requestId, {
+            status: e.response.status,
+            response: body,
+          });
         }
 
         // temp disable, I dont think this is working properly
@@ -343,11 +382,16 @@ export function useSendMessage(
       });
 
       eventsource.onmessage = (e: MessageEvent) => {
+        //stream
         if (abortController.current?.signal.aborted) {
           return;
         }
 
         if (e.data.trim() === '[DONE]') {
+          updateNetworkRequest(requestId, {
+            status: 200,
+            response: { status: 'stream_completed' },
+          });
           return;
         }
 
@@ -467,7 +511,17 @@ export function useSendMessage(
         setIsPending(false);
       };
     },
-    [agentId, baseUrl, isLocal, options, password, queryClient, setIsPending],
+    [
+      agentId,
+      baseUrl,
+      isLocal,
+      options,
+      password,
+      queryClient,
+      setIsPending,
+      addNetworkRequest,
+      updateNetworkRequest,
+    ],
   );
 
   const stopMessage = useCallback(() => {

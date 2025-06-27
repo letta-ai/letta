@@ -183,7 +183,9 @@ export async function getObservabilityOverview(
         format: 'JSONEachRow',
       })
       .then((result) =>
-        getClickhouseData<Array<{ tool_error_count: string; total_tool_count: string }>>(result),
+        getClickhouseData<
+          Array<{ tool_error_count: string; total_tool_count: string }>
+        >(result),
       )
       .then((v) => v[0] || { tool_error_count: '0', total_tool_count: '0' });
   }
@@ -254,18 +256,12 @@ export async function getObservabilityOverview(
     toolErrorsDetails?.total_tool_count || '0',
     10,
   );
-  const apiErrorCount = parseInt(
-    apiErrorDetails?.error_count || '0',
-    10,
-  );
-  const apiSuccessCount = parseInt(
-    apiErrorDetails?.success_count || '0',
-    10,
-  );
+  const apiErrorCount = parseInt(apiErrorDetails?.error_count || '0', 10);
+  const apiSuccessCount = parseInt(apiErrorDetails?.success_count || '0', 10);
 
   const toolErrorRate = toolErrorsCount / (toolTotalCount || 1);
 
-  const apiErrorRate = apiErrorCount / ((apiSuccessCount + apiErrorCount) || 1);
+  const apiErrorRate = apiErrorCount / (apiSuccessCount + apiErrorCount || 1);
 
   const avgToolLatencyNs = toolLatencyDetails?.averageLatencyNs || 0;
 

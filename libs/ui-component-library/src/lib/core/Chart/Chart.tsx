@@ -121,26 +121,29 @@ export function Chart(props: ChartOptions) {
     if (chart.current) {
       const currentChart = chart.current;
 
-      currentChart.setOption({
-        ...defaultOptions,
-        ...options,
-        tooltip: {
-          borderWidth: 0,
-          height: 28,
-          padding: 0,
-          trigger: 'item',
-          position: 'top',
-          backgroundColor: 'hsl(var(--background-grey2))',
-          ...options.tooltip,
-          className: 'chart-tooltip',
+      currentChart.setOption(
+        {
+          ...defaultOptions,
+          ...options,
+          tooltip: {
+            borderWidth: 0,
+            height: 28,
+            padding: 0,
+            trigger: 'item',
+            position: 'top',
+            backgroundColor: 'hsl(var(--background-grey2))',
+            ...options.tooltip,
+            className: 'chart-tooltip',
+          },
+          legend: {
+            show: false,
+          },
         },
-        legend: {
-          show: false,
+        {
+          notMerge: true,
+          lazyUpdate: true,
         },
-      }, {
-        notMerge: true,
-        lazyUpdate: true
-      });
+      );
 
       requestAnimationFrame(() => {
         currentChart.resize();
