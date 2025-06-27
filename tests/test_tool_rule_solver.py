@@ -191,7 +191,7 @@ def test_required_before_exit_tool_rule_has_required_tools_been_called():
     """Test has_required_tools_been_called() with no required tools."""
     solver = ToolRulesSolver(tool_rules=[])
 
-    assert solver.has_required_tools_been_called() is True, "Should return True when no required tools are defined"
+    assert solver.has_required_tools_been_called(set()) is True, "Should return True when no required tools are defined"
 
 
 def test_required_before_exit_tool_rule_single_required_tool():
@@ -199,13 +199,13 @@ def test_required_before_exit_tool_rule_single_required_tool():
     required_rule = RequiredBeforeExitToolRule(tool_name=SAVE_TOOL)
     solver = ToolRulesSolver(tool_rules=[required_rule])
 
-    assert solver.has_required_tools_been_called() is False, "Should return False when required tool hasn't been called"
-    assert solver.get_uncalled_required_tools() == [SAVE_TOOL], "Should return list with uncalled required tool"
+    assert solver.has_required_tools_been_called({SAVE_TOOL}) is False, "Should return False when required tool hasn't been called"
+    assert solver.get_uncalled_required_tools({SAVE_TOOL}) == [SAVE_TOOL], "Should return list with uncalled required tool"
 
     solver.register_tool_call(SAVE_TOOL)
 
-    assert solver.has_required_tools_been_called() is True, "Should return True after required tool is called"
-    assert solver.get_uncalled_required_tools() == [], "Should return empty list after required tool is called"
+    assert solver.has_required_tools_been_called({SAVE_TOOL}) is True, "Should return True after required tool is called"
+    assert solver.get_uncalled_required_tools({SAVE_TOOL}) == [], "Should return empty list after required tool is called"
 
 
 def test_required_before_exit_tool_rule_multiple_required_tools():
@@ -214,21 +214,31 @@ def test_required_before_exit_tool_rule_multiple_required_tools():
     required_rule_2 = RequiredBeforeExitToolRule(tool_name=REQUIRED_TOOL_2)
     solver = ToolRulesSolver(tool_rules=[required_rule_1, required_rule_2])
 
-    assert solver.has_required_tools_been_called() is False, "Should return False when no required tools have been called"
-    uncalled_tools = solver.get_uncalled_required_tools()
+    assert (
+        solver.has_required_tools_been_called({REQUIRED_TOOL_1, REQUIRED_TOOL_2}) is False
+    ), "Should return False when no required tools have been called"
+    uncalled_tools = solver.get_uncalled_required_tools({REQUIRED_TOOL_1, REQUIRED_TOOL_2})
     assert set(uncalled_tools) == {REQUIRED_TOOL_1, REQUIRED_TOOL_2}, "Should return both uncalled required tools"
 
     # Call first required tool
     solver.register_tool_call(REQUIRED_TOOL_1)
 
-    assert solver.has_required_tools_been_called() is False, "Should return False when only one required tool has been called"
-    assert solver.get_uncalled_required_tools() == [REQUIRED_TOOL_2], "Should return remaining uncalled required tool"
+    assert (
+        solver.has_required_tools_been_called({REQUIRED_TOOL_1, REQUIRED_TOOL_2}) is False
+    ), "Should return False when only one required tool has been called"
+    assert solver.get_uncalled_required_tools({REQUIRED_TOOL_1, REQUIRED_TOOL_2}) == [
+        REQUIRED_TOOL_2
+    ], "Should return remaining uncalled required tool"
 
     # Call second required tool
     solver.register_tool_call(REQUIRED_TOOL_2)
 
-    assert solver.has_required_tools_been_called() is True, "Should return True when all required tools have been called"
-    assert solver.get_uncalled_required_tools() == [], "Should return empty list when all required tools have been called"
+    assert (
+        solver.has_required_tools_been_called({REQUIRED_TOOL_1, REQUIRED_TOOL_2}) is True
+    ), "Should return True when all required tools have been called"
+    assert (
+        solver.get_uncalled_required_tools({REQUIRED_TOOL_1, REQUIRED_TOOL_2}) == []
+    ), "Should return empty list when all required tools have been called"
 
 
 def test_required_before_exit_tool_rule_mixed_with_other_tools():
@@ -240,14 +250,14 @@ def test_required_before_exit_tool_rule_mixed_with_other_tools():
     solver.register_tool_call(START_TOOL)
     solver.register_tool_call(HELPER_TOOL)
 
-    assert solver.has_required_tools_been_called() is False, "Should return False even after calling other tools"
-    assert solver.get_uncalled_required_tools() == [SAVE_TOOL], "Should still show required tool as uncalled"
+    assert solver.has_required_tools_been_called({SAVE_TOOL}) is False, "Should return False even after calling other tools"
+    assert solver.get_uncalled_required_tools({SAVE_TOOL}) == [SAVE_TOOL], "Should still show required tool as uncalled"
 
     # Call required tool
     solver.register_tool_call(SAVE_TOOL)
 
-    assert solver.has_required_tools_been_called() is True, "Should return True after required tool is called"
-    assert solver.get_uncalled_required_tools() == [], "Should return empty list after required tool is called"
+    assert solver.has_required_tools_been_called({SAVE_TOOL}) is True, "Should return True after required tool is called"
+    assert solver.get_uncalled_required_tools({SAVE_TOOL}) == [], "Should return empty list after required tool is called"
 
 
 def test_required_before_exit_tool_rule_clear_history():
@@ -257,10 +267,10 @@ def test_required_before_exit_tool_rule_clear_history():
 
     # Call required tool
     solver.register_tool_call(SAVE_TOOL)
-    assert solver.has_required_tools_been_called() is True, "Should return True after required tool is called"
+    assert solver.has_required_tools_been_called({SAVE_TOOL}) is True, "Should return True after required tool is called"
 
     # Clear history
     solver.clear_tool_history()
 
-    assert solver.has_required_tools_been_called() is False, "Should return False after clearing history"
-    assert solver.get_uncalled_required_tools() == [SAVE_TOOL], "Should show required tool as uncalled after clearing history"
+    assert solver.has_required_tools_been_called({SAVE_TOOL}) is False, "Should return False after clearing history"
+    assert solver.get_uncalled_required_tools({SAVE_TOOL}) == [SAVE_TOOL], "Should show required tool as uncalled after clearing history"

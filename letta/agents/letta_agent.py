@@ -993,6 +993,7 @@ class LettaAgent(BaseAgent):
 
         # 4.  Decide whether to keep stepping  (<<< focal section simplified)
         continue_stepping, heartbeat_reason, stop_reason = self._decide_continuation(
+            agent_state=agent_state,
             request_heartbeat=request_heartbeat,
             tool_call_name=tool_call_name,
             tool_rule_violated=tool_rule_violated,
@@ -1048,6 +1049,7 @@ class LettaAgent(BaseAgent):
 
     def _decide_continuation(
         self,
+        agent_state: AgentState,
         request_heartbeat: bool,
         tool_call_name: str,
         tool_rule_violated: bool,
@@ -1083,10 +1085,12 @@ class LettaAgent(BaseAgent):
             continue_stepping = False
             stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
         else:
-            uncalled = tool_rules_solver.get_uncalled_required_tools()
+            uncalled = tool_rules_solver.get_uncalled_required_tools(available_tools=set([t.name for t in agent_state.tools]))
             if not continue_stepping and uncalled:
                 continue_stepping = True
-                heartbeat_reason = f"{NON_USER_MSG_PREFIX}Missing required tools: " f"{', '.join(uncalled)}"
+                heartbeat_reason = (
+                    f"{NON_USER_MSG_PREFIX}Continuing, user expects these tools: [" f"{', '.join(uncalled)}] to be called still."
+                )
 
                 stop_reason = None  # reset – we’re still going
 

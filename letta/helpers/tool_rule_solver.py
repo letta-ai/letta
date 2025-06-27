@@ -151,11 +151,11 @@ class ToolRulesSolver(BaseModel):
         """Check if the tool is defined as a continue tool in the tool rules."""
         return any(rule.tool_name == tool_name for rule in self.continue_tool_rules)
 
-    def has_required_tools_been_called(self) -> bool:
+    def has_required_tools_been_called(self, available_tools: Set[str]) -> bool:
         """Check if all required-before-exit tools have been called."""
-        return len(self.get_uncalled_required_tools()) == 0
+        return len(self.get_uncalled_required_tools(available_tools=available_tools)) == 0
 
-    def get_uncalled_required_tools(self) -> List[str]:
+    def get_uncalled_required_tools(self, available_tools: Set[str]) -> List[str]:
         """Get the list of required-before-exit tools that have not been called yet."""
         if not self.required_before_exit_tool_rules:
             return []  # No required tools means no uncalled tools
@@ -163,7 +163,8 @@ class ToolRulesSolver(BaseModel):
         required_tool_names = {rule.tool_name for rule in self.required_before_exit_tool_rules}
         called_tool_names = set(self.tool_call_history)
 
-        return list(required_tool_names - called_tool_names)
+        # Get required tools that are uncalled AND available
+        return list((required_tool_names & available_tools) - called_tool_names)
 
     def get_ending_tool_names(self) -> List[str]:
         """Get the names of tools that are required before exit."""
