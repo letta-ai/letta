@@ -1471,6 +1471,8 @@ export type embedding_endpoint_type =
   | 'mistral'
   | 'together';
 
+export type FeedbackType = 'positive' | 'negative';
+
 export type File = {
   file: FileFile;
   type: 'file';
@@ -5804,7 +5806,7 @@ export type RetrieveStepData = {
 export type RetrieveStepResponse = Step;
 
 export type AddFeedbackData = {
-  feedback: 'positive' | 'negative' | null;
+  feedback: FeedbackType | null;
   stepId: string;
   userId?: string | null;
 };

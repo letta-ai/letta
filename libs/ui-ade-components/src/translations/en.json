@@ -943,6 +943,7 @@
       "show": "Show details",
       "hide": "Hide details"
     },
+    "tokens": "{count} Tokens",
     "loadingMessages": "Connecting to agent...",
     "noMessages": "There are no messages for this agent, chat below",
     "toolReturn": "Tool response",
@@ -1056,6 +1057,11 @@
     }
   },
   "ADE/AgentSimulator": {
+    "FeedbackButtons": {
+      "positive": "This was valid",
+      "negative": "This was invalid",
+      "error": "There was an error processing your feedback, please check the network inspector to see the error details or contact support."
+    },
     "InvalidMessages": {
       "title": "There was an error processing the message response",
       "description": "This is usually caused by an LLM returning bad data or an improper configuration of your LLM config, you can read the unprocessed response in your server logs or browser inspect element."

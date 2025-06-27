@@ -4454,6 +4454,12 @@ Attributes:
     azure_deployment (str): The Azure deployment for the model (Azure only).`,
 } as const;
 
+export const $FeedbackType = {
+  type: 'string',
+  enum: ['positive', 'negative'],
+  title: 'FeedbackType',
+} as const;
+
 export const $File = {
   properties: {
     file: {

@@ -28,7 +28,7 @@ interface Usage {
   output_tokens: number;
 }
 
-function getIfUsage(value: unknown): Usage | undefined {
+export function getIfUsage(value: unknown): Usage | undefined {
   if (typeof value === 'object' && value !== null) {
     return value as Usage;
   }

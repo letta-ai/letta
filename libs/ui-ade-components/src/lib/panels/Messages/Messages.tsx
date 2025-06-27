@@ -30,7 +30,6 @@ import {
   InnerMonologueIcon,
   AnthropicLogoMarkDynamic,
   InteractiveSystemMessage,
-  StepIcon,
 } from '@letta-cloud/ui-component-library';
 import type {
   AgentMessage,
@@ -57,9 +56,10 @@ import { useGetMessagesWorker } from './useGetMessagesWorker/useGetMessagesWorke
 import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
-import { DetailedMessageView } from './DetailedMessageView/DetailedMessageView';
 import { cn } from '@letta-cloud/ui-styles';
 import { DebugTraceSidebar } from './DebugTraceSidebar/DebugTraceSidebar';
+import './Messages.scss';
+import { StepDetailBar } from './StepDetailBar/StepDetailBar';
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty
@@ -185,44 +185,25 @@ interface MessageProps {
 
 function Message({ message }: MessageProps) {
   const [showDetails, setShowDetails] = useState(false);
-  const t = useTranslations('components/Messages');
-
-  const { data: isDetailedMessagesViewable } = useFeatureFlag(
-    'DETAILED_MESSAGE_VIEW',
-  );
 
   return (
-    <VStack gap={false} fullWidth position="relative">
-      {isDetailedMessagesViewable && message.stepId && (
-        <div
-          style={{ left: -28, top: 4 }}
-          className="absolute top-0 flex flex-col gap-1 transition-all duration-500"
-        >
-          <Button
-            preIcon={<StepIcon />}
-            onClick={() => {
-              setShowDetails((prev) => !prev);
-            }}
-            size="xsmall"
-            hideLabel
-            square
-            active={showDetails}
-            label={showDetails ? t('details.hide') : t('details.show')}
-            color="tertiary"
-          />
-        </div>
-      )}
+    <VStack gap={false} fullWidth>
       <div
         className={cn(
-          'w-full rounded-t-md',
-          showDetails ? 'bg-background-grey border-t border-x p-2.5' : '',
+          'w-full rounded-t-md messages-step',
+          showDetails ? 'bg-background-grey border-t border-x p-2.5 pb-1' : '',
         )}
       >
         {message.content}
+        {message.stepId && (
+          <StepDetailBar
+            showDetails={showDetails}
+            setShowDetails={setShowDetails}
+            stepId={message.stepId}
+            timestamp={message.timestamp}
+          />
+        )}
       </div>
-      {message.stepId && showDetails && (
-        <DetailedMessageView stepId={message.stepId} />
-      )}
     </VStack>
   );
 }

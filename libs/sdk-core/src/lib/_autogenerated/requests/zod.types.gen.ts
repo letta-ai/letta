@@ -3529,6 +3529,12 @@ export const E2BSandboxConfig = z.object({
     .optional(),
 });
 
+export type FeedbackType = z.infer<typeof FeedbackType>;
+export const FeedbackType = z.union([
+  z.literal('positive'),
+  z.literal('negative'),
+]);
+
 export type FileProcessingStatus = z.infer<typeof FileProcessingStatus>;
 export const FileProcessingStatus = z.union([
   z.literal('pending'),
@@ -8611,12 +8617,9 @@ export const patch_Add_feedback = {
   parameters: z.object({
     query: z.object({
       feedback: z.union([
-        z.literal('positive'),
-        z.literal('negative'),
+        FeedbackType,
         z.null(),
-        z.array(
-          z.union([z.literal('positive'), z.literal('negative'), z.null()]),
-        ),
+        z.array(z.union([FeedbackType, z.null()])),
       ]),
     }),
     path: z.object({

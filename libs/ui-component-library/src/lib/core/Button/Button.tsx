@@ -48,6 +48,7 @@ const buttonVariants = cva(
           'bg-background-grey2 text-background-grey2-content hover:bg-background-grey2-hover border-transparent',
       },
       size: {
+        '3xsmall': 'gap-1 px-[0.5]',
         xsmall:
           'px-2 py-1 h-biHeight-xs min-h-biHeight-xs text-xs font-medium gap-1',
         large:
@@ -180,6 +181,10 @@ export const Button = forwardRef<
   } = props;
 
   const iconSize = useMemo(() => {
+    if (size === '3xsmall') {
+      return 'h-3 w-3';
+    }
+
     if (size === 'small') {
       return 'h-4 w-4';
     }

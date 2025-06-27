@@ -41,6 +41,7 @@ import {
   CreateArchivalMemory,
   CreateBatch,
   CreateBlock,
+  FeedbackType,
   GroupCreate,
   GroupUpdate,
   IdentityCreate,
@@ -5641,7 +5642,7 @@ export const useStepsServiceAddFeedback = <
       TData,
       TError,
       {
-        feedback: 'positive' | 'negative';
+        feedback: FeedbackType;
         stepId: string;
         userId?: string;
       },
@@ -5654,7 +5655,7 @@ export const useStepsServiceAddFeedback = <
     TData,
     TError,
     {
-      feedback: 'positive' | 'negative';
+      feedback: FeedbackType;
       stepId: string;
       userId?: string;
     },

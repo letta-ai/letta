@@ -26,6 +26,7 @@ const iconWrapperVariants = cva('inline-flex items-center justify-center', {
       large: 'w-6 h-auto',
       xlarge: 'w-8 h-auto',
       xxlarge: 'w-10 h-auto',
+      auto: '',
     },
   },
   defaultVariants: {

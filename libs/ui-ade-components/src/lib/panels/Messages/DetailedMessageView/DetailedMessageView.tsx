@@ -30,9 +30,6 @@ export function TelemetryDetailsViewer(props: TelemetryDetailsViewerProps) {
       stepId,
     },
     undefined,
-    {
-      enabled: !isLocal,
-    },
   );
 
   const { data: traceData } = webApi.traces.getTrace.useQuery({
@@ -93,7 +90,7 @@ export function DetailedMessageView(props: DetailedMessageViewProps) {
       gap={false}
       overflow="auto"
       color="background"
-      className="rounded-b-md"
+      className="rounded-t-md"
     >
       <TelemetryDetailsViewer stepId={stepId} />
     </VStack>
