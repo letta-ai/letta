@@ -24,6 +24,7 @@ export default function ToolsLayout(props: ToolsLayoutProps) {
   return (
     <DashboardWithSidebarWrapper
       baseUrl="/tools"
+      returnOverride="/"
       returnText={t('nav.return')}
       navigationItems={[
         {
