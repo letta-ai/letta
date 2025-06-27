@@ -285,6 +285,40 @@ class FileAgentManager:
 
     @enforce_types
     @trace_method
+    async def close_all_other_files(self, *, agent_id: str, keep_file_names: List[str], actor: PydanticUser) -> List[str]:
+        """Close every open file for this agent except those in keep_file_names.
+
+        Args:
+            agent_id: ID of the agent
+            keep_file_names: List of file names to keep open
+            actor: User performing the action
+
+        Returns:
+            List of file names that were closed
+        """
+        async with db_registry.async_session() as session:
+            stmt = (
+                update(FileAgentModel)
+                .where(
+                    and_(
+                        FileAgentModel.agent_id == agent_id,
+                        FileAgentModel.organization_id == actor.organization_id,
+                        FileAgentModel.is_open.is_(True),
+                        # Only add the NOT IN filter when there are names to keep
+                        ~FileAgentModel.file_name.in_(keep_file_names) if keep_file_names else True,
+                    )
+                )
+                .values(is_open=False, visible_content=None)
+                .returning(FileAgentModel.file_name)  # Gets the names we closed
+                .execution_options(synchronize_session=False)  # No need to sync ORM state
+            )
+
+            closed_file_names = [row.file_name for row in (await session.execute(stmt))]
+            await session.commit()
+            return closed_file_names
+
+    @enforce_types
+    @trace_method
     async def enforce_max_open_files_and_open(
         self, *, agent_id: str, file_id: str, file_name: str, actor: PydanticUser, visible_content: str
     ) -> tuple[List[str], bool]:

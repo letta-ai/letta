@@ -10,6 +10,7 @@ import pytest
 from pydantic import BaseModel
 
 from letta.functions.functions import derive_openai_json_schema
+from letta.functions.schema_generator import validate_google_style_docstring
 from letta.llm_api.helpers import convert_to_structured_output, make_post_request
 from letta.schemas.tool import Tool, ToolCreate
 
@@ -477,3 +478,108 @@ def test_valid_schemas_with_pydantic_args_schema(openai_model: str, structured_o
 
     end_time = time.time()
     print(f"Total execution time: {end_time - start_time:.2f} seconds")
+
+
+# Google comment style validation tests
+
+
+# ---------- helpers ----------
+def _check(fn, expected_regex: str | None = None):
+    if expected_regex is None:
+        # should pass
+        validate_google_style_docstring(fn)
+    else:
+        with pytest.raises(ValueError, match=expected_regex):
+            validate_google_style_docstring(fn)
+
+
+# ---------- passing cases ----------
+def good_function(file_requests: list, close_all_others: bool = False) -> str:
+    """Open files.
+
+    Args:
+        file_requests (list): Requests.
+        close_all_others (bool): Flag.
+
+    Returns:
+        str: Status.
+    """
+    return "ok"
+
+
+def good_function_no_return(file_requests: list, close_all_others: bool = False) -> str:
+    """Open files.
+
+    Args:
+        file_requests (list): Requests.
+        close_all_others (bool): Flag.
+    """
+    return "ok"
+
+
+def agent_state_ok(agent_state, value: int) -> str:
+    """Ignores agent_state param.
+
+    Args:
+        value (int): Some value.
+
+    Returns:
+        str: Status.
+    """
+    return "ok"
+
+
+class Dummy:
+    def method(self, bar: int) -> str:  # keeps an explicit self
+        """Bound-method example.
+
+        Args:
+            bar (int): Number.
+
+        Returns:
+            str: Status.
+        """
+        return "ok"
+
+
+# ---------- failing cases ----------
+def no_doc(x: int) -> str:
+    return "fail"
+
+
+def no_args(x: int) -> str:
+    """Missing Args.
+
+    Returns:
+        str: Status.
+    """
+    return "fail"
+
+
+def missing_param_doc(x: int, y: int) -> str:
+    """Only one param documented.
+
+    Args:
+        x (int): X.
+
+    Returns:
+        str: Status.
+    """
+    return "fail"
+
+
+# ---------- parametrized test ----------
+@pytest.mark.parametrize(
+    "fn, regex",
+    [
+        (good_function, None),
+        (agent_state_ok, None),
+        (Dummy.method, None),  # unbound method keeps `self`
+        (good_function_no_return, None),
+        (no_doc, "has no docstring"),
+        (no_args, "must have 'Args:' section"),
+        (missing_param_doc, "parameter 'y' not documented"),
+    ],
+)
+def test_google_style_docstring_validation(fn, regex):
+    _check(fn, regex)
