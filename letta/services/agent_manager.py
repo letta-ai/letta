@@ -2051,7 +2051,11 @@ class AgentManager:
                         except NoResultFound:
                             # Agent might not exist anymore, skip
                             continue
-            session.commit()
+
+            # TODO: @andy/caren
+            # TODO: Ideally we do two no commits on the update_async calls, and then commit here - but that errors for some reason?
+            # TODO: I have too many things rn so lets look at this later
+            # await session.commit()
 
             return await agent.to_pydantic_async()
 
