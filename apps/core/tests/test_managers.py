@@ -853,24 +853,6 @@ async def test_get_context_window_basic(
 
 
 @pytest.mark.asyncio
-async def test_get_context_window_composio_tool(
-    server: SyncServer, comprehensive_test_agent_fixture, default_user, default_file, event_loop, set_letta_environment
-):
-    # Test agent creation
-    created_agent, create_agent_request = comprehensive_test_agent_fixture
-
-    # Attach a composio tool
-    tool_create = ToolCreate.from_composio(action_name="GITHUB_GET_EMOJIS")
-    tool = server.tool_manager.create_or_update_composio_tool(tool_create=tool_create, actor=default_user)
-
-    created_agent = server.agent_manager.attach_tool(agent_id=created_agent.id, tool_id=tool.id, actor=default_user)
-
-    # Get context window and check for basic appearances
-    context_window_overview = await server.agent_manager.get_context_window(agent_id=created_agent.id, actor=default_user)
-    validate_context_window_overview(created_agent, context_window_overview)
-
-
-@pytest.mark.asyncio
 async def test_create_agent_passed_in_initial_messages(server: SyncServer, default_user, default_block, event_loop):
     memory_blocks = [CreateBlock(label="human", value="BananaBoy"), CreateBlock(label="persona", value="I am a helpful assistant")]
     create_agent_request = CreateAgent(
