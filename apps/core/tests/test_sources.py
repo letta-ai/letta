@@ -158,6 +158,7 @@ def test_auto_attach_detach_files_tools(client: LettaSDKClient):
         ("tests/data/data_structures.cpp", "BinarySearchTree", r"data_structures_[a-z0-9]+\.cpp"),
         ("tests/data/api_server.go", "UserService", r"api_server_[a-z0-9]+\.go"),
         ("tests/data/data_analysis.py", "StatisticalAnalyzer", r"data_analysis_[a-z0-9]+\.py"),
+        ("tests/data/test.csv", "Smart Fridge Plus", r"test_[a-z0-9]+\.csv"),
     ],
 )
 def test_file_upload_creates_source_blocks_correctly(

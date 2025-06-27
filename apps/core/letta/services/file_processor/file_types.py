@@ -49,6 +49,7 @@ class FileTypeRegistry:
         self.register(".markdown", "text/markdown", True, "Markdown document", ChunkingStrategy.DOCUMENTATION)
         self.register(".json", "application/json", True, "JSON data file", ChunkingStrategy.STRUCTURED_DATA)
         self.register(".jsonl", "application/jsonl", True, "JSON Lines file", ChunkingStrategy.STRUCTURED_DATA)
+        self.register(".csv", "text/csv", True, "CSV data file", ChunkingStrategy.STRUCTURED_DATA)
 
         # Programming languages
         self.register(".py", "text/x-python", True, "Python source code", ChunkingStrategy.CODE)
@@ -137,6 +138,7 @@ class FileTypeRegistry:
         mimetypes.add_type("text/x-markdown", ".md")
         mimetypes.add_type("application/x-jsonlines", ".jsonl")
         mimetypes.add_type("text/xml", ".xml")
+        mimetypes.add_type("text/csv", ".csv")
 
     def get_allowed_media_types(self) -> Set[str]:
         """
