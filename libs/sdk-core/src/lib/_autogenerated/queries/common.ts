@@ -1384,6 +1384,7 @@ export const UseStepsServiceListStepsKeyFn = (
     before,
     endDate,
     feedback,
+    hasFeedback,
     limit,
     model,
     order,
@@ -1397,6 +1398,7 @@ export const UseStepsServiceListStepsKeyFn = (
     before?: string;
     endDate?: string;
     feedback?: 'positive' | 'negative';
+    hasFeedback?: boolean;
     limit?: number;
     model?: string;
     order?: string;
@@ -1415,6 +1417,7 @@ export const UseStepsServiceListStepsKeyFn = (
       before,
       endDate,
       feedback,
+      hasFeedback,
       limit,
       model,
       order,

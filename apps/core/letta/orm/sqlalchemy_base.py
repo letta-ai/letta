@@ -183,6 +183,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         identifier_keys: Optional[List[str]] = None,
         identity_id: Optional[str] = None,
         query_options: Sequence[ORMOption] | None = None,  # ← new
+        has_feedback: Optional[bool] = None,
         **kwargs,
     ) -> List["SqlalchemyBase"]:
         """
@@ -281,6 +282,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         identifier_keys: Optional[List[str]] = None,
         identity_id: Optional[str] = None,
         check_is_deleted: bool = False,
+        has_feedback: Optional[bool] = None,
         **kwargs,
     ):
         """
@@ -336,6 +338,13 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             query = query.filter(cls.created_at > start_date)
         if end_date:
             query = query.filter(cls.created_at < end_date)
+
+        # Feedback filtering
+        if has_feedback is not None and hasattr(cls, "feedback"):
+            if has_feedback:
+                query = query.filter(cls.feedback.isnot(None))
+            else:
+                query = query.filter(cls.feedback.is_(None))
 
         # Handle pagination based on before/after
         if before_obj or after_obj:

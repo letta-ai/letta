@@ -6631,6 +6631,24 @@
             "description": "Filter by feedback"
           },
           {
+            "name": "has_feedback",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by whether steps have feedback (true) or not (false)",
+              "title": "Has Feedback"
+            },
+            "description": "Filter by whether steps have feedback (true) or not (false)"
+          },
+          {
             "name": "tags",
             "in": "query",
             "required": false,

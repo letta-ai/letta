@@ -6200,6 +6200,19 @@ async def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, def
     steps = await step_manager.list_steps_async(agent_id=sarah_agent.id, actor=default_user)
     assert len(steps) == 2
 
+    # add step feedback
+    step_manager = server.step_manager
+
+    # Add feedback to first step
+    await step_manager.add_feedback_async(step_id=steps[0].id, feedback="positive", actor=default_user)
+
+    # Test has_feedback filtering
+    steps_with_feedback = await step_manager.list_steps_async(agent_id=sarah_agent.id, has_feedback=True, actor=default_user)
+    assert len(steps_with_feedback) == 1
+
+    steps_without_feedback = await step_manager.list_steps_async(agent_id=sarah_agent.id, actor=default_user)
+    assert len(steps_without_feedback) == 2
+
 
 def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):
     """Test getting usage statistics for a nonexistent job."""

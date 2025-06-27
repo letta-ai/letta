@@ -3768,6 +3768,7 @@ export class StepsService {
    * @param data.agentId Filter by the ID of the agent that performed the step
    * @param data.traceIds Filter by trace ids returned by the server
    * @param data.feedback Filter by feedback
+   * @param data.hasFeedback Filter by whether steps have feedback (true) or not (false)
    * @param data.tags Filter by tags
    * @param data.userId
    * @returns Step Successful Response
@@ -3791,6 +3792,7 @@ export class StepsService {
         agent_id: data.agentId,
         trace_ids: data.traceIds,
         feedback: data.feedback,
+        has_feedback: data.hasFeedback,
         tags: data.tags,
       },
       errors: {

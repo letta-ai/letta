@@ -8574,6 +8574,13 @@ export const get_List_steps = {
           ),
         ])
         .optional(),
+      has_feedback: z
+        .union([
+          z.boolean(),
+          z.null(),
+          z.array(z.union([z.boolean(), z.null()])),
+        ])
+        .optional(),
       tags: z
         .union([
           z.array(z.string()),

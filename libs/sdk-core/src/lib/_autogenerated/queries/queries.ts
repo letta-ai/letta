@@ -2308,6 +2308,7 @@ export const useRunsServiceListRunSteps = <
  * @param data.agentId Filter by the ID of the agent that performed the step
  * @param data.traceIds Filter by trace ids returned by the server
  * @param data.feedback Filter by feedback
+ * @param data.hasFeedback Filter by whether steps have feedback (true) or not (false)
  * @param data.tags Filter by tags
  * @param data.userId
  * @returns Step Successful Response
@@ -2324,6 +2325,7 @@ export const useStepsServiceListSteps = <
     before,
     endDate,
     feedback,
+    hasFeedback,
     limit,
     model,
     order,
@@ -2337,6 +2339,7 @@ export const useStepsServiceListSteps = <
     before?: string;
     endDate?: string;
     feedback?: 'positive' | 'negative';
+    hasFeedback?: boolean;
     limit?: number;
     model?: string;
     order?: string;
@@ -2356,6 +2359,7 @@ export const useStepsServiceListSteps = <
         before,
         endDate,
         feedback,
+        hasFeedback,
         limit,
         model,
         order,
@@ -2373,6 +2377,7 @@ export const useStepsServiceListSteps = <
         before,
         endDate,
         feedback,
+        hasFeedback,
         limit,
         model,
         order,

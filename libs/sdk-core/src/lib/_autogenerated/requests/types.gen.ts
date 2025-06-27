@@ -5770,6 +5770,10 @@ export type ListStepsData = {
    */
   feedback?: 'positive' | 'negative' | null;
   /**
+   * Filter by whether steps have feedback (true) or not (false)
+   */
+  hasFeedback?: boolean | null;
+  /**
    * Maximum number of steps to return
    */
   limit?: number | null;
