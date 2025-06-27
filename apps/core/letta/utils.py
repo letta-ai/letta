@@ -531,6 +531,10 @@ def enforce_types(func):
             elif origin is list and isinstance(value, list):  # Handle List[T]
                 element_type = args[0] if args else None
                 return all(isinstance(v, element_type) for v in value) if element_type else True
+            elif origin is not None and (
+                str(origin).endswith("Literal") or getattr(origin, "_name", None) == "Literal"
+            ):  # Handle Literal types
+                return value in args
             elif origin:  # Handle other generics like Dict, Tuple, etc.
                 return isinstance(value, origin)
             else:  # Handle non-generic types

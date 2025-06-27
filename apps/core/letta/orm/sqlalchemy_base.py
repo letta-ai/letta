@@ -243,6 +243,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             join_conditions=join_conditions,
             identifier_keys=identifier_keys,
             identity_id=identity_id,
+            has_feedback=has_feedback,
             **kwargs,
         )
         if query_options:
