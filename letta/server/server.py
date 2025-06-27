@@ -1496,7 +1496,7 @@ class SyncServer(Server):
             await self.agent_manager.attach_block_async(agent_id=main_agent.id, block_id=block.id, actor=actor)
 
         if clear_history and block.value != "":
-            block = await self.block_manager.update_block_async(block_id=block.id, block=BlockUpdate(value=""))
+            block = await self.block_manager.update_block_async(block_id=block.id, block_update=BlockUpdate(value=""), actor=actor)
 
         request = CreateAgent(
             name=main_agent.name + "-doc-sleeptime",
