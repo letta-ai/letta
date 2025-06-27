@@ -17,6 +17,7 @@ import { VStack } from '../../framing/VStack/VStack';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Button } from '../../core/Button/Button';
 import {
+  CancelIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   ImagesModeIcon,
@@ -114,6 +115,7 @@ interface ChatInputProps {
     role: RoleOption,
     content: LettaUserMessageContentUnion[] | string,
   ) => void;
+  onStopMessage?: () => void;
   isSendingMessage: boolean;
   disabled?: boolean;
   hasFailedToSendMessageText?: React.ReactNode;
@@ -223,6 +225,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
   function ChatInput(props: ChatInputProps, ref) {
     const {
       onSendMessage,
+      onStopMessage,
       disabled,
       roles,
       getSendSnippet,
@@ -382,6 +385,12 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
         onSendMessage(role, createContentFromChatInput(text, images));
       }
     }, [isSendingMessage, disabled, text, onSendMessage, role, images]);
+
+    const handleStopMessage = useCallback(() => {
+      if (onStopMessage) {
+        onStopMessage();
+      }
+    }, [onStopMessage]);
 
     const handleKeyPress = useCallback(
       (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -547,21 +556,34 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                       roles={roles}
                       disabled={disabled || isDraggedOver}
                     />
-                    <Button
-                      data-testid="chat-simulator-send"
-                      type="submit"
-                      color="primary"
-                      preIcon={<SendIcon />}
-                      disabled={
-                        isSendingMessage ||
-                        disabled ||
-                        isDraggedOver ||
-                        hasImageErrors
-                      }
-                      label={t('send')}
-                      hideLabel
-                      square={true}
-                    />
+                    {isSendingMessage ? (
+                      <Button
+                        data-testid="chat-simulator-stop"
+                        type="button"
+                        color="secondary"
+                        preIcon={<CancelIcon />}
+                        onClick={handleStopMessage}
+                        disabled={disabled || isDraggedOver}
+                        label={t('stop')}
+                        hideLabel
+                        square={true}
+                      />
+                    ) : (
+                      <Button
+                        data-testid="chat-simulator-send"
+                        type="submit"
+                        color="primary"
+                        preIcon={<SendIcon />}
+                        disabled={
+                          disabled ||
+                          isDraggedOver ||
+                          hasImageErrors
+                        }
+                        label={t('send')}
+                        hideLabel
+                        square={true}
+                      />
+                    )}
                   </HStack>
                 </HStack>
               </HStack>
@@ -591,15 +613,28 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                   placeholder={t('placeholder')}
                 />
               </HStack>
-              <Button
-                data-testid="chat-simulator-send"
-                type="submit"
-                color="secondary"
-                hideLabel
-                preIcon={<SendIcon />}
-                disabled={isSendingMessage || disabled}
-                label={t('send')}
-              />
+              {isSendingMessage ? (
+                <Button
+                  data-testid="chat-simulator-stop"
+                  type="button"
+                  color="secondary"
+                  hideLabel
+                  preIcon={<CancelIcon />}
+                  onClick={handleStopMessage}
+                  disabled={disabled}
+                  label={t('stop')}
+                />
+              ) : (
+                <Button
+                  data-testid="chat-simulator-send"
+                  type="submit"
+                  color="secondary"
+                  hideLabel
+                  preIcon={<SendIcon />}
+                  disabled={disabled}
+                  label={t('send')}
+                />
+              )}
             </HStack>
           </VisibleOnMobile>
         </VStack>

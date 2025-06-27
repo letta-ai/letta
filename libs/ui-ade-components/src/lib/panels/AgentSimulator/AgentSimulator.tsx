@@ -470,7 +470,14 @@ export function useSendMessage(
     [agentId, baseUrl, isLocal, options, password, queryClient, setIsPending],
   );
 
-  return { isPending, isError: failedToSendMessage, sendMessage, errorCode };
+  const stopMessage = useCallback(() => {
+    if (abortController.current) {
+      abortController.current.abort();
+      setIsPending(false);
+    }
+  }, [setIsPending]);
+
+  return { isPending, isError: failedToSendMessage, sendMessage, stopMessage, errorCode };
 }
 
 interface ChatroomContextType {
@@ -922,6 +929,7 @@ export function AgentSimulator() {
 
   const {
     sendMessage,
+    stopMessage,
     isError: hasFailedToSendMessage,
     isPending,
     errorCode,
@@ -1176,6 +1184,7 @@ export function AgentSimulator() {
                 ) => {
                   sendMessage({ role, content });
                 }}
+                onStopMessage={stopMessage}
                 isSendingMessage={isPending}
               />
             </VStack>

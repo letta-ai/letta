@@ -793,6 +793,7 @@
     },
     "placeholder": "Type a message...",
     "send": "Send",
+    "stop": "Stop",
     "role": {
       "label": "Click here to switch roles, the current role is {role}"
     },
