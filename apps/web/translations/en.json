@@ -1520,7 +1520,8 @@
   "pages/projects/observability/ActiveAgentChart": {
     "title": "Active agents",
     "info": "This chart shows the number of agents that were active on a given day. It is segemented on new agents (first time active) and returning agents (active after their first time).",
-    "tooltip": "{newAgents} new agents, {returningAgents} returning agents"
+    "tooltip": "{newAgents} new agents, {returningAgents} returning agents",
+    "viewAgents": "View agents"
   },
   "pages/projects/observability/ObservabilityHeader": {
     "root": "All charts",

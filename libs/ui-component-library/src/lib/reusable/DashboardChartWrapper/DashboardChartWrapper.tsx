@@ -13,10 +13,12 @@ interface DashboardChartWrapperProps {
   isLoading?: boolean;
   isEmpty?: boolean;
   analysisLink?: string;
+  headerActions?: React.ReactNode;
 }
 
 export function DashboardChartWrapper(props: DashboardChartWrapperProps) {
-  const { title, children, isEmpty, isLoading, analysisLink } = props;
+  const { title, children, isEmpty, isLoading, analysisLink, headerActions } =
+    props;
   const t = useTranslations('components/DashboardChartWrapper');
 
   return (
@@ -31,6 +33,7 @@ export function DashboardChartWrapper(props: DashboardChartWrapperProps) {
           {title}
         </Typography>
         <HStack>
+          {headerActions}
           {analysisLink && (
             <Button
               label={t('explore')}

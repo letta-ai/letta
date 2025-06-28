@@ -5,11 +5,15 @@ import {
   Chart,
   DashboardChartWrapper,
   makeFormattedTooltip,
+  Button,
+  ExternalLinkIcon,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { get } from 'lodash-es';
 import { useObservabilitySeriesData } from '../../hooks/useObservabilitySeriesData/useObservabilitySeriesData';
 import { useObservabilityContext } from '../../hooks/useObservabilityContext/useObservabilityContext';
+import { useMemo } from 'react';
+import { useParams } from 'next/navigation';
 
 interface TimeToFirstTokenChartProps {
   analysisLink?: string;
@@ -19,6 +23,7 @@ export function APIErrorsChart(props: TimeToFirstTokenChartProps) {
   const { startDate, endDate, baseTemplateId } = useObservabilityContext();
   const { analysisLink } = props;
   const { id: projectId } = useCurrentProject();
+  const { projectSlug } = useParams<{ projectSlug: string }>();
 
   const t = useTranslations('pages/projects/observability/APIErrorsChart');
 
@@ -39,6 +44,36 @@ export function APIErrorsChart(props: TimeToFirstTokenChartProps) {
     },
   });
 
+  // Create the URL for API error responses using project slug
+  const apiErrorResponsesUrl = useMemo(() => {
+    const query = {
+      root: {
+        combinator: 'AND',
+        items: [
+          {
+            field: 'statusCode',
+            queryData: {
+              operator: {
+                label: 'is',
+                value: 'eq',
+              },
+              value: {
+                label: 'API error',
+                value: 'api_error',
+              },
+            },
+          },
+        ],
+      },
+    };
+
+    // Encode and then manually fix the + encoding for "API error"
+    let encodedQuery = encodeURIComponent(JSON.stringify(query));
+    encodedQuery = encodedQuery.replace('API%20error', 'API+error');
+
+    return `/projects/${projectSlug}/responses?query=${encodedQuery}`;
+  }, [projectSlug]);
+
   const tableOptions = useObservabilitySeriesData({
     seriesData: [
       {
@@ -56,6 +91,17 @@ export function APIErrorsChart(props: TimeToFirstTokenChartProps) {
       analysisLink={analysisLink}
       title={t('title')}
       isLoading={!data}
+      headerActions={
+        <Button
+          label="View API Errors"
+          color="tertiary"
+          size="xsmall"
+          href={apiErrorResponsesUrl}
+          target="_blank"
+          postIcon={<ExternalLinkIcon />}
+          hideLabel
+        />
+      }
     >
       <Chart
         options={{

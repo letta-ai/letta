@@ -5,11 +5,15 @@ import {
   Chart,
   DashboardChartWrapper,
   makeFormattedTooltip,
+  Button,
+  ExternalLinkIcon,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { get } from 'lodash-es';
 import { useObservabilitySeriesData } from '../../hooks/useObservabilitySeriesData/useObservabilitySeriesData';
 import { useObservabilityContext } from '../../hooks/useObservabilityContext/useObservabilityContext';
+import { useMemo } from 'react';
+import { useParams } from 'next/navigation';
 
 interface TimeToFirstTokenChartProps {
   analysisLink?: string;
@@ -19,6 +23,7 @@ export function ToolErrorsChart(props: TimeToFirstTokenChartProps) {
   const { startDate, endDate, baseTemplateId } = useObservabilityContext();
   const { analysisLink } = props;
   const { id: projectId } = useCurrentProject();
+  const { projectSlug } = useParams<{ projectSlug: string }>();
 
   const t = useTranslations('pages/projects/observability/ToolErrorsChart');
 
@@ -39,6 +44,36 @@ export function ToolErrorsChart(props: TimeToFirstTokenChartProps) {
     },
   });
 
+  // Create the URL for tool error responses using project slug
+  const toolErrorResponsesUrl = useMemo(() => {
+    const query = {
+      root: {
+        combinator: 'AND',
+        items: [
+          {
+            field: 'statusCode',
+            queryData: {
+              operator: {
+                label: 'is',
+                value: 'eq',
+              },
+              value: {
+                label: 'tool error',
+                value: 'tool_error',
+              },
+            },
+          },
+        ],
+      },
+    };
+
+    // Encode and then manually fix the + encoding
+    let encodedQuery = encodeURIComponent(JSON.stringify(query));
+    encodedQuery = encodedQuery.replace('tool%20error', 'tool+error');
+
+    return `/projects/${projectSlug}/responses?query=${encodedQuery}`;
+  }, [projectSlug]);
+
   const tableOptions = useObservabilitySeriesData({
     seriesData: [
       {
@@ -56,6 +91,17 @@ export function ToolErrorsChart(props: TimeToFirstTokenChartProps) {
       analysisLink={analysisLink}
       title={t('title')}
       isLoading={!data}
+      headerActions={
+        <Button
+          label="View Tool Errors"
+          color="tertiary"
+          size="xsmall"
+          href={toolErrorResponsesUrl}
+          target="_blank"
+          preIcon={<ExternalLinkIcon />}
+          hideLabel
+        />
+      }
     >
       <Chart
         options={{
@@ -77,7 +123,6 @@ export function ToolErrorsChart(props: TimeToFirstTokenChartProps) {
               return makeFormattedTooltip({
                 label: t('tooltip'),
                 date: date,
-
                 value: `${value || 0}`,
               });
             },

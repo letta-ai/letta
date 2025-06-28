@@ -5,18 +5,35 @@ import {
   Chart,
   DashboardChartWrapper,
   makeFormattedTooltip,
+  Button,
+  ExternalLinkIcon,
 } from '@letta-cloud/ui-component-library';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
 import { get } from 'lodash-es';
 import { useObservabilitySeriesData } from '../../hooks/useObservabilitySeriesData/useObservabilitySeriesData';
 import { useObservabilityContext } from '../../hooks/useObservabilityContext/useObservabilityContext';
+import { useMemo } from 'react';
 
 export function ActiveAgentChart() {
-  const { id: projectId } = useCurrentProject();
+  const { id: projectId, slug } = useCurrentProject();
   const { startDate, endDate, baseTemplateId } = useObservabilityContext();
 
   const t = useTranslations('pages/projects/observability/ActiveAgentChart');
+
+  // Get template details if baseTemplateId is set
+  const { data: templateData } =
+    webApi.agentTemplates.getAgentTemplateById.useQuery({
+      queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateById(
+        baseTemplateId?.value || '',
+      ),
+      queryData: {
+        params: {
+          id: baseTemplateId?.value || '',
+        },
+      },
+      enabled: !!baseTemplateId?.value,
+    });
 
   const { data } = webApi.observability.getActiveAgentsPerDay.useQuery({
     queryKey: webApiQueryKeys.observability.getActiveAgentsPerDay({
@@ -54,8 +71,71 @@ export function ActiveAgentChart() {
 
   const { formatNumber } = useFormatters();
 
+  // Build the agents URL with template filter if present
+  const agentsUrl = useMemo(() => {
+    const baseUrl = `/projects/${slug}/agents`;
+
+    if (!baseTemplateId?.value || !templateData?.body) {
+      // No template filter - link to agents page with default query showing "Any Template Family"
+      const query = {
+        root: {
+          combinator: 'AND',
+          items: [
+            {
+              field: 'templateName',
+              queryData: {
+                operator: { label: 'equals', value: 'eq' },
+                value: {
+                  label: '(Any Template Family)',
+                  value: '',
+                },
+              },
+            },
+          ],
+        },
+      };
+      return `${baseUrl}?query=${encodeURIComponent(JSON.stringify(query))}`;
+    }
+
+    // Template is selected - use the template name as the family filter
+    const templateName = templateData.body.name;
+    const query = {
+      root: {
+        combinator: 'AND',
+        items: [
+          {
+            field: 'templateName',
+            queryData: {
+              operator: { label: 'equals', value: 'eq' },
+              value: {
+                label: templateName,
+                value: baseTemplateId.value, // Use the template ID as the value
+              },
+            },
+          },
+        ],
+      },
+    };
+
+    return `${baseUrl}?query=${encodeURIComponent(JSON.stringify(query))}`;
+  }, [slug, baseTemplateId?.value, templateData?.body]);
+
   return (
-    <DashboardChartWrapper title={t('title')} isLoading={!data}>
+    <DashboardChartWrapper
+      title={t('title')}
+      isLoading={!data}
+      headerActions={
+        <Button
+          label="View Agents"
+          color="tertiary"
+          size="xsmall"
+          href={agentsUrl}
+          target="_blank"
+          postIcon={<ExternalLinkIcon />}
+          hideLabel
+        />
+      }
+    >
       <Chart
         options={{
           ...tableOptions,
