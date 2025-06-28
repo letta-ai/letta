@@ -194,7 +194,7 @@ function ToolRuleItemWrapper(props: ToolRuleItemWrapperProps) {
 
 // Editor Components
 interface ToolEditorDefaultProps {
-  onSubmit: (data: SupportedToolRuleTypes) => void;
+  onSubmit: (data: SupportedToolRuleTypes | SupportedToolRuleTypes[]) => void;
   onRemove: () => void;
 }
 
@@ -592,22 +592,26 @@ function ConditionalToolEditor(props: ConditionalToolEditorProps) {
 // Continue Tool Rule Editor
 interface ContinueToolRuleEditorProps extends ToolEditorDefaultProps {
   defaultRule: ContinueToolRule;
+  allContinueLoopRules?: ContinueToolRule[];
 }
 
 const continueLoopToolRuleSchema = z.object({
-  toolName: z.string(),
+  toolNames: z.array(z.string()),
   type: z.literal('continue_loop'),
 });
 
-type ContinueToolRuleRule = z.infer<typeof continueLoopToolRuleSchema>;
+type ContinueToolRuleFormData = z.infer<typeof continueLoopToolRuleSchema>;
 
 function ContinueToolRuleComponent(props: ContinueToolRuleEditorProps) {
-  const { defaultRule, onRemove, onSubmit } = props;
+  const { defaultRule: _defaultRule, onRemove, onSubmit, allContinueLoopRules = [] } = props;
 
-  const form = useForm<ContinueToolRuleRule>({
+  // Get all tool names that are currently in continue_loop rules
+  const currentToolNames = allContinueLoopRules.map(rule => rule.tool_name);
+
+  const form = useForm<ContinueToolRuleFormData>({
     resolver: zodResolver(continueLoopToolRuleSchema),
     defaultValues: {
-      toolName: defaultRule.tool_name,
+      toolNames: currentToolNames.filter(name => name !== ''), // Only include non-empty tool names
       type: 'continue_loop',
     },
   });
@@ -615,13 +619,20 @@ function ContinueToolRuleComponent(props: ContinueToolRuleEditorProps) {
   const t = useTranslations('ADE/ToolRules');
 
   const handleSubmit = useCallback(
-    (data: ContinueToolRuleRule) => {
-      onSubmit({
-        tool_name: data.toolName,
-        type: 'continue_loop',
-      });
+    (data: ContinueToolRuleFormData) => {
+      // Create multiple rules, one for each selected tool
+      // If no tools selected, create a single empty rule
+      const rules = data.toolNames.length > 0 
+        ? data.toolNames.map(toolName => ({
+            tool_name: toolName,
+            type: 'continue_loop' as const,
+          }))
+        : [{ tool_name: '', type: 'continue_loop' as const }];
+      
+      // Submit all rules at once
+      onSubmit(rules);
       form.reset({
-        toolName: data.toolName,
+        toolNames: data.toolNames,
         type: 'continue_loop',
       });
     },
@@ -629,30 +640,28 @@ function ContinueToolRuleComponent(props: ContinueToolRuleEditorProps) {
   );
 
   return (
-    <FormProvider {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)}>
-        <ToolRuleItemWrapper
-          isValid={form.formState.isValid}
-          isDirty={form.formState.isDirty}
-          type="continue_loop"
-          onRemove={onRemove}
-        >
+    <>
+      <FormProvider {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)}>
+          <ToolRuleItemWrapper
+            isValid={form.formState.isValid}
+            isDirty={form.formState.isDirty}
+            type="continue_loop"
+            onRemove={onRemove}
+          >
           <FormField
-            name="toolName"
+            name="toolNames"
             render={({ field }) => (
               <HStack align="center">
                 {t.rich('ContinueToolRule.sentence', {
                   tool: () => (
                     <Select
                       label={t('ContinueToolRule.toolName')}
-                      value={
-                        field.value
-                          ? {
-                              value: field.value,
-                              label: field.value,
-                            }
-                          : undefined
-                      }
+                      value={(field.value as string[]).map(toolName => ({
+                        value: toolName,
+                        label: toolName,
+                      }))}
+                      isMulti
                       inline
                       hideLabel
                       placeholder={t('ContinueToolRule.toolName')}
@@ -662,9 +671,10 @@ function ContinueToolRuleComponent(props: ContinueToolRuleEditorProps) {
                       }))}
                       onSelect={(value) => {
                         if (isMultiValue(value)) {
+                          field.onChange(value.map(v => v.value));
                           return;
                         }
-                        field.onChange(value?.value);
+                        return;
                       }}
                     />
                   ),
@@ -672,31 +682,36 @@ function ContinueToolRuleComponent(props: ContinueToolRuleEditorProps) {
               </HStack>
             )}
           />
-        </ToolRuleItemWrapper>
-      </form>
-    </FormProvider>
+          </ToolRuleItemWrapper>
+        </form>
+      </FormProvider>
+    </>
   );
 }
 
 // Exit Loop Tool Editor
 interface ExitLoopToolEditorProps extends ToolEditorDefaultProps {
   defaultRule: TerminalToolRule;
+  allExitLoopRules?: TerminalToolRule[];
 }
 
 const exitLoopToolRuleSchema = z.object({
-  toolName: z.string(),
+  toolNames: z.array(z.string()),
   type: z.literal('exit_loop'),
 });
 
-type ExitLoopToolRule = z.infer<typeof exitLoopToolRuleSchema>;
+type ExitLoopToolRuleFormData = z.infer<typeof exitLoopToolRuleSchema>;
 
 function ExitLoopToolEditor(props: ExitLoopToolEditorProps) {
-  const { defaultRule, onRemove, onSubmit } = props;
+  const { defaultRule: _defaultRule, onRemove, onSubmit, allExitLoopRules = [] } = props;
 
-  const form = useForm<ExitLoopToolRule>({
+  // Get all tool names that are currently in exit_loop rules
+  const currentToolNames = allExitLoopRules.map(rule => rule.tool_name);
+
+  const form = useForm<ExitLoopToolRuleFormData>({
     resolver: zodResolver(exitLoopToolRuleSchema),
     defaultValues: {
-      toolName: defaultRule.tool_name,
+      toolNames: currentToolNames.filter(name => name !== ''), // Only include non-empty tool names
       type: 'exit_loop',
     },
   });
@@ -704,13 +719,20 @@ function ExitLoopToolEditor(props: ExitLoopToolEditorProps) {
   const t = useTranslations('ADE/ToolRules');
 
   const handleSubmit = useCallback(
-    (data: ExitLoopToolRule) => {
-      onSubmit({
-        tool_name: data.toolName,
-        type: 'exit_loop',
-      });
+    (data: ExitLoopToolRuleFormData) => {
+      // Create multiple rules, one for each selected tool
+      // If no tools selected, create a single empty rule
+      const rules = data.toolNames.length > 0 
+        ? data.toolNames.map(toolName => ({
+            tool_name: toolName,
+            type: 'exit_loop' as const,
+          }))
+        : [{ tool_name: '', type: 'exit_loop' as const }];
+      
+      // Submit all rules at once
+      onSubmit(rules);
       form.reset({
-        toolName: data.toolName,
+        toolNames: data.toolNames,
         type: 'exit_loop',
       });
     },
@@ -718,30 +740,28 @@ function ExitLoopToolEditor(props: ExitLoopToolEditorProps) {
   );
 
   return (
-    <FormProvider {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)}>
-        <ToolRuleItemWrapper
-          isValid={form.formState.isValid}
-          isDirty={form.formState.isDirty}
-          type="exit_loop"
-          onRemove={onRemove}
-        >
+    <>
+      <FormProvider {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)}>
+          <ToolRuleItemWrapper
+            isValid={form.formState.isValid}
+            isDirty={form.formState.isDirty}
+            type="exit_loop"
+            onRemove={onRemove}
+          >
           <FormField
-            name="toolName"
+            name="toolNames"
             render={({ field }) => (
               <HStack align="center">
                 {t.rich('ExitLoopToolEditor.sentence', {
                   tool: () => (
                     <Select
                       label={t('ExitLoopToolEditor.toolName')}
-                      value={
-                        field.value
-                          ? {
-                              value: field.value,
-                              label: field.value,
-                            }
-                          : undefined
-                      }
+                      value={(field.value as string[]).map(toolName => ({
+                        value: toolName,
+                        label: toolName,
+                      }))}
+                      isMulti
                       inline
                       hideLabel
                       placeholder={t('ExitLoopToolEditor.toolName')}
@@ -751,9 +771,10 @@ function ExitLoopToolEditor(props: ExitLoopToolEditorProps) {
                       }))}
                       onSelect={(value) => {
                         if (isMultiValue(value)) {
+                          field.onChange(value.map(v => v.value));
                           return;
                         }
-                        field.onChange(value?.value);
+                        return;
                       }}
                     />
                   ),
@@ -761,9 +782,10 @@ function ExitLoopToolEditor(props: ExitLoopToolEditorProps) {
               </HStack>
             )}
           />
-        </ToolRuleItemWrapper>
-      </form>
-    </FormProvider>
+          </ToolRuleItemWrapper>
+        </form>
+      </FormProvider>
+    </>
   );
 }
 
@@ -1123,7 +1145,32 @@ export function ToolRulesList(props: ToolRulesListProps) {
   );
 
   const filteredRules = useMemo(() => {
-    return toolRules.filter((rule) => {
+    // Filter out unsupported rule types first
+    const supportedRules = toolRules.filter((rule): rule is SupportedToolRuleTypes => {
+      return !!rule.type && [
+        'continue_loop', 'exit_loop', 'run_first', 'constrain_child_tools',
+        'conditional', 'max_count_per_step', 'required_before_exit'
+      ].includes(rule.type);
+    });
+    
+    // Group rules by type for continue_loop and exit_loop
+    const grouped = supportedRules.reduce((acc, rule, index) => {
+      if (rule.type === 'continue_loop' || rule.type === 'exit_loop') {
+        // For these types, always show as grouped - only keep the first occurrence in the UI
+        if (!acc.find(item => item.rule.type === rule.type)) {
+          acc.push({ rule, index, isGrouped: true });
+        }
+      } else {
+        // For other types, keep all rules
+        acc.push({ rule, index, isGrouped: false });
+      }
+      
+      return acc;
+    }, [] as Array<{ rule: SupportedToolRuleTypes; index: number; isGrouped: boolean }>);
+    
+    // Filter based on search (skip search filter for empty tool names to allow new rules to show)
+    return grouped.filter(({ rule }) => {
+      if (rule.tool_name === '') return true; // Always show new empty rules
       return rule.tool_name.toLowerCase().includes(search.toLowerCase());
     });
   }, [search, toolRules]);
@@ -1188,19 +1235,53 @@ export function ToolRulesList(props: ToolRulesListProps) {
 
   const handleRemoveRule = useCallback((index: number) => {
     setToolRules((prev) => {
+      const ruleToRemove = prev[index];
+      
+      // For continue_loop and exit_loop, remove all rules of the same type
+      if (ruleToRemove.type === 'continue_loop' || ruleToRemove.type === 'exit_loop') {
+        return prev.filter(rule => rule.type !== ruleToRemove.type);
+      }
+      
+      // For other rule types, remove just the single rule
       return prev.filter((_, i) => i !== index);
     });
   }, []);
 
   const handleSaveRule = useCallback(
-    (index: number, rule: SupportedToolRuleTypes) => {
+    (index: number, rule: SupportedToolRuleTypes | SupportedToolRuleTypes[]) => {
       setToolRules((prev) => {
-        return prev.map((item, i) => {
-          if (i === index) {
-            return rule;
+        if (Array.isArray(rule)) {
+          // Handle multiple rules (for continue_loop and exit_loop)
+          const currentRule = prev[index];
+          const ruleType = currentRule.type;
+          
+          // Find the position of the first rule of this type to maintain order
+          const firstRuleIndex = prev.findIndex(r => r.type === ruleType);
+          
+          // Create new array maintaining order
+          const newRules = [...prev];
+          
+          // Remove all existing rules of the same type
+          for (let i = newRules.length - 1; i >= 0; i--) {
+            if (newRules[i].type === ruleType) {
+              newRules.splice(i, 1);
+            }
           }
-          return item;
-        });
+          
+          // Insert new rules at the original position of the first rule
+          const insertPosition = firstRuleIndex >= 0 ? Math.min(firstRuleIndex, newRules.length) : newRules.length;
+          newRules.splice(insertPosition, 0, ...rule);
+          
+          return newRules;
+        } else {
+          // Handle single rule (existing behavior)
+          return prev.map((item, i) => {
+            if (i === index) {
+              return rule;
+            }
+            return item;
+          });
+        }
       });
     },
     [],
@@ -1237,18 +1318,20 @@ export function ToolRulesList(props: ToolRulesListProps) {
       </HStack>
       <VStack padding collapseHeight flex overflowY="auto">
         <VStack>
-          {filteredRules.map((rule, index) => {
+          {filteredRules.map(({ rule, index }) => {
             if (rule.type === 'exit_loop') {
+              const allExitLoopRules = toolRules.filter(r => r.type === 'exit_loop') as TerminalToolRule[];
               return (
                 <ExitLoopToolEditor
                   onRemove={() => {
                     handleRemoveRule(index);
                   }}
-                  key={index}
+                  key={`exit_loop_group`}
                   onSubmit={(data) => {
                     handleSaveRule(index, data);
                   }}
                   defaultRule={rule}
+                  allExitLoopRules={allExitLoopRules}
                 />
               );
             }
@@ -1314,16 +1397,18 @@ export function ToolRulesList(props: ToolRulesListProps) {
             }
 
             if (rule.type === 'continue_loop') {
+              const allContinueLoopRules = toolRules.filter(r => r.type === 'continue_loop') as ContinueToolRule[];
               return (
                 <ContinueToolRuleComponent
                   onRemove={() => {
                     handleRemoveRule(index);
                   }}
-                  key={index}
+                  key={`continue_loop_group`}
                   onSubmit={(data) => {
                     handleSaveRule(index, data);
                   }}
                   defaultRule={rule}
+                  allContinueLoopRules={allContinueLoopRules}
                 />
               );
             }
