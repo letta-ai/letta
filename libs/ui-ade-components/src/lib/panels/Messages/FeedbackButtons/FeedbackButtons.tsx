@@ -31,13 +31,35 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
 
   const handleAddFeedback = useCallback(
     (feedback: 'negative' | 'positive') => {
+      let previousFeedback: Step['feedback'];
+
+      queryClient.setQueriesData<Step>(
+        {
+          queryKey: UseStepsServiceRetrieveStepKeyFn({
+            stepId,
+          }),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          previousFeedback = oldData.feedback;
+
+          return {
+            ...oldData,
+            feedback,
+          };
+        },
+      );
+
       mutate(
         {
           stepId,
           feedback,
         },
         {
-          onSuccess: () => {
+          onError: () => {
             queryClient.setQueriesData<Step>(
               {
                 queryKey: UseStepsServiceRetrieveStepKeyFn({
@@ -48,15 +70,13 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
                 if (!oldData) {
                   return oldData;
                 }
-
                 return {
                   ...oldData,
-                  feedback,
+                  feedback: previousFeedback,
                 };
               },
             );
-          },
-          onError: () => {
+
             toast.error(t('error'));
           },
         },

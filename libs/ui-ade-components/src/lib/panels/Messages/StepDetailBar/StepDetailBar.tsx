@@ -49,11 +49,23 @@ export function StepDetailBar(props: StepDetailBarProps) {
     <>
       <div
         className={cn(
-          'w-full messages-step-detail justify-between h-[16px] gap-1 items-center flex',
-          showDetails ? 'pt-2' : 'pt-4',
+          'w-full messages-step-detail justify-between h-[16px] gap-1 items-center flex pt-4',
         )}
       >
         <HStack>
+          <Button
+            preIcon={<StepIcon size="auto" />}
+            onClick={() => {
+              setShowDetails(!showDetails);
+            }}
+            size="3xsmall"
+            hideLabel
+            square
+            active={showDetails}
+            _use_rarely_className="text-muted"
+            label={showDetails ? t('details.hide') : t('details.show')}
+            color="tertiary"
+          />
           <Typography
             className="messages-step-detail--timestamp"
             variant="body4"
@@ -77,19 +89,6 @@ export function StepDetailBar(props: StepDetailBarProps) {
           </Typography>
         </HStack>
         <HStack gap="small">
-          <Button
-            preIcon={<StepIcon size="auto" />}
-            onClick={() => {
-              setShowDetails(!showDetails);
-            }}
-            size="3xsmall"
-            hideLabel
-            square
-            active={showDetails}
-            _use_rarely_className="text-muted"
-            label={showDetails ? t('details.hide') : t('details.show')}
-            color="tertiary"
-          />
           <FeedbackButtons stepId={stepId} />
         </HStack>
       </div>

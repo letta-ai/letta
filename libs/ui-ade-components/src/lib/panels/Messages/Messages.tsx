@@ -190,8 +190,10 @@ function Message({ message }: MessageProps) {
     <VStack gap={false} fullWidth>
       <div
         className={cn(
-          'w-full rounded-t-md messages-step',
-          showDetails ? 'bg-background-grey border-t border-x p-2.5 pb-1' : '',
+          'w-full rounded-t-md messages-step border border-transparent',
+          showDetails
+            ? 'bg-background-grey message-step-selected border-border border-t border-x p-2.5  pb-1'
+            : '',
         )}
       >
         {message.content}
