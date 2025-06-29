@@ -15,7 +15,7 @@ from letta.agents.helpers import (
     _create_letta_response,
     _pop_heartbeat,
     _prepare_in_context_messages_no_persist_async,
-    _safe_load_dict,
+    _safe_load_tool_call_str,
     generate_step_id,
 )
 from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX
@@ -944,7 +944,7 @@ class LettaAgent(BaseAgent):
         # 1.  Parse and validate the tool-call envelope
         tool_call_name: str = tool_call.function.name
         tool_call_id: str = tool_call.id or f"call_{uuid.uuid4().hex[:8]}"
-        tool_args = _safe_load_dict(tool_call.function.arguments)
+        tool_args = _safe_load_tool_call_str(tool_call.function.arguments)
         request_heartbeat: bool = _pop_heartbeat(tool_args)
         tool_args.pop(INNER_THOUGHTS_KWARG, None)
 
