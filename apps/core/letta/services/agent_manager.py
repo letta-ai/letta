@@ -779,6 +779,7 @@ class AgentManager:
                 "response_format": agent_update.response_format,
                 "last_run_completion": agent_update.last_run_completion,
                 "last_run_duration_ms": agent_update.last_run_duration_ms,
+                "timezone": agent_update.timezone,
             }
             for col, val in scalar_updates.items():
                 if val is not None:
