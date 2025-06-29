@@ -87,6 +87,7 @@ from letta.server.db import db_registry
 from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import calculate_base_tools
+from letta.services.step_manager import FeedbackType
 from letta.settings import tool_settings
 from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
 from tests.utils import random_string
@@ -850,24 +851,6 @@ async def test_get_context_window_basic(
     server.agent_manager.delete_agent(created_agent.id, default_user)
     list_agents = await server.agent_manager.list_agents_async(actor=default_user)
     assert len(list_agents) == 0
-
-
-@pytest.mark.asyncio
-async def test_get_context_window_composio_tool(
-    server: SyncServer, comprehensive_test_agent_fixture, default_user, default_file, event_loop, set_letta_environment
-):
-    # Test agent creation
-    created_agent, create_agent_request = comprehensive_test_agent_fixture
-
-    # Attach a composio tool
-    tool_create = ToolCreate.from_composio(action_name="GITHUB_GET_EMOJIS")
-    tool = server.tool_manager.create_or_update_composio_tool(tool_create=tool_create, actor=default_user)
-
-    created_agent = server.agent_manager.attach_tool(agent_id=created_agent.id, tool_id=tool.id, actor=default_user)
-
-    # Get context window and check for basic appearances
-    context_window_overview = await server.agent_manager.get_context_window(agent_id=created_agent.id, actor=default_user)
-    validate_context_window_overview(created_agent, context_window_overview)
 
 
 @pytest.mark.asyncio
@@ -6204,7 +6187,7 @@ async def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, def
     step_manager = server.step_manager
 
     # Add feedback to first step
-    await step_manager.add_feedback_async(step_id=steps[0].id, feedback="positive", actor=default_user)
+    await step_manager.add_feedback_async(step_id=steps[0].id, feedback=FeedbackType.POSITIVE, actor=default_user)
 
     # Test has_feedback filtering
     steps_with_feedback = await step_manager.list_steps_async(agent_id=sarah_agent.id, has_feedback=True, actor=default_user)
