@@ -210,17 +210,21 @@ def generate_step_id():
     return f"step-{uuid.uuid4()}"
 
 
-def _safe_load_dict(raw: str) -> dict:
+def _safe_load_tool_call_str(tool_call_args_str: str) -> dict:
     """Lenient JSON → dict with fallback to eval on assertion failure."""
-    if "}{" in raw:  # strip accidental parallel calls
-        raw = raw.split("}{", 1)[0] + "}"
+    # Temp hack to gracefully handle parallel tool calling attempt, only take first one
+    if "}{" in tool_call_args_str:
+        tool_call_args_str = tool_call_args_str.split("}{", 1)[0] + "}"
+
     try:
-        data = json.loads(raw)
-        if not isinstance(data, dict):
-            raise AssertionError
-        return data
-    except (json.JSONDecodeError, AssertionError):
-        return json.loads(raw) if raw else {}
+        tool_args = json.loads(tool_call_args_str)
+        if not isinstance(tool_args, dict):
+            # Load it again - this is due to sometimes Anthropic returning weird json @caren
+            tool_args = json.loads(tool_args)
+    except json.JSONDecodeError:
+        tool_args = {}
+
+    return tool_args
 
 
 def _pop_heartbeat(tool_args: dict) -> bool:
