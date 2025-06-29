@@ -687,6 +687,11 @@ def test_timezone(client: Letta):
         or "PST" in response.messages[1].content
     )
 
+    # test updating the timezone
+    client.agents.modify(agent_id=agent.id, timezone="America/New_York")
+    agent = client.agents.retrieve(agent_id=agent.id)
+    assert agent.timezone == "America/New_York"
+
 
 def test_attach_sleeptime_block(client: Letta):
 
