@@ -34,6 +34,7 @@ from letta.constants import (
     FILES_TOOLS,
     LETTA_TOOL_EXECUTION_DIR,
     LETTA_TOOL_SET,
+    LOCAL_ONLY_MULTI_AGENT_TOOLS,
     MCP_TOOL_TAG_NAME_PREFIX,
     MULTI_AGENT_TOOLS,
 )
@@ -86,7 +87,7 @@ from letta.schemas.user import UserUpdate
 from letta.server.db import db_registry
 from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import calculate_base_tools
+from letta.services.helpers.agent_manager_helper import calculate_base_tools, calculate_multi_agent_tools
 from letta.services.step_manager import FeedbackType
 from letta.settings import tool_settings
 from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
@@ -745,6 +746,71 @@ async def test_create_agent_include_base_tools(server: SyncServer, default_user,
     tool_names = [t.name for t in created_agent.tools]
     expected_tools = calculate_base_tools(is_v2=False)
     assert sorted(tool_names) == sorted(expected_tools)
+
+
+def test_calculate_multi_agent_tools(set_letta_environment):
+    """Test that calculate_multi_agent_tools excludes local-only tools in production."""
+    result = calculate_multi_agent_tools()
+
+    if set_letta_environment == "PRODUCTION":
+        # Production environment should exclude local-only tools
+        expected_tools = set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
+        assert result == expected_tools, "Production should exclude local-only multi-agent tools"
+        assert not set(LOCAL_ONLY_MULTI_AGENT_TOOLS).intersection(result), "Production should not include local-only tools"
+
+        # Verify specific tools
+        assert "send_message_to_agent_and_wait_for_reply" in result, "Standard multi-agent tools should be in production"
+        assert "send_message_to_agents_matching_tags" in result, "Standard multi-agent tools should be in production"
+        assert "send_message_to_agent_async" not in result, "Local-only tools should not be in production"
+    else:
+        # Non-production environment should include all multi-agent tools
+        assert result == set(MULTI_AGENT_TOOLS), "Non-production should include all multi-agent tools"
+        assert set(LOCAL_ONLY_MULTI_AGENT_TOOLS).issubset(result), "Non-production should include local-only tools"
+
+        # Verify specific tools
+        assert "send_message_to_agent_and_wait_for_reply" in result, "All multi-agent tools should be in non-production"
+        assert "send_message_to_agents_matching_tags" in result, "All multi-agent tools should be in non-production"
+        assert "send_message_to_agent_async" in result, "Local-only tools should be in non-production"
+
+
+async def test_upsert_base_tools_excludes_local_only_in_production(server: SyncServer, default_user, set_letta_environment, event_loop):
+    """Test that upsert_base_tools excludes local-only multi-agent tools in production."""
+    # Upsert all base tools
+    tools = await server.tool_manager.upsert_base_tools_async(actor=default_user)
+    tool_names = {tool.name for tool in tools}
+
+    if set_letta_environment == "PRODUCTION":
+        # Production environment should exclude local-only multi-agent tools
+        for local_only_tool in LOCAL_ONLY_MULTI_AGENT_TOOLS:
+            assert local_only_tool not in tool_names, f"Local-only tool '{local_only_tool}' should not be upserted in production"
+
+        # But should include standard multi-agent tools
+        standard_multi_agent_tools = set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
+        for standard_tool in standard_multi_agent_tools:
+            assert standard_tool in tool_names, f"Standard multi-agent tool '{standard_tool}' should be upserted in production"
+    else:
+        # Non-production environment should include all multi-agent tools
+        for tool in MULTI_AGENT_TOOLS:
+            assert tool in tool_names, f"Multi-agent tool '{tool}' should be upserted in non-production"
+
+
+async def test_upsert_multi_agent_tools_only(server: SyncServer, default_user, set_letta_environment, event_loop):
+    """Test that upserting only multi-agent tools respects production filtering."""
+    from letta.orm.enums import ToolType
+
+    # Upsert only multi-agent tools
+    tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_MULTI_AGENT_CORE})
+    tool_names = {tool.name for tool in tools}
+
+    if set_letta_environment == "PRODUCTION":
+        # Should only have non-local multi-agent tools
+        expected_tools = set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
+        assert tool_names == expected_tools, "Production multi-agent upsert should exclude local-only tools"
+        assert "send_message_to_agent_async" not in tool_names, "Local-only async tool should not be upserted in production"
+    else:
+        # Should have all multi-agent tools
+        assert tool_names == set(MULTI_AGENT_TOOLS), "Non-production multi-agent upsert should include all tools"
+        assert "send_message_to_agent_async" in tool_names, "Local-only async tool should be upserted in non-production"
 
 
 @pytest.mark.asyncio

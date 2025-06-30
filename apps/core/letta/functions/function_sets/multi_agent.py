@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING, List
 
@@ -7,6 +8,7 @@ from letta.functions.helpers import (
     _send_message_to_all_agents_in_group_async,
     execute_send_message_to_agent,
     extract_send_message_from_steps_messages,
+    fire_and_forget_send_to_agent,
 )
 from letta.schemas.enums import MessageRole
 from letta.schemas.message import MessageCreate
@@ -125,3 +127,35 @@ def send_message_to_all_agents_in_group(self: "Agent", message: str) -> List[str
     """
 
     return asyncio.run(_send_message_to_all_agents_in_group_async(self, message))
+
+
+def send_message_to_agent_async(self: "Agent", message: str, other_agent_id: str) -> str:
+    """
+    Sends a message to a specific Letta agent within the same organization. The sender's identity is automatically included, so no explicit introduction is required in the message. This function does not expect a response from the target agent, making it suitable for notifications or one-way communication.
+    Args:
+        message (str): The content of the message to be sent to the target agent.
+        other_agent_id (str): The unique identifier of the target Letta agent.
+    Returns:
+        str: A confirmation message indicating the message was successfully sent.
+    """
+    if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
+        raise RuntimeError("This tool is not allowed to be run on Letta Cloud.")
+
+    message = (
+        f"[Incoming message from agent with ID '{self.agent_state.id}' - to reply to this message, "
+        f"make sure to use the 'send_message_to_agent_async' tool, or the agent will not receive your message] "
+        f"{message}"
+    )
+    messages = [MessageCreate(role=MessageRole.system, content=message, name=self.agent_state.name)]
+
+    # Do the actual fire-and-forget
+    fire_and_forget_send_to_agent(
+        sender_agent=self,
+        messages=messages,
+        other_agent_id=other_agent_id,
+        log_prefix="[send_message_to_agent_async]",
+        use_retries=False,  # or True if you want to use _async_send_message_with_retries
+    )
+
+    # Immediately return to caller
+    return "Successfully sent message"

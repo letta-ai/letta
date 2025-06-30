@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from typing import List, Literal, Optional, Set
 
@@ -10,9 +11,11 @@ from letta.constants import (
     BASE_MEMORY_TOOLS,
     BASE_MEMORY_TOOLS_V2,
     BASE_TOOLS,
-    DEPRECATED_BASE_TOOLS,
+    DEPRECATED_LETTA_TOOLS,
     IN_CONTEXT_MEMORY_KEYWORD,
+    LOCAL_ONLY_MULTI_AGENT_TOOLS,
     MAX_EMBEDDING_DIM,
+    MULTI_AGENT_TOOLS,
     STRUCTURED_OUTPUT_MODELS,
 )
 from letta.embeddings import embedding_model
@@ -1050,6 +1053,14 @@ def build_agent_passage_query(
 
 def calculate_base_tools(is_v2: bool) -> Set[str]:
     if is_v2:
-        return (set(BASE_TOOLS) - set(DEPRECATED_BASE_TOOLS)) | set(BASE_MEMORY_TOOLS_V2)
+        return (set(BASE_TOOLS) - set(DEPRECATED_LETTA_TOOLS)) | set(BASE_MEMORY_TOOLS_V2)
     else:
-        return (set(BASE_TOOLS) - set(DEPRECATED_BASE_TOOLS)) | set(BASE_MEMORY_TOOLS)
+        return (set(BASE_TOOLS) - set(DEPRECATED_LETTA_TOOLS)) | set(BASE_MEMORY_TOOLS)
+
+
+def calculate_multi_agent_tools() -> Set[str]:
+    """Calculate multi-agent tools, excluding local-only tools in production environment."""
+    if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
+        return set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
+    else:
+        return set(MULTI_AGENT_TOOLS)
