@@ -85,7 +85,10 @@ import {
   observabilityQueryKeys,
 } from './public/observabilityContracts';
 
-import { agentfileContracts } from './public/agentfileContracts';
+import {
+  agentfileContracts,
+  agentfileQueryClientKeys,
+} from './public/agentfileContracts';
 
 export const contracts = {
   user: userContract,
@@ -142,6 +145,7 @@ export const queryClientKeys = {
   transactions: transactionsQueryKeys,
   observability: observabilityQueryKeys,
   traces: tracesQueryKeys,
+  agentfile: agentfileQueryClientKeys,
   admin: {
     usage: adminUsageQueryKeys,
     users: adminUsersQueryClientKeys,

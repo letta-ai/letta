@@ -1,37 +1,24 @@
 import { AgentsService } from '@letta-cloud/sdk-core';
 import type { contracts } from '@letta-cloud/sdk-web';
-import type { ServerInferResponses } from '@ts-rest/core';
+import type { ServerInferResponses, ServerInferRequest } from '@ts-rest/core';
 import {
   userHasAgentfileAccess,
   getAgentfilePermissions,
   formatSerializedAgentfile,
   getAgentUrl,
-  isValidAccessLevelType,
   SERVER_CODE,
 } from './helpers';
-import type { AccessLevel } from './helpers';
 import { getUser } from '$web/server/auth';
 import { getOrganizationLettaServiceAccountId } from '$web/server/lib/getOrganizationLettaServiceAccountId/getOrganizationLettaServiceAccountId';
 import { getDefaultProject } from '@letta-cloud/utils-server';
 import { db, agentfilePermissions } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 
-interface AgentfileRequest {
-  params: {
-    agentId: string;
-  };
-}
-
-interface UpdateAgentfileAccessLevelRequest {
-  params: {
-    agentId: string;
-  };
-  body: {
-    accessLevel: string;
-  };
-}
-
 type AgentfileResponse = ServerInferResponses<
+  typeof contracts.agentfile.getAgentfile
+>;
+
+type AgentfileRequest = ServerInferRequest<
   typeof contracts.agentfile.getAgentfile
 >;
 
@@ -134,18 +121,15 @@ export async function cloneAgentfile(
   };
 }
 
+type UpdateAgentfileAccessLevelRequest = ServerInferRequest<
+  typeof contracts.agentfile.updateAgentfileAccessLevel
+>;
+
 export async function updateAgentfileAccessLevel(
   request: UpdateAgentfileAccessLevelRequest,
 ): Promise<AgentfileResponse> {
   const { agentId } = request.params;
   const { accessLevel } = request.body;
-
-  if (!(await isValidAccessLevelType(accessLevel))) {
-    return {
-      status: SERVER_CODE.CLIENT_ERROR,
-      body: 'Invalid Access Level input',
-    };
-  }
 
   const user = await getUser();
   if (!user) {
@@ -173,26 +157,106 @@ export async function updateAgentfileAccessLevel(
 
   const [updatedAccessLevel] = await db
     .update(agentfilePermissions)
-    .set({ accessLevel: accessLevel as AccessLevel })
+    .set({ accessLevel })
     .where(eq(agentfilePermissions.agentId, agentId))
     .returning({ accessLevel: agentfilePermissions.accessLevel });
 
   return {
     status: SERVER_CODE.OK,
-    body: updatedAccessLevel,
+    body: {
+      agentId,
+      accessLevel: updatedAccessLevel.accessLevel,
+    },
   };
 }
 
-interface AgentfileRouter {
-  getAgentfile: (request: AgentfileRequest) => Promise<AgentfileResponse>;
-  cloneAgentfile: (request: AgentfileRequest) => Promise<AgentfileResponse>;
-  updateAgentfileAccessLevel: (
-    request: UpdateAgentfileAccessLevelRequest,
-  ) => Promise<AgentfileResponse>;
+type GetAgentfileMetadataRequest = ServerInferRequest<
+  typeof contracts.agentfile.getAgentfileMetadata
+>;
+
+type GetAgentfileMetadataResponse = ServerInferResponses<
+  typeof contracts.agentfile.getAgentfileMetadata
+>;
+
+export async function getAgentfileMetadata(
+  request: GetAgentfileMetadataRequest,
+): Promise<GetAgentfileMetadataResponse> {
+  const { agentId } = request.params;
+
+  const permissions = await getAgentfilePermissions(agentId);
+
+  if (!permissions) {
+    return {
+      status: SERVER_CODE.NOT_FOUND,
+      body: 'Agentfile metadata not found',
+    };
+  }
+
+  return {
+    status: SERVER_CODE.OK,
+    body: {
+      accessLevel: permissions?.accessLevel || 'none',
+      agentId,
+    },
+  };
 }
 
-export const agentfileRouter: AgentfileRouter = {
+type CreateAgentfileMetadataRequest = ServerInferRequest<
+  typeof contracts.agentfile.createAgentfileMetadata
+>;
+
+type CreateAgentfileMetadataResponse = ServerInferResponses<
+  typeof contracts.agentfile.createAgentfileMetadata
+>;
+
+export async function createAgentfileMetadata(
+  request: CreateAgentfileMetadataRequest,
+): Promise<CreateAgentfileMetadataResponse> {
+  const { agentId } = request.params;
+  const { accessLevel } = request.body;
+
+  const user = await getUser();
+  if (!user) {
+    return {
+      status: SERVER_CODE.UNAUTHORIZED,
+      body: 'Must be logged in to use agent in Letta Cloud',
+    };
+  }
+
+  const organizationId = user.activeOrganizationId;
+
+  if (!organizationId) {
+    return {
+      status: SERVER_CODE.FAILED_DEPENDENCY,
+      body: 'Organization ID not found',
+    };
+  }
+
+  const [createdPermissions] = await db
+    .insert(agentfilePermissions)
+    .values({
+      agentId,
+      organizationId,
+      accessLevel,
+    })
+    .returning({
+      accessLevel: agentfilePermissions.accessLevel,
+      organizationId: agentfilePermissions.organizationId,
+    });
+
+  return {
+    status: SERVER_CODE.OK,
+    body: {
+      agentId,
+      accessLevel: createdPermissions.accessLevel,
+    },
+  };
+}
+
+export const agentfileRouter = {
   getAgentfile,
   cloneAgentfile,
+  createAgentfileMetadata,
+  getAgentfileMetadata,
   updateAgentfileAccessLevel,
 };

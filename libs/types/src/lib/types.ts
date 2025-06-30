@@ -213,3 +213,10 @@ export const PaymentCustomerSubscriptionSchema = z.object({
 export type PaymentCustomerSubscription = z.infer<
   typeof PaymentCustomerSubscriptionSchema
 >;
+
+export const AgentFileAccessLevels = z.enum([
+  'organization',
+  'logged-in',
+  'public',
+  'none',
+]);

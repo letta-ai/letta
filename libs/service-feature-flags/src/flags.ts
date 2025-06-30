@@ -76,6 +76,11 @@ export const featureFlags = {
     expiryDate: '2025-07-01',
     flagValue: z.boolean(),
   },
+  SHARE_AGENT_FILE: {
+    description: 'Share agent file',
+    expiryDate: '2025-07-01',
+    flagValue: z.boolean(),
+  },
   SYSTEM_WARNING: {
     flagValue: z.object({
       title: z.string(),

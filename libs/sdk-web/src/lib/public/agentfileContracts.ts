@@ -1,10 +1,27 @@
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
+import { AgentFileAccessLevels } from '@letta-cloud/types';
 
 const c = initContract();
 
+const GetAgentFileMetadata = z.object({
+  accessLevel: AgentFileAccessLevels,
+  agentId: z.string(),
+});
+
+const getAgentfileMetadataContract = c.query({
+  path: '/agentfiles/:agentId',
+  method: 'GET',
+  pathParams: z.object({
+    agentId: z.string(),
+  }),
+  responses: {
+    200: GetAgentFileMetadata,
+  },
+});
+
 const UpdateAgentfileAccessLevelRequestBodySchema = z.object({
-  accessLevel: z.string(),
+  accessLevel: AgentFileAccessLevels,
 });
 
 const getAgentfileContract = c.query({
@@ -30,6 +47,20 @@ const cloneAgentfileContract = c.mutation({
   },
 });
 
+const createAgentfileMetadataContract = c.mutation({
+  method: 'POST',
+  path: '/agentfiles/:agentId',
+  pathParams: z.object({
+    agentId: z.string(),
+  }),
+  body: z.object({
+    accessLevel: AgentFileAccessLevels,
+  }),
+  responses: {
+    200: GetAgentFileMetadata,
+  },
+});
+
 const updateAgentfileAccessLevelContract = c.mutation({
   method: 'PATCH',
   path: '/agentfiles/:agentId/access-level',
@@ -38,17 +69,23 @@ const updateAgentfileAccessLevelContract = c.mutation({
   }),
   body: UpdateAgentfileAccessLevelRequestBodySchema,
   responses: {
-    200: z.string(),
+    200: z.object({
+      accessLevel: AgentFileAccessLevels,
+      agentId: z.string(),
+    }),
   },
 });
 
 export const agentfileContracts = c.router({
   getAgentfile: getAgentfileContract,
   cloneAgentfile: cloneAgentfileContract,
+  createAgentfileMetadata: createAgentfileMetadataContract,
   updateAgentfileAccessLevel: updateAgentfileAccessLevelContract,
+  getAgentfileMetadata: getAgentfileMetadataContract,
 });
 
 export const agentfileQueryClientKeys = {
+  getAgentfileMetadata: (agentId: string) => ['agentfileMetadata', agentId],
   getAgentfile: (agentId: string) => ['agentId', agentId],
   cloneAgentfile: (agentId: string) => ['agentId', agentId],
 };

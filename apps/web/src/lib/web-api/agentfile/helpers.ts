@@ -1,6 +1,8 @@
 import { db, agentfilePermissions } from '@letta-cloud/service-database';
 import type { GetUserDataResponse } from '$web/server/auth';
 import { eq } from 'drizzle-orm';
+import type { z } from 'zod';
+import type { AgentFileAccessLevels } from '@letta-cloud/types';
 
 export const SERVER_CODE = {
   OK: 200,
@@ -11,22 +13,11 @@ export const SERVER_CODE = {
   FAILED_DEPENDENCY: 424,
 } as const;
 
-export enum AccessLevel {
-  ORGANIZATION = 'organization',
-  LOGGED_IN = 'logged-in',
-  PUBLIC = 'public',
-  NONE = 'none',
-}
-
-export type AccessLevelType = `${AccessLevel}`;
+export type AccessLevel = z.infer<typeof AgentFileAccessLevels>;
 
 interface GetAgentfilePermissionsResponse {
   organizationId: string;
-  accessLevel: AccessLevelType;
-}
-
-export async function isValidAccessLevelType(input: string) {
-  return Object.values(AccessLevel).includes(input as AccessLevel);
+  accessLevel: AccessLevel;
 }
 
 export async function userHasAgentfileAccess(
@@ -42,18 +33,18 @@ export async function userHasAgentfileAccess(
   const accessStatus = permissions.accessLevel;
 
   switch (accessStatus) {
-    case AccessLevel.PUBLIC:
+    case 'public':
       downloadIsAllowed = true;
       break;
-    case AccessLevel.LOGGED_IN:
+    case 'logged-in':
       if (user) {
         downloadIsAllowed = true;
       } else {
         downloadIsAllowed = false;
       }
       break;
-    case AccessLevel.ORGANIZATION:
-    case AccessLevel.NONE:
+    case 'organization':
+    case 'none':
       if (isOwner) {
         downloadIsAllowed = true;
       } else {

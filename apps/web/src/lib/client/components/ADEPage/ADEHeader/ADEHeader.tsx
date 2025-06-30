@@ -1,5 +1,5 @@
 import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentProject';
-import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import {
   Breadcrumb,
   Button,
@@ -45,6 +45,7 @@ import {
 } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
 import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
 import { useNetworkInspectorVisibility } from '@letta-cloud/ui-ade-components';
+import { PublishAgentFileSettingsDialog } from '$web/client/components/ADEPage/PublishAgentFileSettingsDialog/PublishAgentFileSettingsDialog';
 
 interface DesktopADEHeaderProps {
   name: string;
@@ -169,6 +170,8 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
 
   const { id: agentTemplateId } = useCurrentAgent();
 
+  const { data: showShareAgentFile } = useFeatureFlag('SHARE_AGENT_FILE');
+
   if (!canUpdateAgent) {
     return null;
   }
@@ -194,6 +197,19 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
         }
       >
         <NetworkInspectorButton />
+        {showShareAgentFile && (
+          <PublishAgentFileSettingsDialog
+            agentId={agentTemplateId}
+            agentName={name}
+            trigger={
+              <DropdownMenuItem
+                doNotCloseOnSelect
+                preIcon={<LettaInvaderOutlineIcon />}
+                label={t('AgentSettingsDropdown.publish')}
+              />
+            }
+          />
+        )}
         {!isTemplate && (
           <ExportAgentButton
             trigger={

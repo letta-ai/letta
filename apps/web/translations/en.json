@@ -2245,6 +2245,71 @@
       "description": "Save your changes by creating a new version of your template.\n\nEach version is preserved, allowing you to track changes over time and upgrade agents to newer versions when ready."
     }
   },
+  "AgentPage/PublishAgentFileSettingsDialog": {
+    "title": "Publish Agent File",
+    "LoadingView": {
+      "text": "Loading settings..."
+    },
+    "NotPublishedView": {
+      "description": "Your agent file is not published, you can publish it to share it with a link by clicking the button below.",
+      "error": "Failed to publish agent file. Please try again.",
+      "publish": "Publish Agent File",
+      "accessLevel": {
+        "label": "Access Level",
+        "organization": "Organization",
+        "logged-in": "Logged in users",
+        "public": "Public"
+      },
+      "accessLevelDetails": {
+        "organization": "This will generate a link that will preview your agent that can be accessed by anyone in your organization.",
+        "logged-in": "This will generate a link that will preview your agent that can be accessed by anyone who is logged in to Letta.",
+        "loggedIn": "This will generate a link that will preview your agent that can be accessed by anyone who is logged in to Letta.",
+        "public": "This will generate a link that will preview your agent that can be accessed by anyone, even if they are not logged in to Letta."
+      }
+    },
+    "options": {
+      "organization": "Organization",
+      "logged-in": "Logged in users",
+      "public": "Public"
+    },
+    "PublishedView": {
+      "description": "Your agent file is successfully published and can be accessed via the link below."
+    },
+    "UpdateAccessLevelForm": {
+      "error": "Failed to update access level. Please try again.",
+      "success": "Access level updated successfully.",
+      "copyLink": "Copy agentfile link",
+      "update": "Update Access Level",
+      "accessLevel": {
+        "label": "Access Level",
+        "description": "This will determine who can access your agent file via the link",
+        "organization": "Organization",
+        "logged-in": "Logged in users",
+        "public": "Public"
+      }
+    },
+    "AccessLevelSelector": {
+      "options": {
+        "organization": "Organization",
+        "public": "Public",
+        "loggedIn": "Logged in users"
+      },
+      "label": "Access level",
+      "description": "This will determine who can access your agent file via the link"
+    },
+    "PulishedView": {
+      "description": ""
+    }
+  },
+  "shared/AccessLevelSelect": {
+    "label": "Access Level",
+    "description": "This will determine who can access this resource",
+    "options": {
+      "organization": "Organization",
+      "logged-in": "Logged in users",
+      "public": "Public"
+    }
+  },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
     "nav": {
       "localDev": "Self-hosted"
@@ -2254,6 +2319,7 @@
     "viewAgents": "View agents",
     "error": "There was a severe error in this application, please refresh this page. If the error persists, please contact support in the top right corner.",
     "AgentSettingsDropdown": {
+      "publish": "Publish AgentFile",
       "trigger": "{agentBaseType} settings",
       "returnToProject": "Return to project",
       "delete": "Delete {agentBaseType}",
