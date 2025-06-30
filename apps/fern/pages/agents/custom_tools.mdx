@@ -7,9 +7,9 @@ You can create custom tools in Letta using the Python SDK, as well as via the [A
 
 For your agent to call a tool, Letta constructs an OpenAI tool schema (contained in `json_schema` field) from the function you define. Letta can either parse this automatically from a properly formatting docstring, or you can pass in the schema explicitly by providing a Pydantic object that defines the argument schema.
 
-# Creating a custom tool
+## Creating a custom tool
 
-## Specifying tools via Pydantic models
+### Specifying tools via Pydantic models
 To create a custom tool, you can extend the `BaseTool` class and specify the following:
 * `name` - The name of the tool
 * `args_schema` - A Pydantic model that defines the arguments for the tool
@@ -60,7 +60,7 @@ tool_from_class = client.tools.add(
 )
 ```
 
-## Specifying tools via function docstrings
+### Specifying tools via function docstrings
 You can create a tool by passing in a function with a properly formatting docstring specifying the arguments and description of the tool:
 ```python title="python" maxLines=50
 # install letta_client with `pip install letta-client`
@@ -96,7 +96,7 @@ tool = client.tools.create_from_function(
 The tool creation will return a `Tool` object. You can update the tool with `client.tools.upsert_from_function(...)`.
 
 
-## Specifying arguments via Pydantic models
+### Specifying arguments via Pydantic models
 To specify the arguments for a complex tool, you can use the `args_schema` parameter.
 
 ```python title="python" maxLines=50
@@ -136,9 +136,9 @@ tool = client.tools.upsert_from_function(
 ```
 Note: this path for updating tools is currently only supported in Python.
 
-## Creating a tool from a file
+### Creating a tool from a file
 You can also define a tool from a file that contains source code. For example, you may have the following file:
-```python title="custom_tool.py"
+```python title="custom_tool.py" maxLines=50
 from typing import List, Optional
 from pydantic import BaseModel, Field
 

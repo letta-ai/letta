@@ -117,17 +117,6 @@ navigation:
                 path: pages/agents/memory_blocks.mdx
               - page: Agentic Context Engineering
                 path: pages/agents/context_engineering.mdx
-          - section: Tools
-            path: pages/agents/tools.mdx
-            contents:
-              - page: Custom Tools
-                path: pages/agents/custom_tools.mdx
-              - page: Tool Rules
-                path: pages/agents/tool_rules.mdx
-              - page: Tool Variables
-                path: pages/agents/tool_variables.mdx
-              - page: Composio Integration
-                path: pages/agents/composio.mdx
           - page: Data Sources & Files
             path: pages/agents/data_sources.mdx
           - page: Streaming Responses
@@ -149,28 +138,52 @@ navigation:
             path: pages/agents/agentfile.mdx
           - section: Voice Agents
             path: pages/voice/voice.mdx
-            icon: fa-sharp fa-light fa-headset
             contents:
               - page: Connecting to LiveKit Agents
                 path: pages/voice/voice_livekit.mdx
               - page: Connecting to Vapi
                 path: pages/voice/voice_vapi.mdx
 
-      #- section: Tool Execution
-      #  contents:
-      #    - page: Overview
-      #      path: pages/tool_execution/overview.mdx
-      - section: Model Context Protocol
+      - section: Tool Use
         contents:
-          - page: What is MCP?
+          - page: Overview
+            path: pages/agents/tools.mdx
+          - page: Pre-built Tools
+            path: pages/agents/prebuilt_tools.mdx
+          - page: Custom Tools
+            path: pages/agents/custom_tools.mdx
+          - page: Tool Rules
+            path: pages/agents/tool_rules.mdx
+          - page: Tool Variables
+            path: pages/agents/tool_variables.mdx
+          - page: Composio Integration
+            path: pages/agents/composio.mdx
+            hidden: true
+          - section: Model Context Protocol
             path: pages/mcp/overview.mdx
-          - section: Connecting Letta to MCP
-            path: pages/mcp/setup.mdx
             contents:
+              - page: Connecting Letta to MCP
+                path: pages/mcp/setup.mdx
               - page: Remote (SSE/HTTP) Servers
                 path: pages/mcp/sse.mdx
               - page: Local (stdio) Servers
                 path: pages/mcp/stdio.mdx
+
+      #- section: Tool Execution
+      #  contents:
+      #    - page: Overview
+      #      path: pages/tool_execution/overview.mdx
+      # - section: Model Context Protocol
+      #   contents:
+      #     - page: What is MCP?
+      #       path: pages/mcp/overview.mdx
+      #     - section: Connecting Letta to MCP
+      #       path: pages/mcp/setup.mdx
+      #       contents:
+      #         - page: Remote (SSE/HTTP) Servers
+      #           path: pages/mcp/sse.mdx
+      #         - page: Local (stdio) Servers
+      #           path: pages/mcp/stdio.mdx
       #- section: Deploying a Letta Server
       #  contents:
       #    - page: Letta Docker Image

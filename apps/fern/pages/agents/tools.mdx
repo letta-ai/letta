@@ -1,56 +1,22 @@
 ---
-title: Tools
-subtitle: Understanding how to use tools with Letta agents
+title: Connecting Agents to Tools
+subtitle: Understand the different ways to use tools in Letta
 slug: guides/agents/tools
 ---
 Tools allow agents to take actions that affect the real world.
-Letta agents can use tools to manage their own memory, send messages to the end user, search the web, and more.
+Letta agents can use tools to manage their own memory, send messages to users, search the web, and more.
 
 You can add custom tools to Letta by defining your own tools, and also customize the execution environment of the tools.
 You can import external tool libraries by connecting your Letta agents to MCP (Model Context Protocol) servers. MCP servers are a way to expose APIs to Letta agents.
 
-# Pre-built Tools
+## Where to get tools for your agents
 
-## Default Memory Tools
+There are three main ways to connect tools to your agents:
+- [**Pre-built tools**](/guides/agents/prebuilt-tools): connect to tools that are built into the Letta server, such as memory management tools and web search / code execution.
+- [**Custom tools**](/guides/agents/custom-tools): define your own tools in Letta using the SDK and the ADE.
+- [**MCP servers**](/guides/mcp/overview): connect your agent to tools that run on external MCP servers.
 
-By default, agents in Letta are created with a set of default tools including `send_message` (which generates a message to send to the user), core memory tools (allowing the agent to edit its memory blocks), and external memory tools (to read/write from archival memory, and to access recall memory, aka the conversation history):
-
-| Tool                       | Description                                          |
-|----------------------------|------------------------------------------------------|
-| `send_message`             | Sends a message to the human user.                   |
-| `core_memory_append`       | Append to the contents of a block in core memory.    |
-| `core_memory_replace`      | Replace the contents of a block in core memory.      |
-| `conversation_search`      | Search prior conversation history (recall memory)    |
-| `archival_memory_insert`   | Add a memory to archival memory                      |
-| `archival_memory_search`   | Search archival memory via embedding search          |
-
-You can disable the default tools by setting `include_base_tools` to `false` during agent creation. Note that disabling the `send_message` tool may cause agent messages (intended for the user) to appear as "reasoning" messages in the API and ADE.
-
-## Multi-Agent Tools
-
-Letta also includes a set of pre-made tools designed for multi-agent interaction.
-See [our guide on multi-agent](/guides/agents/multi-agent) for more information.
-
-## Web Search
-
-The `web_search` tool allows agents to search the web for information.
-
-<Info>
-On [Letta Cloud](/guides/cloud/overview), this tool works out of the box, but when using this tool on a self-hosted Letta server, you must set a `TAVILY_API_KEY` environment variable either in during server startup or in your agent's [tool execution environment](/guides/agents/tool-variables).
-</Info>
-
-## Code Interpreter
-
-The `run_code` tool allows agents to run code (in a sandbox), for example to do data analysis or calculations. Supports Python, Javascript, Typescript, R, and Java.
-
-<Info>
-On [Letta Cloud](/guides/cloud/overview), this tool works out of the box, but when using this tool on a self-hosted Letta server, you must set a `E2B_API_KEY` environment variable either in during server startup or in your agent's [tool execution environment](/guides/agents/tool-variables).
-</Info>
-
-# Defining Custom Tools
-You can create custom tools in Letta using the SDKs, as well as via the [ADE tool builder](/guides/ade/tools). See more on defining custom tools [here](/guides/agents/custom-tools).
-
-Once the tool is created, you can add it to an agent by passing the tool name to the `tools` parameter in the agent creation.
+Once a tool has been created (if it's a custom tool) or connected (if it's a pre-built tool or MCP server), you can add it to an agent by passing the tool name to the `tools` parameter in the agent creation:
 ```python title="python" {9}
 # create a new agent
 agent = client.agents.create(
@@ -64,10 +30,10 @@ agent = client.agents.create(
 )
 ```
 
-# Tool Execution
+## Tool Execution
 You can customize the environment that your tool runs in (the Python package dependencies and environment variables) by setting a tool execution environment. See more [here](/guides/agents/tool-variables).
 
-# Tool Environment Variables
+## Tool Environment Variables
 You can set agent-scoped environment variables for your tools.
 These environment variables will be accessible in the sandboxed environment that any of the agent tools are run in.
 
@@ -86,14 +52,14 @@ agent = client.agents.create(
     }
 )
 ```
-# Tool Rules
+
+## Tool Rules
+
 Tool rules allow you to define graph-like constrains on your tools, such as requiring that a tool terminate agent execution or be followed by another tool.
 
 Read more about tool rules [here](/guides/agents/tool-rules).
 
-# External Tool Libraries
-Letta also has early support for adding tools from external tool libraries via MCP and Composio.
+## External Tool Libraries
 
-For more information on setting up **MCP servers**, see our [MCP guide](/guides/mcp/overview).
-
-For more information on setting up **Composio tools**, see our [Composio guide](/guides/agents/composio).
+Letta supports connecting to external tool libraries via [MCP](/guides/mcp/overview).
+You can connect to MCP servers via the Letta SDK (Python and TypeScript/Node.js) as well as via simple point-and-click in the ADE.
