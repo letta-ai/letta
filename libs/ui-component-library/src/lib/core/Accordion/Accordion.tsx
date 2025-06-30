@@ -7,24 +7,37 @@ import { cn } from '@letta-cloud/ui-styles';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 
+type Themes = 'agentfile' | 'default';
+
 const accordionTriggerVariants = cva(
   'flex flex-1 px-4 w-full items-center justify-between py-2 font-medium transition-all  [&[data-state=open]>svg]:rotate-180',
   {
-    variants: {},
+    variants: {
+      theme: {
+        agentfile: 'text-sm font-bold p-3 bg-background-grey',
+        default: 'text-sm font-semibold',
+      },
+    },
   },
 );
 
 const AccordionRoot = AccordionPrimitive.Root;
 
+interface AccordionItemProps
+  extends React.ComponentProps<typeof AccordionPrimitive.Item> {
+  theme?: Themes;
+}
+
 function AccordionItem({
   className,
   ref,
+  theme,
   ...props
-}: React.ComponentProps<typeof AccordionPrimitive.Item>) {
+}: AccordionItemProps) {
   return (
     <AccordionPrimitive.Item
       ref={ref}
-      className={cn(' w-full', className)}
+      className={cn('gap-0 w-full', className)}
       {...props}
     />
   );
@@ -42,13 +55,14 @@ function AccordionTrigger({
   className,
   children,
   ref,
+  theme,
   ...props
 }: AccordionTriggerProps) {
   return (
     <AccordionPrimitive.Header className="flex">
       <AccordionPrimitive.Trigger
         ref={ref}
-        className={cn(accordionTriggerVariants(), className)}
+        className={cn(accordionTriggerVariants({ theme }), className)}
         {...props}
       >
         {children}
@@ -60,19 +74,38 @@ function AccordionTrigger({
 
 AccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName;
 
+const accordionContentVariants = cva(
+  'overflow-hidden text-sm  transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down',
+  {
+    variants: {
+      theme: {
+        agentfile: 'p-3 text-sm',
+        default: 'pb-4 pt-0',
+      },
+    },
+  },
+);
+
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+type AccordionContentProps = React.ComponentProps<
+  typeof AccordionPrimitive.Content
+> &
+  VariantProps<typeof accordionContentVariants>;
+
 function AccordionContent({
   className,
   children,
   ref,
+  theme,
   ...props
-}: React.ComponentProps<typeof AccordionPrimitive.Content>) {
+}: AccordionContentProps) {
   return (
     <AccordionPrimitive.Content
       ref={ref}
-      className="overflow-hidden text-sm transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
+      className={cn(accordionContentVariants({ theme }), className)}
       {...props}
     >
-      <div className={cn('pb-4 pt-0', className)}>{children}</div>
+      {children}
     </AccordionPrimitive.Content>
   );
 }
@@ -85,6 +118,7 @@ interface AccordionProps {
   fullWidth?: boolean;
   children: React.ReactNode;
   defaultOpen?: boolean;
+  theme?: Themes;
 }
 
 export function Accordion({
@@ -92,6 +126,7 @@ export function Accordion({
   trigger,
   defaultOpen,
   children,
+  theme,
 }: AccordionProps) {
   return (
     <AccordionRoot
@@ -100,9 +135,9 @@ export function Accordion({
       type="single"
       collapsible
     >
-      <AccordionItem value={id}>
-        <AccordionTrigger>{trigger}</AccordionTrigger>
-        <AccordionContent>{children}</AccordionContent>
+      <AccordionItem theme={theme} value={id}>
+        <AccordionTrigger theme={theme}>{trigger}</AccordionTrigger>
+        <AccordionContent theme={theme}>{children}</AccordionContent>
       </AccordionItem>
     </AccordionRoot>
   );

@@ -2827,5 +2827,15 @@
   },
   "components/CompareTemplateVersions": {
     "loading": "Loading versions..."
+  },
+  "agentfiles/page": {
+    "noAuthor": "No author",
+    "name": "Name",
+    "downloadError": "There was an error downloading the agent file, please try again or contact support.",
+    "memory": "Memory Blocks",
+    "system": "System Prompt",
+    "tools": "Tools",
+    "useInLettaCloud": "Use in Letta Cloud",
+    "downloadAgent": "Download agent"
   }
 }

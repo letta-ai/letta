@@ -11,7 +11,11 @@ import {
 import { getUser } from '$web/server/auth';
 import { getOrganizationLettaServiceAccountId } from '$web/server/lib/getOrganizationLettaServiceAccountId/getOrganizationLettaServiceAccountId';
 import { getDefaultProject } from '@letta-cloud/utils-server';
-import { db, agentfilePermissions } from '@letta-cloud/service-database';
+import {
+  db,
+  agentfilePermissions,
+  organizations,
+} from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 
 type AgentfileResponse = ServerInferResponses<
@@ -98,26 +102,27 @@ export async function cloneAgentfile(
   const response = await getAgentfile({ params: { agentId } });
   const formattedAgentfile = await formatSerializedAgentfile(response.body);
 
-  const projectId = (
-    await getDefaultProject({
-      organizationId: user.activeOrganizationId || '',
-    })
-  ).id;
+  const project = await getDefaultProject({
+    organizationId: user.activeOrganizationId || '',
+  });
+
   const agent = await AgentsService.importAgentSerialized(
     {
       formData: formattedAgentfile,
-      projectId: projectId,
+      projectId: project.id,
     },
     {
       user_id: user.lettaAgentsId,
     },
   );
 
-  const url = getAgentUrl(projectId, agent.id);
+  const redirectUrl = getAgentUrl(project.slug, agent.id);
 
   return {
     status: SERVER_CODE.OK,
-    body: url,
+    body: {
+      redirectUrl,
+    },
   };
 }
 
@@ -253,10 +258,80 @@ export async function createAgentfileMetadata(
   };
 }
 
+type GetAgentfileSummaryRequest = ServerInferRequest<
+  typeof contracts.agentfile.getAgentfileSummary
+>;
+
+type GetAgentfileSummaryResponse = ServerInferResponses<
+  typeof contracts.agentfile.getAgentfileSummary
+>;
+
+export async function getAgentfileSummary(
+  request: GetAgentfileSummaryRequest,
+): Promise<GetAgentfileSummaryResponse> {
+  const { agentId } = request.params;
+
+  const permissions = await getAgentfilePermissions(agentId);
+
+  if (!permissions) {
+    return {
+      status: SERVER_CODE.NOT_FOUND,
+      body: 'Agentfile permissions not found',
+    };
+  }
+
+  const [serviceAccountId, organization] = await Promise.all([
+    getOrganizationLettaServiceAccountId(permissions.organizationId),
+    db.query.organizations.findFirst({
+      where: eq(organizations.id, permissions.organizationId),
+      columns: {
+        name: true,
+      },
+    }),
+  ]);
+
+  if (!serviceAccountId) {
+    return {
+      status: SERVER_CODE.FAILED_DEPENDENCY,
+      body: 'Service Account ID not found',
+    };
+  }
+
+  const { tools, memory, system, description, name } =
+    await AgentsService.retrieveAgent(
+      {
+        agentId,
+      },
+      {
+        user_id: serviceAccountId,
+      },
+    );
+
+  return {
+    status: SERVER_CODE.OK,
+    body: {
+      memory: memory.blocks.map((block) => ({
+        label: block.label || '',
+        value: block.value || '',
+      })),
+      tools: tools.map((tool) => ({
+        name: tool.name || '',
+        source_type: tool.source_type || '',
+        description: tool.description || '',
+      })),
+      system: system || '',
+      description: description || '',
+      name: name || '',
+      author: organization?.name || '',
+    },
+  };
+}
+
 export const agentfileRouter = {
   getAgentfile,
   cloneAgentfile,
   createAgentfileMetadata,
   getAgentfileMetadata,
+  getAgentfileSummary,
   updateAgentfileAccessLevel,
 };

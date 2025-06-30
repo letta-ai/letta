@@ -6,7 +6,11 @@ import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 export function useIsEmailSignupEnabled() {
   const { data } = useFeatureFlag('EMAIL_SIGNUP');
+  return !!data;
+}
 
+export function useIsPublicAgentfileEnabled() {
+  const { data } = useFeatureFlag('PUBLIC_AGENTFILE');
   return !!data;
 }
 

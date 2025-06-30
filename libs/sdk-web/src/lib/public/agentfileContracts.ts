@@ -35,6 +35,37 @@ const getAgentfileContract = c.query({
   },
 });
 
+const GetAgentfileSummarySchema = z.object({
+  memory: z
+    .object({
+      label: z.string(),
+      value: z.string(),
+    })
+    .array(),
+  tools: z
+    .object({
+      name: z.string(),
+      source_type: z.string(),
+      description: z.string(),
+    })
+    .array(),
+  system: z.string(),
+  name: z.string(),
+  description: z.string(),
+  author: z.string(),
+});
+
+const getAgentfileSummaryContract = c.query({
+  path: '/agentfiles/:agentId/summary',
+  method: 'GET',
+  pathParams: z.object({
+    agentId: z.string(),
+  }),
+  responses: {
+    200: GetAgentfileSummarySchema,
+  },
+});
+
 const cloneAgentfileContract = c.mutation({
   method: 'POST',
   path: '/agentfiles/:agentId/clone',
@@ -43,7 +74,9 @@ const cloneAgentfileContract = c.mutation({
   }),
   body: z.undefined(),
   responses: {
-    200: z.string(),
+    200: z.object({
+      redirectUrl: z.string(),
+    }),
   },
 });
 
@@ -78,6 +111,7 @@ const updateAgentfileAccessLevelContract = c.mutation({
 
 export const agentfileContracts = c.router({
   getAgentfile: getAgentfileContract,
+  getAgentfileSummary: getAgentfileSummaryContract,
   cloneAgentfile: cloneAgentfileContract,
   createAgentfileMetadata: createAgentfileMetadataContract,
   updateAgentfileAccessLevel: updateAgentfileAccessLevelContract,
@@ -85,6 +119,7 @@ export const agentfileContracts = c.router({
 });
 
 export const agentfileQueryClientKeys = {
+  getAgentfileSummary: (agentId: string) => ['agentfileSummary', agentId],
   getAgentfileMetadata: (agentId: string) => ['agentfileMetadata', agentId],
   getAgentfile: (agentId: string) => ['agentId', agentId],
   cloneAgentfile: (agentId: string) => ['agentId', agentId],

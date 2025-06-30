@@ -17,7 +17,9 @@ interface LoggedOutWrapperProps {
   showTerms?: boolean;
   showSSOLogin?: boolean;
   showAuthFlowSwitcher?: boolean;
+  showLogo?: boolean;
   logoRef?: Ref<HTMLDivElement> | null;
+  cardWidth?: number;
 }
 
 export function LoggedOutWrapper(props: LoggedOutWrapperProps) {
@@ -27,6 +29,8 @@ export function LoggedOutWrapper(props: LoggedOutWrapperProps) {
     showTerms = true,
     showSSOLogin = true,
     showAuthFlowSwitcher = true,
+    showLogo = true,
+    cardWidth = 400,
   } = props;
 
   const mode = usePathname().substring(1) as Mode;
@@ -80,8 +84,12 @@ export function LoggedOutWrapper(props: LoggedOutWrapperProps) {
   };
 
   return (
-    // eslint-disable-next-line react/forbid-component-props
-    <HStack gap={false} className="login-container h-[100dvh]" fullHeight>
+    <HStack
+      overflow="auto"
+      gap={false}
+      // eslint-disable-next-line react/forbid-component-props
+      className="login-container max-h-[100dvh] box-content  "
+    >
       <VStack
         zIndex="rightAboveZero"
         align="center"
@@ -95,41 +103,57 @@ export function LoggedOutWrapper(props: LoggedOutWrapperProps) {
       >
         <VStack
           // eslint-disable-next-line react/forbid-component-props
-          className="w-full max-w-[400px] border card"
+          className={`w-full border card`}
+          // eslint-disable-next-line react/forbid-component-props
+          style={{
+            maxWidth: `${cardWidth}px`,
+            maxHeight: '100%',
+          }}
           align="center"
           gap="large"
           justify="center"
           padding="xxlarge"
           color="background-grey"
         >
-          <VStack paddingBottom="small" gap="xlarge" align="center" fullWidth>
-            <HStack justify="spaceBetween" align="center" fullWidth>
-              <div className="relative lottie-non-interactive" ref={logoRef}>
-                {isDarkMode ? (
-                  <Lottie
-                    options={lightLogoOptions}
-                    height={36}
-                    width={36}
-                    isClickToPauseDisabled={true}
-                  />
-                ) : (
-                  <Lottie
-                    options={darkLogoOptions}
-                    height={36}
-                    width={36}
-                    isClickToPauseDisabled={true}
-                  />
+          {showLogo && (
+            <VStack paddingBottom="small" gap="xlarge" align="center" fullWidth>
+              <HStack justify="spaceBetween" align="center" fullWidth>
+                {showLogo && (
+                  <div
+                    className="relative lottie-non-interactive"
+                    ref={logoRef}
+                  >
+                    {isDarkMode ? (
+                      <Lottie
+                        options={lightLogoOptions}
+                        height={36}
+                        width={36}
+                        isClickToPauseDisabled={true}
+                      />
+                    ) : (
+                      <Lottie
+                        options={darkLogoOptions}
+                        height={36}
+                        width={36}
+                        isClickToPauseDisabled={true}
+                      />
+                    )}
+                  </div>
                 )}
-              </div>
-              {showAuthFlowSwitcher && <AuthFlowSwitch mode={mode} />}
-            </HStack>
-          </VStack>
+                {showAuthFlowSwitcher && <AuthFlowSwitch mode={mode} />}
+              </HStack>
+            </VStack>
+          )}
           {children}
         </VStack>
         {showSSOLogin && (
           <VStack
             // eslint-disable-next-line react/forbid-component-props
-            className="w-full max-w-[400px] border-x border-b card"
+            className={`w-full border-x border-b card`}
+            // eslint-disable-next-line react/forbid-component-props
+            style={{
+              maxWidth: `${cardWidth}px`,
+            }}
             align="center"
             justify="center"
             padding="xlarge"
@@ -159,7 +183,11 @@ export function LoggedOutWrapper(props: LoggedOutWrapperProps) {
         {showTerms && (
           <VStack
             // eslint-disable-next-line react/forbid-component-props
-            className="w-full max-w-[400px]"
+            className={`w-full`}
+            // eslint-disable-next-line react/forbid-component-props
+            style={{
+              maxWidth: `${cardWidth}px`,
+            }}
             align="center"
             justify="center"
             gap="xlarge"

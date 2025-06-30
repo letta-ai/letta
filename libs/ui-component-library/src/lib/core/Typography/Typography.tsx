@@ -38,6 +38,9 @@ const typographyVariants = cva('break-words', {
       lighter: 'text-text-lighter',
       violet: 'text-violet',
     },
+    light: {
+      true: 'font-thin',
+    },
     font: {
       mono: 'font-mono',
       default: 'font-sans',
@@ -111,6 +114,7 @@ export const Typography = forwardRef<HTMLElement, TypographyProps>(
       italic,
       uppercase,
       noWrap,
+      light,
       preWrap,
       variant,
       semibold,
@@ -133,6 +137,7 @@ export const Typography = forwardRef<HTMLElement, TypographyProps>(
           uppercase,
           semibold,
           inline,
+          light,
           fullWidth,
           variant,
           className,
