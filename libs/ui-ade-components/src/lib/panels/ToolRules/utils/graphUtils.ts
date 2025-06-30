@@ -573,7 +573,7 @@ export function createEdgeData(
     }
 
     // Continue connections
-    if (hasNoType || hasMaxCount || (!hasExitLoop && !isParent)) {
+    if (!isParent && (hasNoType || hasMaxCount || !hasExitLoop)) {
       edgeData.push({
         id: `${toolName}-agent`,
         source: `tool-${toolName}`,
