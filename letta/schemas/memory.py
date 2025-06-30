@@ -1,7 +1,8 @@
+import logging
 from typing import TYPE_CHECKING, List, Optional
 
 from jinja2 import Template, TemplateSyntaxError
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # Forward referencing to avoid circular import with Agent -> Memory -> Agent
 if TYPE_CHECKING:
@@ -68,6 +69,30 @@ class Memory(BaseModel, validate_assignment=True):
     file_blocks: List[Block] = Field(
         default_factory=list, description="Blocks representing the agent's in-context memory of an attached file"
     )
+
+    @field_validator("file_blocks")
+    @classmethod
+    def validate_file_blocks_no_duplicates(cls, v: List[Block]) -> List[Block]:
+        """Validate that file_blocks don't contain duplicate labels, log warnings and remove duplicates."""
+        if not v:
+            return v
+
+        seen_labels = set()
+        unique_blocks = []
+        duplicate_labels = []
+
+        for block in v:
+            if block.label in seen_labels:
+                duplicate_labels.append(block.label)
+            else:
+                seen_labels.add(block.label)
+                unique_blocks.append(block)
+
+        if duplicate_labels:
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Duplicate block labels found in file_blocks: {duplicate_labels}. Removing duplicates.")
+
+        return unique_blocks
 
     # Memory.template is a Jinja2 template for compiling memory module into a prompt string.
     prompt_template: str = Field(

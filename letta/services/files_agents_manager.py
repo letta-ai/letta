@@ -165,17 +165,19 @@ class FileAgentManager:
         self,
         *,
         file_names: List[str],
+        agent_id: str,
         actor: PydanticUser,
     ) -> List[PydanticBlock]:
         """
-        Retrieve multiple FileAgent associations by their IDs in a single query.
+        Retrieve multiple FileAgent associations by their file names for a specific agent.
 
         Args:
             file_names: List of file names to retrieve
+            agent_id: ID of the agent to retrieve file blocks for
             actor: The user making the request
 
         Returns:
-            List of PydanticFileAgent objects found (may be fewer than requested if some IDs don't exist)
+            List of PydanticBlock objects found (may be fewer than requested if some file names don't exist)
         """
         if not file_names:
             return []
@@ -185,6 +187,7 @@ class FileAgentManager:
             query = select(FileAgentModel).where(
                 and_(
                     FileAgentModel.file_name.in_(file_names),
+                    FileAgentModel.agent_id == agent_id,
                     FileAgentModel.organization_id == actor.organization_id,
                 )
             )
