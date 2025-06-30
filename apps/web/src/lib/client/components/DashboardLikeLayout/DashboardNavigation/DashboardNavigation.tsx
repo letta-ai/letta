@@ -196,6 +196,16 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         id: 'projects',
         icon: <ProjectsIcon />,
       },
+      ...(areToolsOnDashboardEnabled
+        ? [
+            {
+              label: t('nav.tools'),
+              href: '/tools',
+              id: 'tools',
+              icon: <ToolsIcon />,
+            },
+          ]
+        : []),
       {
         label: t('nav.dataSources'),
         href: '/data-sources',
@@ -208,16 +218,6 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         id: 'models',
         icon: <TokenIcon />,
       },
-      ...(areToolsOnDashboardEnabled
-        ? [
-            {
-              label: t('nav.tools'),
-              href: '/tools',
-              id: 'tools',
-              icon: <ToolsIcon />,
-            },
-          ]
-        : []),
 
       ...(canReadAPIKeys
         ? [
