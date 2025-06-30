@@ -327,7 +327,6 @@ class LettaBuiltinToolExecutor(ToolExecutor):
             messages=[{"role": "system", "content": FIRECRAWL_SEARCH_SYSTEM_PROMPT}, {"role": "user", "content": user_prompt}],
             response_format=DocumentAnalysis,
             temperature=0.1,
-            max_tokens=300,  # Limit output tokens - only need line numbers
         )
 
         end_time = time.time()

@@ -95,12 +95,9 @@ class JobManager:
     @trace_method
     async def update_job_by_id_async(self, job_id: str, job_update: JobUpdate, actor: PydanticUser) -> PydanticJob:
         """Update a job by its ID with the given JobUpdate object asynchronously."""
-        # TODO: Temporary, please remove
-        logger.info(f"Received update_job_by_id_async for {job_id}: {job_update} by actor {actor}")
         async with db_registry.async_session() as session:
             # Fetch the job by ID
             job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor, access=["write"])
-            not_completed_before = not bool(job.completed_at)
 
             # Update job attributes with only the fields that were explicitly set
             update_data = job_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
@@ -112,10 +109,16 @@ class JobManager:
                     value = value.replace(tzinfo=None)
                 setattr(job, key, value)
 
-            if job_update.status in {JobStatus.completed, JobStatus.failed} and not_completed_before:
+            # If we are updating the job to a terminal state
+            if job_update.status in {JobStatus.completed, JobStatus.failed}:
+                logger.info(f"Current job completed at: {job.completed_at}")
                 job.completed_at = get_utc_time().replace(tzinfo=None)
                 if job.callback_url:
                     await self._dispatch_callback_async(job)
+                else:
+                    logger.info(f"Job does not contain callback url: {job}")
+            else:
+                logger.info(f"Job update is not terminal {job_update}")
 
             # Save the updated job to the database
             await job.update_async(db_session=session, actor=actor)
