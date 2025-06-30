@@ -1730,7 +1730,9 @@ class AgentManager:
             agent_state.memory.blocks = [b for b in blocks if b is not None]
 
         if file_block_names:
-            file_blocks = await self.file_agent_manager.get_all_file_blocks_by_name(file_names=file_block_names, actor=actor)
+            file_blocks = await self.file_agent_manager.get_all_file_blocks_by_name(
+                file_names=file_block_names, agent_id=agent_state.id, actor=actor
+            )
             agent_state.memory.file_blocks = [b for b in file_blocks if b is not None]
 
         return agent_state
