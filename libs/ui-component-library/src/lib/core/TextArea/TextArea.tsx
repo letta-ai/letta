@@ -60,6 +60,7 @@ const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
       hideFocus,
       autosize = true,
       resize = 'none',
+      maxRows,
       fullHeight,
       variant,
       flex,
@@ -96,6 +97,7 @@ const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
           textareaVariants({ resize, variant }),
           className,
         )}
+        maxRows={maxRows}
         ref={ref}
         {...props}
       />

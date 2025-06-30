@@ -72,6 +72,7 @@ export function SharedAgentsPopover(props: SharedMemoryIndicatorProps) {
               <LettaAgentTypeIcon type={agent.agentType} />
               <VStack collapseWidth flex gap={false}>
                 <Typography
+                  overrideEl="span"
                   noWrap
                   bold
                   overflow="ellipsis"
@@ -82,6 +83,7 @@ export function SharedAgentsPopover(props: SharedMemoryIndicatorProps) {
                 </Typography>
                 <Typography
                   noWrap
+                  overrideEl="span"
                   overflow="ellipsis"
                   fullWidth
                   variant="body4"

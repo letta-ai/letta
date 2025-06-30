@@ -17,7 +17,6 @@ import { VStack } from '../../framing/VStack/VStack';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Tooltip } from '../../core/Tooltip/Tooltip';
 import { InlineTextDiff } from '../../core/InlineTextDiff/InlineTextDiff';
-import { HR } from '../../core/HR/HR';
 import { cn } from '@letta-cloud/ui-styles';
 import { Button } from '../../core/Button/Button';
 import type { SharedAgent } from './SharedAgentsPopover/SharedAgentsPopover';
