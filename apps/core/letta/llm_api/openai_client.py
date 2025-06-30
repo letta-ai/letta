@@ -261,6 +261,7 @@ class OpenAIClient(LLMClientBase):
         """
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
+
         response: ChatCompletion = await client.chat.completions.create(**request_data)
         return response.model_dump()
 

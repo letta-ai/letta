@@ -1381,26 +1381,6 @@ class SyncServer(Server):
             )
         await self.agent_manager.delete_agent_async(agent_id=sleeptime_agent_state.id, actor=actor)
 
-    async def _upsert_file_to_agent(self, agent_id: str, file_metadata_with_content: FileMetadata, actor: User) -> List[str]:
-        """
-        Internal method to create or update a file <-> agent association
-
-        Returns:
-            List of file names that were closed due to LRU eviction
-        """
-        # TODO: Maybe have LineChunker object be on the server level?
-        content_lines = LineChunker().chunk_text(file_metadata=file_metadata_with_content)
-        visible_content = "\n".join(content_lines)
-
-        file_agent, closed_files = await self.file_agent_manager.attach_file(
-            agent_id=agent_id,
-            file_id=file_metadata_with_content.id,
-            file_name=file_metadata_with_content.file_name,
-            actor=actor,
-            visible_content=visible_content,
-        )
-        return closed_files
-
     async def _remove_file_from_agent(self, agent_id: str, file_id: str, actor: User) -> None:
         """
         Internal method to remove a document block for an agent.
@@ -1430,9 +1410,23 @@ class SyncServer(Server):
         logger.info(f"Inserting document into context window for source: {source_id}")
         logger.info(f"Attached agents: {[a.id for a in agent_states]}")
 
-        # Collect any files that were closed due to LRU eviction during bulk attach
+        # Generate visible content for the file
+        line_chunker = LineChunker()
+        content_lines = line_chunker.chunk_text(file_metadata=file_metadata_with_content)
+        visible_content = "\n".join(content_lines)
+        visible_content_map = {file_metadata_with_content.file_name: visible_content}
+
+        # Attach file to each agent using bulk method (one file per agent, but atomic per agent)
         all_closed_files = await asyncio.gather(
-            *(self._upsert_file_to_agent(agent_state.id, file_metadata_with_content, actor) for agent_state in agent_states)
+            *(
+                self.file_agent_manager.attach_files_bulk(
+                    agent_id=agent_state.id,
+                    files_metadata=[file_metadata_with_content],
+                    visible_content_map=visible_content_map,
+                    actor=actor,
+                )
+                for agent_state in agent_states
+            )
         )
         # Flatten and log if any files were closed
         closed_files = [file for closed_list in all_closed_files for file in closed_list]
@@ -1448,14 +1442,23 @@ class SyncServer(Server):
         Insert the uploaded documents into the context window of an agent
         attached to the given source.
         """
-        logger.info(f"Inserting documents into context window for agent_state: {agent_state.id}")
+        logger.info(f"Inserting {len(file_metadata_with_content)} documents into context window for agent_state: {agent_state.id}")
 
-        # Collect any files that were closed due to LRU eviction during bulk insert
-        all_closed_files = await asyncio.gather(
-            *(self._upsert_file_to_agent(agent_state.id, file_metadata, actor) for file_metadata in file_metadata_with_content)
+        # Generate visible content for each file
+        line_chunker = LineChunker()
+        visible_content_map = {}
+        for file_metadata in file_metadata_with_content:
+            content_lines = line_chunker.chunk_text(file_metadata=file_metadata)
+            visible_content_map[file_metadata.file_name] = "\n".join(content_lines)
+
+        # Use bulk attach to avoid race conditions and duplicate LRU eviction decisions
+        closed_files = await self.file_agent_manager.attach_files_bulk(
+            agent_id=agent_state.id,
+            files_metadata=file_metadata_with_content,
+            visible_content_map=visible_content_map,
+            actor=actor,
         )
-        # Flatten and log if any files were closed
-        closed_files = [file for closed_list in all_closed_files for file in closed_list]
+
         if closed_files:
             logger.info(f"LRU eviction closed {len(closed_files)} files during bulk insert: {closed_files}")
 
