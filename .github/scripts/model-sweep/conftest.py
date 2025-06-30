@@ -4,9 +4,10 @@ import requests
 import socket
 import threading
 import time
+import json
 
 from datetime import datetime, timezone
-from typing import Generator
+from typing import Generator, Dict, Any
 
 import pytest
 from anthropic.types.beta.messages import BetaMessageBatch, BetaMessageBatchRequestCounts
@@ -15,9 +16,12 @@ from dotenv import load_dotenv
 
 from letta_client import Letta, AsyncLetta
 
+from letta.log import get_logger
 from letta.schemas.agent import AgentState
 
 from letta.schemas.llm_config import LLMConfig
+
+logger = get_logger(__name__)
 
 from letta.services.organization_manager import OrganizationManager
 from letta.services.user_manager import UserManager
@@ -183,6 +187,7 @@ def _start_server_once() -> str:
 
     # Start server (your existing logic)
     if not os.getenv("LETTA_SERVER_URL"):
+        print(os.environ)
         def _run_server():
             load_dotenv()
             from letta.server.rest_api.app import start_server
@@ -237,28 +242,6 @@ def async_client(server_url: str) -> AsyncLetta:
 
 
 @pytest.fixture(scope="module")
-def agent_state(client: Letta) -> AgentState:
-    """
-    Creates and returns an agent state for testing with a pre-configured agent.
-    The agent is named 'supervisor' and is configured with base tools and the roll_dice tool.
-    """
-    client.tools.upsert_base_tools()
-
-    send_message_tool = client.tools.list(name="send_message")[0]
-    agent_state_instance = client.agents.create(
-        name="supervisor",
-        include_base_tools=False,
-        tool_ids=[send_message_tool.id],
-        model="openai/gpt-4o",
-        embedding="letta/letta-free",
-        tags=["supervisor"],
-    )
-    yield agent_state_instance
-
-    client.agents.delete(agent_state_instance.id)
-
-
-@pytest.fixture(scope="module")
 def all_available_llm_configs(client: Letta) -> [LLMConfig]:
     """
     Returns a list of all available LLM configs.
@@ -266,13 +249,21 @@ def all_available_llm_configs(client: Letta) -> [LLMConfig]:
     llm_configs = client.models.list()
     return llm_configs
 
+def get_model_sweep_config() -> Dict[str, Any]:
+    """
+    Returns a dictionary of model sweep configuration.
+    """
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    config = json.load(open(os.path.join(script_dir, "config.json"), "r"))
+    return config
 
 # create a client to the started server started at
 def get_available_llm_configs() -> [LLMConfig]:
     """Get configs, starting server if needed"""
     server_url = _start_server_once()
     temp_client = Letta(base_url=server_url)
-    return temp_client.models.list()
+    filtered_models = [model for model in temp_client.models.list() if model.handle not in get_model_sweep_config()["excluded_llm_handles"]]
+    return filtered_models
 
 # dynamically insert llm_config paramter at collection time
 def pytest_generate_tests(metafunc):

@@ -4,7 +4,7 @@ on:
     - cron: "0 0 * * *"
   push:
     branches:
-      - kian/model-sweep
+      - kian/rebase-model-sweep
   workflow_dispatch:
     inputs:
       branch-name:
@@ -34,22 +34,6 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Check if gh is installed
-        run: |
-          if ! command -v gh >/dev/null 2>&1
-          then
-            echo "gh could not be found, installing now..."
-            # install gh cli
-            (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
-              && sudo mkdir -p -m 755 /etc/apt/keyrings \
-              && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
-              && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
-              && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
-              && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-              && sudo apt update \
-              && sudo apt install gh -y
-          fi
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -108,52 +92,152 @@ jobs:
             ../../.github/scripts/model-sweep/model_sweep.py \
             --json-report --json-report-file=../../.github/scripts/model-sweep/model_sweep_report.json --json-report-indent=4
 
-      - name: Convert report to markdown
-        continue-on-error: true
-        working-directory: apps/core
-        # file path args to generate_model_sweep_markdown.py are relative to the script
-        run: |
-          poetry run python \
-            ../../.github/scripts/model-sweep/generate_model_sweep_markdown.py \
-            model_sweep_report.json \
-            supported-models.mdx
-          cp ../../.github/scripts/model-sweep/supported-models.mdx ../fern/pages/selfhosting/supported-models.mdx
-          echo "Model sweep report saved to apps/fern/pages/selfhosting/supported-models.mdx"
-
-      - id: date
-        run: echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
-
-      - name: commit and open pull request
-        working-directory: apps/fern/pages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          BRANCH_NAME=model-sweep/${{ inputs.branch-name || format('{0}', steps.date.outputs.date) }}
-          gh auth setup-git
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b $BRANCH_NAME
-          git add selfhosting/supported-models.mdx
-
-          # Check if there are meaningful changes (not just timestamps)
-          if git diff --cached selfhosting/supported-models.mdx | grep -E '^[+-]' | grep -v -E '^[+-]generated:|^[+-]Ran.*on|Last Scanned' | grep -q '[+-]'; then
-            echo "Meaningful changes detected, creating PR"
-            git commit -m "Update model sweep report"
-            git push origin $BRANCH_NAME
-            gh pr create \
-              --base main \
-              --head $BRANCH_NAME \
-              --title "chore: update model sweep report" \
-              --body "Automated PR to update model sweep report"
-            just alert "Model sweep detected a meaningful change" kianjones9
-          else
-            echo "Only timestamp changes detected, skipping PR creation"
-            exit 0
-          fi
-
       - name: Upload model sweep report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: model-sweep-report
           path: .github/scripts/model-sweep/model_sweep_report.json
+
+  post-process:
+    runs-on: [self-hosted, medium]
+    needs: model-sweep
+    if: always() && needs.model-sweep.result != 'cancelled'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download model sweep report
+        uses: actions/download-artifact@v4
+        with:
+          name: model-sweep-report
+          path: .github/scripts/model-sweep/
+
+      - name: Parse model sweep report to global config
+        working-directory: apps/core
+        run: |
+          poetry run python ../../.github/scripts/model-sweep/parse_model_sweep_report.py \
+            model_sweep_report.json \
+            global_models_config_detailed.json \
+            config.json \
+            global_models_config_compact.json
+
+      - name: Convert global config to markdown
+        working-directory: apps/core
+        run: |
+          poetry run python ../../.github/scripts/model-sweep/generate_model_sweep_markdown.py \
+            global_models_config_detailed.json \
+            supported-models.mdx
+          cp ../../.github/scripts/model-sweep/supported-models.mdx ../fern/pages/selfhosting/supported-models.mdx
+          echo "Model sweep report saved to apps/fern/pages/selfhosting/supported-models.mdx"
+
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-sweep-processed
+          path: |
+            .github/scripts/model-sweep/global_models_config_detailed.json
+            .github/scripts/model-sweep/global_models_config_compact.json
+            .github/scripts/model-sweep/supported-models.mdx
+
+  analyze-and-publish:
+    runs-on: [self-hosted, medium]
+    needs: post-process
+    if: always() && needs.post-process.result != 'cancelled'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download processed artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: model-sweep-processed
+          path: .github/scripts/model-sweep/
+
+      - name: Get previous compact config from main branch
+        working-directory: .github/scripts/model-sweep
+        run: |
+          # Try to fetch the previous version from main branch
+          if git show main:.github/scripts/model-sweep/global_models_config_compact.json > global_models_config_compact_previous.json 2>/dev/null; then
+            echo "✅ Found previous config from main branch"
+          else
+            echo "⚠️ No previous config found, creating empty baseline"
+            echo '{"models": {}}' > global_models_config_compact_previous.json
+          fi
+
+      - name: Check for meaningful changes
+        working-directory: apps/core
+        id: analyze
+        run: |
+          meaningful_changes=$(poetry run python ../../.github/scripts/model-sweep/analyze_model_changes.py \
+            global_models_config_compact.json global_models_config_compact_previous.json)
+          echo "MEANINGFUL_CHANGES=$meaningful_changes" >> $GITHUB_OUTPUT
+
+      - id: date
+        if: steps.analyze.outputs.meaningful_changes == 'true'
+        run: echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
+      - name: Create branch and PR for meaningful changes
+        if: steps.analyze.outputs.meaningful_changes == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH_NAME=model-sweep/${{ inputs.branch-name || format('{0}', steps.date.outputs.date) }}
+
+          # Configure git
+          gh auth setup-git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create and switch to new branch
+          git checkout -b $BRANCH_NAME
+
+          # Stage all changes
+          git add .github/scripts/model-sweep/global_models_config_compact.json
+          git add .github/scripts/model-sweep/global_models_config_detailed.json
+          git add apps/fern/pages/selfhosting/supported-models.mdx
+
+          # Create commit
+          git commit -m "chore: update model sweep results
+
+          Meaningful changes detected in model configurations.
+
+          🤖 Generated with model sweep automation"
+
+          # Push branch
+          git push origin $BRANCH_NAME
+
+          # Create PR
+          gh pr create \
+            --base main \
+            --head $BRANCH_NAME \
+            --title "chore: update model sweep results (${{ steps.date.outputs.date }})" \
+            --body "Automated PR to update model sweep results with meaningful changes detected.
+
+          This PR includes updates to:
+          - Global models configuration files (compact and detailed)
+          - Documentation (supported-models.mdx)
+
+          🤖 Generated with model sweep automation"
+
+          echo '✅ Created PR for branch: $BRANCH_NAME'
+
+      - name: Skip PR creation for no meaningful changes
+        if: steps.analyze.outputs.meaningful_changes != 'true'
+        run: |
+          echo 'ℹ️ No meaningful changes detected. Skipping PR creation.'
+          echo 'Only timestamp or non-functional changes were found.'
+
+      - name: Upload final artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-sweep-final
+          path: |
+            .github/scripts/model-sweep/global_models_config_compact.json
+            .github/scripts/model-sweep/global_models_config_detailed.json
+            .github/scripts/model-sweep/supported-models.mdx
