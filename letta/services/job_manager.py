@@ -14,7 +14,7 @@ from letta.orm.message import Message as MessageModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step
 from letta.orm.step import Step as StepModel
-from letta.otel.tracing import trace_method
+from letta.otel.tracing import log_event, trace_method
 from letta.schemas.enums import JobStatus, JobType, MessageRole
 from letta.schemas.job import BatchJob as PydanticBatchJob
 from letta.schemas.job import Job as PydanticJob
@@ -95,6 +95,8 @@ class JobManager:
     @trace_method
     async def update_job_by_id_async(self, job_id: str, job_update: JobUpdate, actor: PydanticUser) -> PydanticJob:
         """Update a job by its ID with the given JobUpdate object asynchronously."""
+        # TODO: Temporary, please remove
+        logger.info(f"Received update_job_by_id_async for {job_id}: {job_update} by actor {actor}")
         async with db_registry.async_session() as session:
             # Fetch the job by ID
             job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor, access=["write"])
@@ -628,6 +630,7 @@ class JobManager:
             request_config = job.request_config or LettaRequestConfig()
         return request_config
 
+    @trace_method
     def _dispatch_callback(self, job: JobModel) -> None:
         """
         POST a standard JSON payload to job.callback_url
@@ -643,7 +646,9 @@ class JobManager:
         try:
             import httpx
 
+            log_event("POST callback dispatched", payload)
             resp = httpx.post(job.callback_url, json=payload, timeout=5.0)
+            log_event("POST callback finished")
             job.callback_sent_at = get_utc_time().replace(tzinfo=None)
             job.callback_status_code = resp.status_code
 
@@ -655,6 +660,7 @@ class JobManager:
             job.callback_error = error_message
             # Continue silently - callback failures should not affect job completion
 
+    @trace_method
     async def _dispatch_callback_async(self, job: JobModel) -> None:
         """
         POST a standard JSON payload to job.callback_url and record timestamp + HTTP status asynchronously.
@@ -670,7 +676,9 @@ class JobManager:
             import httpx
 
             async with httpx.AsyncClient() as client:
+                log_event("POST callback dispatched", payload)
                 resp = await client.post(job.callback_url, json=payload, timeout=5.0)
+                log_event("POST callback finished")
                 # Ensure timestamp is timezone-naive for DB compatibility
                 job.callback_sent_at = get_utc_time().replace(tzinfo=None)
                 job.callback_status_code = resp.status_code
