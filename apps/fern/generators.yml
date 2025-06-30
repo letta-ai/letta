@@ -5,6 +5,10 @@ auth-schemes:
     type: optional<string>
 api:
   auth: token
+  headers: 
+    X-Project: 
+      type: optional<string>
+      name: project
   specs:
     - openapi: openapi.json
       overrides: openapi-overrides.yml
