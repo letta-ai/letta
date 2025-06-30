@@ -16,9 +16,8 @@ from letta.constants import (
     BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
     BASE_VOICE_SLEEPTIME_TOOLS,
     DEFAULT_TIMEZONE,
-    DEPRECATED_BASE_TOOLS,
+    DEPRECATED_LETTA_TOOLS,
     FILES_TOOLS,
-    MULTI_AGENT_TOOLS,
 )
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
@@ -79,6 +78,7 @@ from letta.services.helpers.agent_manager_helper import (
     build_passage_query,
     build_source_passage_query,
     calculate_base_tools,
+    calculate_multi_agent_tools,
     check_supports_structured_output,
     compile_system_message,
     derive_system_message,
@@ -271,7 +271,7 @@ class AgentManager:
             else:
                 tool_names |= calculate_base_tools(is_v2=False)
         if agent_create.include_multi_agent_tools:
-            tool_names |= set(MULTI_AGENT_TOOLS)
+            tool_names |= calculate_multi_agent_tools()
 
         supplied_ids = set(agent_create.tool_ids or [])
 
@@ -294,7 +294,7 @@ class AgentManager:
                 tool_rules = list(agent_create.tool_rules or [])
                 if agent_create.include_base_tool_rules:
                     for tn in tool_names:
-                        if tn in {"send_message", "memory_finish_edits"}:
+                        if tn in {"send_message", "send_message_to_agent_async", "memory_finish_edits"}:
                             tool_rules.append(TerminalToolRule(tool_name=tn))
                         elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_SLEEPTIME_TOOLS):
                             tool_rules.append(ContinueToolRule(tool_name=tn))
@@ -438,10 +438,10 @@ class AgentManager:
             else:
                 tool_names |= calculate_base_tools(is_v2=False)
         if agent_create.include_multi_agent_tools:
-            tool_names |= set(MULTI_AGENT_TOOLS)
+            tool_names |= calculate_multi_agent_tools()
 
         # take out the deprecated tool names
-        tool_names.difference_update(set(DEPRECATED_BASE_TOOLS))
+        tool_names.difference_update(set(DEPRECATED_LETTA_TOOLS))
 
         supplied_ids = set(agent_create.tool_ids or [])
 
@@ -479,7 +479,7 @@ class AgentManager:
                 tool_rules = list(agent_create.tool_rules or [])
                 if agent_create.include_base_tool_rules:
                     for tn in tool_names:
-                        if tn in {"send_message", "memory_finish_edits"}:
+                        if tn in {"send_message", "send_message_to_agent_async", "memory_finish_edits"}:
                             tool_rules.append(TerminalToolRule(tool_name=tn))
                         elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_MEMORY_TOOLS_V2 + BASE_SLEEPTIME_TOOLS):
                             tool_rules.append(ContinueToolRule(tool_name=tn))

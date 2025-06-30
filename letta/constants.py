@@ -83,7 +83,7 @@ SEND_MESSAGE_TOOL_NAME = "send_message"
 # Base tools that cannot be edited, as they access agent state directly
 # Note that we don't include "conversation_search_date" for now
 BASE_TOOLS = [SEND_MESSAGE_TOOL_NAME, "conversation_search", "archival_memory_insert", "archival_memory_search"]
-DEPRECATED_BASE_TOOLS = ["archival_memory_insert", "archival_memory_search"]
+DEPRECATED_LETTA_TOOLS = ["archival_memory_insert", "archival_memory_search"]
 # Base memory tools CAN be edited, and are added by default by the server
 BASE_MEMORY_TOOLS = ["core_memory_append", "core_memory_replace"]
 # New v2 collection of the base memory tools (effecitvely same as sleeptime set), to pair with memgpt_v2 prompt
@@ -115,7 +115,8 @@ BASE_VOICE_SLEEPTIME_TOOLS = [
     "finish_rethinking_memory",
 ]
 # Multi agent tools
-MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_tags"]
+MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_tags", "send_message_to_agent_async"]
+LOCAL_ONLY_MULTI_AGENT_TOOLS = ["send_message_to_agent_async"]
 
 # Used to catch if line numbers are pushed in
 # MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX = re.compile(r"^Line \d+: ", re.MULTILINE)

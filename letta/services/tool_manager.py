@@ -15,7 +15,6 @@ from letta.constants import (
     LETTA_TOOL_MODULE_NAMES,
     LETTA_TOOL_SET,
     MCP_TOOL_TAG_NAME_PREFIX,
-    MULTI_AGENT_TOOLS,
 )
 from letta.functions.functions import derive_openai_json_schema, load_function_set
 from letta.log import get_logger
@@ -29,6 +28,7 @@ from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.services.helpers.agent_manager_helper import calculate_multi_agent_tools
 from letta.services.mcp.types import SSEServerConfig, StdioServerConfig
 from letta.utils import enforce_types, printd
 
@@ -419,7 +419,7 @@ class ToolManager:
                 elif name in BASE_MEMORY_TOOLS:
                     tool_type = ToolType.LETTA_MEMORY_CORE
                     tags = [tool_type.value]
-                elif name in MULTI_AGENT_TOOLS:
+                elif name in calculate_multi_agent_tools():
                     tool_type = ToolType.LETTA_MULTI_AGENT_CORE
                     tags = [tool_type.value]
                 elif name in BASE_SLEEPTIME_TOOLS:
@@ -435,9 +435,8 @@ class ToolManager:
                     tool_type = ToolType.LETTA_FILES_CORE
                     tags = [tool_type.value]
                 else:
-                    raise ValueError(
-                        f"Tool name {name} is not in the list of base tool names: {BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS + BASE_SLEEPTIME_TOOLS + BASE_VOICE_SLEEPTIME_TOOLS + BASE_VOICE_SLEEPTIME_CHAT_TOOLS}"
-                    )
+                    logger.warning(f"Tool name {name} is not in any known base tool set, skipping")
+                    continue
 
                 # create to tool
                 tools.append(
@@ -486,7 +485,7 @@ class ToolManager:
                 tool_type = ToolType.LETTA_MEMORY_CORE
             elif name in BASE_SLEEPTIME_TOOLS:
                 tool_type = ToolType.LETTA_SLEEPTIME_CORE
-            elif name in MULTI_AGENT_TOOLS:
+            elif name in calculate_multi_agent_tools():
                 tool_type = ToolType.LETTA_MULTI_AGENT_CORE
             elif name in BASE_VOICE_SLEEPTIME_TOOLS or name in BASE_VOICE_SLEEPTIME_CHAT_TOOLS:
                 tool_type = ToolType.LETTA_VOICE_SLEEPTIME_CORE
@@ -495,7 +494,8 @@ class ToolManager:
             elif name in FILES_TOOLS:
                 tool_type = ToolType.LETTA_FILES_CORE
             else:
-                raise ValueError(f"Tool name {name} is not recognized in any known base tool set.")
+                logger.warning(f"Tool name {name} is not in any known base tool set, skipping")
+                continue
 
             if allowed_types is not None and tool_type not in allowed_types:
                 continue
