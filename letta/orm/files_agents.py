@@ -78,4 +78,5 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
             value=visible_content,
             label=self.file.file_name,
             read_only=True,
+            limit=CORE_MEMORY_SOURCE_CHAR_LIMIT,
         )
