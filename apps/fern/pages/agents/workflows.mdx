@@ -1,0 +1,136 @@
+---
+title: Workflows
+subtitle: Workflows are systems that execute tool calls in a sequence
+slug: guides/agents/architectures/workflows
+---
+
+Workflows execute predefined sequences of tool calls with LLM-driven decision making. Use the `workflow_agent` agent type for structured, sequential processes where you need deterministic execution paths.
+
+Workflows are stateless by default but can branch and make decisions based on tool outputs and LLM reasoning.
+
+## Agents vs Workflows
+
+**Agents** are autonomous systems that decide what tools to call and when, based on goals and context.
+
+**Workflows** are predefined sequences where the LLM follows structured paths (for example, start with tool A, then call either tool B or tool C), making decisions within defined branching points.
+
+The definition between an *agent* and a *workflow* is not always clear and each can have various overlapping levels of autonomy: workflows can be made more autonomous by structuring the decision points to be highly general, and agents can be made more deterministic by adding tool rules to constrain their behavior.
+
+## Workflows vs Tool Rules
+
+An alternative to workflows is using autonomous agents (MemGPT, ReAct, Sleep-time) with [tool rules](/guides/agents/tool-rules) to constrain behavior.
+
+**Use the workflow architecture when:**
+* You have an existing workflow to implement in Letta (e.g., moving from n8n, LangGraph, or another workflow builder)
+* You need strict sequential execution with minimal autonomy
+
+**Use tool rules (on top of other agent architectures) when:**
+* You want more autonomous behavior, but with certain guardrails
+* Your task requires adaptive decision making (tool sequences are hard to predict)
+* You want to have the flexibility (as a developer) to adapt the level of autonomy (for example, reducing constraints as the underlying LLMs improve)
+
+## Creating Workflows
+
+Workflows are created using the `workflow_agent` agent type.
+By default, there are no constraints on the sequence of tool calls that can be made: to add constraints and build a "graph", you can use the `tool_rules` parameter to add tool rules to the agent.
+
+For example, in the following code snippet, we are creating a workflow agent that can call the `web_search` tool, and then call either the `send_email` or `create_report` tool, based on the LLM's reasoning.
+
+<CodeGroup>
+```python title="python" maxLines=50
+from letta_client import Letta
+
+client = Letta(token="LETTA_API_KEY")
+
+# create the workflow agent with tool rules
+agent = client.agents.create(
+    agent_type="workflow_agent",
+    model="openai/gpt-4.1",
+    embedding="openai/text-embedding-3-small",
+    tools=["web_search", "send_email", "create_report"],
+    tool_rules=[
+        {
+            "tool_name": "web_search",
+            "type": "run_first"
+        },
+        {
+            "tool_name": "web_search",
+            "type": "constrain_child_tools",
+            "children": ["send_email", "create_report"]
+        },
+        {
+            "tool_name": "send_email",
+            "type": "exit_loop"
+        },
+        {
+            "tool_name": "create_report",
+            "type": "exit_loop"
+        }
+    ]
+)
+```
+
+```typescript title="node.js" maxLines=50
+import { LettaClient } from '@letta-ai/letta-client'
+
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+
+// create the workflow agent with tool rules
+const agent = await client.agents.create({
+    agentType: "workflow_agent",
+    model: "openai/gpt-4.1",
+    embedding: "openai/text-embedding-3-small",
+    tools: ["web_search", "send_email", "create_report"],
+    toolRules: [
+        {
+            toolName: "web_search",
+            type: "run_first"
+        },
+        {
+            toolName: "web_search",
+            type: "constrain_child_tools",
+            children: ["send_email", "create_report"]
+        },
+        {
+            toolName: "send_email",
+            type: "exit_loop"
+        },
+        {
+            toolName: "create_report",
+            type: "exit_loop"
+        }
+    ]
+});
+```
+
+```bash title="curl" maxLines=50
+curl -X POST https://api.letta.com/v1/agents \
+     -H "Authorization: Bearer $LETTA_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{
+  "agent_type": "workflow_agent",
+  "model": "openai/gpt-4.1",
+  "embedding": "openai/text-embedding-3-small",
+  "tools": ["web_search", "send_email", "create_report"],
+  "tool_rules": [
+    {
+      "tool_name": "web_search",
+      "type": "run_first"
+    },
+    {
+      "tool_name": "web_search",
+      "type": "constrain_child_tools",
+      "children": ["send_email", "create_report"]
+    },
+    {
+      "tool_name": "send_email",
+      "type": "exit_loop"
+    },
+    {
+      "tool_name": "create_report",
+      "type": "exit_loop"
+    }
+  ]
+}'
+```
+</CodeGroup>

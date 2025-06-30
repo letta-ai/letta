@@ -95,6 +95,21 @@ navigation:
         contents:
           - page: Overview
             path: pages/agents/overview.mdx
+          - section: Agent Architectures
+            path: pages/agents/architectures.mdx
+            contents:
+              - page: MemGPT Agents
+                path: pages/agents/memgpt_agents.mdx
+              - page: Sleep-time Agents
+                path: pages/agents/sleep_time_agents.mdx
+              - page: Low-latency (voice) Agents
+                path: pages/agents/low_latency_agents.mdx
+              - page: ReAct Agents
+                path: pages/agents/react_agents.mdx
+              - page: Workflows
+                path: pages/agents/workflows.mdx
+              - page: Stateful Workflows
+                path: pages/agents/stateful_workflows.mdx
           - section: Memory
             path: pages/agents/memory.mdx
             contents:
@@ -132,9 +147,6 @@ navigation:
             path: pages/agents/multiuser.mdx
           - page: Agent File (.af)
             path: pages/agents/agentfile.mdx
-          - page: Sleep-time Agents
-            path: pages/agents/sleeptime.mdx
-            icon: fa-sharp fa-light fa-snooze
           - section: Voice Agents
             path: pages/voice/voice.mdx
             icon: fa-sharp fa-light fa-headset
@@ -633,3 +645,5 @@ redirects:
     destination: "/guides/cloud/quickstart"
   - source: "/letta-platform"
     destination: "/overview"
+  - source: "/guides/agents/sleep-time-agents"
+    destination: "/guides/agents/architectures/sleeptime"
