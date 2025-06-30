@@ -238,7 +238,7 @@ def validate_context_window_overview(
     # 16. Check attached file is visible
     if attached_file:
         assert attached_file.visible_content in overview.core_memory
-        assert '<file status="open">' in overview.core_memory
+        assert '<file status="open"' in overview.core_memory
         assert "</file>" in overview.core_memory
 
     # Check for tools
