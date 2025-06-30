@@ -8,7 +8,7 @@ import type { AnalyticsEvent, AnalyticsEventProperties } from '../events';
 let mixpanelSingleton: mixpanel.Mixpanel | null = null;
 
 function getMixpanel() {
-  if (!environment.NEXT_PUBLIC_MIXPANEL_TOKEN) {
+  if (!environment.MIXPANEL_TOKEN) {
     return null;
   }
 
