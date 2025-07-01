@@ -96,7 +96,7 @@ class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin, AsyncAttrs):
             content_text = None
 
         file_name = self.file_name
-        if strip_directory_prefix:
+        if strip_directory_prefix and "/" in file_name:
             file_name = "/".join(file_name.split("/")[1:])
 
         return PydanticFileMetadata(
