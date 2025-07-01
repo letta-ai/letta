@@ -5,6 +5,7 @@ import {
   type ListSourceFilesResponse,
   useSourcesServiceUploadFileToSource,
   UseSourcesServiceListSourceFilesKeyFn,
+  ACCEPTABLE_FILETYPES,
 } from '@letta-cloud/sdk-core';
 import {
   Button,
@@ -13,7 +14,6 @@ import {
   Typography,
   FileIcon,
   BillingLink,
-  Badge,
 } from '@letta-cloud/ui-component-library';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@letta-cloud/ui-styles';
@@ -64,6 +64,13 @@ export function DataSourceFileUpload(props: NoFilesViewProps) {
         if (error.body.errorCode === 'storage_exceeded') {
           return t.rich('errors.storageExceeded', {
             limit: error.body.limit || '5MB',
+            link: (chunks) => <BillingLink>{chunks}</BillingLink>,
+          });
+        }
+
+        if (error.body.errorCode === 'file_upload_rate_limit_exceeded') {
+          return t.rich('errors.rateLimitExceeded', {
+            limit: error.body.limit || '10',
             link: (chunks) => <BillingLink>{chunks}</BillingLink>,
           });
         }
@@ -149,7 +156,7 @@ export function DataSourceFileUpload(props: NoFilesViewProps) {
         type="file"
         className="hidden"
         onChange={handleInputChange}
-        accept=".pdf,.txt,.md,.markdown,.json,.jsonl,.py,.js,.ts,.java,.cpp,.cxx,.c,.h,.cs,.php,.rb,.go,.rs,.swift,.kt,.scala,.r,.m,.html,.htm,.css,.scss,.sass,.less,.vue,.jsx,.tsx,.xml,.yaml,.yml,.toml,.ini,.cfg,.conf,.sh,.bash,.ps1,.bat,.cmd,.dockerfile,.sql"
+        accept={ACCEPTABLE_FILETYPES.join(',')}
       />
       <VStack align="center" gap="large">
         <VStack gap="medium" align="center">
@@ -172,7 +179,13 @@ export function DataSourceFileUpload(props: NoFilesViewProps) {
           />
         </VStack>
         {errorMessage && (
-          <Badge variant="destructive" content={errorMessage}></Badge>
+          <div className="bg-chip-destructive rounded-sm">
+            <VStack padding="xsmall">
+              <Typography variant="body2" align="center" bold>
+                {errorMessage}
+              </Typography>
+            </VStack>
+          </div>
         )}
       </VStack>
     </VStack>

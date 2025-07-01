@@ -438,6 +438,7 @@
       "errors": {
         "fileSizeExceeded": "File size exceeds the limit of {limit}",
         "storageExceeded": "Storage limit exceeded ({limit}). <link>Upgrade your plan</link>",
+        "rateLimitExceeded": "You have exceeded the rate limit for file uploads. Your account is limited to {limit} uploads per minute. Please try again later or <link>upgrade your plan</link>.",
         "genericError": "Failed to upload file. Please try again."
       }
     },

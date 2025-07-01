@@ -4,6 +4,7 @@ import { getCustomerSubscription } from '@letta-cloud/service-payments';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
 import { EmbeddingsService } from '@letta-cloud/sdk-core';
 import * as Sentry from '@sentry/node';
+import { createRedisInstance } from '@letta-cloud/service-redis';
 
 const fileUploadRoute = pathToRegexp('/v1/sources/:sourceId/upload');
 
@@ -73,6 +74,55 @@ export async function fileSizeRateLimitMiddleware(
       });
       return;
     }
+
+    function getFileCountUploadWindowKey(
+      organizationId: string,
+      minute: number,
+    ): string {
+      return `fileCountUploadWindow:${organizationId}:${minute}`;
+    }
+
+    const rateLimit = limits.filesPerMinute;
+    const currentMinute = Math.floor(Date.now() / 60000);
+
+    const redis = createRedisInstance();
+
+    const window = await redis.get(
+      getFileCountUploadWindowKey(req.actor.cloudOrganizationId, currentMinute),
+    );
+
+    let currentUsage;
+
+    try {
+      currentUsage = parseInt(window || '0', 10);
+    } catch (e) {
+      Sentry.captureException(e);
+      currentUsage = 0;
+    }
+
+    if (isNaN(currentUsage)) {
+      Sentry.captureException(new Error('Invalid current usage value'));
+      currentUsage = 0;
+    }
+
+    console.log(
+      `Current usage for ${req.actor.cloudOrganizationId} at minute ${currentMinute}: ${currentUsage}`,
+    );
+
+    if (currentUsage + 1 > rateLimit) {
+      res.status(429).json({
+        error:
+          'File upload rate limit exceeded - too many files uploaded in a minute',
+        errorCode: 'file_upload_rate_limit_exceeded',
+        limit: rateLimit,
+      });
+      return;
+    }
+
+    await redis.incrby(
+      getFileCountUploadWindowKey(req.actor.cloudOrganizationId, currentMinute),
+      1,
+    );
 
     next();
   } catch (e) {

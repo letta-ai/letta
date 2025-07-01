@@ -15,6 +15,7 @@ export interface UsageLimits {
   groups: number;
   blocks: number;
   monthlyCost: number; // in dollars
+  filesPerMinute: number; // in bytes
   apiKeys: number; // number of API keys allowed
 }
 
@@ -36,6 +37,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     blocks: 500_000_000,
     groups: 10,
     fileSize: OneHundredMB, // 100 MB
+    filesPerMinute: 10_000,
     premiumInferencesPerMonth: 1_000_000_000_000,
     freeInferencesPerMonth: 1_000_000_000,
     storage: OneGB * 100, // 100 GB
@@ -50,6 +52,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     dataSources: 1000,
     templates: 20,
     tools: 250,
+    filesPerMinute: 150,
     groups: 10,
     blocks: 100_000,
     premiumInferencesPerMonth: 500,
@@ -61,6 +64,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
   scale: {
     monthlyCost: 750,
     providers: 50,
+    filesPerMinute: 1500,
     identities: 100_000,
     agents: 1_000_000,
     projects: 100,
@@ -80,6 +84,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     providers: 50,
     agents: 10,
     dataSources: 25,
+    filesPerMinute: 10,
     projects: 25,
     templates: 10,
     blocks: 5_000,
