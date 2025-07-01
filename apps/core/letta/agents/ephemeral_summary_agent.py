@@ -1,27 +1,28 @@
-from pathlib import Path
-from typing import AsyncGenerator, Dict, List
-
-from openai import AsyncOpenAI
+from typing import AsyncGenerator, List
 
 from letta.agents.base_agent import BaseAgent
 from letta.constants import DEFAULT_MAX_STEPS
+from letta.helpers.message_helper import convert_message_creates_to_messages
+from letta.llm_api.llm_client import LLMClient
+from letta.log import get_logger
 from letta.orm.errors import NoResultFound
+from letta.prompts.gpt_system import get_system_text
 from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message, MessageCreate
-from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.message_manager import MessageManager
 
+logger = get_logger(__name__)
+
 
 class EphemeralSummaryAgent(BaseAgent):
     """
-    A stateless summarization agent (thin wrapper around OpenAI)
-
-    # TODO: Extend to more clients
+    A stateless summarization agent that utilizes the caller's LLM client to summarize the conversation.
+    TODO (cliandy): allow the summarizer to use another llm_config from the main agent maybe?
     """
 
     def __init__(
@@ -35,7 +36,7 @@ class EphemeralSummaryAgent(BaseAgent):
     ):
         super().__init__(
             agent_id=agent_id,
-            openai_client=AsyncOpenAI(),
+            openai_client=None,
             message_manager=message_manager,
             agent_manager=agent_manager,
             actor=actor,
@@ -65,17 +66,33 @@ class EphemeralSummaryAgent(BaseAgent):
             input_message = input_messages[0]
             input_message.content[0].text += f"\n\n--- Previous Summary ---\n{block.value}\n"
 
-        openai_messages = self.pre_process_input_message(input_messages=input_messages)
-        request = self._build_openai_request(openai_messages)
+        # Gets the LLMCLient based on the calling agent's LLM Config
+        agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=self.agent_id, actor=self.actor)
+        llm_client = LLMClient.create(
+            provider_type=agent_state.llm_config.model_endpoint_type,
+            put_inner_thoughts_first=True,
+            actor=self.actor,
+        )
 
-        # TODO: Extend to generic client
-        chat_completion = await self.openai_client.chat.completions.create(**request.model_dump(exclude_unset=True))
-        summary = chat_completion.choices[0].message.content.strip()
+        system_message_create = MessageCreate(
+            role=MessageRole.system,
+            content=[TextContent(text=get_system_text("summary_system_prompt"))],
+        )
+        messages = convert_message_creates_to_messages(
+            message_creates=[system_message_create] + input_messages,
+            agent_id=self.agent_id,
+            timezone=agent_state.timezone,
+        )
+
+        request_data = llm_client.build_request_data(messages, agent_state.llm_config, tools=[])
+        response_data = await llm_client.request_async(request_data, agent_state.llm_config)
+        response = llm_client.convert_response_to_chat_completion(response_data, messages, agent_state.llm_config)
+        summary = response.choices[0].message.content.strip()
 
         await self.block_manager.update_block_async(block_id=block.id, block_update=BlockUpdate(value=summary), actor=self.actor)
 
-        print(block)
-        print(summary)
+        logger.debug("block:", block)
+        logger.debug("summary:", summary)
 
         return [
             Message(
@@ -83,23 +100,6 @@ class EphemeralSummaryAgent(BaseAgent):
                 content=[TextContent(text=summary)],
             )
         ]
-
-    def _build_openai_request(self, openai_messages: List[Dict]) -> ChatCompletionRequest:
-        current_dir = Path(__file__).parent
-        file_path = current_dir / "prompts" / "summary_system_prompt.txt"
-        with open(file_path, "r") as file:
-            system = file.read()
-
-        system_message = [{"role": "system", "content": system}]
-
-        openai_request = ChatCompletionRequest(
-            model="gpt-4o",
-            messages=system_message + openai_messages,
-            user=self.actor.id,
-            max_completion_tokens=4096,
-            temperature=0.7,
-        )
-        return openai_request
 
     async def step_stream(self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS) -> AsyncGenerator[str, None]:
         raise NotImplementedError("EphemeralAgent does not support async step.")

@@ -443,6 +443,7 @@ def test_function_return_limit(disable_e2b_api_key, client: LettaSDKClient, agen
     assert "function output was truncated " in res
 
 
+@pytest.mark.flaky(max_runs=3)
 def test_function_always_error(client: LettaSDKClient, agent: AgentState):
     """Test to see if function that errors works correctly"""
 

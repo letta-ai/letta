@@ -90,7 +90,7 @@ async def add_feedback(
 
 
 @router.patch("/{step_id}/transaction/{transaction_id}", response_model=Step, operation_id="update_step_transaction_id")
-def update_step_transaction_id(
+async def update_step_transaction_id(
     step_id: str,
     transaction_id: str,
     actor_id: Optional[str] = Header(None, alias="user_id"),
@@ -102,6 +102,6 @@ def update_step_transaction_id(
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
-        return server.step_manager.update_step_transaction_id(actor=actor, step_id=step_id, transaction_id=transaction_id)
+        return await server.step_manager.update_step_transaction_id(actor=actor, step_id=step_id, transaction_id=transaction_id)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Step not found")

@@ -173,7 +173,7 @@ class StepManager:
 
     @enforce_types
     @trace_method
-    def update_step_transaction_id(self, actor: PydanticUser, step_id: str, transaction_id: str) -> PydanticStep:
+    async def update_step_transaction_id(self, actor: PydanticUser, step_id: str, transaction_id: str) -> PydanticStep:
         """Update the transaction ID for a step.
 
         Args:
@@ -187,15 +187,15 @@ class StepManager:
         Raises:
             NoResultFound: If the step does not exist
         """
-        with db_registry.session() as session:
-            step = session.get(StepModel, step_id)
+        async with db_registry.async_session() as session:
+            step = await session.get(StepModel, step_id)
             if not step:
                 raise NoResultFound(f"Step with id {step_id} does not exist")
             if step.organization_id != actor.organization_id:
                 raise Exception("Unauthorized")
 
             step.tid = transaction_id
-            session.commit()
+            await session.commit()
             return step.to_pydantic()
 
     def _verify_job_access(
@@ -226,8 +226,8 @@ class StepManager:
             raise NoResultFound(f"Job with id {job_id} does not exist or user does not have access")
         return job
 
+    @staticmethod
     async def _verify_job_access_async(
-        self,
         session: AsyncSession,
         job_id: str,
         actor: PydanticUser,

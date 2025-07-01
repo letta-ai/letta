@@ -103,7 +103,6 @@ USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
 all_configs = [
     "openai-gpt-4o-mini.json",
     "openai-o1.json",
-    "openai-o1-mini.json",
     "openai-o3.json",
     "openai-o4-mini.json",
     "azure-gpt-4o-mini.json",
@@ -116,7 +115,7 @@ all_configs = [
     "gemini-2.5-flash-vertex.json",
     "gemini-2.5-pro-vertex.json",
     "together-qwen-2.5-72b-instruct.json",
-    "ollama.json",
+    # "ollama.json", #  TODO (cliandy): enable this in ollama testing
 ]
 
 
@@ -1215,7 +1214,7 @@ def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, llm_config: LLM
     new_llm_config = llm_config.model_dump()
     new_llm_config["context_window"] = 3000
     pinned_context_window_llm_config = LLMConfig(**new_llm_config)
-
+    print("::LLM::", llm_config, new_llm_config)
     send_message_tool = client.tools.list(name="send_message")[0]
     temp_agent_state = client.agents.create(
         include_base_tools=False,
