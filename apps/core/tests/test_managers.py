@@ -4835,8 +4835,8 @@ async def test_create_source(server: SyncServer, default_user, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_create_sources_with_same_name_does_not_error(server: SyncServer, default_user):
-    """Test creating a new source."""
+async def test_create_sources_with_same_name_raises_error(server: SyncServer, default_user):
+    """Test that creating sources with the same name raises an IntegrityError due to unique constraint."""
     name = "Test Source"
     source_pydantic = PydanticSource(
         name=name,
@@ -4845,16 +4845,16 @@ async def test_create_sources_with_same_name_does_not_error(server: SyncServer, 
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
     )
     source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
+
+    # Attempting to create another source with the same name should raise an IntegrityError
     source_pydantic = PydanticSource(
         name=name,
         description="This is a different test source.",
         metadata={"type": "legal"},
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
     )
-    same_source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
-
-    assert source.name == same_source.name
-    assert source.id != same_source.id
+    with pytest.raises(UniqueConstraintViolationError):
+        await server.source_manager.create_source(source=source_pydantic, actor=default_user)
 
 
 @pytest.mark.asyncio

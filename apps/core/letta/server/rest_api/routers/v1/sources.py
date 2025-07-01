@@ -237,7 +237,7 @@ async def upload_file_to_source(
     # Store original filename and generate unique filename
     original_filename = sanitize_filename(file.filename)  # Basic sanitization only
     unique_filename = await server.file_manager.generate_unique_filename(
-        original_filename=original_filename, source_id=source_id, organization_id=actor.organization_id
+        original_filename=original_filename, source=source, organization_id=actor.organization_id
     )
 
     # create file metadata
@@ -308,6 +308,7 @@ async def list_source_files(
         after=after,
         actor=actor,
         include_content=include_content,
+        strip_directory_prefix=True,  # TODO: Reconsider this. This is purely for aesthetics.
     )
 
 
@@ -330,7 +331,9 @@ async def get_file_metadata(
         raise HTTPException(status_code=404, detail=f"Source with id={source_id} not found.")
 
     # Get file metadata using the file manager
-    file_metadata = await server.file_manager.get_file_by_id(file_id=file_id, actor=actor, include_content=include_content)
+    file_metadata = await server.file_manager.get_file_by_id(
+        file_id=file_id, actor=actor, include_content=include_content, strip_directory_prefix=True
+    )
 
     if not file_metadata:
         raise HTTPException(status_code=404, detail=f"File with id={file_id} not found.")

@@ -98,9 +98,13 @@ class BaseAgent(ABC):
             # [DB Call] loading blocks (modifies: agent_state.memory.blocks)
             await self.agent_manager.refresh_memory_async(agent_state=agent_state, actor=self.actor)
 
+            tool_constraint_block = None
+            if tool_rules_solver is not None:
+                tool_constraint_block = tool_rules_solver.compile_tool_rule_prompts()
+
             # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
             curr_system_message = in_context_messages[0]
-            curr_memory_str = agent_state.memory.compile()
+            curr_memory_str = agent_state.memory.compile(tool_usage_rules=tool_constraint_block, sources=agent_state.sources)
             curr_system_message_text = curr_system_message.content[0].text
             if curr_memory_str in curr_system_message_text:
                 logger.debug(

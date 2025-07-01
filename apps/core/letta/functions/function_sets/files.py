@@ -10,15 +10,20 @@ if TYPE_CHECKING:
 async def open_files(agent_state: "AgentState", file_requests: List[FileOpenRequest], close_all_others: bool = False) -> str:
     """Open one or more files and load their contents into files section in core memory. Maximum of 5 files can be opened simultaneously.
 
+    Use this when you want to:
+    - Inspect or reference file contents during reasoning
+    - View specific portions of large files (e.g. functions or definitions)
+    - Replace currently open files with a new set for focused context (via `close_all_others=True`)
+
     Examples:
-        Open single file (entire content):
-            file_requests = [FileOpenRequest(file_name="config.py")]
+        Open single file belonging to a directory named `project_utils` (entire content):
+            file_requests = [FileOpenRequest(file_name="project_utils/config.py")]
 
         Open multiple files with different view ranges:
             file_requests = [
-                FileOpenRequest(file_name="config.py", offset=1, length=50),     # Lines 1-50
-                FileOpenRequest(file_name="main.py", offset=100, length=100),    # Lines 100-199
-                FileOpenRequest(file_name="utils.py")                            # Entire file
+                FileOpenRequest(file_name="project_utils/config.py", offset=1, length=50),     # Lines 1-50
+                FileOpenRequest(file_name="project_utils/main.py", offset=100, length=100),    # Lines 100-199
+                FileOpenRequest(file_name="project_utils/utils.py")                            # Entire file
             ]
 
         Close all other files and open new ones:
@@ -43,6 +48,11 @@ async def grep_files(
     """
     Grep tool to search files across data sources using a keyword or regex pattern.
 
+    Use this when you want to:
+    - Quickly find occurrences of a variable, function, or keyword
+    - Locate log messages, error codes, or TODOs across files
+    - Understand surrounding code by including `context_lines`
+
     Args:
         pattern (str): Keyword or regex pattern to search within file contents.
         include (Optional[str]): Optional keyword or regex pattern to filter filenames to include in the search.
@@ -57,7 +67,12 @@ async def grep_files(
 
 async def search_files(agent_state: "AgentState", query: str) -> List["FileMetadata"]:
     """
-    Get list of most relevant files across all data sources using embedding search.
+    Get list of most relevant chunks from any file using embedding search.
+
+    Use this when you want to:
+    - Find related content that may not match exact keywords (e.g., conceptually similar sections)
+    - Look up high-level descriptions, documentation, or config patterns
+    - Perform fuzzy search when grep isn't sufficient
 
     Args:
         query (str): The search query.
