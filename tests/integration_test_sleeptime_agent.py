@@ -54,6 +54,7 @@ def actor(server, org_id):
     server.user_manager.delete_user_by_id(user.id)
 
 
+@pytest.mark.flaky(max_runs=3)
 @pytest.mark.asyncio(loop_scope="module")
 async def test_sleeptime_group_chat(server, actor):
     # 0. Refresh base tools

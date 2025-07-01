@@ -58,10 +58,14 @@ from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
 from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
-from letta.settings import model_settings
+from letta.settings import model_settings, summarizer_settings
 from letta.system import package_function_response
 from letta.types import JsonDict
 from letta.utils import log_telemetry, validate_function_response
+
+logger = get_logger(__name__)
+
+DEFAULT_SUMMARY_BLOCK_LABEL = "conversation_summary"
 
 
 class LettaAgent(BaseAgent):
@@ -77,11 +81,11 @@ class LettaAgent(BaseAgent):
         actor: User,
         step_manager: StepManager = NoopStepManager(),
         telemetry_manager: TelemetryManager = NoopTelemetryManager(),
-        summary_block_label: str = "conversation_summary",
-        message_buffer_limit: int = 60,  # TODO: Make this configurable
-        message_buffer_min: int = 15,  # TODO: Make this configurable
-        enable_summarization: bool = True,  # TODO: Make this configurable
-        max_summarization_retries: int = 3,  # TODO: Make this configurable
+        summary_block_label: str = DEFAULT_SUMMARY_BLOCK_LABEL,
+        message_buffer_limit: int = summarizer_settings.message_buffer_limit,
+        message_buffer_min: int = summarizer_settings.message_buffer_min,
+        enable_summarization: bool = summarizer_settings.enable_summarization,
+        max_summarization_retries: int = summarizer_settings.max_summarization_retries,
     ):
         super().__init__(agent_id=agent_id, openai_client=None, message_manager=message_manager, agent_manager=agent_manager, actor=actor)
 
@@ -117,7 +121,7 @@ class LettaAgent(BaseAgent):
             )
 
         self.summarizer = Summarizer(
-            mode=SummarizationMode.STATIC_MESSAGE_BUFFER,
+            mode=SummarizationMode(summarizer_settings.mode),
             summarizer_agent=self.summarization_agent,
             # TODO: Make this configurable
             message_buffer_limit=message_buffer_limit,

@@ -67,7 +67,8 @@ class BaseAgent(ABC):
         """
         raise NotImplementedError
 
-    def pre_process_input_message(self, input_messages: List[MessageCreate]) -> Any:
+    @staticmethod
+    def pre_process_input_message(input_messages: List[MessageCreate]) -> Any:
         """
         Pre-process function to run on the input_message.
         """

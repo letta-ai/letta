@@ -11,6 +11,7 @@ from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message, MessageCreate
 from letta.services.summarizer.enums import SummarizationMode
+from letta.templates.template_helper import render_template
 
 logger = get_logger(__name__)
 
@@ -123,29 +124,12 @@ class Summarizer:
             formatted_evicted_messages = [f"{i}. {msg}" for (i, msg) in enumerate(formatted_evicted_messages)]
             formatted_in_context_messages = [f"{i + offset}. {msg}" for (i, msg) in enumerate(formatted_in_context_messages)]
 
-            evicted_messages_str = "\n".join(formatted_evicted_messages)
-            in_context_messages_str = "\n".join(formatted_in_context_messages)
-            # Base prompt
-            prompt_header = (
-                f"You’re a memory-recall helper for an AI that can only keep the last {retain_count} messages. "
-                "Scan the conversation history, focusing on messages about to drop out of that window, "
-                "and write crisp notes that capture any important facts or insights about the conversation history so they aren’t lost."
+            summary_request_text = render_template(
+                "summary_request_text.j2",
+                retain_count=retain_count,
+                evicted_messages=formatted_evicted_messages,
+                in_context_messages=formatted_in_context_messages,
             )
-
-            # Sections
-            evicted_section = f"\n\n(Older) Evicted Messages:\n{evicted_messages_str}" if evicted_messages_str.strip() else ""
-            in_context_section = ""
-
-            if retain_count > 0 and in_context_messages_str.strip():
-                in_context_section = f"\n\n(Newer) In-Context Messages:\n{in_context_messages_str}"
-            elif retain_count == 0:
-                prompt_header = (
-                    "You’re a memory-recall helper for an AI that is about to forget all prior messages. "
-                    "Scan the conversation history and write crisp notes that capture any important facts or insights about the conversation history."
-                )
-
-            # Compose final prompt
-            summary_request_text = prompt_header + evicted_section + in_context_section
 
             # Fire-and-forget the summarization task
             self.fire_and_forget(
