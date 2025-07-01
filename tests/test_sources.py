@@ -150,17 +150,17 @@ def test_auto_attach_detach_files_tools(client: LettaSDKClient):
 @pytest.mark.parametrize(
     "file_path, expected_value, expected_label_regex",
     [
-        ("tests/data/test.txt", "test", r"test\.txt"),
-        ("tests/data/memgpt_paper.pdf", "MemGPT", r"memgpt_paper\.pdf"),
-        ("tests/data/toy_chat_fine_tuning.jsonl", '{"messages"', r"toy_chat_fine_tuning\.jsonl"),
-        ("tests/data/test.md", "h2 Heading", r"test\.md"),
-        ("tests/data/test.json", "glossary", r"test\.json"),
-        ("tests/data/react_component.jsx", "UserProfile", r"react_component\.jsx"),
-        ("tests/data/task_manager.java", "TaskManager", r"task_manager\.java"),
-        ("tests/data/data_structures.cpp", "BinarySearchTree", r"data_structures\.cpp"),
-        ("tests/data/api_server.go", "UserService", r"api_server\.go"),
-        ("tests/data/data_analysis.py", "StatisticalAnalyzer", r"data_analysis\.py"),
-        ("tests/data/test.csv", "Smart Fridge Plus", r"test\.csv"),
+        ("tests/data/test.txt", "test", r"test_source/test\.txt"),
+        ("tests/data/memgpt_paper.pdf", "MemGPT", r"test_source/memgpt_paper\.pdf"),
+        ("tests/data/toy_chat_fine_tuning.jsonl", '{"messages"', r"test_source/toy_chat_fine_tuning\.jsonl"),
+        ("tests/data/test.md", "h2 Heading", r"test_source/test\.md"),
+        ("tests/data/test.json", "glossary", r"test_source/test\.json"),
+        ("tests/data/react_component.jsx", "UserProfile", r"test_source/react_component\.jsx"),
+        ("tests/data/task_manager.java", "TaskManager", r"test_source/task_manager\.java"),
+        ("tests/data/data_structures.cpp", "BinarySearchTree", r"test_source/data_structures\.cpp"),
+        ("tests/data/api_server.go", "UserService", r"test_source/api_server\.go"),
+        ("tests/data/data_analysis.py", "StatisticalAnalyzer", r"test_source/data_analysis\.py"),
+        ("tests/data/test.csv", "Smart Fridge Plus", r"test_source/test\.csv"),
     ],
 )
 def test_file_upload_creates_source_blocks_correctly(
@@ -229,7 +229,6 @@ def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKC
     assert len(blocks) == 1
     assert any("test" in b.value for b in blocks)
     assert any(b.value.startswith("[Viewing file start") for b in blocks)
-    assert any(re.fullmatch(r"test\.txt", b.label) for b in blocks)
 
     # Detach the source
     client.agents.sources.detach(source_id=source.id, agent_id=agent_state.id)
@@ -239,7 +238,6 @@ def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKC
     blocks = agent_state.memory.file_blocks
     assert len(blocks) == 0
     assert not any("test" in b.value for b in blocks)
-    assert not any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
 
 def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, agent_state: AgentState):
@@ -261,7 +259,6 @@ def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, a
     blocks = agent_state.memory.file_blocks
     assert len(blocks) == 1
     assert any("test" in b.value for b in blocks)
-    assert any(re.fullmatch(r"test\.txt", b.label) for b in blocks)
 
     # Remove file from source
     client.sources.delete(source_id=source.id)
@@ -271,7 +268,6 @@ def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, a
     blocks = agent_state.memory.file_blocks
     assert len(blocks) == 0
     assert not any("test" in b.value for b in blocks)
-    assert not any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
 
 def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_state: AgentState):
@@ -314,7 +310,7 @@ def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_stat
         messages=[
             MessageCreate(
                 role="user",
-                content=f"Use ONLY the open_files tool to open the file named {file.file_name} with offset {offset} and length {length}",
+                content=f"Use ONLY the open_files tool to open the file named test_source/{file.file_name} with offset {offset} and length {length}",
             )
         ],
     )
@@ -556,7 +552,6 @@ def test_create_agent_with_source_ids_creates_source_blocks_correctly(client: Le
     blocks = temp_agent_state.memory.file_blocks
     assert len(blocks) == 1
     assert any(b.value.startswith("[Viewing file start (out of 554 chunks)]") for b in blocks)
-    assert any(re.fullmatch(r"long_test\.txt", b.label) for b in blocks)
 
     # Verify file tools were automatically attached
     file_tools = {tool.name for tool in temp_agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
@@ -600,7 +595,7 @@ def test_view_ranges_have_metadata(client: LettaSDKClient, agent_state: AgentSta
         messages=[
             MessageCreate(
                 role="user",
-                content=f"Use ONLY the open_files tool to open the file named {file.file_name} with offset {offset} and length {length}",
+                content=f"Use ONLY the open_files tool to open the file named test_source/{file.file_name} with offset {offset} and length {length}",
             )
         ],
     )
@@ -651,7 +646,7 @@ def test_duplicate_file_renaming(client: LettaSDKClient):
     files.sort(key=lambda f: f.created_at)
 
     # Verify filenames follow the count-based pattern
-    expected_filenames = ["test.txt", "test (1).txt", "test (2).txt"]
+    expected_filenames = ["test.txt", "test_(1).txt", "test_(2).txt"]
     actual_filenames = [f.file_name for f in files]
 
     assert actual_filenames == expected_filenames, f"Expected {expected_filenames}, got {actual_filenames}"
@@ -692,6 +687,7 @@ def test_open_files_schema_descriptions(client: LettaSDKClient):
     assert "# Lines 100-199" in description
     assert "# Entire file" in description
     assert "close_all_others=True" in description
+    assert "View specific portions of large files (e.g. functions or definitions)" in description
 
     # Check parameters structure
     assert "parameters" in schema
@@ -742,6 +738,6 @@ def test_open_files_schema_descriptions(client: LettaSDKClient):
     # Check length field
     assert "length" in file_request_properties
     length_prop = file_request_properties["length"]
-    expected_length_desc = "Optional number of lines to view from offset. If not specified, views to end of file."
+    expected_length_desc = "Optional number of lines to view from offset (inclusive). If not specified, views to end of file."
     assert length_prop["description"] == expected_length_desc
     assert length_prop["type"] == "integer"

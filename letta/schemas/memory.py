@@ -135,8 +135,13 @@ class Memory(BaseModel, validate_assignment=True):
 
     def compile(self, tool_usage_rules=None, sources=None) -> str:
         """Generate a string representation of the memory in-context using the Jinja2 template"""
-        template = Template(self.prompt_template)
-        return template.render(blocks=self.blocks, file_blocks=self.file_blocks, tool_usage_rules=tool_usage_rules, sources=sources)
+        try:
+            template = Template(self.prompt_template)
+            return template.render(blocks=self.blocks, file_blocks=self.file_blocks, tool_usage_rules=tool_usage_rules, sources=sources)
+        except TemplateSyntaxError as e:
+            raise ValueError(f"Invalid Jinja2 template syntax: {str(e)}")
+        except Exception as e:
+            raise ValueError(f"Prompt template is not compatible with current memory structure: {str(e)}")
 
     def list_block_labels(self) -> List[str]:
         """Return a list of the block names held inside the memory object"""

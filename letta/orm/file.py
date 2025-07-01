@@ -82,7 +82,7 @@ class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin, AsyncAttrs):
         cascade="all, delete-orphan",
     )
 
-    async def to_pydantic_async(self, include_content: bool = False) -> PydanticFileMetadata:
+    async def to_pydantic_async(self, include_content: bool = False, strip_directory_prefix: bool = False) -> PydanticFileMetadata:
         """
         Async version of `to_pydantic` that supports optional relationship loading
         without requiring `expire_on_commit=False`.
@@ -95,11 +95,15 @@ class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin, AsyncAttrs):
         else:
             content_text = None
 
+        file_name = self.file_name
+        if strip_directory_prefix:
+            file_name = "/".join(file_name.split("/")[1:])
+
         return PydanticFileMetadata(
             id=self.id,
             organization_id=self.organization_id,
             source_id=self.source_id,
-            file_name=self.file_name,
+            file_name=file_name,
             original_file_name=self.original_file_name,
             file_path=self.file_path,
             file_type=self.file_type,
