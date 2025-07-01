@@ -16,6 +16,13 @@ if TYPE_CHECKING:
 
 
 class FileAgent(SqlalchemyBase, OrganizationMixin):
+    """
+    Join table between File and Agent.
+
+    Tracks whether a file is currently "open" for the agent and
+    the specific excerpt (grepped section) the agent is looking at.
+    """
+
     __tablename__ = "files_agents"
     __table_args__ = (
         # (file_id, agent_id) must be unique
@@ -94,5 +101,6 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
             value=visible_content,
             label=self.file.file_name,
             read_only=True,
+            source_id=self.file.source_id,
             limit=CORE_MEMORY_SOURCE_CHAR_LIMIT,
         )

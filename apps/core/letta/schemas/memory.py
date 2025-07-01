@@ -124,7 +124,7 @@ class Memory(BaseModel, validate_assignment=True):
             Template(prompt_template)
 
             # Validate compatibility with current memory structure
-            Template(prompt_template).render(blocks=self.blocks, file_blocks=self.file_blocks)
+            Template(prompt_template).render(blocks=self.blocks, file_blocks=self.file_blocks, sources=[])
 
             # If we get here, the template is valid and compatible
             self.prompt_template = prompt_template
@@ -133,10 +133,10 @@ class Memory(BaseModel, validate_assignment=True):
         except Exception as e:
             raise ValueError(f"Prompt template is not compatible with current memory structure: {str(e)}")
 
-    def compile(self, tool_usage_rules=None) -> str:
+    def compile(self, tool_usage_rules=None, sources=None) -> str:
         """Generate a string representation of the memory in-context using the Jinja2 template"""
         template = Template(self.prompt_template)
-        return template.render(blocks=self.blocks, file_blocks=self.file_blocks, tool_usage_rules=tool_usage_rules)
+        return template.render(blocks=self.blocks, file_blocks=self.file_blocks, tool_usage_rules=tool_usage_rules, sources=sources)
 
     def list_block_labels(self) -> List[str]:
         """Return a list of the block names held inside the memory object"""

@@ -33,6 +33,9 @@ class BaseBlock(LettaBase, validate_assignment=True):
     description: Optional[str] = Field(None, description="Description of the block.")
     metadata: Optional[dict] = Field({}, description="Metadata of the block.")
 
+    # source association (for file blocks)
+    source_id: Optional[str] = Field(None, description="The source ID associated with this block (for file blocks).")
+
     # def __len__(self):
     #     return len(self.value)
 

@@ -5,14 +5,14 @@ import { ToolRulesVisual } from './ToolRulesVisual';
 
 export function ToolRulesEditor() {
   const agent = useCurrentAgent();
-    return (
-      <HStack gap={false} fullHeight fullWidth>
-        <VStack fullHeight flex>
-          <ToolRulesList defaultToolRules={agent?.tool_rules} />
-        </VStack>
-        <VStack fullHeight flex borderLeft>
-          <ToolRulesVisual />
-        </VStack>
-      </HStack>
-    );
+  return (
+    <HStack gap={false} fullHeight fullWidth>
+      <VStack fullHeight flex>
+        <ToolRulesList defaultToolRules={agent?.tool_rules} />
+      </VStack>
+      <VStack fullHeight flex borderLeft>
+        <ToolRulesVisual />
+      </VStack>
+    </HStack>
+  );
 }

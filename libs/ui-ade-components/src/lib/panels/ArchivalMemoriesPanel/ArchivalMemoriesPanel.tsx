@@ -106,36 +106,39 @@ function MemoryItem(props: MemoryItemProps) {
 
   const { formatDateAndTime } = useFormatters();
 
-  const { mutate: deleteMemory, isPending: isDeletingMemory, isError } =
-    useAgentsServiceDeletePassage({
-      onSuccess: async () => {
-        setOpen(false);
-        queryClient.setQueriesData<
-          InfiniteData<ListPassagesResponse> | undefined
-        >(
-          {
-            queryKey: UseInfiniteAgentPassagesQueryFn([
-              {
-                agentId: currentAgentId,
-              },
-            ]).slice(0, 2),
-            exact: false,
-          },
-          (oldData) => {
-            if (!oldData) {
-              return oldData;
-            }
+  const {
+    mutate: deleteMemory,
+    isPending: isDeletingMemory,
+    isError,
+  } = useAgentsServiceDeletePassage({
+    onSuccess: async () => {
+      setOpen(false);
+      queryClient.setQueriesData<
+        InfiniteData<ListPassagesResponse> | undefined
+      >(
+        {
+          queryKey: UseInfiniteAgentPassagesQueryFn([
+            {
+              agentId: currentAgentId,
+            },
+          ]).slice(0, 2),
+          exact: false,
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
 
-            return {
-              ...oldData,
-              pages: oldData.pages.map((p) =>
-                p.filter((m) => m.id !== memory.id),
-              ),
-            };
-          },
-        );
-      },
-    });
+          return {
+            ...oldData,
+            pages: oldData.pages.map((p) =>
+              p.filter((m) => m.id !== memory.id),
+            ),
+          };
+        },
+      );
+    },
+  });
 
   const handleRemoveMemory = useCallback(
     (memoryId: string) => {

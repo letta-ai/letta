@@ -531,7 +531,13 @@ export function useSendMessage(
     }
   }, [setIsPending]);
 
-  return { isPending, isError: failedToSendMessage, sendMessage, stopMessage, errorCode };
+  return {
+    isPending,
+    isError: failedToSendMessage,
+    sendMessage,
+    stopMessage,
+    errorCode,
+  };
 }
 
 interface ChatroomContextType {
