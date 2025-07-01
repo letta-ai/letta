@@ -47,5 +47,7 @@ export async function projectHeaderMiddleware(
     project_id: project.id,
   };
 
+  delete req.headers['x-project'];
+
   next();
 }

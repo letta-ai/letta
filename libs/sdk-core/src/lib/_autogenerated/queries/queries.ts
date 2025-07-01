@@ -3153,7 +3153,7 @@ export const useSourcesServiceUploadFileToSource = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
- * @param data.xProject
+ * @param data.xProject The project slug to associate with the agent (cloud only).
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -3508,7 +3508,7 @@ export const useAgentsServiceSummarizeAgentConversation = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
- * @param data.xProject
+ * @param data.xProject The project slug to associate with the group (cloud only).
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -3651,7 +3651,7 @@ export const useGroupsServiceSendGroupMessageStreaming = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
- * @param data.xProject
+ * @param data.xProject The project slug to associate with the identity (cloud only).
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -4406,7 +4406,7 @@ export const useToolsServiceAddMcpServer = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
- * @param data.xProject
+ * @param data.xProject The project slug to associate with the identity (cloud only).
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -5252,7 +5252,7 @@ export const useAgentsServiceResetMessages = <
  * @param data.groupId
  * @param data.requestBody
  * @param data.userId
- * @param data.xProject
+ * @param data.xProject The project slug to associate with the group (cloud only).
  * @returns Group Successful Response
  * @throws ApiError
  */

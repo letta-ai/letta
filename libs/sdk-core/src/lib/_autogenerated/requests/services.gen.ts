@@ -1181,7 +1181,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
-   * @param data.xProject
+   * @param data.xProject The project slug to associate with the agent (cloud only).
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2155,7 +2155,7 @@ export class GroupsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
-   * @param data.xProject
+   * @param data.xProject The project slug to associate with the group (cloud only).
    * @returns Group Successful Response
    * @throws ApiError
    */
@@ -2230,7 +2230,7 @@ export class GroupsService {
    * @param data.groupId
    * @param data.requestBody
    * @param data.userId
-   * @param data.xProject
+   * @param data.xProject The project slug to associate with the group (cloud only).
    * @returns Group Successful Response
    * @throws ApiError
    */
@@ -2482,7 +2482,7 @@ export class IdentitiesService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
-   * @param data.xProject
+   * @param data.xProject The project slug to associate with the identity (cloud only).
    * @returns Identity Successful Response
    * @throws ApiError
    */
@@ -2507,7 +2507,7 @@ export class IdentitiesService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
-   * @param data.xProject
+   * @param data.xProject The project slug to associate with the identity (cloud only).
    * @returns Identity Successful Response
    * @throws ApiError
    */

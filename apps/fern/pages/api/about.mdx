@@ -44,7 +44,10 @@ from letta_client import Letta
 client = Letta(base_url="http://localhost:8283")
 
 # connect to Letta Cloud
-client = Letta(token="LETTA_API_KEY")
+client = Letta(
+    token="LETTA_API_KEY",
+    project="default-project",
+)
 ```
 
 ### TypeScript SDK
@@ -65,6 +68,7 @@ const client = new LettaClient({
 // connect to Letta Cloud
 const client = new LettaClient({
     token: "LETTA_API_KEY",
+    project: "default-project",
 });
 
 ```

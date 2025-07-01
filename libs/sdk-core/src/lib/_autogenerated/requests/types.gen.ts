@@ -4843,6 +4843,9 @@ export type ListAgentsResponse = Array<AgentState>;
 export type CreateAgentData = {
   requestBody: CreateAgentRequest;
   userId?: string | null;
+  /**
+   * The project slug to associate with the agent (cloud only).
+   */
   xProject?: string | null;
 };
 
@@ -5204,6 +5207,9 @@ export type ListGroupsResponse = Array<Group>;
 export type CreateGroupData = {
   requestBody: GroupCreate;
   userId?: string | null;
+  /**
+   * The project slug to associate with the group (cloud only).
+   */
   xProject?: string | null;
 };
 
@@ -5226,6 +5232,9 @@ export type ModifyGroupData = {
   groupId: string;
   requestBody: GroupUpdate;
   userId?: string | null;
+  /**
+   * The project slug to associate with the group (cloud only).
+   */
   xProject?: string | null;
 };
 
@@ -5328,6 +5337,9 @@ export type ListIdentitiesResponse = Array<Identity>;
 export type CreateIdentityData = {
   requestBody: IdentityCreate;
   userId?: string | null;
+  /**
+   * The project slug to associate with the identity (cloud only).
+   */
   xProject?: string | null;
 };
 
@@ -5336,6 +5348,9 @@ export type CreateIdentityResponse = Identity;
 export type UpsertIdentityData = {
   requestBody: IdentityUpsert;
   userId?: string | null;
+  /**
+   * The project slug to associate with the identity (cloud only).
+   */
   xProject?: string | null;
 };
 

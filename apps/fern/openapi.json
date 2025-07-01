@@ -1909,8 +1909,10 @@
                   "type": "null"
                 }
               ],
+              "description": "The project slug to associate with the agent (cloud only).",
               "title": "X-Project"
-            }
+            },
+            "description": "The project slug to associate with the agent (cloud only)."
           }
         ],
         "requestBody": {
@@ -3925,8 +3927,10 @@
                   "type": "null"
                 }
               ],
+              "description": "The project slug to associate with the group (cloud only).",
               "title": "X-Project"
-            }
+            },
+            "description": "The project slug to associate with the group (cloud only)."
           }
         ],
         "requestBody": {
@@ -4063,8 +4067,10 @@
                   "type": "null"
                 }
               ],
+              "description": "The project slug to associate with the group (cloud only).",
               "title": "X-Project"
-            }
+            },
+            "description": "The project slug to associate with the group (cloud only)."
           }
         ],
         "requestBody": {
@@ -4682,8 +4688,10 @@
                   "type": "null"
                 }
               ],
+              "description": "The project slug to associate with the identity (cloud only).",
               "title": "X-Project"
-            }
+            },
+            "description": "The project slug to associate with the identity (cloud only)."
           }
         ],
         "requestBody": {
@@ -4737,8 +4745,10 @@
                   "type": "null"
                 }
               ],
+              "description": "The project slug to associate with the identity (cloud only).",
               "title": "X-Project"
-            }
+            },
+            "description": "The project slug to associate with the identity (cloud only)."
           }
         ],
         "requestBody": {
