@@ -650,11 +650,11 @@ paths:
         - steps
       x-fern-sdk-method-name: retrieve
   /v1/steps/{step_id}/feedback:
-    post:
+    patch:
       x-fern-sdk-group-name:
         - steps
         - feedback
-      x-fern-sdk-method-name: add
+      x-fern-sdk-method-name: create
   /v1/identities/:
     get:
       x-fern-sdk-group-name:
