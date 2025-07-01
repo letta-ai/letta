@@ -14,7 +14,7 @@ export function ConnectToLocalServerCommand(
     <InlineCode
       color={props.color}
       size="medium"
-      code={`letta server --ade --port=${LOCAL_PROJECT_SERVER_PORT}`}
+      code={`letta server --port=${LOCAL_PROJECT_SERVER_PORT}`}
     />
   );
 }
