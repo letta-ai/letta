@@ -9,9 +9,9 @@ import { AgentHeader } from './_components/AgentHeader/AgentHeader';
 import { AgentDetails } from './_components/AgentDetails/AgentDetails';
 
 interface AgentPageLayoutProps {
-  params: {
+  params: Promise<{
     agentId: string;
-  };
+  }>;
 }
 
 export default async function AgentPage(props: AgentPageLayoutProps) {

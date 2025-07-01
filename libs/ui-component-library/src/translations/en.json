@@ -137,6 +137,20 @@
       "title": "Source"
     }
   },
+  "components/QueryBuilder": {
+    "addCondition": "Add Condition",
+    "removeCondition": "Remove Condition",
+    "addCombinator": "Add Combinator"
+  },
+  "ComponentLibrary/FileTree": {
+    "loading": "Loading..."
+  },
+  "ComponentLibrary/InlineCode": {
+    "copyButton": "Copy Code"
+  },
+  "ComponentLibrary/ADEInput": {
+    "disabledTooltip": "This field cannot be edited"
+  },
   "components/JobStatusBadge": {
     "created": "Created",
     "running": "Running",

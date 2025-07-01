@@ -782,11 +782,6 @@
       "tooltip": "The amount of steps (inferences) your agent will make to the model"
     }
   },
-  "components/QueryBuilder": {
-    "addCondition": "Add Condition",
-    "removeCondition": "Remove Condition",
-    "addCombinator": "Add Combinator"
-  },
   "create-organization": {
     "error": "There was an error creating the organization, please try again or contact support.",
     "title": "Create a new Organization",
@@ -2009,15 +2004,6 @@
     "agentId": "Agent ID",
     "close": "Close",
     "actions": "Actions"
-  },
-  "ComponentLibrary/InlineCode": {
-    "copyButton": "Copy Code"
-  },
-  "ComponentLibrary/FileTree": {
-    "loading": "Loading..."
-  },
-  "ComponentLibrary/ADEInput": {
-    "disabledTooltip": "This field cannot be edited"
   },
   "development-servers/components/UserIsNotConnectedComponent": {
     "connecting": "Attempting to connect to your server...",
