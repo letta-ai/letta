@@ -124,6 +124,7 @@ class BaseAgent(ABC):
                 previous_message_count=num_messages - len(in_context_messages),
                 archival_memory_size=num_archival_memories,
                 tool_rules_solver=tool_rules_solver,
+                sources=agent_state.sources,
             )
 
             diff = united_diff(curr_system_message_text, new_system_message_str)

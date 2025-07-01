@@ -1111,6 +1111,7 @@ class AgentManager:
         include_relationships: Optional[List[str]] = None,
     ) -> PydanticAgentState:
         """Fetch an agent by its ID."""
+
         async with db_registry.async_session() as session:
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             return await agent.to_pydantic_async(include_relationships=include_relationships)
@@ -1461,6 +1462,7 @@ class AgentManager:
             timezone=agent_state.timezone,
             previous_message_count=num_messages - len(agent_state.message_ids),
             archival_memory_size=num_archival_memories,
+            sources=agent_state.sources,
         )
 
         diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
@@ -1493,7 +1495,8 @@ class AgentManager:
 
         Updates to the memory header should *not* trigger a rebuild, since that will simply flood recall storage with excess messages
         """
-        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory"], actor=actor)
+        # Get the current agent state
+        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory", "sources"], actor=actor)
         if not tool_rules_solver:
             tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
 
@@ -1529,6 +1532,7 @@ class AgentManager:
         num_archival_memories = await self.passage_manager.agent_passage_size_async(actor=actor, agent_id=agent_id)
 
         # update memory (TODO: potentially update recall/archival stats separately)
+
         new_system_message_str = compile_system_message(
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
@@ -1537,6 +1541,7 @@ class AgentManager:
             previous_message_count=num_messages - len(agent_state.message_ids),
             archival_memory_size=num_archival_memories,
             tool_rules_solver=tool_rules_solver,
+            sources=agent_state.sources,
         )
 
         diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
@@ -1654,7 +1659,7 @@ class AgentManager:
             # Update agent to only keep the system message
             agent.message_ids = [system_message_id]
             await agent.update_async(db_session=session, actor=actor)
-            agent_state = await agent.to_pydantic_async()
+            agent_state = await agent.to_pydantic_async(include_relationships=["sources"])
 
         # Optionally add default initial messages after the system message
         if add_default_initial_messages:
@@ -1774,8 +1779,7 @@ class AgentManager:
                 relationship_name="sources",
                 model_class=SourceModel,
                 item_ids=[source_id],
-                allow_partial=False,
-                replace=False,  # Extend existing sources rather than replace
+                allow_partial=False,  # Extend existing sources rather than replace
             )
 
             # Commit the changes

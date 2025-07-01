@@ -153,6 +153,7 @@ class VoiceAgent(BaseAgent):
             timezone=agent_state.timezone,
             previous_message_count=self.num_messages,
             archival_memory_size=self.num_archival_memories,
+            sources=agent_state.sources,
         )
         letta_message_db_queue = create_input_messages(
             input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=self.actor
@@ -366,7 +367,7 @@ class VoiceAgent(BaseAgent):
                         "description": (
                             "Look in long-term or earlier-conversation memory **only when** the "
                             "user asks about something missing from the visible context. "
-                            "The user’s latest utterance is sent automatically as the main query.\n\n"
+                            "The user's latest utterance is sent automatically as the main query.\n\n"
                             "Optional refinements (set unused fields to *null*):\n"
                             "• `convo_keyword_queries`   – extra names/IDs if the request is vague.\n"
                             "• `start_minutes_ago` / `end_minutes_ago` – limit results to a recent time window."
