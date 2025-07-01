@@ -1434,6 +1434,10 @@ export type EmbeddingConfig = {
    */
   handle?: string | null;
   /**
+   * The maximum batch size for processing embeddings.
+   */
+  batch_size?: number;
+  /**
    * The Azure endpoint for the model.
    */
   azure_endpoint?: string | null;

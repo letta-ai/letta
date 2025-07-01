@@ -209,6 +209,7 @@ export const EmbeddingConfig = z.object({
       z.undefined(),
     ])
     .optional(),
+  batch_size: z.union([z.number(), z.undefined()]).optional(),
   azure_endpoint: z
     .union([
       z.string(),

@@ -1705,6 +1705,14 @@
                                 ],
                                 "nullable": true
                               },
+                              "batch_size": {
+                                "oneOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {}
+                                ]
+                              },
                               "azure_endpoint": {
                                 "oneOf": [
                                   {
@@ -3198,6 +3206,14 @@
                                         {}
                                       ],
                                       "nullable": true
+                                    },
+                                    "batch_size": {
+                                      "oneOf": [
+                                        {
+                                          "type": "number"
+                                        },
+                                        {}
+                                      ]
                                     },
                                     "azure_endpoint": {
                                       "oneOf": [
@@ -6584,6 +6600,14 @@
                                 ],
                                 "nullable": true
                               },
+                              "batch_size": {
+                                "oneOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {}
+                                ]
+                              },
                               "azure_endpoint": {
                                 "oneOf": [
                                   {
@@ -8077,6 +8101,14 @@
                                         {}
                                       ],
                                       "nullable": true
+                                    },
+                                    "batch_size": {
+                                      "oneOf": [
+                                        {
+                                          "type": "number"
+                                        },
+                                        {}
+                                      ]
                                     },
                                     "azure_endpoint": {
                                       "oneOf": [

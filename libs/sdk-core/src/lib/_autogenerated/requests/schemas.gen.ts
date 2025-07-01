@@ -4401,6 +4401,12 @@ export const $EmbeddingConfig = {
       description:
         'The handle for this config, in the format provider/model-name.',
     },
+    batch_size: {
+      type: 'integer',
+      title: 'Batch Size',
+      description: 'The maximum batch size for processing embeddings.',
+      default: 32,
+    },
     azure_endpoint: {
       anyOf: [
         {
