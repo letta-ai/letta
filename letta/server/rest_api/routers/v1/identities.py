@@ -86,7 +86,9 @@ async def create_identity(
     identity: IdentityCreate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-    x_project: Optional[str] = Header(None, alias="X-Project"),  # Only handled by next js middleware
+    x_project: Optional[str] = Header(
+        None, alias="X-Project", description="The project slug to associate with the identity (cloud only)."
+    ),  # Only handled by next js middleware
 ):
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
@@ -110,7 +112,9 @@ async def upsert_identity(
     identity: IdentityUpsert = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-    x_project: Optional[str] = Header(None, alias="X-Project"),  # Only handled by next js middleware
+    x_project: Optional[str] = Header(
+        None, alias="X-Project", description="The project slug to associate with the identity (cloud only)."
+    ),  # Only handled by next js middleware
 ):
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)

@@ -242,7 +242,9 @@ async def create_agent(
     agent: CreateAgentRequest = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-    x_project: Optional[str] = Header(None, alias="X-Project"),  # Only handled by next js middleware
+    x_project: Optional[str] = Header(
+        None, alias="X-Project", description="The project slug to associate with the agent (cloud only)."
+    ),  # Only handled by next js middleware
 ):
     """
     Create a new agent with the specified configuration.
