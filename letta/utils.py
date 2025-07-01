@@ -991,16 +991,17 @@ def create_uuid_from_string(val: str):
     return uuid.UUID(hex=hex_string)
 
 
-def sanitize_filename(filename: str) -> str:
+def sanitize_filename(filename: str, add_uuid_suffix: bool = False) -> str:
     """
     Sanitize the given filename to prevent directory traversal, invalid characters,
     and reserved names while ensuring it fits within the maximum length allowed by the filesystem.
 
     Parameters:
         filename (str): The user-provided filename.
+        add_uuid_suffix (bool): If True, adds a UUID suffix for uniqueness (legacy behavior).
 
     Returns:
-        str: A sanitized filename that is unique and safe for use.
+        str: A sanitized filename.
     """
     # Extract the base filename to avoid directory components
     filename = os.path.basename(filename)
@@ -1015,14 +1016,21 @@ def sanitize_filename(filename: str) -> str:
     if base.startswith("."):
         raise ValueError(f"Invalid filename - derived file name {base} cannot start with '.'")
 
-    # Truncate the base name to fit within the maximum allowed length
-    max_base_length = MAX_FILENAME_LENGTH - len(ext) - 33  # 32 for UUID + 1 for `_`
-    if len(base) > max_base_length:
-        base = base[:max_base_length]
+    if add_uuid_suffix:
+        # Legacy behavior: Truncate the base name to fit within the maximum allowed length
+        max_base_length = MAX_FILENAME_LENGTH - len(ext) - 33  # 32 for UUID + 1 for `_`
+        if len(base) > max_base_length:
+            base = base[:max_base_length]
 
-    # Append a unique UUID suffix for uniqueness
-    unique_suffix = uuid.uuid4().hex[:4]
-    sanitized_filename = f"{base}_{unique_suffix}{ext}"
+        # Append a unique UUID suffix for uniqueness
+        unique_suffix = uuid.uuid4().hex[:4]
+        sanitized_filename = f"{base}_{unique_suffix}{ext}"
+    else:
+        max_base_length = MAX_FILENAME_LENGTH - len(ext)
+        if len(base) > max_base_length:
+            base = base[:max_base_length]
+
+        sanitized_filename = f"{base}{ext}"
 
     # Return the sanitized filename
     return sanitized_filename

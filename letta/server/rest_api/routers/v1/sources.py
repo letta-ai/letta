@@ -184,6 +184,20 @@ async def upload_file_to_source(
     """
     Upload a file to a data source.
     """
+    # NEW: Cloud based file processing
+    # Determine file's MIME type
+    file_mime_type = mimetypes.guess_type(file.filename)[0] or "application/octet-stream"
+
+    # Check if it's a simple text file
+    is_simple_file = is_simple_text_mime_type(file_mime_type)
+
+    # For complex files, require Mistral API key
+    if not is_simple_file and not settings.mistral_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Mistral API key is required to process this file type {file_mime_type}. Please configure your Mistral API key to upload complex file formats.",
+        )
+
     allowed_media_types = get_allowed_media_types()
 
     # Normalize incoming Content-Type header (strip charset or any parameters).
@@ -220,15 +234,19 @@ async def upload_file_to_source(
 
     content = await file.read()
 
-    # sanitize filename
-    file.filename = sanitize_filename(file.filename)
+    # Store original filename and generate unique filename
+    original_filename = sanitize_filename(file.filename)  # Basic sanitization only
+    unique_filename = await server.file_manager.generate_unique_filename(
+        original_filename=original_filename, source_id=source_id, organization_id=actor.organization_id
+    )
 
     # create file metadata
     file_metadata = FileMetadata(
         source_id=source_id,
-        file_name=file.filename,
+        file_name=unique_filename,
+        original_file_name=original_filename,
         file_path=None,
-        file_type=mimetypes.guess_type(file.filename)[0] or file.content_type or "unknown",
+        file_type=mimetypes.guess_type(original_filename)[0] or file.content_type or "unknown",
         file_size=file.size if file.size is not None else None,
         processing_status=FileProcessingStatus.PARSING,
     )
@@ -236,20 +254,6 @@ async def upload_file_to_source(
 
     # TODO: Do we need to pull in the full agent_states? Can probably simplify here right?
     agent_states = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
-
-    # NEW: Cloud based file processing
-    # Determine file's MIME type
-    file_mime_type = mimetypes.guess_type(file.filename)[0] or "application/octet-stream"
-
-    # Check if it's a simple text file
-    is_simple_file = is_simple_text_mime_type(file_mime_type)
-
-    # For complex files, require Mistral API key
-    if not is_simple_file and not settings.mistral_api_key:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Mistral API key is required to process this file type {file_mime_type}. Please configure your Mistral API key to upload complex file formats.",
-        )
 
     # Use cloud processing for all files (simple files always, complex files with Mistral key)
     logger.info("Running experimental cloud based file processing...")

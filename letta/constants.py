@@ -361,3 +361,5 @@ REDIS_DEFAULT_CACHE_PREFIX = "letta_cache"
 
 # TODO: This is temporary, eventually use token-based eviction
 MAX_FILES_OPEN = 5
+
+GET_PROVIDERS_TIMEOUT_SECONDS = 10

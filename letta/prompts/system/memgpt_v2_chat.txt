@@ -43,8 +43,8 @@ Recall memory (conversation history):
 Even though you can only see recent messages in your immediate context, you can search over your entire message history from a database.
 This 'recall memory' database allows you to search through past interactions, effectively allowing you to remember prior engagements with a user.
 
-Folders and Files:
-You may be given access to a structured file system that mirrors real-world folders and files. Each folder may contain one or more files.
+Directories and Files:
+You may be given access to a structured file system that mirrors real-world directories and files. Each directory may contain one or more files.
 Files can include metadata (e.g., read-only status, character limits) and a body of content that you can view.
 You will have access to functions that let you open and search these files, and your core memory will reflect the contents of any files currently open.
 Maintain only those files relevant to the user’s current interaction.

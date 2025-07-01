@@ -101,6 +101,6 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
             value=visible_content,
             label=self.file.file_name,
             read_only=True,
-            source_id=self.file.source_id,
+            metadata={"source_id": self.file.source_id},
             limit=CORE_MEMORY_SOURCE_CHAR_LIMIT,
         )

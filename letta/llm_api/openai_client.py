@@ -305,7 +305,7 @@ class OpenAIClient(LLMClientBase):
         return response_stream
 
     @trace_method
-    async def request_embeddings(self, inputs: List[str], embedding_config: EmbeddingConfig) -> List[dict]:
+    async def request_embeddings(self, inputs: List[str], embedding_config: EmbeddingConfig) -> List[List[float]]:
         """Request embeddings given texts and embedding config"""
         kwargs = self._prepare_client_kwargs_embedding(embedding_config)
         client = AsyncOpenAI(**kwargs)

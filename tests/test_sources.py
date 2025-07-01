@@ -126,6 +126,7 @@ def test_auto_attach_detach_files_tools(client: LettaSDKClient):
     assert len(client.sources.list()) == 1
 
     agent = client.agents.sources.attach(source_id=source_1.id, agent_id=agent.id)
+    assert len(client.agents.retrieve(agent_id=agent.id).sources) == 1
     assert_file_tools_present(agent, set(FILES_TOOLS))
 
     # Create and attach second source
@@ -133,6 +134,7 @@ def test_auto_attach_detach_files_tools(client: LettaSDKClient):
     assert len(client.sources.list()) == 2
 
     agent = client.agents.sources.attach(source_id=source_2.id, agent_id=agent.id)
+    assert len(client.agents.retrieve(agent_id=agent.id).sources) == 2
     # File tools should remain after attaching second source
     assert_file_tools_present(agent, set(FILES_TOOLS))
 
@@ -148,17 +150,17 @@ def test_auto_attach_detach_files_tools(client: LettaSDKClient):
 @pytest.mark.parametrize(
     "file_path, expected_value, expected_label_regex",
     [
-        ("tests/data/test.txt", "test", r"test_[a-z0-9]+\.txt"),
-        ("tests/data/memgpt_paper.pdf", "MemGPT", r"memgpt_paper_[a-z0-9]+\.pdf"),
-        ("tests/data/toy_chat_fine_tuning.jsonl", '{"messages"', r"toy_chat_fine_tuning_[a-z0-9]+\.jsonl"),
-        ("tests/data/test.md", "h2 Heading", r"test_[a-z0-9]+\.md"),
-        ("tests/data/test.json", "glossary", r"test_[a-z0-9]+\.json"),
-        ("tests/data/react_component.jsx", "UserProfile", r"react_component_[a-z0-9]+\.jsx"),
-        ("tests/data/task_manager.java", "TaskManager", r"task_manager_[a-z0-9]+\.java"),
-        ("tests/data/data_structures.cpp", "BinarySearchTree", r"data_structures_[a-z0-9]+\.cpp"),
-        ("tests/data/api_server.go", "UserService", r"api_server_[a-z0-9]+\.go"),
-        ("tests/data/data_analysis.py", "StatisticalAnalyzer", r"data_analysis_[a-z0-9]+\.py"),
-        ("tests/data/test.csv", "Smart Fridge Plus", r"test_[a-z0-9]+\.csv"),
+        ("tests/data/test.txt", "test", r"test\.txt"),
+        ("tests/data/memgpt_paper.pdf", "MemGPT", r"memgpt_paper\.pdf"),
+        ("tests/data/toy_chat_fine_tuning.jsonl", '{"messages"', r"toy_chat_fine_tuning\.jsonl"),
+        ("tests/data/test.md", "h2 Heading", r"test\.md"),
+        ("tests/data/test.json", "glossary", r"test\.json"),
+        ("tests/data/react_component.jsx", "UserProfile", r"react_component\.jsx"),
+        ("tests/data/task_manager.java", "TaskManager", r"task_manager\.java"),
+        ("tests/data/data_structures.cpp", "BinarySearchTree", r"data_structures\.cpp"),
+        ("tests/data/api_server.go", "UserService", r"api_server\.go"),
+        ("tests/data/data_analysis.py", "StatisticalAnalyzer", r"data_analysis\.py"),
+        ("tests/data/test.csv", "Smart Fridge Plus", r"test\.csv"),
     ],
 )
 def test_file_upload_creates_source_blocks_correctly(
@@ -227,7 +229,7 @@ def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKC
     assert len(blocks) == 1
     assert any("test" in b.value for b in blocks)
     assert any(b.value.startswith("[Viewing file start") for b in blocks)
-    assert any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
+    assert any(re.fullmatch(r"test\.txt", b.label) for b in blocks)
 
     # Detach the source
     client.agents.sources.detach(source_id=source.id, agent_id=agent_state.id)
@@ -259,7 +261,7 @@ def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, a
     blocks = agent_state.memory.file_blocks
     assert len(blocks) == 1
     assert any("test" in b.value for b in blocks)
-    assert any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
+    assert any(re.fullmatch(r"test\.txt", b.label) for b in blocks)
 
     # Remove file from source
     client.sources.delete(source_id=source.id)
@@ -554,7 +556,7 @@ def test_create_agent_with_source_ids_creates_source_blocks_correctly(client: Le
     blocks = temp_agent_state.memory.file_blocks
     assert len(blocks) == 1
     assert any(b.value.startswith("[Viewing file start (out of 554 chunks)]") for b in blocks)
-    assert any(re.fullmatch(r"long_test_[a-z0-9]+\.txt", b.label) for b in blocks)
+    assert any(re.fullmatch(r"long_test\.txt", b.label) for b in blocks)
 
     # Verify file tools were automatically attached
     file_tools = {tool.name for tool in temp_agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
@@ -622,6 +624,45 @@ def test_view_ranges_have_metadata(client: LettaSDKClient, agent_state: AgentSta
 54: x54 = 54
     """.strip()
     )
+
+
+def test_duplicate_file_renaming(client: LettaSDKClient):
+    """Test that duplicate files are renamed with count-based suffixes (e.g., file.txt, file (1).txt, file (2).txt)"""
+    # Create a new source
+    source = client.sources.create(name="test_duplicate_source", embedding="openai/text-embedding-3-small")
+
+    # Upload the same file three times
+    file_path = "tests/data/test.txt"
+
+    with open(file_path, "rb") as f:
+        first_file = client.sources.files.upload(source_id=source.id, file=f)
+
+    with open(file_path, "rb") as f:
+        second_file = client.sources.files.upload(source_id=source.id, file=f)
+
+    with open(file_path, "rb") as f:
+        third_file = client.sources.files.upload(source_id=source.id, file=f)
+
+    # Get all uploaded files
+    files = client.sources.files.list(source_id=source.id, limit=10)
+    assert len(files) == 3, f"Expected 3 files, got {len(files)}"
+
+    # Sort files by creation time to ensure predictable order
+    files.sort(key=lambda f: f.created_at)
+
+    # Verify filenames follow the count-based pattern
+    expected_filenames = ["test.txt", "test (1).txt", "test (2).txt"]
+    actual_filenames = [f.file_name for f in files]
+
+    assert actual_filenames == expected_filenames, f"Expected {expected_filenames}, got {actual_filenames}"
+
+    # Verify all files have the same original_file_name
+    for file in files:
+        assert file.original_file_name == "test.txt", f"Expected original_file_name='test.txt', got '{file.original_file_name}'"
+
+    print(f"✓ Successfully tested duplicate file renaming:")
+    for i, file in enumerate(files):
+        print(f"  File {i+1}: original='{file.original_file_name}' → renamed='{file.file_name}'")
 
 
 def test_open_files_schema_descriptions(client: LettaSDKClient):

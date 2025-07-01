@@ -1637,12 +1637,14 @@ class SyncServer(Server):
 
         async def get_provider_models(provider: Provider) -> list[LLMConfig]:
             try:
-                return await provider.list_llm_models_async()
+                async with asyncio.timeout(constants.GET_PROVIDERS_TIMEOUT_SECONDS):
+                    return await provider.list_llm_models_async()
+            except asyncio.TimeoutError:
+                warnings.warn(f"Timeout while listing LLM models for provider {provider}")
+                return []
             except Exception as e:
-                import traceback
-
                 traceback.print_exc()
-                warnings.warn(f"An error occurred while listing LLM models for provider {provider}: {e}")
+                warnings.warn(f"Error while listing LLM models for provider {provider}: {e}")
                 return []
 
         # Execute all provider model listing tasks concurrently
