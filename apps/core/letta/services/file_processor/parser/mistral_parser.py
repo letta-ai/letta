@@ -3,6 +3,7 @@ import base64
 from mistralai import Mistral, OCRPageObject, OCRResponse, OCRUsageInfo
 
 from letta.log import get_logger
+from letta.otel.tracing import trace_method
 from letta.services.file_processor.file_types import is_simple_text_mime_type
 from letta.services.file_processor.parser.base_parser import FileParser
 from letta.settings import settings
@@ -17,6 +18,7 @@ class MistralFileParser(FileParser):
         self.model = model
 
     # TODO: Make this return something general if we add more file parsers
+    @trace_method
     async def extract_text(self, content: bytes, mime_type: str) -> OCRResponse:
         """Extract text using Mistral OCR or shortcut for plain text."""
         try:

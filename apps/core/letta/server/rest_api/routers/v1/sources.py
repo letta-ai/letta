@@ -10,6 +10,7 @@ from starlette import status
 
 import letta.constants as constants
 from letta.log import get_logger
+from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import FileProcessingStatus
@@ -389,6 +390,7 @@ async def sleeptime_document_ingest_async(server: SyncServer, source_id: str, ac
             await server.sleeptime_document_ingest_async(agent, source, actor, clear_history)
 
 
+@trace_method
 async def load_file_to_source_cloud(
     server: SyncServer,
     agent_states: List[AgentState],
