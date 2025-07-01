@@ -34,6 +34,7 @@ const listVariant = cva('flex items-center gap-2 flex-row', {
       small: 'px-4 h-biHeight',
       xsmall: 'px-2 h-[28px]',
       xxsmall: 'px-2 h-[26px]',
+      large: 'px-3 h-[40px]',
     },
     fullWidth: {
       true: 'flex-1 justify-center',
@@ -89,6 +90,10 @@ export function TabGroup(props: TabGroupProps) {
 
     if (size === 'xxsmall') {
       return 'body4';
+    }
+
+    if (size === 'large') {
+      return 'body';
     }
 
     return 'body2';

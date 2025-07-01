@@ -17,6 +17,7 @@
     "baseUrl": ".",
     "strictNullChecks": true,
     "paths": {
+      "$afd/*": ["apps/agentfile-directory/src/lib/*"],
       "$web/*": ["apps/web/src/lib/*"],
       "@@letta-cloud/service-crm": ["libs/service-crm/src/index.ts"],
       "@letta-cloud/config-agent-starter-kits": [

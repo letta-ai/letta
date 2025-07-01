@@ -1,0 +1,9 @@
+{
+  "name": "agentfile-directory",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/agentfile-directory",
+  "projectType": "application",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project agentfile-directory --web",
+  "targets": {}
+}

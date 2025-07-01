@@ -862,3 +862,8 @@ alert message="" actor="":
 core-copy-plugins:
     @echo "🚧 Copying letta-cloud plugins to core for development..."
     cp -R scripts/cloud-plugins/* apps/core/letta/plugins/
+
+
+afd:
+    @echo "🚧 Running the AFD (agentfile-directory) service..."
+    npx nx dev agentfile-directory

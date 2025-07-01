@@ -6,13 +6,16 @@ export function ThumbsDownIcon(props: IconWrappedProps) {
   return (
     <IconWrapper {...props}>
       <svg
+        width="21"
+        height="20"
+        viewBox="0 0 21 20"
+        fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        height="24px"
-        viewBox="0 -960 960 960"
-        width="24px"
-        fill="currentColor"
       >
-        <path d="M240-840h440v520L400-40l-50-50q-7-7-11.5-19t-4.5-23v-14l44-174H120q-32 0-56-24t-24-56v-80q0-7 2-15t4-15l120-282q9-20 30-34t44-14Zm360 80H240L120-480v80h360l-54 220 174-174v-406Zm0 406v-406 406Zm80 34v-80h120v-360H680v-80h200v520H680Z" />
+        <path
+          d="M0.5 12.5V8.7155L3.977 0.5H15.7885V12.5L9.15375 19.096L7.79425 17.7365L9.00775 12.5H0.5ZM14.2885 2H4.9905L2 9.0095V11H10.9038L9.65 16.4808L14.2885 11.8615V2ZM15.7885 12.5V11H19V2H15.7885V0.5H20.5V12.5H15.7885Z"
+          fill="#141414"
+        />
       </svg>
     </IconWrapper>
   );

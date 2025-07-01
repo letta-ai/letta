@@ -327,6 +327,107 @@ export async function getAgentfileSummary(
   };
 }
 
+type GetAgentfileDetailsRequest = ServerInferRequest<
+  typeof contracts.agentfile.getAgentfileDetails
+>;
+
+type GetAgentfileDetailsResponse = ServerInferResponses<
+  typeof contracts.agentfile.getAgentfileDetails
+>;
+
+export async function getAgentfileDetails(
+  request: GetAgentfileDetailsRequest,
+): Promise<GetAgentfileDetailsResponse> {
+  const { agentId } = request.params;
+
+  const user = await getUser();
+  const permissions = await getAgentfilePermissions(agentId);
+  if (!permissions) {
+    return {
+      status: SERVER_CODE.NOT_FOUND,
+      body: 'Agentfile permissions not found',
+    };
+  }
+
+  const downloadIsAllowed = await userHasAgentfileAccess(user, permissions);
+  if (!downloadIsAllowed) {
+    return {
+      status: SERVER_CODE.FORBIDDEN,
+      body: 'You do not have access to this agentfile',
+    };
+  }
+
+  const [serviceAccountId, organization] = await Promise.all([
+    getOrganizationLettaServiceAccountId(permissions.organizationId),
+    db.query.organizations.findFirst({
+      where: eq(organizations.id, permissions.organizationId),
+      columns: {
+        name: true,
+      },
+    }),
+  ]);
+
+  if (!serviceAccountId) {
+    return {
+      status: SERVER_CODE.FAILED_DEPENDENCY,
+      body: 'Service Account ID not found',
+    };
+  }
+
+  const {
+    tools,
+    memory,
+    system,
+    llm_config,
+    tool_rules,
+    tool_exec_environment_variables,
+    description,
+    name,
+  } = await AgentsService.retrieveAgent(
+    {
+      agentId,
+    },
+    {
+      user_id: serviceAccountId,
+    },
+  );
+
+  return {
+    status: SERVER_CODE.OK,
+    body: {
+      downloadCount: 0,
+      upvotes: 0,
+      downvotes: 0,
+      memory: memory.blocks.map((block) => ({
+        label: block.label || '',
+        value: block.value || '',
+      })),
+      tools: tools.map((tool) => ({
+        name: tool.name || '',
+        source_type: tool.source_type || '',
+        description: tool.description || '',
+      })),
+      llmConfig: {
+        handle: llm_config?.handle || llm_config.model,
+        temperature: llm_config?.temperature || 0,
+        maxTokens: llm_config?.max_tokens || 0,
+      },
+      system: system || '',
+      description: description || '',
+      name: name || '',
+      author: organization?.name || '',
+      toolRules: tool_rules || [], // Assuming tool_rules is an array of objects
+      publishedAt: permissions.createdAt.toISOString(),
+      toolVariables: (tool_exec_environment_variables || []).map(
+        (variable) => ({
+          name: variable.key || '',
+          value: variable.value || '',
+        }),
+      ),
+    },
+  };
+}
+
 export const agentfileRouter = {
   getAgentfile,
   cloneAgentfile,
@@ -334,4 +435,5 @@ export const agentfileRouter = {
   getAgentfileMetadata,
   getAgentfileSummary,
   updateAgentfileAccessLevel,
+  getAgentfileDetails,
 };

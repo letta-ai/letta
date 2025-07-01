@@ -255,3 +255,9 @@ export * from './lib/core/JSONViewer/JSONViewer';
 export * from './lib/core/ImagePreview/ImagePreview';
 
 export * from './lib/reusable/FullScreenDashboardPageLayout/FullScreenDashboardPageLayout';
+
+export * from './lib/core/VoteComponent/VoteComponent';
+
+export * from './lib/core/BlockViewer/BlockViewer';
+
+export * from './lib/core/ToolLanguageIcon/ToolLanguageIcon';

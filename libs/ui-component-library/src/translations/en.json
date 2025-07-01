@@ -21,6 +21,16 @@
     "showMore": "show more",
     "showLess": "show less"
   },
+  "components/BlockViewer": {
+    "seeAll": "See all",
+    "Element": {
+      "title": "View all"
+    },
+    "ContentPreview": {
+      "label": "Value",
+      "title": "View"
+    }
+  },
   "components/StartEvent": {
     "title": "Agent loop initiated"
   },

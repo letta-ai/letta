@@ -6,13 +6,16 @@ export function ThumbsUpIcon(props: IconWrappedProps) {
   return (
     <IconWrapper {...props}>
       <svg
+        width="21"
+        height="20"
+        viewBox="0 0 21 20"
+        fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        height="24px"
-        viewBox="0 -960 960 960"
-        width="24px"
-        fill="currentColor"
       >
-        <path d="M720-120H280v-520l280-280 50 50q7 7 11.5 19t4.5 23v14l-44 174h258q32 0 56 24t24 56v80q0 7-2 15t-4 15L794-168q-9 20-30 34t-44 14Zm-360-80h360l120-280v-80H480l54-220-174 174v406Zm0-406v406-406Zm-80-34v80H160v360h120v80H80v-520h200Z" />
+        <path
+          d="M5.2115 19.5001V7.50005L11.8462 0.904053L13.2057 2.26355L11.9923 7.50005H20.5V11.2846L17.023 19.5001H5.2115ZM6.7115 18.0001H16.0095L19 10.9906V9.00005H10.0963L11.35 3.5193L6.7115 8.13855V18.0001ZM0.5 19.5001V7.50005H5.2115V9.00005H2V18.0001H5.2115V19.5001H0.5Z"
+          fill="#141414"
+        />
       </svg>
     </IconWrapper>
   );

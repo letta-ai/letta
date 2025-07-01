@@ -181,3 +181,4 @@ export * from './public/composioContracts';
 export * from './public/transactionsContracts';
 export * from './admin/adminContentViolationsContracts';
 export * from './public/observabilityContracts';
+export type * from './public/agentfileContracts';

@@ -14,5 +14,9 @@
   ```
  */
 
-type Runtime = 'letta-desktop' | 'letta-web' | 'please-stub-this-in-your-app';
+type Runtime =
+  | 'agentfile-directory'
+  | 'letta-desktop'
+  | 'letta-web'
+  | 'please-stub-this-in-your-app';
 export const CURRENT_RUNTIME: Runtime = 'please-stub-this-in-your-app';

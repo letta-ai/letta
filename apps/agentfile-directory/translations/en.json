@@ -1,0 +1,23 @@
+{
+  "Header": {
+    "navigation": {
+      "docs": "Docs",
+      "apiReference": "API reference",
+      "ade": "ADE"
+    }
+  },
+  "pages/agent/AgentHeader": {
+    "tabs": {
+      "overview": "Overview",
+      "memoryBlocks": "Memory Blocks",
+      "tools": "Tools",
+      "toolRules": "Tool Rules",
+      "toolVariables": "Tool Variables"
+    }
+  },
+  "components/AgentDetails": {
+    "memoryBlocks": "Memory Blocks",
+    "tools": "Tools",
+    "system": "System"
+  }
+}

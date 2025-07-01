@@ -64,6 +64,7 @@ export async function getAgentfilePermissions(agentId: string) {
     where: eq(agentfilePermissions.agentId, agentId),
     columns: {
       accessLevel: true,
+      createdAt: true,
       organizationId: true,
     },
   });
