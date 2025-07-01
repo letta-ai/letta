@@ -49,6 +49,7 @@ class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin, AsyncAttrs):
     )
 
     file_name: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The name of the file.")
+    original_file_name: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The original name of the file as uploaded.")
     file_path: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The file path on the system.")
     file_type: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The type of the file.")
     file_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, doc="The size of the file in bytes.")
@@ -99,6 +100,7 @@ class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin, AsyncAttrs):
             organization_id=self.organization_id,
             source_id=self.source_id,
             file_name=self.file_name,
+            original_file_name=self.original_file_name,
             file_path=self.file_path,
             file_type=self.file_type,
             file_size=self.file_size,

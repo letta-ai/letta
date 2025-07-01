@@ -315,9 +315,9 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
     if agent_type == AgentType.react_agent or agent_type == AgentType.workflow_agent:
         return (
             "{% if sources %}"
-            "<folders>\n"
+            "<directories>\n"
             "{% for source in sources %}"
-            f'<folder name="{{{{ source.name }}}}">\n'
+            f'<directory name="{{{{ source.name }}}}">\n'
             "{% if source.description %}"
             "<description>{{ source.description }}</description>\n"
             "{% endif %}"
@@ -326,7 +326,7 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% endif %}"
             "{% if file_blocks %}"
             "{% for block in file_blocks %}"
-            "{% if block.source_id == source.id %}"
+            "{% if block.metadata['source_id'] == source.id %}"
             f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\">\n"
             "<{{ block.label }}>\n"
             "<description>\n"
@@ -344,9 +344,9 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% endif %}"
             "{% endfor %}"
             "{% endif %}"
-            "</folder>\n"
+            "</directory>\n"
             "{% endfor %}"
-            "</folders>"
+            "</directories>"
             "{% endif %}"
         )
 
@@ -382,9 +382,9 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "</tool_usage_rules>"
             "{% endif %}"
             "\n\n{% if sources %}"
-            "<folders>\n"
+            "<directories>\n"
             "{% for source in sources %}"
-            f'<folder name="{{{{ source.name }}}}">\n'
+            f'<directory name="{{{{ source.name }}}}">\n'
             "{% if source.description %}"
             "<description>{{ source.description }}</description>\n"
             "{% endif %}"
@@ -393,7 +393,7 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% endif %}"
             "{% if file_blocks %}"
             "{% for block in file_blocks %}"
-            "{% if block.source_id == source.id %}"
+            "{% if block.metadata['source_id'] == source.id %}"
             f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\" name=\"{{{{ block.label }}}}\">\n"
             "{% if block.description %}"
             "<description>\n"
@@ -414,9 +414,9 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% endif %}"
             "{% endfor %}"
             "{% endif %}"
-            "</folder>\n"
+            "</directory>\n"
             "{% endfor %}"
-            "</folders>"
+            "</directories>"
             "{% endif %}"
         )
 
@@ -448,9 +448,9 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "</tool_usage_rules>"
             "{% endif %}"
             "\n\n{% if sources %}"
-            "<folders>\n"
+            "<directories>\n"
             "{% for source in sources %}"
-            f'<folder name="{{{{ source.name }}}}">\n'
+            f'<directory name="{{{{ source.name }}}}">\n'
             "{% if source.description %}"
             "<description>{{ source.description }}</description>\n"
             "{% endif %}"
@@ -459,7 +459,7 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% endif %}"
             "{% if file_blocks %}"
             "{% for block in file_blocks %}"
-            "{% if block.source_id == source.id %}"
+            "{% if block.metadata['source_id'] == source.id %}"
             f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\" name=\"{{{{ block.label }}}}\">\n"
             "{% if block.description %}"
             "<description>\n"
@@ -480,8 +480,8 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% endif %}"
             "{% endfor %}"
             "{% endif %}"
-            "</folder>\n"
+            "</directory>\n"
             "{% endfor %}"
-            "</folders>"
+            "</directories>"
             "{% endif %}"
         )

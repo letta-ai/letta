@@ -1779,7 +1779,7 @@ class AgentManager:
                 relationship_name="sources",
                 model_class=SourceModel,
                 item_ids=[source_id],
-                allow_partial=False,  # Extend existing sources rather than replace
+                replace=False,
             )
 
             # Commit the changes

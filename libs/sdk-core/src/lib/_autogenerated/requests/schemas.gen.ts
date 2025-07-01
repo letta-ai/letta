@@ -4541,6 +4541,18 @@ export const $FileMetadata = {
       title: 'File Name',
       description: 'The name of the file.',
     },
+    original_file_name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Original File Name',
+      description: 'The original name of the file as uploaded.',
+    },
     file_path: {
       anyOf: [
         {

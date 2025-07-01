@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON, Index
+from sqlalchemy import JSON, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm import FileMetadata
@@ -25,6 +25,7 @@ class Source(SqlalchemyBase, OrganizationMixin):
 
     __table_args__ = (
         Index(f"source_created_at_id_idx", "created_at", "id"),
+        UniqueConstraint("name", "organization_id", name="uq_source_name_organization"),
         {"extend_existing": True},
     )
 

@@ -1509,6 +1509,10 @@ export type FileMetadata = {
    */
   file_name?: string | null;
   /**
+   * The original name of the file as uploaded.
+   */
+  original_file_name?: string | null;
+  /**
    * The path to the file.
    */
   file_path?: string | null;

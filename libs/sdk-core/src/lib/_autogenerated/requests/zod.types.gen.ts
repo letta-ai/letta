@@ -3565,6 +3565,14 @@ export const FileMetadata = z.object({
       z.undefined(),
     ])
     .optional(),
+  original_file_name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   file_path: z
     .union([
       z.string(),
