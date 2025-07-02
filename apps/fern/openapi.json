@@ -2569,6 +2569,51 @@
         }
       }
     },
+    "/v1/agents/{agent_id}/files/close-all": {
+      "patch": {
+        "tags": ["agents"],
+        "summary": "Close All Open Files",
+        "description": "Closes all currently open files for a given agent.\n\nThis endpoint updates the file state for the agent so that no files are marked as open.\nTypically used to reset the working memory view for the agent.",
+        "operationId": "close_all_open_files",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Response Close All Open Files"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/{agent_id}/sources": {
       "get": {
         "tags": ["agents"],

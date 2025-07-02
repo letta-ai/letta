@@ -72,7 +72,7 @@ def upload_file_and_wait(client: LettaSDKClient, source_id: str, file_path: str,
 @pytest.fixture
 def agent_state(client: LettaSDKClient):
     open_file_tool = client.tools.list(name="open_files")[0]
-    search_files_tool = client.tools.list(name="search_files")[0]
+    search_files_tool = client.tools.list(name="semantic_search_files")[0]
     grep_tool = client.tools.list(name="grep_files")[0]
 
     agent_state = client.agents.create(
@@ -400,11 +400,13 @@ def test_agent_uses_search_files_correctly(client: LettaSDKClient, agent_state: 
     assert len(files) == 1
     assert files[0].source_id == source.id
 
-    # Ask agent to use the search_files tool
+    # Ask agent to use the semantic_search_files tool
     search_files_response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[
-            MessageCreate(role="user", content=f"Use ONLY the search_files tool to search for details regarding the electoral history.")
+            MessageCreate(
+                role="user", content=f"Use ONLY the semantic_search_files tool to search for details regarding the electoral history."
+            )
         ],
     )
     print(f"Search file request sent, got {len(search_files_response.messages)} message(s) in response")
@@ -413,7 +415,7 @@ def test_agent_uses_search_files_correctly(client: LettaSDKClient, agent_state: 
     # Check that archival_memory_search was called
     tool_calls = [msg for msg in search_files_response.messages if msg.message_type == "tool_call_message"]
     assert len(tool_calls) > 0, "No tool calls found"
-    assert any(tc.tool_call.name == "search_files" for tc in tool_calls), "search_files not called"
+    assert any(tc.tool_call.name == "semantic_search_files" for tc in tool_calls), "semantic_search_files not called"
 
     # Check it returned successfully
     tool_returns = [msg for msg in search_files_response.messages if msg.message_type == "tool_return_message"]
@@ -444,7 +446,7 @@ def test_agent_uses_grep_correctly_basic(client: LettaSDKClient, agent_state: Ag
     assert len(files) == 1
     assert files[0].source_id == source.id
 
-    # Ask agent to use the search_files tool
+    # Ask agent to use the semantic_search_files tool
     search_files_response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[MessageCreate(role="user", content=f"Use ONLY the grep_files tool to search for `Nunzia De Girolamo`.")],
@@ -455,7 +457,7 @@ def test_agent_uses_grep_correctly_basic(client: LettaSDKClient, agent_state: Ag
     # Check that grep_files was called
     tool_calls = [msg for msg in search_files_response.messages if msg.message_type == "tool_call_message"]
     assert len(tool_calls) > 0, "No tool calls found"
-    assert any(tc.tool_call.name == "grep_files" for tc in tool_calls), "search_files not called"
+    assert any(tc.tool_call.name == "grep_files" for tc in tool_calls), "semantic_search_files not called"
 
     # Check it returned successfully
     tool_returns = [msg for msg in search_files_response.messages if msg.message_type == "tool_return_message"]
@@ -486,7 +488,7 @@ def test_agent_uses_grep_correctly_advanced(client: LettaSDKClient, agent_state:
     assert len(files) == 1
     assert files[0].source_id == source.id
 
-    # Ask agent to use the search_files tool
+    # Ask agent to use the semantic_search_files tool
     search_files_response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[

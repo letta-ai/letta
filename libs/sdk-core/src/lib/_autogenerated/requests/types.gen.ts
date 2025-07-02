@@ -4988,6 +4988,13 @@ export type DetachSourceFromAgentData = {
 
 export type DetachSourceFromAgentResponse = AgentState;
 
+export type CloseAllOpenFilesData = {
+  agentId: string;
+  userId?: string | null;
+};
+
+export type CloseAllOpenFilesResponse = Array<string>;
+
 export type ListAgentSourcesData = {
   agentId: string;
   userId?: string | null;
@@ -6696,6 +6703,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/files/close-all': {
+    patch: {
+      req: CloseAllOpenFilesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<string>;
         /**
          * Validation Error
          */

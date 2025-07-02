@@ -4998,6 +4998,52 @@ export const useAgentsServiceDetachSourceFromAgent = <
     ...options,
   });
 /**
+ * Close All Open Files
+ * Closes all currently open files for a given agent.
+ *
+ * This endpoint updates the file state for the agent so that no files are marked as open.
+ * Typically used to reset the working memory view for the agent.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.userId
+ * @returns string Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceCloseAllOpenFiles = <
+  TData = Common.AgentsServiceCloseAllOpenFilesMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, userId }) =>
+      AgentsService.closeAllOpenFiles({
+        agentId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
  * Modify Block
  * Updates a core memory block of an agent.
  * @param data The data for the request.

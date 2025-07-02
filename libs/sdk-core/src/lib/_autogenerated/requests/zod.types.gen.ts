@@ -6874,6 +6874,24 @@ export const patch_Detach_source_from_agent = {
   response: AgentState,
 };
 
+export type patch_Close_all_open_files = typeof patch_Close_all_open_files;
+export const patch_Close_all_open_files = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/agents/{agent_id}/files/close-all'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(z.string()),
+};
+
 export type get_List_agent_sources = typeof get_List_agent_sources;
 export const get_List_agent_sources = {
   method: z.literal('GET'),
@@ -9107,6 +9125,7 @@ export const EndpointByMethod = {
       patch_Attach_source_to_agent,
     '/v1/agents/{agent_id}/sources/detach/{source_id}':
       patch_Detach_source_from_agent,
+    '/v1/agents/{agent_id}/files/close-all': patch_Close_all_open_files,
     '/v1/agents/{agent_id}/core-memory/blocks/{block_label}':
       patch_Modify_core_memory_block,
     '/v1/agents/{agent_id}/core-memory/blocks/attach/{block_id}':

@@ -76,7 +76,7 @@ class LettaFileToolExecutor(ToolExecutor):
         function_map = {
             "open_files": self.open_files,
             "grep_files": self.grep_files,
-            "search_files": self.search_files,
+            "semantic_search_files": self.semantic_search_files,
         }
 
         if function_name not in function_map:
@@ -463,7 +463,7 @@ class LettaFileToolExecutor(ToolExecutor):
         return "\n".join(formatted_results)
 
     @trace_method
-    async def search_files(self, agent_state: AgentState, query: str, limit: int = 10) -> str:
+    async def semantic_search_files(self, agent_state: AgentState, query: str, limit: int = 10) -> str:
         """
         Search for text within attached files using semantic search and return passages with their source filenames.
 

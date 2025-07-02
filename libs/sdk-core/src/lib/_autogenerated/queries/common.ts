@@ -1854,6 +1854,9 @@ export type AgentsServiceAttachSourceToAgentMutationResult = Awaited<
 export type AgentsServiceDetachSourceFromAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.detachSourceFromAgent>
 >;
+export type AgentsServiceCloseAllOpenFilesMutationResult = Awaited<
+  ReturnType<typeof AgentsService.closeAllOpenFiles>
+>;
 export type AgentsServiceModifyCoreMemoryBlockMutationResult = Awaited<
   ReturnType<typeof AgentsService.modifyCoreMemoryBlock>
 >;

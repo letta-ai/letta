@@ -96,6 +96,8 @@ import type {
   AttachSourceToAgentResponse,
   DetachSourceFromAgentData,
   DetachSourceFromAgentResponse,
+  CloseAllOpenFilesData,
+  CloseAllOpenFilesResponse,
   ListAgentSourcesData,
   ListAgentSourcesResponse,
   RetrieveAgentMemoryData,
@@ -1555,6 +1557,35 @@ export class AgentsService {
       path: {
         agent_id: data.agentId,
         source_id: data.sourceId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Close All Open Files
+   * Closes all currently open files for a given agent.
+   *
+   * This endpoint updates the file state for the agent so that no files are marked as open.
+   * Typically used to reset the working memory view for the agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.userId
+   * @returns string Successful Response
+   * @throws ApiError
+   */
+  public static closeAllOpenFiles(
+    data: CloseAllOpenFilesData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CloseAllOpenFilesResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/files/close-all',
+      path: {
+        agent_id: data.agentId,
       },
       errors: {
         422: 'Validation Error',
