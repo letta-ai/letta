@@ -91,7 +91,7 @@ class Tool(BaseTool):
                     description=description,
                     append_heartbeat=False,
                 )
-            elif not self.json_schema:
+            else:  # elif not self.json_schema: # TODO: JSON schema is not being derived correctly the first time?
                 # If there's not a json_schema provided, then we need to re-derive
                 try:
                     self.json_schema = derive_openai_json_schema(source_code=self.source_code)
