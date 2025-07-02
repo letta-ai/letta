@@ -9860,18 +9860,6 @@
             "description": "Metadata of the block.",
             "default": {}
           },
-          "source_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Id",
-            "description": "The source ID associated with this block (for file blocks)."
-          },
           "id": {
             "type": "string",
             "pattern": "^block-[a-fA-F0-9]{8}",
@@ -10009,18 +9997,6 @@
             "title": "Metadata",
             "description": "Metadata of the block.",
             "default": {}
-          },
-          "source_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Id",
-            "description": "The source ID associated with this block (for file blocks)."
           }
         },
         "type": "object",
@@ -10565,6 +10541,18 @@
         "type": "object",
         "required": ["tool_name", "type", "children"],
         "title": "ChildToolRuleSchema"
+      },
+      "CodeInput": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "Python source code to parse for JSON schema"
+          }
+        },
+        "type": "object",
+        "required": ["code"],
+        "title": "CodeInput"
       },
       "CompletionCreateParamsNonStreaming": {
         "properties": {
@@ -12332,18 +12320,6 @@
             "title": "Metadata",
             "description": "Metadata of the block.",
             "default": {}
-          },
-          "source_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Id",
-            "description": "The source ID associated with this block (for file blocks)."
           }
         },
         "type": "object",

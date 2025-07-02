@@ -881,14 +881,6 @@ export const Block = z.object({
       z.undefined(),
     ])
     .optional(),
-  source_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
   id: z.union([z.string(), z.undefined()]).optional(),
   organization_id: z
     .union([
@@ -1690,9 +1682,6 @@ export const BlockUpdate = z.object({
   metadata: z
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
     .optional(),
-  source_id: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
 });
 
 export type Body_import_agent_serialized = z.infer<
@@ -2100,6 +2089,11 @@ export const ChatCompletionUserMessageParam = z.object({
   ]),
   role: z.string(),
   name: z.union([z.string(), z.undefined()]).optional(),
+});
+
+export type CodeInput = z.infer<typeof CodeInput>;
+export const CodeInput = z.object({
+  code: z.string(),
 });
 
 export type openai__types__chat__completion_create_params__Function = z.infer<
@@ -3196,14 +3190,6 @@ export const CreateBlock = z.object({
       z.unknown(),
       z.null(),
       z.array(z.union([z.unknown(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  source_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -6311,6 +6297,22 @@ export const post_Test_mcp_server = {
   response: z.array(MCPTool),
 };
 
+export type post_Generate_json_schema = typeof post_Generate_json_schema;
+export const post_Generate_json_schema = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/tools/generate-schema'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: CodeInput,
+  }),
+  response: z.unknown(),
+};
+
 export type get_Count_sources = typeof get_Count_sources;
 export const get_Count_sources = {
   method: z.literal('GET'),
@@ -9138,6 +9140,7 @@ export const EndpointByMethod = {
     '/v1/tools/mcp/servers/{mcp_server_name}/{mcp_tool_name}':
       post_Add_mcp_tool,
     '/v1/tools/mcp/servers/test': post_Test_mcp_server,
+    '/v1/tools/generate-schema': post_Generate_json_schema,
     '/v1/sources/': post_Create_source,
     '/v1/sources/{source_id}/upload': post_Upload_file_to_source,
     '/v1/agents/': post_Create_agent,

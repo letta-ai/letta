@@ -549,10 +549,6 @@ export type Block = {
     [key: string]: unknown;
   } | null;
   /**
-   * The source ID associated with this block (for file blocks).
-   */
-  source_id?: string | null;
-  /**
    * The human-friendly ID of the Block
    */
   id?: string;
@@ -612,10 +608,6 @@ export type BlockUpdate = {
   metadata?: {
     [key: string]: unknown;
   } | null;
-  /**
-   * The source ID associated with this block (for file blocks).
-   */
-  source_id?: string | null;
 };
 
 export type Body_import_agent_serialized = {
@@ -777,6 +769,13 @@ export type ChildToolRuleSchema = {
   tool_name: string;
   type: string;
   children: Array<string>;
+};
+
+export type CodeInput = {
+  /**
+   * Python source code to parse for JSON schema
+   */
+  code: string;
 };
 
 export type CompletionCreateParamsNonStreaming = {
@@ -1353,10 +1352,6 @@ export type CreateBlock = {
   metadata?: {
     [key: string]: unknown;
   } | null;
-  /**
-   * The source ID associated with this block (for file blocks).
-   */
-  source_id?: string | null;
 };
 
 export type DynamicManager = {
@@ -4684,6 +4679,15 @@ export type TestMcpServerData = {
 
 export type TestMcpServerResponse = Array<MCPTool>;
 
+export type GenerateJsonSchemaData = {
+  requestBody: CodeInput;
+  userId?: string | null;
+};
+
+export type GenerateJsonSchemaResponse = {
+  [key: string]: unknown;
+};
+
 export type CountSourcesData = {
   userId?: string | null;
 };
@@ -6297,6 +6301,23 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Array<MCPTool>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tools/generate-schema': {
+    post: {
+      req: GenerateJsonSchemaData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: {
+          [key: string]: unknown;
+        };
         /**
          * Validation Error
          */

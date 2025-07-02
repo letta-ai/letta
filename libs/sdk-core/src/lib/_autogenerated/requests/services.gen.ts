@@ -42,6 +42,8 @@ import type {
   DeleteMcpServerResponse,
   TestMcpServerData,
   TestMcpServerResponse,
+  GenerateJsonSchemaData,
+  GenerateJsonSchemaResponse,
   CountSourcesData,
   CountSourcesResponse,
   RetrieveSourceData,
@@ -772,6 +774,31 @@ export class ToolsService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/tools/mcp/servers/test',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Generate Json Schema
+   * Generate a JSON schema from the given Python source code defining a function or class.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static generateJsonSchema(
+    data: GenerateJsonSchemaData,
+    headers?: { user_id: string },
+  ): CancelablePromise<GenerateJsonSchemaResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/tools/generate-schema',
       body: data.requestBody,
       mediaType: 'application/json',
       errors: {

@@ -1626,19 +1626,6 @@ export const $Block = {
       description: 'Metadata of the block.',
       default: {},
     },
-    source_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Source Id',
-      description:
-        'The source ID associated with this block (for file blocks).',
-    },
     id: {
       type: 'string',
       pattern: '^block-[a-fA-F0-9]{8}',
@@ -1803,19 +1790,6 @@ export const $BlockUpdate = {
       title: 'Metadata',
       description: 'Metadata of the block.',
       default: {},
-    },
-    source_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Source Id',
-      description:
-        'The source ID associated with this block (for file blocks).',
     },
   },
   type: 'object',
@@ -2386,6 +2360,19 @@ export const $ChildToolRuleSchema = {
   type: 'object',
   required: ['tool_name', 'type', 'children'],
   title: 'ChildToolRuleSchema',
+} as const;
+
+export const $CodeInput = {
+  properties: {
+    code: {
+      type: 'string',
+      title: 'Code',
+      description: 'Python source code to parse for JSON schema',
+    },
+  },
+  type: 'object',
+  required: ['code'],
+  title: 'CodeInput',
 } as const;
 
 export const $CompletionCreateParamsNonStreaming = {
@@ -4208,19 +4195,6 @@ export const $CreateBlock = {
       title: 'Metadata',
       description: 'Metadata of the block.',
       default: {},
-    },
-    source_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Source Id',
-      description:
-        'The source ID associated with this block (for file blocks).',
     },
   },
   type: 'object',

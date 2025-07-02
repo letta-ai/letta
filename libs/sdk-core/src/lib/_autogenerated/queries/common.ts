@@ -1707,6 +1707,9 @@ export type ToolsServiceAddMcpToolMutationResult = Awaited<
 export type ToolsServiceTestMcpServerMutationResult = Awaited<
   ReturnType<typeof ToolsService.testMcpServer>
 >;
+export type ToolsServiceGenerateJsonSchemaMutationResult = Awaited<
+  ReturnType<typeof ToolsService.generateJsonSchema>
+>;
 export type SourcesServiceCreateSourceMutationResult = Awaited<
   ReturnType<typeof SourcesService.createSource>
 >;

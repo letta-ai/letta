@@ -37,6 +37,7 @@ import {
   BlockUpdate,
   Body_import_agent_serialized,
   Body_upload_file_to_source,
+  CodeInput,
   CreateAgentRequest,
   CreateArchivalMemory,
   CreateBatch,
@@ -3065,6 +3066,49 @@ export const useToolsServiceTestMcpServer = <
   >({
     mutationFn: ({ requestBody }) =>
       ToolsService.testMcpServer({ requestBody }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Generate Json Schema
+ * Generate a JSON schema from the given Python source code defining a function or class.
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useToolsServiceGenerateJsonSchema = <
+  TData = Common.ToolsServiceGenerateJsonSchemaMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: CodeInput;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: CodeInput;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, userId }) =>
+      ToolsService.generateJsonSchema({
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
     ...options,
   });
 /**

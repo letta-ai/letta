@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from composio.client import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.collections import ActionModel, AppModel
@@ -10,8 +10,10 @@ from composio.exceptions import (
     EnumStringNotFound,
 )
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from letta.errors import LettaToolCreateError
+from letta.functions.functions import derive_openai_json_schema
 from letta.functions.mcp_client.exceptions import MCPTimeoutError
 from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
 from letta.helpers.composio_helpers import get_composio_api_key
@@ -656,3 +658,24 @@ async def test_mcp_server(
                 "server_name": request.server_name,
             },
         )
+
+
+class CodeInput(BaseModel):
+    code: str = Field(..., description="Python source code to parse for JSON schema")
+
+
+@router.post("/generate-schema", response_model=Dict[str, Any], operation_id="generate_json_schema")
+async def generate_json_schema(
+    request: CodeInput = Body(...),
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Generate a JSON schema from the given Python source code defining a function or class.
+    """
+    try:
+        schema = derive_openai_json_schema(source_code=request.code)
+        return schema
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to generate schema: {str(e)}")
