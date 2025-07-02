@@ -836,13 +836,11 @@ def anthropic_chat_completions_request(
         max_reasoning_tokens=max_reasoning_tokens,
     )
     log_event(name="llm_request_sent", attributes=data)
-    logging.info("ranckajbvkjal")
     response = anthropic_client.beta.messages.create(
         **data,
         betas=betas,
     )
     log_event(name="llm_response_received", attributes={"response": response.json()})
-    logger.info(response.json())
     return convert_anthropic_response_to_chatcompletion(response=response, inner_thoughts_xml_tag=inner_thoughts_xml_tag)
 
 
