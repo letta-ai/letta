@@ -681,8 +681,8 @@ def test_open_files_schema_descriptions(client: LettaSDKClient):
 
     # Check that examples are included
     assert "Examples:" in description
-    assert 'FileOpenRequest(file_name="config.py")' in description
-    assert 'FileOpenRequest(file_name="config.py", offset=1, length=50)' in description
+    assert 'FileOpenRequest(file_name="project_utils/config.py")' in description
+    assert 'FileOpenRequest(file_name="project_utils/config.py", offset=1, length=50)' in description
     assert "# Lines 1-50" in description
     assert "# Lines 100-199" in description
     assert "# Entire file" in description

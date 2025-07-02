@@ -239,7 +239,7 @@ def strip_datetime_fields(d: Dict[str, Any]) -> Dict[str, Any]:
     return {k: v for k, v in d.items() if not isinstance(v, datetime)}
 
 
-def _log_mismatch(key: str, expected: Any, actual: Any, log: bool) -> None:
+def _log_mismatch(key: str, expected: Any, actual: Any, log: bool = True) -> None:
     """Log detailed information about a mismatch."""
     if log:
         print(f"\n🔴 Mismatch Found in Key: '{key}'")
@@ -257,6 +257,8 @@ def _compare_agent_state_model_dump(d1: Dict[str, Any], d2: Dict[str, Any], log:
     Compare two dictionaries with special handling:
     - Keys in `ignore_prefix_fields` should match only by prefix.
     - 'message_ids' lists should match in length only.
+    - 'tool_exec_environment_variables' ignores values since they're cleared during serialization.
+    - 'json_schema' allows extra fields in d2 (from schema normalization during deserialization).
     - Datetime fields are ignored.
     - Order-independent comparison for lists of dicts.
     """
@@ -265,6 +267,21 @@ def _compare_agent_state_model_dump(d1: Dict[str, Any], d2: Dict[str, Any], log:
     # Remove datetime fields upfront
     d1 = strip_datetime_fields(d1)
     d2 = strip_datetime_fields(d2)
+
+    # For json_schema comparison, allow d2 to have extra fields (schema normalization)
+    if "json_schema" in d1 and "json_schema" in d2:
+        schema1 = d1["json_schema"]
+        schema2 = d2["json_schema"]
+        if isinstance(schema1, dict) and isinstance(schema2, dict):
+            # Check that all fields in schema1 exist in schema2 with same values
+            for k, v in schema1.items():
+                if k not in schema2 or not _compare_agent_state_model_dump({k: v}, {k: schema2[k]}, log=False):
+                    _log_mismatch("json_schema", schema1, schema2, log)
+                    return False
+            # Don't compare other keys for json_schema
+            d1_without_schema = {k: v for k, v in d1.items() if k != "json_schema"}
+            d2_without_schema = {k: v for k, v in d2.items() if k != "json_schema"}
+            return _compare_agent_state_model_dump(d1_without_schema, d2_without_schema, log)
 
     if d1.keys() != d2.keys():
         _log_mismatch("dict_keys", set(d1.keys()), set(d2.keys()))
@@ -285,8 +302,17 @@ def _compare_agent_state_model_dump(d1: Dict[str, Any], d2: Dict[str, Any], log:
             if not isinstance(v1, list) or not isinstance(v2, list) or len(v1) != len(v2):
                 _log_mismatch(key, v1, v2, log)
                 return False
+            # Compare environment variables ignoring values (cleared during serialization)
+            for env1, env2 in zip(v1, v2):
+                if isinstance(env1, dict) and isinstance(env2, dict):
+                    # Compare all fields except 'value'
+                    env1_without_value = {k: v for k, v in env1.items() if k != "value"}
+                    env2_without_value = {k: v for k, v in env2.items() if k != "value"}
+                    if not _compare_agent_state_model_dump(env1_without_value, env2_without_value, log=False):
+                        _log_mismatch(key, v1, v2, log)
+                        return False
         elif isinstance(v1, Dict) and isinstance(v2, Dict):
-            if not _compare_agent_state_model_dump(v1, v2):
+            if not _compare_agent_state_model_dump(v1, v2, log=False):
                 _log_mismatch(key, v1, v2, log)
                 return False
         elif isinstance(v1, list) and isinstance(v2, list):
