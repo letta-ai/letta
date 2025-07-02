@@ -1,5 +1,5 @@
+'use client'
 import React, { useCallback, useState, useEffect } from 'react';
-import { useCurrentAgent } from '../../hooks';
 import { useMergedToolData } from './hooks/useMergedToolData';
 import {
   ReactFlow,
@@ -57,6 +57,7 @@ import {
 
 import { isMaxCountRule } from './utils/ruleGuards';
 import { useTranslations } from 'next-intl';
+import type { AgentState, Tool } from '@letta-cloud/sdk-core';
 
 function getNodeBackgroundColor(
   toolName: string,
@@ -569,9 +570,17 @@ function Legend({
 }
 
 // Main Component
-export function ToolRulesVisual() {
-  const agent = useCurrentAgent();
-  const rulesDataRaw = useMergedToolData(agent);
+interface ToolRulesVisualProps {
+  tools?: Tool[];
+  toolRules?: AgentState['tool_rules']; // Allow null to match SDK type
+}
+
+export function ToolRulesVisual(props: ToolRulesVisualProps) {
+  const { tools, toolRules } = props;
+  const rulesDataRaw = useMergedToolData({
+    tools: tools || [],
+    tool_rules: toolRules || null,
+  });
   // ensure TS sees these as the SDK rule types
   const rulesData = rulesDataRaw as SupportedToolRuleTypes[];
 
@@ -616,7 +625,7 @@ export function ToolRulesVisual() {
     setFocusedTool((prev) => (prev === targetTool ? null : targetTool));
   }, []);
 
-  if (!agent) {
+  if (!tools) {
     return <LoadingEmptyStatusComponent isLoading />;
   }
 

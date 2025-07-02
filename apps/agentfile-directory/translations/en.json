@@ -18,6 +18,17 @@
   "components/AgentDetails": {
     "memoryBlocks": "Memory Blocks",
     "tools": "Tools",
-    "system": "System"
+    "system": "System",
+    "variables": "Environment Variables",
+    "toolRules": "Tool Rules",
+    "viewRules": "View rules",
+    "noVariables": "This agent has no environment variables set",
+    "DetailsOverlay": {
+      "distributor": "Distributor",
+      "downloads": "Downloads",
+      "published": "Published",
+      "rating": "Rating",
+      "noRating": "Not rated yet"
+    }
   }
 }

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-interface Rule {
+export interface Rule {
   tool_name?: string;
   type?: string;
   children?: string[];

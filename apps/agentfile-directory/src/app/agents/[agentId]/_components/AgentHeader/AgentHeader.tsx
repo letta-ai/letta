@@ -1,6 +1,5 @@
 import { CenterContent } from '../../../../../lib/client/components/CenterContent/CenterContent';
 import { HStack, Typography, VStack } from '@letta-cloud/ui-component-library';
-import { VoteHandlers } from './VoteHandlers/VoteHandlers';
 import { DownloadCount } from './DownloadCount/DownloadCount';
 import './AgentHeader.scss';
 
@@ -13,22 +12,24 @@ interface AgentHeaderProps {
 }
 
 export function AgentHeader(props: AgentHeaderProps) {
-  const { name, author, downloadCount, upvotes, downvotes } = props;
+  const { name, author, downloadCount } = props;
   return (
     <div className="pt-[40px]">
-      <div className="absolute pointer-events-none agentheader-background border-b-border h-[231px] w-[100dvw]  border-b z-[0] top-0 left-0" />
       <CenterContent>
-        <HStack>
-          <VStack>
-            <Typography variant="heading3">{name}.af</Typography>
-            <HStack gap="large" align="center">
-              <Typography color="lighter">{author}</Typography>
-              <DownloadCount downloadCount={downloadCount} />
-              <VoteHandlers upvotes={upvotes} downvotes={downvotes} />
-            </HStack>
-          </VStack>
-        </HStack>
+        <div className="z-[1] relative">
+          <HStack>
+            <VStack>
+              <Typography variant="heading3">{name}.af</Typography>
+              <HStack gap="large" align="center">
+                <Typography color="lighter">{author}</Typography>
+                <DownloadCount downloadCount={downloadCount} />
+                {/*<VoteHandlers upvotes={upvotes} downvotes={downvotes} />*/}
+              </HStack>
+            </VStack>
+          </HStack>
+        </div>
       </CenterContent>
+      <div className="absolute pointer-events-none agentheader-background border-b-border h-[227px] w-[100dvw]  border-b z-[0] top-0 left-0" />
     </div>
   );
 }

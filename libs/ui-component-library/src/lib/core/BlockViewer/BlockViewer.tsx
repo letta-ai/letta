@@ -121,11 +121,13 @@ export function BlockViewer(props: ElementsAsBlocksViewerProps) {
       <div className="h-[22px]">
         <HStack fullWidth align="center">
           <Typography bold>{title}</Typography>
-          <div className="border flex items-center justify-center w-[22px] h-[22px]">
-            <Typography variant="body2" bold>
-              {elements.length}
-            </Typography>
-          </div>
+          {elements.length > 1 && (
+            <div className="border flex items-center justify-center w-[22px] h-[22px]">
+              <Typography variant="body2" bold>
+                {elements.length}
+              </Typography>
+            </div>
+          )}
           {showSeeAll && (
             <Button
               onClick={onSeeAll}

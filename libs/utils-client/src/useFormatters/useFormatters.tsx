@@ -60,6 +60,14 @@ export function useFormatters() {
     }
   }
 
+  function formatPercentage(value: number, options?: Intl.NumberFormatOptions) {
+    return new Intl.NumberFormat(defaultLocal, {
+      style: 'percent',
+      maximumFractionDigits: 2,
+      ...options,
+    }).format(value);
+  }
+
   function formatNumber(number: number, options?: Intl.NumberFormatOptions) {
     return new Intl.NumberFormat(
       defaultLocal,
@@ -197,6 +205,7 @@ export function useFormatters() {
     formatSmallDuration,
     formatFileSize,
     dynamicFileSize,
+    formatPercentage,
     formatCurrency,
     formatTime,
     formatShorthandNumber,

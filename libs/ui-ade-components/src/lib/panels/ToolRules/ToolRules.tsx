@@ -11,7 +11,7 @@ export function ToolRulesEditor() {
         <ToolRulesList defaultToolRules={agent?.tool_rules} />
       </VStack>
       <VStack fullHeight flex borderLeft>
-        <ToolRulesVisual />
+        <ToolRulesVisual tools={agent.tools} toolRules={agent.tool_rules} />
       </VStack>
     </HStack>
   );

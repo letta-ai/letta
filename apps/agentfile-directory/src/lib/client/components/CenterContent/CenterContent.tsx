@@ -7,5 +7,5 @@ interface CenterContentProps {
 export function CenterContent(props: CenterContentProps) {
   const { children } = props;
 
-  return <div className="max-w-[946px] w-full mx-auto">{children}</div>;
+  return <div className="max-w-[1024px] px-6 w-full mx-auto">{children}</div>;
 }

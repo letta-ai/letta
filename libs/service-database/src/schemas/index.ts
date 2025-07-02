@@ -9,6 +9,7 @@ import {
   numeric,
   primaryKey,
   unique,
+  integer,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
 import type {
@@ -1284,3 +1285,28 @@ export const agentfilePermissions = pgTable('agentfile_permissions', {
     .notNull()
     .$onUpdate(() => new Date()),
 });
+
+export const agentfilePermissionsRelations = relations(
+  agentfilePermissions,
+  ({ one }) => ({
+    agentfileStats: one(agentfileStats, {
+      fields: [agentfilePermissions.agentId],
+      references: [agentfileStats.agentId],
+    }),
+  }),
+);
+
+export const agentfileStats = pgTable('agentfile_stats', {
+  agentId: text('agent_id').notNull().primaryKey(),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  totalDownloads: integer('total_downloads').notNull().default(0),
+});
+
+export const agentfileStatsRelations = relations(agentfileStats, ({ one }) => ({
+  agentfilePermissions: one(agentfilePermissions, {
+    fields: [agentfileStats.agentId],
+    references: [agentfilePermissions.agentId],
+  }),
+}));

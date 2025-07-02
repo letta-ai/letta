@@ -15,8 +15,9 @@ import {
   db,
   agentfilePermissions,
   organizations,
+  agentfileStats,
 } from '@letta-cloud/service-database';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 type AgentfileResponse = ServerInferResponses<
   typeof contracts.agentfile.getAgentfile
@@ -73,6 +74,13 @@ export async function getAgentfile(
       user_id: serviceAccountId,
     },
   );
+
+  await db
+    .update(agentfileStats)
+    .set({
+      totalDownloads: sql`${agentfileStats.totalDownloads} + 1`,
+    })
+    .where(eq(agentfileStats.agentId, agentId));
 
   if (!exportedAgentfile) {
     return {
@@ -249,6 +257,12 @@ export async function createAgentfileMetadata(
       organizationId: agentfilePermissions.organizationId,
     });
 
+  await db.insert(agentfileStats).values({
+    agentId,
+    organizationId,
+    totalDownloads: 0,
+  });
+
   return {
     status: SERVER_CODE.OK,
     body: {
@@ -357,12 +371,18 @@ export async function getAgentfileDetails(
     };
   }
 
-  const [serviceAccountId, organization] = await Promise.all([
+  const [serviceAccountId, organization, stats] = await Promise.all([
     getOrganizationLettaServiceAccountId(permissions.organizationId),
     db.query.organizations.findFirst({
       where: eq(organizations.id, permissions.organizationId),
       columns: {
         name: true,
+      },
+    }),
+    db.query.agentfileStats.findFirst({
+      where: eq(agentfileStats.agentId, agentId),
+      columns: {
+        totalDownloads: true,
       },
     }),
   ]);
@@ -395,7 +415,7 @@ export async function getAgentfileDetails(
   return {
     status: SERVER_CODE.OK,
     body: {
-      downloadCount: 0,
+      downloadCount: stats?.totalDownloads || 0,
       upvotes: 0,
       downvotes: 0,
       memory: memory.blocks.map((block) => ({

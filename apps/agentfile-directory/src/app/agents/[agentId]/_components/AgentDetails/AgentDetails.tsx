@@ -2,13 +2,22 @@
 import type { GetAgentFileDetails } from '@letta-cloud/sdk-web';
 import {
   BlockViewer,
+  BoltIcon,
+  HStack,
+  RawKeyValueEditor,
   TabGroup,
   ToolLanguageIcon,
   Typography,
+  VStack,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { CenterContent } from '../../../../../lib/client/components/CenterContent/CenterContent';
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
+import { ToolRulesVisual } from '@letta-cloud/ui-ade-components';
+import type { AgentState } from '@letta-cloud/sdk-core';
+import { cn } from '@letta-cloud/ui-styles';
+import { useFormatters } from '@letta-cloud/utils-client';
+import './AgentDetails.scss';
 
 interface AgentDetailsProps {
   agent: GetAgentFileDetails;
@@ -52,10 +61,6 @@ function Tabber(props: TabberProps) {
           value: 'tools',
         },
         {
-          label: t('toolRules'),
-          value: 'toolRules',
-        },
-        {
           label: t('toolVariables'),
           value: 'toolVariables',
         },
@@ -77,46 +82,131 @@ function AgentOverview(props: AgentOverviewProps) {
 
   return (
     <>
-      {description && (
-        <Typography variant="large" light>
-          {description}
-        </Typography>
-      )}
-      <BlockViewer
-        title={t('memoryBlocks')}
-        limit={2}
-        onSeeAll={() => {
-          setValue('memoryBlocks');
-        }}
-        maxLines={2}
-        elements={memory.map((block) => ({
-          label: block.label,
-          value: block.value,
-        }))}
-      />
-
-      <BlockViewer
-        limit={3}
-        onSeeAll={() => {
-          setValue('tools');
-        }}
-        title={t('tools')}
-        elements={tools.map((tool) => ({
-          label: tool.name,
-          value: tool.description || '',
-          icon: <ToolLanguageIcon sourceType={tool.source_type} />,
-        }))}
-      />
-      <BlockViewer
-        title={t('system')}
-        maxLines={4}
-        elements={[
-          {
-            value: system,
-          },
-        ]}
-      />
+      <CappedWidth>
+        {description && (
+          <Typography variant="large" light>
+            {description}
+          </Typography>
+        )}
+      </CappedWidth>
+      <CappedWidth>
+        <BlockViewer
+          title={t('memoryBlocks')}
+          limit={2}
+          onSeeAll={() => {
+            setValue('memoryBlocks');
+          }}
+          maxLines={2}
+          elements={memory.map((block) => ({
+            label: block.label,
+            value: block.value,
+          }))}
+        />
+      </CappedWidth>
+      <CappedWidth>
+        <BlockViewer
+          limit={3}
+          onSeeAll={() => {
+            setValue('tools');
+          }}
+          title={t('tools')}
+          elements={tools.map((tool) => ({
+            label: tool.name,
+            value: tool.description || '',
+            icon: <ToolLanguageIcon sourceType={tool.source_type} />,
+          }))}
+        />
+      </CappedWidth>
+      <ToolRules agent={agent} />
+      <CappedWidth>
+        <BlockViewer
+          title={t('system')}
+          maxLines={4}
+          elements={[
+            {
+              value: system,
+            },
+          ]}
+        />
+      </CappedWidth>
+      <CappedWidth>
+        <ToolVariables agent={agent} />
+      </CappedWidth>
     </>
+  );
+}
+
+interface ToolVariablesProps {
+  agent: GetAgentFileDetails;
+}
+
+function ToolVariables(props: ToolVariablesProps) {
+  const { agent } = props;
+  const t = useTranslations('components/AgentDetails');
+
+  const parsedVariables = useMemo(() => {
+    return (
+      agent.toolVariables?.map((key) => ({
+        key: key.name,
+        value: key.value,
+      })) || []
+    );
+  }, [agent.toolVariables]);
+
+  return (
+    <VStack>
+      <Typography bold>{t('variables')}</Typography>
+      {parsedVariables.length > 0 ? (
+        <RawKeyValueEditor
+          hideLabel
+          label={t('variables')}
+          value={
+            agent.toolVariables?.map((key) => ({
+              key: key.name,
+              value: key.value,
+            })) || []
+          }
+          disabled
+        />
+      ) : (
+        <Typography italic>{t('noVariables')}</Typography>
+      )}
+    </VStack>
+  );
+}
+
+interface ToolRulesProps {
+  agent: GetAgentFileDetails;
+}
+
+function ToolRules(props: ToolRulesProps) {
+  const { agent } = props;
+  const t = useTranslations('components/AgentDetails');
+
+  return (
+    <VStack>
+      <HStack align="center">
+        <Typography bold>{t('toolRules')}</Typography>
+        <div className="border flex items-center justify-center w-[22px] h-[22px]">
+          <Typography variant="body2" bold>
+            {(agent.toolRules || []).length}
+          </Typography>
+        </div>
+      </HStack>
+      <VStack
+        /* eslint-disable-next-line react/forbid-component-props */
+        className="h-[600px] mx-auto rounded "
+        border
+        overflow="hidden"
+        fullHeight
+        fullWidth
+      >
+        <ToolRulesVisual
+          tools={agent.tools}
+          toolRules={agent.toolRules as AgentState['tool_rules'] | undefined}
+        />
+      </VStack>
+    </VStack>
   );
 }
 
@@ -133,28 +223,35 @@ function Switcher(props: SwitcherProps) {
       return <AgentOverview agent={agent} />;
     case 'memoryBlocks':
       return (
-        <BlockViewer
-          title="Memory Blocks"
-          elements={agent.memory.map((block) => ({
-            label: block.label,
-            value: block.value,
-          }))}
-        />
+        <CappedWidth>
+          <BlockViewer
+            title="Memory Blocks"
+            elements={agent.memory.map((block) => ({
+              label: block.label,
+              value: block.value,
+            }))}
+          />
+        </CappedWidth>
       );
     case 'tools':
       return (
-        <BlockViewer
-          title="Tools"
-          elements={agent.tools.map((tool) => ({
-            label: tool.name,
-            value: tool.description,
-          }))}
-        />
+        <CappedWidth>
+          <BlockViewer
+            title="Tools"
+            elements={agent.tools.map((tool) => ({
+              label: tool.name,
+              value: tool.description,
+              icon: <ToolLanguageIcon sourceType={tool.source_type} />,
+            }))}
+          />
+        </CappedWidth>
       );
-    case 'toolRules':
-      return <Typography>Tool Rules will be displayed here.</Typography>;
     case 'toolVariables':
-      return <Typography>Tool Variables will be displayed here.</Typography>;
+      return (
+        <CappedWidth>
+          <ToolVariables agent={agent} />
+        </CappedWidth>
+      );
     default:
       return null;
   }
@@ -169,6 +266,83 @@ const SelectedTabContext = createContext<{
     return;
   },
 });
+
+interface DetailProps {
+  label: string;
+  value: React.ReactNode;
+}
+
+function Detail(props: DetailProps) {
+  const { label, value } = props;
+  return (
+    <VStack gap="small" fullWidth>
+      <Typography variant="body3" light color="lighter">
+        {label}
+      </Typography>
+      <Typography variant="body3" overrideEl="span">
+        {value}
+      </Typography>
+    </VStack>
+  );
+}
+
+interface DetailsOverlayProps {
+  agent: GetAgentFileDetails;
+}
+
+function DetailsOverlay(props: DetailsOverlayProps) {
+  const t = useTranslations('components/AgentDetails.DetailsOverlay');
+  const { formatDate, formatPercentage, formatShorthandNumber } =
+    useFormatters();
+
+  const { agent } = props;
+
+  const { author, publishedAt, downloadCount, upvotes, downvotes } = agent;
+
+  const rating = useMemo(() => {
+    if (upvotes + downvotes === 0) {
+      return (
+        <Typography variant="body2" italic>
+          {t('noRating')}
+        </Typography>
+      );
+    }
+
+    const totalVotes = upvotes + downvotes;
+
+    const ratingValue = (upvotes / totalVotes) * 100;
+
+    return formatPercentage(ratingValue, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  }, [upvotes, downvotes, formatPercentage, t]);
+
+  return (
+    <VStack gap="xlarge" padding border>
+      <HStack>
+        <Detail label={t('distributor')} value={author} />
+        <Detail label={t('published')} value={formatDate(publishedAt)} />
+      </HStack>
+      <HStack>
+        <Detail
+          label={t('downloads')}
+          value={
+            <HStack gap="small">
+              <BoltIcon size="xsmall" />
+              {formatShorthandNumber(downloadCount)}
+            </HStack>
+          }
+        />
+        <Detail label={t('rating')} value={rating} />
+      </HStack>
+    </VStack>
+  );
+}
+
+function CappedWidth({ children }: { children: React.ReactNode }) {
+  return <div className="max-w-[560px] w-full">{children}</div>;
+}
 
 function useSelectedTab() {
   const context = useContext(SelectedTabContext);
@@ -191,16 +365,21 @@ export function AgentDetails(props: AgentDetailsProps) {
       }}
     >
       <CenterContent>
-        <div className="pt-[24px]">
-          <Tabber
-            value={selectedTab}
-            onChange={(value) => {
-              setSelectedTab(value);
-            }}
-          />
-        </div>
-        <div className="gap-[32px] max-w-[560px] py-[32px] flex flex-col">
-          <Switcher selectedTab={selectedTab} agent={agent} />
+        <div className="relative w-full">
+          <div className="pt-[24px]">
+            <Tabber
+              value={selectedTab}
+              onChange={(value) => {
+                setSelectedTab(value);
+              }}
+            />
+          </div>
+          <div className={cn('gap-[32px]  py-[32px] flex flex-col')}>
+            <Switcher selectedTab={selectedTab} agent={agent} />
+          </div>
+          <div className="agent-details-overlay pb-6">
+            <DetailsOverlay agent={agent} />
+          </div>
         </div>
       </CenterContent>
     </SelectedTabContext>

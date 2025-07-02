@@ -25,3 +25,4 @@ export * from './lib/panels/ToolManager/ToolManager';
 
 export * from './lib/panels/ToolManager/hooks/useToolManagerState/useToolManagerState';
 export * from './lib/panels/ToolManager/hooks/useToolManagerRouteCopy/useToolManagerRouteCopy';
+export * from './lib/panels/ToolRules/ToolRulesVisual';
