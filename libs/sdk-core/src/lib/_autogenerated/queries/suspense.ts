@@ -1709,8 +1709,13 @@ export const useBlocksServiceListAgentsForBlockSuspense = <
 /**
  * List Jobs
  * List all jobs.
+ * TODO (cliandy): implementation for pagination
  * @param data The data for the request.
  * @param data.sourceId Only list jobs associated with the source.
+ * @param data.before Cursor for pagination
+ * @param data.after Cursor for pagination
+ * @param data.limit Limit for pagination
+ * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
  * @returns Job Successful Response
  * @throws ApiError
@@ -1721,9 +1726,17 @@ export const useJobsServiceListJobsSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
+    ascending,
+    before,
+    limit,
     sourceId,
     userId,
   }: {
+    after?: string;
+    ascending?: boolean;
+    before?: string;
+    limit?: number;
     sourceId?: string;
     userId?: string;
   } = {},
@@ -1732,10 +1745,18 @@ export const useJobsServiceListJobsSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseJobsServiceListJobsKeyFn(
-      { sourceId, userId },
+      { after, ascending, before, limit, sourceId, userId },
       queryKey,
     ),
-    queryFn: () => JobsService.listJobs({ sourceId, userId }) as TData,
+    queryFn: () =>
+      JobsService.listJobs({
+        after,
+        ascending,
+        before,
+        limit,
+        sourceId,
+        userId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1743,6 +1764,10 @@ export const useJobsServiceListJobsSuspense = <
  * List all active jobs.
  * @param data The data for the request.
  * @param data.sourceId Only list jobs associated with the source.
+ * @param data.before Cursor for pagination
+ * @param data.after Cursor for pagination
+ * @param data.limit Limit for pagination
+ * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
  * @returns Job Successful Response
  * @throws ApiError
@@ -1753,9 +1778,17 @@ export const useJobsServiceListActiveJobsSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
+    ascending,
+    before,
+    limit,
     sourceId,
     userId,
   }: {
+    after?: string;
+    ascending?: boolean;
+    before?: string;
+    limit?: number;
     sourceId?: string;
     userId?: string;
   } = {},
@@ -1764,10 +1797,18 @@ export const useJobsServiceListActiveJobsSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseJobsServiceListActiveJobsKeyFn(
-      { sourceId, userId },
+      { after, ascending, before, limit, sourceId, userId },
       queryKey,
     ),
-    queryFn: () => JobsService.listActiveJobs({ sourceId, userId }) as TData,
+    queryFn: () =>
+      JobsService.listActiveJobs({
+        after,
+        ascending,
+        before,
+        limit,
+        sourceId,
+        userId,
+      }) as TData,
     ...options,
   });
 /**

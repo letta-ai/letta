@@ -3609,11 +3609,74 @@
         }
       }
     },
+    "/v1/agents/{agent_id}/messages/cancel": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "Cancel Agent Run",
+        "description": "Cancel runs associated with an agent. If run_ids are passed in, cancel those in particular.\n\nNote to cancel active runs associated with an agent, redis is required.",
+        "operationId": "cancel_agent_run",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Run Ids"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Cancel Agent Run"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/{agent_id}/messages/async": {
       "post": {
         "tags": ["agents"],
         "summary": "Send Message Async",
-        "description": "Asynchronously process a user message and return a run object.\nThe actual processing happens in the background, and the status can be checked using the run ID.",
+        "description": "Asynchronously process a user message and return a run object.\nThe actual processing happens in the background, and the status can be checked using the run ID.\n\nThis is \"asynchronous\" in the sense that it's a background job and explicitly must be fetched by the run ID.\nThis is more like `send_message_job`",
         "operationId": "create_agent_message_async",
         "parameters": [
           {
@@ -5547,7 +5610,7 @@
       "get": {
         "tags": ["jobs"],
         "summary": "List Jobs",
-        "description": "List all jobs.",
+        "description": "List all jobs.\nTODO (cliandy): implementation for pagination",
         "operationId": "list_jobs",
         "parameters": [
           {
@@ -5567,6 +5630,73 @@
               "title": "Source Id"
             },
             "description": "Only list jobs associated with the source."
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Cursor for pagination",
+              "title": "Before"
+            },
+            "description": "Cursor for pagination"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Cursor for pagination",
+              "title": "After"
+            },
+            "description": "Cursor for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Limit for pagination",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Limit for pagination"
+          },
+          {
+            "name": "ascending",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)",
+              "default": true,
+              "title": "Ascending"
+            },
+            "description": "Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)"
           }
         ],
         "responses": {
@@ -5621,6 +5751,73 @@
               "title": "Source Id"
             },
             "description": "Only list jobs associated with the source."
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Cursor for pagination",
+              "title": "Before"
+            },
+            "description": "Cursor for pagination"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Cursor for pagination",
+              "title": "After"
+            },
+            "description": "Cursor for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Limit for pagination",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Limit for pagination"
+          },
+          {
+            "name": "ascending",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)",
+              "default": true,
+              "title": "Ascending"
+            },
+            "description": "Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)"
           }
         ],
         "responses": {
@@ -5696,6 +5893,47 @@
         "summary": "Delete Job",
         "description": "Delete a job by its job_id.",
         "operationId": "delete_job",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs/{job_id}/cancel": {
+      "patch": {
+        "tags": ["jobs"],
+        "summary": "Cancel Job",
+        "description": "Cancel a job by its job_id.\n\nThis endpoint marks a job as cancelled, which will cause any associated\nagent execution to terminate as soon as possible.",
+        "operationId": "cancel_job",
         "parameters": [
           {
             "name": "job_id",
@@ -17600,7 +17838,8 @@
           "invalid_tool_call",
           "max_steps",
           "no_tool_call",
-          "tool_rule"
+          "tool_rule",
+          "cancelled"
         ],
         "title": "StopReasonType"
       },

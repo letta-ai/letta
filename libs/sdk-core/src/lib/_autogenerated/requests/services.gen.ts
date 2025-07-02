@@ -128,6 +128,8 @@ import type {
   ModifyMessageResponse,
   CreateAgentMessageStreamData,
   CreateAgentMessageStreamResponse,
+  CancelAgentRunData,
+  CancelAgentRunResponse,
   CreateAgentMessageAsyncData,
   CreateAgentMessageAsyncResponse,
   ResetMessagesData,
@@ -200,6 +202,8 @@ import type {
   RetrieveJobResponse,
   DeleteJobData,
   DeleteJobResponse,
+  CancelJobData,
+  CancelJobResponse,
   HealthCheckResponse,
   CreateSandboxConfigV1SandboxConfigPostData,
   CreateSandboxConfigV1SandboxConfigPostResponse,
@@ -2049,9 +2053,43 @@ export class AgentsService {
   }
 
   /**
+   * Cancel Agent Run
+   * Cancel runs associated with an agent. If run_ids are passed in, cancel those in particular.
+   *
+   * Note to cancel active runs associated with an agent, redis is required.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.userId
+   * @param data.requestBody
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static cancelAgentRun(
+    data: CancelAgentRunData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CancelAgentRunResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/agents/{agent_id}/messages/cancel',
+      path: {
+        agent_id: data.agentId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
    * Send Message Async
    * Asynchronously process a user message and return a run object.
    * The actual processing happens in the background, and the status can be checked using the run ID.
+   *
+   * This is "asynchronous" in the sense that it's a background job and explicitly must be fetched by the run ID.
+   * This is more like `send_message_job`
    * @param data The data for the request.
    * @param data.agentId
    * @param data.requestBody
@@ -3015,8 +3053,13 @@ export class JobsService {
   /**
    * List Jobs
    * List all jobs.
+   * TODO (cliandy): implementation for pagination
    * @param data The data for the request.
    * @param data.sourceId Only list jobs associated with the source.
+   * @param data.before Cursor for pagination
+   * @param data.after Cursor for pagination
+   * @param data.limit Limit for pagination
+   * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
    * @param data.userId
    * @returns Job Successful Response
    * @throws ApiError
@@ -3030,6 +3073,10 @@ export class JobsService {
       url: '/v1/jobs/',
       query: {
         source_id: data.sourceId,
+        before: data.before,
+        after: data.after,
+        limit: data.limit,
+        ascending: data.ascending,
       },
       errors: {
         422: 'Validation Error',
@@ -3043,6 +3090,10 @@ export class JobsService {
    * List all active jobs.
    * @param data The data for the request.
    * @param data.sourceId Only list jobs associated with the source.
+   * @param data.before Cursor for pagination
+   * @param data.after Cursor for pagination
+   * @param data.limit Limit for pagination
+   * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
    * @param data.userId
    * @returns Job Successful Response
    * @throws ApiError
@@ -3056,6 +3107,10 @@ export class JobsService {
       url: '/v1/jobs/active',
       query: {
         source_id: data.sourceId,
+        before: data.before,
+        after: data.after,
+        limit: data.limit,
+        ascending: data.ascending,
       },
       errors: {
         422: 'Validation Error',
@@ -3106,6 +3161,35 @@ export class JobsService {
     return __request(OpenAPI, {
       method: 'DELETE',
       url: '/v1/jobs/{job_id}',
+      path: {
+        job_id: data.jobId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Cancel Job
+   * Cancel a job by its job_id.
+   *
+   * This endpoint marks a job as cancelled, which will cause any associated
+   * agent execution to terminate as soon as possible.
+   * @param data The data for the request.
+   * @param data.jobId
+   * @param data.userId
+   * @returns Job Successful Response
+   * @throws ApiError
+   */
+  public static cancelJob(
+    data: CancelJobData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CancelJobResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/jobs/{job_id}/cancel',
       path: {
         job_id: data.jobId,
       },

@@ -1,4 +1,4 @@
-from functools import reduce
+from functools import partial, reduce
 from operator import add
 from typing import List, Literal, Optional, Union
 
@@ -124,6 +124,46 @@ class JobManager:
             await job.update_async(db_session=session, actor=actor)
 
             return job.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def safe_update_job_status_async(
+        self, job_id: str, new_status: JobStatus, actor: PydanticUser, metadata: Optional[dict] = None
+    ) -> bool:
+        """
+        Safely update job status with state transition guards.
+        Created -> Pending -> Running --> <Terminal>
+
+        Returns:
+            True if update was successful, False if update was skipped due to invalid transition
+        """
+        try:
+            # Get current job state
+            current_job = await self.get_job_by_id_async(job_id=job_id, actor=actor)
+
+            current_status = current_job.status
+            if not any(
+                (
+                    new_status.is_terminal and not current_status.is_terminal,
+                    current_status == JobStatus.created and new_status != JobStatus.created,
+                    current_status == JobStatus.pending and new_status == JobStatus.running,
+                )
+            ):
+                logger.warning(f"Invalid job status transition from {current_job.status} to {new_status} for job {job_id}")
+                return False
+
+            job_update_builder = partial(JobUpdate, status=new_status)
+            if metadata:
+                job_update_builder = partial(job_update_builder, metadata=metadata)
+            if new_status.is_terminal:
+                job_update_builder = partial(job_update_builder, completed_at=get_utc_time())
+
+            await self.update_job_by_id_async(job_id=job_id, job_update=job_update_builder(), actor=actor)
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to safely update job status for job {job_id}: {e}")
+            return False
 
     @enforce_types
     @trace_method
@@ -656,7 +696,7 @@ class JobManager:
             job.callback_status_code = resp.status_code
 
         except Exception as e:
-            error_message = f"Failed to dispatch callback for job {job.id} to {job.callback_url}: {str(e)}"
+            error_message = f"Failed to dispatch callback for job {job.id} to {job.callback_url}: {e!s}"
             logger.error(error_message)
             # Record the failed attempt
             job.callback_sent_at = get_utc_time().replace(tzinfo=None)
@@ -686,7 +726,7 @@ class JobManager:
                 job.callback_sent_at = get_utc_time().replace(tzinfo=None)
                 job.callback_status_code = resp.status_code
         except Exception as e:
-            error_message = f"Failed to dispatch callback for job {job.id} to {job.callback_url}: {str(e)}"
+            error_message = f"Failed to dispatch callback for job {job.id} to {job.callback_url}: {e!s}"
             logger.error(error_message)
             # Record the failed attempt
             job.callback_sent_at = get_utc_time().replace(tzinfo=None)

@@ -9893,6 +9893,7 @@ export const $StopReasonType = {
     'max_steps',
     'no_tool_call',
     'tool_rule',
+    'cancelled',
   ],
   title: 'StopReasonType',
 } as const;

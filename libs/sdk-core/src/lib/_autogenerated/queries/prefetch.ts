@@ -1427,8 +1427,13 @@ export const prefetchUseBlocksServiceListAgentsForBlock = (
 /**
  * List Jobs
  * List all jobs.
+ * TODO (cliandy): implementation for pagination
  * @param data The data for the request.
  * @param data.sourceId Only list jobs associated with the source.
+ * @param data.before Cursor for pagination
+ * @param data.after Cursor for pagination
+ * @param data.limit Limit for pagination
+ * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
  * @returns Job Successful Response
  * @throws ApiError
@@ -1436,22 +1441,49 @@ export const prefetchUseBlocksServiceListAgentsForBlock = (
 export const prefetchUseJobsServiceListJobs = (
   queryClient: QueryClient,
   {
+    after,
+    ascending,
+    before,
+    limit,
     sourceId,
     userId,
   }: {
+    after?: string;
+    ascending?: boolean;
+    before?: string;
+    limit?: number;
     sourceId?: string;
     userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseJobsServiceListJobsKeyFn({ sourceId, userId }),
-    queryFn: () => JobsService.listJobs({ sourceId, userId }),
+    queryKey: Common.UseJobsServiceListJobsKeyFn({
+      after,
+      ascending,
+      before,
+      limit,
+      sourceId,
+      userId,
+    }),
+    queryFn: () =>
+      JobsService.listJobs({
+        after,
+        ascending,
+        before,
+        limit,
+        sourceId,
+        userId,
+      }),
   });
 /**
  * List Active Jobs
  * List all active jobs.
  * @param data The data for the request.
  * @param data.sourceId Only list jobs associated with the source.
+ * @param data.before Cursor for pagination
+ * @param data.after Cursor for pagination
+ * @param data.limit Limit for pagination
+ * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
  * @returns Job Successful Response
  * @throws ApiError
@@ -1459,16 +1491,39 @@ export const prefetchUseJobsServiceListJobs = (
 export const prefetchUseJobsServiceListActiveJobs = (
   queryClient: QueryClient,
   {
+    after,
+    ascending,
+    before,
+    limit,
     sourceId,
     userId,
   }: {
+    after?: string;
+    ascending?: boolean;
+    before?: string;
+    limit?: number;
     sourceId?: string;
     userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseJobsServiceListActiveJobsKeyFn({ sourceId, userId }),
-    queryFn: () => JobsService.listActiveJobs({ sourceId, userId }),
+    queryKey: Common.UseJobsServiceListActiveJobsKeyFn({
+      after,
+      ascending,
+      before,
+      limit,
+      sourceId,
+      userId,
+    }),
+    queryFn: () =>
+      JobsService.listActiveJobs({
+        after,
+        ascending,
+        before,
+        limit,
+        sourceId,
+        userId,
+      }),
   });
 /**
  * Retrieve Job

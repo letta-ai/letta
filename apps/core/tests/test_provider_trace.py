@@ -17,6 +17,7 @@ from letta.schemas.message import MessageCreate
 from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
+from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.step_manager import StepManager

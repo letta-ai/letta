@@ -1078,14 +1078,25 @@ export type JobsServiceListJobsQueryResult<
 export const useJobsServiceListJobsKey = 'JobsServiceListJobs';
 export const UseJobsServiceListJobsKeyFn = (
   {
+    after,
+    ascending,
+    before,
+    limit,
     sourceId,
     userId,
   }: {
+    after?: string;
+    ascending?: boolean;
+    before?: string;
+    limit?: number;
     sourceId?: string;
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useJobsServiceListJobsKey, ...(queryKey ?? [{ sourceId, userId }])];
+) => [
+  useJobsServiceListJobsKey,
+  ...(queryKey ?? [{ after, ascending, before, limit, sourceId, userId }]),
+];
 export type JobsServiceListActiveJobsDefaultResponse = Awaited<
   ReturnType<typeof JobsService.listActiveJobs>
 >;
@@ -1096,14 +1107,25 @@ export type JobsServiceListActiveJobsQueryResult<
 export const useJobsServiceListActiveJobsKey = 'JobsServiceListActiveJobs';
 export const UseJobsServiceListActiveJobsKeyFn = (
   {
+    after,
+    ascending,
+    before,
+    limit,
     sourceId,
     userId,
   }: {
+    after?: string;
+    ascending?: boolean;
+    before?: string;
+    limit?: number;
     sourceId?: string;
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useJobsServiceListActiveJobsKey, ...(queryKey ?? [{ sourceId, userId }])];
+) => [
+  useJobsServiceListActiveJobsKey,
+  ...(queryKey ?? [{ after, ascending, before, limit, sourceId, userId }]),
+];
 export type JobsServiceRetrieveJobDefaultResponse = Awaited<
   ReturnType<typeof JobsService.retrieveJob>
 >;
@@ -1731,6 +1753,9 @@ export type AgentsServiceSendMessageMutationResult = Awaited<
 export type AgentsServiceCreateAgentMessageStreamMutationResult = Awaited<
   ReturnType<typeof AgentsService.createAgentMessageStream>
 >;
+export type AgentsServiceCancelAgentRunMutationResult = Awaited<
+  ReturnType<typeof AgentsService.cancelAgentRun>
+>;
 export type AgentsServiceCreateAgentMessageAsyncMutationResult = Awaited<
   ReturnType<typeof AgentsService.createAgentMessageAsync>
 >;
@@ -1889,6 +1914,9 @@ export type IdentitiesServiceUpdateIdentityMutationResult = Awaited<
 >;
 export type BlocksServiceModifyBlockMutationResult = Awaited<
   ReturnType<typeof BlocksService.modifyBlock>
+>;
+export type JobsServiceCancelJobMutationResult = Awaited<
+  ReturnType<typeof JobsService.cancelJob>
 >;
 export type SandboxConfigServiceUpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchMutationResult =
   Awaited<

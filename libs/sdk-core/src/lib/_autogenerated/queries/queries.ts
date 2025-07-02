@@ -1762,8 +1762,13 @@ export const useBlocksServiceListAgentsForBlock = <
 /**
  * List Jobs
  * List all jobs.
+ * TODO (cliandy): implementation for pagination
  * @param data The data for the request.
  * @param data.sourceId Only list jobs associated with the source.
+ * @param data.before Cursor for pagination
+ * @param data.after Cursor for pagination
+ * @param data.limit Limit for pagination
+ * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
  * @returns Job Successful Response
  * @throws ApiError
@@ -1774,9 +1779,17 @@ export const useJobsServiceListJobs = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
+    ascending,
+    before,
+    limit,
     sourceId,
     userId,
   }: {
+    after?: string;
+    ascending?: boolean;
+    before?: string;
+    limit?: number;
     sourceId?: string;
     userId?: string;
   } = {},
@@ -1785,10 +1798,18 @@ export const useJobsServiceListJobs = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseJobsServiceListJobsKeyFn(
-      { sourceId, userId },
+      { after, ascending, before, limit, sourceId, userId },
       queryKey,
     ),
-    queryFn: () => JobsService.listJobs({ sourceId, userId }) as TData,
+    queryFn: () =>
+      JobsService.listJobs({
+        after,
+        ascending,
+        before,
+        limit,
+        sourceId,
+        userId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1796,6 +1817,10 @@ export const useJobsServiceListJobs = <
  * List all active jobs.
  * @param data The data for the request.
  * @param data.sourceId Only list jobs associated with the source.
+ * @param data.before Cursor for pagination
+ * @param data.after Cursor for pagination
+ * @param data.limit Limit for pagination
+ * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
  * @returns Job Successful Response
  * @throws ApiError
@@ -1806,9 +1831,17 @@ export const useJobsServiceListActiveJobs = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
+    ascending,
+    before,
+    limit,
     sourceId,
     userId,
   }: {
+    after?: string;
+    ascending?: boolean;
+    before?: string;
+    limit?: number;
     sourceId?: string;
     userId?: string;
   } = {},
@@ -1817,10 +1850,18 @@ export const useJobsServiceListActiveJobs = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseJobsServiceListActiveJobsKeyFn(
-      { sourceId, userId },
+      { after, ascending, before, limit, sourceId, userId },
       queryKey,
     ),
-    queryFn: () => JobsService.listActiveJobs({ sourceId, userId }) as TData,
+    queryFn: () =>
+      JobsService.listActiveJobs({
+        after,
+        ascending,
+        before,
+        limit,
+        sourceId,
+        userId,
+      }) as TData,
     ...options,
   });
 /**
@@ -3459,9 +3500,61 @@ export const useAgentsServiceCreateAgentMessageStream = <
     ...options,
   });
 /**
+ * Cancel Agent Run
+ * Cancel runs associated with an agent. If run_ids are passed in, cancel those in particular.
+ *
+ * Note to cancel active runs associated with an agent, redis is required.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.userId
+ * @param data.requestBody
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceCancelAgentRun = <
+  TData = Common.AgentsServiceCancelAgentRunMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        requestBody?: string[];
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      requestBody?: string[];
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, requestBody, userId }) =>
+      AgentsService.cancelAgentRun({
+        agentId,
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
  * Send Message Async
  * Asynchronously process a user message and return a run object.
  * The actual processing happens in the background, and the status can be checked using the run ID.
+ *
+ * This is "asynchronous" in the sense that it's a background job and explicitly must be fetched by the run ID.
+ * This is more like `send_message_job`
  * @param data The data for the request.
  * @param data.agentId
  * @param data.requestBody
@@ -5588,6 +5681,49 @@ export const useBlocksServiceModifyBlock = <
         requestBody,
         userId,
       }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Cancel Job
+ * Cancel a job by its job_id.
+ *
+ * This endpoint marks a job as cancelled, which will cause any associated
+ * agent execution to terminate as soon as possible.
+ * @param data The data for the request.
+ * @param data.jobId
+ * @param data.userId
+ * @returns Job Successful Response
+ * @throws ApiError
+ */
+export const useJobsServiceCancelJob = <
+  TData = Common.JobsServiceCancelJobMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        jobId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      jobId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ jobId, userId }) =>
+      JobsService.cancelJob({ jobId, userId }) as unknown as Promise<TData>,
     ...options,
   });
 /**

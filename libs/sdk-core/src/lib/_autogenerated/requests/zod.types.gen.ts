@@ -4438,6 +4438,7 @@ export const StopReasonType = z.union([
   z.literal('max_steps'),
   z.literal('no_tool_call'),
   z.literal('tool_rule'),
+  z.literal('cancelled'),
 ]);
 
 export type LettaStopReason = z.infer<typeof LettaStopReason>;
@@ -7237,6 +7238,29 @@ export const post_Create_agent_message_stream = {
   response: z.unknown(),
 };
 
+export type post_Cancel_agent_run = typeof post_Cancel_agent_run;
+export const post_Cancel_agent_run = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/agents/{agent_id}/messages/cancel'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: z.union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ]),
+  }),
+  response: z.unknown(),
+};
+
 export type post_Create_agent_message_async =
   typeof post_Create_agent_message_async;
 export const post_Create_agent_message_async = {
@@ -7949,6 +7973,16 @@ export const get_List_jobs = {
       source_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      ascending: z.boolean().optional(),
     }),
     header: z.object({
       user_id: z
@@ -7969,6 +8003,16 @@ export const get_List_active_jobs = {
       source_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      ascending: z.boolean().optional(),
     }),
     header: z.object({
       user_id: z
@@ -8001,6 +8045,24 @@ export type delete_Delete_job = typeof delete_Delete_job;
 export const delete_Delete_job = {
   method: z.literal('DELETE'),
   path: z.literal('/v1/jobs/{job_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      job_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Job,
+};
+
+export type patch_Cancel_job = typeof patch_Cancel_job;
+export const patch_Cancel_job = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/jobs/{job_id}/cancel'),
   requestFormat: z.literal('json'),
   parameters: z.object({
     path: z.object({
@@ -9140,6 +9202,7 @@ export const EndpointByMethod = {
     '/v1/groups/{group_id}/reset-messages': patch_Reset_group_messages,
     '/v1/identities/{identity_id}': patch_Update_identity,
     '/v1/blocks/{block_id}': patch_Modify_block,
+    '/v1/jobs/{job_id}/cancel': patch_Cancel_job,
     '/v1/sandbox-config/{sandbox_config_id}':
       patch_Update_sandbox_config_v1_sandbox_config__sandbox_config_id__patch,
     '/v1/sandbox-config/environment-variable/{env_var_id}':
@@ -9167,6 +9230,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/archival-memory': post_Create_passage,
     '/v1/agents/{agent_id}/messages': post_Send_message,
     '/v1/agents/{agent_id}/messages/stream': post_Create_agent_message_stream,
+    '/v1/agents/{agent_id}/messages/cancel': post_Cancel_agent_run,
     '/v1/agents/{agent_id}/messages/async': post_Create_agent_message_async,
     '/v1/agents/{agent_id}/summarize': post_Summarize_agent_conversation,
     '/v1/groups/': post_Create_group,

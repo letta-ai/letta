@@ -4551,7 +4551,7 @@ async def test_create_and_upsert_identity(server: SyncServer, default_user, even
             actor=default_user,
         )
 
-    identity_create.properties = [(IdentityProperty(key="age", value=29, type=IdentityPropertyType.number))]
+    identity_create.properties = [IdentityProperty(key="age", value=29, type=IdentityPropertyType.number)]
 
     identity = await server.identity_manager.upsert_identity_async(
         identity=IdentityUpsert(**identity_create.model_dump()), actor=default_user

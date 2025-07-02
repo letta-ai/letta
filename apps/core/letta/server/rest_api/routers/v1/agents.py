@@ -2,7 +2,7 @@ import asyncio
 import json
 import traceback
 from datetime import datetime, timezone
-from typing import Annotated, Any, List, Optional
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, File, Header, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import JSONResponse
@@ -13,7 +13,8 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
-from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, LETTA_MODEL_ENDPOINT
+from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, LETTA_MODEL_ENDPOINT, REDIS_RUN_ID_PREFIX
+from letta.data_sources.redis_client import get_redis_client
 from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
@@ -49,26 +50,26 @@ router = APIRouter(prefix="/agents", tags=["agents"])
 logger = get_logger(__name__)
 
 
-@router.get("/", response_model=List[AgentState], operation_id="list_agents")
+@router.get("/", response_model=list[AgentState], operation_id="list_agents")
 async def list_agents(
-    name: Optional[str] = Query(None, description="Name of the agent"),
-    tags: Optional[List[str]] = Query(None, description="List of tags to filter agents by"),
+    name: str | None = Query(None, description="Name of the agent"),
+    tags: list[str] | None = Query(None, description="List of tags to filter agents by"),
     match_all_tags: bool = Query(
         False,
         description="If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed-in tags.",
     ),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
-    before: Optional[str] = Query(None, description="Cursor for pagination"),
-    after: Optional[str] = Query(None, description="Cursor for pagination"),
-    limit: Optional[int] = Query(50, description="Limit for pagination"),
-    query_text: Optional[str] = Query(None, description="Search agents by name"),
-    project_id: Optional[str] = Query(None, description="Search agents by project ID"),
-    template_id: Optional[str] = Query(None, description="Search agents by template ID"),
-    base_template_id: Optional[str] = Query(None, description="Search agents by base template ID"),
-    identity_id: Optional[str] = Query(None, description="Search agents by identity ID"),
-    identifier_keys: Optional[List[str]] = Query(None, description="Search agents by identifier keys"),
-    include_relationships: Optional[List[str]] = Query(
+    actor_id: str | None = Header(None, alias="user_id"),
+    before: str | None = Query(None, description="Cursor for pagination"),
+    after: str | None = Query(None, description="Cursor for pagination"),
+    limit: int | None = Query(50, description="Limit for pagination"),
+    query_text: str | None = Query(None, description="Search agents by name"),
+    project_id: str | None = Query(None, description="Search agents by project ID"),
+    template_id: str | None = Query(None, description="Search agents by template ID"),
+    base_template_id: str | None = Query(None, description="Search agents by base template ID"),
+    identity_id: str | None = Query(None, description="Search agents by identity ID"),
+    identifier_keys: list[str] | None = Query(None, description="Search agents by identifier keys"),
+    include_relationships: list[str] | None = Query(
         None,
         description=(
             "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. "
@@ -80,7 +81,7 @@ async def list_agents(
         False,
         description="Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
     ),
-    sort_by: Optional[str] = Query(
+    sort_by: str | None = Query(
         "created_at",
         description="Field to sort by. Options: 'created_at' (default), 'last_run_completion'",
     ),
@@ -119,7 +120,7 @@ async def list_agents(
 @router.get("/count", response_model=int, operation_id="count_agents")
 async def count_agents(
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: str | None = Header(None, alias="user_id"),
 ):
     """
     Get the count of all agents associated with a given user.
@@ -139,10 +140,10 @@ class IndentedORJSONResponse(Response):
 def export_agent_serialized(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: str | None = Header(None, alias="user_id"),
     # do not remove, used to autogeneration of spec
     # TODO: Think of a better way to export AgentSchema
-    spec: Optional[AgentSchema] = None,
+    spec: AgentSchema | None = None,
 ) -> JSONResponse:
     """
     Export the serialized JSON representation of an agent, formatted with indentation.
@@ -160,13 +161,13 @@ def export_agent_serialized(
 def import_agent_serialized(
     file: UploadFile = File(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: str | None = Header(None, alias="user_id"),
     append_copy_suffix: bool = Query(True, description='If set to True, appends "_copy" to the end of the agent name.'),
     override_existing_tools: bool = Query(
         True,
         description="If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
     ),
-    project_id: Optional[str] = Query(None, description="The project ID to associate the uploaded agent with."),
+    project_id: str | None = Query(None, description="The project ID to associate the uploaded agent with."),
     strip_messages: bool = Query(
         False,
         description="If set to True, strips all messages from the agent before importing.",
@@ -198,24 +199,24 @@ def import_agent_serialized(
         raise HTTPException(status_code=400, detail="Corrupted agent file format.")
 
     except ValidationError as e:
-        raise HTTPException(status_code=422, detail=f"Invalid agent schema: {str(e)}")
+        raise HTTPException(status_code=422, detail=f"Invalid agent schema: {e!s}")
 
     except IntegrityError as e:
-        raise HTTPException(status_code=409, detail=f"Database integrity error: {str(e)}")
+        raise HTTPException(status_code=409, detail=f"Database integrity error: {e!s}")
 
     except OperationalError as e:
-        raise HTTPException(status_code=503, detail=f"Database connection error. Please try again later: {str(e)}")
+        raise HTTPException(status_code=503, detail=f"Database connection error. Please try again later: {e!s}")
 
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred while uploading the agent: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred while uploading the agent: {e!s}")
 
 
 @router.get("/{agent_id}/context", response_model=ContextWindowOverview, operation_id="retrieve_agent_context_window")
 async def retrieve_agent_context_window(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Retrieve the context window of a specific agent.
@@ -234,15 +235,15 @@ class CreateAgentRequest(CreateAgent):
     """
 
     # Override the user_id field to exclude it from the request body validation
-    actor_id: Optional[str] = Field(None, exclude=True)
+    actor_id: str | None = Field(None, exclude=True)
 
 
 @router.post("/", response_model=AgentState, operation_id="create_agent")
 async def create_agent(
     agent: CreateAgentRequest = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-    x_project: Optional[str] = Header(
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    x_project: str | None = Header(
         None, alias="X-Project", description="The project slug to associate with the agent (cloud only)."
     ),  # Only handled by next js middleware
 ):
@@ -262,18 +263,18 @@ async def modify_agent(
     agent_id: str,
     update_agent: UpdateAgent = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """Update an existing agent"""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     return await server.update_agent_async(agent_id=agent_id, request=update_agent, actor=actor)
 
 
-@router.get("/{agent_id}/tools", response_model=List[Tool], operation_id="list_agent_tools")
+@router.get("/{agent_id}/tools", response_model=list[Tool], operation_id="list_agent_tools")
 def list_agent_tools(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """Get tools from an existing agent"""
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
@@ -285,7 +286,7 @@ async def attach_tool(
     agent_id: str,
     tool_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: str | None = Header(None, alias="user_id"),
 ):
     """
     Attach a tool to an agent.
@@ -299,7 +300,7 @@ async def detach_tool(
     agent_id: str,
     tool_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: str | None = Header(None, alias="user_id"),
 ):
     """
     Detach a tool from an agent.
@@ -313,7 +314,7 @@ async def attach_source(
     agent_id: str,
     source_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: str | None = Header(None, alias="user_id"),
 ):
     """
     Attach a source to an agent.
@@ -341,7 +342,7 @@ async def detach_source(
     agent_id: str,
     source_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: str | None = Header(None, alias="user_id"),
 ):
     """
     Detach a source from an agent.
@@ -386,7 +387,7 @@ async def close_all_open_files(
 @router.get("/{agent_id}", response_model=AgentState, operation_id="retrieve_agent")
 async def retrieve_agent(
     agent_id: str,
-    include_relationships: Optional[List[str]] = Query(
+    include_relationships: list[str] | None = Query(
         None,
         description=(
             "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. "
@@ -395,7 +396,7 @@ async def retrieve_agent(
         ),
     ),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Get the state of the agent.
@@ -412,7 +413,7 @@ async def retrieve_agent(
 async def delete_agent(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Delete an agent.
@@ -425,11 +426,11 @@ async def delete_agent(
         raise HTTPException(status_code=404, detail=f"Agent agent_id={agent_id} not found for user_id={actor.id}.")
 
 
-@router.get("/{agent_id}/sources", response_model=List[Source], operation_id="list_agent_sources")
+@router.get("/{agent_id}/sources", response_model=list[Source], operation_id="list_agent_sources")
 async def list_agent_sources(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Get the sources associated with an agent.
@@ -443,7 +444,7 @@ async def list_agent_sources(
 async def retrieve_agent_memory(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Retrieve the memory state of a specific agent.
@@ -459,7 +460,7 @@ async def retrieve_block(
     agent_id: str,
     block_label: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Retrieve a core memory block from an agent.
@@ -472,11 +473,11 @@ async def retrieve_block(
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.get("/{agent_id}/core-memory/blocks", response_model=List[Block], operation_id="list_core_memory_blocks")
+@router.get("/{agent_id}/core-memory/blocks", response_model=list[Block], operation_id="list_core_memory_blocks")
 async def list_blocks(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Retrieve the core memory blocks of a specific agent.
@@ -495,7 +496,7 @@ async def modify_block(
     block_label: str,
     block_update: BlockUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Updates a core memory block of an agent.
@@ -517,7 +518,7 @@ async def attach_block(
     agent_id: str,
     block_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: str | None = Header(None, alias="user_id"),
 ):
     """
     Attach a core memoryblock to an agent.
@@ -531,7 +532,7 @@ async def detach_block(
     agent_id: str,
     block_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: str | None = Header(None, alias="user_id"),
 ):
     """
     Detach a core memory block from an agent.
@@ -540,18 +541,18 @@ async def detach_block(
     return await server.agent_manager.detach_block_async(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
-@router.get("/{agent_id}/archival-memory", response_model=List[Passage], operation_id="list_passages")
+@router.get("/{agent_id}/archival-memory", response_model=list[Passage], operation_id="list_passages")
 async def list_passages(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    after: Optional[str] = Query(None, description="Unique ID of the memory to start the query range at."),
-    before: Optional[str] = Query(None, description="Unique ID of the memory to end the query range at."),
-    limit: Optional[int] = Query(None, description="How many results to include in the response."),
-    search: Optional[str] = Query(None, description="Search passages by text"),
-    ascending: Optional[bool] = Query(
+    after: str | None = Query(None, description="Unique ID of the memory to start the query range at."),
+    before: str | None = Query(None, description="Unique ID of the memory to end the query range at."),
+    limit: int | None = Query(None, description="How many results to include in the response."),
+    search: str | None = Query(None, description="Search passages by text"),
+    ascending: bool | None = Query(
         True, description="Whether to sort passages oldest to newest (True, default) or newest to oldest (False)"
     ),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Retrieve the memories in an agent's archival memory store (paginated query).
@@ -569,12 +570,12 @@ async def list_passages(
     )
 
 
-@router.post("/{agent_id}/archival-memory", response_model=List[Passage], operation_id="create_passage")
+@router.post("/{agent_id}/archival-memory", response_model=list[Passage], operation_id="create_passage")
 async def create_passage(
     agent_id: str,
     request: CreateArchivalMemory = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: str | None = Header(None, alias="user_id"),
 ):
     """
     Insert a memory into an agent's archival memory store.
@@ -584,13 +585,13 @@ async def create_passage(
     return await server.insert_archival_memory_async(agent_id=agent_id, memory_contents=request.text, actor=actor)
 
 
-@router.patch("/{agent_id}/archival-memory/{memory_id}", response_model=List[Passage], operation_id="modify_passage")
+@router.patch("/{agent_id}/archival-memory/{memory_id}", response_model=list[Passage], operation_id="modify_passage")
 def modify_passage(
     agent_id: str,
     memory_id: str,
     passage: PassageUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Modify a memory in the agent's archival memory store.
@@ -607,7 +608,7 @@ async def delete_passage(
     memory_id: str,
     # memory_id: str = Query(..., description="Unique ID of the memory to be deleted."),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Delete a memory from an agent's archival memory store.
@@ -619,7 +620,7 @@ async def delete_passage(
 
 
 AgentMessagesResponse = Annotated[
-    List[LettaMessageUnion], Field(json_schema_extra={"type": "array", "items": {"$ref": "#/components/schemas/LettaMessageUnion"}})
+    list[LettaMessageUnion], Field(json_schema_extra={"type": "array", "items": {"$ref": "#/components/schemas/LettaMessageUnion"}})
 ]
 
 
@@ -627,14 +628,14 @@ AgentMessagesResponse = Annotated[
 async def list_messages(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    after: Optional[str] = Query(None, description="Message after which to retrieve the returned messages."),
-    before: Optional[str] = Query(None, description="Message before which to retrieve the returned messages."),
+    after: str | None = Query(None, description="Message after which to retrieve the returned messages."),
+    before: str | None = Query(None, description="Message before which to retrieve the returned messages."),
     limit: int = Query(10, description="Maximum number of messages to retrieve."),
-    group_id: Optional[str] = Query(None, description="Group ID to filter messages by."),
+    group_id: str | None = Query(None, description="Group ID to filter messages by."),
     use_assistant_message: bool = Query(True, description="Whether to use assistant messages"),
     assistant_message_tool_name: str = Query(DEFAULT_MESSAGE_TOOL, description="The name of the designated message tool."),
     assistant_message_tool_kwarg: str = Query(DEFAULT_MESSAGE_TOOL_KWARG, description="The name of the message argument."),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Retrieve message history for an agent.
@@ -662,7 +663,7 @@ def modify_message(
     message_id: str,
     request: LettaMessageUpdateUnion = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Update the details of a message associated with an agent.
@@ -672,6 +673,7 @@ def modify_message(
     return server.message_manager.update_message_by_letta_message(message_id=message_id, letta_message_update=request, actor=actor)
 
 
+# noinspection PyInconsistentReturns
 @router.post(
     "/{agent_id}/messages",
     response_model=LettaResponse,
@@ -682,7 +684,7 @@ async def send_message(
     request_obj: Request,  # FastAPI Request
     server: SyncServer = Depends(get_letta_server),
     request: LettaRequest = Body(...),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Process a user message and return the agent's response.
@@ -697,55 +699,95 @@ async def send_message(
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex", "bedrock"]
 
-    if agent_eligible and model_compatible:
-        if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
-            agent_loop = SleeptimeMultiAgentV2(
-                agent_id=agent_id,
-                message_manager=server.message_manager,
-                agent_manager=server.agent_manager,
-                block_manager=server.block_manager,
-                passage_manager=server.passage_manager,
-                group_manager=server.group_manager,
-                job_manager=server.job_manager,
-                actor=actor,
-                group=agent.multi_agent_group,
+    # Create a new run for execution tracking
+    job_status = JobStatus.created
+    run = await server.job_manager.create_job_async(
+        pydantic_job=Run(
+            user_id=actor.id,
+            status=job_status,
+            metadata={
+                "job_type": "send_message",
+                "agent_id": agent_id,
+            },
+            request_config=LettaRequestConfig(
+                use_assistant_message=request.use_assistant_message,
+                assistant_message_tool_name=request.assistant_message_tool_name,
+                assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+                include_return_message_types=request.include_return_message_types,
+            ),
+        ),
+        actor=actor,
+    )
+    job_update_metadata = None
+    # TODO (cliandy): clean this up
+    redis_client = await get_redis_client()
+    await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id)
+
+    try:
+        if agent_eligible and model_compatible:
+            if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
+                agent_loop = SleeptimeMultiAgentV2(
+                    agent_id=agent_id,
+                    message_manager=server.message_manager,
+                    agent_manager=server.agent_manager,
+                    block_manager=server.block_manager,
+                    passage_manager=server.passage_manager,
+                    group_manager=server.group_manager,
+                    job_manager=server.job_manager,
+                    actor=actor,
+                    group=agent.multi_agent_group,
+                    current_run_id=run.id,
+                )
+            else:
+                agent_loop = LettaAgent(
+                    agent_id=agent_id,
+                    message_manager=server.message_manager,
+                    agent_manager=server.agent_manager,
+                    block_manager=server.block_manager,
+                    job_manager=server.job_manager,
+                    passage_manager=server.passage_manager,
+                    actor=actor,
+                    step_manager=server.step_manager,
+                    telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
+                    current_run_id=run.id,
+                )
+
+            result = await agent_loop.step(
+                request.messages,
+                max_steps=request.max_steps,
+                use_assistant_message=request.use_assistant_message,
+                request_start_timestamp_ns=request_start_timestamp_ns,
+                include_return_message_types=request.include_return_message_types,
             )
         else:
-            agent_loop = LettaAgent(
+            result = await server.send_message_to_agent(
                 agent_id=agent_id,
-                message_manager=server.message_manager,
-                agent_manager=server.agent_manager,
-                block_manager=server.block_manager,
-                job_manager=server.job_manager,
-                passage_manager=server.passage_manager,
                 actor=actor,
-                step_manager=server.step_manager,
-                telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
+                input_messages=request.messages,
+                stream_steps=False,
+                stream_tokens=False,
+                # Support for AssistantMessage
+                use_assistant_message=request.use_assistant_message,
+                assistant_message_tool_name=request.assistant_message_tool_name,
+                assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+                include_return_message_types=request.include_return_message_types,
             )
-
-        result = await agent_loop.step(
-            request.messages,
-            max_steps=request.max_steps,
-            use_assistant_message=request.use_assistant_message,
-            request_start_timestamp_ns=request_start_timestamp_ns,
-            include_return_message_types=request.include_return_message_types,
-        )
-    else:
-        result = await server.send_message_to_agent(
-            agent_id=agent_id,
+        job_status = result.stop_reason.stop_reason.run_status
+        return result
+    except Exception as e:
+        job_update_metadata = {"error": str(e)}
+        job_status = JobStatus.failed
+        raise
+    finally:
+        await server.job_manager.safe_update_job_status_async(
+            job_id=run.id,
+            new_status=job_status,
             actor=actor,
-            input_messages=request.messages,
-            stream_steps=False,
-            stream_tokens=False,
-            # Support for AssistantMessage
-            use_assistant_message=request.use_assistant_message,
-            assistant_message_tool_name=request.assistant_message_tool_name,
-            assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-            include_return_message_types=request.include_return_message_types,
+            metadata=job_update_metadata,
         )
-    return result
 
 
+# noinspection PyInconsistentReturns
 @router.post(
     "/{agent_id}/messages/stream",
     response_model=None,
@@ -764,7 +806,7 @@ async def send_message_streaming(
     request_obj: Request,  # FastAPI Request
     server: SyncServer = Depends(get_letta_server),
     request: LettaStreamingRequest = Body(...),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ) -> StreamingResponse | LettaResponse:
     """
     Process a user message and return the agent's response.
@@ -780,88 +822,160 @@ async def send_message_streaming(
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex", "bedrock"]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"]
-    not_letta_endpoint = LETTA_MODEL_ENDPOINT != agent.llm_config.model_endpoint
+    not_letta_endpoint = agent.llm_config.model_endpoint != LETTA_MODEL_ENDPOINT
 
-    if agent_eligible and model_compatible:
-        if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
-            agent_loop = SleeptimeMultiAgentV2(
-                agent_id=agent_id,
-                message_manager=server.message_manager,
-                agent_manager=server.agent_manager,
-                block_manager=server.block_manager,
-                passage_manager=server.passage_manager,
-                group_manager=server.group_manager,
-                job_manager=server.job_manager,
-                actor=actor,
-                step_manager=server.step_manager,
-                telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-                group=agent.multi_agent_group,
-            )
-        else:
-            agent_loop = LettaAgent(
-                agent_id=agent_id,
-                message_manager=server.message_manager,
-                agent_manager=server.agent_manager,
-                block_manager=server.block_manager,
-                job_manager=server.job_manager,
-                passage_manager=server.passage_manager,
-                actor=actor,
-                step_manager=server.step_manager,
-                telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-            )
-        from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
+    # Create a new job for execution tracking
+    job_status = JobStatus.created
+    run = await server.job_manager.create_job_async(
+        pydantic_job=Run(
+            user_id=actor.id,
+            status=job_status,
+            metadata={
+                "job_type": "send_message_streaming",
+                "agent_id": agent_id,
+            },
+            request_config=LettaRequestConfig(
+                use_assistant_message=request.use_assistant_message,
+                assistant_message_tool_name=request.assistant_message_tool_name,
+                assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+                include_return_message_types=request.include_return_message_types,
+            ),
+        ),
+        actor=actor,
+    )
 
-        if request.stream_tokens and model_compatible_token_streaming and not_letta_endpoint:
-            result = StreamingResponseWithStatusCode(
-                agent_loop.step_stream(
-                    input_messages=request.messages,
-                    max_steps=request.max_steps,
-                    use_assistant_message=request.use_assistant_message,
-                    request_start_timestamp_ns=request_start_timestamp_ns,
-                    include_return_message_types=request.include_return_message_types,
-                ),
-                media_type="text/event-stream",
-            )
+    job_update_metadata = None
+    # TODO (cliandy): clean this up
+    redis_client = await get_redis_client()
+    await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id)
+
+    try:
+        if agent_eligible and model_compatible:
+            if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
+                agent_loop = SleeptimeMultiAgentV2(
+                    agent_id=agent_id,
+                    message_manager=server.message_manager,
+                    agent_manager=server.agent_manager,
+                    block_manager=server.block_manager,
+                    passage_manager=server.passage_manager,
+                    group_manager=server.group_manager,
+                    job_manager=server.job_manager,
+                    actor=actor,
+                    step_manager=server.step_manager,
+                    telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
+                    group=agent.multi_agent_group,
+                    current_run_id=run.id,
+                )
+            else:
+                agent_loop = LettaAgent(
+                    agent_id=agent_id,
+                    message_manager=server.message_manager,
+                    agent_manager=server.agent_manager,
+                    block_manager=server.block_manager,
+                    job_manager=server.job_manager,
+                    passage_manager=server.passage_manager,
+                    actor=actor,
+                    step_manager=server.step_manager,
+                    telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
+                    current_run_id=run.id,
+                )
+            from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
+
+            if request.stream_tokens and model_compatible_token_streaming and not_letta_endpoint:
+                result = StreamingResponseWithStatusCode(
+                    agent_loop.step_stream(
+                        input_messages=request.messages,
+                        max_steps=request.max_steps,
+                        use_assistant_message=request.use_assistant_message,
+                        request_start_timestamp_ns=request_start_timestamp_ns,
+                        include_return_message_types=request.include_return_message_types,
+                    ),
+                    media_type="text/event-stream",
+                )
+            else:
+                result = StreamingResponseWithStatusCode(
+                    agent_loop.step_stream_no_tokens(
+                        request.messages,
+                        max_steps=request.max_steps,
+                        use_assistant_message=request.use_assistant_message,
+                        request_start_timestamp_ns=request_start_timestamp_ns,
+                        include_return_message_types=request.include_return_message_types,
+                    ),
+                    media_type="text/event-stream",
+                )
         else:
-            result = StreamingResponseWithStatusCode(
-                agent_loop.step_stream_no_tokens(
-                    request.messages,
-                    max_steps=request.max_steps,
-                    use_assistant_message=request.use_assistant_message,
-                    request_start_timestamp_ns=request_start_timestamp_ns,
-                    include_return_message_types=request.include_return_message_types,
-                ),
-                media_type="text/event-stream",
+            result = await server.send_message_to_agent(
+                agent_id=agent_id,
+                actor=actor,
+                input_messages=request.messages,
+                stream_steps=True,
+                stream_tokens=request.stream_tokens,
+                # Support for AssistantMessage
+                use_assistant_message=request.use_assistant_message,
+                assistant_message_tool_name=request.assistant_message_tool_name,
+                assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+                request_start_timestamp_ns=request_start_timestamp_ns,
+                include_return_message_types=request.include_return_message_types,
             )
-    else:
-        result = await server.send_message_to_agent(
-            agent_id=agent_id,
+        job_status = JobStatus.running
+        return result
+    except Exception as e:
+        job_update_metadata = {"error": str(e)}
+        job_status = JobStatus.failed
+        raise
+    finally:
+        await server.job_manager.safe_update_job_status_async(
+            job_id=run.id,
+            new_status=job_status,
             actor=actor,
-            input_messages=request.messages,
-            stream_steps=True,
-            stream_tokens=request.stream_tokens,
-            # Support for AssistantMessage
-            use_assistant_message=request.use_assistant_message,
-            assistant_message_tool_name=request.assistant_message_tool_name,
-            assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-            request_start_timestamp_ns=request_start_timestamp_ns,
-            include_return_message_types=request.include_return_message_types,
+            metadata=job_update_metadata,
         )
 
-    return result
+
+@router.post("/{agent_id}/messages/cancel", operation_id="cancel_agent_run")
+async def cancel_agent_run(
+    agent_id: str,
+    run_ids: list[str] | None = None,
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: str | None = Header(None, alias="user_id"),
+) -> dict:
+    """
+    Cancel runs associated with an agent. If run_ids are passed in, cancel those in particular.
+
+    Note to cancel active runs associated with an agent, redis is required.
+    """
+
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    if not run_ids:
+        redis_client = await get_redis_client()
+        run_id = await redis_client.get(f"{REDIS_RUN_ID_PREFIX}:{agent_id}")
+        if run_id is None:
+            logger.warning("Cannot find run associated with agent to cancel.")
+            return {}
+        run_ids = [run_id]
+
+    results = {}
+    for run_id in run_ids:
+        success = await server.job_manager.safe_update_job_status_async(
+            job_id=run_id,
+            new_status=JobStatus.cancelled,
+            actor=actor,
+        )
+        results[run_id] = "cancelled" if success else "failed"
+    return results
 
 
-async def process_message_background(
-    job_id: str,
+async def _process_message_background(
+    run_id: str,
     server: SyncServer,
     actor: User,
     agent_id: str,
-    messages: List[MessageCreate],
+    messages: list[MessageCreate],
     use_assistant_message: bool,
     assistant_message_tool_name: str,
     assistant_message_tool_kwarg: str,
     max_steps: int = DEFAULT_MAX_STEPS,
-    include_return_message_types: Optional[List[MessageType]] = None,
+    include_return_message_types: list[MessageType] | None = None,
 ) -> None:
     """Background task to process the message and update job status."""
     request_start_timestamp_ns = get_utc_timestamp_ns()
@@ -905,7 +1019,7 @@ async def process_message_background(
             result = await agent_loop.step(
                 messages,
                 max_steps=max_steps,
-                run_id=job_id,
+                run_id=run_id,
                 use_assistant_message=use_assistant_message,
                 request_start_timestamp_ns=request_start_timestamp_ns,
                 include_return_message_types=include_return_message_types,
@@ -917,7 +1031,7 @@ async def process_message_background(
                 input_messages=messages,
                 stream_steps=False,
                 stream_tokens=False,
-                metadata={"job_id": job_id},
+                metadata={"job_id": run_id},
                 # Support for AssistantMessage
                 use_assistant_message=use_assistant_message,
                 assistant_message_tool_name=assistant_message_tool_name,
@@ -930,7 +1044,7 @@ async def process_message_background(
             completed_at=datetime.now(timezone.utc),
             metadata={"result": result.model_dump(mode="json")},
         )
-        await server.job_manager.update_job_by_id_async(job_id=job_id, job_update=job_update, actor=actor)
+        await server.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=actor)
 
     except Exception as e:
         # Update job status to failed
@@ -951,11 +1065,14 @@ async def send_message_async(
     agent_id: str,
     server: SyncServer = Depends(get_letta_server),
     request: LettaAsyncRequest = Body(...),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: str | None = Header(None, alias="user_id"),
 ):
     """
     Asynchronously process a user message and return a run object.
     The actual processing happens in the background, and the status can be checked using the run ID.
+
+    This is "asynchronous" in the sense that it's a background job and explicitly must be fetched by the run ID.
+    This is more like `send_message_job`
     """
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
@@ -980,8 +1097,8 @@ async def send_message_async(
 
     # Create asyncio task for background processing
     asyncio.create_task(
-        process_message_background(
-            job_id=run.id,
+        _process_message_background(
+            run_id=run.id,
             server=server,
             actor=actor,
             agent_id=agent_id,
@@ -1002,7 +1119,7 @@ async def reset_messages(
     agent_id: str,
     add_default_initial_messages: bool = Query(default=False, description="If true, adds the default initial messages after resetting."),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """Resets the messages for an agent"""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
@@ -1011,12 +1128,12 @@ async def reset_messages(
     )
 
 
-@router.get("/{agent_id}/groups", response_model=List[Group], operation_id="list_agent_groups")
+@router.get("/{agent_id}/groups", response_model=list[Group], operation_id="list_agent_groups")
 async def list_agent_groups(
     agent_id: str,
-    manager_type: Optional[str] = Query(None, description="Manager type to filter groups by"),
+    manager_type: str | None = Query(None, description="Manager type to filter groups by"),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """Lists the groups for an agent"""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
@@ -1030,7 +1147,7 @@ async def summarize_agent_conversation(
     request_obj: Request,  # FastAPI Request
     max_message_length: int = Query(..., description="Maximum number of messages to retain after summarization."),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: str | None = Header(None, alias="user_id"),
 ):
     """
     Summarize an agent's conversation history to a target message length.

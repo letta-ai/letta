@@ -3630,7 +3630,8 @@ export type StopReasonType =
   | 'invalid_tool_call'
   | 'max_steps'
   | 'no_tool_call'
-  | 'tool_rule';
+  | 'tool_rule'
+  | 'cancelled';
 
 /**
  * Configuration for an MCP server using Streamable HTTP
@@ -5172,6 +5173,16 @@ export type CreateAgentMessageStreamData = {
 
 export type CreateAgentMessageStreamResponse = unknown;
 
+export type CancelAgentRunData = {
+  agentId: string;
+  requestBody?: Array<string> | null;
+  userId?: string | null;
+};
+
+export type CancelAgentRunResponse = {
+  [key: string]: unknown;
+};
+
 export type CreateAgentMessageAsyncData = {
   agentId: string;
   requestBody: LettaAsyncRequest;
@@ -5516,6 +5527,22 @@ export type ListAgentsForBlockResponse = Array<AgentState>;
 
 export type ListJobsData = {
   /**
+   * Cursor for pagination
+   */
+  after?: string | null;
+  /**
+   * Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
+   */
+  ascending?: boolean;
+  /**
+   * Cursor for pagination
+   */
+  before?: string | null;
+  /**
+   * Limit for pagination
+   */
+  limit?: number | null;
+  /**
    * Only list jobs associated with the source.
    */
   sourceId?: string | null;
@@ -5525,6 +5552,22 @@ export type ListJobsData = {
 export type ListJobsResponse = Array<Job>;
 
 export type ListActiveJobsData = {
+  /**
+   * Cursor for pagination
+   */
+  after?: string | null;
+  /**
+   * Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
+   */
+  ascending?: boolean;
+  /**
+   * Cursor for pagination
+   */
+  before?: string | null;
+  /**
+   * Limit for pagination
+   */
+  limit?: number | null;
   /**
    * Only list jobs associated with the source.
    */
@@ -5547,6 +5590,13 @@ export type DeleteJobData = {
 };
 
 export type DeleteJobResponse = Job;
+
+export type CancelJobData = {
+  jobId: string;
+  userId?: string | null;
+};
+
+export type CancelJobResponse = Job;
 
 export type HealthCheckResponse = Health;
 
@@ -6949,6 +6999,23 @@ export type $OpenApiTs = {
       };
     };
   };
+  '/v1/agents/{agent_id}/messages/cancel': {
+    post: {
+      req: CancelAgentRunData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: {
+          [key: string]: unknown;
+        };
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
   '/v1/agents/{agent_id}/messages/async': {
     post: {
       req: CreateAgentMessageAsyncData;
@@ -7460,6 +7527,21 @@ export type $OpenApiTs = {
     };
     delete: {
       req: DeleteJobData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Job;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/jobs/{job_id}/cancel': {
+    patch: {
+      req: CancelJobData;
       res: {
         /**
          * Successful Response

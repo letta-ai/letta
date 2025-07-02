@@ -63,6 +63,11 @@ on:
         required: false
         type: string
         default: ${{ github.sha }}
+      use-redis:
+        description: 'Use Redis for tests'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   changed-files:
@@ -195,6 +200,15 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: ${{ inputs.use-redis && 'redis:8-alpine' || '' }}
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
       - name: Checkout
@@ -319,6 +333,9 @@ jobs:
 
           # Docker-specific environment variables
           PYTHONPATH: ${{ inputs.use-docker && format('{0}:{1}', github.workspace, env.PYTHONPATH) || '' }}
+
+          # TODO (cliandy): see if this works
+          LETTA_REDIS_HOST: localhost
         run: |
           set -o xtrace
 
