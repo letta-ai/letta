@@ -56,7 +56,7 @@ class EmbeddingConfig(BaseModel):
     @classmethod
     def default_config(cls, model_name: Optional[str] = None, provider: Optional[str] = None):
 
-        if model_name == "text-embedding-ada-002" or (not model_name and provider == "openai"):
+        if model_name == "text-embedding-ada-002" and provider == "openai":
             return cls(
                 embedding_model="text-embedding-ada-002",
                 embedding_endpoint_type="openai",
@@ -64,7 +64,7 @@ class EmbeddingConfig(BaseModel):
                 embedding_dim=1536,
                 embedding_chunk_size=300,
             )
-        if model_name == "text-embedding-3-small" and provider == "openai":
+        if (model_name == "text-embedding-3-small" and provider == "openai") or (not model_name and provider == "openai"):
             return cls(
                 embedding_model="text-embedding-3-small",
                 embedding_endpoint_type="openai",
