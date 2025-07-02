@@ -8,6 +8,11 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.rollingUpdate.maxSurge | default "25%" }}
+      maxUnavailable: {{ .Values.rollingUpdate.maxUnavailable | default "25%" }}
   selector:
     matchLabels:
       {{- include "letta-web.selectorLabels" . | nindent 6 }}
