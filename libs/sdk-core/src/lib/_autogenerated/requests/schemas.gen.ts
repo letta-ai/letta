@@ -1626,6 +1626,19 @@ export const $Block = {
       description: 'Metadata of the block.',
       default: {},
     },
+    source_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Source Id',
+      description:
+        'The source ID associated with this block (for file blocks).',
+    },
     id: {
       type: 'string',
       pattern: '^block-[a-fA-F0-9]{8}',
@@ -1790,6 +1803,19 @@ export const $BlockUpdate = {
       title: 'Metadata',
       description: 'Metadata of the block.',
       default: {},
+    },
+    source_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Source Id',
+      description:
+        'The source ID associated with this block (for file blocks).',
     },
   },
   type: 'object',
@@ -4182,6 +4208,19 @@ export const $CreateBlock = {
       title: 'Metadata',
       description: 'Metadata of the block.',
       default: {},
+    },
+    source_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Source Id',
+      description:
+        'The source ID associated with this block (for file blocks).',
     },
   },
   type: 'object',
@@ -9850,6 +9889,19 @@ export const $Step = {
       title: 'Feedback',
       description:
         "The feedback for this step. Must be either 'positive' or 'negative'.",
+    },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description:
+        'The project that the agent that executed this step belongs to (cloud only).',
     },
   },
   additionalProperties: false,

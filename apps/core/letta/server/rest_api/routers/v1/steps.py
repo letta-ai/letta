@@ -26,8 +26,12 @@ async def list_steps(
     feedback: Optional[Literal["positive", "negative"]] = Query(None, description="Filter by feedback"),
     has_feedback: Optional[bool] = Query(None, description="Filter by whether steps have feedback (true) or not (false)"),
     tags: Optional[list[str]] = Query(None, description="Filter by tags"),
+    project_id: Optional[str] = Query(None, description="Filter by the project ID that is associated with the step (cloud only)."),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
+    x_project: Optional[str] = Header(
+        None, alias="X-Project", description="Filter by project slug to associate with the group (cloud only)."
+    ),  # Only handled by next js middleware
 ):
     """
     List steps with optional pagination and date filters.
@@ -53,6 +57,7 @@ async def list_steps(
         feedback=feedback,
         has_feedback=has_feedback,
         tags=tags,
+        project_id=project_id,
     )
 
 

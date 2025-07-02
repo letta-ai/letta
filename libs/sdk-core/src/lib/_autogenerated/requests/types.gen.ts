@@ -549,6 +549,10 @@ export type Block = {
     [key: string]: unknown;
   } | null;
   /**
+   * The source ID associated with this block (for file blocks).
+   */
+  source_id?: string | null;
+  /**
    * The human-friendly ID of the Block
    */
   id?: string;
@@ -608,6 +612,10 @@ export type BlockUpdate = {
   metadata?: {
     [key: string]: unknown;
   } | null;
+  /**
+   * The source ID associated with this block (for file blocks).
+   */
+  source_id?: string | null;
 };
 
 export type Body_import_agent_serialized = {
@@ -1345,6 +1353,10 @@ export type CreateBlock = {
   metadata?: {
     [key: string]: unknown;
   } | null;
+  /**
+   * The source ID associated with this block (for file blocks).
+   */
+  source_id?: string | null;
 };
 
 export type DynamicManager = {
@@ -3611,6 +3623,10 @@ export type Step = {
    * The feedback for this step. Must be either 'positive' or 'negative'.
    */
   feedback?: 'positive' | 'negative' | null;
+  /**
+   * The project that the agent that executed this step belongs to (cloud only).
+   */
+  project_id?: string | null;
 };
 
 export type StopReasonType =
@@ -5809,6 +5825,10 @@ export type ListStepsData = {
    */
   order?: string | null;
   /**
+   * Filter by the project ID that is associated with the step (cloud only).
+   */
+  projectId?: string | null;
+  /**
    * Return steps after this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")
    */
   startDate?: string | null;
@@ -5821,6 +5841,10 @@ export type ListStepsData = {
    */
   traceIds?: Array<string> | null;
   userId?: string | null;
+  /**
+   * Filter by project slug to associate with the group (cloud only).
+   */
+  xProject?: string | null;
 };
 
 export type ListStepsResponse = Array<Step>;

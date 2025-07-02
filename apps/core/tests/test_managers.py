@@ -6160,6 +6160,7 @@ async def test_job_usage_stats_add_and_get(server: SyncServer, sarah_agent, defa
             total_tokens=150,
         ),
         actor=default_user,
+        project_id=sarah_agent.project_id,
     )
 
     # Get usage statistics
@@ -6213,6 +6214,7 @@ async def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, def
             total_tokens=150,
         ),
         actor=default_user,
+        project_id=sarah_agent.project_id,
     )
 
     # Add second usage statistics entry
@@ -6230,6 +6232,7 @@ async def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, def
             total_tokens=300,
         ),
         actor=default_user,
+        project_id=sarah_agent.project_id,
     )
 
     # Get usage statistics (should return the latest entry)
@@ -6291,6 +6294,7 @@ async def test_job_usage_stats_add_nonexistent_job(server: SyncServer, sarah_age
                 total_tokens=150,
             ),
             actor=default_user,
+            project_id=sarah_agent.project_id,
         )
 
 

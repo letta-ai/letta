@@ -1870,7 +1870,9 @@ export const prefetchUseRunsServiceListRunSteps = (
  * @param data.feedback Filter by feedback
  * @param data.hasFeedback Filter by whether steps have feedback (true) or not (false)
  * @param data.tags Filter by tags
+ * @param data.projectId Filter by the project ID that is associated with the step (cloud only).
  * @param data.userId
+ * @param data.xProject Filter by project slug to associate with the group (cloud only).
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -1886,10 +1888,12 @@ export const prefetchUseStepsServiceListSteps = (
     limit,
     model,
     order,
+    projectId,
     startDate,
     tags,
     traceIds,
     userId,
+    xProject,
   }: {
     after?: string;
     agentId?: string;
@@ -1900,10 +1904,12 @@ export const prefetchUseStepsServiceListSteps = (
     limit?: number;
     model?: string;
     order?: string;
+    projectId?: string;
     startDate?: string;
     tags?: string[];
     traceIds?: string[];
     userId?: string;
+    xProject?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -1917,10 +1923,12 @@ export const prefetchUseStepsServiceListSteps = (
       limit,
       model,
       order,
+      projectId,
       startDate,
       tags,
       traceIds,
       userId,
+      xProject,
     }),
     queryFn: () =>
       StepsService.listSteps({
@@ -1933,10 +1941,12 @@ export const prefetchUseStepsServiceListSteps = (
         limit,
         model,
         order,
+        projectId,
         startDate,
         tags,
         traceIds,
         userId,
+        xProject,
       }),
   });
 /**

@@ -1388,10 +1388,12 @@ export const UseStepsServiceListStepsKeyFn = (
     limit,
     model,
     order,
+    projectId,
     startDate,
     tags,
     traceIds,
     userId,
+    xProject,
   }: {
     after?: string;
     agentId?: string;
@@ -1402,10 +1404,12 @@ export const UseStepsServiceListStepsKeyFn = (
     limit?: number;
     model?: string;
     order?: string;
+    projectId?: string;
     startDate?: string;
     tags?: string[];
     traceIds?: string[];
     userId?: string;
+    xProject?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
@@ -1421,10 +1425,12 @@ export const UseStepsServiceListStepsKeyFn = (
       limit,
       model,
       order,
+      projectId,
       startDate,
       tags,
       traceIds,
       userId,
+      xProject,
     },
   ]),
 ];

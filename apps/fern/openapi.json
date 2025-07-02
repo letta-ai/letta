@@ -6678,6 +6678,42 @@
               "title": "Tags"
             },
             "description": "Filter by tags"
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by the project ID that is associated with the step (cloud only).",
+              "title": "Project Id"
+            },
+            "description": "Filter by the project ID that is associated with the step (cloud only)."
+          },
+          {
+            "name": "X-Project",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by project slug to associate with the group (cloud only).",
+              "title": "X-Project"
+            },
+            "description": "Filter by project slug to associate with the group (cloud only)."
           }
         ],
         "responses": {
@@ -9824,6 +9860,18 @@
             "description": "Metadata of the block.",
             "default": {}
           },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id",
+            "description": "The source ID associated with this block (for file blocks)."
+          },
           "id": {
             "type": "string",
             "pattern": "^block-[a-fA-F0-9]{8}",
@@ -9961,6 +10009,18 @@
             "title": "Metadata",
             "description": "Metadata of the block.",
             "default": {}
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id",
+            "description": "The source ID associated with this block (for file blocks)."
           }
         },
         "type": "object",
@@ -12272,6 +12332,18 @@
             "title": "Metadata",
             "description": "Metadata of the block.",
             "default": {}
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id",
+            "description": "The source ID associated with this block (for file blocks)."
           }
         },
         "type": "object",
@@ -17480,6 +17552,18 @@
             ],
             "title": "Feedback",
             "description": "The feedback for this step. Must be either 'positive' or 'negative'."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The project that the agent that executed this step belongs to (cloud only)."
           }
         },
         "additionalProperties": false,

@@ -3770,7 +3770,9 @@ export class StepsService {
    * @param data.feedback Filter by feedback
    * @param data.hasFeedback Filter by whether steps have feedback (true) or not (false)
    * @param data.tags Filter by tags
+   * @param data.projectId Filter by the project ID that is associated with the step (cloud only).
    * @param data.userId
+   * @param data.xProject Filter by project slug to associate with the group (cloud only).
    * @returns Step Successful Response
    * @throws ApiError
    */
@@ -3794,6 +3796,7 @@ export class StepsService {
         feedback: data.feedback,
         has_feedback: data.hasFeedback,
         tags: data.tags,
+        project_id: data.projectId,
       },
       errors: {
         422: 'Validation Error',

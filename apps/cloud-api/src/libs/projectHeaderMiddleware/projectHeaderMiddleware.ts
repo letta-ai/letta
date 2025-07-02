@@ -19,7 +19,7 @@ export async function projectHeaderMiddleware(
     return;
   }
 
-  if (req.method !== 'POST') {
+  if (req.method !== 'POST' && req.method !== 'GET') {
     next();
     return;
   }

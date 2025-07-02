@@ -2259,7 +2259,9 @@ export const useRunsServiceListRunStepsSuspense = <
  * @param data.feedback Filter by feedback
  * @param data.hasFeedback Filter by whether steps have feedback (true) or not (false)
  * @param data.tags Filter by tags
+ * @param data.projectId Filter by the project ID that is associated with the step (cloud only).
  * @param data.userId
+ * @param data.xProject Filter by project slug to associate with the group (cloud only).
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -2278,10 +2280,12 @@ export const useStepsServiceListStepsSuspense = <
     limit,
     model,
     order,
+    projectId,
     startDate,
     tags,
     traceIds,
     userId,
+    xProject,
   }: {
     after?: string;
     agentId?: string;
@@ -2292,10 +2296,12 @@ export const useStepsServiceListStepsSuspense = <
     limit?: number;
     model?: string;
     order?: string;
+    projectId?: string;
     startDate?: string;
     tags?: string[];
     traceIds?: string[];
     userId?: string;
+    xProject?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -2312,10 +2318,12 @@ export const useStepsServiceListStepsSuspense = <
         limit,
         model,
         order,
+        projectId,
         startDate,
         tags,
         traceIds,
         userId,
+        xProject,
       },
       queryKey,
     ),
@@ -2330,10 +2338,12 @@ export const useStepsServiceListStepsSuspense = <
         limit,
         model,
         order,
+        projectId,
         startDate,
         tags,
         traceIds,
         userId,
+        xProject,
       }) as TData,
     ...options,
   });

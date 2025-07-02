@@ -881,6 +881,14 @@ export const Block = z.object({
       z.undefined(),
     ])
     .optional(),
+  source_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   id: z.union([z.string(), z.undefined()]).optional(),
   organization_id: z
     .union([
@@ -1681,6 +1689,9 @@ export const BlockUpdate = z.object({
     .optional(),
   metadata: z
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+  source_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
 });
 
@@ -3185,6 +3196,14 @@ export const CreateBlock = z.object({
       z.unknown(),
       z.null(),
       z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  source_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -5421,6 +5440,14 @@ export const Step = z.object({
       z.array(
         z.union([z.literal('positive'), z.literal('negative'), z.null()]),
       ),
+      z.undefined(),
+    ])
+    .optional(),
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -8597,9 +8624,15 @@ export const get_List_steps = {
           z.array(z.union([z.array(z.string()), z.null()])),
         ])
         .optional(),
+      project_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),

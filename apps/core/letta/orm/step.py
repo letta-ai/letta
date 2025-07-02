@@ -51,6 +51,9 @@ class Step(SqlalchemyBase):
     feedback: Mapped[Optional[str]] = mapped_column(
         None, nullable=True, doc="The feedback for this step. Must be either 'positive' or 'negative'."
     )
+    project_id: Mapped[Optional[str]] = mapped_column(
+        None, nullable=True, doc="The project that the agent that executed this step belongs to (cloud only)."
+    )
 
     # Relationships (foreign keys)
     organization: Mapped[Optional["Organization"]] = relationship("Organization")
