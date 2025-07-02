@@ -13,7 +13,7 @@ curl -X POST https://app.letta.com/v1/agents \
   -d '{
     "project":"YOUR_PROJECT_SLUG"
     "model":"gpt-4o-mini",
-    "embedding":"openai/text-embedding-ada-002"
+    "embedding":"openai/text-embedding-3-small"
     "memory_blocks": [
       {
         "label": "human",
@@ -30,7 +30,7 @@ client = Letta(
 agent = client.agents.create(
   project="YOUR_PROJECT_SLUG",
   model="gpt-4o-mini",
-  embedding="openai/text-embedding-ada-002"
+  embedding="openai/text-embedding-3-small"
   memory_blocks=[
     CreateBlock(
       "label": "human",
@@ -47,7 +47,7 @@ const client = new LettaClient({
 const agent = await client.agents.create({
   project: "YOUR_PROJECT_SLUG",
   model: "gpt-4o-mini",
-  embedding: "openai/text-embedding-ada-002"
+  embedding: "openai/text-embedding-3-small"
   memory_blocks: [
     {
       label: "human",
@@ -67,7 +67,7 @@ curl -X POST https://app.letta.com/v1/agents \
   -H 'X-Project: YOUR_PROJECT_SLUG' \
   -d '{
     "model":"gpt-4o-mini",
-    "embedding":"openai/text-embedding-ada-002"
+    "embedding":"openai/text-embedding-3-small"
     "memory_blocks": [
       {
         "label": "human",
@@ -84,7 +84,7 @@ client = Letta(
 agent = client.agents.create(
   x_project="YOUR_PROJECT_SLUG",
   model="gpt-4o-mini",
-  embedding="openai/text-embedding-ada-002"
+  embedding="openai/text-embedding-3-small"
   memory_blocks=[
     CreateBlock(
       "label": "human",
@@ -101,7 +101,7 @@ const client = new LettaClient({
 const agent = await client.agents.create({
   x_project: "YOUR_PROJECT_SLUG",
   model: "gpt-4o-mini",
-  embedding: "openai/text-embedding-ada-002"
+  embedding: "openai/text-embedding-3-small"
   memory_blocks: [
     {
       label: "human",

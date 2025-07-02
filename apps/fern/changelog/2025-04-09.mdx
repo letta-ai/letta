@@ -10,7 +10,7 @@ client = Letta(
 )
 agent = client.agents.create(
     model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
     tool_rules=[
         ParentToolRule(
             tool_name="parent_tool",
@@ -26,7 +26,7 @@ const client = new LettaClient({
 });
 const agent = await client.agents.create({
   model: "openai/gpt-4o-mini",
-  embedding: "openai/text-embedding-ada-002",
+  embedding: "openai/text-embedding-3-small",
   tool_rules: [
     {
       type: "parent",

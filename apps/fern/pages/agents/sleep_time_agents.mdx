@@ -57,7 +57,7 @@ agent = client.agents.create(
         {"value": "You are a helpful assistant.", "label": "persona"},
     ],
     model="anthropic/claude-3-7-sonnet-20250219",
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
     enable_sleeptime=True,
 )
 print(f"Created agent id {agent.id}")
@@ -106,7 +106,7 @@ agent = client.agents.create(
         {"value": "You are a helpful assistant.", "label": "persona"},
     ],
     model="anthropic/claude-3-7-sonnet-20250219",
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
     enable_sleeptime=True,
 )
 print(f"Created agent id {agent.id}")
@@ -116,7 +116,7 @@ source_name = "employee_handbook"
 source = client.sources.create(
     name=source_name,
     description="Provides reference information for the employee handbook",
-    embedding="openai/text-embedding-ada-002" # must match agent
+    embedding="openai/text-embedding-3-small" # must match agent
 )
 # attach the source to the agent
 client.agents.sources.attach(

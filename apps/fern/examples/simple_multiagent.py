@@ -5,17 +5,17 @@ client = Letta(base_url="http://localhost:8283")
 
 
 try:
-    # create a supervisor agent 
+    # create a supervisor agent
     supervisor_agent = client.agents.create(
         name="supervisor_agent",
         memory_blocks=[
             {
-                "label": "persona", 
+                "label": "persona",
                 "value": "I am the supervisor, and I can communicate with worker agents with the tag `worker`"
             }
-        ], 
+        ],
         model="anthropic/claude-3-5-sonnet-20241022",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
         tags=["supervisor"],
         tools=["send_message_to_agents_matching_all_tags"]
     )
@@ -34,12 +34,12 @@ try:
         name="worker_agent",
         memory_blocks=[
             {
-                "label": "persona", 
+                "label": "persona",
                 "value": f"I am the worker, my supervisor agent has ID {supervisor_agent.id}"
             }
-        ], 
+        ],
         model="anthropic/claude-3-5-sonnet-20241022",
-        embedding="openai/text-embedding-ada-002",
+        embedding="openai/text-embedding-3-small",
         tool_ids=[tool.id],
         tags=["worker"],
         tools=["send_message_to_agents_matching_all_tags"]
@@ -49,7 +49,7 @@ try:
 
     # send a message to the supervisor agent
     response = client.agents.messages.create(
-        agent_id=worker_agent.id, 
+        agent_id=worker_agent.id,
         messages=[
             {
                 "role": "user",
@@ -59,7 +59,7 @@ try:
     )
     print(response.messages)
     print(response.usage)
-except Exception as e:      
+except Exception as e:
     print(e)
 
 
@@ -68,7 +68,3 @@ except Exception as e:
     for agent in agents:
         client.agents.delete(agent.id)
         print(f"Deleted agent {agent.name} with ID {agent.id}")
-
-
-
-

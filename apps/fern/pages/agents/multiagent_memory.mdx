@@ -35,7 +35,7 @@ shared_block = client.blocks.create(label="organization", value="Organization: L
 # create a supervisor agent
 supervisor_agent = client.agents.create(
     model="anthropic/claude-3-5-sonnet-20241022",
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
     # blocks created for this agentj
     memory_blocks=[{"label": "persona", "value": "I am a supervisor"}],
     # pre-existing shared block that is "attached" to this agent
@@ -45,7 +45,7 @@ supervisor_agent = client.agents.create(
 # create a worker agent
 worker_agent = client.agents.create(
     model="anthropic/claude-3-5-sonnet-20241022",
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
     # blocks created for this agent
     memory_blocks=[{"label": "persona", "value": "I am a worker"}],
     # pre-existing shared block that is "attached" to this agent

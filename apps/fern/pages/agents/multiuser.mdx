@@ -31,7 +31,7 @@ curl -X POST https://app.letta.com/v1/agents/ \
   "memory_blocks": [],
   "llm": "anthropic/claude-3-5-sonnet-20241022",
   "context_window_limit": 200000,
-  "embedding": "openai/text-embedding-ada-002",
+  "embedding": "openai/text-embedding-3-small",
   "identity_ids": ["identity-634d3994-5d6c-46e9-b56b-56e34fe34ca0"]
 }'
 ```
@@ -46,7 +46,7 @@ agent = client.agents.create(
     memory_blocks=[],
     model="anthropic/claude-3-5-sonnet-20241022",
     context_window_limit=200000,
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
     identity_ids=[identity.id]
 )
 ```
@@ -62,7 +62,7 @@ const agent = await client.agents.create({
     memoryBlocks: [],
     model: "anthropic/claude-3-5-sonnet-20241022",
     contextWindowLimit: 200000,
-    embedding: "openai/text-embedding-ada-002",
+    embedding: "openai/text-embedding-3-small",
     identityIds: [identity.id]
 });
 ```
@@ -137,7 +137,7 @@ agent = client.agents.create(
     memory_blocks=[],
     model="anthropic/claude-3-5-sonnet-20241022",
     context_window_limit=200000,
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
     tags=[user_id]
 )
 print(f"Created agent with id {agent.id}, tags {agent.tags}")

@@ -2,41 +2,41 @@ from letta_client import Letta
 
 client = Letta(base_url="http://localhost:8283")
 
-# list available models 
+# list available models
 models = client.models.list_llms()
 for model in models:
     print(f"Provider {model.model_endpoint_type} model {model.model}: {model.handle}")
 
 print()
 print()
-# list available embedding models 
+# list available embedding models
 embedding_models = client.models.list_embedding_models()
 for model in embedding_models:
     print(f"Provider {model.handle}")
 
-# openai 
+# openai
 openai_agent = client.agents.create(
     model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small", 
+    embedding="openai/text-embedding-3-small",
     # optional configuration
     context_window_limit=16000,
     embedding_chunk_size=300
 )
 
-# Azure OpenAI 
+# Azure OpenAI
 azure_openai_agent = client.agents.create(
     model="azure/gpt-4o-mini",
-    embedding="azure/text-embedding-ada-002",
+    embedding="azure/text-embedding-3-small",
     # optional configuration
     context_window_limit=16000,
     embedding_chunk_size=300
 )
 
-# anthropic 
+# anthropic
 anthropic_agent = client.agents.create(
     model="anthropic/claude-3-5-sonnet-20241022",
     # note: anthropic does not support embeddings so you will need another provider
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
     # optional configuration
     context_window_limit=16000,
     embedding_chunk_size=300
@@ -44,9 +44,9 @@ anthropic_agent = client.agents.create(
 
 # Groq
 groq_agent = client.agents.create(
-    model="groq/llama-3.3-70b-versatile", 
+    model="groq/llama-3.3-70b-versatile",
     # note: groq does not support embeddings so you will need another provider
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
     # optional configuration
     context_window_limit=16000,
     embedding_chunk_size=300

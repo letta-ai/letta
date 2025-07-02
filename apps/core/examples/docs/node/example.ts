@@ -27,7 +27,7 @@ const agent = await client.agents.create({
     },
   ],
   model: 'openai/gpt-4o-mini',
-  embedding: 'openai/text-embedding-ada-002',
+  embedding: 'openai/text-embedding-3-small',
 });
 
 console.log('Created agent with name', agent.name);
@@ -100,7 +100,7 @@ console.log(
 
 let agentCopy = await client.agents.create({
   model: 'openai/gpt-4o-mini',
-  embedding: 'openai/text-embedding-ada-002',
+  embedding: 'openai/text-embedding-3-small',
 });
 let block = await client.agents.blocks.retrieve(agent.id, 'human');
 agentCopy = await client.agents.blocks.attach(agentCopy.id, block.id);

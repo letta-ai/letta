@@ -11,7 +11,7 @@ client = Letta(
 client.agents.modify(
     agent_id="AGENT_ID",
     model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
 )
 ```
 ```typescript title="node.js"
@@ -22,7 +22,7 @@ const client = new LettaClient({
 await client.agents.modify({
   agent_id: "AGENT_ID",
   model: "openai/gpt-4o-mini",
-  embedding: "openai/text-embedding-ada-002",
+  embedding: "openai/text-embedding-3-small",
 });
 ```
 </CodeBlocks>
