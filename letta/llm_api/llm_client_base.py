@@ -50,7 +50,8 @@ class LLMClientBase:
         If stream=True, returns a Stream[ChatCompletionChunk] that can be iterated over.
         Otherwise returns a ChatCompletionResponse.
         """
-        request_data = self.build_request_data(messages, llm_config, tools, force_tool_call)
+        request_data = (self.
+                        build_request_data(messages, llm_config, tools, force_tool_call))
 
         try:
             log_event(name="llm_request_sent", attributes=request_data)
