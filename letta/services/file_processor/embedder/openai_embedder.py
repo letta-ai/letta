@@ -44,7 +44,7 @@ class OpenAIEmbedder:
             {
                 "batch_size": len(batch),
                 "model": self.embedding_config.embedding_model,
-                "provider": self.embedding_config.embedding_provider,
+                "embedding_endpoint_type": self.embedding_config.embedding_endpoint_type,
             },
         )
         embeddings = await self.client.request_embeddings(inputs=batch, embedding_config=self.embedding_config)
@@ -63,7 +63,7 @@ class OpenAIEmbedder:
             {
                 "total_chunks": len(chunks),
                 "model": self.embedding_config.embedding_model,
-                "provider": self.embedding_config.embedding_provider,
+                "embedding_endpoint_type": self.embedding_config.embedding_endpoint_type,
                 "batch_size": self.embedding_config.batch_size,
                 "file_id": file_id,
                 "source_id": source_id,
