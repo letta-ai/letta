@@ -358,6 +358,7 @@ REDIS_INCLUDE = "include"
 REDIS_EXCLUDE = "exclude"
 REDIS_SET_DEFAULT_VAL = "None"
 REDIS_DEFAULT_CACHE_PREFIX = "letta_cache"
+REDIS_RUN_ID_PREFIX = "agent:send_message:run_id"
 
 # TODO: This is temporary, eventually use token-based eviction
 MAX_FILES_OPEN = 5

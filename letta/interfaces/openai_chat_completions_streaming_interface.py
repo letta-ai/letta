@@ -1,4 +1,5 @@
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from openai import AsyncStream
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk, Choice, ChoiceDelta
@@ -19,14 +20,14 @@ class OpenAIChatCompletionsStreamingInterface:
         self.optimistic_json_parser: OptimisticJSONParser = OptimisticJSONParser()
         self.stream_pre_execution_message: bool = stream_pre_execution_message
 
-        self.current_parsed_json_result: Dict[str, Any] = {}
-        self.content_buffer: List[str] = []
+        self.current_parsed_json_result: dict[str, Any] = {}
+        self.content_buffer: list[str] = []
         self.tool_call_happened: bool = False
         self.finish_reason_stop: bool = False
 
-        self.tool_call_name: Optional[str] = None
+        self.tool_call_name: str | None = None
         self.tool_call_args_str: str = ""
-        self.tool_call_id: Optional[str] = None
+        self.tool_call_id: str | None = None
 
     async def process(self, stream: AsyncStream[ChatCompletionChunk]) -> AsyncGenerator[str, None]:
         """
@@ -35,6 +36,8 @@ class OpenAIChatCompletionsStreamingInterface:
         """
         async with stream:
             async for chunk in stream:
+                # TODO (cliandy): reconsider in stream cancellations
+                # await cancellation_token.check_and_raise_if_cancelled()
                 if chunk.choices:
                     choice = chunk.choices[0]
                     delta = choice.delta
@@ -103,7 +106,7 @@ class OpenAIChatCompletionsStreamingInterface:
                 )
             )
 
-    def _handle_finish_reason(self, finish_reason: Optional[str]) -> bool:
+    def _handle_finish_reason(self, finish_reason: str | None) -> bool:
         """Handles the finish reason and determines if streaming should stop."""
         if finish_reason == "tool_calls":
             self.tool_call_happened = True

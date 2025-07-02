@@ -54,6 +54,10 @@ class JobStatus(str, Enum):
     cancelled = "cancelled"
     expired = "expired"
 
+    @property
+    def is_terminal(self):
+        return self in (JobStatus.completed, JobStatus.failed, JobStatus.cancelled, JobStatus.expired)
+
 
 class AgentStepStatus(str, Enum):
     """
