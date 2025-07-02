@@ -42,6 +42,7 @@ class StepManager:
         trace_ids: Optional[list[str]] = None,
         feedback: Optional[Literal["positive", "negative"]] = None,
         has_feedback: Optional[bool] = None,
+        project_id: Optional[str] = None,
     ) -> List[PydanticStep]:
         """List all jobs with optional pagination and status filter."""
         async with db_registry.async_session() as session:
@@ -54,6 +55,8 @@ class StepManager:
                 filter_kwargs["trace_id"] = trace_ids
             if feedback:
                 filter_kwargs["feedback"] = feedback
+            if project_id:
+                filter_kwargs["project_id"] = project_id
             steps = await StepModel.list_async(
                 db_session=session,
                 before=before,
@@ -82,6 +85,7 @@ class StepManager:
         provider_id: Optional[str] = None,
         job_id: Optional[str] = None,
         step_id: Optional[str] = None,
+        project_id: Optional[str] = None,
     ) -> PydanticStep:
         step_data = {
             "origin": None,
@@ -100,6 +104,7 @@ class StepManager:
             "tags": [],
             "tid": None,
             "trace_id": get_trace_id(),  # Get the current trace ID
+            "project_id": project_id,
         }
         if step_id:
             step_data["id"] = step_id
@@ -125,6 +130,7 @@ class StepManager:
         provider_id: Optional[str] = None,
         job_id: Optional[str] = None,
         step_id: Optional[str] = None,
+        project_id: Optional[str] = None,
     ) -> PydanticStep:
         step_data = {
             "origin": None,
@@ -143,6 +149,7 @@ class StepManager:
             "tags": [],
             "tid": None,
             "trace_id": get_trace_id(),  # Get the current trace ID
+            "project_id": project_id,
         }
         if step_id:
             step_data["id"] = step_id
@@ -280,6 +287,7 @@ class NoopStepManager(StepManager):
         provider_id: Optional[str] = None,
         job_id: Optional[str] = None,
         step_id: Optional[str] = None,
+        project_id: Optional[str] = None,
     ) -> PydanticStep:
         return
 
@@ -298,5 +306,6 @@ class NoopStepManager(StepManager):
         provider_id: Optional[str] = None,
         job_id: Optional[str] = None,
         step_id: Optional[str] = None,
+        project_id: Optional[str] = None,
     ) -> PydanticStep:
         return

@@ -1018,6 +1018,7 @@ class LettaAgent(BaseAgent):
             provider_id=None,
             job_id=run_id,
             step_id=step_id,
+            project_id=agent_state.project_id,
         )
 
         tool_call_messages = create_letta_messages_from_llm_response(
