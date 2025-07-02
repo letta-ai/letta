@@ -2,6 +2,7 @@ import { CenterContent } from '../../../../../lib/client/components/CenterConten
 import { HStack, Typography, VStack } from '@letta-cloud/ui-component-library';
 import { DownloadCount } from './DownloadCount/DownloadCount';
 import './AgentHeader.scss';
+import { AgentHeaderActions } from './AgentHeaderActions/AgentHeaderActions';
 
 interface AgentHeaderProps {
   name: string;
@@ -9,15 +10,16 @@ interface AgentHeaderProps {
   downloadCount: number;
   upvotes: number;
   downvotes: number;
+  agentId: string;
 }
 
 export function AgentHeader(props: AgentHeaderProps) {
-  const { name, author, downloadCount } = props;
+  const { name, agentId, author, downloadCount } = props;
   return (
     <div className="pt-[40px]">
       <CenterContent>
         <div className="z-[1] relative">
-          <HStack>
+          <HStack justify="spaceBetween">
             <VStack>
               <Typography variant="heading3">{name}.af</Typography>
               <HStack gap="large" align="center">
@@ -26,6 +28,7 @@ export function AgentHeader(props: AgentHeaderProps) {
                 {/*<VoteHandlers upvotes={upvotes} downvotes={downvotes} />*/}
               </HStack>
             </VStack>
+            <AgentHeaderActions agentId={agentId} agentName={name} />
           </HStack>
         </div>
       </CenterContent>

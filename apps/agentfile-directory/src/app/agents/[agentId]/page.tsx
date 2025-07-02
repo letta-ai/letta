@@ -40,6 +40,7 @@ export default async function AgentPage(props: AgentPageLayoutProps) {
       <AgentHeader
         name={res.body.name}
         author={res.body.author}
+        agentId={agentId}
         downloadCount={res.body.downloadCount}
         upvotes={res.body.upvotes}
         downvotes={res.body.downvotes}

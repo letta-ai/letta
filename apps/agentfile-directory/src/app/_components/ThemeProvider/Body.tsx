@@ -1,5 +1,4 @@
 'use client';
-import { SystemAlert } from '../SystemAlert/SystemAlert';
 
 interface BodyProps {
   children: React.ReactNode;
@@ -10,10 +9,7 @@ export function Body(props: BodyProps) {
 
   return (
     <body>
-      <div className="min-h-[100dvh]">
-        <SystemAlert></SystemAlert>
-        {children}
-      </div>
+      <div className="min-h-[100dvh]">{children}</div>
     </body>
   );
 }

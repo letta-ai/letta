@@ -22,7 +22,7 @@ export function Header() {
   const t = useTranslations('Header');
 
   return (
-    <HStack fullWidth align="center" justify="center">
+    <HStack zIndex="rightAboveZero" fullWidth align="center" justify="center">
       <HStack
         justify="spaceBetween"
         paddingX

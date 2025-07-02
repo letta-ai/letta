@@ -10,6 +10,14 @@
   --border: 210, 3%, 66%;
 }
 
+
+/* Follow the OS interface colours or force the use of the dark theme */
+@media (prefers-color-scheme: dark) {
+    :root {
+      @include dark;
+    }
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system,

@@ -53,6 +53,11 @@ $rule-icon-colors: (
   }
 }
 
+.react-flow__controls-button {
+  background-color: hsl(var(--background));
+  border-bottom-color: hsl(var(--border));
+}
+
 // Legend component
 .tool-rules-legend {
   position: absolute;

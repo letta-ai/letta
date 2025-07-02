@@ -13,6 +13,11 @@
       "tools": "Tools",
       "toolRules": "Tool Rules",
       "toolVariables": "Tool Variables"
+    },
+    "actions": {
+      "downloadError": "Error downloading agent",
+      "downloadAgent": "Download Agent",
+      "useInCloud": "Use in Letta Cloud"
     }
   },
   "components/AgentDetails": {
