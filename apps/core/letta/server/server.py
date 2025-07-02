@@ -19,7 +19,6 @@ import letta.constants as constants
 import letta.server.utils as server_utils
 import letta.system as system
 from letta.agent import Agent, save_agent
-from letta.agents.letta_agent import LettaAgent
 from letta.config import LettaConfig
 from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.data_sources.connectors import DataConnector, load_data
@@ -101,7 +100,7 @@ from letta.services.provider_manager import ProviderManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.source_manager import SourceManager
 from letta.services.step_manager import StepManager
-from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
+from letta.services.telemetry_manager import TelemetryManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
@@ -1360,26 +1359,28 @@ class SyncServer(Server):
     async def sleeptime_document_ingest_async(
         self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False
     ) -> None:
-        sleeptime_agent_state = await self.create_document_sleeptime_agent_async(main_agent, source, actor, clear_history)
-        sleeptime_agent = LettaAgent(
-            agent_id=sleeptime_agent_state.id,
-            message_manager=self.message_manager,
-            agent_manager=self.agent_manager,
-            block_manager=self.block_manager,
-            job_manager=self.job_manager,
-            passage_manager=self.passage_manager,
-            actor=actor,
-            step_manager=self.step_manager,
-            telemetry_manager=self.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-        )
-        passages = await self.agent_manager.list_passages_async(actor=actor, source_id=source.id)
-        for passage in passages:
-            await sleeptime_agent.step(
-                input_messages=[
-                    MessageCreate(role="user", content=passage.text),
-                ]
-            )
-        await self.agent_manager.delete_agent_async(agent_id=sleeptime_agent_state.id, actor=actor)
+        # TEMPORARILY DISABLE UNTIL V2
+        # sleeptime_agent_state = await self.create_document_sleeptime_agent_async(main_agent, source, actor, clear_history)
+        # sleeptime_agent = LettaAgent(
+        #     agent_id=sleeptime_agent_state.id,
+        #     message_manager=self.message_manager,
+        #     agent_manager=self.agent_manager,
+        #     block_manager=self.block_manager,
+        #     job_manager=self.job_manager,
+        #     passage_manager=self.passage_manager,
+        #     actor=actor,
+        #     step_manager=self.step_manager,
+        #     telemetry_manager=self.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
+        # )
+        # passages = await self.agent_manager.list_passages_async(actor=actor, source_id=source.id)
+        # for passage in passages:
+        #     await sleeptime_agent.step(
+        #         input_messages=[
+        #             MessageCreate(role="user", content=passage.text),
+        #         ]
+        #     )
+        # await self.agent_manager.delete_agent_async(agent_id=sleeptime_agent_state.id, actor=actor)
+        pass
 
     async def _remove_file_from_agent(self, agent_id: str, file_id: str, actor: User) -> None:
         """
