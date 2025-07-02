@@ -29,7 +29,7 @@ import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { ViewMessageTrace } from '../observability/_components/ViewMessageTrace/ViewMessageTrace';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useParams } from 'next/navigation';
 import { useToolsServiceListTools } from '@letta-cloud/sdk-core';
 import { useQuery } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
@@ -245,6 +245,7 @@ function useQueryDefinition() {
 }
 
 export default function ResponsesPage() {
+  const { projectSlug } = useParams();
   const { id: projectId } = useCurrentProject();
   const [limit, setLimit] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -397,21 +398,30 @@ export default function ResponsesPage() {
         },
         cell: ({ row }) => {
           return (
-            <ViewMessageTrace
-              trigger={
-                <Button
-                  label={t('actions.exploreMessage')}
-                  color="secondary"
-                  size="small"
-                />
-              }
-              traceId={row.original.traceId}
-            />
+            <HStack align="center" justify="end">
+              <Button
+                href={`/projects/${projectSlug}/agents/${row.original.agentId}`}
+                label={t('actions.viewAgent')}
+                color="tertiary"
+                size="small"
+              />
+              <ViewMessageTrace
+                trigger={
+                  <Button
+                    label={t('actions.exploreMessage')}
+                    color="secondary"
+                    size="small"
+                  />
+                }
+                traceId={row.original.traceId}
+                agentId={row.original.agentId}
+              />
+            </HStack>
           );
         },
       },
     ],
-    [formatDateAndTime, formatSmallDuration, t],
+    [formatDateAndTime, formatSmallDuration, t, projectSlug],
   );
 
   const items = useMemo(() => {

@@ -109,6 +109,7 @@ function LatestMessagesTable() {
                 />
               }
               traceId={row.original.traceId}
+              agentId={row.original.agentId}
             />
           );
         },

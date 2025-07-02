@@ -1507,7 +1507,10 @@
   },
   "pages/projects/observability/TraceDetails": {
     "title": "Message history",
-    "description": "Below is the message history for this trace. You can see the input and output messages, as well as the tools used by the agent."
+    "description": "Below is the message history for this trace. You can see the input and output messages, as well as the tools used by the agent.",
+    "viewAgent": "View Agent",
+    "AgentMetadata": "Agent Metadata",
+    "AgentId": "Agent ID: {agentId}"
   },
   "pages/projects/observability/ToolErrorsChart": {
     "title": "Tool errors",
@@ -1741,7 +1744,8 @@
       "actions": "Actions"
     },
     "actions": {
-      "exploreMessage": "Inspect message"
+      "exploreMessage": "Inspect message",
+      "viewAgent": "View Agent"
     },
     "statuses": {
       "requestFailed": {

@@ -6,37 +6,68 @@ import {
   Section,
   SideOverlay,
   SideOverlayHeader,
+  HStack,
   VStack,
+  Typography,
+  Button,
 } from '@letta-cloud/ui-component-library';
 import React, { useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import type { OtelTrace } from '@letta-cloud/types';
+import { useParams } from 'next/navigation';
 
 interface ViewMessageTraceProps {
   traceId: string;
   trigger?: React.ReactNode;
+  agentId: string;
 }
 
 interface TraceDetailsProps {
   traces: OtelTrace[];
+  traceId: string;
+  agentId: string;
 }
 
 function TraceDetails(props: TraceDetailsProps) {
-  const { traces } = props;
+  const { traces, agentId } = props;
+  const { projectSlug } = useParams();
 
   const t = useTranslations('pages/projects/observability/TraceDetails');
 
   return (
     <VStack overflowY="auto" padding fullWidth fullHeight>
-      <Section fullHeight title={t('title')} description={t('description')}>
-        <MessageReplay traces={traces} />
-      </Section>
+      <HStack align="center" justify="spaceBetween" fullWidth>
+        <VStack fullWidth>
+          <HStack
+            align="center"
+            justify="spaceBetween"
+            fullWidth
+            paddingRight="small"
+          >
+            <Typography bold variant="large">
+              {t('AgentMetadata')}
+            </Typography>
+            <Button
+              href={`/projects/${projectSlug}/agents/${agentId}`}
+              label={t('viewAgent')}
+              color="secondary"
+              size="small"
+            />
+          </HStack>
+          <Typography variant="body2">{t('AgentId', { agentId })}</Typography>
+        </VStack>
+      </HStack>
+      <VStack paddingTop="large" fullHeight>
+        <Section fullHeight title={t('title')} description={t('description')}>
+          <MessageReplay traces={traces} />
+        </Section>
+      </VStack>
     </VStack>
   );
 }
 
 export function ViewMessageTrace(props: ViewMessageTraceProps) {
-  const { traceId, trigger } = props;
+  const { traceId, trigger, agentId } = props;
   const [open, setOpen] = useState(false);
   const { data: traceData } = webApi.traces.getTrace.useQuery({
     queryKey: webApiQueryKeys.traces.getTrace(traceId || ''),
@@ -82,7 +113,11 @@ export function ViewMessageTrace(props: ViewMessageTraceProps) {
               isLoading
             />
           ) : (
-            <TraceDetails traces={traceData.body} />
+            <TraceDetails
+              traces={traceData.body}
+              traceId={traceId}
+              agentId={agentId}
+            />
           )}
         </VStack>
       </VStack>
