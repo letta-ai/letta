@@ -366,6 +366,23 @@ async def detach_source(
     return agent_state
 
 
+@router.patch("/{agent_id}/files/close-all", response_model=List[str], operation_id="close_all_open_files")
+async def close_all_open_files(
+    agent_id: str,
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Closes all currently open files for a given agent.
+
+    This endpoint updates the file state for the agent so that no files are marked as open.
+    Typically used to reset the working memory view for the agent.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+
+    return server.file_agent_manager.close_all_other_files(agent_id=agent_id, keep_file_names=[], actor=actor)
+
+
 @router.get("/{agent_id}", response_model=AgentState, operation_id="retrieve_agent")
 async def retrieve_agent(
     agent_id: str,

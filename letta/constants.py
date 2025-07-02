@@ -131,7 +131,7 @@ MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX = re.compile(
 BUILTIN_TOOLS = ["run_code", "web_search"]
 
 # Built in tools
-FILES_TOOLS = ["open_files", "grep_files", "search_files"]
+FILES_TOOLS = ["open_files", "grep_files", "semantic_search_files"]
 
 FILE_MEMORY_EXISTS_MESSAGE = "The following files are currently accessible in memory:"
 FILE_MEMORY_EMPTY_MESSAGE = (

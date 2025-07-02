@@ -65,12 +65,12 @@ async def grep_files(
     raise NotImplementedError("Tool not implemented. Please contact the Letta team.")
 
 
-async def search_files(agent_state: "AgentState", query: str) -> List["FileMetadata"]:
+async def semantic_search_files(agent_state: "AgentState", query: str) -> List["FileMetadata"]:
     """
-    Get list of most relevant chunks from any file using embedding search.
+    Get list of most relevant chunks from any file using vector/embedding search.
 
     Use this when you want to:
-    - Find related content that may not match exact keywords (e.g., conceptually similar sections)
+    - Find related content that without using exact keywords (e.g., conceptually similar sections)
     - Look up high-level descriptions, documentation, or config patterns
     - Perform fuzzy search when grep isn't sufficient
 
