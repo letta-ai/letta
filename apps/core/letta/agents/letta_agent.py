@@ -464,7 +464,7 @@ class LettaAgent(BaseAgent):
                 ),
             )
 
-            MetricRegistry().step_execution_time_ms_histogram.record(step_start - get_utc_timestamp_ns(), get_ctx_attributes())
+            MetricRegistry().step_execution_time_ms_histogram.record(get_utc_timestamp_ns() - step_start, get_ctx_attributes())
 
             if not should_continue:
                 break
@@ -701,7 +701,7 @@ class LettaAgent(BaseAgent):
                     yield f"data: {tool_return.model_dump_json()}\n\n"
 
             # TODO (cliandy): consolidate and expand with trace
-            MetricRegistry().step_execution_time_ms_histogram.record(step_start - get_utc_timestamp_ns(), get_ctx_attributes())
+            MetricRegistry().step_execution_time_ms_histogram.record(get_utc_timestamp_ns() - step_start, get_ctx_attributes())
 
             if not should_continue:
                 break
