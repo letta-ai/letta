@@ -59,7 +59,7 @@ from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
 from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
-from letta.settings import model_settings, summarizer_settings
+from letta.settings import model_settings, settings, summarizer_settings
 from letta.system import package_function_response
 from letta.types import JsonDict
 from letta.utils import log_telemetry, validate_function_response
@@ -494,6 +494,8 @@ class LettaAgent(BaseAgent):
         return current_in_context_messages, new_in_context_messages, stop_reason, usage
 
     async def _update_agent_last_run_metrics(self, completion_time: datetime, duration_ms: float) -> None:
+        if not settings.track_last_agent_run:
+            return
         try:
             await self.agent_manager.update_agent_async(
                 agent_id=self.agent_id,
