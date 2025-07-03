@@ -1,6 +1,11 @@
 import os
+from importlib.metadata import PackageNotFoundError, version
 
-__version__ = "0.8.8"
+try:
+    __version__ = version("letta")
+except PackageNotFoundError:
+    # Fallback for development installations
+    __version__ = "0.8.9"
 
 
 if os.environ.get("LETTA_VERSION"):
