@@ -219,8 +219,9 @@ class Settings(BaseSettings):
     otel_preferred_temporality: Optional[int] = Field(
         default=1, ge=0, le=2, description="Exported metric temporality. {0: UNSPECIFIED, 1: DELTA, 2: CUMULATIVE}"
     )
-    disable_tracing: bool = False
-    llm_api_logging: bool = True
+    disable_tracing: bool = Field(default=False, description="Disable OTEL Tracing")
+    llm_api_logging: bool = Field(default=True, description="Enable LLM API logging at each step")
+    track_last_agent_run: bool = Field(default=False, description="Update last agent run metrics")
 
     # uvicorn settings
     uvicorn_workers: int = 1

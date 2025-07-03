@@ -1,6 +1,10 @@
 set dotenv-load
 set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
+# JavaScript runtime configuration
+JS_RUNTIME := "npm"  # Options: "npm" or "bun", or add more
+JS_EXEC := if JS_RUNTIME == "bun" { "bunx" } else { "npx" }
+
 PROJECT_NAME := "memgpt-428419"
 REGION := "us-central1"
 HAS_KUBECTL := `command -v kubectl || echo ""`
@@ -222,6 +226,7 @@ describe-web:
         --set secrets.LETTA_MISTRAL_API_KEY=${LETTA_MISTRAL_API_KEY} \
         --set secrets.MCP_READ_FROM_CONFIG=false \
         --set secrets.MCP_DISABLE_STDIO=true \
+        --set secrets.LETTA_TRACK_LAST_AGENT_RUN=true \
         --set secrets.FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
     else
         helm upgrade --install {{CORE_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{CORE_HELM_CHART_NAME}} \
@@ -300,15 +305,15 @@ check-github-status:
 
 setup-cloud-api:
     @echo "🚧 Setting up the cloud API..."
-    cd apps/cloud-api && npm install
+    cd apps/cloud-api && {{JS_RUNTIME}} install
 
 cloud-api: setup-cloud-api
     @echo "🚧 Running the cloud API..."
-    cd apps/cloud-api && npm run build && npm run start
+    cd apps/cloud-api && {{JS_RUNTIME}} run build && {{JS_RUNTIME}} run start
 
 dev-cloud-api: setup-cloud-api
     @echo "🚧 Starting up the cloud API..."
-    cd apps/cloud-api && npm run dev
+    cd apps/cloud-api && {{JS_RUNTIME}} run dev
 
 # Trigger the cloud API deployment workflow (defaults to current branch if none specified)
 trigger-cloud-api-deploy branch="" deploy_message="":
@@ -501,7 +506,7 @@ core-debug:
     npm run core:debug
 
 web:
-    cd apps/web && npx next dev --turbopack
+    cd apps/web && {{JS_EXEC}} next dev --turbopack
 
 web-slow:
     npm run web:dev:slow
