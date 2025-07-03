@@ -322,6 +322,30 @@ const importAgentFileAsTemplateContract = c.mutation({
   },
 });
 
+const updateTemplateNameContract = c.mutation({
+  method: 'PATCH',
+  path: '/agent-templates/:agentTemplateId/name',
+  pathParams: z.object({
+    agentTemplateId: z.string(),
+  }),
+  body: z.object({
+    name: z
+      .string()
+      .min(3, {
+        message: 'Name must be at least 3 characters long',
+      })
+      .max(50, {
+        message: 'Name must be at most 50 characters long',
+      })
+      .regex(/^[a-zA-Z0-9_-]+$/, {
+        message: 'Name must be alphanumeric with underscores or dashes',
+      }),
+  }),
+  responses: {
+    200: AgentTemplateSchema,
+  },
+});
+
 export const agentTemplatesContracts = c.router({
   listAgentTemplates: listAgentTemplatesContract,
   forkAgentTemplate: forkAgentTemplateContract,
@@ -339,6 +363,7 @@ export const agentTemplatesContracts = c.router({
   listAgentMigrations: listAgentMigrationsContract,
   importAgentFileAsTemplate: importAgentFileAsTemplateContract,
   abortAgentMigration: abortAgentMigrationContract,
+  updateTemplateName: updateTemplateNameContract,
 });
 
 export const agentTemplatesQueryClientKeys = {

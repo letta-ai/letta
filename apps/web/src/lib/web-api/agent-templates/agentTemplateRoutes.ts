@@ -1119,6 +1119,77 @@ async function abortAgentMigration(
   }
 }
 
+type UpdateTemplateNameRequest = ServerInferRequest<
+  typeof contracts.agentTemplates.updateTemplateName
+>;
+
+type UpdateTemplateNameResponse = ServerInferResponses<
+  typeof contracts.agentTemplates.updateTemplateName
+>;
+
+async function updateTemplateName(
+  req: UpdateTemplateNameRequest,
+): Promise<UpdateTemplateNameResponse> {
+  const { agentTemplateId } = req.params;
+  const { name } = req.body;
+
+  const { activeOrganizationId, lettaAgentsId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
+
+  const updatedAgentTemplate = await db
+    .update(agentTemplates)
+    .set({
+      name,
+    })
+    .where(
+      and(
+        eq(agentTemplates.id, agentTemplateId),
+        eq(agentTemplates.organizationId, activeOrganizationId),
+        isNull(agentTemplates.deletedAt),
+      ),
+    )
+    .returning({
+      id: agentTemplates.id,
+      name: agentTemplates.name,
+      updatedAt: agentTemplates.updatedAt,
+    });
+
+  await AgentsService.modifyAgent(
+    {
+      agentId: agentTemplateId,
+      requestBody: {
+        name,
+      },
+    },
+    {
+      user_id: lettaAgentsId,
+    },
+  );
+
+  if (updatedAgentTemplate.length === 0) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      id: updatedAgentTemplate[0].id,
+      name: updatedAgentTemplate[0].name,
+      updatedAt: updatedAgentTemplate[0].updatedAt.toISOString(),
+    },
+  };
+}
+
 export const agentTemplateRoutes = {
   listAgentMigrations,
   abortAgentMigration,
@@ -1131,6 +1202,7 @@ export const agentTemplateRoutes = {
   deleteAgentTemplateSimulatorSession,
   listTemplateVersions,
   getAgentTemplateById,
+  updateTemplateName,
   getDeployedAgentTemplateById,
   importAgentFileAsTemplate,
 };

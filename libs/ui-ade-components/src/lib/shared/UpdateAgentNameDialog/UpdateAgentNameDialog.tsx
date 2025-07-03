@@ -16,22 +16,11 @@ import { useCurrentBasePathname } from '../../hooks';
 import { useCurrentAgentMetaData } from '../../hooks';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { webApi } from '@letta-cloud/sdk-web';
 
 interface UpdateNameDialogProps {
   trigger: React.ReactNode;
 }
-
-const updateNameFormSchema = z.object({
-  name: z
-    .string()
-    .regex(/^[a-zA-Z0-9_-]+$/, {
-      message: 'Name must be alphanumeric, with underscores or dashes',
-    })
-    .min(3, { message: 'Name must be at least 3 characters long' })
-    .max(50, { message: 'Name must be at most 50 characters long' }),
-});
-
-type UpdateNameFormValues = z.infer<typeof updateNameFormSchema>;
 
 export function UpdateNameDialog(props: UpdateNameDialogProps) {
   const { trigger } = props;
@@ -40,6 +29,25 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
   const basePathname = useCurrentBasePathname();
 
   const t = useTranslations('UpdateNameDialog');
+
+  const updateNameFormSchema = isTemplate
+    ? z.object({
+        name: z
+          .string()
+          .regex(/^[a-zA-Z0-9_-]+$/, {
+            message: 'Name must be alphanumeric, with underscores or dashes',
+          })
+          .min(3, { message: 'Name must be at least 3 characters long' })
+          .max(50, { message: 'Name must be at most 50 characters long' }),
+      })
+    : z.object({
+        name: z
+          .string()
+          .min(3, { message: 'Name must be at least 3 characters long' })
+          .max(50, { message: 'Name must be at most 50 characters long' }),
+      });
+
+  type UpdateNameFormValues = z.infer<typeof updateNameFormSchema>;
 
   const form = useForm({
     resolver: zodResolver(updateNameFormSchema),
@@ -60,6 +68,12 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
 
   const { mutate, isPending, error } = useAgentsServiceModifyAgent();
 
+  const {
+    mutate: templateMutate,
+    isPending: templatePending,
+    error: templateError,
+  } = webApi.agentTemplates.updateTemplateName.useMutation();
+
   const handleSubmit = useCallback(
     (values: UpdateNameFormValues) => {
       if (isLocal) {
@@ -73,6 +87,26 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
           {
             onSuccess: () => {
               window.location.reload();
+            },
+          },
+        );
+
+        return;
+      }
+
+      if (isTemplate) {
+        templateMutate(
+          {
+            params: {
+              agentTemplateId,
+            },
+            body: {
+              name: values.name,
+            },
+          },
+          {
+            onSuccess: async () => {
+              window.location.href = `${basePathname}/${values.name}`;
             },
           },
         );
@@ -98,7 +132,15 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
         },
       );
     },
-    [isLocal, localMutate, mutate, agentTemplateId, isTemplate, basePathname],
+    [
+      isLocal,
+      isTemplate,
+      mutate,
+      agentTemplateId,
+      localMutate,
+      templateMutate,
+      basePathname,
+    ],
   );
 
   useEffect(() => {
@@ -135,8 +177,10 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
           agentBaseType: agentBaseType.capitalized,
         })}
         trigger={trigger}
-        errorMessage={localError ? t('error.default') : undefined}
-        isConfirmBusy={isPending || localIsPending}
+        errorMessage={
+          localError || templateError ? t('error.default') : undefined
+        }
+        isConfirmBusy={isPending || localIsPending || templatePending}
         confirmText={t('confirm')}
         onSubmit={form.handleSubmit(handleSubmit)}
       >
