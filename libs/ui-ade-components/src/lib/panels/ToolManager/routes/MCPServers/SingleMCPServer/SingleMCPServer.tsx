@@ -131,7 +131,7 @@ function ServerToolsList(props: ServerToolsListProps) {
     [tools],
   );
 
-  if (!data || data?.length === 0 || isFetching) {
+  if (isError || !data || data?.length === 0 || isFetching) {
     return (
       <LoadingEmptyStatusComponent
         isLoading={isFetching}

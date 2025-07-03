@@ -156,9 +156,22 @@ export function MCPServers() {
 
   useEffect(() => {
     if (servers && serversAsArray.length > 0) {
-      setSelectedServerKey(serversAsArray[0].server_name);
+      // Only auto-select the first server if no server is currently selected
+      if (!selectedServerKey) {
+        setSelectedServerKey(serversAsArray[0].server_name);
+      } else {
+        // Check if the currently selected server still exists after updates
+        const currentServerStillExists = serversAsArray.some(
+          server => server.server_name === selectedServerKey
+        );
+        
+        // If current selection is invalid, fall back to first server
+        if (!currentServerStillExists) {
+          setSelectedServerKey(serversAsArray[0].server_name);
+        }
+      }
     }
-  }, [serversAsArray, servers]);
+  }, [serversAsArray, servers, selectedServerKey]);
 
   const selectedServer = useMemo(() => {
     return Object.values(servers || {})?.find(
@@ -242,7 +255,9 @@ export function MCPServers() {
             {!selectedServer ? (
               <LoadingEmptyStatusComponent emptyMessage={t('select')} />
             ) : (
-              <SingleMCPServer server={selectedServer} />
+              <SingleMCPServer 
+                server={selectedServer} 
+              />
             )}
           </VStack>
         </HStack>

@@ -5774,6 +5774,9 @@ export const UpdateSSEMCPServer = z.object({
   token: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
+  custom_headers: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
 });
 
 export type UpdateStreamableHTTPMCPServer = z.infer<
@@ -5791,6 +5794,9 @@ export const UpdateStreamableHTTPMCPServer = z.object({
     .optional(),
   auth_token: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  custom_headers: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
     .optional(),
 });
 

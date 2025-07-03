@@ -39,6 +39,9 @@ class MCPServer(SqlalchemyBase, OrganizationMixin):
     # access token / api key for MCP servers that require authentication
     token: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The access token or api key for the MCP server")
 
+    # custom headers for authentication (key-value pairs)
+    custom_headers: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, doc="Custom authentication headers as key-value pairs")
+
     # stdio server
     stdio_config: Mapped[Optional[StdioServerConfig]] = mapped_column(
         MCPStdioServerConfigColumn, nullable=True, doc="The configuration for the stdio server"

@@ -1506,6 +1506,21 @@
         "placeholder": "Access Token / API Key",
         "description": "The value set here will be passed as a Bearer token in the `Authorization` header."
       },
+      "authMode": {
+        "label": "Authentication",
+        "none": "None",
+        "apiKey": "Access Token / API Key",
+        "customHeaders": "Custom Headers",
+        "validationError": "Please provide authentication details for the selected mode"
+      },
+      "customHeaders": {
+        "label": "Custom Headers",
+        "description": "Custom authentication headers will be passed as `header: value` pairs",
+        "keyPlaceholder": "header",
+        "valuePlaceholder": "value",
+        "addHeader": "Add Header",
+        "removeHeader": "Remove header"
+      },
       "type": {
         "label": "Server Type",
         "name": "Server Type",

@@ -1,6 +1,7 @@
 import { useMemo, useCallback } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { z } from 'zod';
+import { AuthModes } from './AuthenticationSection';
 
 // Core schema creation functions (without translations)
 function createServerNameSchema(errorMessage: string) {
@@ -22,20 +23,56 @@ function createServerUrlSchema(
     });
 }
 
+// Custom header schema
+const customHeaderSchema = z.object({
+  key: z.string(),
+  value: z.string(),
+});
+
+function validateAuthenticationInputs(data: {
+  authMode: AuthModes;
+  authToken?: string;
+  customHeaders?: Array<{ key: string; value: string }>;
+}) {
+  if (data.authMode === AuthModes.API_KEY && !data.authToken) {
+    return false;
+  }
+  if (
+    data.authMode === AuthModes.CUSTOM_HEADERS &&
+    (!data.customHeaders ||
+      data.customHeaders.length === 0 ||
+      !data.customHeaders.some((h) => h.key && h.value))
+  ) {
+    return false;
+  }
+  return true;
+}
+
 // Hook for SSE Server Schema
 export function useSSEServerSchema() {
   const t = useTranslations('ToolsEditor/MCPServers');
 
   return useMemo(
     () =>
-      z.object({
-        name: createServerNameSchema(t('AddServerDialog.name.error')),
-        serverUrl: createServerUrlSchema(
-          t('AddServerDialog.serverUrl.required'),
-          t('AddServerDialog.serverUrl.invalid'),
-        ),
-        authToken: z.string().optional(),
-      }),
+      z
+        .object({
+          name: createServerNameSchema(t('AddServerDialog.name.error')),
+          serverUrl: createServerUrlSchema(
+            t('AddServerDialog.serverUrl.required'),
+            t('AddServerDialog.serverUrl.invalid'),
+          ),
+          authMode: z
+            .enum([AuthModes.NONE, AuthModes.API_KEY, AuthModes.CUSTOM_HEADERS])
+            .default(AuthModes.NONE),
+          authToken: z.string().optional(),
+          customHeaders: z
+            .array(customHeaderSchema)
+            .optional()
+            .default([{ key: '', value: '' }]),
+        })
+        .refine(validateAuthenticationInputs, {
+          message: t('AddServerDialog.authMode.validationError'),
+        }),
     [t],
   );
 }
@@ -46,14 +83,25 @@ export function useStreamableHttpServerSchema() {
 
   return useMemo(
     () =>
-      z.object({
-        name: createServerNameSchema(t('AddServerDialog.name.error')),
-        serverUrl: createServerUrlSchema(
-          t('AddServerDialog.serverUrl.required'),
-          t('AddServerDialog.serverUrl.invalid'),
-        ),
-        authToken: z.string().optional(),
-      }),
+      z
+        .object({
+          name: createServerNameSchema(t('AddServerDialog.name.error')),
+          serverUrl: createServerUrlSchema(
+            t('AddServerDialog.serverUrl.required'),
+            t('AddServerDialog.serverUrl.invalid'),
+          ),
+          authMode: z
+            .enum([AuthModes.NONE, AuthModes.API_KEY, AuthModes.CUSTOM_HEADERS])
+            .default(AuthModes.NONE),
+          authToken: z.string().optional(),
+          customHeaders: z
+            .array(customHeaderSchema)
+            .optional()
+            .default([{ key: '', value: '' }]),
+        })
+        .refine(validateAuthenticationInputs, {
+          message: t('AddServerDialog.authMode.validationError'),
+        }),
     [t],
   );
 }

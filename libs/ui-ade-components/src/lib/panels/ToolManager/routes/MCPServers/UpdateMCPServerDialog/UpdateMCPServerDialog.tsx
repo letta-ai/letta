@@ -16,14 +16,18 @@ import {
   type StreamableHTTPServerConfig,
   useToolsServiceUpdateMcpServer,
   UseToolsServiceListMcpServersKeyFn,
+  UseToolsServiceListMcpToolsByServerKeyFn,
 } from '@letta-cloud/sdk-core';
 import { MCPServerTypes } from '../types';
-import { parseAuthToken } from '../utils';
+import {
+  parseAuthenticationData,
+  getAuthModeAndValuesFromServer,
+} from '../utils';
 import {
   ServerNameField,
   ServerUrlField,
-  AuthTokenField,
   MCPFormActions,
+  AuthenticationSection,
 } from '../FormFields';
 import {
   useSSEServerSchema,
@@ -53,12 +57,17 @@ function UpdateSSEServerForm(props: UpdateSSEServerFormProps) {
 
   type UpdateSSEServerFormValues = z.infer<typeof UpdateSSEServerSchema>;
 
+  const { authMode, authToken, customHeaders } =
+    getAuthModeAndValuesFromServer(server);
+
   const form = useForm<UpdateSSEServerFormValues>({
     resolver: zodResolver(UpdateSSEServerSchema),
     defaultValues: {
       name: server.server_name,
       serverUrl: server.server_url,
-      authToken: parseAuthToken(server.auth_token),
+      authMode,
+      authToken,
+      customHeaders,
     },
   });
 
@@ -67,18 +76,28 @@ function UpdateSSEServerForm(props: UpdateSSEServerFormProps) {
   const { mutate, isPending, isError, error, reset } =
     useToolsServiceUpdateMcpServer({
       onSuccess: (updatedServer) => {
+        // Update MCP servers list query with the updated server
         queryClient.setQueriesData<ListMcpServersResponse | undefined>(
           {
             queryKey: UseToolsServiceListMcpServersKeyFn(),
           },
-          (data) => {
-            if (!data) return data;
+          (oldData) => {
+            if (!oldData) return oldData;
+
+            // Update the specific server in the cache
             return {
-              ...data,
+              ...oldData,
               [updatedServer.server_name]: updatedServer,
             };
           },
         );
+
+        // Invalidate tools for this specific server (since tools might have changed)
+        void queryClient.invalidateQueries({
+          queryKey: UseToolsServiceListMcpToolsByServerKeyFn({
+            mcpServerName: updatedServer.server_name,
+          }),
+        });
 
         onSuccess();
       },
@@ -92,11 +111,18 @@ function UpdateSSEServerForm(props: UpdateSSEServerFormProps) {
 
   const handleSubmit = useCallback(
     (values: UpdateSSEServerFormValues) => {
+      const { token, authHeaders } = parseAuthenticationData({
+        authMode: values.authMode,
+        authToken: values.authToken,
+        customHeaders: values.customHeaders,
+      });
+
       mutate({
         mcpServerName: server.server_name,
         requestBody: {
           server_url: values.serverUrl,
-          token: values.authToken || undefined,
+          token: token ?? null,
+          custom_headers: authHeaders ?? null,
         },
       });
     },
@@ -109,7 +135,7 @@ function UpdateSSEServerForm(props: UpdateSSEServerFormProps) {
         <VStack gap="form" paddingBottom>
           <ServerNameField disabled />
           <ServerUrlField />
-          <AuthTokenField isUpdate />
+          <AuthenticationSection isUpdate />
           <MCPFormActions
             errorMessage={isError ? getErrorMessage(error, false) : undefined}
             onCancel={handleReset}
@@ -134,12 +160,17 @@ function UpdateStreamableHttpServerForm(
     typeof UpdateStreamableHttpServerSchema
   >;
 
+  const { authMode, authToken, customHeaders } =
+    getAuthModeAndValuesFromServer(server);
+
   const form = useForm<UpdateStreamableHttpServerFormValues>({
     resolver: zodResolver(UpdateStreamableHttpServerSchema),
     defaultValues: {
       name: server.server_name,
       serverUrl: server.server_url,
-      authToken: parseAuthToken(server.auth_token),
+      authMode,
+      authToken,
+      customHeaders,
     },
   });
 
@@ -148,18 +179,12 @@ function UpdateStreamableHttpServerForm(
   const { mutate, isPending, isError, error, reset } =
     useToolsServiceUpdateMcpServer({
       onSuccess: (updatedServer) => {
-        queryClient.setQueriesData<ListMcpServersResponse | undefined>(
-          {
-            queryKey: UseToolsServiceListMcpServersKeyFn(),
-          },
-          (data) => {
-            if (!data) return data;
-            return {
-              ...data,
-              [updatedServer.server_name]: updatedServer,
-            };
-          },
-        );
+        // Invalidate tools for this specific server
+        void queryClient.invalidateQueries({
+          queryKey: UseToolsServiceListMcpToolsByServerKeyFn({
+            mcpServerName: updatedServer.server_name,
+          }),
+        });
 
         onSuccess();
       },
@@ -173,11 +198,18 @@ function UpdateStreamableHttpServerForm(
 
   const handleSubmit = useCallback(
     (values: UpdateStreamableHttpServerFormValues) => {
+      const { token, authHeaders } = parseAuthenticationData({
+        authMode: values.authMode,
+        authToken: values.authToken,
+        customHeaders: values.customHeaders,
+      });
+
       mutate({
         mcpServerName: server.server_name,
         requestBody: {
           server_url: values.serverUrl,
-          token: values.authToken || undefined,
+          token: token ?? null,
+          custom_headers: authHeaders ?? null,
         },
       });
     },
@@ -190,7 +222,7 @@ function UpdateStreamableHttpServerForm(
         <VStack gap="form" paddingBottom>
           <ServerNameField disabled />
           <ServerUrlField />
-          <AuthTokenField isUpdate />
+          <AuthenticationSection isUpdate />
           <MCPFormActions
             errorMessage={isError ? getErrorMessage(error, false) : undefined}
             onCancel={handleReset}
@@ -222,6 +254,7 @@ export function UpdateMCPServerDialog(props: UpdateMCPServerDialogProps) {
       hideFooter
       title={t('UpdateServerDialog.title')}
       disableForm
+      size="large"
     >
       <VStack gap="form">
         {server.type === MCPServerTypes.StreamableHttp ? (

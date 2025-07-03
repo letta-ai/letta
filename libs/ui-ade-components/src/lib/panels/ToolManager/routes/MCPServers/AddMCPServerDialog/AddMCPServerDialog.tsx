@@ -20,15 +20,15 @@ import {
 } from '@letta-cloud/sdk-core';
 import { type MCPServerType, MCPServerTypes } from '../types';
 import { useCurrentAgentMetaData } from '../../../../../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
-import { AUTH_HEADER } from '../constants';
-import { formatAuthToken } from '../utils';
+import { parseAuthenticationData } from '../utils';
+import { AuthModes } from '../AuthenticationSection';
 import {
   ServerNameField,
   ServerUrlField,
-  AuthTokenField,
   MCPFormActions,
   CommandField,
   ArgsField,
+  AuthenticationSection,
 } from '../FormFields';
 import { TestMCPConnectionButton } from '../TestMCPConnectionButton';
 import {
@@ -131,7 +131,9 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
     defaultValues: {
       name: '',
       serverUrl: '',
+      authMode: AuthModes.NONE,
       authToken: '',
+      customHeaders: [{ key: '', value: '' }],
     },
   });
 
@@ -163,22 +165,26 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
 
   const handleSubmit = useCallback(
     (values: AddSSEServerFormValues) => {
+      const { authHeaders, authHeader, authToken } = parseAuthenticationData({
+        authMode: values.authMode,
+        authToken: values.authToken,
+        customHeaders: values.customHeaders,
+        options: { formatToken: true, includeAuthHeader: true },
+      });
+
       mutate({
         requestBody: {
           server_name: values.name,
           type: MCPServerTypes.Sse,
           server_url: values.serverUrl,
-          auth_header: values.authToken ? AUTH_HEADER : undefined,
-          auth_token: formatAuthToken(values.authToken),
+          auth_header: authHeader,
+          auth_token: authToken,
+          custom_headers: authHeaders,
         },
       });
     },
     [mutate],
   );
-
-  const { watch } = form;
-  const watchedServerUrl = watch('serverUrl');
-  const watchedAuthToken = watch('authToken');
 
   return (
     <FormProvider {...form}>
@@ -186,12 +192,8 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
         <VStack gap="form" paddingBottom>
           <ServerNameField />
           <ServerUrlField />
-          <AuthTokenField />
-          <TestMCPConnectionButton
-            serverType={MCPServerTypes.Sse}
-            serverUrl={watchedServerUrl}
-            authToken={watchedAuthToken}
-          />
+          <AuthenticationSection />
+          <TestMCPConnectionButton serverType={MCPServerTypes.Sse} />
           <MCPFormActions
             errorMessage={isError ? getErrorMessage(error) : undefined}
             onCancel={handleReset}
@@ -218,7 +220,9 @@ function AddStreamableHttpServerForm(props: AddStdioServerFormProps) {
     defaultValues: {
       name: '',
       serverUrl: '',
+      authMode: AuthModes.NONE,
       authToken: '',
+      customHeaders: [{ key: '', value: '' }],
     },
   });
 
@@ -250,22 +254,26 @@ function AddStreamableHttpServerForm(props: AddStdioServerFormProps) {
 
   const handleSubmit = useCallback(
     (values: AddStreamableHttpServerFormValues) => {
+      const { authHeaders, authHeader, authToken } = parseAuthenticationData({
+        authMode: values.authMode,
+        authToken: values.authToken,
+        customHeaders: values.customHeaders,
+        options: { formatToken: true, includeAuthHeader: true },
+      });
+
       mutate({
         requestBody: {
           server_name: values.name,
           type: MCPServerTypes.StreamableHttp,
           server_url: values.serverUrl,
-          auth_header: values.authToken ? AUTH_HEADER : undefined,
-          auth_token: formatAuthToken(values.authToken),
+          auth_header: authHeader,
+          auth_token: authToken,
+          custom_headers: authHeaders,
         },
       });
     },
     [mutate],
   );
-
-  const { watch } = form;
-  const watchedServerUrl = watch('serverUrl');
-  const watchedAuthToken = watch('authToken');
 
   return (
     <FormProvider {...form}>
@@ -273,12 +281,8 @@ function AddStreamableHttpServerForm(props: AddStdioServerFormProps) {
         <VStack gap="form" paddingBottom>
           <ServerNameField />
           <ServerUrlField />
-          <AuthTokenField />
-          <TestMCPConnectionButton
-            serverType={MCPServerTypes.StreamableHttp}
-            serverUrl={watchedServerUrl}
-            authToken={watchedAuthToken}
-          />
+          <AuthenticationSection />
+          <TestMCPConnectionButton serverType={MCPServerTypes.StreamableHttp} />
           <MCPFormActions
             errorMessage={isError ? getErrorMessage(error) : undefined}
             onCancel={handleReset}
@@ -338,6 +342,7 @@ export function AddServerDialog(props: AddServerDialogProps) {
       hideFooter
       title={t('AddServerDialog.title')}
       disableForm
+      size="large"
     >
       <VStack gap="form">
         {options.length > 1 && (

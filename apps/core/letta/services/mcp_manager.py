@@ -2,6 +2,8 @@ import json
 import os
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from sqlalchemy import null
+
 import letta.constants as constants
 from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
 from letta.log import get_logger
@@ -156,6 +158,10 @@ class MCPManager:
             pydantic_mcp_server.organization_id = actor.organization_id
             mcp_server_data = pydantic_mcp_server.model_dump(to_orm=True)
 
+            # Ensure custom_headers None is stored as SQL NULL, not JSON null
+            if mcp_server_data.get("custom_headers") is None:
+                mcp_server_data.pop("custom_headers", None)
+
             mcp_server = MCPServerModel(**mcp_server_data)
             mcp_server = await mcp_server.create_async(session, actor=actor)
             return mcp_server.to_pydantic()
@@ -168,7 +174,13 @@ class MCPManager:
             mcp_server = await MCPServerModel.read_async(db_session=session, identifier=mcp_server_id, actor=actor)
 
             # Update tool attributes with only the fields that were explicitly set
-            update_data = mcp_server_update.model_dump(to_orm=True, exclude_none=True)
+            update_data = mcp_server_update.model_dump(to_orm=True, exclude_unset=True)
+
+            # Ensure custom_headers None is stored as SQL NULL, not JSON null
+            if update_data.get("custom_headers") is None:
+                update_data.pop("custom_headers", None)
+                setattr(mcp_server, "custom_headers", null())
+
             for key, value in update_data.items():
                 setattr(mcp_server, key, value)
 

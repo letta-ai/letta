@@ -29,7 +29,7 @@ const config: StorybookConfig = {
 
     nextConfig.resolve.alias = {
       ...nextConfig.resolve.alias,
-      path: () => require.resolve('path-browserify'),
+      path: 'path-browserify', // fixes `[ERROR] require is not defined [plugin vite:dep-pre-bundle]` when running `npm run cl`
       // 'next/image': () => React.createElement('div'),
       // 'next/link': () => React.createElement('div'),
     };

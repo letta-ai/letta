@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   Button,
@@ -15,21 +16,19 @@ import {
   type MCPServerType,
 } from '@letta-cloud/sdk-core';
 import { MCPServerTypes, type MCPTool } from './types';
-import { AUTH_HEADER } from './constants';
-import { formatAuthToken } from './utils';
+import { parseAuthenticationData } from './utils';
 import { MCPToolsList } from './MCPToolsList';
+import { AuthModes } from './FormFields';
 
 interface TestMCPConnectionButtonProps {
   serverType: string;
-  serverUrl?: string;
-  authToken?: string;
 }
 
 export function TestMCPConnectionButton({
   serverType,
-  serverUrl,
-  authToken,
 }: TestMCPConnectionButtonProps) {
+  const { watch, getValues } = useFormContext();
+  const serverUrl = watch('serverUrl');
   const [testingStatus, setTestingStatus] = useState<
     'failed' | 'pending' | 'success' | null
   >(null);
@@ -58,7 +57,25 @@ export function TestMCPConnectionButton({
 
     if (serverType === MCPServerTypes.Stdio) {
       return;
-    } else if (serverType === MCPServerTypes.Sse) {
+    }
+
+    const formValues = getValues();
+    const authMode = formValues.authMode || AuthModes.NONE;
+    const authToken = formValues.authToken;
+    const customHeaders = formValues.customHeaders;
+
+    const {
+      authHeaders,
+      authHeader,
+      authToken: authTokenValue,
+    } = parseAuthenticationData({
+      authMode,
+      authToken,
+      customHeaders,
+      options: { formatToken: true, includeAuthHeader: true },
+    });
+
+    if (serverType === MCPServerTypes.Sse) {
       if (!serverUrl) {
         setTestingStatus('failed');
         return;
@@ -67,8 +84,9 @@ export function TestMCPConnectionButton({
         server_name: 'test_server',
         type: serverType as MCPServerType,
         server_url: serverUrl,
-        auth_header: authToken ? AUTH_HEADER : undefined,
-        auth_token: formatAuthToken(authToken),
+        auth_header: authHeader,
+        auth_token: authTokenValue,
+        custom_headers: authHeaders,
       } as SSEServerConfig;
     } else {
       if (!serverUrl) {
@@ -79,13 +97,14 @@ export function TestMCPConnectionButton({
         server_name: 'test_server',
         type: serverType as MCPServerType,
         server_url: serverUrl,
-        auth_header: authToken ? AUTH_HEADER : undefined,
-        auth_token: formatAuthToken(authToken),
+        auth_header: authHeader,
+        auth_token: authTokenValue,
+        custom_headers: authHeaders,
       } as StreamableHTTPServerConfig;
     }
 
     testServer({ requestBody });
-  }, [serverType, serverUrl, authToken, testServer]);
+  }, [serverType, serverUrl, getValues, testServer]);
 
   const isDisabled =
     isPending || serverType === MCPServerTypes.Stdio || !serverUrl;

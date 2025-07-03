@@ -4285,6 +4285,12 @@ export type UpdateSSEMCPServer = {
    * The access token or API key for the MCP server (used for SSE authentication)
    */
   token?: string | null;
+  /**
+   * Custom authentication headers as key-value pairs
+   */
+  custom_headers?: {
+    [key: string]: string;
+  } | null;
 };
 
 /**
@@ -4307,6 +4313,12 @@ export type UpdateStreamableHTTPMCPServer = {
    * The authentication token or API key value
    */
   auth_token?: string | null;
+  /**
+   * Custom authentication headers as key-value pairs
+   */
+  custom_headers?: {
+    [key: string]: string;
+  } | null;
 };
 
 export type UpdateSystemMessage = {

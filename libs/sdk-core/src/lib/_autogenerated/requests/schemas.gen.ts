@@ -11774,6 +11774,21 @@ export const $UpdateSSEMCPServer = {
       description:
         'The access token or API key for the MCP server (used for SSE authentication)',
     },
+    custom_headers: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'string',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Custom Headers',
+      description: 'Custom authentication headers as key-value pairs',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -11832,6 +11847,21 @@ export const $UpdateStreamableHTTPMCPServer = {
       ],
       title: 'Auth Token',
       description: 'The authentication token or API key value',
+    },
+    custom_headers: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'string',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Custom Headers',
+      description: 'Custom authentication headers as key-value pairs',
     },
   },
   additionalProperties: false,

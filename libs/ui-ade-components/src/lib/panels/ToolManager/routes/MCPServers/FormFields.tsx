@@ -8,6 +8,11 @@ import {
   Input,
 } from '@letta-cloud/ui-component-library';
 
+export { AuthenticationSection, AuthModes } from './AuthenticationSection';
+export { CustomHeadersField } from './CustomHeadersField';
+export type { CustomHeader } from './CustomHeadersField';
+export type { AuthMode } from './AuthenticationSection';
+
 interface ServerNameFieldProps {
   disabled?: boolean;
 }
@@ -65,14 +70,12 @@ export function AuthTokenField({ isUpdate = false }: AuthTokenFieldProps) {
           {...field}
           type="password"
           label={t('AddServerDialog.authToken.label')}
+          hideLabel
           placeholder={t(
             isUpdate
               ? 'UpdateServerDialog.authToken.placeholder'
               : 'AddServerDialog.authToken.placeholder',
           )}
-          infoTooltip={{
-            text: t('AddServerDialog.authToken.description'),
-          }}
         />
       )}
     />

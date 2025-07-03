@@ -169,7 +169,7 @@ function KeyValueEditorPrimitive(props: KeyValueEditorProps) {
                 onClick={() => {
                   addRow();
                 }}
-                label={removeVariableLabel || t('addVariable')}
+                label={addVariableLabel || t('addVariable')}
               />
             )}
           </HStack>

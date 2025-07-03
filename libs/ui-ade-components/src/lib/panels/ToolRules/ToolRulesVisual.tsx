@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import React, { useCallback, useState, useEffect } from 'react';
 import { useMergedToolData } from './hooks/useMergedToolData';
 import {
