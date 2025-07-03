@@ -230,6 +230,7 @@ describe-web:
         --set secrets.FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
     else
         helm upgrade --install {{CORE_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{CORE_HELM_CHART_NAME}} \
+            --set image.repository={{DOCKER_REGISTRY}}/memgpt-server \
             --set image.tag={{TAG}} \
             --set deployMessage='{{deploy_message}}' \
             --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)";
