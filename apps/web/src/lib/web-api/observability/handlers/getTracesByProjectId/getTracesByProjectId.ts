@@ -26,6 +26,7 @@ interface Conditions {
   toolErrorQuery?: string;
   agentIdQuery?: string;
   apiErrorQuery?: string;
+  templateFamilyQuery?: string;
 }
 
 function conditionBuilder(search: SearchTypesType[]): Conditions {
@@ -39,6 +40,7 @@ function conditionBuilder(search: SearchTypesType[]): Conditions {
     toolErrorQuery: '',
     agentIdQuery: '',
     apiErrorQuery: '',
+    templateFamilyQuery: '',
   };
 
   search.forEach((item) => {
@@ -108,6 +110,13 @@ function conditionBuilder(search: SearchTypesType[]): Conditions {
     if (item.field === 'agentId') {
       conditions.agentIdQuery += ` AND SpanAttributes['agent.id'] = '${item.value}' `;
     }
+
+    if (item.field === 'templateFamily') {
+      // Only add filter if template ID is provided (not empty string for "Any Family")
+      if (item.value) {
+        conditions.templateFamilyQuery += ` AND SpanAttributes['base_template.id'] = '${item.value}' `;
+      }
+    }
   });
 
   return conditions;
@@ -154,6 +163,7 @@ export async function getTracesByProjectId(
             ${conditions.timestampQuery || ''}
             ${conditions.agentIdQuery || ''}
             ${conditions.apiErrorQuery || ''}
+            ${conditions.templateFamilyQuery || ''}
         )
       SELECT
         a.TraceId,

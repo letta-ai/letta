@@ -27,6 +27,20 @@ export function ToolErrorsChart(props: TimeToFirstTokenChartProps) {
 
   const t = useTranslations('pages/projects/observability/ToolErrorsChart');
 
+  // Get template details if baseTemplateId is set
+  const { data: templateData } =
+    webApi.agentTemplates.getAgentTemplateById.useQuery({
+      queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateById(
+        baseTemplateId?.value || '',
+      ),
+      queryData: {
+        params: {
+          id: baseTemplateId?.value || '',
+        },
+      },
+      enabled: !!baseTemplateId?.value,
+    });
+
   const { data } = webApi.observability.getToolErrorsMetrics.useQuery({
     queryKey: webApiQueryKeys.observability.getToolErrorsMetrics({
       projectId,
@@ -44,35 +58,50 @@ export function ToolErrorsChart(props: TimeToFirstTokenChartProps) {
     },
   });
 
-  // Create the URL for tool error responses using project slug
+  // Create the URL for tool error responses using project slug with template filtering
   const toolErrorResponsesUrl = useMemo(() => {
+    const queryItems = [
+      {
+        field: 'statusCode',
+        queryData: {
+          operator: {
+            label: 'is',
+            value: 'eq',
+          },
+          value: {
+            label: 'tool error',
+            value: 'tool_error',
+          },
+        },
+      },
+    ];
+
+    // Add template family filter if a template is selected
+    if (baseTemplateId?.value && templateData?.body) {
+      queryItems.push({
+        field: 'templateFamily',
+        queryData: {
+          operator: {
+            label: 'equals',
+            value: 'eq',
+          },
+          value: {
+            label: templateData.body.name,
+            value: baseTemplateId.value,
+          },
+        },
+      });
+    }
+
     const query = {
       root: {
         combinator: 'AND',
-        items: [
-          {
-            field: 'statusCode',
-            queryData: {
-              operator: {
-                label: 'is',
-                value: 'eq',
-              },
-              value: {
-                label: 'tool error',
-                value: 'tool_error',
-              },
-            },
-          },
-        ],
+        items: queryItems,
       },
     };
 
-    // Encode and then manually fix the + encoding
-    let encodedQuery = encodeURIComponent(JSON.stringify(query));
-    encodedQuery = encodedQuery.replace('tool%20error', 'tool+error');
-
-    return `/projects/${projectSlug}/responses?query=${encodedQuery}`;
-  }, [projectSlug]);
+    return `/projects/${projectSlug}/responses?query=${encodeURIComponent(JSON.stringify(query))}`;
+  }, [projectSlug, baseTemplateId?.value, templateData?.body]);
 
   const tableOptions = useObservabilitySeriesData({
     seriesData: [

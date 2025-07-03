@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   Badge,
   Button,
@@ -41,12 +41,28 @@ interface UseQueryDefinitionResponse {
 
 function useQueryDefinition() {
   const t = useTranslations('projects/(projectSlug)/responses/page');
+  const { id: currentProjectId } = useCurrentProject();
 
   const params = useSearchParams();
 
   const { data: defaultTools } = useToolsServiceListTools({
     limit: 250,
   });
+
+  // Load template data for default options
+  const { data: templateData } =
+    webApi.agentTemplates.listAgentTemplates.useQuery({
+      queryKey: webApiQueryKeys.agentTemplates.listAgentTemplatesWithSearch({
+        projectId: currentProjectId,
+        limit: 10,
+      }),
+      queryData: {
+        query: {
+          projectId: currentProjectId,
+          limit: 10,
+        },
+      },
+    });
 
   const queryFilter = useMemo(() => {
     const query = params.get('query');
@@ -59,6 +75,49 @@ function useQueryDefinition() {
       }
     }
   }, [params]);
+
+  const defaultTemplateNameOptions = useMemo(() => {
+    if (!templateData?.body) {
+      return [];
+    }
+
+    const arr = templateData.body.agentTemplates.map((template) => ({
+      label: template.name,
+      value: template.id,
+    }));
+
+    // Add "(Any Template Family)" option at the beginning
+    arr.unshift({ label: '(Any Template Family)', value: '' });
+
+    return arr;
+  }, [templateData?.body]);
+
+  const handleLoadTemplateNames = useCallback(
+    async (query: string) => {
+      const response = await webApi.agentTemplates.listAgentTemplates.query({
+        query: {
+          search: query,
+          projectId: currentProjectId,
+          limit: 10,
+        },
+      });
+
+      if (response.status !== 200) {
+        return [];
+      }
+
+      const options = response.body.agentTemplates.map((template) => ({
+        label: template.name,
+        value: template.id,
+      }));
+
+      // Add "(Any Template Family)" option at the beginning
+      options.unshift({ label: '(Any Template Family)', value: '' });
+
+      return options;
+    },
+    [currentProjectId],
+  );
 
   return useMemo(() => {
     const fieldDefinitions = {
@@ -214,6 +273,38 @@ function useQueryDefinition() {
           },
         ],
       },
+      templateFamily: {
+        id: 'templateFamily',
+        name: 'Template Family',
+        queries: [
+          {
+            key: 'operator',
+            label: 'Operator',
+            display: 'select',
+            options: {
+              styleConfig: {
+                containerWidth: 100,
+              },
+              options: [
+                {
+                  label: 'equals',
+                  value: 'eq',
+                },
+              ],
+            },
+          },
+          {
+            key: 'value',
+            label: 'Template',
+            display: 'async-select',
+            options: {
+              placeholder: 'Select template family...',
+              defaultOptions: defaultTemplateNameOptions || [],
+              loadOptions: handleLoadTemplateNames,
+            },
+          },
+        ],
+      },
     } as const satisfies FieldDefinitions;
 
     const initialQuery =
@@ -241,7 +332,13 @@ function useQueryDefinition() {
       fieldDefinitions,
       initialQuery,
     } satisfies UseQueryDefinitionResponse;
-  }, [defaultTools, queryFilter, t]);
+  }, [
+    defaultTools,
+    queryFilter,
+    t,
+    handleLoadTemplateNames,
+    defaultTemplateNameOptions,
+  ]);
 }
 
 export default function ResponsesPage() {
