@@ -508,11 +508,19 @@ async def add_mcp_server_to_config(
                     )
             elif isinstance(request, SSEServerConfig):
                 mapped_request = MCPServer(
-                    server_name=request.server_name, server_type=request.type, server_url=request.server_url, token=request.resolve_token()
+                    server_name=request.server_name,
+                    server_type=request.type,
+                    server_url=request.server_url,
+                    token=request.resolve_token() if not request.custom_headers else None,
+                    custom_headers=request.custom_headers,
                 )
             elif isinstance(request, StreamableHTTPServerConfig):
                 mapped_request = MCPServer(
-                    server_name=request.server_name, server_type=request.type, server_url=request.server_url, token=request.resolve_token()
+                    server_name=request.server_name,
+                    server_type=request.type,
+                    server_url=request.server_url,
+                    token=request.resolve_token() if not request.custom_headers else None,
+                    custom_headers=request.custom_headers,
                 )
 
             await server.mcp_manager.create_mcp_server(mapped_request, actor=actor)
@@ -624,7 +632,6 @@ async def test_mcp_server(
 
         await client.connect_to_server()
         tools = await client.list_tools()
-        await client.cleanup()
         return tools
     except ConnectionError as e:
         raise HTTPException(
@@ -645,11 +652,6 @@ async def test_mcp_server(
             },
         )
     except Exception as e:
-        if client:
-            try:
-                await client.cleanup()
-            except:
-                pass
         raise HTTPException(
             status_code=500,
             detail={
@@ -658,6 +660,12 @@ async def test_mcp_server(
                 "server_name": request.server_name,
             },
         )
+    finally:
+        if client:
+            try:
+                await client.cleanup()
+            except Exception as cleanup_error:
+                logger.warning(f"Error during MCP client cleanup: {cleanup_error}")
 
 
 class CodeInput(BaseModel):

@@ -77,6 +77,7 @@ class AsyncBaseMCPClient:
             logger.error("MCPClient has not been initialized")
             raise RuntimeError("MCPClient has not been initialized")
 
+    # TODO: still hitting some async errors for voice agents, need to fix
     async def cleanup(self):
         """Clean up resources - ensure this runs in the same task"""
         if hasattr(self, "_cleanup_task"):
