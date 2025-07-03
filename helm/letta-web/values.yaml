@@ -116,3 +116,7 @@ env:
   HUBSPOT_API_KEY: ""
   RESEND_API_KEY: ""
   COMPOSIO_API_KEY: ""
+
+rollingUpdate:
+  maxSurge: 25%
+  maxUnavailable: 25%
