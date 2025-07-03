@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from composio.client import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.collections import ActionModel, AppModel
@@ -10,8 +10,10 @@ from composio.exceptions import (
     EnumStringNotFound,
 )
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from letta.errors import LettaToolCreateError
+from letta.functions.functions import derive_openai_json_schema
 from letta.functions.mcp_client.exceptions import MCPTimeoutError
 from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
 from letta.helpers.composio_helpers import get_composio_api_key
@@ -521,11 +523,19 @@ async def add_mcp_server_to_config(
                     )
             elif isinstance(request, SSEServerConfig):
                 mapped_request = MCPServer(
-                    server_name=request.server_name, server_type=request.type, server_url=request.server_url, token=request.resolve_token()
+                    server_name=request.server_name,
+                    server_type=request.type,
+                    server_url=request.server_url,
+                    token=request.resolve_token() if not request.custom_headers else None,
+                    custom_headers=request.custom_headers,
                 )
             elif isinstance(request, StreamableHTTPServerConfig):
                 mapped_request = MCPServer(
-                    server_name=request.server_name, server_type=request.type, server_url=request.server_url, token=request.resolve_token()
+                    server_name=request.server_name,
+                    server_type=request.type,
+                    server_url=request.server_url,
+                    token=request.resolve_token() if not request.custom_headers else None,
+                    custom_headers=request.custom_headers,
                 )
 
             await server.mcp_manager.create_mcp_server(mapped_request, actor=actor)
@@ -637,7 +647,6 @@ async def test_mcp_server(
 
         await client.connect_to_server()
         tools = await client.list_tools()
-        await client.cleanup()
         return tools
     except ConnectionError as e:
         raise HTTPException(
@@ -658,11 +667,6 @@ async def test_mcp_server(
             },
         )
     except Exception as e:
-        if client:
-            try:
-                await client.cleanup()
-            except:
-                pass
         raise HTTPException(
             status_code=500,
             detail={
@@ -671,3 +675,30 @@ async def test_mcp_server(
                 "server_name": request.server_name,
             },
         )
+    finally:
+        if client:
+            try:
+                await client.cleanup()
+            except Exception as cleanup_error:
+                logger.warning(f"Error during MCP client cleanup: {cleanup_error}")
+
+
+class CodeInput(BaseModel):
+    code: str = Field(..., description="Python source code to parse for JSON schema")
+
+
+@router.post("/generate-schema", response_model=Dict[str, Any], operation_id="generate_json_schema")
+async def generate_json_schema(
+    request: CodeInput = Body(...),
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Generate a JSON schema from the given Python source code defining a function or class.
+    """
+    try:
+        schema = derive_openai_json_schema(source_code=request.code)
+        return schema
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to generate schema: {str(e)}")

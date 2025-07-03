@@ -34,6 +34,7 @@ from letta.constants import (
     FILES_TOOLS,
     LETTA_TOOL_EXECUTION_DIR,
     LETTA_TOOL_SET,
+    LOCAL_ONLY_MULTI_AGENT_TOOLS,
     MCP_TOOL_TAG_NAME_PREFIX,
     MULTI_AGENT_TOOLS,
 )
@@ -86,7 +87,7 @@ from letta.schemas.user import UserUpdate
 from letta.server.db import db_registry
 from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import calculate_base_tools
+from letta.services.helpers.agent_manager_helper import calculate_base_tools, calculate_multi_agent_tools
 from letta.services.step_manager import FeedbackType
 from letta.settings import tool_settings
 from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
@@ -745,6 +746,71 @@ async def test_create_agent_include_base_tools(server: SyncServer, default_user,
     tool_names = [t.name for t in created_agent.tools]
     expected_tools = calculate_base_tools(is_v2=False)
     assert sorted(tool_names) == sorted(expected_tools)
+
+
+def test_calculate_multi_agent_tools(set_letta_environment):
+    """Test that calculate_multi_agent_tools excludes local-only tools in production."""
+    result = calculate_multi_agent_tools()
+
+    if set_letta_environment == "PRODUCTION":
+        # Production environment should exclude local-only tools
+        expected_tools = set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
+        assert result == expected_tools, "Production should exclude local-only multi-agent tools"
+        assert not set(LOCAL_ONLY_MULTI_AGENT_TOOLS).intersection(result), "Production should not include local-only tools"
+
+        # Verify specific tools
+        assert "send_message_to_agent_and_wait_for_reply" in result, "Standard multi-agent tools should be in production"
+        assert "send_message_to_agents_matching_tags" in result, "Standard multi-agent tools should be in production"
+        assert "send_message_to_agent_async" not in result, "Local-only tools should not be in production"
+    else:
+        # Non-production environment should include all multi-agent tools
+        assert result == set(MULTI_AGENT_TOOLS), "Non-production should include all multi-agent tools"
+        assert set(LOCAL_ONLY_MULTI_AGENT_TOOLS).issubset(result), "Non-production should include local-only tools"
+
+        # Verify specific tools
+        assert "send_message_to_agent_and_wait_for_reply" in result, "All multi-agent tools should be in non-production"
+        assert "send_message_to_agents_matching_tags" in result, "All multi-agent tools should be in non-production"
+        assert "send_message_to_agent_async" in result, "Local-only tools should be in non-production"
+
+
+async def test_upsert_base_tools_excludes_local_only_in_production(server: SyncServer, default_user, set_letta_environment, event_loop):
+    """Test that upsert_base_tools excludes local-only multi-agent tools in production."""
+    # Upsert all base tools
+    tools = await server.tool_manager.upsert_base_tools_async(actor=default_user)
+    tool_names = {tool.name for tool in tools}
+
+    if set_letta_environment == "PRODUCTION":
+        # Production environment should exclude local-only multi-agent tools
+        for local_only_tool in LOCAL_ONLY_MULTI_AGENT_TOOLS:
+            assert local_only_tool not in tool_names, f"Local-only tool '{local_only_tool}' should not be upserted in production"
+
+        # But should include standard multi-agent tools
+        standard_multi_agent_tools = set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
+        for standard_tool in standard_multi_agent_tools:
+            assert standard_tool in tool_names, f"Standard multi-agent tool '{standard_tool}' should be upserted in production"
+    else:
+        # Non-production environment should include all multi-agent tools
+        for tool in MULTI_AGENT_TOOLS:
+            assert tool in tool_names, f"Multi-agent tool '{tool}' should be upserted in non-production"
+
+
+async def test_upsert_multi_agent_tools_only(server: SyncServer, default_user, set_letta_environment, event_loop):
+    """Test that upserting only multi-agent tools respects production filtering."""
+    from letta.orm.enums import ToolType
+
+    # Upsert only multi-agent tools
+    tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_MULTI_AGENT_CORE})
+    tool_names = {tool.name for tool in tools}
+
+    if set_letta_environment == "PRODUCTION":
+        # Should only have non-local multi-agent tools
+        expected_tools = set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
+        assert tool_names == expected_tools, "Production multi-agent upsert should exclude local-only tools"
+        assert "send_message_to_agent_async" not in tool_names, "Local-only async tool should not be upserted in production"
+    else:
+        # Should have all multi-agent tools
+        assert tool_names == set(MULTI_AGENT_TOOLS), "Non-production multi-agent upsert should include all tools"
+        assert "send_message_to_agent_async" in tool_names, "Local-only async tool should be upserted in non-production"
 
 
 @pytest.mark.asyncio
@@ -4485,7 +4551,7 @@ async def test_create_and_upsert_identity(server: SyncServer, default_user, even
             actor=default_user,
         )
 
-    identity_create.properties = [(IdentityProperty(key="age", value=29, type=IdentityPropertyType.number))]
+    identity_create.properties = [IdentityProperty(key="age", value=29, type=IdentityPropertyType.number)]
 
     identity = await server.identity_manager.upsert_identity_async(
         identity=IdentityUpsert(**identity_create.model_dump()), actor=default_user
@@ -4769,8 +4835,8 @@ async def test_create_source(server: SyncServer, default_user, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_create_sources_with_same_name_does_not_error(server: SyncServer, default_user):
-    """Test creating a new source."""
+async def test_create_sources_with_same_name_raises_error(server: SyncServer, default_user):
+    """Test that creating sources with the same name raises an IntegrityError due to unique constraint."""
     name = "Test Source"
     source_pydantic = PydanticSource(
         name=name,
@@ -4779,16 +4845,16 @@ async def test_create_sources_with_same_name_does_not_error(server: SyncServer, 
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
     )
     source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
+
+    # Attempting to create another source with the same name should raise an IntegrityError
     source_pydantic = PydanticSource(
         name=name,
         description="This is a different test source.",
         metadata={"type": "legal"},
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
     )
-    same_source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
-
-    assert source.name == same_source.name
-    assert source.id != same_source.id
+    with pytest.raises(UniqueConstraintViolationError):
+        await server.source_manager.create_source(source=source_pydantic, actor=default_user)
 
 
 @pytest.mark.asyncio
@@ -6094,6 +6160,7 @@ async def test_job_usage_stats_add_and_get(server: SyncServer, sarah_agent, defa
             total_tokens=150,
         ),
         actor=default_user,
+        project_id=sarah_agent.project_id,
     )
 
     # Get usage statistics
@@ -6147,6 +6214,7 @@ async def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, def
             total_tokens=150,
         ),
         actor=default_user,
+        project_id=sarah_agent.project_id,
     )
 
     # Add second usage statistics entry
@@ -6164,6 +6232,7 @@ async def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, def
             total_tokens=300,
         ),
         actor=default_user,
+        project_id=sarah_agent.project_id,
     )
 
     # Get usage statistics (should return the latest entry)
@@ -6225,6 +6294,7 @@ async def test_job_usage_stats_add_nonexistent_job(server: SyncServer, sarah_age
                 total_tokens=150,
             ),
             actor=default_user,
+            project_id=sarah_agent.project_id,
         )
 
 
@@ -7349,3 +7419,273 @@ async def test_last_accessed_at_updates_correctly(server, default_user, sarah_ag
 
     final_agent = await server.file_agent_manager.get_file_agent_by_id(agent_id=sarah_agent.id, file_id=file.id, actor=default_user)
     assert final_agent.last_accessed_at > prev_time, "mark_access should update timestamp"
+
+
+@pytest.mark.asyncio
+async def test_attach_files_bulk_basic(server, default_user, sarah_agent, default_source):
+    """Test basic functionality of attach_files_bulk method."""
+    # Create multiple files
+    files = []
+    for i in range(3):
+        file_metadata = PydanticFileMetadata(
+            file_name=f"bulk_test_{i}.txt",
+            organization_id=default_user.organization_id,
+            source_id=default_source.id,
+        )
+        file = await server.file_manager.create_file(file_metadata=file_metadata, actor=default_user, text=f"content {i}")
+        files.append(file)
+
+    # Create visible content map
+    visible_content_map = {f"bulk_test_{i}.txt": f"visible content {i}" for i in range(3)}
+
+    # Bulk attach files
+    closed_files = await server.file_agent_manager.attach_files_bulk(
+        agent_id=sarah_agent.id,
+        files_metadata=files,
+        visible_content_map=visible_content_map,
+        actor=default_user,
+    )
+
+    # Should not close any files since we're under the limit
+    assert closed_files == []
+
+    # Verify all files are attached and open
+    attached_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
+    assert len(attached_files) == 3
+
+    attached_file_names = {f.file_name for f in attached_files}
+    expected_names = {f"bulk_test_{i}.txt" for i in range(3)}
+    assert attached_file_names == expected_names
+
+    # Verify visible content is set correctly
+    for i, attached_file in enumerate(attached_files):
+        if attached_file.file_name == f"bulk_test_{i}.txt":
+            assert attached_file.visible_content == f"visible content {i}"
+
+
+@pytest.mark.asyncio
+async def test_attach_files_bulk_deduplication(server, default_user, sarah_agent, default_source):
+    """Test that attach_files_bulk properly deduplicates files with same names."""
+    # Create files with same name (different IDs)
+    file_metadata_1 = PydanticFileMetadata(
+        file_name="duplicate_test.txt",
+        organization_id=default_user.organization_id,
+        source_id=default_source.id,
+    )
+    file1 = await server.file_manager.create_file(file_metadata=file_metadata_1, actor=default_user, text="content 1")
+
+    file_metadata_2 = PydanticFileMetadata(
+        file_name="duplicate_test.txt",
+        organization_id=default_user.organization_id,
+        source_id=default_source.id,
+    )
+    file2 = await server.file_manager.create_file(file_metadata=file_metadata_2, actor=default_user, text="content 2")
+
+    # Try to attach both files (same name, different IDs)
+    files_to_attach = [file1, file2]
+    visible_content_map = {"duplicate_test.txt": "visible content"}
+
+    # Bulk attach should deduplicate
+    closed_files = await server.file_agent_manager.attach_files_bulk(
+        agent_id=sarah_agent.id,
+        files_metadata=files_to_attach,
+        visible_content_map=visible_content_map,
+        actor=default_user,
+    )
+
+    # Should only attach one file (deduplicated)
+    attached_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
+    assert len(attached_files) == 1
+    assert attached_files[0].file_name == "duplicate_test.txt"
+
+
+@pytest.mark.asyncio
+async def test_attach_files_bulk_lru_eviction(server, default_user, sarah_agent, default_source):
+    """Test that attach_files_bulk properly handles LRU eviction without duplicates."""
+    import time
+
+    from letta.constants import MAX_FILES_OPEN
+
+    # First, fill up to the max with individual files
+    existing_files = []
+    for i in range(MAX_FILES_OPEN):
+        file_metadata = PydanticFileMetadata(
+            file_name=f"existing_{i}.txt",
+            organization_id=default_user.organization_id,
+            source_id=default_source.id,
+        )
+        file = await server.file_manager.create_file(file_metadata=file_metadata, actor=default_user, text=f"existing {i}")
+        existing_files.append(file)
+
+        time.sleep(0.05)  # Small delay for different timestamps
+        await server.file_agent_manager.attach_file(
+            agent_id=sarah_agent.id,
+            file_id=file.id,
+            file_name=file.file_name,
+            actor=default_user,
+            visible_content=f"existing content {i}",
+        )
+
+    # Verify we're at the limit
+    open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
+    assert len(open_files) == MAX_FILES_OPEN
+
+    # Now bulk attach 3 new files (should trigger LRU eviction)
+    new_files = []
+    for i in range(3):
+        file_metadata = PydanticFileMetadata(
+            file_name=f"new_bulk_{i}.txt",
+            organization_id=default_user.organization_id,
+            source_id=default_source.id,
+        )
+        file = await server.file_manager.create_file(file_metadata=file_metadata, actor=default_user, text=f"new content {i}")
+        new_files.append(file)
+
+    visible_content_map = {f"new_bulk_{i}.txt": f"new visible {i}" for i in range(3)}
+
+    # Bulk attach should evict oldest files
+    closed_files = await server.file_agent_manager.attach_files_bulk(
+        agent_id=sarah_agent.id,
+        files_metadata=new_files,
+        visible_content_map=visible_content_map,
+        actor=default_user,
+    )
+
+    # Should have closed exactly 3 files (oldest ones)
+    assert len(closed_files) == 3
+
+    # CRITICAL: Verify no duplicates in closed_files list
+    assert len(closed_files) == len(set(closed_files)), f"Duplicate file names in closed_files: {closed_files}"
+
+    # Verify expected files were closed (oldest 3)
+    expected_closed = {f"existing_{i}.txt" for i in range(3)}
+    actual_closed = set(closed_files)
+    assert actual_closed == expected_closed
+
+    # Verify we still have exactly MAX_FILES_OPEN files open
+    open_files_after = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
+    assert len(open_files_after) == MAX_FILES_OPEN
+
+    # Verify the new files are open
+    open_file_names = {f.file_name for f in open_files_after}
+    for i in range(3):
+        assert f"new_bulk_{i}.txt" in open_file_names
+
+
+@pytest.mark.asyncio
+async def test_attach_files_bulk_mixed_existing_new(server, default_user, sarah_agent, default_source):
+    """Test bulk attach with mix of existing and new files."""
+    # Create and attach one file individually first
+    existing_file_metadata = PydanticFileMetadata(
+        file_name="existing_file.txt",
+        organization_id=default_user.organization_id,
+        source_id=default_source.id,
+    )
+    existing_file = await server.file_manager.create_file(file_metadata=existing_file_metadata, actor=default_user, text="existing")
+
+    await server.file_agent_manager.attach_file(
+        agent_id=sarah_agent.id,
+        file_id=existing_file.id,
+        file_name=existing_file.file_name,
+        actor=default_user,
+        visible_content="old content",
+        is_open=False,  # Start as closed
+    )
+
+    # Create new files
+    new_files = []
+    for i in range(2):
+        file_metadata = PydanticFileMetadata(
+            file_name=f"new_file_{i}.txt",
+            organization_id=default_user.organization_id,
+            source_id=default_source.id,
+        )
+        file = await server.file_manager.create_file(file_metadata=file_metadata, actor=default_user, text=f"new {i}")
+        new_files.append(file)
+
+    # Bulk attach: existing file + new files
+    files_to_attach = [existing_file] + new_files
+    visible_content_map = {
+        "existing_file.txt": "updated content",
+        "new_file_0.txt": "new content 0",
+        "new_file_1.txt": "new content 1",
+    }
+
+    closed_files = await server.file_agent_manager.attach_files_bulk(
+        agent_id=sarah_agent.id,
+        files_metadata=files_to_attach,
+        visible_content_map=visible_content_map,
+        actor=default_user,
+    )
+
+    # Should not close any files
+    assert closed_files == []
+
+    # Verify all files are now open
+    open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
+    assert len(open_files) == 3
+
+    # Verify existing file was updated
+    existing_file_agent = await server.file_agent_manager.get_file_agent_by_file_name(
+        agent_id=sarah_agent.id, file_name="existing_file.txt", actor=default_user
+    )
+    assert existing_file_agent.is_open is True
+    assert existing_file_agent.visible_content == "updated content"
+
+
+@pytest.mark.asyncio
+async def test_attach_files_bulk_empty_list(server, default_user, sarah_agent):
+    """Test attach_files_bulk with empty file list."""
+    closed_files = await server.file_agent_manager.attach_files_bulk(
+        agent_id=sarah_agent.id,
+        files_metadata=[],
+        visible_content_map={},
+        actor=default_user,
+    )
+
+    assert closed_files == []
+
+    # Verify no files are attached
+    attached_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
+    assert len(attached_files) == 0
+
+
+@pytest.mark.asyncio
+async def test_attach_files_bulk_oversized_bulk(server, default_user, sarah_agent, default_source):
+    """Test bulk attach when trying to attach more files than MAX_FILES_OPEN allows."""
+    from letta.constants import MAX_FILES_OPEN
+
+    # Create more files than the limit allows
+    oversized_files = []
+    for i in range(MAX_FILES_OPEN + 3):  # 3 more than limit
+        file_metadata = PydanticFileMetadata(
+            file_name=f"oversized_{i}.txt",
+            organization_id=default_user.organization_id,
+            source_id=default_source.id,
+        )
+        file = await server.file_manager.create_file(file_metadata=file_metadata, actor=default_user, text=f"oversized {i}")
+        oversized_files.append(file)
+
+    visible_content_map = {f"oversized_{i}.txt": f"oversized visible {i}" for i in range(MAX_FILES_OPEN + 3)}
+
+    # Bulk attach all files (more than limit)
+    closed_files = await server.file_agent_manager.attach_files_bulk(
+        agent_id=sarah_agent.id,
+        files_metadata=oversized_files,
+        visible_content_map=visible_content_map,
+        actor=default_user,
+    )
+
+    # Should have closed exactly 3 files (the excess)
+    assert len(closed_files) == 3
+
+    # CRITICAL: Verify no duplicates in closed_files list
+    assert len(closed_files) == len(set(closed_files)), f"Duplicate file names in closed_files: {closed_files}"
+
+    # Should have exactly MAX_FILES_OPEN files open
+    open_files_after = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
+    assert len(open_files_after) == MAX_FILES_OPEN
+
+    # All files should be attached (some open, some closed)
+    all_files_after = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
+    assert len(all_files_after) == MAX_FILES_OPEN + 3

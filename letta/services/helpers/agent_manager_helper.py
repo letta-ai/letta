@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from typing import List, Literal, Optional, Set
 
@@ -10,9 +11,11 @@ from letta.constants import (
     BASE_MEMORY_TOOLS,
     BASE_MEMORY_TOOLS_V2,
     BASE_TOOLS,
-    DEPRECATED_BASE_TOOLS,
+    DEPRECATED_LETTA_TOOLS,
     IN_CONTEXT_MEMORY_KEYWORD,
+    LOCAL_ONLY_MULTI_AGENT_TOOLS,
     MAX_EMBEDDING_DIM,
+    MULTI_AGENT_TOOLS,
     STRUCTURED_OUTPUT_MODELS,
 )
 from letta.embeddings import embedding_model
@@ -248,6 +251,7 @@ def compile_system_message(
     previous_message_count: int = 0,
     archival_memory_size: int = 0,
     tool_rules_solver: Optional[ToolRulesSolver] = None,
+    sources: Optional[List] = None,
 ) -> str:
     """Prepare the final/full system message that will be fed into the LLM API
 
@@ -256,6 +260,7 @@ def compile_system_message(
     The following are reserved variables:
       - CORE_MEMORY: the in-context memory of the LLM
     """
+
     # Add tool rule constraints if available
     tool_constraint_block = None
     if tool_rules_solver is not None:
@@ -278,13 +283,16 @@ def compile_system_message(
             archival_memory_size=archival_memory_size,
             timezone=timezone,
         )
-        full_memory_string = in_context_memory.compile(tool_usage_rules=tool_constraint_block) + "\n\n" + memory_metadata_string
+
+        memory_with_sources = in_context_memory.compile(tool_usage_rules=tool_constraint_block, sources=sources)
+        full_memory_string = memory_with_sources + "\n\n" + memory_metadata_string
 
         # Add to the variables list to inject
         variables[IN_CONTEXT_MEMORY_KEYWORD] = full_memory_string
 
     if template_format == "f-string":
         memory_variable_string = "{" + IN_CONTEXT_MEMORY_KEYWORD + "}"
+
         # Catch the special case where the system prompt is unformatted
         if append_icm_if_missing:
             if memory_variable_string not in system_prompt:
@@ -327,6 +335,7 @@ def initialize_message_sequence(
         append_icm_if_missing=True,
         previous_message_count=previous_message_count,
         archival_memory_size=archival_memory_size,
+        sources=agent_state.sources,
     )
     first_user_message = get_login_event(agent_state.timezone)  # event letting Letta know the user just logged in
 
@@ -1050,6 +1059,14 @@ def build_agent_passage_query(
 
 def calculate_base_tools(is_v2: bool) -> Set[str]:
     if is_v2:
-        return (set(BASE_TOOLS) - set(DEPRECATED_BASE_TOOLS)) | set(BASE_MEMORY_TOOLS_V2)
+        return (set(BASE_TOOLS) - set(DEPRECATED_LETTA_TOOLS)) | set(BASE_MEMORY_TOOLS_V2)
     else:
-        return (set(BASE_TOOLS) - set(DEPRECATED_BASE_TOOLS)) | set(BASE_MEMORY_TOOLS)
+        return (set(BASE_TOOLS) - set(DEPRECATED_LETTA_TOOLS)) | set(BASE_MEMORY_TOOLS)
+
+
+def calculate_multi_agent_tools() -> Set[str]:
+    """Calculate multi-agent tools, excluding local-only tools in production environment."""
+    if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
+        return set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
+    else:
+        return set(MULTI_AGENT_TOOLS)

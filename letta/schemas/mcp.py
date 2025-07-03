@@ -19,12 +19,13 @@ class BaseMCPServer(LettaBase):
 
 class MCPServer(BaseMCPServer):
     id: str = BaseMCPServer.generate_id_field()
-    server_type: MCPServerType = MCPServerType.SSE
+    server_type: MCPServerType = MCPServerType.STREAMABLE_HTTP
     server_name: str = Field(..., description="The name of the server")
 
-    # sse config
-    server_url: Optional[str] = Field(None, description="The URL of the server (MCP SSE client will connect to this URL)")
-    token: Optional[str] = Field(None, description="The access token or API key for the MCP server (used for SSE authentication)")
+    # sse / streamable http config
+    server_url: Optional[str] = Field(None, description="The URL of the server (MCP SSE/Streamable HTTP client will connect to this URL)")
+    token: Optional[str] = Field(None, description="The access token or API key for the MCP server (used for authentication)")
+    custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom authentication headers as key-value pairs")
 
     # stdio config
     stdio_config: Optional[StdioServerConfig] = Field(
@@ -43,9 +44,9 @@ class MCPServer(BaseMCPServer):
             return SSEServerConfig(
                 server_name=self.server_name,
                 server_url=self.server_url,
-                auth_header=MCP_AUTH_HEADER_AUTHORIZATION if self.token else None,
-                auth_token=f"{MCP_AUTH_TOKEN_BEARER_PREFIX} {self.token}" if self.token else None,
-                custom_headers=None,
+                auth_header=MCP_AUTH_HEADER_AUTHORIZATION if self.token and not self.custom_headers else None,
+                auth_token=f"{MCP_AUTH_TOKEN_BEARER_PREFIX} {self.token}" if self.token and not self.custom_headers else None,
+                custom_headers=self.custom_headers,
             )
         elif self.server_type == MCPServerType.STDIO:
             if self.stdio_config is None:
@@ -57,9 +58,9 @@ class MCPServer(BaseMCPServer):
             return StreamableHTTPServerConfig(
                 server_name=self.server_name,
                 server_url=self.server_url,
-                auth_header=MCP_AUTH_HEADER_AUTHORIZATION if self.token else None,
-                auth_token=f"{MCP_AUTH_TOKEN_BEARER_PREFIX} {self.token}" if self.token else None,
-                custom_headers=None,
+                auth_header=MCP_AUTH_HEADER_AUTHORIZATION if self.token and not self.custom_headers else None,
+                auth_token=f"{MCP_AUTH_TOKEN_BEARER_PREFIX} {self.token}" if self.token and not self.custom_headers else None,
+                custom_headers=self.custom_headers,
             )
         else:
             raise ValueError(f"Unsupported server type: {self.server_type}")
@@ -70,6 +71,7 @@ class RegisterSSEMCPServer(LettaBase):
     server_type: MCPServerType = MCPServerType.SSE
     server_url: str = Field(..., description="The URL of the server (MCP SSE client will connect to this URL)")
     token: Optional[str] = Field(None, description="The access token or API key for the MCP server used for authentication")
+    custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom authentication headers as key-value pairs")
 
 
 class RegisterStdioMCPServer(LettaBase):
@@ -84,6 +86,7 @@ class RegisterStreamableHTTPMCPServer(LettaBase):
     server_url: str = Field(..., description="The URL path for the streamable HTTP server (e.g., 'example/mcp')")
     auth_header: Optional[str] = Field(None, description="The name of the authentication header (e.g., 'Authorization')")
     auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
+    custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom authentication headers as key-value pairs")
 
 
 class UpdateSSEMCPServer(LettaBase):
@@ -92,6 +95,7 @@ class UpdateSSEMCPServer(LettaBase):
     server_name: Optional[str] = Field(None, description="The name of the server")
     server_url: Optional[str] = Field(None, description="The URL of the server (MCP SSE client will connect to this URL)")
     token: Optional[str] = Field(None, description="The access token or API key for the MCP server (used for SSE authentication)")
+    custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom authentication headers as key-value pairs")
 
 
 class UpdateStdioMCPServer(LettaBase):
@@ -110,6 +114,7 @@ class UpdateStreamableHTTPMCPServer(LettaBase):
     server_url: Optional[str] = Field(None, description="The URL path for the streamable HTTP server (e.g., 'example/mcp')")
     auth_header: Optional[str] = Field(None, description="The name of the authentication header (e.g., 'Authorization')")
     auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
+    custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom authentication headers as key-value pairs")
 
 
 UpdateMCPServer = Union[UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer]

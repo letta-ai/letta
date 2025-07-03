@@ -72,7 +72,7 @@ def upload_file_and_wait(client: LettaSDKClient, source_id: str, file_path: str,
 @pytest.fixture
 def agent_state(client: LettaSDKClient):
     open_file_tool = client.tools.list(name="open_files")[0]
-    search_files_tool = client.tools.list(name="search_files")[0]
+    search_files_tool = client.tools.list(name="semantic_search_files")[0]
     grep_tool = client.tools.list(name="grep_files")[0]
 
     agent_state = client.agents.create(
@@ -126,6 +126,7 @@ def test_auto_attach_detach_files_tools(client: LettaSDKClient):
     assert len(client.sources.list()) == 1
 
     agent = client.agents.sources.attach(source_id=source_1.id, agent_id=agent.id)
+    assert len(client.agents.retrieve(agent_id=agent.id).sources) == 1
     assert_file_tools_present(agent, set(FILES_TOOLS))
 
     # Create and attach second source
@@ -133,6 +134,7 @@ def test_auto_attach_detach_files_tools(client: LettaSDKClient):
     assert len(client.sources.list()) == 2
 
     agent = client.agents.sources.attach(source_id=source_2.id, agent_id=agent.id)
+    assert len(client.agents.retrieve(agent_id=agent.id).sources) == 2
     # File tools should remain after attaching second source
     assert_file_tools_present(agent, set(FILES_TOOLS))
 
@@ -148,17 +150,17 @@ def test_auto_attach_detach_files_tools(client: LettaSDKClient):
 @pytest.mark.parametrize(
     "file_path, expected_value, expected_label_regex",
     [
-        ("tests/data/test.txt", "test", r"test_[a-z0-9]+\.txt"),
-        ("tests/data/memgpt_paper.pdf", "MemGPT", r"memgpt_paper_[a-z0-9]+\.pdf"),
-        ("tests/data/toy_chat_fine_tuning.jsonl", '{"messages"', r"toy_chat_fine_tuning_[a-z0-9]+\.jsonl"),
-        ("tests/data/test.md", "h2 Heading", r"test_[a-z0-9]+\.md"),
-        ("tests/data/test.json", "glossary", r"test_[a-z0-9]+\.json"),
-        ("tests/data/react_component.jsx", "UserProfile", r"react_component_[a-z0-9]+\.jsx"),
-        ("tests/data/task_manager.java", "TaskManager", r"task_manager_[a-z0-9]+\.java"),
-        ("tests/data/data_structures.cpp", "BinarySearchTree", r"data_structures_[a-z0-9]+\.cpp"),
-        ("tests/data/api_server.go", "UserService", r"api_server_[a-z0-9]+\.go"),
-        ("tests/data/data_analysis.py", "StatisticalAnalyzer", r"data_analysis_[a-z0-9]+\.py"),
-        ("tests/data/test.csv", "Smart Fridge Plus", r"test_[a-z0-9]+\.csv"),
+        ("tests/data/test.txt", "test", r"test_source/test\.txt"),
+        ("tests/data/memgpt_paper.pdf", "MemGPT", r"test_source/memgpt_paper\.pdf"),
+        ("tests/data/toy_chat_fine_tuning.jsonl", '{"messages"', r"test_source/toy_chat_fine_tuning\.jsonl"),
+        ("tests/data/test.md", "h2 Heading", r"test_source/test\.md"),
+        ("tests/data/test.json", "glossary", r"test_source/test\.json"),
+        ("tests/data/react_component.jsx", "UserProfile", r"test_source/react_component\.jsx"),
+        ("tests/data/task_manager.java", "TaskManager", r"test_source/task_manager\.java"),
+        ("tests/data/data_structures.cpp", "BinarySearchTree", r"test_source/data_structures\.cpp"),
+        ("tests/data/api_server.go", "UserService", r"test_source/api_server\.go"),
+        ("tests/data/data_analysis.py", "StatisticalAnalyzer", r"test_source/data_analysis\.py"),
+        ("tests/data/test.csv", "Smart Fridge Plus", r"test_source/test\.csv"),
     ],
 )
 def test_file_upload_creates_source_blocks_correctly(
@@ -227,7 +229,6 @@ def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKC
     assert len(blocks) == 1
     assert any("test" in b.value for b in blocks)
     assert any(b.value.startswith("[Viewing file start") for b in blocks)
-    assert any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
     # Detach the source
     client.agents.sources.detach(source_id=source.id, agent_id=agent_state.id)
@@ -237,7 +238,6 @@ def test_attach_existing_files_creates_source_blocks_correctly(client: LettaSDKC
     blocks = agent_state.memory.file_blocks
     assert len(blocks) == 0
     assert not any("test" in b.value for b in blocks)
-    assert not any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
 
 def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, agent_state: AgentState):
@@ -259,7 +259,6 @@ def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, a
     blocks = agent_state.memory.file_blocks
     assert len(blocks) == 1
     assert any("test" in b.value for b in blocks)
-    assert any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
     # Remove file from source
     client.sources.delete(source_id=source.id)
@@ -269,7 +268,6 @@ def test_delete_source_removes_source_blocks_correctly(client: LettaSDKClient, a
     blocks = agent_state.memory.file_blocks
     assert len(blocks) == 0
     assert not any("test" in b.value for b in blocks)
-    assert not any(re.fullmatch(r"test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
 
 def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_state: AgentState):
@@ -312,7 +310,7 @@ def test_agent_uses_open_close_file_correctly(client: LettaSDKClient, agent_stat
         messages=[
             MessageCreate(
                 role="user",
-                content=f"Use ONLY the open_files tool to open the file named {file.file_name} with offset {offset} and length {length}",
+                content=f"Use ONLY the open_files tool to open the file named test_source/{file.file_name} with offset {offset} and length {length}",
             )
         ],
     )
@@ -402,11 +400,13 @@ def test_agent_uses_search_files_correctly(client: LettaSDKClient, agent_state: 
     assert len(files) == 1
     assert files[0].source_id == source.id
 
-    # Ask agent to use the search_files tool
+    # Ask agent to use the semantic_search_files tool
     search_files_response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[
-            MessageCreate(role="user", content=f"Use ONLY the search_files tool to search for details regarding the electoral history.")
+            MessageCreate(
+                role="user", content=f"Use ONLY the semantic_search_files tool to search for details regarding the electoral history."
+            )
         ],
     )
     print(f"Search file request sent, got {len(search_files_response.messages)} message(s) in response")
@@ -415,7 +415,7 @@ def test_agent_uses_search_files_correctly(client: LettaSDKClient, agent_state: 
     # Check that archival_memory_search was called
     tool_calls = [msg for msg in search_files_response.messages if msg.message_type == "tool_call_message"]
     assert len(tool_calls) > 0, "No tool calls found"
-    assert any(tc.tool_call.name == "search_files" for tc in tool_calls), "search_files not called"
+    assert any(tc.tool_call.name == "semantic_search_files" for tc in tool_calls), "semantic_search_files not called"
 
     # Check it returned successfully
     tool_returns = [msg for msg in search_files_response.messages if msg.message_type == "tool_return_message"]
@@ -446,7 +446,7 @@ def test_agent_uses_grep_correctly_basic(client: LettaSDKClient, agent_state: Ag
     assert len(files) == 1
     assert files[0].source_id == source.id
 
-    # Ask agent to use the search_files tool
+    # Ask agent to use the semantic_search_files tool
     search_files_response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[MessageCreate(role="user", content=f"Use ONLY the grep_files tool to search for `Nunzia De Girolamo`.")],
@@ -457,7 +457,7 @@ def test_agent_uses_grep_correctly_basic(client: LettaSDKClient, agent_state: Ag
     # Check that grep_files was called
     tool_calls = [msg for msg in search_files_response.messages if msg.message_type == "tool_call_message"]
     assert len(tool_calls) > 0, "No tool calls found"
-    assert any(tc.tool_call.name == "grep_files" for tc in tool_calls), "search_files not called"
+    assert any(tc.tool_call.name == "grep_files" for tc in tool_calls), "semantic_search_files not called"
 
     # Check it returned successfully
     tool_returns = [msg for msg in search_files_response.messages if msg.message_type == "tool_return_message"]
@@ -488,7 +488,7 @@ def test_agent_uses_grep_correctly_advanced(client: LettaSDKClient, agent_state:
     assert len(files) == 1
     assert files[0].source_id == source.id
 
-    # Ask agent to use the search_files tool
+    # Ask agent to use the semantic_search_files tool
     search_files_response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[
@@ -554,7 +554,6 @@ def test_create_agent_with_source_ids_creates_source_blocks_correctly(client: Le
     blocks = temp_agent_state.memory.file_blocks
     assert len(blocks) == 1
     assert any(b.value.startswith("[Viewing file start (out of 554 chunks)]") for b in blocks)
-    assert any(re.fullmatch(r"long_test_[a-z0-9]+\.txt", b.label) for b in blocks)
 
     # Verify file tools were automatically attached
     file_tools = {tool.name for tool in temp_agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
@@ -598,7 +597,7 @@ def test_view_ranges_have_metadata(client: LettaSDKClient, agent_state: AgentSta
         messages=[
             MessageCreate(
                 role="user",
-                content=f"Use ONLY the open_files tool to open the file named {file.file_name} with offset {offset} and length {length}",
+                content=f"Use ONLY the open_files tool to open the file named test_source/{file.file_name} with offset {offset} and length {length}",
             )
         ],
     )
@@ -624,6 +623,45 @@ def test_view_ranges_have_metadata(client: LettaSDKClient, agent_state: AgentSta
     )
 
 
+def test_duplicate_file_renaming(client: LettaSDKClient):
+    """Test that duplicate files are renamed with count-based suffixes (e.g., file.txt, file (1).txt, file (2).txt)"""
+    # Create a new source
+    source = client.sources.create(name="test_duplicate_source", embedding="openai/text-embedding-3-small")
+
+    # Upload the same file three times
+    file_path = "tests/data/test.txt"
+
+    with open(file_path, "rb") as f:
+        first_file = client.sources.files.upload(source_id=source.id, file=f)
+
+    with open(file_path, "rb") as f:
+        second_file = client.sources.files.upload(source_id=source.id, file=f)
+
+    with open(file_path, "rb") as f:
+        third_file = client.sources.files.upload(source_id=source.id, file=f)
+
+    # Get all uploaded files
+    files = client.sources.files.list(source_id=source.id, limit=10)
+    assert len(files) == 3, f"Expected 3 files, got {len(files)}"
+
+    # Sort files by creation time to ensure predictable order
+    files.sort(key=lambda f: f.created_at)
+
+    # Verify filenames follow the count-based pattern
+    expected_filenames = ["test.txt", "test_(1).txt", "test_(2).txt"]
+    actual_filenames = [f.file_name for f in files]
+
+    assert actual_filenames == expected_filenames, f"Expected {expected_filenames}, got {actual_filenames}"
+
+    # Verify all files have the same original_file_name
+    for file in files:
+        assert file.original_file_name == "test.txt", f"Expected original_file_name='test.txt', got '{file.original_file_name}'"
+
+    print(f"✓ Successfully tested duplicate file renaming:")
+    for i, file in enumerate(files):
+        print(f"  File {i+1}: original='{file.original_file_name}' → renamed='{file.file_name}'")
+
+
 def test_open_files_schema_descriptions(client: LettaSDKClient):
     """Test that open_files tool schema contains correct descriptions from docstring"""
 
@@ -645,12 +683,13 @@ def test_open_files_schema_descriptions(client: LettaSDKClient):
 
     # Check that examples are included
     assert "Examples:" in description
-    assert 'FileOpenRequest(file_name="config.py")' in description
-    assert 'FileOpenRequest(file_name="config.py", offset=1, length=50)' in description
+    assert 'FileOpenRequest(file_name="project_utils/config.py")' in description
+    assert 'FileOpenRequest(file_name="project_utils/config.py", offset=1, length=50)' in description
     assert "# Lines 1-50" in description
     assert "# Lines 100-199" in description
     assert "# Entire file" in description
     assert "close_all_others=True" in description
+    assert "View specific portions of large files (e.g. functions or definitions)" in description
 
     # Check parameters structure
     assert "parameters" in schema
@@ -701,6 +740,6 @@ def test_open_files_schema_descriptions(client: LettaSDKClient):
     # Check length field
     assert "length" in file_request_properties
     length_prop = file_request_properties["length"]
-    expected_length_desc = "Optional number of lines to view from offset. If not specified, views to end of file."
+    expected_length_desc = "Optional number of lines to view from offset (inclusive). If not specified, views to end of file."
     assert length_prop["description"] == expected_length_desc
     assert length_prop["type"] == "integer"

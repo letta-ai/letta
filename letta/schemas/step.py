@@ -35,3 +35,4 @@ class Step(StepBase):
     feedback: Optional[Literal["positive", "negative"]] = Field(
         None, description="The feedback for this step. Must be either 'positive' or 'negative'."
     )
+    project_id: Optional[str] = Field(None, description="The project that the agent that executed this step belongs to (cloud only).")

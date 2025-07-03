@@ -6,6 +6,7 @@ from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from letta.local_llm.constants import DEFAULT_WRAPPER_NAME
+from letta.services.summarizer.enums import SummarizationMode
 
 
 class ToolSettings(BaseSettings):
@@ -38,6 +39,13 @@ class ToolSettings(BaseSettings):
 class SummarizerSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="letta_summarizer_", extra="ignore")
 
+    mode: SummarizationMode = SummarizationMode.STATIC_MESSAGE_BUFFER
+    message_buffer_limit: int = 60
+    message_buffer_min: int = 15
+    enable_summarization: bool = True
+    max_summarization_retries: int = 3
+
+    # TODO(cliandy): the below settings are tied to old summarization and should be deprecated or moved
     # Controls if we should evict all messages
     # TODO: Can refactor this into an enum if we have a bunch of different kinds of summarizers
     evict_all_messages: bool = False
@@ -211,8 +219,9 @@ class Settings(BaseSettings):
     otel_preferred_temporality: Optional[int] = Field(
         default=1, ge=0, le=2, description="Exported metric temporality. {0: UNSPECIFIED, 1: DELTA, 2: CUMULATIVE}"
     )
-    disable_tracing: bool = False
-    llm_api_logging: bool = True
+    disable_tracing: bool = Field(default=False, description="Disable OTEL Tracing")
+    llm_api_logging: bool = Field(default=True, description="Enable LLM API logging at each step")
+    track_last_agent_run: bool = Field(default=False, description="Update last agent run metrics")
 
     # uvicorn settings
     uvicorn_workers: int = 1

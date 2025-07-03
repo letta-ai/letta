@@ -181,6 +181,7 @@ class LettaProvider(Provider):
                 embedding_dim=1024,
                 embedding_chunk_size=300,
                 handle=self.get_handle("letta-free", is_embedding=True),
+                batch_size=32,
             )
         ]
 
@@ -301,6 +302,7 @@ class OpenAIProvider(Provider):
             if self.base_url == "https://api.openai.com/v1":
                 allowed_types = ["gpt-4", "o1", "o3", "o4"]
                 # NOTE: o1-mini and o1-preview do not support tool calling
+                # NOTE: o1-mini does not support system messages
                 # NOTE: o1-pro is only available in Responses API
                 disallowed_types = ["transcribe", "search", "realtime", "tts", "audio", "computer", "o1-mini", "o1-preview", "o1-pro"]
                 skip = True
@@ -352,6 +354,7 @@ class OpenAIProvider(Provider):
                     embedding_dim=1536,
                     embedding_chunk_size=300,
                     handle=self.get_handle("text-embedding-ada-002", is_embedding=True),
+                    batch_size=1024,
                 ),
                 EmbeddingConfig(
                     embedding_model="text-embedding-3-small",
@@ -360,6 +363,7 @@ class OpenAIProvider(Provider):
                     embedding_dim=2000,
                     embedding_chunk_size=300,
                     handle=self.get_handle("text-embedding-3-small", is_embedding=True),
+                    batch_size=1024,
                 ),
                 EmbeddingConfig(
                     embedding_model="text-embedding-3-large",
@@ -368,6 +372,7 @@ class OpenAIProvider(Provider):
                     embedding_dim=2000,
                     embedding_chunk_size=300,
                     handle=self.get_handle("text-embedding-3-large", is_embedding=True),
+                    batch_size=1024,
                 ),
             ]
 
@@ -387,6 +392,7 @@ class OpenAIProvider(Provider):
                     embedding_dim=1536,
                     embedding_chunk_size=300,
                     handle=self.get_handle("text-embedding-ada-002", is_embedding=True),
+                    batch_size=1024,
                 ),
                 EmbeddingConfig(
                     embedding_model="text-embedding-3-small",
@@ -395,6 +401,7 @@ class OpenAIProvider(Provider):
                     embedding_dim=2000,
                     embedding_chunk_size=300,
                     handle=self.get_handle("text-embedding-3-small", is_embedding=True),
+                    batch_size=1024,
                 ),
                 EmbeddingConfig(
                     embedding_model="text-embedding-3-large",
@@ -403,6 +410,7 @@ class OpenAIProvider(Provider):
                     embedding_dim=2000,
                     embedding_chunk_size=300,
                     handle=self.get_handle("text-embedding-3-large", is_embedding=True),
+                    batch_size=1024,
                 ),
             ]
 
@@ -1301,6 +1309,7 @@ class GoogleAIProvider(Provider):
                     embedding_dim=768,
                     embedding_chunk_size=300,  # NOTE: max is 2048
                     handle=self.get_handle(model, is_embedding=True),
+                    batch_size=1024,
                 )
             )
         return configs
@@ -1360,6 +1369,7 @@ class GoogleVertexProvider(Provider):
                     embedding_dim=dim,
                     embedding_chunk_size=300,  # NOTE: max is 2048
                     handle=self.get_handle(model, is_embedding=True),
+                    batch_size=1024,
                 )
             )
         return configs
@@ -1424,6 +1434,7 @@ class AzureProvider(Provider):
                     embedding_dim=768,
                     embedding_chunk_size=300,  # NOTE: max is 2048
                     handle=self.get_handle(model_name),
+                    batch_size=1024,
                 ),
             )
         return configs

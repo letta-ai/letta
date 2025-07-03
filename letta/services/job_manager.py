@@ -1,4 +1,4 @@
-from functools import reduce
+from functools import partial, reduce
 from operator import add
 from typing import List, Literal, Optional, Union
 
@@ -14,7 +14,7 @@ from letta.orm.message import Message as MessageModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step
 from letta.orm.step import Step as StepModel
-from letta.otel.tracing import trace_method
+from letta.otel.tracing import log_event, trace_method
 from letta.schemas.enums import JobStatus, JobType, MessageRole
 from letta.schemas.job import BatchJob as PydanticBatchJob
 from letta.schemas.job import Job as PydanticJob
@@ -98,7 +98,6 @@ class JobManager:
         async with db_registry.async_session() as session:
             # Fetch the job by ID
             job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor, access=["write"])
-            not_completed_before = not bool(job.completed_at)
 
             # Update job attributes with only the fields that were explicitly set
             update_data = job_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
@@ -110,15 +109,61 @@ class JobManager:
                     value = value.replace(tzinfo=None)
                 setattr(job, key, value)
 
-            if job_update.status in {JobStatus.completed, JobStatus.failed} and not_completed_before:
+            # If we are updating the job to a terminal state
+            if job_update.status in {JobStatus.completed, JobStatus.failed}:
+                logger.info(f"Current job completed at: {job.completed_at}")
                 job.completed_at = get_utc_time().replace(tzinfo=None)
                 if job.callback_url:
                     await self._dispatch_callback_async(job)
+                else:
+                    logger.info(f"Job does not contain callback url: {job}")
+            else:
+                logger.info(f"Job update is not terminal {job_update}")
 
             # Save the updated job to the database
             await job.update_async(db_session=session, actor=actor)
 
             return job.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def safe_update_job_status_async(
+        self, job_id: str, new_status: JobStatus, actor: PydanticUser, metadata: Optional[dict] = None
+    ) -> bool:
+        """
+        Safely update job status with state transition guards.
+        Created -> Pending -> Running --> <Terminal>
+
+        Returns:
+            True if update was successful, False if update was skipped due to invalid transition
+        """
+        try:
+            # Get current job state
+            current_job = await self.get_job_by_id_async(job_id=job_id, actor=actor)
+
+            current_status = current_job.status
+            if not any(
+                (
+                    new_status.is_terminal and not current_status.is_terminal,
+                    current_status == JobStatus.created and new_status != JobStatus.created,
+                    current_status == JobStatus.pending and new_status == JobStatus.running,
+                )
+            ):
+                logger.warning(f"Invalid job status transition from {current_job.status} to {new_status} for job {job_id}")
+                return False
+
+            job_update_builder = partial(JobUpdate, status=new_status)
+            if metadata:
+                job_update_builder = partial(job_update_builder, metadata=metadata)
+            if new_status.is_terminal:
+                job_update_builder = partial(job_update_builder, completed_at=get_utc_time())
+
+            await self.update_job_by_id_async(job_id=job_id, job_update=job_update_builder(), actor=actor)
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to safely update job status for job {job_id}: {e}")
+            return False
 
     @enforce_types
     @trace_method
@@ -628,6 +673,7 @@ class JobManager:
             request_config = job.request_config or LettaRequestConfig()
         return request_config
 
+    @trace_method
     def _dispatch_callback(self, job: JobModel) -> None:
         """
         POST a standard JSON payload to job.callback_url
@@ -643,18 +689,21 @@ class JobManager:
         try:
             import httpx
 
+            log_event("POST callback dispatched", payload)
             resp = httpx.post(job.callback_url, json=payload, timeout=5.0)
+            log_event("POST callback finished")
             job.callback_sent_at = get_utc_time().replace(tzinfo=None)
             job.callback_status_code = resp.status_code
 
         except Exception as e:
-            error_message = f"Failed to dispatch callback for job {job.id} to {job.callback_url}: {str(e)}"
+            error_message = f"Failed to dispatch callback for job {job.id} to {job.callback_url}: {e!s}"
             logger.error(error_message)
             # Record the failed attempt
             job.callback_sent_at = get_utc_time().replace(tzinfo=None)
             job.callback_error = error_message
             # Continue silently - callback failures should not affect job completion
 
+    @trace_method
     async def _dispatch_callback_async(self, job: JobModel) -> None:
         """
         POST a standard JSON payload to job.callback_url and record timestamp + HTTP status asynchronously.
@@ -670,12 +719,14 @@ class JobManager:
             import httpx
 
             async with httpx.AsyncClient() as client:
+                log_event("POST callback dispatched", payload)
                 resp = await client.post(job.callback_url, json=payload, timeout=5.0)
+                log_event("POST callback finished")
                 # Ensure timestamp is timezone-naive for DB compatibility
                 job.callback_sent_at = get_utc_time().replace(tzinfo=None)
                 job.callback_status_code = resp.status_code
         except Exception as e:
-            error_message = f"Failed to dispatch callback for job {job.id} to {job.callback_url}: {str(e)}"
+            error_message = f"Failed to dispatch callback for job {job.id} to {job.callback_url}: {e!s}"
             logger.error(error_message)
             # Record the failed attempt
             job.callback_sent_at = get_utc_time().replace(tzinfo=None)

@@ -67,7 +67,8 @@ class BaseAgent(ABC):
         """
         raise NotImplementedError
 
-    def pre_process_input_message(self, input_messages: List[MessageCreate]) -> Any:
+    @staticmethod
+    def pre_process_input_message(input_messages: List[MessageCreate]) -> Any:
         """
         Pre-process function to run on the input_message.
         """
@@ -97,9 +98,13 @@ class BaseAgent(ABC):
             # [DB Call] loading blocks (modifies: agent_state.memory.blocks)
             await self.agent_manager.refresh_memory_async(agent_state=agent_state, actor=self.actor)
 
+            tool_constraint_block = None
+            if tool_rules_solver is not None:
+                tool_constraint_block = tool_rules_solver.compile_tool_rule_prompts()
+
             # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
             curr_system_message = in_context_messages[0]
-            curr_memory_str = agent_state.memory.compile()
+            curr_memory_str = agent_state.memory.compile(tool_usage_rules=tool_constraint_block, sources=agent_state.sources)
             curr_system_message_text = curr_system_message.content[0].text
             if curr_memory_str in curr_system_message_text:
                 logger.debug(
@@ -124,6 +129,7 @@ class BaseAgent(ABC):
                 previous_message_count=num_messages - len(in_context_messages),
                 archival_memory_size=num_archival_memories,
                 tool_rules_solver=tool_rules_solver,
+                sources=agent_state.sources,
             )
 
             diff = united_diff(curr_system_message_text, new_system_message_str)

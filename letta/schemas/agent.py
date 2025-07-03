@@ -4,12 +4,7 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from letta.constants import (
-    CORE_MEMORY_LINE_NUMBER_WARNING,
-    DEFAULT_EMBEDDING_CHUNK_SIZE,
-    FILE_MEMORY_EMPTY_MESSAGE,
-    FILE_MEMORY_EXISTS_MESSAGE,
-)
+from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING, DEFAULT_EMBEDDING_CHUNK_SIZE
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.environment_variables import AgentEnvironmentVariable
@@ -319,8 +314,19 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
     # However, they still allow files to be injected into the context
     if agent_type == AgentType.react_agent or agent_type == AgentType.workflow_agent:
         return (
-            f"<files>\n{{% if file_blocks %}}{FILE_MEMORY_EXISTS_MESSAGE}\n{{% else %}}{FILE_MEMORY_EMPTY_MESSAGE}{{% endif %}}"
+            "{% if sources %}"
+            "<directories>\n"
+            "{% for source in sources %}"
+            f'<directory name="{{{{ source.name }}}}">\n'
+            "{% if source.description %}"
+            "<description>{{ source.description }}</description>\n"
+            "{% endif %}"
+            "{% if source.instructions %}"
+            "<instructions>{{ source.instructions }}</instructions>\n"
+            "{% endif %}"
+            "{% if file_blocks %}"
             "{% for block in file_blocks %}"
+            "{% if block.metadata and block.metadata.get('source_id') == source.id %}"
             f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\">\n"
             "<{{ block.label }}>\n"
             "<description>\n"
@@ -334,11 +340,14 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "<value>\n"
             "{{ block.value }}\n"
             "</value>\n"
-            "</{{ block.label }}>\n"
             "</file>\n"
-            "{% if not loop.last %}\n{% endif %}"
+            "{% endif %}"
             "{% endfor %}"
-            "\n</files>"
+            "{% endif %}"
+            "</directory>\n"
+            "{% endfor %}"
+            "</directories>"
+            "{% endif %}"
         )
 
     # Sleeptime agents use the MemGPT v2 memory tools (line numbers)
@@ -372,10 +381,20 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{{ tool_usage_rules.value }}\n"
             "</tool_usage_rules>"
             "{% endif %}"
-            f"\n\n<files>\n{{% if file_blocks %}}{FILE_MEMORY_EXISTS_MESSAGE}\n{{% else %}}{FILE_MEMORY_EMPTY_MESSAGE}{{% endif %}}"
+            "\n\n{% if sources %}"
+            "<directories>\n"
+            "{% for source in sources %}"
+            f'<directory name="{{{{ source.name }}}}">\n'
+            "{% if source.description %}"
+            "<description>{{ source.description }}</description>\n"
+            "{% endif %}"
+            "{% if source.instructions %}"
+            "<instructions>{{ source.instructions }}</instructions>\n"
+            "{% endif %}"
+            "{% if file_blocks %}"
             "{% for block in file_blocks %}"
-            f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\">\n"
-            "<{{ block.label }}>\n"
+            "{% if block.metadata and block.metadata.get('source_id') == source.id %}"
+            f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\" name=\"{{{{ block.label }}}}\">\n"
             "{% if block.description %}"
             "<description>\n"
             "{{ block.description }}\n"
@@ -391,14 +410,17 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{{ block.value }}\n"
             "</value>\n"
             "{% endif %}"
-            "</{{ block.label }}>\n"
             "</file>\n"
-            "{% if not loop.last %}\n{% endif %}"
+            "{% endif %}"
             "{% endfor %}"
-            "\n</files>"
+            "{% endif %}"
+            "</directory>\n"
+            "{% endfor %}"
+            "</directories>"
+            "{% endif %}"
         )
 
-    # Default setup (MemGPT), no line numbers
+    # All other agent types use memory blocks
     else:
         return (
             "<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n"
@@ -425,10 +447,20 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{{ tool_usage_rules.value }}\n"
             "</tool_usage_rules>"
             "{% endif %}"
-            f"\n\n<files>\n{{% if file_blocks %}}{FILE_MEMORY_EXISTS_MESSAGE}\n{{% else %}}{FILE_MEMORY_EMPTY_MESSAGE}{{% endif %}}"
+            "\n\n{% if sources %}"
+            "<directories>\n"
+            "{% for source in sources %}"
+            f'<directory name="{{{{ source.name }}}}">\n'
+            "{% if source.description %}"
+            "<description>{{ source.description }}</description>\n"
+            "{% endif %}"
+            "{% if source.instructions %}"
+            "<instructions>{{ source.instructions }}</instructions>\n"
+            "{% endif %}"
+            "{% if file_blocks %}"
             "{% for block in file_blocks %}"
-            f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\">\n"
-            "<{{ block.label }}>\n"
+            "{% if block.metadata and block.metadata.get('source_id') == source.id %}"
+            f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\" name=\"{{{{ block.label }}}}\">\n"
             "{% if block.description %}"
             "<description>\n"
             "{{ block.description }}\n"
@@ -444,9 +476,12 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{{ block.value }}\n"
             "</value>\n"
             "{% endif %}"
-            "</{{ block.label }}>\n"
             "</file>\n"
-            "{% if not loop.last %}\n{% endif %}"
+            "{% endif %}"
             "{% endfor %}"
-            "\n</files>"
+            "{% endif %}"
+            "</directory>\n"
+            "{% endfor %}"
+            "</directories>"
+            "{% endif %}"
         )

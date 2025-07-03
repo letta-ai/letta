@@ -1,7 +1,9 @@
+import asyncio
 import json
+from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
 from enum import Enum
-from typing import AsyncGenerator, List, Optional, Union
+from typing import Optional
 
 from anthropic import AsyncStream
 from anthropic.types.beta import (
@@ -131,14 +133,16 @@ class AnthropicStreamingInterface:
         self,
         stream: AsyncStream[BetaRawMessageStreamEvent],
         ttft_span: Optional["Span"] = None,
-        provider_request_start_timestamp_ns: Optional[int] = None,
-    ) -> AsyncGenerator[LettaMessage, None]:
+        provider_request_start_timestamp_ns: int | None = None,
+    ) -> AsyncGenerator[LettaMessage | LettaStopReason, None]:
         prev_message_type = None
         message_index = 0
         first_chunk = True
         try:
             async with stream:
                 async for event in stream:
+                    # TODO (cliandy): reconsider in stream cancellations
+                    # await cancellation_token.check_and_raise_if_cancelled()
                     if first_chunk and ttft_span is not None and provider_request_start_timestamp_ns is not None:
                         now = get_utc_timestamp_ns()
                         ttft_ns = now - provider_request_start_timestamp_ns
@@ -384,18 +388,21 @@ class AnthropicStreamingInterface:
                             self.tool_call_buffer = []
 
                         self.anthropic_mode = None
+        except asyncio.CancelledError as e:
+            logger.info("Cancelled stream %s", e)
+            yield LettaStopReason(stop_reason=StopReasonType.cancelled)
+            raise
         except Exception as e:
             logger.error("Error processing stream: %s", e)
-            stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
-            yield stop_reason
+            yield LettaStopReason(stop_reason=StopReasonType.error)
             raise
         finally:
             logger.info("AnthropicStreamingInterface: Stream processing complete.")
 
-    def get_reasoning_content(self) -> List[Union[TextContent, ReasoningContent, RedactedReasoningContent]]:
+    def get_reasoning_content(self) -> list[TextContent | ReasoningContent | RedactedReasoningContent]:
         def _process_group(
-            group: List[Union[ReasoningMessage, HiddenReasoningMessage]], group_type: str
-        ) -> Union[TextContent, ReasoningContent, RedactedReasoningContent]:
+            group: list[ReasoningMessage | HiddenReasoningMessage], group_type: str
+        ) -> TextContent | ReasoningContent | RedactedReasoningContent:
             if group_type == "reasoning":
                 reasoning_text = "".join(chunk.reasoning for chunk in group).strip()
                 is_native = any(chunk.source == "reasoner_model" for chunk in group)

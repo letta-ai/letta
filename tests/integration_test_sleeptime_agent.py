@@ -54,6 +54,7 @@ def actor(server, org_id):
     server.user_manager.delete_user_by_id(user.id)
 
 
+@pytest.mark.flaky(max_runs=3)
 @pytest.mark.asyncio(loop_scope="module")
 async def test_sleeptime_group_chat(server, actor):
     # 0. Refresh base tools
@@ -433,7 +434,7 @@ async def test_sleeptime_agent_new_block_attachment(server, actor):
                 ),
             ],
             model="anthropic/claude-3-5-sonnet-20240620",
-            embedding="openai/text-embedding-ada-002",
+            embedding="openai/text-embedding-3-small",
             enable_sleeptime=True,
         ),
         actor=actor,

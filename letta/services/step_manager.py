@@ -42,6 +42,7 @@ class StepManager:
         trace_ids: Optional[list[str]] = None,
         feedback: Optional[Literal["positive", "negative"]] = None,
         has_feedback: Optional[bool] = None,
+        project_id: Optional[str] = None,
     ) -> List[PydanticStep]:
         """List all jobs with optional pagination and status filter."""
         async with db_registry.async_session() as session:
@@ -54,6 +55,8 @@ class StepManager:
                 filter_kwargs["trace_id"] = trace_ids
             if feedback:
                 filter_kwargs["feedback"] = feedback
+            if project_id:
+                filter_kwargs["project_id"] = project_id
             steps = await StepModel.list_async(
                 db_session=session,
                 before=before,
@@ -82,6 +85,7 @@ class StepManager:
         provider_id: Optional[str] = None,
         job_id: Optional[str] = None,
         step_id: Optional[str] = None,
+        project_id: Optional[str] = None,
     ) -> PydanticStep:
         step_data = {
             "origin": None,
@@ -100,6 +104,7 @@ class StepManager:
             "tags": [],
             "tid": None,
             "trace_id": get_trace_id(),  # Get the current trace ID
+            "project_id": project_id,
         }
         if step_id:
             step_data["id"] = step_id
@@ -125,6 +130,7 @@ class StepManager:
         provider_id: Optional[str] = None,
         job_id: Optional[str] = None,
         step_id: Optional[str] = None,
+        project_id: Optional[str] = None,
     ) -> PydanticStep:
         step_data = {
             "origin": None,
@@ -143,6 +149,7 @@ class StepManager:
             "tags": [],
             "tid": None,
             "trace_id": get_trace_id(),  # Get the current trace ID
+            "project_id": project_id,
         }
         if step_id:
             step_data["id"] = step_id
@@ -173,7 +180,7 @@ class StepManager:
 
     @enforce_types
     @trace_method
-    def update_step_transaction_id(self, actor: PydanticUser, step_id: str, transaction_id: str) -> PydanticStep:
+    async def update_step_transaction_id(self, actor: PydanticUser, step_id: str, transaction_id: str) -> PydanticStep:
         """Update the transaction ID for a step.
 
         Args:
@@ -187,15 +194,15 @@ class StepManager:
         Raises:
             NoResultFound: If the step does not exist
         """
-        with db_registry.session() as session:
-            step = session.get(StepModel, step_id)
+        async with db_registry.async_session() as session:
+            step = await session.get(StepModel, step_id)
             if not step:
                 raise NoResultFound(f"Step with id {step_id} does not exist")
             if step.organization_id != actor.organization_id:
                 raise Exception("Unauthorized")
 
             step.tid = transaction_id
-            session.commit()
+            await session.commit()
             return step.to_pydantic()
 
     def _verify_job_access(
@@ -226,8 +233,8 @@ class StepManager:
             raise NoResultFound(f"Job with id {job_id} does not exist or user does not have access")
         return job
 
+    @staticmethod
     async def _verify_job_access_async(
-        self,
         session: AsyncSession,
         job_id: str,
         actor: PydanticUser,
@@ -280,6 +287,7 @@ class NoopStepManager(StepManager):
         provider_id: Optional[str] = None,
         job_id: Optional[str] = None,
         step_id: Optional[str] = None,
+        project_id: Optional[str] = None,
     ) -> PydanticStep:
         return
 
@@ -298,5 +306,6 @@ class NoopStepManager(StepManager):
         provider_id: Optional[str] = None,
         job_id: Optional[str] = None,
         step_id: Optional[str] = None,
+        project_id: Optional[str] = None,
     ) -> PydanticStep:
         return

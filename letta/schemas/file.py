@@ -30,6 +30,7 @@ class FileMetadata(FileMetadataBase):
     organization_id: Optional[str] = Field(None, description="The unique identifier of the organization associated with the document.")
     source_id: str = Field(..., description="The unique identifier of the source associated with the document.")
     file_name: Optional[str] = Field(None, description="The name of the file.")
+    original_file_name: Optional[str] = Field(None, description="The original name of the file as uploaded.")
     file_path: Optional[str] = Field(None, description="The path to the file.")
     file_type: Optional[str] = Field(None, description="The type of the file (MIME type).")
     file_size: Optional[int] = Field(None, description="The size of the file in bytes.")

@@ -7,6 +7,7 @@ from letta.orm.group import Group
 from letta.orm.user import User
 from letta.schemas.agent import AgentState
 from letta.schemas.group import ManagerType
+from letta.schemas.letta_message_content import ImageContent, TextContent
 from letta.schemas.message import Message
 from letta.services.mcp.base_client import AsyncBaseMCPClient
 
@@ -89,11 +90,13 @@ def stringify_message(message: Message, use_assistant_name: bool = False) -> str
     assistant_name = message.name or "assistant" if use_assistant_name else "assistant"
     if message.role == "user":
         try:
-            content = json.loads(message.content[0].text)
-            if content["type"] == "user_message":
-                return f"{message.name or 'user'}: {content['message']}"
-            else:
-                return None
+            messages = []
+            for content in message.content:
+                if isinstance(content, TextContent):
+                    messages.append(f"{message.name or 'user'}: {content.text}")
+                elif isinstance(content, ImageContent):
+                    messages.append(f"{message.name or 'user'}: [Image Here]")
+            return "\n".join(messages)
         except:
             return f"{message.name or 'user'}: {message.content[0].text}"
     elif message.role == "assistant":

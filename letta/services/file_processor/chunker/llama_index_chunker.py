@@ -3,6 +3,7 @@ from typing import List, Tuple
 from mistralai import OCRPageObject
 
 from letta.log import get_logger
+from letta.otel.tracing import trace_method
 
 logger = get_logger(__name__)
 
@@ -19,6 +20,7 @@ class LlamaIndexChunker:
         self.parser = SentenceSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 
     # TODO: Make this more general beyond Mistral
+    @trace_method
     def chunk_text(self, page: OCRPageObject) -> List[str]:
         """Chunk text using LlamaIndex splitter"""
         try:

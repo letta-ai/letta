@@ -26,8 +26,12 @@ async def list_steps(
     feedback: Optional[Literal["positive", "negative"]] = Query(None, description="Filter by feedback"),
     has_feedback: Optional[bool] = Query(None, description="Filter by whether steps have feedback (true) or not (false)"),
     tags: Optional[list[str]] = Query(None, description="Filter by tags"),
+    project_id: Optional[str] = Query(None, description="Filter by the project ID that is associated with the step (cloud only)."),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
+    x_project: Optional[str] = Header(
+        None, alias="X-Project", description="Filter by project slug to associate with the group (cloud only)."
+    ),  # Only handled by next js middleware
 ):
     """
     List steps with optional pagination and date filters.
@@ -53,6 +57,7 @@ async def list_steps(
         feedback=feedback,
         has_feedback=has_feedback,
         tags=tags,
+        project_id=project_id,
     )
 
 
@@ -90,7 +95,7 @@ async def add_feedback(
 
 
 @router.patch("/{step_id}/transaction/{transaction_id}", response_model=Step, operation_id="update_step_transaction_id")
-def update_step_transaction_id(
+async def update_step_transaction_id(
     step_id: str,
     transaction_id: str,
     actor_id: Optional[str] = Header(None, alias="user_id"),
@@ -102,6 +107,6 @@ def update_step_transaction_id(
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
-        return server.step_manager.update_step_transaction_id(actor=actor, step_id=step_id, transaction_id=transaction_id)
+        return await server.step_manager.update_step_transaction_id(actor=actor, step_id=step_id, transaction_id=transaction_id)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Step not found")

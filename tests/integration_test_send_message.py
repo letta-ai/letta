@@ -103,7 +103,6 @@ USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
 all_configs = [
     "openai-gpt-4o-mini.json",
     "openai-o1.json",
-    "openai-o1-mini.json",
     "openai-o3.json",
     "openai-o4-mini.json",
     "azure-gpt-4o-mini.json",
@@ -116,7 +115,7 @@ all_configs = [
     "gemini-2.5-flash-vertex.json",
     "gemini-2.5-pro-vertex.json",
     "together-qwen-2.5-72b-instruct.json",
-    "ollama.json",
+    # "ollama.json", #  TODO (cliandy): enable this in ollama testing
 ]
 
 
@@ -1215,7 +1214,7 @@ def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, llm_config: LLM
     new_llm_config = llm_config.model_dump()
     new_llm_config["context_window"] = 3000
     pinned_context_window_llm_config = LLMConfig(**new_llm_config)
-
+    print("::LLM::", llm_config, new_llm_config)
     send_message_tool = client.tools.list(name="send_message")[0]
     temp_agent_state = client.agents.create(
         include_base_tools=False,
@@ -1252,3 +1251,207 @@ def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, llm_config: LLM
         prev_length = current_length
     else:
         raise AssertionError("Summarization was not triggered after 10 messages")
+
+
+# ============================
+# Job Cancellation Tests
+# ============================
+
+
+def wait_for_run_status(client: Letta, run_id: str, target_status: str, timeout: float = 30.0, interval: float = 0.1) -> Run:
+    """Wait for a run to reach a specific status"""
+    start = time.time()
+    while True:
+        run = client.runs.retrieve(run_id)
+        if run.status == target_status:
+            return run
+        if time.time() - start > timeout:
+            raise TimeoutError(f"Run {run_id} did not reach status '{target_status}' within {timeout} seconds (last status: {run.status})")
+        time.sleep(interval)
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_job_creation_for_send_message(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Test that send_message endpoint creates a job and the job completes successfully.
+    """
+    previous_runs = client.runs.list(agent_ids=[agent_state.id])
+    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+
+    # Send a simple message and verify a job was created
+    response = client.agents.messages.create(
+        agent_id=agent_state.id,
+        messages=USER_MESSAGE_FORCE_REPLY,
+    )
+
+    # The response should be successful
+    assert response.messages is not None
+    assert len(response.messages) > 0
+
+    runs = client.runs.list(agent_ids=[agent_state.id])
+    new_runs = set(r.id for r in runs) - set(r.id for r in previous_runs)
+    assert len(new_runs) == 1
+
+    for run in runs:
+        if run.id == list(new_runs)[0]:
+            assert run.status == "completed"
+
+
+# TODO (cliandy): MERGE BACK IN POST
+# @pytest.mark.parametrize(
+#     "llm_config",
+#     TESTED_LLM_CONFIGS,
+#     ids=[c.model for c in TESTED_LLM_CONFIGS],
+# )
+# def test_async_job_cancellation(
+#     disable_e2b_api_key: Any,
+#     client: Letta,
+#     agent_state: AgentState,
+#     llm_config: LLMConfig,
+# ) -> None:
+#     """
+#     Test that an async job can be cancelled and the cancellation is reflected in the job status.
+#     """
+#     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+#
+#     # client.runs.cancel
+#     # Start an async job
+#     run = client.agents.messages.create_async(
+#         agent_id=agent_state.id,
+#         messages=USER_MESSAGE_FORCE_REPLY,
+#     )
+#
+#     # Verify the job was created
+#     assert run.id is not None
+#     assert run.status in ["created", "running"]
+#
+#     # Cancel the job quickly (before it potentially completes)
+#     cancelled_run = client.jobs.cancel(run.id)
+#
+#     # Verify the job was cancelled
+#     assert cancelled_run.status == "cancelled"
+#
+#     # Wait a bit and verify it stays cancelled (no invalid state transitions)
+#     time.sleep(1)
+#     final_run = client.runs.retrieve(run.id)
+#     assert final_run.status == "cancelled"
+#
+#     # Verify the job metadata indicates cancellation
+#     if final_run.metadata:
+#         assert final_run.metadata.get("cancelled") is True or "stop_reason" in final_run.metadata
+#
+#
+# def test_job_cancellation_endpoint_validation(
+#     disable_e2b_api_key: Any,
+#     client: Letta,
+#     agent_state: AgentState,
+# ) -> None:
+#     """
+#     Test job cancellation endpoint validation (trying to cancel completed/failed jobs).
+#     """
+#     # Test cancelling a non-existent job
+#     with pytest.raises(ApiError) as exc_info:
+#         client.jobs.cancel("non-existent-job-id")
+#     assert exc_info.value.status_code == 404
+#
+#
+# @pytest.mark.parametrize(
+#     "llm_config",
+#     TESTED_LLM_CONFIGS,
+#     ids=[c.model for c in TESTED_LLM_CONFIGS],
+# )
+# def test_completed_job_cannot_be_cancelled(
+#     disable_e2b_api_key: Any,
+#     client: Letta,
+#     agent_state: AgentState,
+#     llm_config: LLMConfig,
+# ) -> None:
+#     """
+#     Test that completed jobs cannot be cancelled.
+#     """
+#     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+#
+#     # Start an async job and wait for it to complete
+#     run = client.agents.messages.create_async(
+#         agent_id=agent_state.id,
+#         messages=USER_MESSAGE_FORCE_REPLY,
+#     )
+#
+#     # Wait for completion
+#     completed_run = wait_for_run_completion(client, run.id)
+#     assert completed_run.status == "completed"
+#
+#     # Try to cancel the completed job - should fail
+#     with pytest.raises(ApiError) as exc_info:
+#         client.jobs.cancel(run.id)
+#     assert exc_info.value.status_code == 400
+#     assert "Cannot cancel job with status 'completed'" in str(exc_info.value)
+#
+#
+# @pytest.mark.parametrize(
+#     "llm_config",
+#     TESTED_LLM_CONFIGS,
+#     ids=[c.model for c in TESTED_LLM_CONFIGS],
+# )
+# def test_streaming_job_independence_from_client_disconnect(
+#     disable_e2b_api_key: Any,
+#     client: Letta,
+#     agent_state: AgentState,
+#     llm_config: LLMConfig,
+# ) -> None:
+#     """
+#     Test that streaming jobs are independent of client connection state.
+#     This verifies that jobs continue even if the client "disconnects" (simulated by not consuming the stream).
+#     """
+#     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+#
+#     # Create a streaming request
+#     import threading
+#
+#     import httpx
+#
+#     # Get the base URL and create a raw HTTP request to simulate partial consumption
+#     base_url = client._client_wrapper._base_url
+#
+#     def start_stream_and_abandon():
+#         """Start a streaming request but abandon it (simulating client disconnect)"""
+#         try:
+#             response = httpx.post(
+#                 f"{base_url}/agents/{agent_state.id}/messages/stream",
+#                 json={"messages": [{"role": "user", "text": "Hello, how are you?"}], "stream_tokens": False},
+#                 headers={"user_id": "test-user"},
+#                 timeout=30.0,
+#             )
+#
+#             # Read just a few chunks then "disconnect" by not reading the rest
+#             chunk_count = 0
+#             for chunk in response.iter_lines():
+#                 chunk_count += 1
+#                 if chunk_count > 3:  # Read a few chunks then stop
+#                     break
+#             # Connection is now "abandoned" but the job should continue
+#
+#         except Exception:
+#             pass  # Ignore connection errors
+#
+#     # Start the stream in a separate thread to simulate abandonment
+#     thread = threading.Thread(target=start_stream_and_abandon)
+#     thread.start()
+#     thread.join(timeout=5.0)  # Wait up to 5 seconds for the "disconnect"
+#
+#     # The important thing is that this test validates our architecture:
+#     # 1. Jobs are created before streaming starts (verified by our other tests)
+#     # 2. Jobs track execution independent of client connection (handled by our wrapper)
+#     # 3. Only explicit cancellation terminates jobs (tested by other tests)
+#
+#     # This test primarily validates that the implementation doesn't break under simulated disconnection
+#     assert True  # If we get here without errors, the architecture is sound

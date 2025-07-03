@@ -1,8 +1,9 @@
 import asyncio
 import json
 import uuid
+from collections.abc import AsyncGenerator
 from datetime import datetime
-from typing import AsyncGenerator, Dict, List, Optional, Tuple, Union
+from typing import Optional
 
 from openai import AsyncStream
 from openai.types.chat import ChatCompletionChunk
@@ -34,7 +35,7 @@ from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
 from letta.otel.tracing import log_event, trace_method, tracer
 from letta.schemas.agent import AgentState, UpdateAgent
-from letta.schemas.enums import MessageRole, ProviderType
+from letta.schemas.enums import JobStatus, MessageRole, ProviderType
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
@@ -58,14 +59,17 @@ from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
 from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
-from letta.settings import model_settings
+from letta.settings import model_settings, settings, summarizer_settings
 from letta.system import package_function_response
 from letta.types import JsonDict
 from letta.utils import log_telemetry, validate_function_response
 
+logger = get_logger(__name__)
+
+DEFAULT_SUMMARY_BLOCK_LABEL = "conversation_summary"
+
 
 class LettaAgent(BaseAgent):
-
     def __init__(
         self,
         agent_id: str,
@@ -77,11 +81,12 @@ class LettaAgent(BaseAgent):
         actor: User,
         step_manager: StepManager = NoopStepManager(),
         telemetry_manager: TelemetryManager = NoopTelemetryManager(),
-        summary_block_label: str = "conversation_summary",
-        message_buffer_limit: int = 60,  # TODO: Make this configurable
-        message_buffer_min: int = 15,  # TODO: Make this configurable
-        enable_summarization: bool = True,  # TODO: Make this configurable
-        max_summarization_retries: int = 3,  # TODO: Make this configurable
+        current_run_id: str | None = None,
+        summary_block_label: str = DEFAULT_SUMMARY_BLOCK_LABEL,
+        message_buffer_limit: int = summarizer_settings.message_buffer_limit,
+        message_buffer_min: int = summarizer_settings.message_buffer_min,
+        enable_summarization: bool = summarizer_settings.enable_summarization,
+        max_summarization_retries: int = summarizer_settings.max_summarization_retries,
     ):
         super().__init__(agent_id=agent_id, openai_client=None, message_manager=message_manager, agent_manager=agent_manager, actor=actor)
 
@@ -92,7 +97,9 @@ class LettaAgent(BaseAgent):
         self.passage_manager = passage_manager
         self.step_manager = step_manager
         self.telemetry_manager = telemetry_manager
-        self.response_messages: List[Message] = []
+        self.job_manager = job_manager
+        self.current_run_id = current_run_id
+        self.response_messages: list[Message] = []
 
         self.last_function_response = None
 
@@ -117,23 +124,42 @@ class LettaAgent(BaseAgent):
             )
 
         self.summarizer = Summarizer(
-            mode=SummarizationMode.STATIC_MESSAGE_BUFFER,
+            mode=SummarizationMode(summarizer_settings.mode),
             summarizer_agent=self.summarization_agent,
             # TODO: Make this configurable
             message_buffer_limit=message_buffer_limit,
             message_buffer_min=message_buffer_min,
         )
 
+    async def _check_run_cancellation(self) -> bool:
+        """
+        Check if the current run associated with this agent execution has been cancelled.
+
+        Returns:
+            True if the run is cancelled, False otherwise (or if no run is associated)
+        """
+        if not self.job_manager or not self.current_run_id:
+            return False
+
+        try:
+            job = await self.job_manager.get_job_by_id_async(job_id=self.current_run_id, actor=self.actor)
+            return job.status == JobStatus.cancelled
+        except Exception as e:
+            # Log the error but don't fail the execution
+            logger.warning(f"Failed to check job cancellation status for job {self.current_run_id}: {e}")
+            return False
+
     @trace_method
     async def step(
         self,
-        input_messages: List[MessageCreate],
+        input_messages: list[MessageCreate],
         max_steps: int = DEFAULT_MAX_STEPS,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
         use_assistant_message: bool = True,
-        request_start_timestamp_ns: Optional[int] = None,
-        include_return_message_types: Optional[List[MessageType]] = None,
+        request_start_timestamp_ns: int | None = None,
+        include_return_message_types: list[MessageType] | None = None,
     ) -> LettaResponse:
+        # TODO (cliandy): pass in run_id and use at send_message endpoints for all step functions
         agent_state = await self.agent_manager.get_agent_by_id_async(
             agent_id=self.agent_id, include_relationships=["tools", "memory", "tool_exec_environment_variables"], actor=self.actor
         )
@@ -155,11 +181,11 @@ class LettaAgent(BaseAgent):
     @trace_method
     async def step_stream_no_tokens(
         self,
-        input_messages: List[MessageCreate],
+        input_messages: list[MessageCreate],
         max_steps: int = DEFAULT_MAX_STEPS,
         use_assistant_message: bool = True,
-        request_start_timestamp_ns: Optional[int] = None,
-        include_return_message_types: Optional[List[MessageType]] = None,
+        request_start_timestamp_ns: int | None = None,
+        include_return_message_types: list[MessageType] | None = None,
     ):
         agent_state = await self.agent_manager.get_agent_by_id_async(
             agent_id=self.agent_id, include_relationships=["tools", "memory", "tool_exec_environment_variables"], actor=self.actor
@@ -182,6 +208,13 @@ class LettaAgent(BaseAgent):
         request_span.set_attributes({f"llm_config.{k}": v for k, v in agent_state.llm_config.model_dump().items() if v is not None})
 
         for i in range(max_steps):
+            # Check for job cancellation at the start of each step
+            if await self._check_run_cancellation():
+                stop_reason = LettaStopReason(stop_reason=StopReasonType.cancelled.value)
+                logger.info(f"Agent execution cancelled for run {self.current_run_id}")
+                yield f"data: {stop_reason.model_dump_json()}\n\n"
+                break
+
             step_id = generate_step_id()
             step_start = get_utc_timestamp_ns()
             agent_step_span = tracer.start_span("agent_step", start_time=step_start)
@@ -313,11 +346,11 @@ class LettaAgent(BaseAgent):
     async def _step(
         self,
         agent_state: AgentState,
-        input_messages: List[MessageCreate],
+        input_messages: list[MessageCreate],
         max_steps: int = DEFAULT_MAX_STEPS,
-        run_id: Optional[str] = None,
-        request_start_timestamp_ns: Optional[int] = None,
-    ) -> Tuple[List[Message], List[Message], Optional[LettaStopReason], LettaUsageStatistics]:
+        run_id: str | None = None,
+        request_start_timestamp_ns: int | None = None,
+    ) -> tuple[list[Message], list[Message], LettaStopReason | None, LettaUsageStatistics]:
         """
         Carries out an invocation of the agent loop. In each step, the agent
             1. Rebuilds its memory
@@ -343,6 +376,12 @@ class LettaAgent(BaseAgent):
         stop_reason = None
         usage = LettaUsageStatistics()
         for i in range(max_steps):
+            # Check for job cancellation at the start of each step
+            if await self._check_run_cancellation():
+                stop_reason = LettaStopReason(stop_reason=StopReasonType.cancelled.value)
+                logger.info(f"Agent execution cancelled for run {self.current_run_id}")
+                break
+
             step_id = generate_step_id()
             step_start = get_utc_timestamp_ns()
             agent_step_span = tracer.start_span("agent_step", start_time=step_start)
@@ -425,7 +464,7 @@ class LettaAgent(BaseAgent):
                 ),
             )
 
-            MetricRegistry().step_execution_time_ms_histogram.record(step_start - get_utc_timestamp_ns(), get_ctx_attributes())
+            MetricRegistry().step_execution_time_ms_histogram.record(get_utc_timestamp_ns() - step_start, get_ctx_attributes())
 
             if not should_continue:
                 break
@@ -455,6 +494,8 @@ class LettaAgent(BaseAgent):
         return current_in_context_messages, new_in_context_messages, stop_reason, usage
 
     async def _update_agent_last_run_metrics(self, completion_time: datetime, duration_ms: float) -> None:
+        if not settings.track_last_agent_run:
+            return
         try:
             await self.agent_manager.update_agent_async(
                 agent_id=self.agent_id,
@@ -467,11 +508,11 @@ class LettaAgent(BaseAgent):
     @trace_method
     async def step_stream(
         self,
-        input_messages: List[MessageCreate],
+        input_messages: list[MessageCreate],
         max_steps: int = DEFAULT_MAX_STEPS,
         use_assistant_message: bool = True,
-        request_start_timestamp_ns: Optional[int] = None,
-        include_return_message_types: Optional[List[MessageType]] = None,
+        request_start_timestamp_ns: int | None = None,
+        include_return_message_types: list[MessageType] | None = None,
     ) -> AsyncGenerator[str, None]:
         """
         Carries out an invocation of the agent loop in a streaming fashion that yields partial tokens.
@@ -503,6 +544,13 @@ class LettaAgent(BaseAgent):
             request_span.set_attributes({f"llm_config.{k}": v for k, v in agent_state.llm_config.model_dump().items() if v is not None})
 
         for i in range(max_steps):
+            # Check for job cancellation at the start of each step
+            if await self._check_run_cancellation():
+                stop_reason = LettaStopReason(stop_reason=StopReasonType.cancelled.value)
+                logger.info(f"Agent execution cancelled for run {self.current_run_id}")
+                yield f"data: {stop_reason.model_dump_json()}\n\n"
+                break
+
             step_id = generate_step_id()
             step_start = get_utc_timestamp_ns()
             agent_step_span = tracer.start_span("agent_step", start_time=step_start)
@@ -543,7 +591,9 @@ class LettaAgent(BaseAgent):
                 raise ValueError(f"Streaming not supported for {agent_state.llm_config}")
 
             async for chunk in interface.process(
-                stream, ttft_span=request_span, provider_request_start_timestamp_ns=provider_request_start_timestamp_ns
+                stream,
+                ttft_span=request_span,
+                provider_request_start_timestamp_ns=provider_request_start_timestamp_ns,
             ):
                 # Measure time to first token
                 if first_chunk and request_span is not None:
@@ -653,7 +703,7 @@ class LettaAgent(BaseAgent):
                     yield f"data: {tool_return.model_dump_json()}\n\n"
 
             # TODO (cliandy): consolidate and expand with trace
-            MetricRegistry().step_execution_time_ms_histogram.record(step_start - get_utc_timestamp_ns(), get_ctx_attributes())
+            MetricRegistry().step_execution_time_ms_histogram.record(get_utc_timestamp_ns() - step_start, get_ctx_attributes())
 
             if not should_continue:
                 break
@@ -686,13 +736,13 @@ class LettaAgent(BaseAgent):
     # noinspection PyInconsistentReturns
     async def _build_and_request_from_llm(
         self,
-        current_in_context_messages: List[Message],
-        new_in_context_messages: List[Message],
+        current_in_context_messages: list[Message],
+        new_in_context_messages: list[Message],
         agent_state: AgentState,
         llm_client: LLMClientBase,
         tool_rules_solver: ToolRulesSolver,
         agent_step_span: "Span",
-    ) -> Tuple[Dict, Dict, List[Message], List[Message], List[str]] | None:
+    ) -> tuple[dict, dict, list[Message], list[Message], list[str]] | None:
         for attempt in range(self.max_summarization_retries + 1):
             try:
                 log_event("agent.stream_no_tokens.messages.refreshed")
@@ -738,12 +788,12 @@ class LettaAgent(BaseAgent):
         first_chunk: bool,
         ttft_span: "Span",
         request_start_timestamp_ns: int,
-        current_in_context_messages: List[Message],
-        new_in_context_messages: List[Message],
+        current_in_context_messages: list[Message],
+        new_in_context_messages: list[Message],
         agent_state: AgentState,
         llm_client: LLMClientBase,
         tool_rules_solver: ToolRulesSolver,
-    ) -> Tuple[Dict, AsyncStream[ChatCompletionChunk], List[Message], List[Message], List[str], int] | None:
+    ) -> tuple[dict, AsyncStream[ChatCompletionChunk], list[Message], list[Message], list[str], int] | None:
         for attempt in range(self.max_summarization_retries + 1):
             try:
                 log_event("agent.stream_no_tokens.messages.refreshed")
@@ -795,11 +845,11 @@ class LettaAgent(BaseAgent):
         self,
         e: Exception,
         llm_client: LLMClientBase,
-        in_context_messages: List[Message],
-        new_letta_messages: List[Message],
+        in_context_messages: list[Message],
+        new_letta_messages: list[Message],
         llm_config: LLMConfig,
         force: bool,
-    ) -> List[Message]:
+    ) -> list[Message]:
         if isinstance(e, ContextWindowExceededError):
             return await self._rebuild_context_window(
                 in_context_messages=in_context_messages, new_letta_messages=new_letta_messages, llm_config=llm_config, force=force
@@ -810,12 +860,12 @@ class LettaAgent(BaseAgent):
     @trace_method
     async def _rebuild_context_window(
         self,
-        in_context_messages: List[Message],
-        new_letta_messages: List[Message],
+        in_context_messages: list[Message],
+        new_letta_messages: list[Message],
         llm_config: LLMConfig,
-        total_tokens: Optional[int] = None,
+        total_tokens: int | None = None,
         force: bool = False,
-    ) -> List[Message]:
+    ) -> list[Message]:
         # If total tokens is reached, we truncate down
         # TODO: This can be broken by bad configs, e.g. lower bound too high, initial messages too fat, etc.
         if force or (total_tokens and total_tokens > llm_config.context_window):
@@ -851,10 +901,10 @@ class LettaAgent(BaseAgent):
     async def _create_llm_request_data_async(
         self,
         llm_client: LLMClientBase,
-        in_context_messages: List[Message],
+        in_context_messages: list[Message],
         agent_state: AgentState,
         tool_rules_solver: ToolRulesSolver,
-    ) -> Tuple[dict, List[str]]:
+    ) -> tuple[dict, list[str]]:
         self.num_messages, self.num_archival_memories = await asyncio.gather(
             (
                 self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id)
@@ -925,18 +975,18 @@ class LettaAgent(BaseAgent):
     async def _handle_ai_response(
         self,
         tool_call: ToolCall,
-        valid_tool_names: List[str],
+        valid_tool_names: list[str],
         agent_state: AgentState,
         tool_rules_solver: ToolRulesSolver,
         usage: UsageStatistics,
-        reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
-        pre_computed_assistant_message_id: Optional[str] = None,
+        reasoning_content: list[TextContent | ReasoningContent | RedactedReasoningContent | OmittedReasoningContent] | None = None,
+        pre_computed_assistant_message_id: str | None = None,
         step_id: str | None = None,
-        initial_messages: Optional[List[Message]] = None,
+        initial_messages: list[Message] | None = None,
         agent_step_span: Optional["Span"] = None,
-        is_final_step: Optional[bool] = None,
-        run_id: Optional[str] = None,
-    ) -> Tuple[List[Message], bool, Optional[LettaStopReason]]:
+        is_final_step: bool | None = None,
+        run_id: str | None = None,
+    ) -> tuple[list[Message], bool, LettaStopReason | None]:
         """
         Handle the final AI response once streaming completes, execute / validate the
         tool call, decide whether we should keep stepping, and persist state.
@@ -1012,8 +1062,9 @@ class LettaAgent(BaseAgent):
             context_window_limit=agent_state.llm_config.context_window,
             usage=usage,
             provider_id=None,
-            job_id=run_id,
+            job_id=run_id if run_id else self.current_run_id,
             step_id=step_id,
+            project_id=agent_state.project_id,
         )
 
         tool_call_messages = create_letta_messages_from_llm_response(
@@ -1150,7 +1201,7 @@ class LettaAgent(BaseAgent):
                 name="tool_execution_completed",
                 attributes={
                     "tool_name": target_tool.name,
-                    "duration_ms": ns_to_ms((end_time - start_time)),
+                    "duration_ms": ns_to_ms(end_time - start_time),
                     "success": tool_execution_result.success_flag,
                     "tool_type": target_tool.tool_type,
                     "tool_id": target_tool.id,
@@ -1160,7 +1211,7 @@ class LettaAgent(BaseAgent):
         return tool_execution_result
 
     @trace_method
-    def _load_last_function_response(self, in_context_messages: List[Message]):
+    def _load_last_function_response(self, in_context_messages: list[Message]):
         """Load the last function response from message history"""
         for msg in reversed(in_context_messages):
             if msg.role == MessageRole.tool and msg.content and len(msg.content) == 1 and isinstance(msg.content[0], TextContent):

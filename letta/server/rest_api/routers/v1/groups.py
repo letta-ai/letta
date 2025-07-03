@@ -73,7 +73,9 @@ def create_group(
     group: GroupCreate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
-    x_project: Optional[str] = Header(None, alias="X-Project"),  # Only handled by next js middleware
+    x_project: Optional[str] = Header(
+        None, alias="X-Project", description="The project slug to associate with the group (cloud only)."
+    ),  # Only handled by next js middleware
 ):
     """
     Create a new multi-agent group with the specified configuration.
@@ -91,7 +93,9 @@ async def modify_group(
     group: GroupUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
-    x_project: Optional[str] = Header(None, alias="X-Project"),  # Only handled by next js middleware
+    x_project: Optional[str] = Header(
+        None, alias="X-Project", description="The project slug to associate with the group (cloud only)."
+    ),  # Only handled by next js middleware
 ):
     """
     Create a new multi-agent group with the specified configuration.

@@ -282,21 +282,21 @@ def test_coerce_dict_args_with_default_arguments():
 
 def test_valid_filename():
     filename = "valid_filename.txt"
-    sanitized = sanitize_filename(filename)
+    sanitized = sanitize_filename(filename, add_uuid_suffix=True)
     assert sanitized.startswith("valid_filename_")
     assert sanitized.endswith(".txt")
 
 
 def test_filename_with_special_characters():
     filename = "invalid:/<>?*ƒfilename.txt"
-    sanitized = sanitize_filename(filename)
+    sanitized = sanitize_filename(filename, add_uuid_suffix=True)
     assert sanitized.startswith("ƒfilename_")
     assert sanitized.endswith(".txt")
 
 
 def test_null_byte_in_filename():
     filename = "valid\0filename.txt"
-    sanitized = sanitize_filename(filename)
+    sanitized = sanitize_filename(filename, add_uuid_suffix=True)
     assert "\0" not in sanitized
     assert sanitized.startswith("validfilename_")
     assert sanitized.endswith(".txt")
@@ -304,13 +304,13 @@ def test_null_byte_in_filename():
 
 def test_path_traversal_characters():
     filename = "../../etc/passwd"
-    sanitized = sanitize_filename(filename)
+    sanitized = sanitize_filename(filename, add_uuid_suffix=True)
     assert sanitized.startswith("passwd_")
     assert len(sanitized) <= MAX_FILENAME_LENGTH
 
 
 def test_empty_filename():
-    sanitized = sanitize_filename("")
+    sanitized = sanitize_filename("", add_uuid_suffix=True)
     assert sanitized.startswith("_")
 
 
@@ -326,20 +326,32 @@ def test_dotdot_as_filename():
 
 def test_long_filename():
     filename = "a" * (MAX_FILENAME_LENGTH + 10) + ".txt"
-    sanitized = sanitize_filename(filename)
+    sanitized = sanitize_filename(filename, add_uuid_suffix=True)
     assert len(sanitized) <= MAX_FILENAME_LENGTH
     assert sanitized.endswith(".txt")
 
 
 def test_unique_filenames():
     filename = "duplicate.txt"
-    sanitized1 = sanitize_filename(filename)
-    sanitized2 = sanitize_filename(filename)
+    sanitized1 = sanitize_filename(filename, add_uuid_suffix=True)
+    sanitized2 = sanitize_filename(filename, add_uuid_suffix=True)
     assert sanitized1 != sanitized2
     assert sanitized1.startswith("duplicate_")
     assert sanitized2.startswith("duplicate_")
     assert sanitized1.endswith(".txt")
     assert sanitized2.endswith(".txt")
+
+
+def test_basic_sanitization_no_suffix():
+    """Test the new behavior - basic sanitization without UUID suffix"""
+    filename = "test_file.txt"
+    sanitized = sanitize_filename(filename)
+    assert sanitized == "test_file.txt"
+
+    # Test with special characters
+    filename_with_chars = "test:/<>?*file.txt"
+    sanitized_chars = sanitize_filename(filename_with_chars)
+    assert sanitized_chars == "file.txt"
 
 
 def test_formatter():

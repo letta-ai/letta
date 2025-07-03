@@ -1,7 +1,8 @@
+import logging
 from typing import TYPE_CHECKING, List, Optional
 
 from jinja2 import Template, TemplateSyntaxError
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # Forward referencing to avoid circular import with Agent -> Memory -> Agent
 if TYPE_CHECKING:
@@ -69,6 +70,30 @@ class Memory(BaseModel, validate_assignment=True):
         default_factory=list, description="Blocks representing the agent's in-context memory of an attached file"
     )
 
+    @field_validator("file_blocks")
+    @classmethod
+    def validate_file_blocks_no_duplicates(cls, v: List[Block]) -> List[Block]:
+        """Validate that file_blocks don't contain duplicate labels, log warnings and remove duplicates."""
+        if not v:
+            return v
+
+        seen_labels = set()
+        unique_blocks = []
+        duplicate_labels = []
+
+        for block in v:
+            if block.label in seen_labels:
+                duplicate_labels.append(block.label)
+            else:
+                seen_labels.add(block.label)
+                unique_blocks.append(block)
+
+        if duplicate_labels:
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Duplicate block labels found in file_blocks: {duplicate_labels}. Removing duplicates.")
+
+        return unique_blocks
+
     # Memory.template is a Jinja2 template for compiling memory module into a prompt string.
     prompt_template: str = Field(
         default="{% for block in blocks %}"
@@ -99,7 +124,7 @@ class Memory(BaseModel, validate_assignment=True):
             Template(prompt_template)
 
             # Validate compatibility with current memory structure
-            Template(prompt_template).render(blocks=self.blocks, file_blocks=self.file_blocks)
+            Template(prompt_template).render(blocks=self.blocks, file_blocks=self.file_blocks, sources=[])
 
             # If we get here, the template is valid and compatible
             self.prompt_template = prompt_template
@@ -108,10 +133,15 @@ class Memory(BaseModel, validate_assignment=True):
         except Exception as e:
             raise ValueError(f"Prompt template is not compatible with current memory structure: {str(e)}")
 
-    def compile(self, tool_usage_rules=None) -> str:
+    def compile(self, tool_usage_rules=None, sources=None) -> str:
         """Generate a string representation of the memory in-context using the Jinja2 template"""
-        template = Template(self.prompt_template)
-        return template.render(blocks=self.blocks, file_blocks=self.file_blocks, tool_usage_rules=tool_usage_rules)
+        try:
+            template = Template(self.prompt_template)
+            return template.render(blocks=self.blocks, file_blocks=self.file_blocks, tool_usage_rules=tool_usage_rules, sources=sources)
+        except TemplateSyntaxError as e:
+            raise ValueError(f"Invalid Jinja2 template syntax: {str(e)}")
+        except Exception as e:
+            raise ValueError(f"Prompt template is not compatible with current memory structure: {str(e)}")
 
     def list_block_labels(self) -> List[str]:
         """Return a list of the block names held inside the memory object"""

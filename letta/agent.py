@@ -990,6 +990,7 @@ class Agent(BaseAgent):
                 ),
                 job_id=job_id,
                 step_id=step_id,
+                project_id=self.agent_state.project_id,
             )
             for message in all_new_messages:
                 message.step_id = step.id

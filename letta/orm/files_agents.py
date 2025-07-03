@@ -19,25 +19,48 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
     """
     Join table between File and Agent.
 
-    Tracks whether a file is currently “open” for the agent and
+    Tracks whether a file is currently "open" for the agent and
     the specific excerpt (grepped section) the agent is looking at.
     """
 
     __tablename__ = "files_agents"
     __table_args__ = (
-        Index("ix_files_agents_file_id_agent_id", "file_id", "agent_id"),
-        UniqueConstraint("file_id", "agent_id", name="uq_files_agents_file_agent"),
-        UniqueConstraint("agent_id", "file_name", name="uq_files_agents_agent_file_name"),
-        Index("ix_files_agents_agent_file_name", "agent_id", "file_name"),
+        # (file_id, agent_id) must be unique
+        UniqueConstraint("file_id", "agent_id", name="uq_file_agent"),
+        # (file_name, agent_id) must be unique
+        UniqueConstraint("agent_id", "file_name", name="uq_agent_filename"),
+        # helpful indexes for look-ups
+        Index("ix_file_agent", "file_id", "agent_id"),
+        Index("ix_agent_filename", "agent_id", "file_name"),
     )
     __pydantic_model__ = PydanticFileAgent
 
-    # TODO: We want to migrate all the ORM models to do this, so we will need to move this to the SqlalchemyBase
-    # TODO: Some still rely on the Pydantic object to do this
-    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: f"file_agent-{uuid.uuid4()}")
-    file_id: Mapped[str] = mapped_column(String, ForeignKey("files.id", ondelete="CASCADE"), primary_key=True, doc="ID of the file.")
-    file_name: Mapped[str] = mapped_column(String, nullable=False, doc="Denormalized copy of files.file_name; unique per agent.")
-    agent_id: Mapped[str] = mapped_column(String, ForeignKey("agents.id", ondelete="CASCADE"), primary_key=True, doc="ID of the agent.")
+    # single-column surrogate PK
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        default=lambda: f"file_agent-{uuid.uuid4()}",
+    )
+
+    # not part of the PK, but NOT NULL + FK
+    file_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("files.id", ondelete="CASCADE"),
+        nullable=False,
+        doc="ID of the file",
+    )
+    agent_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("agents.id", ondelete="CASCADE"),
+        nullable=False,
+        doc="ID of the agent",
+    )
+
+    file_name: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+        doc="Denormalized copy of files.file_name; unique per agent",
+    )
 
     is_open: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, doc="True if the agent currently has the file open.")
     visible_content: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="Portion of the file the agent is focused on.")
@@ -78,4 +101,6 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
             value=visible_content,
             label=self.file.file_name,
             read_only=True,
+            metadata={"source_id": self.file.source_id},
+            limit=CORE_MEMORY_SOURCE_CHAR_LIMIT,
         )

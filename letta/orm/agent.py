@@ -245,6 +245,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
         Returns:
             PydanticAgentState: The Pydantic representation of the agent.
         """
+
         # Base fields: always included
         state = {
             "id": self.id,

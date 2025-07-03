@@ -83,7 +83,7 @@ SEND_MESSAGE_TOOL_NAME = "send_message"
 # Base tools that cannot be edited, as they access agent state directly
 # Note that we don't include "conversation_search_date" for now
 BASE_TOOLS = [SEND_MESSAGE_TOOL_NAME, "conversation_search", "archival_memory_insert", "archival_memory_search"]
-DEPRECATED_BASE_TOOLS = ["archival_memory_insert", "archival_memory_search"]
+DEPRECATED_LETTA_TOOLS = ["archival_memory_insert", "archival_memory_search"]
 # Base memory tools CAN be edited, and are added by default by the server
 BASE_MEMORY_TOOLS = ["core_memory_append", "core_memory_replace"]
 # New v2 collection of the base memory tools (effecitvely same as sleeptime set), to pair with memgpt_v2 prompt
@@ -115,7 +115,8 @@ BASE_VOICE_SLEEPTIME_TOOLS = [
     "finish_rethinking_memory",
 ]
 # Multi agent tools
-MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_tags"]
+MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_tags", "send_message_to_agent_async"]
+LOCAL_ONLY_MULTI_AGENT_TOOLS = ["send_message_to_agent_async"]
 
 # Used to catch if line numbers are pushed in
 # MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX = re.compile(r"^Line \d+: ", re.MULTILINE)
@@ -130,7 +131,7 @@ MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX = re.compile(
 BUILTIN_TOOLS = ["run_code", "web_search"]
 
 # Built in tools
-FILES_TOOLS = ["open_files", "grep_files", "search_files"]
+FILES_TOOLS = ["open_files", "grep_files", "semantic_search_files"]
 
 FILE_MEMORY_EXISTS_MESSAGE = "The following files are currently accessible in memory:"
 FILE_MEMORY_EMPTY_MESSAGE = (
@@ -325,7 +326,7 @@ MAX_ERROR_MESSAGE_CHAR_LIMIT = 500
 CORE_MEMORY_PERSONA_CHAR_LIMIT: int = 5000
 CORE_MEMORY_HUMAN_CHAR_LIMIT: int = 5000
 CORE_MEMORY_BLOCK_CHAR_LIMIT: int = 5000
-CORE_MEMORY_SOURCE_CHAR_LIMIT: int = 5000
+CORE_MEMORY_SOURCE_CHAR_LIMIT: int = 50000
 # Function return limits
 FUNCTION_RETURN_CHAR_LIMIT = 6000  # ~300 words
 BASE_FUNCTION_RETURN_CHAR_LIMIT = 1000000  # very high (we rely on implementation)
@@ -357,6 +358,9 @@ REDIS_INCLUDE = "include"
 REDIS_EXCLUDE = "exclude"
 REDIS_SET_DEFAULT_VAL = "None"
 REDIS_DEFAULT_CACHE_PREFIX = "letta_cache"
+REDIS_RUN_ID_PREFIX = "agent:send_message:run_id"
 
 # TODO: This is temporary, eventually use token-based eviction
 MAX_FILES_OPEN = 5
+
+GET_PROVIDERS_TIMEOUT_SECONDS = 10

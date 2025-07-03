@@ -1,11 +1,13 @@
+import os
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
+from letta.constants import MAX_FILENAME_LENGTH
 from letta.orm.errors import NoResultFound
 from letta.orm.file import FileContent as FileContentModel
 from letta.orm.file import FileMetadata as FileMetadataModel
@@ -13,6 +15,7 @@ from letta.orm.sqlalchemy_base import AccessType
 from letta.otel.tracing import trace_method
 from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
+from letta.schemas.source import Source as PydanticSource
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.utils import enforce_types
@@ -58,11 +61,7 @@ class FileManager:
     @enforce_types
     @trace_method
     async def get_file_by_id(
-        self,
-        file_id: str,
-        actor: Optional[PydanticUser] = None,
-        *,
-        include_content: bool = False,
+        self, file_id: str, actor: Optional[PydanticUser] = None, *, include_content: bool = False, strip_directory_prefix: bool = False
     ) -> Optional[PydanticFileMetadata]:
         """Retrieve a file by its ID.
 
@@ -96,7 +95,7 @@ class FileManager:
                         actor=actor,
                     )
 
-                return await file_orm.to_pydantic_async(include_content=include_content)
+                return await file_orm.to_pydantic_async(include_content=include_content, strip_directory_prefix=strip_directory_prefix)
 
             except NoResultFound:
                 return None
@@ -193,7 +192,13 @@ class FileManager:
     @enforce_types
     @trace_method
     async def list_files(
-        self, source_id: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, include_content: bool = False
+        self,
+        source_id: str,
+        actor: PydanticUser,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        include_content: bool = False,
+        strip_directory_prefix: bool = False,
     ) -> List[PydanticFileMetadata]:
         """List all files with optional pagination."""
         async with db_registry.async_session() as session:
@@ -207,7 +212,10 @@ class FileManager:
                 source_id=source_id,
                 query_options=options,
             )
-            return [await file.to_pydantic_async(include_content=include_content) for file in files]
+            return [
+                await file.to_pydantic_async(include_content=include_content, strip_directory_prefix=strip_directory_prefix)
+                for file in files
+            ]
 
     @enforce_types
     @trace_method
@@ -217,3 +225,44 @@ class FileManager:
             file = await FileMetadataModel.read_async(db_session=session, identifier=file_id)
             await file.hard_delete_async(db_session=session, actor=actor)
             return await file.to_pydantic_async()
+
+    @enforce_types
+    @trace_method
+    async def generate_unique_filename(self, original_filename: str, source: PydanticSource, organization_id: str) -> str:
+        """
+        Generate a unique filename by checking for duplicates and adding a numeric suffix if needed.
+        Similar to how filesystems handle duplicates (e.g., file.txt, file (1).txt, file (2).txt).
+
+        Parameters:
+            original_filename (str): The original filename as uploaded.
+            source_id (str): Source ID to check for duplicates within.
+            organization_id (str): Organization ID to check for duplicates within.
+
+        Returns:
+            str: A unique filename with numeric suffix if needed.
+        """
+        base, ext = os.path.splitext(original_filename)
+
+        # Reserve space for potential suffix: " (999)" = 6 characters
+        max_base_length = MAX_FILENAME_LENGTH - len(ext) - 6
+        if len(base) > max_base_length:
+            base = base[:max_base_length]
+            original_filename = f"{base}{ext}"
+
+        async with db_registry.async_session() as session:
+            # Count existing files with the same original_file_name in this source
+            query = select(func.count(FileMetadataModel.id)).where(
+                FileMetadataModel.original_file_name == original_filename,
+                FileMetadataModel.source_id == source.id,
+                FileMetadataModel.organization_id == organization_id,
+                FileMetadataModel.is_deleted == False,
+            )
+            result = await session.execute(query)
+            count = result.scalar() or 0
+
+            if count == 0:
+                # No duplicates, return original filename with source.name
+                return f"{source.name}/{original_filename}"
+            else:
+                # Add numeric suffix
+                return f"{source.name}/{base}_({count}){ext}"

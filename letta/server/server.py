@@ -19,7 +19,6 @@ import letta.constants as constants
 import letta.server.utils as server_utils
 import letta.system as system
 from letta.agent import Agent, save_agent
-from letta.agents.letta_agent import LettaAgent
 from letta.config import LettaConfig
 from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.data_sources.connectors import DataConnector, load_data
@@ -101,7 +100,7 @@ from letta.services.provider_manager import ProviderManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.source_manager import SourceManager
 from letta.services.step_manager import StepManager
-from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
+from letta.services.telemetry_manager import TelemetryManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
@@ -1360,46 +1359,28 @@ class SyncServer(Server):
     async def sleeptime_document_ingest_async(
         self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False
     ) -> None:
-        sleeptime_agent_state = await self.create_document_sleeptime_agent_async(main_agent, source, actor, clear_history)
-        sleeptime_agent = LettaAgent(
-            agent_id=sleeptime_agent_state.id,
-            message_manager=self.message_manager,
-            agent_manager=self.agent_manager,
-            block_manager=self.block_manager,
-            job_manager=self.job_manager,
-            passage_manager=self.passage_manager,
-            actor=actor,
-            step_manager=self.step_manager,
-            telemetry_manager=self.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-        )
-        passages = await self.agent_manager.list_passages_async(actor=actor, source_id=source.id)
-        for passage in passages:
-            await sleeptime_agent.step(
-                input_messages=[
-                    MessageCreate(role="user", content=passage.text),
-                ]
-            )
-        await self.agent_manager.delete_agent_async(agent_id=sleeptime_agent_state.id, actor=actor)
-
-    async def _upsert_file_to_agent(self, agent_id: str, file_metadata_with_content: FileMetadata, actor: User) -> List[str]:
-        """
-        Internal method to create or update a file <-> agent association
-
-        Returns:
-            List of file names that were closed due to LRU eviction
-        """
-        # TODO: Maybe have LineChunker object be on the server level?
-        content_lines = LineChunker().chunk_text(file_metadata=file_metadata_with_content)
-        visible_content = "\n".join(content_lines)
-
-        file_agent, closed_files = await self.file_agent_manager.attach_file(
-            agent_id=agent_id,
-            file_id=file_metadata_with_content.id,
-            file_name=file_metadata_with_content.file_name,
-            actor=actor,
-            visible_content=visible_content,
-        )
-        return closed_files
+        # TEMPORARILY DISABLE UNTIL V2
+        # sleeptime_agent_state = await self.create_document_sleeptime_agent_async(main_agent, source, actor, clear_history)
+        # sleeptime_agent = LettaAgent(
+        #     agent_id=sleeptime_agent_state.id,
+        #     message_manager=self.message_manager,
+        #     agent_manager=self.agent_manager,
+        #     block_manager=self.block_manager,
+        #     job_manager=self.job_manager,
+        #     passage_manager=self.passage_manager,
+        #     actor=actor,
+        #     step_manager=self.step_manager,
+        #     telemetry_manager=self.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
+        # )
+        # passages = await self.agent_manager.list_passages_async(actor=actor, source_id=source.id)
+        # for passage in passages:
+        #     await sleeptime_agent.step(
+        #         input_messages=[
+        #             MessageCreate(role="user", content=passage.text),
+        #         ]
+        #     )
+        # await self.agent_manager.delete_agent_async(agent_id=sleeptime_agent_state.id, actor=actor)
+        pass
 
     async def _remove_file_from_agent(self, agent_id: str, file_id: str, actor: User) -> None:
         """
@@ -1430,9 +1411,23 @@ class SyncServer(Server):
         logger.info(f"Inserting document into context window for source: {source_id}")
         logger.info(f"Attached agents: {[a.id for a in agent_states]}")
 
-        # Collect any files that were closed due to LRU eviction during bulk attach
+        # Generate visible content for the file
+        line_chunker = LineChunker()
+        content_lines = line_chunker.chunk_text(file_metadata=file_metadata_with_content)
+        visible_content = "\n".join(content_lines)
+        visible_content_map = {file_metadata_with_content.file_name: visible_content}
+
+        # Attach file to each agent using bulk method (one file per agent, but atomic per agent)
         all_closed_files = await asyncio.gather(
-            *(self._upsert_file_to_agent(agent_state.id, file_metadata_with_content, actor) for agent_state in agent_states)
+            *(
+                self.file_agent_manager.attach_files_bulk(
+                    agent_id=agent_state.id,
+                    files_metadata=[file_metadata_with_content],
+                    visible_content_map=visible_content_map,
+                    actor=actor,
+                )
+                for agent_state in agent_states
+            )
         )
         # Flatten and log if any files were closed
         closed_files = [file for closed_list in all_closed_files for file in closed_list]
@@ -1448,14 +1443,23 @@ class SyncServer(Server):
         Insert the uploaded documents into the context window of an agent
         attached to the given source.
         """
-        logger.info(f"Inserting documents into context window for agent_state: {agent_state.id}")
+        logger.info(f"Inserting {len(file_metadata_with_content)} documents into context window for agent_state: {agent_state.id}")
 
-        # Collect any files that were closed due to LRU eviction during bulk insert
-        all_closed_files = await asyncio.gather(
-            *(self._upsert_file_to_agent(agent_state.id, file_metadata, actor) for file_metadata in file_metadata_with_content)
+        # Generate visible content for each file
+        line_chunker = LineChunker()
+        visible_content_map = {}
+        for file_metadata in file_metadata_with_content:
+            content_lines = line_chunker.chunk_text(file_metadata=file_metadata)
+            visible_content_map[file_metadata.file_name] = "\n".join(content_lines)
+
+        # Use bulk attach to avoid race conditions and duplicate LRU eviction decisions
+        closed_files = await self.file_agent_manager.attach_files_bulk(
+            agent_id=agent_state.id,
+            files_metadata=file_metadata_with_content,
+            visible_content_map=visible_content_map,
+            actor=actor,
         )
-        # Flatten and log if any files were closed
-        closed_files = [file for closed_list in all_closed_files for file in closed_list]
+
         if closed_files:
             logger.info(f"LRU eviction closed {len(closed_files)} files during bulk insert: {closed_files}")
 
@@ -1634,12 +1638,14 @@ class SyncServer(Server):
 
         async def get_provider_models(provider: Provider) -> list[LLMConfig]:
             try:
-                return await provider.list_llm_models_async()
+                async with asyncio.timeout(constants.GET_PROVIDERS_TIMEOUT_SECONDS):
+                    return await provider.list_llm_models_async()
+            except asyncio.TimeoutError:
+                warnings.warn(f"Timeout while listing LLM models for provider {provider}")
+                return []
             except Exception as e:
-                import traceback
-
                 traceback.print_exc()
-                warnings.warn(f"An error occurred while listing LLM models for provider {provider}: {e}")
+                warnings.warn(f"Error while listing LLM models for provider {provider}: {e}")
                 return []
 
         # Execute all provider model listing tasks concurrently
