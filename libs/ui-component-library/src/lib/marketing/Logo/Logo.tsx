@@ -22,6 +22,7 @@ const logoVariants = cva('', {
       medium: 'h-[20px] w-[20px]',
       default: 'h-[24px] w-[24px]',
       big: 'h-[36px] w-[36px]',
+      bigger: 'h-[48px] w-[48px]',
       large: 'h-[56px] w-[56px]',
       xlarge: 'h-[64px] w-[64px]',
     },
@@ -86,6 +87,8 @@ const logoWithTextVariants = cva('w-auto', {
       default: 'h-[24px]',
       big: 'h-[36px]',
       large: 'h-[64px]',
+      bigger: 'h-[48px] w-[48px]',
+
       xlarge: 'h-[72px]',
     },
   },

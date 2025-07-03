@@ -235,10 +235,6 @@ function AgentfileViewer() {
             label={t('useInLettaCloud')}
             align="center"
             fullWidth
-            busy={isPending || isSuccess}
-            onClick={() => {
-              handleAgentfileClone();
-            }}
             bold
             size="large"
           />

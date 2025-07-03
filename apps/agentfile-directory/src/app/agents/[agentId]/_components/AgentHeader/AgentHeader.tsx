@@ -32,7 +32,7 @@ export function AgentHeader(props: AgentHeaderProps) {
           </HStack>
         </div>
       </CenterContent>
-      <div className="absolute pointer-events-none agentheader-background border-b-border h-[227px] w-[100dvw]  border-b z-[0] top-0 left-0" />
+      <div className="absolute pointer-events-none agentheader-background border-b-border h-[238px] w-[100dvw]  border-b z-[0] top-0 left-0" />
     </div>
   );
 }

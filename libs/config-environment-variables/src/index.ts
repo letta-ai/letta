@@ -14,7 +14,6 @@ if (typeof window === 'undefined') {
   config({ path: resolve(__dirname, '.env') });
 }
 
-/* eslint-disable @typescript-eslint/naming-convention */
 export const environment = createEnv({
   server: {
     GOOGLE_CLIENT_ID: z.string().optional(),
@@ -48,6 +47,7 @@ export const environment = createEnv({
   },
   client: {
     NEXT_PUBLIC_CURRENT_HOST: z.string().optional(),
+    NEXT_PUBLIC_AGENTFILES_SITE: z.string().optional(),
     NEXT_PUBLIC_MIXPANEL_TOKEN: z.string().optional(),
     NEXT_PUBLIC_STRIPE_PUBLISH_KEY: z.string().optional(),
   },
@@ -81,6 +81,11 @@ export const environment = createEnv({
     TWILIO_SID: process.env.TWILIO_SID,
     TWILIO_SECRET: process.env.TWILIO_SECRET,
     INTERCOM_SECRET: process.env.INTERCOM_SECRET,
+    NEXT_PUBLIC_AGENTFILES_SITE: process.env.NEXT_PUBLIC_CURRENT_HOST?.endsWith(
+      '3000',
+    )
+      ? 'http://localhost:3001'
+      : 'https://agentfiles.directory',
     CLOUD_API_ENDPOINT:
       process.env.CLOUD_API_ENDPOINT || 'http://localhost:3006',
     CORE_DATABASE_URL: `postgresql://${process.env.LETTA_PG_USER}:${process.env.LETTA_PG_PASSWORD}@${process.env.LETTA_PG_HOST}:${process.env.LETTA_PG_PORT}/${process.env.LETTA_PG_DB}`,

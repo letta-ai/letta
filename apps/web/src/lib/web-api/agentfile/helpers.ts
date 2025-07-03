@@ -34,6 +34,7 @@ export async function userHasAgentfileAccess(
 
   switch (accessStatus) {
     case 'public':
+    case 'unlisted':
       downloadIsAllowed = true;
       break;
     case 'logged-in':
@@ -66,6 +67,8 @@ export async function getAgentfilePermissions(agentId: string) {
       accessLevel: true,
       createdAt: true,
       organizationId: true,
+      name: true,
+      description: true,
     },
   });
 

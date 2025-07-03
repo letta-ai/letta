@@ -2248,7 +2248,24 @@
       "text": "Loading settings..."
     },
     "NotPublishedView": {
-      "description": "Your agent file is not published, you can publish it to share it with a link by clicking the button below.",
+      "validation": {
+        "nameRegex": "Names must be alphanumeric and can include dashes and underscores.",
+        "nameRequired": "Please enter a name for your agent file.",
+        "nameMaxLength": "Names must be less than 25 characters.",
+        "descriptionRequired": "Please enter a description for your agent file.",
+        "descriptionMaxLength": "Descriptions must be less than 200 characters."
+      },
+      "description": {
+        "label": "Public description",
+        "placeholder": "A short description of your agent file, this will be displayed when your agent file is published.",
+        "description": "This is the description that will be displayed when your agent file is published. It should be a short summary of what your agent file does and how it can be used."
+      },
+      "name": {
+        "label": "Public name",
+        "description": "This is the name that will be displayed when your agent file is published.",
+        "placeholder": "my-agent-file-name"
+      },
+      "details": "Your agent file is not published, you can publish it to share it with a link by clicking the button below.",
       "error": "Failed to publish agent file. Please try again.",
       "publish": "Publish Agent File",
       "accessLevel": {
@@ -2258,10 +2275,11 @@
         "public": "Public"
       },
       "accessLevelDetails": {
+        "unlisted": "This will generate a link that will preview your agent that can be accessed by anyone, but it will not be listed on agentfile.directory.",
         "organization": "This will generate a link that will preview your agent that can be accessed by anyone in your organization.",
         "logged-in": "This will generate a link that will preview your agent that can be accessed by anyone who is logged in to Letta.",
         "loggedIn": "This will generate a link that will preview your agent that can be accessed by anyone who is logged in to Letta.",
-        "public": "This will generate a link that will preview your agent that can be accessed by anyone, even if they are not logged in to Letta."
+        "public": "This will generate a link that will preview your agent that can be accessed by anyone, and it will be listed on <link>agentfile.directory</link>."
       }
     },
     "options": {
@@ -2270,13 +2288,31 @@
       "public": "Public"
     },
     "PublishedView": {
-      "description": "Your agent file is successfully published and can be accessed via the link below."
+      "details": "Your agent file is successfully published and can be accessed via the link below."
+    },
+    "validation": {
+      "nameRegex": "Names must be alphanumeric and can include dashes and underscores.",
+      "nameRequired": "Please enter a name for your agent file.",
+      "nameMaxLength": "Names must be less than 25 characters.",
+      "descriptionRequired": "Please enter a description for your agent file.",
+      "descriptionMaxLength": "Descriptions must be less than 200 characters."
+    },
+    "description": {
+      "label": "Display description",
+      "placeholder": "A short description of your agent file, this will be displayed when your agent file is published.",
+      "description": "This is the description that will be displayed when your agent file is published. It should be a short summary of what your agent file does and how it can be used."
+    },
+    "name": {
+      "label": "Display name",
+      "description": "This is the name that will be displayed when your agent file is published.",
+      "placeholder": "my-agent-file-name"
     },
     "UpdateAccessLevelForm": {
       "error": "Failed to update access level. Please try again.",
       "success": "Access level updated successfully.",
       "copyLink": "Copy agentfile link",
-      "update": "Update Access Level",
+      "viewLink": "View on agentfile.directory",
+      "update": "Update Details",
       "accessLevel": {
         "label": "Access Level",
         "description": "This will determine who can access your agent file via the link",
@@ -2304,7 +2340,9 @@
     "options": {
       "organization": "Organization",
       "logged-in": "Logged in users",
-      "public": "Public"
+      "unlisted": "Unlisted",
+      "public": "Public",
+      "listed": "Listed on agentfile.directory"
     }
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {

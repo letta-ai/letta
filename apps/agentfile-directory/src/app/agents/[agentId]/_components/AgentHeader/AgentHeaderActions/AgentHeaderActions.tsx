@@ -6,6 +6,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { environment } from '@letta-cloud/config-environment-variables';
+import { useEffect, useState } from 'react';
 
 interface DownloadAgentButtonProps {
   agentId: string;
@@ -40,6 +41,16 @@ interface AgentHeaderActionsProps {
 export function AgentHeaderActions(props: AgentHeaderActionsProps) {
   const { agentId, agentName } = props;
   const t = useTranslations('pages/agent/AgentHeader.actions');
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <HStack>

@@ -4,49 +4,69 @@ import {
   Form,
   FormField,
   FormProvider,
+  HStack,
+  Input,
   Spinner,
+  TextArea,
   toast,
   useForm,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import {
+  type GetAgentFileMetadataType,
+  webApi,
+  webApiQueryKeys,
+} from '@letta-cloud/sdk-web';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { environment } from '@letta-cloud/config-environment-variables';
-import {
-  AccessLevelSelect,
-  type AccessLevelValue,
-} from '../AccessLevelSelect/AccessLevelSelect';
-
-const UpdateAccessLevelSchema = z.object({
-  accessLevel: z.enum(['organization', 'logged-in', 'public']),
-});
-
-type UpdateAccessLevelType = z.infer<typeof UpdateAccessLevelSchema>;
+import { AccessLevelSelect } from '../AccessLevelSelect/AccessLevelSelect';
+import { AgentFileAccessLevels } from '@letta-cloud/types';
 
 interface UpdateAccessLevelFormProps {
-  /** The agent ID for which to update the access level */
   agentId: string;
-  /** The current access level value */
-  currentAccessLevel: AccessLevelValue;
-  /** Optional callback function called when the update is successful */
-  onSuccess?: () => void;
-  /** Whether to automatically save changes with debouncing (default: false) */
-  autoSave?: boolean;
+  metadata: GetAgentFileMetadataType;
 }
 
 export function UpdateAccessLevelForm(props: UpdateAccessLevelFormProps) {
-  const { agentId, currentAccessLevel, onSuccess } = props;
+  const { agentId, metadata } = props;
   const t = useTranslations('AgentPage/PublishAgentFileSettingsDialog');
   const queryClient = useQueryClient();
+
+  const UpdateAccessLevelSchema = z.object({
+    accessLevel: AgentFileAccessLevels,
+    name: z
+      .string()
+      .regex(/^[a-zA-Z0-9_-]+$/, {
+        message: t('validation.nameRegex'),
+      })
+      .min(1, {
+        message: t('validation.nameRequired'),
+      })
+      .max(25, {
+        message: t('validation.nameMaxLength'),
+      }),
+    description: z
+      .string()
+      .min(1, {
+        message: t('validation.descriptionRequired'),
+      })
+      .max(200, {
+        message: t('validation.descriptionMaxLength'),
+      }),
+  });
+
+  type UpdateAccessLevelType = z.infer<typeof UpdateAccessLevelSchema>;
 
   const form = useForm<UpdateAccessLevelType>({
     resolver: zodResolver(UpdateAccessLevelSchema),
     defaultValues: {
-      accessLevel: currentAccessLevel,
+      accessLevel: metadata.accessLevel,
+      name: metadata.name,
+      description: metadata.description,
     },
   });
 
@@ -57,7 +77,6 @@ export function UpdateAccessLevelForm(props: UpdateAccessLevelFormProps) {
         void queryClient.invalidateQueries({
           queryKey: webApiQueryKeys.agentfile.getAgentfileMetadata(agentId),
         });
-        onSuccess?.();
       },
     });
 
@@ -81,10 +100,7 @@ export function UpdateAccessLevelForm(props: UpdateAccessLevelFormProps) {
     [mutate, agentId, t],
   );
 
-  // Reset form when currentAccessLevel changes
-  useEffect(() => {
-    form.reset({ accessLevel: currentAccessLevel });
-  }, [currentAccessLevel, form]);
+  const accessLevel = form.watch('accessLevel');
 
   return (
     <FormProvider {...form}>
@@ -104,6 +120,34 @@ export function UpdateAccessLevelForm(props: UpdateAccessLevelFormProps) {
               />
             )}
           />
+          <FormField
+            name="name"
+            render={({ field }) => (
+              <Input
+                label={t('name.label')}
+                placeholder={t('name.placeholder')}
+                description={t('name.description')}
+                fullWidth
+                {...field}
+              />
+            )}
+          />
+
+          <FormField
+            name="description"
+            render={({ field }) => (
+              <TextArea
+                autosize
+                minRows={2}
+                maxRows={3}
+                label={t('description.label')}
+                placeholder={t('description.placeholder')}
+                description={t('description.description')}
+                fullWidth
+                {...field}
+              />
+            )}
+          />
 
           <VStack gap="medium">
             <Button
@@ -114,12 +158,22 @@ export function UpdateAccessLevelForm(props: UpdateAccessLevelFormProps) {
               label={t('UpdateAccessLevelForm.update')}
               color="primary"
             />
-            <CopyButton
-              color="tertiary"
-              fullWidth
-              copyButtonText={t('UpdateAccessLevelForm.copyLink')}
-              textToCopy={`${environment.NEXT_PUBLIC_CURRENT_HOST}/agentfiles/${agentId}`}
-            />
+            <HStack>
+              {accessLevel === 'public' && (
+                <Button
+                  color="secondary"
+                  target="_blank"
+                  label={t('UpdateAccessLevelForm.viewLink')}
+                  href={`${environment.NEXT_PUBLIC_AGENTFILES_SITE}/agents/${agentId}`}
+                />
+              )}
+              <CopyButton
+                color={accessLevel === 'public' ? 'secondary' : 'tertiary'}
+                fullWidth
+                copyButtonText={t('UpdateAccessLevelForm.copyLink')}
+                textToCopy={`${environment.NEXT_PUBLIC_CURRENT_HOST}/agentfiles/${agentId}`}
+              />
+            </HStack>
           </VStack>
         </VStack>
       </Form>

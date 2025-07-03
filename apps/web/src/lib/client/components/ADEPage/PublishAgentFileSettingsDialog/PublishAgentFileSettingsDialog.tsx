@@ -5,13 +5,20 @@ import {
   Form,
   FormField,
   FormProvider,
+  Input,
+  Link,
   LoadingEmptyStatusComponent,
   Spinner,
+  TextArea,
   useForm,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import {
+  type GetAgentFileMetadataType,
+  webApi,
+  webApiQueryKeys,
+} from '@letta-cloud/sdk-web';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -24,14 +31,8 @@ import {
   AccessLevelSelect,
   type AccessLevelValue,
 } from './AccessLevelSelect/AccessLevelSelect';
-
-const CreateAgentFileMetadataSchema = z.object({
-  accessLevel: AgentFileAccessLevels,
-});
-
-type CreateAgentFileMetadataType = z.infer<
-  typeof CreateAgentFileMetadataSchema
->;
+import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
+import { environment } from '@letta-cloud/config-environment-variables';
 
 function LoadingView() {
   const t = useTranslations(
@@ -45,12 +46,47 @@ function NotPublishedView({ agentId }: { agentId: string }) {
   const t = useTranslations(
     'AgentPage/PublishAgentFileSettingsDialog.NotPublishedView',
   );
+
+  const { name, description } = useCurrentAgent();
   const queryClient = useQueryClient();
+
+  const CreateAgentFileMetadataSchema = z.object({
+    accessLevel: AgentFileAccessLevels,
+    name: z
+      .string()
+      .regex(/^[a-zA-Z0-9_-]+$/, {
+        message: t('validation.nameRegex'),
+      })
+      .min(1, {
+        message: t('validation.nameRequired'),
+      })
+      .max(25, {
+        message: t('validation.nameMaxLength'),
+      }),
+    description: z
+      .string()
+      .min(1, {
+        message: t('validation.descriptionRequired'),
+      })
+      .max(200, {
+        message: t('validation.descriptionMaxLength'),
+      }),
+  });
+
+  type CreateAgentFileMetadataType = z.infer<
+    typeof CreateAgentFileMetadataSchema
+  >;
+
+  function transformNameToAlphaNumeric(name: string) {
+    return name.replace(/[^a-zA-Z0-9_-]/g, '');
+  }
 
   const form = useForm<CreateAgentFileMetadataType>({
     resolver: zodResolver(CreateAgentFileMetadataSchema),
     defaultValues: {
       accessLevel: 'organization',
+      name: transformNameToAlphaNumeric(name) || 'default',
+      description: description || '',
     },
   });
 
@@ -82,15 +118,13 @@ function NotPublishedView({ agentId }: { agentId: string }) {
     },
     [mutate, agentId],
   );
+
   return (
     <VStack paddingBottom gap="form">
-      <Alert variant="warning" title={t('description')} />
-
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(handleSubmit)}>
           <VStack gap="form">
             {isError && <Alert title={t('error')} variant="destructive" />}
-
             <FormField
               name="accessLevel"
               render={({ field }) => (
@@ -99,11 +133,24 @@ function NotPublishedView({ agentId }: { agentId: string }) {
                   onChange={field.onChange}
                   description={(() => {
                     if (field.value === 'public') {
-                      return t('accessLevelDetails.public');
+                      return t.rich('accessLevelDetails.public', {
+                        link: (chunks) => (
+                          <Link
+                            target="_blank"
+                            href={environment.NEXT_PUBLIC_AGENTFILES_SITE}
+                          >
+                            {chunks}
+                          </Link>
+                        ),
+                      });
                     }
 
                     if (field.value === 'organization') {
                       return t('accessLevelDetails.organization');
+                    }
+
+                    if (field.value === 'unlisted') {
+                      return t('accessLevelDetails.unlisted');
                     }
 
                     return t('accessLevelDetails.loggedIn');
@@ -112,6 +159,34 @@ function NotPublishedView({ agentId }: { agentId: string }) {
                     isPending ? <Spinner size="xsmall" /> : null
                   }
                   label={t('accessLevel.label')}
+                />
+              )}
+            />
+            <FormField
+              name="name"
+              render={({ field }) => (
+                <Input
+                  label={t('name.label')}
+                  placeholder={t('name.placeholder')}
+                  description={t('name.description')}
+                  fullWidth
+                  {...field}
+                />
+              )}
+            />
+
+            <FormField
+              name="description"
+              render={({ field }) => (
+                <TextArea
+                  autosize
+                  minRows={2}
+                  maxRows={3}
+                  label={t('description.label')}
+                  placeholder={t('description.placeholder')}
+                  description={t('description.description')}
+                  fullWidth
+                  {...field}
                 />
               )}
             />
@@ -131,26 +206,16 @@ function NotPublishedView({ agentId }: { agentId: string }) {
   );
 }
 
-function PublishedView({
-  agentId,
-  accessLevel,
-}: {
+interface PublishedViewProps {
   agentId: string;
-  accessLevel: string;
-}) {
-  const t = useTranslations(
-    'AgentPage/PublishAgentFileSettingsDialog.PublishedView',
-  );
+  metadata: GetAgentFileMetadataType;
+}
 
+function PublishedView(props: PublishedViewProps) {
+  const { agentId, metadata } = props;
   return (
     <VStack paddingBottom gap="form">
-      <Alert variant="info" title={t('description')} />
-
-      <UpdateAccessLevelForm
-        agentId={agentId}
-        currentAccessLevel={accessLevel as AccessLevelValue}
-        autoSave={true}
-      />
+      <UpdateAccessLevelForm agentId={agentId} metadata={metadata} />
     </VStack>
   );
 }
@@ -177,16 +242,16 @@ export function PublishAgentFileSettingsDialog(
 
   return (
     <Dialog
-      headerVariant="emphasis"
       trigger={trigger}
       disableForm
+      size="medium"
       hideFooter
       title={t('title')}
     >
       {isLoading && <LoadingView />}
       {!isLoading && !data && <NotPublishedView agentId={agentId} />}
       {!isLoading && data && (
-        <PublishedView agentId={agentId} accessLevel={data.body.accessLevel} />
+        <PublishedView agentId={agentId} metadata={data.body} />
       )}
     </Dialog>
   );

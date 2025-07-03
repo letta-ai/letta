@@ -4,6 +4,11 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  border-color: hsl(var(--border));
+}
+
+
 html {
   -webkit-text-size-adjust: 100%;
   font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system,

@@ -3,7 +3,7 @@
     "navigation": {
       "docs": "Docs",
       "apiReference": "API reference",
-      "ade": "ADE"
+      "ade": "Open Letta Cloud"
     }
   },
   "pages/agent/AgentHeader": {
@@ -19,6 +19,17 @@
       "downloadAgent": "Download Agent",
       "useInCloud": "Use in Letta Cloud"
     }
+  },
+  "agentfile-directory/index": {
+    "title": "The only place to share, discover and download AI agents",
+    "start": "Start exploring",
+    "search": "Search agentfiles",
+    "or": "or",
+    "go": "Search",
+    "all": "All"
+  },
+  "components/Section": {
+    "seeAll": "See all"
   },
   "components/AgentDetails": {
     "memoryBlocks": "Memory Blocks",

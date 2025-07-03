@@ -1271,6 +1271,7 @@ export const agentfilePermissionsEnum = pgEnum('agentfile_access_level', [
   'public',
   'organization',
   'logged-in',
+  'unlisted',
   'none',
 ]);
 
@@ -1279,6 +1280,8 @@ export const agentfilePermissions = pgTable('agentfile_permissions', {
     .notNull()
     .references(() => organizations.id, { onDelete: 'cascade' }),
   agentId: text('agent_id').notNull().primaryKey(),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
   accessLevel: agentfilePermissionsEnum('agentfile_access_level').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
@@ -1292,6 +1295,10 @@ export const agentfilePermissionsRelations = relations(
     agentfileStats: one(agentfileStats, {
       fields: [agentfilePermissions.agentId],
       references: [agentfileStats.agentId],
+    }),
+    organization: one(organizations, {
+      fields: [agentfilePermissions.organizationId],
+      references: [organizations.id],
     }),
   }),
 );

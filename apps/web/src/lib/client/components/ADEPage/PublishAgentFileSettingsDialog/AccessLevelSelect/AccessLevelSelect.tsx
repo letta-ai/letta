@@ -1,6 +1,7 @@
 import {
   EarthIcon,
   isMultiValue,
+  LinkIcon,
   LockClosedIcon,
   OfficesIcon,
   Select,
@@ -14,7 +15,7 @@ interface AccessLevelSelectProps {
   value: AccessLevelValue;
   onChange: (value: AccessLevelValue) => void;
   label?: string;
-  description?: string;
+  description?: React.ReactNode;
   disabled?: boolean;
   fullWidth?: boolean;
   rightOfLabelContent?: React.ReactNode;
@@ -60,6 +61,11 @@ export function AccessLevelSelect(props: AccessLevelSelectProps) {
         icon: <LockClosedIcon />,
       },
       {
+        label: t('options.unlisted'),
+        value: 'unlisted' as const,
+        icon: <LinkIcon />,
+      },
+      {
         label: t('options.public'),
         value: 'public' as const,
         icon: <EarthIcon />,
@@ -95,33 +101,5 @@ export function AccessLevelSelect(props: AccessLevelSelectProps) {
       onSelect={handleSelect as any}
       value={getOption(value)}
     />
-  );
-}
-
-/**
- * Hook to get access level options for use in other components
- */
-export function useAccessLevelOptions() {
-  const t = useTranslations('shared/AccessLevelSelect');
-
-  return useMemo(
-    () => [
-      {
-        label: t('options.organization'),
-        value: 'organization' as const,
-        icon: <OfficesIcon />,
-      },
-      {
-        label: t('options.logged-in'),
-        value: 'logged-in' as const,
-        icon: <LockClosedIcon />,
-      },
-      {
-        label: t('options.public'),
-        value: 'public' as const,
-        icon: <EarthIcon />,
-      },
-    ],
-    [t],
   );
 }

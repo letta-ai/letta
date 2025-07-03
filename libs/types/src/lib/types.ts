@@ -218,5 +218,6 @@ export const AgentFileAccessLevels = z.enum([
   'organization',
   'logged-in',
   'public',
+  'unlisted',
   'none',
 ]);

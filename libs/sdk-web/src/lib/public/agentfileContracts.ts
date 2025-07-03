@@ -5,10 +5,16 @@ import { zodTypes } from '@letta-cloud/sdk-core';
 
 const c = initContract();
 
-const GetAgentFileMetadata = z.object({
+const GetAgentFileMetadataSchema = z.object({
   accessLevel: AgentFileAccessLevels,
   agentId: z.string(),
+  name: z.string(),
+  description: z.string(),
 });
+
+export type GetAgentFileMetadataType = z.infer<
+  typeof GetAgentFileMetadataSchema
+>;
 
 const getAgentfileMetadataContract = c.query({
   path: '/agentfiles/:agentId',
@@ -17,11 +23,19 @@ const getAgentfileMetadataContract = c.query({
     agentId: z.string(),
   }),
   responses: {
-    200: GetAgentFileMetadata,
+    200: GetAgentFileMetadataSchema,
   },
 });
 
 const UpdateAgentfileAccessLevelRequestBodySchema = z.object({
+  name: z
+    .string()
+    .regex(/^[a-zA-Z0-9_-]+$/, {
+      message: 'Name must be alphanumeric with underscores or dashes',
+    })
+    .min(1)
+    .max(25),
+  description: z.string().max(200).min(1).optional(),
   accessLevel: AgentFileAccessLevels,
 });
 
@@ -87,11 +101,9 @@ const createAgentfileMetadataContract = c.mutation({
   pathParams: z.object({
     agentId: z.string(),
   }),
-  body: z.object({
-    accessLevel: AgentFileAccessLevels,
-  }),
+  body: UpdateAgentfileAccessLevelRequestBodySchema,
   responses: {
-    200: GetAgentFileMetadata,
+    200: GetAgentFileMetadataSchema,
   },
 });
 
@@ -160,6 +172,35 @@ const getAgentfileDetailsContract = c.query({
   },
 });
 
+const GetAgentfilePartialDetailsSchema = z.object({
+  name: z.string(),
+  agentId: z.string(),
+  author: z.string(),
+  description: z.string(),
+  downloadCount: z.number(),
+});
+
+export type GetAgentfilePartialDetailsType = z.infer<
+  typeof GetAgentfilePartialDetailsSchema
+>;
+
+const listAgentfilesContract = c.query({
+  path: '/agentfiles',
+  method: 'GET',
+  query: z.object({
+    limit: z.number().max(25).optional(),
+    offset: z.number().optional(),
+    search: z.string().optional(),
+  }),
+  responses: {
+    200: z.object({
+      totalCount: z.number(),
+      items: GetAgentfilePartialDetailsSchema.array(),
+      hasNextPage: z.boolean(),
+    }),
+  },
+});
+
 export const agentfileContracts = c.router({
   getAgentfile: getAgentfileContract,
   getAgentfileSummary: getAgentfileSummaryContract,
@@ -168,6 +209,7 @@ export const agentfileContracts = c.router({
   updateAgentfileAccessLevel: updateAgentfileAccessLevelContract,
   getAgentfileDetails: getAgentfileDetailsContract,
   getAgentfileMetadata: getAgentfileMetadataContract,
+  listAgentfiles: listAgentfilesContract,
 });
 
 export const agentfileQueryClientKeys = {

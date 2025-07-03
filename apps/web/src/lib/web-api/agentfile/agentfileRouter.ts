@@ -17,7 +17,7 @@ import {
   organizations,
   agentfileStats,
 } from '@letta-cloud/service-database';
-import { eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, ilike, sql } from 'drizzle-orm';
 
 type AgentfileResponse = ServerInferResponses<
   typeof contracts.agentfile.getAgentfile
@@ -78,7 +78,8 @@ export async function getAgentfile(
   await db
     .update(agentfileStats)
     .set({
-      totalDownloads: sql`${agentfileStats.totalDownloads} + 1`,
+      totalDownloads: sql`${agentfileStats.totalDownloads}
+      + 1`,
     })
     .where(eq(agentfileStats.agentId, agentId));
 
@@ -91,7 +92,11 @@ export async function getAgentfile(
 
   return {
     status: SERVER_CODE.OK,
-    body: exportedAgentfile,
+    body: JSON.stringify({
+      ...JSON.parse(exportedAgentfile),
+      name: permissions.name || '',
+      description: permissions.description || '',
+    }),
   };
 }
 
@@ -208,6 +213,8 @@ export async function getAgentfileMetadata(
   return {
     status: SERVER_CODE.OK,
     body: {
+      name: permissions.name || '',
+      description: permissions.description || '',
       accessLevel: permissions?.accessLevel || 'none',
       agentId,
     },
@@ -226,7 +233,7 @@ export async function createAgentfileMetadata(
   request: CreateAgentfileMetadataRequest,
 ): Promise<CreateAgentfileMetadataResponse> {
   const { agentId } = request.params;
-  const { accessLevel } = request.body;
+  const { accessLevel, name, description } = request.body;
 
   const user = await getUser();
   if (!user) {
@@ -251,9 +258,13 @@ export async function createAgentfileMetadata(
       agentId,
       organizationId,
       accessLevel,
+      name: name || '',
+      description: description || '',
     })
     .returning({
       accessLevel: agentfilePermissions.accessLevel,
+      name: agentfilePermissions.name,
+      description: agentfilePermissions.description,
       organizationId: agentfilePermissions.organizationId,
     });
 
@@ -266,6 +277,8 @@ export async function createAgentfileMetadata(
   return {
     status: SERVER_CODE.OK,
     body: {
+      name: createdPermissions.name || '',
+      description: createdPermissions.description || '',
       agentId,
       accessLevel: createdPermissions.accessLevel,
     },
@@ -311,15 +324,14 @@ export async function getAgentfileSummary(
     };
   }
 
-  const { tools, memory, system, description, name } =
-    await AgentsService.retrieveAgent(
-      {
-        agentId,
-      },
-      {
-        user_id: serviceAccountId,
-      },
-    );
+  const { tools, memory, system } = await AgentsService.retrieveAgent(
+    {
+      agentId,
+    },
+    {
+      user_id: serviceAccountId,
+    },
+  );
 
   return {
     status: SERVER_CODE.OK,
@@ -334,8 +346,8 @@ export async function getAgentfileSummary(
         description: tool.description || '',
       })),
       system: system || '',
-      description: description || '',
-      name: name || '',
+      description: permissions.description || '',
+      name: permissions.name || '',
       author: organization?.name || '',
     },
   };
@@ -401,8 +413,6 @@ export async function getAgentfileDetails(
     llm_config,
     tool_rules,
     tool_exec_environment_variables,
-    description,
-    name,
   } = await AgentsService.retrieveAgent(
     {
       agentId,
@@ -433,8 +443,8 @@ export async function getAgentfileDetails(
         maxTokens: llm_config?.max_tokens || 0,
       },
       system: system || '',
-      description: description || '',
-      name: name || '',
+      description: permissions.description || '',
+      name: permissions.name || '',
       author: organization?.name || '',
       toolRules: tool_rules || [], // Assuming tool_rules is an array of objects
       publishedAt: permissions.createdAt.toISOString(),
@@ -448,6 +458,67 @@ export async function getAgentfileDetails(
   };
 }
 
+type ListAgentfilesRequest = ServerInferRequest<
+  typeof contracts.agentfile.listAgentfiles
+>;
+
+type ListAgentfilesResponse = ServerInferResponses<
+  typeof contracts.agentfile.listAgentfiles
+>;
+
+export async function listAgentfiles(
+  request: ListAgentfilesRequest,
+): Promise<ListAgentfilesResponse> {
+  const { limit = 5, offset = 0, search } = request.query;
+
+  const query = [eq(agentfilePermissions.accessLevel, 'public')];
+
+  if (search) {
+    query.push(ilike(agentfilePermissions.name, `%${search}%`));
+  }
+
+  const where = and(...query);
+
+  const [agentfiles, metrics] = await Promise.all([
+    db.query.agentfilePermissions.findMany({
+      where,
+      with: {
+        agentfileStats: true,
+        organization: {
+          columns: {
+            name: true,
+          },
+        },
+      },
+      orderBy: desc(agentfilePermissions.createdAt),
+      limit: limit + 1,
+      offset,
+    }),
+    db.select({ count: count() }).from(agentfilePermissions).where(where),
+  ]);
+
+  const formattedAgentfiles = agentfiles
+    .map((agent) => {
+      return {
+        agentId: agent.agentId,
+        name: agent.name,
+        description: agent.description,
+        author: agent.organization?.name || 'Unknown',
+        downloadCount: agent.agentfileStats?.totalDownloads || 0,
+      };
+    })
+    .slice(0, limit);
+
+  return {
+    status: SERVER_CODE.OK,
+    body: {
+      totalCount: metrics[0].count || 0,
+      items: formattedAgentfiles,
+      hasNextPage: agentfiles.length > limit,
+    },
+  };
+}
+
 export const agentfileRouter = {
   getAgentfile,
   cloneAgentfile,
@@ -456,4 +527,5 @@ export const agentfileRouter = {
   getAgentfileSummary,
   updateAgentfileAccessLevel,
   getAgentfileDetails,
+  listAgentfiles,
 };
