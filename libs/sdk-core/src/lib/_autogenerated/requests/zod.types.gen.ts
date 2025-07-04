@@ -3627,6 +3627,22 @@ export const FileMetadata = z.object({
       z.undefined(),
     ])
     .optional(),
+  total_chunks: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  chunks_embedded: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   created_at: z
     .union([
       z.string(),

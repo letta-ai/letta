@@ -109,15 +109,17 @@ class FileManager:
         actor: PydanticUser,
         processing_status: Optional[FileProcessingStatus] = None,
         error_message: Optional[str] = None,
+        total_chunks: Optional[int] = None,
+        chunks_embedded: Optional[int] = None,
     ) -> PydanticFileMetadata:
         """
-        Update processing_status and/or error_message on a FileMetadata row.
+        Update processing_status, error_message, total_chunks, and/or chunks_embedded on a FileMetadata row.
 
         * 1st round-trip → UPDATE
         * 2nd round-trip → SELECT fresh row (same as read_async)
         """
 
-        if processing_status is None and error_message is None:
+        if processing_status is None and error_message is None and total_chunks is None and chunks_embedded is None:
             raise ValueError("Nothing to update")
 
         values: dict[str, object] = {"updated_at": datetime.utcnow()}
@@ -125,6 +127,10 @@ class FileManager:
             values["processing_status"] = processing_status
         if error_message is not None:
             values["error_message"] = error_message
+        if total_chunks is not None:
+            values["total_chunks"] = total_chunks
+        if chunks_embedded is not None:
+            values["chunks_embedded"] = chunks_embedded
 
         async with db_registry.async_session() as session:
             # Fast in-place update – no ORM hydration

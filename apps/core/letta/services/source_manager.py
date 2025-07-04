@@ -19,7 +19,6 @@ class SourceManager:
     @trace_method
     async def create_source(self, source: PydanticSource, actor: PydanticUser) -> PydanticSource:
         """Create a new source based on the PydanticSource schema."""
-        # Try getting the source first by id
         db_source = await self.get_source_by_id(source.id, actor=actor)
         if db_source:
             return db_source

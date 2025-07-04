@@ -60,6 +60,8 @@ class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin, AsyncAttrs):
     )
 
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="Any error message encountered during processing.")
+    total_chunks: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, doc="Total number of chunks for the file.")
+    chunks_embedded: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, doc="Number of chunks that have been embedded.")
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="files", lazy="selectin")
@@ -112,6 +114,8 @@ class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin, AsyncAttrs):
             file_last_modified_date=self.file_last_modified_date,
             processing_status=self.processing_status,
             error_message=self.error_message,
+            total_chunks=self.total_chunks,
+            chunks_embedded=self.chunks_embedded,
             created_at=self.created_at,
             updated_at=self.updated_at,
             is_deleted=self.is_deleted,

@@ -65,7 +65,7 @@ async def grep_files(
     raise NotImplementedError("Tool not implemented. Please contact the Letta team.")
 
 
-async def semantic_search_files(agent_state: "AgentState", query: str) -> List["FileMetadata"]:
+async def semantic_search_files(agent_state: "AgentState", query: str, limit: int = 5) -> List["FileMetadata"]:
     """
     Get list of most relevant chunks from any file using vector/embedding search.
 
@@ -76,6 +76,7 @@ async def semantic_search_files(agent_state: "AgentState", query: str) -> List["
 
     Args:
         query (str): The search query.
+        limit: Maximum number of results to return (default: 5)
 
     Returns:
         List[FileMetadata]: List of matching files.

@@ -1548,6 +1548,14 @@ export type FileMetadata = {
    */
   error_message?: string | null;
   /**
+   * Total number of chunks for the file.
+   */
+  total_chunks?: number | null;
+  /**
+   * Number of chunks that have been embedded.
+   */
+  chunks_embedded?: number | null;
+  /**
    * The creation date of the file.
    */
   created_at?: string | null;

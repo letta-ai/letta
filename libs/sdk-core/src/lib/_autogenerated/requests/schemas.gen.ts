@@ -4644,6 +4644,30 @@ export const $FileMetadata = {
       title: 'Error Message',
       description: 'Optional error message if the file failed processing.',
     },
+    total_chunks: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Total Chunks',
+      description: 'Total number of chunks for the file.',
+    },
+    chunks_embedded: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Chunks Embedded',
+      description: 'Number of chunks that have been embedded.',
+    },
     created_at: {
       anyOf: [
         {

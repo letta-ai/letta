@@ -115,10 +115,6 @@ class JobManager:
                 job.completed_at = get_utc_time().replace(tzinfo=None)
                 if job.callback_url:
                     await self._dispatch_callback_async(job)
-                else:
-                    logger.info(f"Job does not contain callback url: {job}")
-            else:
-                logger.info(f"Job update is not terminal {job_update}")
 
             # Save the updated job to the database
             await job.update_async(db_session=session, actor=actor)
