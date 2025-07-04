@@ -11,7 +11,7 @@ from letta.server.server import SyncServer
 from letta.services.file_manager import FileManager
 from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.file_processor.chunker.llama_index_chunker import LlamaIndexChunker
-from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
+from letta.services.file_processor.embedder.base_embedder import BaseEmbedder
 from letta.services.file_processor.parser.mistral_parser import MistralFileParser
 from letta.services.job_manager import JobManager
 from letta.services.passage_manager import PassageManager
@@ -27,8 +27,9 @@ class FileProcessor:
         self,
         file_parser: MistralFileParser,
         text_chunker: LlamaIndexChunker,
-        embedder: OpenAIEmbedder,
+        embedder: BaseEmbedder,
         actor: User,
+        using_pinecone: bool,
         max_file_size: int = 50 * 1024 * 1024,  # 50MB default
     ):
         self.file_parser = file_parser
@@ -41,6 +42,7 @@ class FileProcessor:
         self.passage_manager = PassageManager()
         self.job_manager = JobManager()
         self.actor = actor
+        self.using_pinecone = using_pinecone
 
     # TODO: Factor this function out of SyncServer
     @trace_method
@@ -109,7 +111,7 @@ class FileProcessor:
 
             logger.info("Chunking extracted text")
             log_event("file_processor.chunking_started", {"filename": filename, "pages_to_process": len(ocr_response.pages)})
-            all_passages = []
+            all_chunks = []
 
             for page in ocr_response.pages:
                 chunks = self.text_chunker.chunk_text(page)
@@ -118,24 +120,17 @@ class FileProcessor:
                     log_event("file_processor.chunking_failed", {"filename": filename, "page_index": ocr_response.pages.index(page)})
                     raise ValueError("No chunks created from text")
 
-                passages = await self.embedder.generate_embedded_passages(
-                    file_id=file_metadata.id, source_id=source_id, chunks=chunks, actor=self.actor
-                )
-                log_event(
-                    "file_processor.page_processed",
-                    {
-                        "filename": filename,
-                        "page_index": ocr_response.pages.index(page),
-                        "chunks_created": len(chunks),
-                        "passages_generated": len(passages),
-                    },
-                )
-                all_passages.extend(passages)
+                all_chunks.extend(self.text_chunker.chunk_text(page))
 
-            all_passages = await self.passage_manager.create_many_source_passages_async(
-                passages=all_passages, file_metadata=file_metadata, actor=self.actor
+            all_passages = await self.embedder.generate_embedded_passages(
+                file_id=file_metadata.id, source_id=source_id, chunks=all_chunks, actor=self.actor
             )
-            log_event("file_processor.passages_created", {"filename": filename, "total_passages": len(all_passages)})
+
+            if not self.using_pinecone:
+                all_passages = await self.passage_manager.create_many_source_passages_async(
+                    passages=all_passages, file_metadata=file_metadata, actor=self.actor
+                )
+                log_event("file_processor.passages_created", {"filename": filename, "total_passages": len(all_passages)})
 
             logger.info(f"Successfully processed {filename}: {len(all_passages)} passages")
             log_event(
@@ -149,9 +144,14 @@ class FileProcessor:
             )
 
             # update job status
-            await self.file_manager.update_file_status(
-                file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.COMPLETED
-            )
+            if not self.using_pinecone:
+                await self.file_manager.update_file_status(
+                    file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.COMPLETED
+                )
+            else:
+                await self.file_manager.update_file_status(
+                    file_id=file_metadata.id, actor=self.actor, total_chunks=len(all_passages), chunks_embedded=0
+                )
 
             return all_passages
 

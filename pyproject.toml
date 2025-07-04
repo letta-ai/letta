@@ -98,6 +98,7 @@ redis = {version = "^6.2.0", optional = true}
 structlog = "^25.4.0"
 certifi = "^2025.6.15"
 aioboto3 = {version = "^14.3.0", optional = true}
+pinecone = {extras = ["asyncio"], version = "^7.3.0"}
 
 
 [tool.poetry.extras]
@@ -119,6 +120,7 @@ black = "^24.4.2"
 ipykernel = "^6.29.5"
 ipdb = "^0.13.13"
 pytest-mock = "^3.14.0"
+pinecone = "^7.3.0"
 
 
 [tool.poetry.group."dev,tests".dependencies]
