@@ -109,6 +109,8 @@ jobs:
           MCP_READ_FROM_CONFIG: false
           MCP_DISABLE_STDIO: true
           FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
+          LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
         run: |
           just build-core deploy-core "${DEPLOY_MESSAGE}"
 
