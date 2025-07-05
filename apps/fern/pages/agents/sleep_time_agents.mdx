@@ -44,9 +44,10 @@ When a `sleeptime_agent` is created, a primary agent and a sleep-time agent are 
 <img src="/images/sleeptime_chat_only.gif" />
 
 ### Configuring the frequency of sleep-time updates
-The sleep-time agent will be triggered every N-steps (default `5`) to update the memory blocks of the primary agent. You can configure the frequency of updates by setting the `sleep_time_agent_frequency` parameter when creating the agent.
+The sleep-time agent will be triggered every N-steps (default `5`) to update the memory blocks of the primary agent. You can configure the frequency of updates by setting the `sleeptime_agent_frequency` parameter when creating the agent.
 ```python maxLines=50
-from letta_client import Letta, SleeptimeManagerUpdate
+from letta_client import Letta
+from letta_client.types import SleeptimeManagerUpdate
 
 client = Letta(token="LETTA_API_KEY")
 
@@ -64,14 +65,14 @@ print(f"Created agent id {agent.id}")
 
 # get the multi-agent group
 group_id = agent.multi_agent_group.id
-current_frequence = agent.multi_agent_group.sleep_time_agent_frequency
+current_frequence = agent.multi_agent_group.sleeptime_agent_frequency
 print(f"Group id: {group_id}, frequency: {current_frequence}")
 
 # update the frequency to every 2 steps
 group = client.groups.modify(
     group_id=group_id,
     manager_config=SleeptimeManagerUpdate(
-        sleep_time_agent_frequency=2
+        sleeptime_agent_frequency=2
     ),
 )
 ```
