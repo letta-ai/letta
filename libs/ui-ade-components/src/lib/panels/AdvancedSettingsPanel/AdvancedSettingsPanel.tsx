@@ -17,7 +17,6 @@ import { MaxTokensSlider } from './components/MaxOutputTokensSlider/MaxOutputTok
 import { MessageBufferAutoclearSwitch } from './components/MessageBufferAutoclearSwitch/MessageBufferAutoclearSwitch';
 import { EmbeddingConfiguration } from './components/EmbeddingConfiguration/EmbeddingConfiguration';
 import { MaxReasoningTokensSlider } from './components/MaxReasoningTokensSlider/MaxReasoningTokensSlider';
-import { SystemPromptEditor } from './components/SystemPromptEditor/SystemPromptEditor';
 import { AgentDescription } from './components/AgentDescription/AgentDescription';
 import { AgentType } from './components/AgentType/AgentType';
 import { MessageBufferLengthSlider } from './components/MessageBufferLengthSlider/MessageBufferLengthSlider';
@@ -97,7 +96,6 @@ function AgentAdvancedSettingsView() {
     <VStack gap="large">
       <VStack>
         <AgentType />
-        <SystemPromptEditor />
         {!isTemplate && <AgentDescription />}
         <MessageBufferAutoclearSwitch />
       </VStack>

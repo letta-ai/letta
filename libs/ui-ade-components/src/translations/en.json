@@ -613,7 +613,7 @@
       "label": "Description"
     },
     "tags": {
-      "label": "Agent Tags",
+      "label": "Tags",
       "tooltip": "Tags are used to organize and identify your agents. You can add multiple tags to your agent.",
       "placeholder": "Enter tags...",
       "noOptions": "No existing tags found, you can create a new tag by typing it in and pressing enter"
@@ -1654,7 +1654,7 @@
       "dependencies": "Dependencies",
       "integrationTools": "Other integrations",
       "composioTools": "Composio",
-      "mcpServerHeader": "MCP Servers",
+      "mcpServerHeader": "MCP servers",
       "mcpServers": "Connected servers <count></count>",
       "create": "Create tool"
     }

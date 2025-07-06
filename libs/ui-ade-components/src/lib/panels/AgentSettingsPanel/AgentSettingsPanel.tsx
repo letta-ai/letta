@@ -52,6 +52,7 @@ import { useADEAppContext } from '../../AppContext/AppContext';
 import { useIdentityTypeToTranslationMap } from '../../IdentitiesTable/hooks/useIdentityTypeToTranslationMap';
 import { useADETour } from '../../hooks/useADETour/useADETour';
 import { ModelSelector } from './ModelSelector/ModelSelector';
+import { SystemPromptEditor } from '../AdvancedSettingsPanel/components/SystemPromptEditor/SystemPromptEditor';
 
 function AgentIdentifierToCopy() {
   const currentAgent = useCurrentAgent();
@@ -689,6 +690,7 @@ export function AgentSettingsPanel() {
         </HStack>
         <AgentIdentifierToCopy />
       </VStack>
+      <SystemPromptEditor />
       <ModelSelector llmConfig={currentAgent.llm_config} />
       {!isTemplate && <IdentityViewer />}
       {isTemplate && <TemplateDescription />}
