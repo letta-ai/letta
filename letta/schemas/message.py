@@ -84,11 +84,11 @@ class MessageCreate(BaseModel):
         description="The content of the message.",
         json_schema_extra=get_letta_message_content_union_str_json_schema(),
     )
-    name: Optional[str] = Field(None, description="The name of the participant.")
-    otid: Optional[str] = Field(None, description="The offline threading id associated with this message")
-    sender_id: Optional[str] = Field(None, description="The id of the sender of the message, can be an identity id or agent id")
-    batch_item_id: Optional[str] = Field(None, description="The id of the LLMBatchItem that this message is associated with")
-    group_id: Optional[str] = Field(None, description="The multi-agent group that the message was sent in")
+    name: Optional[str] = Field(default=None, description="The name of the participant.")
+    otid: Optional[str] = Field(default=None, description="The offline threading id associated with this message")
+    sender_id: Optional[str] = Field(default=None, description="The id of the sender of the message, can be an identity id or agent id")
+    batch_item_id: Optional[str] = Field(default=None, description="The id of the LLMBatchItem that this message is associated with")
+    group_id: Optional[str] = Field(default=None, description="The multi-agent group that the message was sent in")
 
     def model_dump(self, to_orm: bool = False, **kwargs) -> Dict[str, Any]:
         data = super().model_dump(**kwargs)
@@ -101,9 +101,9 @@ class MessageCreate(BaseModel):
 class MessageUpdate(BaseModel):
     """Request to update a message"""
 
-    role: Optional[MessageRole] = Field(None, description="The role of the participant.")
+    role: Optional[MessageRole] = Field(default=None, description="The role of the participant.")
     content: Optional[Union[str, List[LettaMessageContentUnion]]] = Field(
-        None,
+        default=None,
         description="The content of the message.",
         json_schema_extra=get_letta_message_content_union_str_json_schema(),
     )
@@ -112,11 +112,11 @@ class MessageUpdate(BaseModel):
     # agent_id: Optional[str] = Field(None, description="The unique identifier of the agent.")
     # NOTE: we probably shouldn't allow updating the model field, otherwise this loses meaning
     # model: Optional[str] = Field(None, description="The model used to make the function call.")
-    name: Optional[str] = Field(None, description="The name of the participant.")
+    name: Optional[str] = Field(default=None, description="The name of the participant.")
     # NOTE: we probably shouldn't allow updating the created_at field, right?
     # created_at: Optional[datetime] = Field(None, description="The time the message was created.")
-    tool_calls: Optional[List[OpenAIToolCall,]] = Field(None, description="The list of tool calls requested.")
-    tool_call_id: Optional[str] = Field(None, description="The id of the tool call.")
+    tool_calls: Optional[List[OpenAIToolCall,]] = Field(default=None, description="The list of tool calls requested.")
+    tool_call_id: Optional[str] = Field(default=None, description="The id of the tool call.")
 
     def model_dump(self, to_orm: bool = False, **kwargs) -> Dict[str, Any]:
         data = super().model_dump(**kwargs)
@@ -150,28 +150,28 @@ class Message(BaseMessage):
     """
 
     id: str = BaseMessage.generate_id_field()
-    organization_id: Optional[str] = Field(None, description="The unique identifier of the organization.")
-    agent_id: Optional[str] = Field(None, description="The unique identifier of the agent.")
-    model: Optional[str] = Field(None, description="The model used to make the function call.")
+    organization_id: Optional[str] = Field(default=None, description="The unique identifier of the organization.")
+    agent_id: Optional[str] = Field(default=None, description="The unique identifier of the agent.")
+    model: Optional[str] = Field(default=None, description="The model used to make the function call.")
     # Basic OpenAI-style fields
     role: MessageRole = Field(..., description="The role of the participant.")
-    content: Optional[List[LettaMessageContentUnion]] = Field(None, description="The content of the message.")
+    content: Optional[List[LettaMessageContentUnion]] = Field(default=None, description="The content of the message.")
     # NOTE: in OpenAI, this field is only used for roles 'user', 'assistant', and 'function' (now deprecated). 'tool' does not use it.
     name: Optional[str] = Field(
-        None,
+        default=None,
         description="For role user/assistant: the (optional) name of the participant. For role tool/function: the name of the function called.",
     )
     tool_calls: Optional[List[OpenAIToolCall]] = Field(
-        None, description="The list of tool calls requested. Only applicable for role assistant."
+        default=None, description="The list of tool calls requested. Only applicable for role assistant."
     )
-    tool_call_id: Optional[str] = Field(None, description="The ID of the tool call. Only applicable for role tool.")
+    tool_call_id: Optional[str] = Field(default=None, description="The ID of the tool call. Only applicable for role tool.")
     # Extras
-    step_id: Optional[str] = Field(None, description="The id of the step that this message was created in.")
-    otid: Optional[str] = Field(None, description="The offline threading id associated with this message")
-    tool_returns: Optional[List[ToolReturn]] = Field(None, description="Tool execution return information for prior tool calls")
-    group_id: Optional[str] = Field(None, description="The multi-agent group that the message was sent in")
-    sender_id: Optional[str] = Field(None, description="The id of the sender of the message, can be an identity id or agent id")
-    batch_item_id: Optional[str] = Field(None, description="The id of the LLMBatchItem that this message is associated with")
+    step_id: Optional[str] = Field(default=None, description="The id of the step that this message was created in.")
+    otid: Optional[str] = Field(default=None, description="The offline threading id associated with this message")
+    tool_returns: Optional[List[ToolReturn]] = Field(default=None, description="Tool execution return information for prior tool calls")
+    group_id: Optional[str] = Field(default=None, description="The multi-agent group that the message was sent in")
+    sender_id: Optional[str] = Field(default=None, description="The id of the sender of the message, can be an identity id or agent id")
+    batch_item_id: Optional[str] = Field(default=None, description="The id of the LLMBatchItem that this message is associated with")
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
 
@@ -482,7 +482,9 @@ class Message(BaseMessage):
         # TODO(caren) implicit support for only non-parts/list content types
         if openai_message_dict["content"] is not None and type(openai_message_dict["content"]) is not str:
             raise ValueError(f"Invalid content type: {type(openai_message_dict['content'])}")
-        content = [TextContent(text=openai_message_dict["content"])] if openai_message_dict["content"] else []
+        content: List[LettaMessageContentUnion] = (
+            [TextContent(text=openai_message_dict["content"])] if openai_message_dict["content"] else []
+        )
 
         # TODO(caren) bad assumption here that "reasoning_content" always comes before "redacted_reasoning_content"
         if "reasoning_content" in openai_message_dict and openai_message_dict["reasoning_content"]:
@@ -491,14 +493,16 @@ class Message(BaseMessage):
                     reasoning=openai_message_dict["reasoning_content"],
                     is_native=True,
                     signature=(
-                        openai_message_dict["reasoning_content_signature"] if openai_message_dict["reasoning_content_signature"] else None
+                        str(openai_message_dict["reasoning_content_signature"])
+                        if "reasoning_content_signature" in openai_message_dict
+                        else None
                     ),
                 ),
             )
         if "redacted_reasoning_content" in openai_message_dict and openai_message_dict["redacted_reasoning_content"]:
             content.append(
                 RedactedReasoningContent(
-                    data=openai_message_dict["redacted_reasoning_content"] if "redacted_reasoning_content" in openai_message_dict else None,
+                    data=str(openai_message_dict["redacted_reasoning_content"]),
                 ),
             )
         if "omitted_reasoning_content" in openai_message_dict and openai_message_dict["omitted_reasoning_content"]:
@@ -733,7 +737,7 @@ class Message(BaseMessage):
             else:
                 warnings.warn(f"Using OpenAI with invalid 'name' field (name={self.name} role={self.role}).")
 
-        if parse_content_parts:
+        if parse_content_parts and self.content is not None:
             for content in self.content:
                 if isinstance(content, ReasoningContent):
                     openai_message["reasoning_content"] = content.reasoning
@@ -819,7 +823,7 @@ class Message(BaseMessage):
             }
             content = []
             # COT / reasoning / thinking
-            if len(self.content) > 1:
+            if self.content is not None and len(self.content) > 1:
                 for content_part in self.content:
                     if isinstance(content_part, ReasoningContent):
                         content.append(
@@ -1154,6 +1158,6 @@ class Message(BaseMessage):
 
 class ToolReturn(BaseModel):
     status: Literal["success", "error"] = Field(..., description="The status of the tool call")
-    stdout: Optional[List[str]] = Field(None, description="Captured stdout (e.g. prints, logs) from the tool invocation")
-    stderr: Optional[List[str]] = Field(None, description="Captured stderr from the tool invocation")
+    stdout: Optional[List[str]] = Field(default=None, description="Captured stdout (e.g. prints, logs) from the tool invocation")
+    stderr: Optional[List[str]] = Field(default=None, description="Captured stderr from the tool invocation")
     # func_return: Optional[Any] = Field(None, description="The function return object")
