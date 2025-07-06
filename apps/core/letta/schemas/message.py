@@ -698,7 +698,7 @@ class Message(BaseMessage):
         elif self.role == "assistant":
             assert self.tool_calls is not None or text_content is not None
             openai_message = {
-                "content": None if put_inner_thoughts_in_kwargs else text_content,
+                "content": None if (put_inner_thoughts_in_kwargs and self.tool_calls is not None) else text_content,
                 "role": self.role,
             }
 
