@@ -97,7 +97,7 @@ class LettaBase(BaseModel):
 
 class OrmMetadataBase(LettaBase):
     # metadata fields
-    created_by_id: Optional[str] = Field(None, description="The id of the user that made this object.")
-    last_updated_by_id: Optional[str] = Field(None, description="The id of the user that made this object.")
-    created_at: Optional[datetime] = Field(None, description="The timestamp when the object was created.")
-    updated_at: Optional[datetime] = Field(None, description="The timestamp when the object was last updated.")
+    created_by_id: Optional[str] = Field(default=None, description="The id of the user that made this object.")
+    last_updated_by_id: Optional[str] = Field(default=None, description="The id of the user that made this object.")
+    created_at: Optional[datetime] = Field(default=None, description="The timestamp when the object was created.")
+    updated_at: Optional[datetime] = Field(default=None, description="The timestamp when the object was last updated.")

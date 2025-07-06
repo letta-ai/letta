@@ -72,7 +72,7 @@ class SystemMessage(LettaMessage):
         content (str): The message content sent by the system
     """
 
-    message_type: Literal[MessageType.system_message] = Field(MessageType.system_message, description="The type of the message.")
+    message_type: Literal[MessageType.system_message] = Field(default=MessageType.system_message, description="The type of the message.")
     content: str = Field(..., description="The message content sent by the system")
 
 
@@ -87,7 +87,7 @@ class UserMessage(LettaMessage):
         content (Union[str, List[LettaUserMessageContentUnion]]): The message content sent by the user (can be a string or an array of multi-modal content parts)
     """
 
-    message_type: Literal[MessageType.user_message] = Field(MessageType.user_message, description="The type of the message.")
+    message_type: Literal[MessageType.user_message] = Field(default=MessageType.user_message, description="The type of the message.")
     content: Union[str, List[LettaUserMessageContentUnion]] = Field(
         ...,
         description="The message content sent by the user (can be a string or an array of multi-modal content parts)",
@@ -109,7 +109,9 @@ class ReasoningMessage(LettaMessage):
         signature (Optional[str]): The model-generated signature of the reasoning step
     """
 
-    message_type: Literal[MessageType.reasoning_message] = Field(MessageType.reasoning_message, description="The type of the message.")
+    message_type: Literal[MessageType.reasoning_message] = Field(
+        default=MessageType.reasoning_message, description="The type of the message."
+    )
     source: Literal["reasoner_model", "non_reasoner_model"] = "non_reasoner_model"
     reasoning: str
     signature: Optional[str] = None
@@ -130,7 +132,7 @@ class HiddenReasoningMessage(LettaMessage):
     """
 
     message_type: Literal[MessageType.hidden_reasoning_message] = Field(
-        MessageType.hidden_reasoning_message, description="The type of the message."
+        default=MessageType.hidden_reasoning_message, description="The type of the message."
     )
     state: Literal["redacted", "omitted"]
     hidden_reasoning: Optional[str] = None
@@ -170,7 +172,9 @@ class ToolCallMessage(LettaMessage):
         tool_call (Union[ToolCall, ToolCallDelta]): The tool call
     """
 
-    message_type: Literal[MessageType.tool_call_message] = Field(MessageType.tool_call_message, description="The type of the message.")
+    message_type: Literal[MessageType.tool_call_message] = Field(
+        default=MessageType.tool_call_message, description="The type of the message."
+    )
     tool_call: Union[ToolCall, ToolCallDelta]
 
     def model_dump(self, *args, **kwargs):
@@ -222,7 +226,9 @@ class ToolReturnMessage(LettaMessage):
         stderr (Optional[List(str)]): Captured stderr from the tool invocation
     """
 
-    message_type: Literal[MessageType.tool_return_message] = Field(MessageType.tool_return_message, description="The type of the message.")
+    message_type: Literal[MessageType.tool_return_message] = Field(
+        default=MessageType.tool_return_message, description="The type of the message."
+    )
     tool_return: str
     status: Literal["success", "error"]
     tool_call_id: str
@@ -241,7 +247,9 @@ class AssistantMessage(LettaMessage):
         content (Union[str, List[LettaAssistantMessageContentUnion]]): The message content sent by the agent (can be a string or an array of content parts)
     """
 
-    message_type: Literal[MessageType.assistant_message] = Field(MessageType.assistant_message, description="The type of the message.")
+    message_type: Literal[MessageType.assistant_message] = Field(
+        default=MessageType.assistant_message, description="The type of the message."
+    )
     content: Union[str, List[LettaAssistantMessageContentUnion]] = Field(
         ...,
         description="The message content sent by the agent (can be a string or an array of content parts)",
