@@ -2121,6 +2121,10 @@ export type LLMConfig = {
    * Configurable thinking budget for extended thinking, only used if enable_reasoner is True. Minimum value is 1024.
    */
   max_reasoning_tokens?: number;
+  /**
+   * Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. From OpenAI: Number between -2.0 and 2.0.
+   */
+  frequency_penalty?: number | null;
 };
 
 /**

@@ -343,6 +343,14 @@ export const LLMConfig = z.object({
     ])
     .optional(),
   max_reasoning_tokens: z.union([z.number(), z.undefined()]).optional(),
+  frequency_penalty: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type TextContent = z.infer<typeof TextContent>;

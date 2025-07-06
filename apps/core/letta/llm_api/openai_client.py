@@ -216,6 +216,10 @@ class OpenAIClient(LLMClientBase):
             # NOTE: the reasoners that don't support temperature require 1.0, not None
             temperature=llm_config.temperature if supports_temperature_param(model) else 1.0,
         )
+
+        if llm_config.frequency_penalty is not None:
+            data.frequency_penalty = llm_config.frequency_penalty
+
         if tools and supports_parallel_tool_calling(model):
             data.parallel_tool_calls = False
 

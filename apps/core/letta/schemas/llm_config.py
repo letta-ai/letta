@@ -77,6 +77,10 @@ class LLMConfig(BaseModel):
     max_reasoning_tokens: int = Field(
         0, description="Configurable thinking budget for extended thinking, only used if enable_reasoner is True. Minimum value is 1024."
     )
+    frequency_penalty: Optional[float] = Field(
+        None,  # Can also deafult to 0.0?
+        description="Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. From OpenAI: Number between -2.0 and 2.0.",
+    )
 
     # FIXME hack to silence pydantic protected namespace warning
     model_config = ConfigDict(protected_namespaces=())

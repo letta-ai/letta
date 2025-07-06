@@ -6190,6 +6190,19 @@ export const $LLMConfig = {
         'Configurable thinking budget for extended thinking, only used if enable_reasoner is True. Minimum value is 1024.',
       default: 0,
     },
+    frequency_penalty: {
+      anyOf: [
+        {
+          type: 'number',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Frequency Penalty',
+      description:
+        "Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. From OpenAI: Number between -2.0 and 2.0.",
+    },
   },
   type: 'object',
   required: ['model', 'model_endpoint_type', 'context_window'],
