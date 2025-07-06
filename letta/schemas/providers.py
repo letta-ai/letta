@@ -324,17 +324,24 @@ class OpenAIProvider(Provider):
             else:
                 handle = self.get_handle(model_name)
 
-            configs.append(
-                LLMConfig(
-                    model=model_name,
-                    model_endpoint_type="openai",
-                    model_endpoint=self.base_url,
-                    context_window=context_window_size,
-                    handle=handle,
-                    provider_name=self.name,
-                    provider_category=self.provider_category,
-                )
+            llm_config = LLMConfig(
+                model=model_name,
+                model_endpoint_type="openai",
+                model_endpoint=self.base_url,
+                context_window=context_window_size,
+                handle=handle,
+                provider_name=self.name,
+                provider_category=self.provider_category,
             )
+
+            # gpt-4o-mini has started to regress with pretty bad emoji spam loops
+            # this is to counteract that
+            if "gpt-4o-mini" in model_name:
+                llm_config.frequency_penalty = 1.0
+            if "gpt-4.1-mini" in model_name:
+                llm_config.frequency_penalty = 1.0
+
+            configs.append(llm_config)
 
         # for OpenAI, sort in reverse order
         if self.base_url == "https://api.openai.com/v1":
