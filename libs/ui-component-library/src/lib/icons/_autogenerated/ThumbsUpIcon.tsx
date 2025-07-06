@@ -14,7 +14,7 @@ export function ThumbsUpIcon(props: IconWrappedProps) {
       >
         <path
           d="M5.2115 19.5001V7.50005L11.8462 0.904053L13.2057 2.26355L11.9923 7.50005H20.5V11.2846L17.023 19.5001H5.2115ZM6.7115 18.0001H16.0095L19 10.9906V9.00005H10.0963L11.35 3.5193L6.7115 8.13855V18.0001ZM0.5 19.5001V7.50005H5.2115V9.00005H2V18.0001H5.2115V19.5001H0.5Z"
-          fill="#141414"
+          fill="currentColor"
         />
       </svg>
     </IconWrapper>
