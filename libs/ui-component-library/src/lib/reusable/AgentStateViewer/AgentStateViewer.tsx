@@ -277,9 +277,28 @@ function MemoryBlockViewer(props: MemoryBlockViewerProps) {
   const t = useTranslations('components/AgentStateViewer');
   const { memoryBlocks, negative, comparedMemoryBlocks } = props;
 
+  const combinedMemoryBlocks = useMemo(() => {
+    const memoryMap = new Map<
+      string,
+      CleanedAgentState['memoryBlocks'][number]
+    >();
+
+    memoryBlocks.forEach((block) => {
+      memoryMap.set(block.label || '', block);
+    });
+
+    comparedMemoryBlocks?.forEach((block) => {
+      if (!memoryMap.has(block.label || '')) {
+        memoryMap.set(block.label || '', block);
+      }
+    });
+
+    return Array.from(memoryMap.values());
+  }, [memoryBlocks, comparedMemoryBlocks]);
+
   if (
-    !memoryBlocks ||
-    (memoryBlocks.length === 0 && comparedMemoryBlocks?.length === 0)
+    !combinedMemoryBlocks ||
+    (combinedMemoryBlocks.length === 0 && combinedMemoryBlocks?.length === 0)
   ) {
     return (
       <Typography variant="body3">
@@ -288,11 +307,39 @@ function MemoryBlockViewer(props: MemoryBlockViewerProps) {
     );
   }
 
+  function getStatusFromState(first: boolean, second?: boolean) {
+    if (first && second) {
+      return 'default';
+    }
+
+    if (!first && second) {
+      return 'success';
+    }
+
+    if (first && typeof second === 'boolean' && !second) {
+      return 'destructive';
+    } else if (first) {
+      return 'default';
+    }
+
+    return null;
+  }
+
   return (
     <VStack gap={false}>
-      {memoryBlocks.map((block) => {
+      {combinedMemoryBlocks.map((block) => {
         const comparedBlock = comparedMemoryBlocks?.find(
           (b) => b.label === block.label,
+        );
+
+        const readonlyStatus = getStatusFromState(
+          block.read_only,
+          comparedBlock?.read_only,
+        );
+
+        const preservedStatus = getStatusFromState(
+          block.preserve_on_migration,
+          comparedBlock?.preserve_on_migration,
         );
 
         return (
@@ -310,11 +357,17 @@ function MemoryBlockViewer(props: MemoryBlockViewerProps) {
             key={block.label || ''}
           >
             <HStack align="center">
-              {block.read_only && (
-                <Badge content={t('MemoryBlockViewer.readOnly')} />
+              {readonlyStatus && (
+                <Badge
+                  content={t('MemoryBlockViewer.readOnly')}
+                  variant={readonlyStatus}
+                />
               )}
-              {block.preserve_on_migration && (
-                <Badge content={t('MemoryBlockViewer.preserved')} />
+              {preservedStatus && (
+                <Badge
+                  content={t('MemoryBlockViewer.preserved')}
+                  variant={preservedStatus}
+                />
               )}
             </HStack>
             <HStack align="center">
@@ -694,18 +747,13 @@ function StateViewer(props: StateViewerProps) {
         <SectionWrapper
           hasDifference={hasMemoryBlocksDifference}
           title={t('MemoryBlockViewer.title')}
-          base={
-            <MemoryBlockViewer
-              negative
-              comparedMemoryBlocks={toCompare?.memoryBlocks}
-              memoryBlocks={state.memoryBlocks}
-            />
-          }
+          base={<MemoryBlockViewer memoryBlocks={state.memoryBlocks} />}
           compared={
             toCompare && (
               <MemoryBlockViewer
-                memoryBlocks={toCompare.memoryBlocks}
-                comparedMemoryBlocks={state?.memoryBlocks}
+                negative
+                memoryBlocks={state.memoryBlocks}
+                comparedMemoryBlocks={toCompare?.memoryBlocks}
               />
             )
           }
