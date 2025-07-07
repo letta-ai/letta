@@ -90,7 +90,7 @@ class VoiceSleeptimeAgent(LettaAgent):
         current_in_context_messages, new_in_context_messages, stop_reason, usage = await super()._step(
             agent_state=agent_state, input_messages=input_messages, max_steps=max_steps
         )
-        new_in_context_messages, updated = self.summarizer.summarize(
+        new_in_context_messages, updated = await self.summarizer.summarize(
             in_context_messages=current_in_context_messages, new_letta_messages=new_in_context_messages
         )
         self.agent_manager.set_in_context_messages(

@@ -188,6 +188,22 @@ def package_summarize_message(summary, summary_message_count, hidden_message_cou
     return json_dumps(packaged_message)
 
 
+def package_summarize_message_no_counts(summary, timezone):
+    context_message = (
+        f"Note: prior messages have been hidden from view due to conversation memory constraints.\n"
+        + f"The following is a summary of the previous messages:\n {summary}"
+    )
+
+    formatted_time = get_local_time(timezone=timezone)
+    packaged_message = {
+        "type": "system_alert",
+        "message": context_message,
+        "time": formatted_time,
+    }
+
+    return json_dumps(packaged_message)
+
+
 def package_summarize_message_no_summary(hidden_message_count, message=None, timezone=None):
     """Add useful metadata to the summary message"""
 

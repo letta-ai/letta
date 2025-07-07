@@ -7,3 +7,4 @@ class SummarizationMode(str, Enum):
     """
 
     STATIC_MESSAGE_BUFFER = "static_message_buffer_mode"
+    PARTIAL_EVICT_MESSAGE_BUFFER = "partial_evict_message_buffer_mode"

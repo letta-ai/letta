@@ -39,11 +39,16 @@ class ToolSettings(BaseSettings):
 class SummarizerSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="letta_summarizer_", extra="ignore")
 
-    mode: SummarizationMode = SummarizationMode.STATIC_MESSAGE_BUFFER
+    # mode: SummarizationMode = SummarizationMode.STATIC_MESSAGE_BUFFER
+    mode: SummarizationMode = SummarizationMode.PARTIAL_EVICT_MESSAGE_BUFFER
     message_buffer_limit: int = 60
     message_buffer_min: int = 15
     enable_summarization: bool = True
     max_summarization_retries: int = 3
+
+    # partial evict summarizer percentage
+    # eviction based on percentage of message count, not token count
+    partial_evict_summarizer_percentage: float = 0.30
 
     # TODO(cliandy): the below settings are tied to old summarization and should be deprecated or moved
     # Controls if we should evict all messages
