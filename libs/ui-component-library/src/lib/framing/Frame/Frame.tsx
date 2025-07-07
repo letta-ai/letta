@@ -162,6 +162,7 @@ const frameVariants = cva('', {
     paddingRight: {
       none: 'pr-0',
       xxsmall: 'pr-1',
+      xsmall: 'pr-1.5',
       small: 'pr-2.5',
       medium: 'pr-3',
       large: 'pr-4',

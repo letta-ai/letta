@@ -73,8 +73,8 @@ const inputIconVariants = cva('', {
   variants: {
     size: {
       small: 'h-4 w-4',
-      default: 'h-5 w-5',
-      large: 'h-5 w-5',
+      default: 'h-4 w-4',
+      large: 'h-4 w-4',
     },
   },
   defaultVariants: {
@@ -256,7 +256,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
               color="tertiary"
               label={visibility ? 'Hide' : 'Show'}
               hideLabel
-              size="small"
+              size={size}
             />
           )}
           {isUpdating && <SpinnerPrimitive className="w-3 h-3" />}
@@ -265,9 +265,14 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
               text={(props.value || props.defaultValue || '').toString()}
             />
           )}
-          <Slot className={cn(inputIconVariants({ size }))}>
-            {postIconRender}
-          </Slot>
+
+          {postIcon && (
+            <VStack paddingRight={'xsmall'}>
+              <Slot className={cn(inputIconVariants({ size }), 'text-inherit')}>
+                {postIconRender}
+              </Slot>
+            </VStack>
+          )}
         </HStack>
       </VStack>
     );
