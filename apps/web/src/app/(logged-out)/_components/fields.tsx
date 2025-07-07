@@ -158,7 +158,7 @@ function PasswordSecurityCheck({ passwordValue }: PasswordSecurityCheckProps) {
       <VStack>
         <HStack>
           {passwordValidation(passwordValue).minLength ? (
-            <CheckIcon size="xsmall" color="success" />
+            <CheckIcon size="xsmall" color="positive" />
           ) : (
             <CloseIcon size="xsmall" color="destructive" />
           )}
@@ -175,7 +175,7 @@ function PasswordSecurityCheck({ passwordValue }: PasswordSecurityCheckProps) {
         </HStack>
         <HStack>
           {passwordValidation(passwordValue).hasLowercase ? (
-            <CheckIcon size="xsmall" color="success" />
+            <CheckIcon size="xsmall" color="positive" />
           ) : (
             <CloseIcon size="xsmall" color="destructive" />
           )}
@@ -192,7 +192,7 @@ function PasswordSecurityCheck({ passwordValue }: PasswordSecurityCheckProps) {
         </HStack>
         <HStack>
           {passwordValidation(passwordValue).hasUppercase ? (
-            <CheckIcon size="xsmall" color="success" />
+            <CheckIcon size="xsmall" color="positive" />
           ) : (
             <CloseIcon size="xsmall" color="destructive" />
           )}
@@ -209,7 +209,7 @@ function PasswordSecurityCheck({ passwordValue }: PasswordSecurityCheckProps) {
         </HStack>
         <HStack>
           {passwordValidation(passwordValue).hasNumber ? (
-            <CheckIcon size="xsmall" color="success" />
+            <CheckIcon size="xsmall" color="positive" />
           ) : (
             <CloseIcon size="xsmall" color="destructive" />
           )}
@@ -226,7 +226,7 @@ function PasswordSecurityCheck({ passwordValue }: PasswordSecurityCheckProps) {
         </HStack>
         <HStack>
           {passwordValidation(passwordValue).hasSymbol ? (
-            <CheckIcon size="xsmall" color="success" />
+            <CheckIcon size="xsmall" color="positive" />
           ) : (
             <CloseIcon size="xsmall" color="destructive" />
           )}

@@ -117,7 +117,7 @@ function TestConnectionButton() {
         {testingStatus === 'success' && (
           <Tooltip content={t('TestConnectionButton.success.tooltip')}>
             <HStack>
-              <CheckIcon color="success" />
+              <CheckIcon color="positive" />
               <Typography variant="body2" bold>
                 {t('TestConnectionButton.success.label')}
               </Typography>

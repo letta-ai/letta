@@ -15,7 +15,7 @@ const iconWrapperVariants = cva('inline-flex items-center justify-center', {
       lighter: 'text-text-lighter',
       default: 'text-content',
       muted: 'text-muted',
-      success: 'text-success',
+      positive: 'text-positive',
       brand: 'text-brand',
       violet: 'text-violet',
     },

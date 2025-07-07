@@ -28,7 +28,7 @@ function Benefit(props: BenefitProps) {
 
   return (
     <HStack gap="large">
-      <CheckIcon color="success" />
+      <CheckIcon color="positive" />
       <Typography variant="body">{label}</Typography>
     </HStack>
   );
