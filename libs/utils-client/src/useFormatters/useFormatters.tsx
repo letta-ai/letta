@@ -92,6 +92,8 @@ export function useFormatters() {
         style: 'unit',
         unit: 'millisecond',
         unitDisplay: 'narrow',
+        maximumFractionDigits: 1,
+        minimumFractionDigits: 0,
         ...options,
       }).format(duration / 1_000_000);
     }
@@ -102,6 +104,8 @@ export function useFormatters() {
         style: 'unit',
         unit: 'second',
         unitDisplay: 'narrow',
+        maximumFractionDigits: 1,
+        minimumFractionDigits: 0,
         ...options,
       }).format(duration / 1_000_000_000);
     }
@@ -111,6 +115,8 @@ export function useFormatters() {
       return new Intl.NumberFormat(defaultLocal, {
         style: 'unit',
         unit: 'minute',
+        maximumFractionDigits: 1,
+        minimumFractionDigits: 0,
         unitDisplay: 'narrow',
         ...options,
       }).format(duration / 60_000_000_000);
@@ -119,6 +125,8 @@ export function useFormatters() {
     return new Intl.NumberFormat(defaultLocal, {
       style: 'unit',
       unit: 'hour',
+      maximumFractionDigits: 1,
+      minimumFractionDigits: 0,
       ...options,
     }).format(duration / 3_600_000_000_000);
   }
