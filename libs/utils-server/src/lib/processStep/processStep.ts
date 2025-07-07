@@ -11,19 +11,54 @@ import {
 } from '../redisModelTransactions/redisModelTransactions';
 import { getCustomerSubscription } from '@letta-cloud/service-payments';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
+import {
+  db,
+  organizationCreditTransactions,
+} from '@letta-cloud/service-database';
 
-export async function processStep(step: Step) {
+interface ProcessStepResponse {
+  newCredits?: string;
+  transactionId: string;
+}
+
+export async function processStep(
+  step: Step,
+): Promise<ProcessStepResponse | null> {
   if (
     !step.model ||
     !step.model_endpoint ||
     !step.context_window_limit ||
     !step.organization_id
   ) {
-    return;
+    return null;
   }
 
   if (step.provider_category === 'byok') {
-    return;
+    const org = await getRedisData('coreOrganizationIdToOrganizationId', {
+      coreOrganizationId: step.organization_id,
+    });
+
+    if (!org) {
+      return null;
+    }
+
+    const [txn] = await db
+      .insert(organizationCreditTransactions)
+      .values({
+        amount: '0',
+        organizationId: org.organizationId,
+        stepId: step.id,
+        source: 'inference',
+        note: `BYOK transaction for model ${step.model}`,
+        transactionType: 'subtraction',
+      })
+      .returning({
+        id: organizationCreditTransactions.id,
+      });
+
+    return {
+      transactionId: txn.id,
+    };
   }
 
   const [creditCost, modelData, webOrgId] = await Promise.all([
@@ -46,7 +81,7 @@ export async function processStep(step: Step) {
       console.warn(
         `Model ${step.model} [${step.model_endpoint}] has a cost of 0 credits`,
       );
-      return;
+      return null;
     }
 
     const transactionLock = await createUniqueRedisProperty(
@@ -64,7 +99,7 @@ export async function processStep(step: Step) {
 
     if (!transactionLock) {
       console.warn(`Transaction lock already exists for step ${step.id}`);
-      return;
+      return null;
     }
 
     let amount = creditCost;
@@ -125,5 +160,7 @@ export async function processStep(step: Step) {
       `Failed to deduct credits from organization ${step.organization_id} for model ${step.model}`,
     );
     console.error(e);
+
+    return null;
   }
 }

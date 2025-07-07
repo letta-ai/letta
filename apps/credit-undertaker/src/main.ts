@@ -69,11 +69,12 @@ END;$$;
 
     await Promise.all(
       filteredSteps.map(async (row) => {
-        console.log('[Undertaker] Found existing step', row.id);
         const transaction = await processStep(row);
 
         if (!transaction) {
           return;
+        } else {
+          console.log('[Undertaker] Processed existing step', row.id);
         }
 
         // set tid column of the step to the current transaction id
@@ -95,10 +96,6 @@ END;$$;
         const transaction = await processStep(parsedPayload);
 
         if (!transaction) {
-          console.log(
-            '[Undertaker] No transaction found for step',
-            parsedPayload.id,
-          );
           return;
         }
 
