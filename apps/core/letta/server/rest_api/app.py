@@ -163,7 +163,8 @@ async def lifespan(app_: FastAPI):
 # TODO: Make this more robust
 def filter_out_sentry_errors(event, hint):
     if (
-        "Fiel processing Failed" in str(event.get("exception"))
+        "File processing failed" in str(event.get("exception"))
+        or "Default chunking also failed for" in str(event.get("exception"))
         or "Failed to embed batch of size 32" in str(event.get("exception"))
         or "`inputs` must have less than 512 tokens" in str(event.get("exception"))
     ):
