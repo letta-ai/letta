@@ -37,7 +37,9 @@ async function DataSourcePageLayout(props: ProjectPageWrapperProps) {
     {
       user_id: user.lettaAgentsId,
     },
-  );
+  ).catch(() => {
+    return null;
+  });
 
   if (!dataSource) {
     redirect('/data-sources');
