@@ -26,7 +26,6 @@ from letta.schemas.source import Source, SourceCreate, SourceUpdate
 from letta.schemas.user import User
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
-from letta.services.file_processor.chunker.llama_index_chunker import LlamaIndexChunker
 from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
 from letta.services.file_processor.embedder.pinecone_embedder import PineconeEmbedder
 from letta.services.file_processor.file_processor import FileProcessor
@@ -424,15 +423,12 @@ async def load_file_to_source_cloud(
     file_metadata: FileMetadata,
 ):
     file_processor = MistralFileParser()
-    text_chunker = LlamaIndexChunker(chunk_size=embedding_config.embedding_chunk_size)
     using_pinecone = should_use_pinecone()
     if using_pinecone:
         embedder = PineconeEmbedder()
     else:
         embedder = OpenAIEmbedder(embedding_config=embedding_config)
-    file_processor = FileProcessor(
-        file_parser=file_processor, text_chunker=text_chunker, embedder=embedder, actor=actor, using_pinecone=using_pinecone
-    )
+    file_processor = FileProcessor(file_parser=file_processor, embedder=embedder, actor=actor, using_pinecone=using_pinecone)
     await file_processor.process(
         server=server, agent_states=agent_states, source_id=source_id, content=content, file_metadata=file_metadata
     )
