@@ -38,6 +38,7 @@ from letta.schemas.user import User
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
+from letta.services.summarizer.enums import SummarizationMode
 from letta.services.telemetry_manager import NoopTelemetryManager
 from letta.settings import settings
 from letta.utils import safe_create_task
@@ -750,6 +751,12 @@ async def send_message(
                     step_manager=server.step_manager,
                     telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
                     current_run_id=run.id,
+                    # summarizer settings to be added here
+                    summarizer_mode=(
+                        SummarizationMode.STATIC_MESSAGE_BUFFER
+                        if agent.agent_type == AgentType.voice_convo_agent
+                        else SummarizationMode.PARTIAL_EVICT_MESSAGE_BUFFER
+                    ),
                 )
 
             result = await agent_loop.step(
@@ -878,6 +885,12 @@ async def send_message_streaming(
                     step_manager=server.step_manager,
                     telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
                     current_run_id=run.id,
+                    # summarizer settings to be added here
+                    summarizer_mode=(
+                        SummarizationMode.STATIC_MESSAGE_BUFFER
+                        if agent.agent_type == AgentType.voice_convo_agent
+                        else SummarizationMode.PARTIAL_EVICT_MESSAGE_BUFFER
+                    ),
                 )
             from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
 
@@ -1014,6 +1027,12 @@ async def _process_message_background(
                     actor=actor,
                     step_manager=server.step_manager,
                     telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
+                    # summarizer settings to be added here
+                    summarizer_mode=(
+                        SummarizationMode.STATIC_MESSAGE_BUFFER
+                        if agent.agent_type == AgentType.voice_convo_agent
+                        else SummarizationMode.PARTIAL_EVICT_MESSAGE_BUFFER
+                    ),
                 )
 
             result = await agent_loop.step(

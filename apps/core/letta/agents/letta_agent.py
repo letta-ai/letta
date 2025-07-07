@@ -82,11 +82,16 @@ class LettaAgent(BaseAgent):
         step_manager: StepManager = NoopStepManager(),
         telemetry_manager: TelemetryManager = NoopTelemetryManager(),
         current_run_id: str | None = None,
+        ## summarizer settings
+        summarizer_mode: SummarizationMode = summarizer_settings.mode,
+        # for static_buffer mode
         summary_block_label: str = DEFAULT_SUMMARY_BLOCK_LABEL,
         message_buffer_limit: int = summarizer_settings.message_buffer_limit,
         message_buffer_min: int = summarizer_settings.message_buffer_min,
         enable_summarization: bool = summarizer_settings.enable_summarization,
         max_summarization_retries: int = summarizer_settings.max_summarization_retries,
+        # for partial_evict mode
+        partial_evict_summarizer_percentage: float = summarizer_settings.partial_evict_summarizer_percentage,
     ):
         super().__init__(agent_id=agent_id, openai_client=None, message_manager=message_manager, agent_manager=agent_manager, actor=actor)
 
@@ -124,11 +129,13 @@ class LettaAgent(BaseAgent):
             )
 
         self.summarizer = Summarizer(
-            mode=SummarizationMode(summarizer_settings.mode),
+            mode=summarizer_mode,
+            # TODO consolidate to not use this, or push it into the Summarizer() class
             summarizer_agent=self.summarization_agent,
             # TODO: Make this configurable
             message_buffer_limit=message_buffer_limit,
             message_buffer_min=message_buffer_min,
+            partial_evict_summarizer_percentage=partial_evict_summarizer_percentage,
         )
 
     async def _check_run_cancellation(self) -> bool:
@@ -872,25 +879,35 @@ class LettaAgent(BaseAgent):
             self.logger.warning(
                 f"Total tokens {total_tokens} exceeds configured max tokens {llm_config.context_window}, forcefully clearing message history."
             )
-            new_in_context_messages, updated = self.summarizer.summarize(
-                in_context_messages=in_context_messages, new_letta_messages=new_letta_messages, force=True, clear=True
+            new_in_context_messages, updated = await self.summarizer.summarize(
+                in_context_messages=in_context_messages,
+                new_letta_messages=new_letta_messages,
+                force=True,
+                clear=True,
             )
         else:
-            new_in_context_messages, updated = self.summarizer.summarize(
-                in_context_messages=in_context_messages, new_letta_messages=new_letta_messages
+            self.logger.info(
+                f"Total tokens {total_tokens} does not exceed configured max tokens {llm_config.context_window}, passing summarizing w/o force."
+            )
+            new_in_context_messages, updated = await self.summarizer.summarize(
+                in_context_messages=in_context_messages,
+                new_letta_messages=new_letta_messages,
             )
         await self.agent_manager.set_in_context_messages_async(
-            agent_id=self.agent_id, message_ids=[m.id for m in new_in_context_messages], actor=self.actor
+            agent_id=self.agent_id,
+            message_ids=[m.id for m in new_in_context_messages],
+            actor=self.actor,
         )
 
         return new_in_context_messages
 
     @trace_method
     async def summarize_conversation_history(self) -> AgentState:
+        """Called when the developer explicitly triggers compaction via the API"""
         agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=self.agent_id, actor=self.actor)
         message_ids = agent_state.message_ids
         in_context_messages = await self.message_manager.get_messages_by_ids_async(message_ids=message_ids, actor=self.actor)
-        new_in_context_messages, updated = self.summarizer.summarize(
+        new_in_context_messages, updated = await self.summarizer.summarize(
             in_context_messages=in_context_messages, new_letta_messages=[], force=True
         )
         return await self.agent_manager.set_in_context_messages_async(

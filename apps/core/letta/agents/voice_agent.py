@@ -295,7 +295,7 @@ class VoiceAgent(BaseAgent):
         new_letta_messages = await self.message_manager.create_many_messages_async(letta_message_db_queue, actor=self.actor)
 
         # TODO: Make this more general and configurable, less brittle
-        new_in_context_messages, updated = summarizer.summarize(
+        new_in_context_messages, updated = await summarizer.summarize(
             in_context_messages=in_context_messages, new_letta_messages=new_letta_messages
         )
 
