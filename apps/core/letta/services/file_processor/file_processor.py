@@ -90,7 +90,7 @@ class FileProcessor:
                 return all_passages
 
             except Exception as fallback_error:
-                logger.error(f"Default chunking also failed for {filename}: {str(fallback_error)}")
+                logger.error("Default chunking also failed for %s: %s", filename, fallback_error)
                 log_event(
                     "file_processor.default_chunking_also_failed",
                     {"filename": filename, "fallback_error": str(fallback_error), "fallback_error_type": type(fallback_error).__name__},
@@ -200,7 +200,7 @@ class FileProcessor:
             return all_passages
 
         except Exception as e:
-            logger.error(f"File processing failed for {filename}: {str(e)}")
+            logger.error("File processing failed for %s: %s", filename, e)
             log_event(
                 "file_processor.processing_failed",
                 {

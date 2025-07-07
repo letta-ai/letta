@@ -160,18 +160,6 @@ async def lifespan(app_: FastAPI):
     logger.info(f"[Worker {worker_id}] Lifespan shutdown completed")
 
 
-# TODO: Make this more robust
-def filter_out_sentry_errors(event, hint):
-    if (
-        "File processing failed" in str(event.get("exception"))
-        or "Default chunking also failed for" in str(event.get("exception"))
-        or "Failed to embed batch of size 32" in str(event.get("exception"))
-        or "`inputs` must have less than 512 tokens" in str(event.get("exception"))
-    ):
-        return None
-    return event
-
-
 def create_application() -> "FastAPI":
     """the application start routine"""
     # global server
@@ -187,7 +175,6 @@ def create_application() -> "FastAPI":
             _experiments={
                 "continuous_profiling_auto_start": True,
             },
-            before_send=filter_out_sentry_errors,
         )
 
     debug_mode = "--debug" in sys.argv
