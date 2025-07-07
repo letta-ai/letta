@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any, Dict, List
 
 from pinecone import PineconeAsyncio
@@ -99,8 +98,9 @@ async def upsert_records_to_pinecone_index(records: List[dict], actor: User):
         description = await pc.describe_index(name=settings.pinecone_source_index)
         async with pc.IndexAsyncio(host=description.index.host) as dense_index:
             # Process records in batches to avoid exceeding Pinecone limits
-            batches = [records[i : i + PINECONE_MAX_BATCH_SIZE] for i in range(0, len(records), PINECONE_MAX_BATCH_SIZE)]
-            await asyncio.gather(*[dense_index.upsert_records(actor.organization_id, batch) for batch in batches])
+            for i in range(0, len(records), PINECONE_MAX_BATCH_SIZE):
+                batch = records[i : i + PINECONE_MAX_BATCH_SIZE]
+                await dense_index.upsert_records(actor.organization_id, batch)
 
 
 async def search_pinecone_index(query: str, limit: int, filter: Dict[str, Any], actor: User) -> Dict[str, Any]:
