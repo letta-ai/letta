@@ -39,11 +39,16 @@ class ToolSettings(BaseSettings):
 class SummarizerSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="letta_summarizer_", extra="ignore")
 
-    mode: SummarizationMode = SummarizationMode.STATIC_MESSAGE_BUFFER
+    # mode: SummarizationMode = SummarizationMode.STATIC_MESSAGE_BUFFER
+    mode: SummarizationMode = SummarizationMode.PARTIAL_EVICT_MESSAGE_BUFFER
     message_buffer_limit: int = 60
     message_buffer_min: int = 15
     enable_summarization: bool = True
     max_summarization_retries: int = 3
+
+    # partial evict summarizer percentage
+    # eviction based on percentage of message count, not token count
+    partial_evict_summarizer_percentage: float = 0.30
 
     # TODO(cliandy): the below settings are tied to old summarization and should be deprecated or moved
     # Controls if we should evict all messages
@@ -252,6 +257,13 @@ class Settings(BaseSettings):
     # LLM request timeout settings (model + embedding model)
     llm_request_timeout_seconds: float = Field(default=60.0, ge=10.0, le=1800.0, description="Timeout for LLM requests in seconds")
     llm_stream_timeout_seconds: float = Field(default=60.0, ge=10.0, le=1800.0, description="Timeout for LLM streaming requests in seconds")
+
+    # For embeddings
+    enable_pinecone: bool = False
+    pinecone_api_key: Optional[str] = None
+    pinecone_source_index: Optional[str] = "sources"
+    pinecone_agent_index: Optional[str] = "recall"
+    upsert_pinecone_indices: bool = False
 
     @property
     def letta_pg_uri(self) -> str:

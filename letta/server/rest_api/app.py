@@ -17,6 +17,7 @@ from letta.__init__ import __version__ as letta_version
 from letta.agents.exceptions import IncompatibleAgentType
 from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
 from letta.errors import BedrockPermissionError, LettaAgentNotFoundError, LettaUserNotFoundError
+from letta.helpers.pinecone_utils import get_pinecone_indices, should_use_pinecone, upsert_pinecone_indices
 from letta.jobs.scheduler import start_scheduler_with_leader_election
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
@@ -126,6 +127,16 @@ async def lifespan(app_: FastAPI):
     db_registry.initialize_sync()
     db_registry.initialize_async()
     logger.info(f"[Worker {worker_id}] Database connections initialized")
+
+    if should_use_pinecone():
+        if settings.upsert_pinecone_indices:
+            logger.info(f"[Worker {worker_id}] Upserting pinecone indices: {get_pinecone_indices()}")
+            await upsert_pinecone_indices()
+            logger.info(f"[Worker {worker_id}] Upserted pinecone indices")
+        else:
+            logger.info(f"[Worker {worker_id}] Enabled pinecone")
+    else:
+        logger.info(f"[Worker {worker_id}] Disabled pinecone")
 
     logger.info(f"[Worker {worker_id}] Starting scheduler with leader election")
     global server

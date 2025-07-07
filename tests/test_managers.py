@@ -3320,7 +3320,7 @@ async def test_update_tool_pip_requirements(server: SyncServer, print_tool, defa
     # Add pip requirements to existing tool
     pip_reqs = [
         PipRequirement(name="pandas", version="1.5.0"),
-        PipRequirement(name="matplotlib"),
+        PipRequirement(name="sumy"),
     ]
 
     tool_update = ToolUpdate(pip_requirements=pip_reqs)
@@ -3334,7 +3334,7 @@ async def test_update_tool_pip_requirements(server: SyncServer, print_tool, defa
     assert len(updated_tool.pip_requirements) == 2
     assert updated_tool.pip_requirements[0].name == "pandas"
     assert updated_tool.pip_requirements[0].version == "1.5.0"
-    assert updated_tool.pip_requirements[1].name == "matplotlib"
+    assert updated_tool.pip_requirements[1].name == "sumy"
     assert updated_tool.pip_requirements[1].version is None
 
 
@@ -5216,6 +5216,41 @@ async def test_update_file_status_error_only(server, default_user, default_sourc
     )
     assert updated.error_message == "Timeout while embedding"
     assert updated.processing_status == FileProcessingStatus.PENDING  # default from creation
+
+
+@pytest.mark.asyncio
+async def test_update_file_status_with_chunks(server, default_user, default_source):
+    """Update chunk progress fields along with status."""
+    meta = PydanticFileMetadata(
+        file_name="chunks_test.txt",
+        file_path="/tmp/chunks_test.txt",
+        file_type="text/plain",
+        file_size=500,
+        source_id=default_source.id,
+    )
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
+
+    # Update with chunk progress
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.EMBEDDING,
+        total_chunks=100,
+        chunks_embedded=50,
+    )
+    assert updated.processing_status == FileProcessingStatus.EMBEDDING
+    assert updated.total_chunks == 100
+    assert updated.chunks_embedded == 50
+
+    # Update only chunk progress
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        chunks_embedded=100,
+    )
+    assert updated.chunks_embedded == 100
+    assert updated.total_chunks == 100  # unchanged
+    assert updated.processing_status == FileProcessingStatus.EMBEDDING  # unchanged
 
 
 @pytest.mark.asyncio

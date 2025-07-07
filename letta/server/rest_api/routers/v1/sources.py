@@ -9,6 +9,12 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, UploadFile
 from starlette import status
 
 import letta.constants as constants
+from letta.helpers.pinecone_utils import (
+    delete_file_records_from_pinecone_index,
+    delete_source_records_from_pinecone_index,
+    list_pinecone_index_for_files,
+    should_use_pinecone,
+)
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
@@ -22,6 +28,7 @@ from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 from letta.services.file_processor.chunker.llama_index_chunker import LlamaIndexChunker
 from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
+from letta.services.file_processor.embedder.pinecone_embedder import PineconeEmbedder
 from letta.services.file_processor.file_processor import FileProcessor
 from letta.services.file_processor.file_types import (
     get_allowed_media_types,
@@ -162,6 +169,10 @@ async def delete_source(
     agent_states = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
     files = await server.file_manager.list_files(source_id, actor)
     file_ids = [f.id for f in files]
+
+    if should_use_pinecone():
+        logger.info(f"Deleting source {source_id} from pinecone index")
+        await delete_source_records_from_pinecone_index(source_id=source_id, actor=actor)
 
     for agent_state in agent_states:
         await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
@@ -326,15 +337,23 @@ async def get_file_metadata(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    # Verify the source exists and user has access
-    source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
-    if not source:
-        raise HTTPException(status_code=404, detail=f"Source with id={source_id} not found.")
-
     # Get file metadata using the file manager
     file_metadata = await server.file_manager.get_file_by_id(
         file_id=file_id, actor=actor, include_content=include_content, strip_directory_prefix=True
     )
+
+    if should_use_pinecone() and not file_metadata.is_processing_terminal():
+        ids = await list_pinecone_index_for_files(file_id=file_id, actor=actor, limit=file_metadata.total_chunks)
+        logger.info(f"Embedded chunks {len(ids)}/{file_metadata.total_chunks} for {file_id} in organization {actor.organization_id}")
+
+        if len(ids) != file_metadata.chunks_embedded or len(ids) == file_metadata.total_chunks:
+            if len(ids) != file_metadata.total_chunks:
+                file_status = file_metadata.processing_status
+            else:
+                file_status = FileProcessingStatus.COMPLETED
+            await server.file_manager.update_file_status(
+                file_id=file_metadata.id, actor=actor, chunks_embedded=len(ids), processing_status=file_status
+            )
 
     if not file_metadata:
         raise HTTPException(status_code=404, detail=f"File with id={file_id} not found.")
@@ -363,6 +382,10 @@ async def delete_file_from_source(
     deleted_file = await server.file_manager.delete_file(file_id=file_id, actor=actor)
 
     await server.remove_file_from_context_windows(source_id=source_id, file_id=deleted_file.id, actor=actor)
+
+    if should_use_pinecone():
+        logger.info(f"Deleting file {file_id} from pinecone index")
+        await delete_file_records_from_pinecone_index(file_id=file_id, actor=actor)
 
     asyncio.create_task(sleeptime_document_ingest_async(server, source_id, actor, clear_history=True))
     if deleted_file is None:
@@ -402,8 +425,14 @@ async def load_file_to_source_cloud(
 ):
     file_processor = MistralFileParser()
     text_chunker = LlamaIndexChunker(chunk_size=embedding_config.embedding_chunk_size)
-    embedder = OpenAIEmbedder(embedding_config=embedding_config)
-    file_processor = FileProcessor(file_parser=file_processor, text_chunker=text_chunker, embedder=embedder, actor=actor)
+    using_pinecone = should_use_pinecone()
+    if using_pinecone:
+        embedder = PineconeEmbedder()
+    else:
+        embedder = OpenAIEmbedder(embedding_config=embedding_config)
+    file_processor = FileProcessor(
+        file_parser=file_processor, text_chunker=text_chunker, embedder=embedder, actor=actor, using_pinecone=using_pinecone
+    )
     await file_processor.process(
         server=server, agent_states=agent_states, source_id=source_id, content=content, file_metadata=file_metadata
     )

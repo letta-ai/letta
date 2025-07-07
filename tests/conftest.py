@@ -29,6 +29,24 @@ def disable_e2b_api_key() -> Generator[None, None, None]:
 
 
 @pytest.fixture
+def disable_pinecone() -> Generator[None, None, None]:
+    """
+    Temporarily disables Pinecone by setting `settings.enable_pinecone` to False
+    and `settings.pinecone_api_key` to None for the duration of the test.
+    Restores the original values afterward.
+    """
+    from letta.settings import settings
+
+    original_enable_pinecone = settings.enable_pinecone
+    original_pinecone_api_key = settings.pinecone_api_key
+    settings.enable_pinecone = False
+    settings.pinecone_api_key = None
+    yield
+    settings.enable_pinecone = original_enable_pinecone
+    settings.pinecone_api_key = original_pinecone_api_key
+
+
+@pytest.fixture
 def check_e2b_key_is_set():
     from letta.settings import tool_settings
 

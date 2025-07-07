@@ -9,12 +9,13 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderType
 from letta.schemas.passage import Passage
 from letta.schemas.user import User
+from letta.services.file_processor.embedder.base_embedder import BaseEmbedder
 from letta.settings import model_settings
 
 logger = get_logger(__name__)
 
 
-class OpenAIEmbedder:
+class OpenAIEmbedder(BaseEmbedder):
     """OpenAI-based embedding generation"""
 
     def __init__(self, embedding_config: Optional[EmbeddingConfig] = None):
@@ -24,6 +25,7 @@ class OpenAIEmbedder:
             else EmbeddingConfig.default_config(model_name="letta")
         )
         self.embedding_config = embedding_config or self.default_embedding_config
+        self.max_concurrent_requests = 20
 
         # TODO: Unify to global OpenAI client
         self.client: OpenAIClient = cast(
@@ -34,7 +36,6 @@ class OpenAIEmbedder:
                 actor=None,  # Not necessary
             ),
         )
-        self.max_concurrent_requests = 20
 
     @trace_method
     async def _embed_batch(self, batch: List[str], batch_indices: List[int]) -> List[Tuple[int, List[float]]]:

@@ -29,7 +29,6 @@ from letta_client.types import (
 from letta.schemas.agent import AgentState
 from letta.schemas.llm_config import LLMConfig
 
-
 # ------------------------------
 # Helper Functions and Constants
 # ------------------------------
@@ -108,6 +107,7 @@ all_configs = [
 requested = os.getenv("LLM_CONFIG_FILE")
 filenames = [requested] if requested else all_configs
 TESTED_LLM_CONFIGS: List[LLMConfig] = [get_llm_config(fn) for fn in filenames]
+
 
 def assert_greeting_with_assistant_message_response(
     messages: List[Any],

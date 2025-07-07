@@ -29,7 +29,6 @@ def derive_openai_json_schema(source_code: str, name: Optional[str] = None) -> d
             # "Field": Field,
         }
         env.update(globals())
-
         # print("About to execute source code...")
         exec(source_code, env)
         # print("Source code executed successfully")

@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 import json
-import sys
 import os
+import sys
 from collections import defaultdict
 from datetime import datetime
+
 
 def load_feature_mappings(config_file=None):
     """Load feature mappings from config file."""
     if config_file is None:
         # Default to feature_mappings.json in the same directory as this script
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        config_file = os.path.join(script_dir, 'feature_mappings.json')
+        config_file = os.path.join(script_dir, "feature_mappings.json")
 
     try:
-        with open(config_file, 'r') as f:
+        with open(config_file, "r") as f:
             return json.load(f)
     except FileNotFoundError:
         print(f"Error: Could not find feature mappings config file '{config_file}'")
@@ -22,14 +23,15 @@ def load_feature_mappings(config_file=None):
         print(f"Error: Invalid JSON in feature mappings config file '{config_file}'")
         sys.exit(1)
 
+
 def get_support_status(passed_tests, feature_tests):
     """Determine support status for a feature category."""
     if not feature_tests:
         return "❓"  # Unknown - no tests for this feature
 
     # Filter out error tests when checking for support
-    non_error_tests = [test for test in feature_tests if not test.endswith('_error')]
-    error_tests = [test for test in feature_tests if test.endswith('_error')]
+    non_error_tests = [test for test in feature_tests if not test.endswith("_error")]
+    error_tests = [test for test in feature_tests if test.endswith("_error")]
 
     # Check which non-error tests passed
     passed_non_error_tests = [test for test in non_error_tests if test in passed_tests]
@@ -46,6 +48,7 @@ def get_support_status(passed_tests, feature_tests):
     else:
         return "⚠️"  # Partial support
 
+
 def categorize_tests(all_test_names, feature_mapping):
     """Categorize test names into feature buckets."""
     categorized = {feature: [] for feature in feature_mapping.keys()}
@@ -57,6 +60,7 @@ def categorize_tests(all_test_names, feature_mapping):
                 break
 
     return categorized
+
 
 def calculate_support_score(feature_support, feature_order):
     """Calculate a numeric support score for ranking models.
@@ -83,86 +87,90 @@ def calculate_support_score(feature_support, feature_order):
         # Unknown (❓) gets 0 points
     return score
 
+
 def calculate_provider_support_score(models_data, feature_order):
     """Calculate a provider-level support score based on all models' support scores."""
     if not models_data:
         return 0
 
     # Calculate the average support score across all models in the provider
-    total_score = sum(model['support_score'] for model in models_data)
+    total_score = sum(model["support_score"] for model in models_data)
     return total_score / len(models_data)
+
 
 def get_test_function_line_numbers(test_file_path):
     """Extract line numbers for test functions from the test file."""
     test_line_numbers = {}
-    
+
     try:
-        with open(test_file_path, 'r') as f:
+        with open(test_file_path, "r") as f:
             lines = f.readlines()
-        
+
         for i, line in enumerate(lines, 1):
-            if 'def test_' in line and line.strip().startswith('def test_'):
+            if "def test_" in line and line.strip().startswith("def test_"):
                 # Extract function name
-                func_name = line.strip().split('def ')[1].split('(')[0]
+                func_name = line.strip().split("def ")[1].split("(")[0]
                 test_line_numbers[func_name] = i
     except FileNotFoundError:
         print(f"Warning: Could not find test file at {test_file_path}")
-    
+
     return test_line_numbers
+
 
 def get_github_repo_info():
     """Get GitHub repository information from git remote."""
     try:
         # Try to get the GitHub repo URL from git remote
         import subprocess
-        result = subprocess.run(['git', 'remote', 'get-url', 'origin'], 
-                              capture_output=True, text=True, cwd=os.path.dirname(__file__))
+
+        result = subprocess.run(["git", "remote", "get-url", "origin"], capture_output=True, text=True, cwd=os.path.dirname(__file__))
         if result.returncode == 0:
             remote_url = result.stdout.strip()
             # Parse GitHub URL
-            if 'github.com' in remote_url:
-                if remote_url.startswith('https://'):
+            if "github.com" in remote_url:
+                if remote_url.startswith("https://"):
                     # https://github.com/user/repo.git -> user/repo
-                    repo_path = remote_url.replace('https://github.com/', '').replace('.git', '')
-                elif remote_url.startswith('git@'):
+                    repo_path = remote_url.replace("https://github.com/", "").replace(".git", "")
+                elif remote_url.startswith("git@"):
                     # git@github.com:user/repo.git -> user/repo
-                    repo_path = remote_url.split(':')[1].replace('.git', '')
+                    repo_path = remote_url.split(":")[1].replace(".git", "")
                 else:
                     return None
                 return repo_path
     except:
         pass
-    
+
     # Default fallback
     return "letta-ai/letta"
+
 
 def generate_test_details(model_info, feature_mapping):
     """Generate detailed test results for a model."""
     details = []
-    
+
     # Get test function line numbers
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    test_file_path = os.path.join(script_dir, 'model_sweep.py')
+    test_file_path = os.path.join(script_dir, "model_sweep.py")
     test_line_numbers = get_test_function_line_numbers(test_file_path)
-    
+
     # Use the main branch GitHub URL
     base_github_url = "https://github.com/letta-ai/letta/blob/main/.github/scripts/model-sweep/model_sweep.py"
-    
-    for feature, tests in model_info['categorized_tests'].items():
+
+    for feature, tests in model_info["categorized_tests"].items():
         if not tests:
             continue
-            
+
         details.append(f"### {feature}")
         details.append("")
-        
+
         for test in sorted(tests):
-            if test in model_info['passed_tests']:
+            if test in model_info["passed_tests"]:
                 status = "✅"
-            elif test in model_info['failed_tests']:
+            elif test in model_info["failed_tests"]:
                 status = "❌"
             else:
                 status = "❓"
-            
+
             # Create GitHub link if we have line number info
             if test in test_line_numbers:
                 line_num = test_line_numbers[test]
@@ -171,16 +179,13 @@ def generate_test_details(model_info, feature_mapping):
             else:
                 details.append(f"- {status} `{test}`")
         details.append("")
-    
+
     return details
+
 
 def calculate_column_widths(all_provider_data, feature_mapping):
     """Calculate the maximum width needed for each column across all providers."""
-    widths = {
-        'model': len('Model'),
-        'context_window': len('Context Window'),
-        'last_scanned': len('Last Scanned')
-    }
+    widths = {"model": len("Model"), "context_window": len("Context Window"), "last_scanned": len("Last Scanned")}
 
     # Feature column widths
     for feature in feature_mapping.keys():
@@ -191,18 +196,19 @@ def calculate_column_widths(all_provider_data, feature_mapping):
         for model_info in provider_data:
             # Model name width (including backticks)
             model_width = len(f"`{model_info['name']}`")
-            widths['model'] = max(widths['model'], model_width)
+            widths["model"] = max(widths["model"], model_width)
 
             # Context window width (with commas)
             context_width = len(f"{model_info['context_window']:,}")
-            widths['context_window'] = max(widths['context_window'], context_width)
+            widths["context_window"] = max(widths["context_window"], context_width)
 
             # Last scanned width
-            widths['last_scanned'] = max(widths['last_scanned'], len(str(model_info['last_scanned'])))
+            widths["last_scanned"] = max(widths["last_scanned"], len(str(model_info["last_scanned"])))
 
             # Feature support symbols are always 2 chars, so no need to check
 
     return widths
+
 
 def process_model_sweep_report(input_file, output_file, config_file=None, debug=False):
     """Convert model sweep JSON data to MDX report."""
@@ -217,18 +223,18 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
     #     print()
 
     # Read the JSON data
-    with open(input_file, 'r') as f:
+    with open(input_file, "r") as f:
         data = json.load(f)
 
-    tests = data.get('tests', [])
+    tests = data.get("tests", [])
 
     # if debug:
     #     print("DEBUG: Tests loaded:")
     #     print([test['outcome'] for test in tests if 'haiku' in test['nodeid']])
 
     # Calculate summary statistics
-    providers = set(test['metadata']['llm_config']['provider_name'] for test in tests)
-    models = set(test['metadata']['llm_config']['model'] for test in tests)
+    providers = set(test["metadata"]["llm_config"]["provider_name"] for test in tests)
+    models = set(test["metadata"]["llm_config"]["model"] for test in tests)
     total_tests = len(tests)
 
     # Start building the MDX
@@ -246,13 +252,13 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
         "",
         f"Ran {total_tests} tests against {len(models)} models across {len(providers)} providers on {datetime.now().strftime('%B %dth, %Y')}",
         "",
-        ""
+        "",
     ]
 
     # Group tests by provider
     provider_groups = defaultdict(list)
     for test in tests:
-        provider_name = test['metadata']['llm_config']['provider_name']
+        provider_name = test["metadata"]["llm_config"]["provider_name"]
         provider_groups[provider_name].append(test)
 
     # Process all providers first to collect model data
@@ -265,7 +271,7 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
         # Group tests by model within this provider
         model_groups = defaultdict(list)
         for test in provider_tests:
-            model_name = test['metadata']['llm_config']['model']
+            model_name = test["metadata"]["llm_config"]["model"]
             model_groups[model_name].append(test)
 
         # Process all models to calculate support scores for ranking
@@ -283,15 +289,15 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
 
             for test in model_tests:
                 # Extract test name from nodeid (split on :: and [)
-                test_name = test['nodeid'].split('::')[1].split('[')[0]
+                test_name = test["nodeid"].split("::")[1].split("[")[0]
                 all_test_names.add(test_name)
 
                 # if debug:
                 #     print(f"  Test name: {test_name}")
                 #     print(f"  Outcome: {test}")
-                if test['outcome'] == 'passed':
+                if test["outcome"] == "passed":
                     passed_tests.add(test_name)
-                elif test['outcome'] == 'failed':
+                elif test["outcome"] == "failed":
                     failed_tests.add(test_name)
 
             # if debug:
@@ -319,16 +325,16 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
             #     print()
 
             # Get context window and last scanned time
-            context_window = model_tests[0]['metadata']['llm_config']['context_window']
+            context_window = model_tests[0]["metadata"]["llm_config"]["context_window"]
 
             # Try to get time_last_scanned from metadata, fallback to current time
             try:
-                last_scanned = model_tests[0]['metadata'].get('time_last_scanned',
-                                                           model_tests[0]['metadata'].get('timestamp',
-                                                           datetime.now().isoformat()))
+                last_scanned = model_tests[0]["metadata"].get(
+                    "time_last_scanned", model_tests[0]["metadata"].get("timestamp", datetime.now().isoformat())
+                )
                 # Format timestamp if it's a full ISO string
-                if 'T' in str(last_scanned):
-                    last_scanned = str(last_scanned).split('T')[0]  # Just the date part
+                if "T" in str(last_scanned):
+                    last_scanned = str(last_scanned).split("T")[0]  # Just the date part
             except:
                 last_scanned = "Unknown"
 
@@ -337,19 +343,21 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
             support_score = calculate_support_score(feature_support, feature_order)
 
             # Store model data for sorting
-            model_data.append({
-                'name': model_name,
-                'feature_support': feature_support,
-                'context_window': context_window,
-                'last_scanned': last_scanned,
-                'support_score': support_score,
-                'failed_tests': failed_tests,
-                'passed_tests': passed_tests,
-                'categorized_tests': categorized_tests
-            })
+            model_data.append(
+                {
+                    "name": model_name,
+                    "feature_support": feature_support,
+                    "context_window": context_window,
+                    "last_scanned": last_scanned,
+                    "support_score": support_score,
+                    "failed_tests": failed_tests,
+                    "passed_tests": passed_tests,
+                    "categorized_tests": categorized_tests,
+                }
+            )
 
         # Sort models by support score (descending) then by name (ascending)
-        model_data.sort(key=lambda x: (-x['support_score'], x['name']))
+        model_data.sort(key=lambda x: (-x["support_score"], x["name"]))
 
         # Store provider data
         all_provider_data[provider_name] = model_data
@@ -357,13 +365,10 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
 
     # Calculate column widths for consistent formatting (add details column)
     column_widths = calculate_column_widths(all_provider_data, feature_mapping)
-    column_widths['details'] = len('Details')
+    column_widths["details"] = len("Details")
 
     # Sort providers by support score (descending) then by name (ascending)
-    sorted_providers = sorted(
-        provider_support_scores.keys(),
-        key=lambda x: (-provider_support_scores[x], x)
-    )
+    sorted_providers = sorted(provider_support_scores.keys(), key=lambda x: (-provider_support_scores[x], x))
 
     # Generate tables for all providers first
     for provider_name in sorted_providers:
@@ -377,47 +382,48 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
         header_parts = [f"{'Model':<{column_widths['model']}}"]
         for feature in feature_names:
             header_parts.append(f"{feature:^{column_widths[feature]}}")
-        header_parts.extend([
-            f"{'Context Window':^{column_widths['context_window']}}",
-            f"{'Last Scanned':^{column_widths['last_scanned']}}",
-            f"{'Details':^{column_widths['details']}}"
-        ])
+        header_parts.extend(
+            [
+                f"{'Context Window':^{column_widths['context_window']}}",
+                f"{'Last Scanned':^{column_widths['last_scanned']}}",
+                f"{'Details':^{column_widths['details']}}",
+            ]
+        )
         header_row = "| " + " | ".join(header_parts) + " |"
 
         # Build separator row with left-aligned first column, centered others
         separator_parts = [f"{'-' * column_widths['model']}"]
         for feature in feature_names:
             separator_parts.append(f":{'-' * (column_widths[feature] - 2)}:")
-        separator_parts.extend([
-            f":{'-' * (column_widths['context_window'] - 2)}:",
-            f":{'-' * (column_widths['last_scanned'] - 2)}:",
-            f":{'-' * (column_widths['details'] - 2)}:"
-        ])
+        separator_parts.extend(
+            [
+                f":{'-' * (column_widths['context_window'] - 2)}:",
+                f":{'-' * (column_widths['last_scanned'] - 2)}:",
+                f":{'-' * (column_widths['details'] - 2)}:",
+            ]
+        )
         separator_row = "|" + "|".join(separator_parts) + "|"
 
         # Add provider section without percentage
-        mdx_lines.extend([
-            f"## {provider_name}",
-            "",
-            header_row,
-            separator_row
-        ])
+        mdx_lines.extend([f"## {provider_name}", "", header_row, separator_row])
 
         # Generate table rows for sorted models with proper padding
         for model_info in model_data:
             # Create anchor for model details
-            model_anchor = model_info['name'].replace('/', '_').replace(':', '_').replace('-', '_').lower()
+            model_anchor = model_info["name"].replace("/", "_").replace(":", "_").replace("-", "_").lower()
             details_anchor = f"{provider_name.lower().replace(' ', '_')}_{model_anchor}_details"
-            
+
             # Build row with left-aligned first column, centered others
-            row_parts = [f"`{model_info['name']}`".ljust(column_widths['model'])]
+            row_parts = [f"`{model_info['name']}`".ljust(column_widths["model"])]
             for feature in feature_names:
                 row_parts.append(f"{model_info['feature_support'][feature]:^{column_widths[feature]}}")
-            row_parts.extend([
-                f"{model_info['context_window']:,}".center(column_widths['context_window']),
-                f"{model_info['last_scanned']}".center(column_widths['last_scanned']),
-                f"[View](#{details_anchor})".center(column_widths['details'])
-            ])
+            row_parts.extend(
+                [
+                    f"{model_info['context_window']:,}".center(column_widths["context_window"]),
+                    f"{model_info['last_scanned']}".center(column_widths["last_scanned"]),
+                    f"[View](#{details_anchor})".center(column_widths["details"]),
+                ]
+            )
             row = "| " + " | ".join(row_parts) + " |"
             mdx_lines.append(row)
 
@@ -426,30 +432,31 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
 
     # Add detailed test results section after all tables
     mdx_lines.extend(["---", "", "# Detailed Test Results", ""])
-    
+
     for provider_name in sorted_providers:
         model_data = all_provider_data[provider_name]
         mdx_lines.extend([f"## {provider_name}", ""])
-        
+
         for model_info in model_data:
-            model_anchor = model_info['name'].replace('/', '_').replace(':', '_').replace('-', '_').lower()
+            model_anchor = model_info["name"].replace("/", "_").replace(":", "_").replace("-", "_").lower()
             details_anchor = f"{provider_name.lower().replace(' ', '_')}_{model_anchor}_details"
-            mdx_lines.append(f"<a id=\"{details_anchor}\"></a>")
+            mdx_lines.append(f'<a id="{details_anchor}"></a>')
             mdx_lines.append(f"### {model_info['name']}")
             mdx_lines.append("")
-            
+
             # Add test details
             test_details = generate_test_details(model_info, feature_mapping)
             mdx_lines.extend(test_details)
-        
+
         # Add spacing between providers in details section
         mdx_lines.extend(["", ""])
 
     # Write the MDX file
-    with open(output_file, 'w') as f:
-        f.write('\n'.join(mdx_lines))
+    with open(output_file, "w") as f:
+        f.write("\n".join(mdx_lines))
 
     print(f"Model sweep report saved to {output_file}")
+
 
 def main():
     input_file = "model_sweep_report.json"
@@ -482,6 +489,7 @@ def main():
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -364,3 +364,10 @@ REDIS_RUN_ID_PREFIX = "agent:send_message:run_id"
 MAX_FILES_OPEN = 5
 
 GET_PROVIDERS_TIMEOUT_SECONDS = 10
+
+# Pinecone related fields
+PINECONE_EMBEDDING_MODEL: str = "llama-text-embed-v2"
+PINECONE_TEXT_FIELD_NAME = "chunk_text"
+PINECONE_METRIC = "cosine"
+PINECONE_CLOUD = "aws"
+PINECONE_REGION = "us-east-1"

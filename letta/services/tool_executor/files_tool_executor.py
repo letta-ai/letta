@@ -2,8 +2,9 @@ import asyncio
 import re
 from typing import Any, Dict, List, Optional
 
-from letta.constants import MAX_FILES_OPEN
+from letta.constants import MAX_FILES_OPEN, PINECONE_TEXT_FIELD_NAME
 from letta.functions.types import FileOpenRequest
+from letta.helpers.pinecone_utils import search_pinecone_index, should_use_pinecone
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
@@ -463,14 +464,15 @@ class LettaFileToolExecutor(ToolExecutor):
         return "\n".join(formatted_results)
 
     @trace_method
-    async def semantic_search_files(self, agent_state: AgentState, query: str, limit: int = 10) -> str:
+    async def semantic_search_files(self, agent_state: AgentState, query: str, limit: int = 5) -> str:
         """
         Search for text within attached files using semantic search and return passages with their source filenames.
+        Uses Pinecone if configured, otherwise falls back to traditional search.
 
         Args:
             agent_state: Current agent state
             query: Search query for semantic matching
-            limit: Maximum number of results to return (default: 10)
+            limit: Maximum number of results to return (default: 5)
 
         Returns:
             Formatted string with search results in IDE/terminal style
@@ -485,6 +487,110 @@ class LettaFileToolExecutor(ToolExecutor):
 
         self.logger.info(f"Semantic search started for agent {agent_state.id} with query '{query}' (limit: {limit})")
 
+        # Check if Pinecone is enabled and use it if available
+        if should_use_pinecone():
+            return await self._search_files_pinecone(agent_state, query, limit)
+        else:
+            return await self._search_files_traditional(agent_state, query, limit)
+
+    async def _search_files_pinecone(self, agent_state: AgentState, query: str, limit: int) -> str:
+        """Search files using Pinecone vector database."""
+
+        # Extract unique source_ids
+        # TODO: Inefficient
+        attached_sources = await self.agent_manager.list_attached_sources_async(agent_id=agent_state.id, actor=self.actor)
+        source_ids = [source.id for source in attached_sources]
+        if not source_ids:
+            return f"No valid source IDs found for attached files"
+
+        # Get all attached files for this agent
+        file_agents = await self.files_agents_manager.list_files_for_agent(agent_id=agent_state.id, actor=self.actor)
+        if not file_agents:
+            return "No files are currently attached to search"
+
+        results = []
+        total_hits = 0
+        files_with_matches = {}
+
+        try:
+            filter = {"source_id": {"$in": source_ids}}
+            search_results = await search_pinecone_index(query, limit, filter, self.actor)
+
+            # Process search results
+            if "result" in search_results and "hits" in search_results["result"]:
+                for hit in search_results["result"]["hits"]:
+                    if total_hits >= limit:
+                        break
+
+                    total_hits += 1
+
+                    # Extract hit information
+                    hit_id = hit.get("_id", "unknown")
+                    score = hit.get("_score", 0.0)
+                    fields = hit.get("fields", {})
+                    text = fields.get(PINECONE_TEXT_FIELD_NAME, "")
+                    file_id = fields.get("file_id", "")
+
+                    # Find corresponding file name
+                    file_name = "Unknown File"
+                    for fa in file_agents:
+                        if fa.file_id == file_id:
+                            file_name = fa.file_name
+                            break
+
+                    # Group by file name
+                    if file_name not in files_with_matches:
+                        files_with_matches[file_name] = []
+                    files_with_matches[file_name].append({"text": text, "score": score, "hit_id": hit_id})
+
+        except Exception as e:
+            self.logger.error(f"Pinecone search failed: {str(e)}")
+            raise e
+
+        if not files_with_matches:
+            return f"No semantic matches found in Pinecone for query: '{query}'"
+
+        # Format results
+        passage_num = 0
+        for file_name, matches in files_with_matches.items():
+            for match in matches:
+                passage_num += 1
+
+                # Format each passage with terminal-style header
+                score_display = f"(score: {match['score']:.3f})"
+                passage_header = f"\n=== {file_name} (passage #{passage_num}) {score_display} ==="
+
+                # Format the passage text
+                passage_text = match["text"].strip()
+                lines = passage_text.splitlines()
+                formatted_lines = []
+                for line in lines[:20]:  # Limit to first 20 lines per passage
+                    formatted_lines.append(f"  {line}")
+
+                if len(lines) > 20:
+                    formatted_lines.append(f"  ... [truncated {len(lines) - 20} more lines]")
+
+                passage_content = "\n".join(formatted_lines)
+                results.append(f"{passage_header}\n{passage_content}")
+
+        # Mark access for files that had matches
+        if files_with_matches:
+            matched_file_names = [name for name in files_with_matches.keys() if name != "Unknown File"]
+            if matched_file_names:
+                await self.files_agents_manager.mark_access_bulk(agent_id=agent_state.id, file_names=matched_file_names, actor=self.actor)
+
+        # Create summary header
+        file_count = len(files_with_matches)
+        summary = f"Found {total_hits} Pinecone matches in {file_count} file{'s' if file_count != 1 else ''} for query: '{query}'"
+
+        # Combine all results
+        formatted_results = [summary, "=" * len(summary)] + results
+
+        self.logger.info(f"Pinecone search completed: {total_hits} matches across {file_count} files")
+        return "\n".join(formatted_results)
+
+    async def _search_files_traditional(self, agent_state: AgentState, query: str, limit: int) -> str:
+        """Traditional search using existing passage manager."""
         # Get semantic search results
         passages = await self.agent_manager.list_source_passages_async(
             actor=self.actor,
