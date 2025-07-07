@@ -36,6 +36,7 @@ export function useAgentsList(args: UseAgentsListArgs) {
         searchParams.set('limit', limit.toString());
       }
 
+      // @ts-expect-error - correct typing
       searchParams.set('offset', pageParam?.offset?.toString() || '0');
 
       const response = await fetch(`/api/agents?${searchParams.toString()}`);
