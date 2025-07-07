@@ -21,6 +21,7 @@ import {
   BetaTag,
   TroubleshootIcon,
   HotKey,
+  DropdownMenuSeparator,
 } from '@letta-cloud/ui-component-library';
 import type { QueryBuilderQuery } from '@letta-cloud/ui-component-library';
 import { ProjectSelector } from '$web/client/components';
@@ -182,7 +183,7 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
         <ForkAgentDialog onClose={handleCloseDialog} />
       )}
       <DropdownMenu
-        align="center"
+        align="start"
         triggerAsChild
         trigger={
           <Button
@@ -197,30 +198,7 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
         }
       >
         <NetworkInspectorButton />
-        {showShareAgentFile && (
-          <PublishAgentFileSettingsDialog
-            agentId={agentTemplateId}
-            agentName={name}
-            trigger={
-              <DropdownMenuItem
-                doNotCloseOnSelect
-                preIcon={<LettaInvaderOutlineIcon />}
-                label={t('AgentSettingsDropdown.publish')}
-              />
-            }
-          />
-        )}
-        {!isTemplate && (
-          <ExportAgentButton
-            trigger={
-              <DropdownMenuItem
-                doNotCloseOnSelect
-                preIcon={<DownloadIcon />}
-                label={t('AgentSettingsDropdown.download')}
-              />
-            }
-          />
-        )}
+        <DropdownMenuSeparator />
         {isTemplate && (
           <DropdownMenuItem
             onClick={() => {
@@ -245,6 +223,29 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
             />
           }
           onSuccess={handleDeleteAgentSuccess}
+        />
+        <DropdownMenuSeparator />
+        {showShareAgentFile && (
+          <PublishAgentFileSettingsDialog
+            agentId={agentTemplateId}
+            agentName={name}
+            trigger={
+              <DropdownMenuItem
+                doNotCloseOnSelect
+                preIcon={<LettaInvaderOutlineIcon />}
+                label={t('AgentSettingsDropdown.publish')}
+              />
+            }
+          />
+        )}
+        <ExportAgentButton
+          trigger={
+            <DropdownMenuItem
+              doNotCloseOnSelect
+              preIcon={<DownloadIcon />}
+              label={t('AgentSettingsDropdown.download')}
+            />
+          }
         />
       </DropdownMenu>
     </>

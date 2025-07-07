@@ -2358,7 +2358,7 @@
       "trigger": "{agentBaseType} settings",
       "returnToProject": "Return to project",
       "delete": "Delete {agentBaseType}",
-      "download": "Export Agent",
+      "download": "Download AgentFile (.af)",
       "networkInspector": "Network Inspector"
     },
     "DeployAgentDialog": {
