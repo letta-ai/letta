@@ -12,6 +12,7 @@ export interface UsageLimits {
   freeInferencesPerMonth: number;
   tools: number;
   fileSize: number; // in bytes
+  fileSizePerMinute: number; // in bytes
   groups: number;
   blocks: number;
   monthlyCost: number; // in dollars
@@ -23,6 +24,7 @@ const OneGB = 1_073_741_824; // 1024 * 1024 * 1024
 const OneHundredMB = 1024 * 1024 * 100; // 100 MB
 const TwentyFiveMB = 1024 * 1024 * 25; // 25 MB
 const FiveMB = 1024 * 1024 * 5; // 5 MB
+const OneMB = 1024 * 1024; // 1 MB
 
 const limitMap: Record<BillingTiersType, UsageLimits> = {
   enterprise: {
@@ -38,6 +40,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     groups: 10,
     fileSize: OneHundredMB, // 100 MB
     filesPerMinute: 10_000,
+    fileSizePerMinute: OneHundredMB, // 10 MB per minute
     premiumInferencesPerMonth: 1_000_000_000_000,
     freeInferencesPerMonth: 1_000_000_000,
     storage: OneGB * 100, // 100 GB
@@ -53,6 +56,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     templates: 20,
     tools: 250,
     filesPerMinute: 150,
+    fileSizePerMinute: TwentyFiveMB, // 10 MB per minute
     groups: 10,
     blocks: 100_000,
     premiumInferencesPerMonth: 500,
@@ -72,6 +76,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     templates: 100,
     tools: 250,
     groups: 10,
+    fileSizePerMinute: OneHundredMB, // 100 MB per minute
     blocks: 100_000_0000,
     premiumInferencesPerMonth: 5_000,
     freeInferencesPerMonth: 50_000,
@@ -91,6 +96,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     tools: 250,
     groups: 1,
     identities: 5,
+    fileSizePerMinute: FiveMB, // 1 MB per minute
     premiumInferencesPerMonth: 50,
     freeInferencesPerMonth: 500,
     fileSize: FiveMB, // 5 MB

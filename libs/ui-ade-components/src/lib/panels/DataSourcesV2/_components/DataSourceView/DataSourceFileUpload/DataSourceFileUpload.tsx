@@ -74,6 +74,13 @@ export function DataSourceFileUpload(props: NoFilesViewProps) {
             link: (chunks) => <BillingLink>{chunks}</BillingLink>,
           });
         }
+
+        if (error.body.errorCode === 'file_upload_size_rate_limit_exceeded') {
+          return t.rich('errors.fileUploadSizeRateLimitExceeded', {
+            limit: error.body.limit || '10MB',
+            link: (chunks) => <BillingLink>{chunks}</BillingLink>,
+          });
+        }
       }
 
       return t('errors.genericError');

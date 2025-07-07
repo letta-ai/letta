@@ -79,7 +79,14 @@ export async function fileSizeRateLimitMiddleware(
       organizationId: string,
       minute: number,
     ): string {
-      return `fileCountUploadWindow:${organizationId}:${minute}`;
+      return `fileCountUploadWindow2:${organizationId}:${minute}`;
+    }
+
+    function getFileSizeUploadWindowKey(
+      organizationId: string,
+      minute: number,
+    ): string {
+      return `fileSizeUploadWindow:${organizationId}:${minute}`;
     }
 
     const rateLimit = limits.filesPerMinute;
@@ -87,29 +94,25 @@ export async function fileSizeRateLimitMiddleware(
 
     const redis = createRedisInstance();
 
-    const window = await redis.get(
+    const fileCountUsage = await redis.get(
       getFileCountUploadWindowKey(req.actor.cloudOrganizationId, currentMinute),
     );
 
-    let currentUsage;
+    let currentFileUsage;
 
     try {
-      currentUsage = parseInt(window || '0', 10);
+      currentFileUsage = parseInt(fileCountUsage || '0', 10);
     } catch (e) {
       Sentry.captureException(e);
-      currentUsage = 0;
+      currentFileUsage = 0;
     }
 
-    if (isNaN(currentUsage)) {
+    if (isNaN(currentFileUsage)) {
       Sentry.captureException(new Error('Invalid current usage value'));
-      currentUsage = 0;
+      currentFileUsage = 0;
     }
 
-    console.log(
-      `Current usage for ${req.actor.cloudOrganizationId} at minute ${currentMinute}: ${currentUsage}`,
-    );
-
-    if (currentUsage + 1 > rateLimit) {
+    if (currentFileUsage + 1 > rateLimit) {
       res.status(429).json({
         error:
           'File upload rate limit exceeded - too many files uploaded in a minute',
@@ -122,6 +125,55 @@ export async function fileSizeRateLimitMiddleware(
     await redis.incrby(
       getFileCountUploadWindowKey(req.actor.cloudOrganizationId, currentMinute),
       1,
+    );
+
+    await redis.expire(
+      getFileCountUploadWindowKey(req.actor.cloudOrganizationId, currentMinute),
+      60, // expire in 60 seconds
+    );
+
+    const fileSizeUsage = await redis.get(
+      getFileSizeUploadWindowKey(req.actor.cloudOrganizationId, currentMinute),
+    );
+
+    let currentFileSizeUsage;
+
+    try {
+      currentFileSizeUsage = parseInt(fileSizeUsage || '0', 10);
+    } catch (e) {
+      Sentry.captureException(e);
+      currentFileSizeUsage = 0;
+    }
+
+    if (isNaN(currentFileSizeUsage)) {
+      Sentry.captureException(
+        new Error('Invalid current file size usage value'),
+      );
+      currentFileSizeUsage = 0;
+    }
+
+    if (
+      currentFileSizeUsage + Number(contentLength) >
+      limits.fileSizePerMinute
+    ) {
+      res.status(429).json({
+        error:
+          'File upload size rate limit exceeded - too much data uploaded in a minute',
+        errorCode: 'file_upload_size_rate_limit_exceeded',
+        limit: `${bytesToMB(limits.fileSizePerMinute)} MB`,
+        limit_bytes: limits.fileSizePerMinute,
+      });
+      return;
+    }
+
+    await redis.incrby(
+      getFileSizeUploadWindowKey(req.actor.cloudOrganizationId, currentMinute),
+      Number(contentLength),
+    );
+
+    await redis.expire(
+      getFileSizeUploadWindowKey(req.actor.cloudOrganizationId, currentMinute),
+      60, // expire in 60 seconds
     );
 
     next();
