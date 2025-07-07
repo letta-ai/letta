@@ -237,6 +237,23 @@ export const UseSourcesServiceGetSourceIdByNameKeyFn = (
   useSourcesServiceGetSourceIdByNameKey,
   ...(queryKey ?? [{ sourceName, userId }]),
 ];
+export type SourcesServiceGetSourcesMetadataDefaultResponse = Awaited<
+  ReturnType<typeof SourcesService.getSourcesMetadata>
+>;
+export type SourcesServiceGetSourcesMetadataQueryResult<
+  TData = SourcesServiceGetSourcesMetadataDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useSourcesServiceGetSourcesMetadataKey =
+  'SourcesServiceGetSourcesMetadata';
+export const UseSourcesServiceGetSourcesMetadataKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useSourcesServiceGetSourcesMetadataKey, ...(queryKey ?? [{ userId }])];
 export type SourcesServiceListSourcesDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.listSources>
 >;

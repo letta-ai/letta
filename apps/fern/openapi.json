@@ -1176,6 +1176,37 @@
         }
       }
     },
+    "/v1/sources/metadata": {
+      "get": {
+        "tags": ["sources"],
+        "summary": "Get Sources Metadata",
+        "description": "Get aggregated metadata for all sources in an organization.\n\nReturns structured metadata including:\n- Total number of sources\n- Total number of files across all sources  \n- Total size of all files\n- Per-source breakdown with file details (file_name, file_size per file)",
+        "operationId": "get_sources_metadata",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationSourcesStats"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sources/": {
       "get": {
         "tags": ["sources"],
@@ -13102,6 +13133,37 @@
         "enum": ["pending", "parsing", "embedding", "completed", "error"],
         "title": "FileProcessingStatus"
       },
+      "FileStats": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "Unique identifier of the file"
+          },
+          "file_name": {
+            "type": "string",
+            "title": "File Name",
+            "description": "Name of the file"
+          },
+          "file_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Size",
+            "description": "Size of the file in bytes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["file_id", "file_name"],
+        "title": "FileStats",
+        "description": "File statistics for metadata endpoint"
+      },
       "Function-Output": {
         "properties": {
           "arguments": {
@@ -15674,6 +15736,40 @@
         "type": "object",
         "title": "OrganizationCreate"
       },
+      "OrganizationSourcesStats": {
+        "properties": {
+          "total_sources": {
+            "type": "integer",
+            "title": "Total Sources",
+            "description": "Total number of sources",
+            "default": 0
+          },
+          "total_files": {
+            "type": "integer",
+            "title": "Total Files",
+            "description": "Total number of files across all sources",
+            "default": 0
+          },
+          "total_size": {
+            "type": "integer",
+            "title": "Total Size",
+            "description": "Total size of all files in bytes",
+            "default": 0
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceStats"
+            },
+            "type": "array",
+            "title": "Sources",
+            "description": "List of source metadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "OrganizationSourcesStats",
+        "description": "Complete metadata response for organization sources"
+      },
       "OrganizationUpdate": {
         "properties": {
           "name": {
@@ -17516,6 +17612,45 @@
         "required": ["name"],
         "title": "SourceCreate",
         "description": "Schema for creating a new Source."
+      },
+      "SourceStats": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id",
+            "description": "Unique identifier of the source"
+          },
+          "source_name": {
+            "type": "string",
+            "title": "Source Name",
+            "description": "Name of the source"
+          },
+          "file_count": {
+            "type": "integer",
+            "title": "File Count",
+            "description": "Number of files in the source",
+            "default": 0
+          },
+          "total_size": {
+            "type": "integer",
+            "title": "Total Size",
+            "description": "Total size of all files in bytes",
+            "default": 0
+          },
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/FileStats"
+            },
+            "type": "array",
+            "title": "Files",
+            "description": "List of file statistics"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["source_id", "source_name"],
+        "title": "SourceStats",
+        "description": "Aggregated metadata for a source"
       },
       "SourceUpdate": {
         "properties": {

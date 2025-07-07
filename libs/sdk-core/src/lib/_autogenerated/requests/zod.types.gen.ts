@@ -3678,6 +3678,20 @@ export const FileMetadata = z.object({
     .optional(),
 });
 
+export type FileStats = z.infer<typeof FileStats>;
+export const FileStats = z.object({
+  file_id: z.string(),
+  file_name: z.string(),
+  file_size: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type RoundRobinManager = z.infer<typeof RoundRobinManager>;
 export const RoundRobinManager = z.object({
   manager_type: z.string().optional(),
@@ -4605,6 +4619,23 @@ export const OrganizationCreate = z.object({
   privileged_tools: z
     .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
     .optional(),
+});
+
+export type SourceStats = z.infer<typeof SourceStats>;
+export const SourceStats = z.object({
+  source_id: z.string(),
+  source_name: z.string(),
+  file_count: z.union([z.number(), z.undefined()]).optional(),
+  total_size: z.union([z.number(), z.undefined()]).optional(),
+  files: z.union([z.array(FileStats), z.undefined()]).optional(),
+});
+
+export type OrganizationSourcesStats = z.infer<typeof OrganizationSourcesStats>;
+export const OrganizationSourcesStats = z.object({
+  total_sources: z.number().optional(),
+  total_files: z.number().optional(),
+  total_size: z.number().optional(),
+  sources: z.array(SourceStats).optional(),
 });
 
 export type OrganizationUpdate = z.infer<typeof OrganizationUpdate>;
@@ -6430,6 +6461,21 @@ export const get_Get_source_id_by_name = {
     }),
   }),
   response: z.string(),
+};
+
+export type get_Get_sources_metadata = typeof get_Get_sources_metadata;
+export const get_Get_sources_metadata = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/sources/metadata'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: OrganizationSourcesStats,
 };
 
 export type get_List_sources = typeof get_List_sources;
@@ -9149,6 +9195,7 @@ export const EndpointByMethod = {
     '/v1/sources/count': get_Count_sources,
     '/v1/sources/{source_id}': get_Retrieve_source,
     '/v1/sources/name/{source_name}': get_Get_source_id_by_name,
+    '/v1/sources/metadata': get_Get_sources_metadata,
     '/v1/sources/': get_List_sources,
     '/v1/sources/{source_id}/passages': get_List_source_passages,
     '/v1/sources/{source_id}/files': get_List_source_files,

@@ -16,6 +16,7 @@ from letta.otel.tracing import trace_method
 from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.source import Source as PydanticSource
+from letta.schemas.source_metadata import FileStats, OrganizationSourcesStats, SourceStats
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.utils import enforce_types
@@ -272,3 +273,72 @@ class FileManager:
             else:
                 # Add numeric suffix
                 return f"{source.name}/{base}_({count}){ext}"
+
+    @enforce_types
+    @trace_method
+    async def get_organization_sources_metadata(self, actor: PydanticUser) -> OrganizationSourcesStats:
+        """
+        Get aggregated metadata for all sources in an organization with optimized queries.
+
+        Returns structured metadata including:
+        - Total number of sources
+        - Total number of files across all sources
+        - Total size of all files
+        - Per-source breakdown with file details
+        """
+        async with db_registry.async_session() as session:
+            # Import here to avoid circular imports
+            from letta.orm.source import Source as SourceModel
+
+            # Single optimized query to get all sources with their file aggregations
+            query = (
+                select(
+                    SourceModel.id,
+                    SourceModel.name,
+                    func.count(FileMetadataModel.id).label("file_count"),
+                    func.coalesce(func.sum(FileMetadataModel.file_size), 0).label("total_size"),
+                )
+                .outerjoin(FileMetadataModel, (FileMetadataModel.source_id == SourceModel.id) & (FileMetadataModel.is_deleted == False))
+                .where(SourceModel.organization_id == actor.organization_id)
+                .where(SourceModel.is_deleted == False)
+                .group_by(SourceModel.id, SourceModel.name)
+                .order_by(SourceModel.name)
+            )
+
+            result = await session.execute(query)
+            source_aggregations = result.fetchall()
+
+            # Build response
+            metadata = OrganizationSourcesStats()
+
+            for row in source_aggregations:
+                source_id, source_name, file_count, total_size = row
+
+                # Get individual file details for this source
+                files_query = (
+                    select(FileMetadataModel.id, FileMetadataModel.file_name, FileMetadataModel.file_size)
+                    .where(
+                        FileMetadataModel.source_id == source_id,
+                        FileMetadataModel.organization_id == actor.organization_id,
+                        FileMetadataModel.is_deleted == False,
+                    )
+                    .order_by(FileMetadataModel.file_name)
+                )
+
+                files_result = await session.execute(files_query)
+                files_rows = files_result.fetchall()
+
+                # Build file stats
+                files = [FileStats(file_id=file_row[0], file_name=file_row[1], file_size=file_row[2]) for file_row in files_rows]
+
+                # Build source metadata
+                source_metadata = SourceStats(
+                    source_id=source_id, source_name=source_name, file_count=file_count, total_size=total_size, files=files
+                )
+
+                metadata.sources.append(source_metadata)
+                metadata.total_files += file_count
+                metadata.total_size += total_size
+
+            metadata.total_sources = len(metadata.sources)
+            return metadata

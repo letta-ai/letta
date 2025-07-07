@@ -281,6 +281,32 @@ export const prefetchUseSourcesServiceGetSourceIdByName = (
     queryFn: () => SourcesService.getSourceIdByName({ sourceName, userId }),
   });
 /**
+ * Get Sources Metadata
+ * Get aggregated metadata for all sources in an organization.
+ *
+ * Returns structured metadata including:
+ * - Total number of sources
+ * - Total number of files across all sources
+ * - Total size of all files
+ * - Per-source breakdown with file details (file_name, file_size per file)
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns OrganizationSourcesStats Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseSourcesServiceGetSourcesMetadata = (
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseSourcesServiceGetSourcesMetadataKeyFn({ userId }),
+    queryFn: () => SourcesService.getSourcesMetadata({ userId }),
+  });
+/**
  * List Sources
  * List all data sources created by a user.
  * @param data The data for the request.

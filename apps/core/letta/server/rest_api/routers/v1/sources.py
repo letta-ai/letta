@@ -23,6 +23,7 @@ from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.file import FileMetadata
 from letta.schemas.passage import Passage
 from letta.schemas.source import Source, SourceCreate, SourceUpdate
+from letta.schemas.source_metadata import OrganizationSourcesStats
 from letta.schemas.user import User
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
@@ -92,6 +93,24 @@ async def get_source_id_by_name(
     if not source:
         raise HTTPException(status_code=404, detail=f"Source with name={source_name} not found.")
     return source.id
+
+
+@router.get("/metadata", response_model=OrganizationSourcesStats, operation_id="get_sources_metadata")
+async def get_sources_metadata(
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Get aggregated metadata for all sources in an organization.
+
+    Returns structured metadata including:
+    - Total number of sources
+    - Total number of files across all sources
+    - Total size of all files
+    - Per-source breakdown with file details (file_name, file_size per file)
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.file_manager.get_organization_sources_metadata(actor=actor)
 
 
 @router.get("/", response_model=List[Source], operation_id="list_sources")

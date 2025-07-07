@@ -54,6 +54,8 @@ import type {
   DeleteSourceResponse,
   GetSourceIdByNameData,
   GetSourceIdByNameResponse,
+  GetSourcesMetadataData,
+  GetSourcesMetadataResponse,
   ListSourcesData,
   ListSourcesResponse,
   CreateSourceData,
@@ -938,6 +940,34 @@ export class SourcesService {
       path: {
         source_name: data.sourceName,
       },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Sources Metadata
+   * Get aggregated metadata for all sources in an organization.
+   *
+   * Returns structured metadata including:
+   * - Total number of sources
+   * - Total number of files across all sources
+   * - Total size of all files
+   * - Per-source breakdown with file details (file_name, file_size per file)
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns OrganizationSourcesStats Successful Response
+   * @throws ApiError
+   */
+  public static getSourcesMetadata(
+    data: GetSourcesMetadataData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<GetSourcesMetadataResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/sources/metadata',
       errors: {
         422: 'Validation Error',
       },

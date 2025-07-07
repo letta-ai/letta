@@ -1580,6 +1580,24 @@ export type FileProcessingStatus =
   | 'completed'
   | 'error';
 
+/**
+ * File statistics for metadata endpoint
+ */
+export type FileStats = {
+  /**
+   * Unique identifier of the file
+   */
+  file_id: string;
+  /**
+   * Name of the file
+   */
+  file_name: string;
+  /**
+   * Size of the file in bytes
+   */
+  file_size?: number | null;
+};
+
 export type Function_Output = {
   arguments: string;
   name: string;
@@ -2683,6 +2701,28 @@ export type OrganizationCreate = {
   privileged_tools?: boolean | null;
 };
 
+/**
+ * Complete metadata response for organization sources
+ */
+export type OrganizationSourcesStats = {
+  /**
+   * Total number of sources
+   */
+  total_sources?: number;
+  /**
+   * Total number of files across all sources
+   */
+  total_files?: number;
+  /**
+   * Total size of all files in bytes
+   */
+  total_size?: number;
+  /**
+   * List of source metadata
+   */
+  sources?: Array<SourceStats>;
+};
+
 export type OrganizationUpdate = {
   /**
    * The name of the organization.
@@ -3495,6 +3535,32 @@ export type SourceCreate = {
   metadata?: {
     [key: string]: unknown;
   } | null;
+};
+
+/**
+ * Aggregated metadata for a source
+ */
+export type SourceStats = {
+  /**
+   * Unique identifier of the source
+   */
+  source_id: string;
+  /**
+   * Name of the source
+   */
+  source_name: string;
+  /**
+   * Number of files in the source
+   */
+  file_count?: number;
+  /**
+   * Total size of all files in bytes
+   */
+  total_size?: number;
+  /**
+   * List of file statistics
+   */
+  files?: Array<FileStats>;
 };
 
 /**
@@ -4747,6 +4813,12 @@ export type GetSourceIdByNameData = {
 };
 
 export type GetSourceIdByNameResponse = string;
+
+export type GetSourcesMetadataData = {
+  userId?: string | null;
+};
+
+export type GetSourcesMetadataResponse = OrganizationSourcesStats;
 
 export type ListSourcesData = {
   userId?: string | null;
@@ -6470,6 +6542,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: string;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/sources/metadata': {
+    get: {
+      req: GetSourcesMetadataData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: OrganizationSourcesStats;
         /**
          * Validation Error
          */

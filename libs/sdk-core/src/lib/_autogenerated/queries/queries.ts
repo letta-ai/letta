@@ -405,6 +405,41 @@ export const useSourcesServiceGetSourceIdByName = <
     ...options,
   });
 /**
+ * Get Sources Metadata
+ * Get aggregated metadata for all sources in an organization.
+ *
+ * Returns structured metadata including:
+ * - Total number of sources
+ * - Total number of files across all sources
+ * - Total size of all files
+ * - Per-source breakdown with file details (file_name, file_size per file)
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns OrganizationSourcesStats Successful Response
+ * @throws ApiError
+ */
+export const useSourcesServiceGetSourcesMetadata = <
+  TData = Common.SourcesServiceGetSourcesMetadataDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseSourcesServiceGetSourcesMetadataKeyFn(
+      { userId },
+      queryKey,
+    ),
+    queryFn: () => SourcesService.getSourcesMetadata({ userId }) as TData,
+    ...options,
+  });
+/**
  * List Sources
  * List all data sources created by a user.
  * @param data The data for the request.

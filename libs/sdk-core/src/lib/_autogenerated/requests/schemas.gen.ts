@@ -4727,6 +4727,38 @@ export const $FileProcessingStatus = {
   title: 'FileProcessingStatus',
 } as const;
 
+export const $FileStats = {
+  properties: {
+    file_id: {
+      type: 'string',
+      title: 'File Id',
+      description: 'Unique identifier of the file',
+    },
+    file_name: {
+      type: 'string',
+      title: 'File Name',
+      description: 'Name of the file',
+    },
+    file_size: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'File Size',
+      description: 'Size of the file in bytes',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['file_id', 'file_name'],
+  title: 'FileStats',
+  description: 'File statistics for metadata endpoint',
+} as const;
+
 export const $Function_Output = {
   properties: {
     arguments: {
@@ -7506,6 +7538,41 @@ export const $OrganizationCreate = {
   title: 'OrganizationCreate',
 } as const;
 
+export const $OrganizationSourcesStats = {
+  properties: {
+    total_sources: {
+      type: 'integer',
+      title: 'Total Sources',
+      description: 'Total number of sources',
+      default: 0,
+    },
+    total_files: {
+      type: 'integer',
+      title: 'Total Files',
+      description: 'Total number of files across all sources',
+      default: 0,
+    },
+    total_size: {
+      type: 'integer',
+      title: 'Total Size',
+      description: 'Total size of all files in bytes',
+      default: 0,
+    },
+    sources: {
+      items: {
+        $ref: '#/components/schemas/SourceStats',
+      },
+      type: 'array',
+      title: 'Sources',
+      description: 'List of source metadata',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  title: 'OrganizationSourcesStats',
+  description: 'Complete metadata response for organization sources',
+} as const;
+
 export const $OrganizationUpdate = {
   properties: {
     name: {
@@ -9546,6 +9613,46 @@ export const $SourceCreate = {
   required: ['name'],
   title: 'SourceCreate',
   description: 'Schema for creating a new Source.',
+} as const;
+
+export const $SourceStats = {
+  properties: {
+    source_id: {
+      type: 'string',
+      title: 'Source Id',
+      description: 'Unique identifier of the source',
+    },
+    source_name: {
+      type: 'string',
+      title: 'Source Name',
+      description: 'Name of the source',
+    },
+    file_count: {
+      type: 'integer',
+      title: 'File Count',
+      description: 'Number of files in the source',
+      default: 0,
+    },
+    total_size: {
+      type: 'integer',
+      title: 'Total Size',
+      description: 'Total size of all files in bytes',
+      default: 0,
+    },
+    files: {
+      items: {
+        $ref: '#/components/schemas/FileStats',
+      },
+      type: 'array',
+      title: 'Files',
+      description: 'List of file statistics',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['source_id', 'source_name'],
+  title: 'SourceStats',
+  description: 'Aggregated metadata for a source',
 } as const;
 
 export const $SourceUpdate = {
