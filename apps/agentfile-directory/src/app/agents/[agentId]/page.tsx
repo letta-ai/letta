@@ -7,7 +7,7 @@ import {
 } from '@tanstack/react-query';
 import { AgentHeader } from './_components/AgentHeader/AgentHeader';
 import { AgentDetails } from './_components/AgentDetails/AgentDetails';
-import type { Header } from '../../../lib/client/components/Header/Header';
+import { Header } from '../../../lib/client/components/Header/Header';
 
 interface AgentPageLayoutProps {
   params: Promise<{
