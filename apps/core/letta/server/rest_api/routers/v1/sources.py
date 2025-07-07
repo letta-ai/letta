@@ -343,7 +343,9 @@ async def get_file_metadata(
 
     if should_use_pinecone() and not file_metadata.is_processing_terminal():
         ids = await list_pinecone_index_for_files(file_id=file_id, actor=actor, limit=file_metadata.total_chunks)
-        logger.info(f"Embedded chunks {len(ids)}/{file_metadata.total_chunks} for {file_id} in organization {actor.organization_id}")
+        logger.info(
+            f"Embedded chunks {len(ids)}/{file_metadata.total_chunks} for {file_id} ({file_metadata.file_name}) in organization {actor.organization_id}"
+        )
 
         if len(ids) != file_metadata.chunks_embedded or len(ids) == file_metadata.total_chunks:
             if len(ids) != file_metadata.total_chunks:
