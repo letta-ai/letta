@@ -21,10 +21,12 @@ This is the monorepo for all internal Letta web projects. It uses [Nx](https://n
 
 For windows setup: [Windows Setup](docs/windows-setup.md)
 
+Install `Docker Desktop`: [linky](https://docs.docker.com/desktop/setup/install/mac-install/)
+
 Install the following with Homebrew:
 - `docker` - [linky](https://docs.docker.com/get-docker/)
 - `just` - [linky](https://github.com/casey/just)
-- `poetry` - [linky]([https://github.com/casey/just](https://github.com/python-poetry/poetry))
+- `poetry` - [linky](https://github.com/python-poetry/poetry)
 - `1password-cli` - [linky](https://support.1password.com/command-line-getting-started/)
 - `node` (for npm) - [linky](https://nodejs.org/en/download)
 - `postgresql` (to build psycopg2) - [linky](https://formulae.brew.sh/formula/postgresql@14)
@@ -44,7 +46,7 @@ Then run the following commands to setup the environment:
 ```sh
 cd ~/Developer
 
-git clone git@github.com:letta-ai/letta-cloud.git letta-cloud
+git clone git@github.com:letta-ai/letta-cloud.git --branch main
 
 # Start all supporting services
 # (Make sure docker daemon is running)
@@ -63,7 +65,7 @@ just setup
 
 ### Starting the Development Environment
 #### Running letta core (OSS Backend)
-```
+```sh
 # prepares local environment, cloud APIs, migrates your databases
 just ready
 
@@ -75,7 +77,7 @@ just core-debug
 ```
 
 #### Running letta web
-```
+```sh
 # prepares local environment, cloud APIs, migrates your databases
 just ready
 
