@@ -2,6 +2,8 @@ import pytest
 
 from letta.constants import MAX_FILENAME_LENGTH
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
+from letta.schemas.file import FileMetadata
+from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.helpers.agent_manager_helper import safe_format
 from letta.utils import sanitize_filename
 
@@ -407,3 +409,103 @@ def test_formatter():
     """
 
     assert UNUSED_AND_EMPRY_VAR_SOL == safe_format(UNUSED_AND_EMPRY_VAR, VARS_DICT)
+
+
+# ---------------------- LineChunker TESTS ---------------------- #
+
+
+def test_line_chunker_valid_range():
+    """Test that LineChunker works correctly with valid ranges"""
+    file = FileMetadata(file_name="test.py", source_id="test_source", content="line1\nline2\nline3\nline4")
+    chunker = LineChunker()
+
+    # Test valid range with validation
+    result = chunker.chunk_text(file, start=1, end=3, validate_range=True)
+    # Should return lines 2 and 3 (0-indexed 1:3)
+    assert "[Viewing lines 2 to 3 (out of 4 lines)]" in result[0]
+    assert "2: line2" in result[1]
+    assert "3: line3" in result[2]
+
+
+def test_line_chunker_valid_range_no_validation():
+    """Test that LineChunker works the same without validation for valid ranges"""
+    file = FileMetadata(file_name="test.py", source_id="test_source", content="line1\nline2\nline3\nline4")
+    chunker = LineChunker()
+
+    # Test same range without validation
+    result = chunker.chunk_text(file, start=1, end=3, validate_range=False)
+    assert "[Viewing lines 2 to 3 (out of 4 lines)]" in result[0]
+    assert "2: line2" in result[1]
+    assert "3: line3" in result[2]
+
+
+def test_line_chunker_out_of_range_start():
+    """Test that LineChunker throws error when start is out of range"""
+    file = FileMetadata(file_name="test.py", source_id="test_source", content="line1\nline2\nline3")
+    chunker = LineChunker()
+
+    # Test with start beyond file length (3 lines, requesting start=5 which is 0-indexed 4)
+    with pytest.raises(ValueError, match="File test.py has only 3 lines, but requested offset 6 is out of range"):
+        chunker.chunk_text(file, start=5, end=6, validate_range=True)
+
+
+def test_line_chunker_out_of_range_end():
+    """Test that LineChunker throws error when end extends beyond file bounds"""
+    file = FileMetadata(file_name="test.py", source_id="test_source", content="line1\nline2\nline3")
+    chunker = LineChunker()
+
+    # Test with end beyond file length (3 lines, requesting 1 to 10)
+    with pytest.raises(ValueError, match="File test.py has only 3 lines, but requested range 1 to 10 extends beyond file bounds"):
+        chunker.chunk_text(file, start=0, end=10, validate_range=True)
+
+
+def test_line_chunker_edge_case_empty_file():
+    """Test that LineChunker handles empty files correctly"""
+    file = FileMetadata(file_name="empty.py", source_id="test_source", content="")
+    chunker = LineChunker()
+
+    # Test requesting lines from empty file
+    with pytest.raises(ValueError, match="File empty.py has only 0 lines, but requested offset 1 is out of range"):
+        chunker.chunk_text(file, start=0, end=1, validate_range=True)
+
+
+def test_line_chunker_edge_case_single_line():
+    """Test that LineChunker handles single line files correctly"""
+    file = FileMetadata(file_name="single.py", source_id="test_source", content="only line")
+    chunker = LineChunker()
+
+    # Test valid single line access
+    result = chunker.chunk_text(file, start=0, end=1, validate_range=True)
+    assert "1: only line" in result[1]
+
+    # Test out of range for single line file
+    with pytest.raises(ValueError, match="File single.py has only 1 lines, but requested offset 2 is out of range"):
+        chunker.chunk_text(file, start=1, end=2, validate_range=True)
+
+
+def test_line_chunker_validation_disabled_allows_out_of_range():
+    """Test that when validation is disabled, out of range silently returns partial results"""
+    file = FileMetadata(file_name="test.py", source_id="test_source", content="line1\nline2\nline3")
+    chunker = LineChunker()
+
+    # Test with validation disabled - should not raise error
+    result = chunker.chunk_text(file, start=5, end=10, validate_range=False)
+    # Should return empty content (except metadata header) since slice is out of bounds
+    assert len(result) == 1  # Only metadata header
+    assert "[Viewing lines 6 to 10 (out of 3 lines)]" in result[0]
+
+
+def test_line_chunker_only_start_parameter():
+    """Test validation with only start parameter specified"""
+    file = FileMetadata(file_name="test.py", source_id="test_source", content="line1\nline2\nline3")
+    chunker = LineChunker()
+
+    # Test valid start only
+    result = chunker.chunk_text(file, start=1, validate_range=True)
+    assert "[Viewing lines 2 to end (out of 3 lines)]" in result[0]
+    assert "2: line2" in result[1]
+    assert "3: line3" in result[2]
+
+    # Test invalid start only
+    with pytest.raises(ValueError, match="File test.py has only 3 lines, but requested offset 4 is out of range"):
+        chunker.chunk_text(file, start=3, validate_range=True)

@@ -175,7 +175,7 @@ class LettaFileToolExecutor(ToolExecutor):
             file = await self.file_manager.get_file_by_id(file_id=file_id, actor=self.actor, include_content=True)
 
             # Process file content
-            content_lines = LineChunker().chunk_text(file_metadata=file, start=start, end=end)
+            content_lines = LineChunker().chunk_text(file_metadata=file, start=start, end=end, validate_range=True)
             visible_content = "\n".join(content_lines)
 
             # Handle LRU eviction and file opening
