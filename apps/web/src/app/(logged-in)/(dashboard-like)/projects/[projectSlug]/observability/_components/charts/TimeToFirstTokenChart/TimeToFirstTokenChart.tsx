@@ -10,7 +10,7 @@ import { useFormatters } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
 import { get } from 'lodash-es';
 import { useObservabilitySeriesData } from '../../hooks/useObservabilitySeriesData/useObservabilitySeriesData';
-import { useObservabilityContext } from '../../hooks/useObservabilityContext/useObservabilityContext';
+import { useObservabilityContext } from '$web/client/hooks/useObservabilityContext/useObservabilityContext';
 
 interface TimeToFirstTokenChartProps {
   analysisLink?: string;

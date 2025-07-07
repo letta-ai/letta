@@ -8,7 +8,7 @@ import {
 import { useTranslations } from '@letta-cloud/translations';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
-import { useObservabilityContext } from '../hooks/useObservabilityContext/useObservabilityContext';
+import { useObservabilityContext } from '$web/client/hooks/useObservabilityContext/useObservabilityContext';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { useCallback } from 'react';
 

@@ -6,8 +6,8 @@ import {
   TabGroup,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import type { ChartType } from '../hooks/useObservabilityContext/useObservabilityContext';
-import { useObservabilityContext } from '../hooks/useObservabilityContext/useObservabilityContext';
+import type { ChartType } from '$web/client/hooks/useObservabilityContext/useObservabilityContext';
+import { useObservabilityContext } from '$web/client/hooks/useObservabilityContext/useObservabilityContext';
 import { useCallback, useMemo } from 'react';
 import { differenceInDays } from 'date-fns';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
@@ -157,6 +157,8 @@ export function ObservabilityHeader(props: ObservabilityHeaderProps) {
   const { subPage } = props;
   const { slug } = useCurrentProject();
 
+  const { noTemplateFilter } = useObservabilityContext();
+
   return (
     <HStack
       borderBottom
@@ -189,7 +191,7 @@ export function ObservabilityHeader(props: ObservabilityHeaderProps) {
         />
         <HStack>
           <DateRangeSelector />
-          <AdvancedObservabilityFilter />
+          {!noTemplateFilter && <AdvancedObservabilityFilter />}
         </HStack>
       </HStack>
     </HStack>

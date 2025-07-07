@@ -2857,6 +2857,7 @@
     "nav": {
       "migrations": "Migrations",
       "templateEditor": "Template Editor",
+      "metrics": "Monitoring",
       "distribution": "Distribution"
     }
   },

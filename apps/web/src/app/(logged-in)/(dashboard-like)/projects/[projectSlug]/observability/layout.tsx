@@ -1,4 +1,4 @@
-import { ObservabilityProvider } from './_components/hooks/useObservabilityContext/useObservabilityContext';
+import { ObservabilityProvider } from '$web/client/hooks/useObservabilityContext/useObservabilityContext';
 
 interface ObservabilityLayoutProps {
   children: React.ReactNode;
@@ -7,5 +7,9 @@ interface ObservabilityLayoutProps {
 export default function ObservabilityLayout(props: ObservabilityLayoutProps) {
   const { children } = props;
 
-  return <ObservabilityProvider>{children}</ObservabilityProvider>;
+  return (
+    <div className="w-full pr-1 encapsulated-full-height h-0 overflow-y-auto">
+      <ObservabilityProvider>{children}</ObservabilityProvider>
+    </div>
+  );
 }

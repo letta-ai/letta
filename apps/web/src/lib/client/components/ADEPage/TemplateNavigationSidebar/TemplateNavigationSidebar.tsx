@@ -7,6 +7,7 @@ import {
   ConveyorBeltIcon,
   VStack,
   WrapNotificationDot,
+  MonitoringIcon,
 } from '@letta-cloud/ui-component-library';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from '@letta-cloud/translations';
@@ -32,6 +33,7 @@ function SidebarButton(props: SidebarButtonProps) {
       color="tertiary"
       href={href}
       label={label}
+      preload
       active={pathname === href ? 'brand' : undefined}
       preIcon={icon}
       size="xsmall"
@@ -144,6 +146,11 @@ export function TemplateSidebarInner() {
           href={`/projects/${slug}/templates/${templateName}/distribution`}
         />
       </DistributionOnboardingStep>
+      <SidebarButton
+        icon={<MonitoringIcon />}
+        label={t('nav.metrics')}
+        href={`/projects/${slug}/templates/${templateName}/metrics`}
+      />
     </VStack>
   );
 }

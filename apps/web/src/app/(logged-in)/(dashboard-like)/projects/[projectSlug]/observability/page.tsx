@@ -15,7 +15,7 @@ import { ToolUsageFrequencyChart } from './_components/charts/ToolUsageFrequency
 import { ToolErrorsByNameChart } from './_components/charts/ToolErrorsByNameChart/ToolErrorsByNameChart';
 import { ToolLatencyChart } from './_components/charts/ToolLatencyChart/ToolLatencyChart';
 import { ToolLatencyByToolNameChart } from './_components/charts/ToolLatencyByToolNameChart/ToolLatencyByToolNameChart';
-import { useObservabilityContext } from './_components/hooks/useObservabilityContext/useObservabilityContext';
+import { useObservabilityContext } from '$web/client/hooks/useObservabilityContext/useObservabilityContext';
 import { Fragment, useMemo } from 'react';
 import { LLMLatencyChart } from './_components/charts/LLMLatencyChart/LLMLatencyChart';
 import { LLMLatencyByModelNameChart } from './_components/charts/LLMLatencyByModelNameChart/LLMLatencyByModelNameChart';

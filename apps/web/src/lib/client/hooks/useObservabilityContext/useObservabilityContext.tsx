@@ -3,7 +3,7 @@ import { createContext, useContext, useMemo, useState } from 'react';
 import { endOfDay, startOfDay, subDays } from 'date-fns';
 import { useSessionStorage } from '@mantine/hooks';
 import type { OptionType } from '@letta-cloud/ui-component-library';
-import { useEmptyBaseTemplateValue } from '../useEmptyBaseTemplateValue/useEmptyBaseTemplateValue';
+import { useEmptyBaseTemplateValue } from '../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/observability/_components/hooks/useEmptyBaseTemplateValue/useEmptyBaseTemplateValue';
 
 export type ChartType = 'activity' | 'all' | 'errors' | 'performance';
 
@@ -13,12 +13,14 @@ interface ObservabilityContextType {
   setDateRange: (startDate: Date, endDate: Date) => void;
   chartType: ChartType;
   setChartType: (type: ChartType) => void;
+  noTemplateFilter: boolean;
   baseTemplateId: OptionType;
   setBaseTemplateId: (templateId: OptionType) => void;
 }
 
 const ObservabilityContext = createContext<ObservabilityContextType>({
   startDate: new Date().toISOString(),
+  noTemplateFilter: false,
   chartType: 'all',
   endDate: new Date().toISOString(),
   setDateRange: () => {
@@ -42,10 +44,14 @@ export function useObservabilityContext() {
 
 interface ObservabilityProviderProps {
   children: React.ReactNode;
+  baseTemplate?: OptionType;
+  noTemplateFilter?: boolean;
 }
 
 export function ObservabilityProvider({
   children,
+  baseTemplate,
+  noTemplateFilter,
 }: ObservabilityProviderProps) {
   const [endDate, setEndDate] = useState(endOfDay(new Date()));
   const [startDate, setStartTime] = useState(
@@ -53,7 +59,9 @@ export function ObservabilityProvider({
   );
 
   const emptyValue = useEmptyBaseTemplateValue();
-  const [baseTemplateId, setBaseTemplateId] = useState<OptionType>(emptyValue);
+  const [baseTemplateId, setBaseTemplateId] = useState<OptionType>(
+    baseTemplate || emptyValue,
+  );
 
   const [chartType, setChartType] = useSessionStorage<ChartType>({
     key: 'observability-chart-type',
@@ -65,6 +73,7 @@ export function ObservabilityProvider({
       startDate: new Date(startDate).toISOString(),
       endDate: new Date(endDate).toISOString(),
       setBaseTemplateId,
+      noTemplateFilter: noTemplateFilter || false,
       baseTemplateId,
       chartType,
       setDateRange: (startDate: Date, endDate: Date) => {
@@ -75,7 +84,14 @@ export function ObservabilityProvider({
         setChartType(type);
       },
     }),
-    [startDate, endDate, baseTemplateId, chartType, setChartType],
+    [
+      startDate,
+      noTemplateFilter,
+      endDate,
+      baseTemplateId,
+      chartType,
+      setChartType,
+    ],
   );
 
   return (

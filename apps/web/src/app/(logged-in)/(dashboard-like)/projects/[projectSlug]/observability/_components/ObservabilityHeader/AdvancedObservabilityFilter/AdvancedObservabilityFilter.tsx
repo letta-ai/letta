@@ -1,4 +1,4 @@
-import { useObservabilityContext } from '../../hooks/useObservabilityContext/useObservabilityContext';
+import { useObservabilityContext } from '$web/client/hooks/useObservabilityContext/useObservabilityContext';
 import type { AgentTemplateType } from '@letta-cloud/sdk-web';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import {
