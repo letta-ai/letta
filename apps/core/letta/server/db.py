@@ -226,6 +226,32 @@ class DatabaseRegistry:
     @contextmanager
     def session(self, name: str = "default") -> Generator[Any, None, None]:
         """Context manager for database sessions."""
+        caller_info = "unknown caller"
+        try:
+            import inspect
+
+            frame = inspect.currentframe()
+            stack = inspect.getouterframes(frame)
+
+            for i, frame_info in enumerate(stack):
+                module = inspect.getmodule(frame_info.frame)
+                module_name = module.__name__ if module else "unknown"
+
+                if module_name != "contextlib" and "db.py" not in frame_info.filename:
+                    caller_module = module_name
+                    caller_function = frame_info.function
+                    caller_lineno = frame_info.lineno
+                    caller_file = frame_info.filename.split("/")[-1]
+
+                    caller_info = f"{caller_module}.{caller_function}:{caller_lineno} ({caller_file})"
+                    break
+        except:
+            pass
+        finally:
+            del frame
+
+        self.session_caller_trace(caller_info)
+
         session_factory = self.get_session_factory(name)
         if not session_factory:
             raise ValueError(f"No session factory found for '{name}'")
@@ -249,6 +275,11 @@ class DatabaseRegistry:
             yield session
         finally:
             await session.close()
+
+    @trace_method
+    def session_caller_trace(self, caller_info: str):
+        """Trace sync db caller information for debugging purposes."""
+        pass  # wrapper used for otel tracing only
 
 
 # Create a singleton instance
