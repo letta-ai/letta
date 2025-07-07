@@ -75,7 +75,7 @@ import { LettaClient } from "@letta-ai/letta-client";
 const client = new LettaClient({ token: "YOUR_TOKEN" });
 
 // create agent
-const { agents } = await client.templates.createAgents("${slug}", "${templateName}:latest");
+const { agents } = await client.templates.agents.create("${slug}", "${templateName}:latest");
 
 // message agent
 await client.agents.messages.create(agents[0].id, {

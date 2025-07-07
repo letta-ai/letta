@@ -307,7 +307,7 @@ const client = new LettaClient({
           showLineNumbers={false}
           language="typescript"
           code={`async function createAgentAndReturnId(name: string) {
-  const response = await client.templates.createAgents('${slug}', '${templateName}:latest', {
+  const response = await client.templates.agents.create('${slug}', '${templateName}:latest', {
     name: "My Agent",
   });
 
