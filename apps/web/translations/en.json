@@ -1383,6 +1383,9 @@
       "placeholder": "Search projects"
     }
   },
+  "projects/(projectSlug)/ExternalVersionManagementDialog": {
+    "title": "External version management"
+  },
   "projects/(projectSlug)/components/CreateNewTemplateDialog": {
     "title": "Create a template",
     "OnboardingWrapper": {
@@ -2359,6 +2362,7 @@
       "returnToProject": "Return to project",
       "delete": "Delete {agentBaseType}",
       "download": "Download AgentFile (.af)",
+      "externalVersionManagement": "External Version Management",
       "networkInspector": "Network Inspector"
     },
     "DeployAgentDialog": {

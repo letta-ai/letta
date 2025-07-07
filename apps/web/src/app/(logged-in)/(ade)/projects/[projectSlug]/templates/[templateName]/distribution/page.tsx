@@ -613,53 +613,55 @@ export default function DistributionPage() {
 
   return (
     <ADEPage>
-      <PanelGroup
-        /* eslint-disable-next-line react/forbid-component-props */
-        className="h-full"
-        direction="horizontal"
-        autoSaveId="distribution"
-      >
-        <Panel
-          defaultSize={65}
-          defaultValue={65}
+      <VStack fullHeight fullWidth borderY borderRight>
+        <PanelGroup
           /* eslint-disable-next-line react/forbid-component-props */
           className="h-full"
-          minSize={20}
+          direction="horizontal"
+          autoSaveId="distribution"
         >
-          <VStack fullHeight gap="small">
+          <Panel
+            defaultSize={65}
+            defaultValue={65}
+            /* eslint-disable-next-line react/forbid-component-props */
+            className="h-full"
+            minSize={20}
+          >
+            <VStack fullHeight gap="small">
+              <ADEGroup
+                items={[
+                  {
+                    title: t('VersionList.title'),
+                    id: 'versions',
+                    content: <VersionHistorySection />,
+                  },
+                ]}
+              ></ADEGroup>
+            </VStack>
+          </Panel>
+          <PanelResizeHandle
+            /* eslint-disable-next-line react/forbid-component-props */
+            className="w-[1px] bg-border"
+          />
+          <Panel
+            defaultSize={35}
+            defaultValue={35}
+            /* eslint-disable-next-line react/forbid-component-props */
+            className="h-full"
+            minSize={20}
+          >
             <ADEGroup
               items={[
                 {
-                  title: t('VersionList.title'),
-                  id: 'versions',
-                  content: <VersionHistorySection />,
+                  title: t('agents'),
+                  id: 'agents',
+                  content: <AgentsPanel />,
                 },
               ]}
             ></ADEGroup>
-          </VStack>
-        </Panel>
-        <PanelResizeHandle
-          /* eslint-disable-next-line react/forbid-component-props */
-          className="w-[4px]"
-        />
-        <Panel
-          defaultSize={35}
-          defaultValue={35}
-          /* eslint-disable-next-line react/forbid-component-props */
-          className="h-full"
-          minSize={20}
-        >
-          <ADEGroup
-            items={[
-              {
-                title: t('agents'),
-                id: 'agents',
-                content: <AgentsPanel />,
-              },
-            ]}
-          ></ADEGroup>
-        </Panel>
-      </PanelGroup>
+          </Panel>
+        </PanelGroup>
+      </VStack>
     </ADEPage>
   );
 }

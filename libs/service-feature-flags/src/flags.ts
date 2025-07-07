@@ -81,6 +81,11 @@ export const featureFlags = {
     expiryDate: '2025-07-01',
     flagValue: z.boolean(),
   },
+  EXTERNAL_VERSION_SYNC_SETTINGS: {
+    description: 'External version sync',
+    expiryDate: '2025-07-01',
+    flagValue: z.boolean(),
+  },
   SYSTEM_WARNING: {
     flagValue: z.object({
       title: z.string(),

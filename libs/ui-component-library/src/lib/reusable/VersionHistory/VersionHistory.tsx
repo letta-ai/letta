@@ -34,7 +34,7 @@ function VersionHistoryItem(props: VersionHistoryItemProps) {
       }}
       paddingX="small"
       paddingY="small"
-      className={cn(isSelected ? 'bg-background-grey2' : '', 'min-h-[66px]')}
+      className={cn(isSelected ? 'bg-brand-light' : '', 'min-h-[66px]')}
       align="center"
       gap="large"
     >
@@ -130,7 +130,7 @@ export function VersionHistory(props: VersionHistoryProps) {
         selectedVersionIndex={selectedVersionIndex}
         loadMoreButton={loadMoreButton}
       />
-      <VStack flex fullWidth gap={false} color="background-grey2">
+      <VStack borderLeft flex fullWidth gap={false} color="background-grey2">
         {versions[selectedVersionIndex]?.details}
       </VStack>
     </HStack>

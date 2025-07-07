@@ -22,6 +22,7 @@ import {
   TroubleshootIcon,
   HotKey,
   DropdownMenuSeparator,
+  CloudSyncIcon,
 } from '@letta-cloud/ui-component-library';
 import type { QueryBuilderQuery } from '@letta-cloud/ui-component-library';
 import { ProjectSelector } from '$web/client/components';
@@ -47,6 +48,7 @@ import {
 import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
 import { useNetworkInspectorVisibility } from '@letta-cloud/ui-ade-components';
 import { PublishAgentFileSettingsDialog } from '$web/client/components/ADEPage/PublishAgentFileSettingsDialog/PublishAgentFileSettingsDialog';
+import { ExternalVersionManagementDialog } from '$web/client/components/ADEPage/ExternalVersionManagementDialog/ExternalVersionManagementDialog';
 
 interface DesktopADEHeaderProps {
   name: string;
@@ -172,6 +174,9 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
   const { id: agentTemplateId } = useCurrentAgent();
 
   const { data: showShareAgentFile } = useFeatureFlag('SHARE_AGENT_FILE');
+  const { data: showVersionSyncSettings } = useFeatureFlag(
+    'EXTERNAL_VERSION_SYNC_SETTINGS',
+  );
 
   if (!canUpdateAgent) {
     return null;
@@ -247,6 +252,20 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
             />
           }
         />
+        {isTemplate && showVersionSyncSettings && (
+          <>
+            <DropdownMenuSeparator />
+            <ExternalVersionManagementDialog
+              trigger={
+                <DropdownMenuItem
+                  doNotCloseOnSelect
+                  preIcon={<CloudSyncIcon />}
+                  label={t('AgentSettingsDropdown.externalVersionManagement')}
+                />
+              }
+            />
+          </>
+        )}
       </DropdownMenu>
     </>
   );

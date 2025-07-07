@@ -156,6 +156,7 @@ export function VersionHistorySection() {
     <VStack gap="small" overflow="hidden" fullHeight>
       <VStack
         paddingX="small"
+        borderTop
         paddingBottom="small"
         overflowY="auto"
         collapseHeight
