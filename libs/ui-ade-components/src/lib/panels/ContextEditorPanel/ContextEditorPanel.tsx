@@ -250,7 +250,7 @@ export function ContextWindowPanel() {
             },
           },
           data: [systemPromptLength / totalLengthForChart],
-          color: '#3758F9',
+          color: '#3f5ff9',
           name: t('ContextWindowPreview.systemPrompt'),
           itemStyle: {
             borderRadius: [0, 0, 0, 0],
@@ -271,7 +271,7 @@ export function ContextWindowPanel() {
             },
           },
           data: [toolLength / totalLengthForChart],
-          color: '#37e2f9',
+          color: '#6ba5b3',
           name: t('ContextWindowPreview.toolPrompt'),
           itemStyle: {
             borderRadius: [0, 0, 0, 0],
@@ -292,7 +292,7 @@ export function ContextWindowPanel() {
             },
           },
           data: [externalSummaryLength / totalLengthForChart],
-          color: '#37f9a2',
+          color: '#36a373',
           name: t('ContextWindowPreview.externalSummaryLength'),
           itemStyle: {
             borderRadius: [0, 0, 0, 0],
@@ -313,7 +313,7 @@ export function ContextWindowPanel() {
             },
           },
           data: [coreMemoryLength / totalLengthForChart],
-          color: '#76e76e',
+          color: '#fce054',
           name: t('ContextWindowPreview.memoryBlocks'),
         },
         {
@@ -331,7 +331,7 @@ export function ContextWindowPanel() {
             },
           },
           data: [recursiveMemoryLength / totalLengthForChart],
-          color: 'green',
+          color: '#ff8c00',
           name: t('ContextWindowPreview.summaryMemory'),
         },
         {
@@ -349,7 +349,7 @@ export function ContextWindowPanel() {
             },
           },
           data: [messagesTokensLength / totalLengthForChart],
-          color: 'orange',
+          color: '#9d37f9',
           name: t('ContextWindowPreview.messagesTokens'),
         },
         {
@@ -495,7 +495,7 @@ export function ContextWindowSimulator() {
           />
         ),
         size: systemPromptLength,
-        color: '#3758F9',
+        color: '#3f5ff9',
       },
       {
         id: 'tool',
@@ -510,7 +510,7 @@ export function ContextWindowSimulator() {
           />
         ),
         size: toolLength,
-        color: '#37e2f9',
+        color: '#6ba5b3',
       },
       {
         id: 'external',
@@ -525,7 +525,7 @@ export function ContextWindowSimulator() {
           />
         ),
         size: externalSummaryLength,
-        color: '#37f9a2',
+        color: '#36a373',
       },
       {
         id: 'coreMemory',
@@ -540,7 +540,7 @@ export function ContextWindowSimulator() {
           />
         ),
         size: coreMemoryLength,
-        color: '#76e76e',
+        color: '#fce054',
       },
       {
         id: 'recursiveMemory',
@@ -555,7 +555,7 @@ export function ContextWindowSimulator() {
           />
         ),
         size: recursiveMemoryLength,
-        color: 'green',
+        color: '#ff8c00',
       },
       {
         id: 'messages',
@@ -570,7 +570,7 @@ export function ContextWindowSimulator() {
           />
         ),
         size: messagesTokensLength,
-        color: 'orange',
+        color: '#9d37f9',
       },
     ];
   }, [

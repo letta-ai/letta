@@ -131,7 +131,7 @@ export function Chart(props: ChartOptions) {
             padding: 0,
             trigger: 'item',
             position: 'top',
-            backgroundColor: 'hsl(var(--background-grey2))',
+            backgroundColor: 'hsl(var(--background-inverted))',
             ...options.tooltip,
             className: 'chart-tooltip',
           },
