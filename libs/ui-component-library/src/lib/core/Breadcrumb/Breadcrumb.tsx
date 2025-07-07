@@ -145,6 +145,8 @@ function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
             size === 'xsmall' ? 'body3' : size === 'small' ? 'body2' : 'body'
           }
           onClick={onClick}
+          noWrap
+          overflow="ellipsis"
           className={cn(
             'flex items-center gap-1',
             !isLast ? 'text-text-lighter' : 'font-light',
