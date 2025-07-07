@@ -443,10 +443,12 @@ function QueryCombinator(props: QueryCombinatorProps) {
   const { combinator, path, items } = props;
 
   const { setQuery } = useQueryBuilder();
-  const combinatorOptions: OptionType[] = [
-    { label: 'AND', value: 'AND' },
-    { label: 'OR', value: 'OR' },
-  ];
+  const combinatorOptions: OptionType[] = DISABLE_COMBINATOR
+    ? [{ label: 'AND', value: 'AND' }]
+    : [
+        { label: 'AND', value: 'AND' },
+        { label: 'OR', value: 'OR' },
+      ];
 
   const selectedCombinator = combinatorOptions.find(
     (option) => option.value === combinator,
