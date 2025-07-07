@@ -156,7 +156,7 @@ class FileProcessor:
             return all_passages
 
         except Exception as e:
-            logger.error(f"File processing failed for {filename}: {str(e)}")
+            logger.debug(f"File processing failed for {filename}: {str(e)}")
             log_event(
                 "file_processor.processing_failed",
                 {
