@@ -197,20 +197,22 @@ export function AttachDataSourceModal(props: AttachDataSourceModalProps) {
         <Frame
           paddingBottom
           fullWidth
+          fullHeight
           overflowY="auto"
           className="min-h-[400px]"
         >
           {isLoading || isError || isEmpty ? (
-            <LoadingEmptyStatusComponent
-              isLoading={isLoading}
-              isError={isError}
-              loadingMessage={t('loading')}
-              errorMessage={t('error')}
-              emptyMessage={
-                search ? t('emptySearchMessage') : t('emptyMessage')
-              }
-              noMinHeight
-            />
+            <VStack fullWidth fullHeight align="center" justify="center">
+              <LoadingEmptyStatusComponent
+                isLoading={isLoading}
+                isError={isError}
+                loadingMessage={t('loading')}
+                errorMessage={t('error')}
+                emptyMessage={
+                  search ? t('emptySearchMessage') : t('emptyMessage')
+                }
+              />
+            </VStack>
           ) : (
             <VStack gap={false} fullWidth>
               {filteredSources.map((source) => (
