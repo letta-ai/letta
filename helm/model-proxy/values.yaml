@@ -63,38 +63,38 @@ ingress:
 resources:
   limits:
     cpu: 500m
-    memory: 1024Mi
+    memory: 2048Mi
   requests:
     cpu: 200m
-    memory: 512Mi
+    memory: 1024Mi
 
-# livenessProbe:
-#   tcpSocket:
-#     port: 8080
-#   initialDelaySeconds: 60
-#   periodSeconds: 15
-#   failureThreshold: 3
+livenessProbe:
+  tcpSocket:
+    port: 8080
+  initialDelaySeconds: 60
+  periodSeconds: 15
+  failureThreshold: 3
 
-# readinessProbe:
-#   tcpSocket:
-#     port: 8080
-#   initialDelaySeconds: 30
-#   periodSeconds: 10
-#   failureThreshold: 3
+readinessProbe:
+  tcpSocket:
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 3
 
-# startupProbe:
-#   httpGet:
-#     path: /healthz
-#     port: 8080
-#   failureThreshold: 30
-#   periodSeconds: 10
+startupProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  failureThreshold: 30
+  periodSeconds: 10
 
 autoscaling:
   enabled: false
-  minReplicas: 1
-  maxReplicas: 100
+  minReplicas: 2
+  maxReplicas: 6
   targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
 # Additional volumes on the output Deployment definition.
 volumes: []
