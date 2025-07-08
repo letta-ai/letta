@@ -44,7 +44,7 @@ export function ADEGroup(props: ADEGroupProps) {
                 setActiveTab(index);
               }}
             >
-              <HStack align="center" gap="medium">
+              <HStack align="center" gap="small">
                 <Typography
                   uppercase
                   bold

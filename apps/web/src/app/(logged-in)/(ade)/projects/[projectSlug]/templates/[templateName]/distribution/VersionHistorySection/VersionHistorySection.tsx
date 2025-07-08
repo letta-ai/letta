@@ -32,13 +32,15 @@ function VersionDetails(props: VersionDetailsProps) {
   const t = useTranslations('pages/distribution/VersionHistory');
 
   return (
-    <VStack padding flex overflowY="auto" collapseHeight>
-      <VStack gap="small" fullWidth>
+    <VStack collapseHeight overflow="hidden" fullWidth>
+      <VStack gap={false} fullHeight fullWidth>
         <HStack
           /* eslint-disable-next-line react/forbid-component-props */
-          className="min-h-[24px]"
+          className="min-h-[36px]"
           justify="spaceBetween"
           fullWidth
+          paddingX="small"
+          borderBottom
           align="center"
         >
           <Typography
@@ -46,7 +48,7 @@ function VersionDetails(props: VersionDetailsProps) {
             overflow="ellipsis"
             noWrap
             uppercase
-            variant="body3"
+            variant="body4"
             bold
           >
             {agentName}:{version}
@@ -62,11 +64,13 @@ function VersionDetails(props: VersionDetailsProps) {
             </Tooltip>
           )}
         </HStack>
-        {!agentState ? (
-          <LoadingEmptyStatusComponent isLoading loaderVariant="grower" />
-        ) : (
-          <AgentStateViewer baseState={agentState} />
-        )}
+        <VStack flex overflowY="auto" color="background" collapseHeight>
+          {!agentState ? (
+            <LoadingEmptyStatusComponent isLoading loaderVariant="grower" />
+          ) : (
+            <AgentStateViewer baseState={agentState} />
+          )}
+        </VStack>
       </VStack>
     </VStack>
   );
@@ -155,7 +159,6 @@ export function VersionHistorySection() {
   return (
     <VStack gap="small" overflow="hidden" fullHeight>
       <VStack
-        paddingX="small"
         borderTop
         paddingBottom="small"
         overflowY="auto"

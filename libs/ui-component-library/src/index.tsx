@@ -261,3 +261,5 @@ export * from './lib/core/VoteComponent/VoteComponent';
 export * from './lib/core/BlockViewer/BlockViewer';
 
 export * from './lib/core/ToolLanguageIcon/ToolLanguageIcon';
+
+export * from './lib/core/JSONDiff/JSONDiff';

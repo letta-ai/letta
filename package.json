@@ -132,6 +132,7 @@
     "ioredis": "^5.4.2",
     "jotai": "^2.11.0",
     "js-tiktoken": "^1.0.16",
+    "json-diff-kit": "^1.0.32",
     "jsonrepair": "^3.11.2",
     "jsonwebtoken": "^9.0.2",
     "jwt-decode": "^4.0.0",

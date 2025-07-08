@@ -165,6 +165,10 @@
   },
   "pages/distribution": {
     "viewAgents": "View all",
+    "VersionDropdownMenu": {
+      "trigger": "Options",
+      "uploadVersion": "Manually upload new version"
+    },
     "VersionHistory": {
       "title": "Version History"
     },

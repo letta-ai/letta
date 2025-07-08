@@ -4,7 +4,7 @@ import { default as JSONPretty } from 'react-json-pretty';
 import './JSONViewer.scss';
 
 interface JSONViewerProps {
-  data: Record<string, any>;
+  data: any;
 }
 
 export function JSONViewer(props: JSONViewerProps) {

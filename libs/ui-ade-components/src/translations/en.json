@@ -2062,7 +2062,7 @@
   },
   "ImportAgentsDialog": {
     "importOptions": "Import options",
-
+    "sourceWarning": "Sources are not yet supported in manual import, your sources will be detached on upload",
     "warnings": {
       "versionMismatch": "The version of this agentfile is not the same as your current version, this may cause issues with the import."
     },

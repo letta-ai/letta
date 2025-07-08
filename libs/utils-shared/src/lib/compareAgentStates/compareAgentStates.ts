@@ -21,7 +21,8 @@ export interface CleanedAgentState {
   llmConfig: LLMConfig;
   embedding_config: EmbeddingConfig;
   memoryBlocks: CleanedMemoryBlock[];
-  promptTemplate: string;
+  // temp hidden since its not editable in ade
+  // promptTemplate: string;
   system: string;
   toolRules: AgentState['tool_rules'];
 }
@@ -60,7 +61,18 @@ export function stateCleaner(state: AgentState): CleanedAgentState {
       embedding_dim: state.embedding_config.embedding_dim,
       embedding_chunk_size: state.embedding_config.embedding_chunk_size,
     },
-    toolRules: state.tool_rules,
+    toolRules: state.tool_rules
+      ?.map(({ prompt_template: _p, ...rule }) => ({
+        ...rule,
+      }))
+      .toSorted((a, b) => {
+        // sort by tool_type then by name
+        const typeComparison = (a.type || '').localeCompare(b.type || '');
+
+        if (typeComparison !== 0) return typeComparison;
+
+        return (a.tool_name || '').localeCompare(b.tool_name || '');
+      }),
     memoryBlocks: state.memory
       ? state.memory.blocks
           .map((block) => ({
@@ -73,7 +85,8 @@ export function stateCleaner(state: AgentState): CleanedAgentState {
           }))
           .toSorted((a, b) => (a.label || '').localeCompare(b.label || ''))
       : [],
-    promptTemplate: state.memory?.prompt_template || '',
+    // temp hidden since its not editable in ade and not supported in agentfile
+    // promptTemplate: state.memory?.prompt_template || '',
     system: state.system,
   };
 }
