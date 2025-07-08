@@ -392,6 +392,12 @@ paths:
                   - $ref: '#/components/schemas/AssistantMessage'
                   - $ref: '#/components/schemas/LettaStopReason'
                   - $ref: '#/components/schemas/LettaUsageStatistics'
+  /v1/agents/{agent_id}/messages/cancel:
+    post:
+      x-fern-sdk-group-name:
+        - agents
+        - messages
+      x-fern-sdk-method-name: cancel
   /v1/agents/{agent_id}/template:
     post:
       x-fern-sdk-group-name:
