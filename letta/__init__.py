@@ -14,7 +14,7 @@ if os.environ.get("LETTA_VERSION"):
 # import clients
 from letta.client.client import RESTClient
 
-# # imports for easier access
+# imports for easier access
 from letta.schemas.agent import AgentState
 from letta.schemas.block import Block
 from letta.schemas.embedding_config import EmbeddingConfig
