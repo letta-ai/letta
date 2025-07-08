@@ -91,7 +91,7 @@ class OpenAIEmbedder(BaseEmbedder):
             try:
                 return await self._embed_batch(batch, indices)
             except Exception as e:
-                logger.error(f"Failed to embed batch of size {len(batch)}: {str(e)}")
+                logger.error("Failed to embed batch of size %s: %s", len(batch), e)
                 log_event("embedder.batch_failed", {"batch_size": len(batch), "error": str(e), "error_type": type(e).__name__})
                 raise
 

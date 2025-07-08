@@ -23,10 +23,10 @@ from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.file import FileMetadata
 from letta.schemas.passage import Passage
 from letta.schemas.source import Source, SourceCreate, SourceUpdate
+from letta.schemas.source_metadata import OrganizationSourcesStats
 from letta.schemas.user import User
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
-from letta.services.file_processor.chunker.llama_index_chunker import LlamaIndexChunker
 from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
 from letta.services.file_processor.embedder.pinecone_embedder import PineconeEmbedder
 from letta.services.file_processor.file_processor import FileProcessor
@@ -93,6 +93,24 @@ async def get_source_id_by_name(
     if not source:
         raise HTTPException(status_code=404, detail=f"Source with name={source_name} not found.")
     return source.id
+
+
+@router.get("/metadata", response_model=OrganizationSourcesStats, operation_id="get_sources_metadata")
+async def get_sources_metadata(
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Get aggregated metadata for all sources in an organization.
+
+    Returns structured metadata including:
+    - Total number of sources
+    - Total number of files across all sources
+    - Total size of all files
+    - Per-source breakdown with file details (file_name, file_size per file)
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.file_manager.get_organization_sources_metadata(actor=actor)
 
 
 @router.get("/", response_model=List[Source], operation_id="list_sources")
@@ -344,7 +362,9 @@ async def get_file_metadata(
 
     if should_use_pinecone() and not file_metadata.is_processing_terminal():
         ids = await list_pinecone_index_for_files(file_id=file_id, actor=actor, limit=file_metadata.total_chunks)
-        logger.info(f"Embedded chunks {len(ids)}/{file_metadata.total_chunks} for {file_id} in organization {actor.organization_id}")
+        logger.info(
+            f"Embedded chunks {len(ids)}/{file_metadata.total_chunks} for {file_id} ({file_metadata.file_name}) in organization {actor.organization_id}"
+        )
 
         if len(ids) != file_metadata.chunks_embedded or len(ids) == file_metadata.total_chunks:
             if len(ids) != file_metadata.total_chunks:
@@ -424,15 +444,12 @@ async def load_file_to_source_cloud(
     file_metadata: FileMetadata,
 ):
     file_processor = MistralFileParser()
-    text_chunker = LlamaIndexChunker(chunk_size=embedding_config.embedding_chunk_size)
     using_pinecone = should_use_pinecone()
     if using_pinecone:
         embedder = PineconeEmbedder()
     else:
         embedder = OpenAIEmbedder(embedding_config=embedding_config)
-    file_processor = FileProcessor(
-        file_parser=file_processor, text_chunker=text_chunker, embedder=embedder, actor=actor, using_pinecone=using_pinecone
-    )
+    file_processor = FileProcessor(file_parser=file_processor, embedder=embedder, actor=actor, using_pinecone=using_pinecone)
     await file_processor.process(
         server=server, agent_states=agent_states, source_id=source_id, content=content, file_metadata=file_metadata
     )

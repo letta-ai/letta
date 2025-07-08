@@ -26,14 +26,12 @@ class FileProcessor:
     def __init__(
         self,
         file_parser: MistralFileParser,
-        text_chunker: LlamaIndexChunker,
         embedder: BaseEmbedder,
         actor: User,
         using_pinecone: bool,
         max_file_size: int = 50 * 1024 * 1024,  # 50MB default
     ):
         self.file_parser = file_parser
-        self.text_chunker = text_chunker
         self.line_chunker = LineChunker()
         self.embedder = embedder
         self.max_file_size = max_file_size
@@ -43,6 +41,61 @@ class FileProcessor:
         self.job_manager = JobManager()
         self.actor = actor
         self.using_pinecone = using_pinecone
+
+    async def _chunk_and_embed_with_fallback(self, file_metadata: FileMetadata, ocr_response, source_id: str) -> List:
+        """Chunk text and generate embeddings with fallback to default chunker if needed"""
+        filename = file_metadata.file_name
+
+        # Create file-type-specific chunker
+        text_chunker = LlamaIndexChunker(file_type=file_metadata.file_type)
+
+        # First attempt with file-specific chunker
+        try:
+            all_chunks = []
+            for page in ocr_response.pages:
+                chunks = text_chunker.chunk_text(page)
+                if not chunks:
+                    log_event("file_processor.chunking_failed", {"filename": filename, "page_index": ocr_response.pages.index(page)})
+                    raise ValueError("No chunks created from text")
+                all_chunks.extend(chunks)
+
+            all_passages = await self.embedder.generate_embedded_passages(
+                file_id=file_metadata.id, source_id=source_id, chunks=all_chunks, actor=self.actor
+            )
+            return all_passages
+
+        except Exception as e:
+            logger.warning(f"Failed to chunk/embed with file-specific chunker for {filename}: {str(e)}. Retrying with default chunker.")
+            log_event("file_processor.embedding_failed_retrying", {"filename": filename, "error": str(e), "error_type": type(e).__name__})
+
+            # Retry with default chunker
+            try:
+                logger.info(f"Retrying chunking with default SentenceSplitter for {filename}")
+                all_chunks = []
+
+                for page in ocr_response.pages:
+                    chunks = text_chunker.default_chunk_text(page)
+                    if not chunks:
+                        log_event(
+                            "file_processor.default_chunking_failed", {"filename": filename, "page_index": ocr_response.pages.index(page)}
+                        )
+                        raise ValueError("No chunks created from text with default chunker")
+                    all_chunks.extend(chunks)
+
+                all_passages = await self.embedder.generate_embedded_passages(
+                    file_id=file_metadata.id, source_id=source_id, chunks=all_chunks, actor=self.actor
+                )
+                logger.info(f"Successfully generated passages with default chunker for {filename}")
+                log_event("file_processor.default_chunking_success", {"filename": filename, "total_chunks": len(all_chunks)})
+                return all_passages
+
+            except Exception as fallback_error:
+                logger.error("Default chunking also failed for %s: %s", filename, fallback_error)
+                log_event(
+                    "file_processor.default_chunking_also_failed",
+                    {"filename": filename, "fallback_error": str(fallback_error), "fallback_error_type": type(fallback_error).__name__},
+                )
+                raise fallback_error
 
     # TODO: Factor this function out of SyncServer
     @trace_method
@@ -111,19 +164,10 @@ class FileProcessor:
 
             logger.info("Chunking extracted text")
             log_event("file_processor.chunking_started", {"filename": filename, "pages_to_process": len(ocr_response.pages)})
-            all_chunks = []
 
-            for page in ocr_response.pages:
-                chunks = self.text_chunker.chunk_text(page)
-
-                if not chunks:
-                    log_event("file_processor.chunking_failed", {"filename": filename, "page_index": ocr_response.pages.index(page)})
-                    raise ValueError("No chunks created from text")
-
-                all_chunks.extend(self.text_chunker.chunk_text(page))
-
-            all_passages = await self.embedder.generate_embedded_passages(
-                file_id=file_metadata.id, source_id=source_id, chunks=all_chunks, actor=self.actor
+            # Chunk and embed with fallback logic
+            all_passages = await self._chunk_and_embed_with_fallback(
+                file_metadata=file_metadata, ocr_response=ocr_response, source_id=source_id
             )
 
             if not self.using_pinecone:
@@ -156,7 +200,7 @@ class FileProcessor:
             return all_passages
 
         except Exception as e:
-            logger.error(f"File processing failed for {filename}: {str(e)}")
+            logger.error("File processing failed for %s: %s", filename, e)
             log_event(
                 "file_processor.processing_failed",
                 {

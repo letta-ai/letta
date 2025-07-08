@@ -99,7 +99,12 @@ class LineChunker:
         return [line for line in lines if line.strip()]
 
     def chunk_text(
-        self, file_metadata: FileMetadata, start: Optional[int] = None, end: Optional[int] = None, add_metadata: bool = True
+        self,
+        file_metadata: FileMetadata,
+        start: Optional[int] = None,
+        end: Optional[int] = None,
+        add_metadata: bool = True,
+        validate_range: bool = False,
     ) -> List[str]:
         """Content-aware text chunking based on file type"""
         strategy = self._determine_chunking_strategy(file_metadata)
@@ -116,11 +121,31 @@ class LineChunker:
             content_lines = self._chunk_by_lines(text, preserve_indentation=False)
 
         total_chunks = len(content_lines)
+        chunk_type = (
+            "sentences" if strategy == ChunkingStrategy.DOCUMENTATION else "chunks" if strategy == ChunkingStrategy.PROSE else "lines"
+        )
+
+        # Validate range if requested
+        if validate_range and (start is not None or end is not None):
+            if start is not None and start >= total_chunks:
+                # Convert to 1-indexed for user-friendly error message
+                start_display = start + 1
+                raise ValueError(
+                    f"File {file_metadata.file_name} has only {total_chunks} lines, but requested offset {start_display} is out of range"
+                )
+
+            if start is not None and end is not None and end > total_chunks:
+                # Convert to 1-indexed for user-friendly error message
+                start_display = start + 1
+                end_display = end
+                raise ValueError(
+                    f"File {file_metadata.file_name} has only {total_chunks} lines, but requested range {start_display} to {end_display} extends beyond file bounds"
+                )
 
         # Handle start/end slicing
-        if start is not None and end is not None:
+        if start is not None or end is not None:
             content_lines = content_lines[start:end]
-            line_offset = start
+            line_offset = start if start is not None else 0
         else:
             line_offset = 0
 
@@ -129,14 +154,15 @@ class LineChunker:
 
         # Add metadata about total chunks
         if add_metadata:
-            chunk_type = (
-                "sentences" if strategy == ChunkingStrategy.DOCUMENTATION else "chunks" if strategy == ChunkingStrategy.PROSE else "lines"
-            )
             if start is not None and end is not None:
                 # Display 1-indexed ranges for users
                 start_display = start + 1
                 end_display = end
                 content_lines.insert(0, f"[Viewing {chunk_type} {start_display} to {end_display} (out of {total_chunks} {chunk_type})]")
+            elif start is not None:
+                # Only start specified - viewing from start to end
+                start_display = start + 1
+                content_lines.insert(0, f"[Viewing {chunk_type} {start_display} to end (out of {total_chunks} {chunk_type})]")
             else:
                 content_lines.insert(0, f"[Viewing file start (out of {total_chunks} {chunk_type})]")
 
