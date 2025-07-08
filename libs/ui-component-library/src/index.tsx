@@ -26,6 +26,7 @@ export * from './lib/core/RangeSlider/RangeSlider';
 export * from './lib/core/Switch/Switch';
 
 export * from './lib/core/DataTable/DataTable';
+export * from './lib/core/DataTable/SortableHeader';
 
 export * from './lib/core/Dialog/Dialog';
 

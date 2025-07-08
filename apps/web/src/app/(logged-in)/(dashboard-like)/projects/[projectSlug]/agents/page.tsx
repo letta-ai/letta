@@ -1,6 +1,9 @@
 'use client';
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { DotsVerticalIcon } from '@letta-cloud/ui-component-library';
+import {
+  DotsVerticalIcon,
+  SortableHeader,
+} from '@letta-cloud/ui-component-library';
 import type {
   FieldDefinitions,
   QueryBuilderQuery,
@@ -676,6 +679,12 @@ function DeployedAgentsPage() {
   const [query, setQuery] = useState<QueryBuilderQuery>(initialQuery);
   const t = useTranslations('projects/(projectSlug)/agents/page');
 
+  // Change the sortBy state type
+  const [sortBy, setSortBy] = useState<'created_at' | 'last_run_completion'>(
+    'last_run_completion',
+  );
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
   // Add this line to force QueryBuilder re-render when field definitions change
   const queryBuilderKey = useMemo(() => {
     return JSON.stringify(Object.keys(fieldDefinitions));
@@ -728,7 +737,11 @@ function DeployedAgentsPage() {
             }, {}),
           };
         })
-        .filter(Boolean) as any[], // Type assertion to bypass strict typing
+        .filter(Boolean) as Array<{
+        field: string;
+        operator?: string;
+        value?: string[] | string;
+      }>,
       limit,
       project_id: currentProjectId,
       combinator: 'AND' as const,
@@ -759,14 +772,16 @@ function DeployedAgentsPage() {
     queryKey: [
       'infinite',
       ...cloudQueryKeys.agents.searchDeployedAgents(compiledQuery),
+      sortBy,
+      sortDirection,
     ],
     queryFn: async ({ pageParam }) => {
       const response = await cloudAPI.agents.searchDeployedAgents.mutate({
         body: {
           ...compiledQuery,
           after: pageParam?.after,
-          sortBy: 'last_run_completion',
-          ascending: false,
+          sortBy: sortBy,
+          ascending: sortDirection === 'asc',
         },
       });
 
@@ -870,6 +885,25 @@ function DeployedAgentsPage() {
   const { slug: currentProjectSlug } = useCurrentProject();
   const { formatDateAndTime } = useFormatters();
 
+  // Update the handleSort function parameter type
+  const handleSort = useCallback(
+    (columnId: 'created_at' | 'last_run_completion') => {
+      if (sortBy === columnId) {
+        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      } else {
+        setSortBy(columnId);
+        setSortDirection('desc');
+      }
+      setPage(0); // Reset to first page when sorting changes
+    },
+    [sortBy, sortDirection],
+  );
+
+  // Add effect to refetch when sort changes
+  useEffect(() => {
+    setPage(0);
+  }, [sortBy, sortDirection]);
+
   const DeployedAgentColumns: Array<ColumnDef<ExtendedAgentState>> = useMemo(
     () => [
       {
@@ -921,7 +955,16 @@ function DeployedAgentsPage() {
       },
       {
         id: 'lastRunCompletion',
-        header: t('table.columns.lastRunCompletion'),
+        header: () => (
+          <SortableHeader
+            sortKey="last_run_completion"
+            currentSortBy={sortBy}
+            currentSortDirection={sortDirection}
+            onSort={handleSort}
+          >
+            {t('table.columns.lastRunCompletion')}
+          </SortableHeader>
+        ),
         cell: ({ row }) => {
           if (
             !row.original?.last_run_completion ||
@@ -954,7 +997,16 @@ function DeployedAgentsPage() {
       },
       {
         id: 'createdAt',
-        header: t('table.columns.lastUpdatedAt'),
+        header: () => (
+          <SortableHeader
+            sortKey="created_at"
+            currentSortBy={sortBy}
+            currentSortDirection={sortDirection}
+            onSort={handleSort}
+          >
+            {t('table.columns.lastUpdatedAt')}
+          </SortableHeader>
+        ),
         cell: ({ row }) => {
           if (
             !row.original?.created_at ||
@@ -994,7 +1046,15 @@ function DeployedAgentsPage() {
         ),
       },
     ],
-    [currentProjectSlug, filterByVersion, formatDateAndTime, t],
+    [
+      currentProjectSlug,
+      filterByVersion,
+      formatDateAndTime,
+      t,
+      sortBy,
+      sortDirection,
+      handleSort,
+    ],
   );
 
   const { push } = useRouter();
