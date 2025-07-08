@@ -158,6 +158,7 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
             if not settings.debug:
                 os.remove(temp_file_path)
 
+    @trace_method
     async def _prepare_venv(self, local_configs, venv_path: str, env: Dict[str, str]):
         """
         Prepare virtual environment asynchronously (in a background thread).
@@ -174,11 +175,12 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
             )
             log_event(name="finish create_venv_for_local_sandbox")
 
-        log_event(name="start install_pip_requirements_for_sandbox", attributes={"local_configs": local_configs.model_dump_json()})
-        await asyncio.to_thread(
-            install_pip_requirements_for_sandbox, local_configs, upgrade=True, user_install_if_no_venv=False, env=env, tool=self.tool
-        )
-        log_event(name="finish install_pip_requirements_for_sandbox", attributes={"local_configs": local_configs.model_dump_json()})
+        if local_configs.pip_requirements or (self.tool and self.tool.pip_requirements):
+            log_event(name="start install_pip_requirements_for_sandbox", attributes={"local_configs": local_configs.model_dump_json()})
+            await asyncio.to_thread(
+                install_pip_requirements_for_sandbox, local_configs, upgrade=True, user_install_if_no_venv=False, env=env, tool=self.tool
+            )
+            log_event(name="finish install_pip_requirements_for_sandbox", attributes={"local_configs": local_configs.model_dump_json()})
 
     @trace_method
     async def _execute_tool_subprocess(
