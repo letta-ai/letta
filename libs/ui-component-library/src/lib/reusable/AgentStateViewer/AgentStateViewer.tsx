@@ -30,8 +30,12 @@ function stateEnhancer(
   const { toolIds, sourceIds, ...rest } = state;
   return {
     ...rest,
-    tools: toolIds.map((toolId) => tools[toolId]),
-    sources: sourceIds.map((sourceId) => sources[sourceId]),
+    tools: toolIds
+      .map((toolId) => `${tools[toolId].name} (${toolId})`)
+      .toSorted((a, b) => a.localeCompare(b)),
+    sources: sourceIds
+      .map((sourceId) => `${sources[sourceId].name} (${sourceId})`)
+      .toSorted((a, b) => a.localeCompare(b)),
   };
 }
 
