@@ -7,6 +7,7 @@ import {
 import React, { useCallback } from 'react';
 import {
   Button,
+  HStack,
   ThumbsDownIcon,
   ThumbsUpIcon,
   toast,
@@ -93,35 +94,43 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
   }
 
   return (
-    <>
+    <HStack gap="small">
       <Button
-        preIcon={<ThumbsUpIcon size="auto" />}
+        preIcon={
+          isPositiveFeedback ? (
+            <ThumbsUpIcon color="positive" size="auto" />
+          ) : (
+            <ThumbsUpIcon size="auto" />
+          )
+        }
         size="3xsmall"
         hideLabel
         square
         label={t('positive')}
-        _use_rarely_className={
-          isPositiveFeedback ? 'text-positive' : 'text-muted'
-        }
         onClick={() => {
           handleAddFeedback('positive');
         }}
+        _use_rarely_className=" w-4 h-4"
         color="tertiary"
       />
       <Button
-        preIcon={<ThumbsDownIcon size="auto" />}
+        preIcon={
+          isNegativeFeedback ? (
+            <ThumbsDownIcon color="destructive" size="auto" />
+          ) : (
+            <ThumbsDownIcon size="auto" />
+          )
+        }
         onClick={() => {
           handleAddFeedback('negative');
         }}
         label={t('negative')}
         size="3xsmall"
-        _use_rarely_className={
-          isNegativeFeedback ? 'text-destructive' : 'text-muted'
-        }
         hideLabel
         square
+        _use_rarely_className=" w-4 h-4"
         color="tertiary"
       />
-    </>
+    </HStack>
   );
 }

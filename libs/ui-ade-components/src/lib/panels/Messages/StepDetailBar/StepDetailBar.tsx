@@ -1,8 +1,9 @@
 import React from 'react';
 import {
   Button,
+  ChevronDownIcon,
+  ChevronUpIcon,
   HStack,
-  StepIcon,
   Typography,
 } from '@letta-cloud/ui-component-library';
 import { FeedbackButtons } from '../FeedbackButtons/FeedbackButtons';
@@ -49,12 +50,18 @@ export function StepDetailBar(props: StepDetailBarProps) {
     <>
       <div
         className={cn(
-          'w-full messages-step-detail justify-between h-[16px] gap-1 items-center flex pt-4',
+          'w-full messages-step-detail justify-between h-[16px] gap-1 items-center flex pb-1 pt-4',
         )}
       >
-        <HStack>
+        <HStack align="center" gap="small">
           <Button
-            preIcon={<StepIcon size="auto" />}
+            preIcon={
+              !showDetails ? (
+                <ChevronDownIcon size="small" />
+              ) : (
+                <ChevronUpIcon size="small" />
+              )
+            }
             onClick={() => {
               setShowDetails(!showDetails);
             }}
@@ -62,10 +69,13 @@ export function StepDetailBar(props: StepDetailBarProps) {
             hideLabel
             square
             active={showDetails}
-            _use_rarely_className="text-muted"
+            _use_rarely_className="text-muted w-4 h-4"
             label={showDetails ? t('details.hide') : t('details.show')}
             color="tertiary"
           />
+          <FeedbackButtons stepId={stepId} />
+        </HStack>
+        <HStack gap="small">
           <Typography
             className="messages-step-detail--timestamp"
             variant="body4"
@@ -87,9 +97,6 @@ export function StepDetailBar(props: StepDetailBarProps) {
                 count: usage.output_tokens,
               })}
           </Typography>
-        </HStack>
-        <HStack gap="small">
-          <FeedbackButtons stepId={stepId} />
         </HStack>
       </div>
       {showDetails && (
