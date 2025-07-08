@@ -1713,6 +1713,7 @@ export const useBlocksServiceRetrieveBlockSuspense = <
  * Raises a 404 if the block does not exist.
  * @param data The data for the request.
  * @param data.blockId
+ * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
  * @param data.userId
  * @returns AgentState Successful Response
  * @throws ApiError
@@ -1724,9 +1725,11 @@ export const useBlocksServiceListAgentsForBlockSuspense = <
 >(
   {
     blockId,
+    includeRelationships,
     userId,
   }: {
     blockId: string;
+    includeRelationships?: string[];
     userId?: string;
   },
   queryKey?: TQueryKey,
@@ -1734,11 +1737,15 @@ export const useBlocksServiceListAgentsForBlockSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseBlocksServiceListAgentsForBlockKeyFn(
-      { blockId, userId },
+      { blockId, includeRelationships, userId },
       queryKey,
     ),
     queryFn: () =>
-      BlocksService.listAgentsForBlock({ blockId, userId }) as TData,
+      BlocksService.listAgentsForBlock({
+        blockId,
+        includeRelationships,
+        userId,
+      }) as TData,
     ...options,
   });
 /**

@@ -1075,15 +1075,17 @@ export const useBlocksServiceListAgentsForBlockKey =
 export const UseBlocksServiceListAgentsForBlockKeyFn = (
   {
     blockId,
+    includeRelationships,
     userId,
   }: {
     blockId: string;
+    includeRelationships?: string[];
     userId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useBlocksServiceListAgentsForBlockKey,
-  ...(queryKey ?? [{ blockId, userId }]),
+  ...(queryKey ?? [{ blockId, includeRelationships, userId }]),
 ];
 export type JobsServiceListJobsDefaultResponse = Awaited<
   ReturnType<typeof JobsService.listJobs>

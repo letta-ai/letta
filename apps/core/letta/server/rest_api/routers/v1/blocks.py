@@ -101,6 +101,14 @@ async def retrieve_block(
 @router.get("/{block_id}/agents", response_model=List[AgentState], operation_id="list_agents_for_block")
 async def list_agents_for_block(
     block_id: str,
+    include_relationships: list[str] | None = Query(
+        None,
+        description=(
+            "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. "
+            "If not provided, all relationships are loaded by default. "
+            "Using this can optimize performance by reducing unnecessary joins."
+        ),
+    ),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
@@ -110,7 +118,9 @@ async def list_agents_for_block(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     try:
-        agents = await server.block_manager.get_agents_for_block_async(block_id=block_id, actor=actor)
+        agents = await server.block_manager.get_agents_for_block_async(
+            block_id=block_id, include_relationships=include_relationships, actor=actor
+        )
         return agents
     except NoResultFound:
         raise HTTPException(status_code=404, detail=f"Block with id={block_id} not found")

@@ -1429,6 +1429,7 @@ export const prefetchUseBlocksServiceRetrieveBlock = (
  * Raises a 404 if the block does not exist.
  * @param data The data for the request.
  * @param data.blockId
+ * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
  * @param data.userId
  * @returns AgentState Successful Response
  * @throws ApiError
@@ -1437,18 +1438,26 @@ export const prefetchUseBlocksServiceListAgentsForBlock = (
   queryClient: QueryClient,
   {
     blockId,
+    includeRelationships,
     userId,
   }: {
     blockId: string;
+    includeRelationships?: string[];
     userId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseBlocksServiceListAgentsForBlockKeyFn({
       blockId,
+      includeRelationships,
       userId,
     }),
-    queryFn: () => BlocksService.listAgentsForBlock({ blockId, userId }),
+    queryFn: () =>
+      BlocksService.listAgentsForBlock({
+        blockId,
+        includeRelationships,
+        userId,
+      }),
   });
 /**
  * List Jobs

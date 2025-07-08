@@ -55,6 +55,7 @@ function EditMemoryForm(props: EditMemoryFormProps) {
   const { data: agents } = useBlocksServiceListAgentsForBlock(
     {
       blockId: memory.id || '',
+      includeRelationships: [],
     },
     undefined,
     {

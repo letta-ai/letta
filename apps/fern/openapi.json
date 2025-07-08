@@ -1180,7 +1180,7 @@
       "get": {
         "tags": ["sources"],
         "summary": "Get Sources Metadata",
-        "description": "Get aggregated metadata for all sources in an organization.\n\nReturns structured metadata including:\n- Total number of sources\n- Total number of files across all sources  \n- Total size of all files\n- Per-source breakdown with file details (file_name, file_size per file)",
+        "description": "Get aggregated metadata for all sources in an organization.\n\nReturns structured metadata including:\n- Total number of sources\n- Total number of files across all sources\n- Total size of all files\n- Per-source breakdown with file details (file_name, file_size per file)",
         "operationId": "get_sources_metadata",
         "parameters": [],
         "responses": {
@@ -5607,6 +5607,27 @@
               "type": "string",
               "title": "Block Id"
             }
+          },
+          {
+            "name": "include_relationships",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.",
+              "title": "Include Relationships"
+            },
+            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins."
           }
         ],
         "responses": {

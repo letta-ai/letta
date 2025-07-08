@@ -8027,6 +8027,15 @@ export const get_List_agents_for_block = {
   path: z.literal('/v1/blocks/{block_id}/agents'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    query: z.object({
+      include_relationships: z
+        .union([
+          z.array(z.string()),
+          z.null(),
+          z.array(z.union([z.array(z.string()), z.null()])),
+        ])
+        .optional(),
+    }),
     path: z.object({
       block_id: z.string(),
     }),
