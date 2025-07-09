@@ -7,6 +7,7 @@ import {
   ChevronRightIcon,
   ContextWindowIcon,
   FunctionIcon,
+  HeartIcon,
 } from '../../icons';
 import { Typography } from '../../core/Typography/Typography';
 import { RawCodeEditor } from '../../core/Code/Code';
@@ -81,6 +82,32 @@ export function FunctionCall(props: FunctionCallProps) {
 
   const toolReturn = response?.tool_return;
 
+  const requestHeartbeatState: boolean | undefined = useMemo(() => {
+    // regex to find any form of request_heartbeat = true
+    const hasHeartbeatTruePattern = /request_heartbeat[^}]*true/i.test(inputs);
+    const hasHeartbeatFalsePattern = /request_heartbeat[^}]*false/i.test(
+      inputs,
+    );
+
+    if (hasHeartbeatTruePattern) {
+      return true;
+    }
+
+    if (hasHeartbeatFalsePattern) {
+      return false;
+    }
+
+    try {
+      const parsedInputs = JSON.parse(inputs);
+      if ('request_heartbeat' in parsedInputs) {
+        return parsedInputs.request_heartbeat === true;
+      }
+      return undefined;
+    } catch {
+      return undefined;
+    }
+  }, [inputs]);
+
   const [responseView, setResponseView] = useState<ResponseViews>('response');
 
   const responseData = useMemo(() => {
@@ -148,6 +175,12 @@ export function FunctionCall(props: FunctionCallProps) {
             </HStack>
             <StatusBadge status={status} toolReturn={toolReturn} />
           </HStack>
+          {typeof requestHeartbeatState === 'boolean' && (
+            <HeartIcon
+              color={requestHeartbeatState === true ? 'destructive' : 'lighter'}
+              size="small"
+            />
+          )}
         </HStack>
       </HStack>
       {open && (
