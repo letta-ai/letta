@@ -8,9 +8,11 @@ import { useTranslations } from '@letta-cloud/translations';
 import {
   CaretDownIcon,
   CaretUpIcon,
+  EyeOpenIcon,
   InvaderSharedAgentIcon,
   LockClosedIcon,
   LockOpenRightIcon,
+  SplitscreenRightIcon,
   VisibilityLockIcon,
 } from '../../icons';
 import { VStack } from '../../framing/VStack/VStack';
@@ -21,6 +23,7 @@ import { cn } from '@letta-cloud/ui-styles';
 import { Button } from '../../core/Button/Button';
 import type { SharedAgent } from './SharedAgentsPopover/SharedAgentsPopover';
 import { SharedAgentsPopover } from './SharedAgentsPopover/SharedAgentsPopover';
+import { useVisibleMemoryTypeContext } from './useVisibleMemoryTypeContext/useVisibleMemoryTypeContext';
 
 interface LimitProps {
   limit: number;
@@ -129,7 +132,9 @@ interface CoreMemoryEditorHeaderProps {
   sharedAgents: SharedAgent[];
   isLocked: boolean;
   editedValue: string;
+  openInAdvanced?: VoidFunction;
   isCollapsed: boolean;
+  hasSimulatedDiff: boolean;
   onCollapseChange: (collapsed: boolean) => void;
   onLockChange: (locked: boolean) => void;
 }
@@ -141,11 +146,14 @@ function CoreMemoryEditorHeader(props: CoreMemoryEditorHeaderProps) {
     isLocked,
     disabled,
     isCollapsed,
+    hasSimulatedDiff = false,
     onCollapseChange,
+    openInAdvanced,
     onLockChange,
     sharedAgents,
   } = props;
   const { label, limit, read_only, preserve_on_migration } = memoryBlock;
+  const { setVisibleMemoryType } = useVisibleMemoryTypeContext();
 
   const t = useTranslations('components/CoreMemoryEditor');
 
@@ -183,16 +191,34 @@ function CoreMemoryEditorHeader(props: CoreMemoryEditorHeaderProps) {
               }
             ></SharedAgentsPopover>
           )}
-          {read_only && (
+          {read_only ? (
             <InfoChip
+              onClick={openInAdvanced}
               label={t('CoreMemoryEditorHeader.readOnly')}
               icon={<VisibilityLockIcon />}
+            />
+          ) : (
+            <InfoChip
+              onClick={openInAdvanced}
+              label={t('CoreMemoryEditorHeader.editable')}
+              icon={<EyeOpenIcon />}
             />
           )}
           {preserve_on_migration && (
             <InfoChip
+              onClick={openInAdvanced}
               label={t('CoreMemoryEditorHeader.preserved')}
-              icon={<VisibilityLockIcon />}
+              icon={<EyeOpenIcon />}
+            />
+          )}
+          {hasSimulatedDiff && (
+            <InfoChip
+              onClick={() => {
+                setVisibleMemoryType('simulated');
+              }}
+              variant="brand"
+              label={t('CoreMemoryEditorHeader.simulatedDiff')}
+              icon={<SplitscreenRightIcon color="brand" />}
             />
           )}
         </HStack>
@@ -374,7 +400,9 @@ interface CoreMemoryEditorProps {
   testId?: string;
   onSave: (value: string) => void;
   sharedAgents?: SharedAgent[];
+  openInAdvanced?: VoidFunction;
   showDiff?: boolean;
+  hasSimulatedDiff?: boolean;
   isSaving: boolean;
   errorMessage?: string;
 }
@@ -389,6 +417,8 @@ export function CoreMemoryEditor(props: CoreMemoryEditorProps) {
     showDiff,
     isSaving,
     disabled,
+    openInAdvanced,
+    hasSimulatedDiff = false,
     testId,
     onSave,
     errorMessage,
@@ -433,6 +463,8 @@ export function CoreMemoryEditor(props: CoreMemoryEditorProps) {
         sharedAgents={sharedAgents}
         memoryBlock={memoryBlock}
         disabled={disabled}
+        openInAdvanced={openInAdvanced}
+        hasSimulatedDiff={hasSimulatedDiff}
         editedValue={editedValue}
         isLocked={isLocked}
       />
@@ -463,3 +495,5 @@ export function CoreMemoryEditor(props: CoreMemoryEditorProps) {
     </VStack>
   );
 }
+
+export * from './useVisibleMemoryTypeContext/useVisibleMemoryTypeContext';

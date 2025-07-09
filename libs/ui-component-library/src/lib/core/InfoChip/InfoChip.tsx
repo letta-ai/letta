@@ -12,6 +12,7 @@ const infoChipVariants = cva(
     variants: {
       variant: {
         info: 'bg-background-grey ',
+        success: 'bg-success-light text-success-light-content',
         brand: 'bg-brand-light text-brand-light-content',
       },
     },

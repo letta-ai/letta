@@ -3,10 +3,13 @@ import {
   CoreMemoryEditor,
   EmptyBlockIcon,
   MemoryBlocksIcon,
+  type MemoryType,
   OnboardingAsideFocus,
   PlusIcon,
   TabGroup,
   Typography,
+  useVisibleMemoryTypeContext,
+  VisibleMemoryTypeProvider,
 } from '@letta-cloud/ui-component-library';
 import { InfoTooltip } from '@letta-cloud/ui-component-library';
 import { LettaLoaderPanel } from '@letta-cloud/ui-component-library';
@@ -15,7 +18,7 @@ import { VStack } from '@letta-cloud/ui-component-library';
 import { PanelMainContent } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent } from '../../hooks';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import React, { useMemo } from 'react';
 import { useSortedMemories } from '@letta-cloud/utils-client';
 import { useUpdateMemory } from '../../hooks';
@@ -44,10 +47,11 @@ interface AdvancedEditorPayload {
 interface EditMemoryFormProps extends AdvancedEditorPayload {
   memoryType: 'simulated' | 'templated';
   disabled?: boolean;
+  hasSimulatedDiff?: boolean;
 }
 
 function EditMemoryForm(props: EditMemoryFormProps) {
-  const { label, memory, memoryType, disabled } = props;
+  const { label, memory, memoryType, hasSimulatedDiff, disabled } = props;
   const { id } = useCurrentAgent();
   const { isLocal } = useCurrentAgentMetaData();
   const { projectSlug } = useADEAppContext();
@@ -129,6 +133,8 @@ function EditMemoryForm(props: EditMemoryFormProps) {
     return memory.value;
   }, [templateValue, memoryType, memory.value]);
 
+  const { open } = useAdvancedCoreMemoryEditor();
+
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
   return (
@@ -137,7 +143,15 @@ function EditMemoryForm(props: EditMemoryFormProps) {
         ...memory,
         value,
       }}
+      openInAdvanced={
+        memoryType === 'simulated'
+          ? undefined
+          : () => {
+              open(label);
+            }
+      }
       showDiff
+      hasSimulatedDiff={hasSimulatedDiff}
       sharedAgents={sharedAgents}
       isSaving={isUpdating}
       testId={`edit-memory-block-${label}-content`}
@@ -199,18 +213,38 @@ function MemoryWrapper(props: MemoryWrapperProps) {
 
 function DefaultMemory() {
   const agent = useCurrentAgent();
+  const { agentSession } = useCurrentSimulatedAgent();
+
+  const simulatedMemoriesLabelMap = useMemo(() => {
+    const map = new Map<string, Block>();
+
+    agentSession?.body.agent.memory?.blocks.forEach((block) => {
+      if (block.label) {
+        map.set(block.label, block);
+      }
+    });
+
+    return map;
+  }, [agentSession]);
 
   const memories = useSortedMemories(agent);
   return (
     <MemoryWrapper memoryCount={memories.length}>
-      {memories.map((block) => (
-        <EditMemoryForm
-          key={block.label}
-          memory={block}
-          memoryType="templated"
-          label={block.label || ''}
-        />
-      ))}
+      {memories.map((block) => {
+        const simulatedBlock = simulatedMemoriesLabelMap.get(block.label || '');
+        const hasSimulatedDiff =
+          simulatedBlock && simulatedBlock.value !== block.value;
+
+        return (
+          <EditMemoryForm
+            key={block.label}
+            memory={block}
+            memoryType="templated"
+            hasSimulatedDiff={hasSimulatedDiff}
+            label={block.label || ''}
+          />
+        );
+      })}
     </MemoryWrapper>
   );
 }
@@ -282,8 +316,6 @@ function MemoryOnboarding(props: MemoryOnboardingProps) {
   );
 }
 
-type MemoryType = 'simulated' | 'templated';
-
 function AdvancedEditorButton() {
   const { open } = useAdvancedCoreMemoryEditor();
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
@@ -331,93 +363,100 @@ function AdvancedEditorButton() {
   );
 }
 
-export function EditMemory() {
+function MemoryTabs() {
+  const { visibleMemoryType, setVisibleMemoryType } =
+    useVisibleMemoryTypeContext();
   const { isTemplate } = useCurrentAgentMetaData();
-
-  const [memoryType, setMemoryType] = useState<MemoryType>('templated');
-
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
 
   return (
+    <TabGroup
+      color="transparent"
+      bold
+      extendBorder
+      rightContent={<AdvancedEditorButton />}
+      size="xsmall"
+      value={visibleMemoryType}
+      onValueChange={(value) => {
+        if (!value) {
+          return;
+        }
+
+        setVisibleMemoryType(value as MemoryType);
+      }}
+      items={
+        isTemplate
+          ? [
+              {
+                label: t('toggleMemoryType.templated.label'),
+                value: 'templated',
+                postIcon: (
+                  <InfoTooltip text={t('toggleMemoryType.templated.tooltip')} />
+                ),
+              },
+              {
+                label: t('toggleMemoryType.simulated.label'),
+                value: 'simulated',
+                postIcon: (
+                  <InfoTooltip text={t('toggleMemoryType.simulated.tooltip')} />
+                ),
+              },
+            ]
+          : [
+              {
+                label: t('toggleMemoryType.agent.label'),
+                value: 'templated',
+                postIcon: (
+                  <InfoTooltip text={t('toggleMemoryType.agent.tooltip')} />
+                ),
+              },
+            ]
+      }
+    />
+  );
+}
+
+function MemoryRenderer() {
+  const { visibleMemoryType } = useVisibleMemoryTypeContext();
+
+  if (visibleMemoryType === 'simulated') {
+    return <SimulatedMemory />;
+  }
+
+  return <DefaultMemory />;
+}
+
+export function EditMemory() {
+  return (
     <PanelMainContent variant="noPadding">
-      <MemoryOnboarding>
-        <VStack
-          className="core-memory-panel"
-          overflow="auto"
-          fullHeight
-          gap={false}
-        >
-          <VStack fullWidth paddingX="small">
-            <TabGroup
-              color="transparent"
-              bold
-              extendBorder
-              rightContent={<AdvancedEditorButton />}
-              size="xsmall"
-              value={memoryType}
-              onValueChange={(value) => {
-                if (!value) {
-                  return;
-                }
-
-                setMemoryType(value as MemoryType);
-              }}
-              items={
-                isTemplate
-                  ? [
-                      {
-                        label: t('toggleMemoryType.templated.label'),
-                        value: 'templated',
-                        postIcon: (
-                          <InfoTooltip
-                            text={t('toggleMemoryType.templated.tooltip')}
-                          />
-                        ),
-                      },
-                      {
-                        label: t('toggleMemoryType.simulated.label'),
-                        value: 'simulated',
-                        postIcon: (
-                          <InfoTooltip
-                            text={t('toggleMemoryType.simulated.tooltip')}
-                          />
-                        ),
-                      },
-                    ]
-                  : [
-                      {
-                        label: t('toggleMemoryType.agent.label'),
-                        value: 'templated',
-                        postIcon: (
-                          <InfoTooltip
-                            text={t('toggleMemoryType.agent.tooltip')}
-                          />
-                        ),
-                      },
-                    ]
-              }
-            />
-          </VStack>
+      <VisibleMemoryTypeProvider>
+        <MemoryOnboarding>
           <VStack
-            paddingTop="xsmall"
-            fullWidth
-            collapseHeight
-            flex
+            className="core-memory-panel"
             overflow="auto"
-            gap="small"
-            paddingX="small"
-            paddingBottom="small"
+            fullHeight
+            gap={false}
           >
-            <AdvancedCoreMemoryEditor />
+            <VStack fullWidth paddingX="small">
+              <MemoryTabs />
+            </VStack>
+            <VStack
+              paddingTop="xsmall"
+              fullWidth
+              collapseHeight
+              flex
+              overflow="auto"
+              gap="small"
+              paddingX="small"
+              paddingBottom="small"
+            >
+              <AdvancedCoreMemoryEditor />
 
-            {memoryType === 'templated' ? (
-              <DefaultMemory />
-            ) : (
-              <SimulatedMemory />
-            )}
+              <MemoryRenderer />
+            </VStack>
           </VStack>
-        </VStack>
-      </MemoryOnboarding>
+        </MemoryOnboarding>
+      </VisibleMemoryTypeProvider>
     </PanelMainContent>
   );
 }
