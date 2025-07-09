@@ -77,9 +77,8 @@ class Tool(BaseTool):
 
         if self.tool_type is ToolType.CUSTOM:
             if not self.source_code:
-                error_msg = f"Custom tool with id={self.id} is missing source_code field."
-                logger.error(error_msg)
-                raise ValueError(error_msg)
+                logger.error("Custom tool with id=%s is missing source_code field", self.id)
+                raise ValueError(f"Custom tool with id={self.id} is missing source_code field.")
 
             # Always derive json_schema for freshest possible json_schema
             if self.args_json_schema is not None:
@@ -96,8 +95,7 @@ class Tool(BaseTool):
                 try:
                     self.json_schema = derive_openai_json_schema(source_code=self.source_code)
                 except Exception as e:
-                    error_msg = f"Failed to derive json schema for tool with id={self.id} name={self.name}. Error: {str(e)}"
-                    logger.error(error_msg)
+                    logger.error("Failed to derive json schema for tool with id=%s name=%s: %s", self.id, self.name, e)
         elif self.tool_type in {ToolType.LETTA_CORE, ToolType.LETTA_MEMORY_CORE, ToolType.LETTA_SLEEPTIME_CORE}:
             # If it's letta core tool, we generate the json_schema on the fly here
             self.json_schema = get_json_schema_from_module(module_name=LETTA_CORE_TOOL_MODULE_NAME, function_name=self.name)
@@ -119,9 +117,8 @@ class Tool(BaseTool):
 
         # At this point, we need to validate that at least json_schema is populated
         if not self.json_schema:
-            error_msg = f"Tool with id={self.id} name={self.name} tool_type={self.tool_type} is missing a json_schema."
-            logger.error(error_msg)
-            raise ValueError(error_msg)
+            logger.error("Tool with id=%s name=%s tool_type=%s is missing a json_schema", self.id, self.name, self.tool_type)
+            raise ValueError(f"Tool with id={self.id} name={self.name} tool_type={self.tool_type} is missing a json_schema.")
 
         # Derive name from the JSON schema if not provided
         if not self.name:
