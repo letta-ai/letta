@@ -1354,7 +1354,27 @@
   "ToolManager/RecommendedMCPServers": {
     "zapier": {
       "description": "Zapier MCP gives your AI assistant direct access to over 7,000+ apps and 30,000+ actions without complex API integrations.",
-      "instructions": "To connect Zapier to Letta, you need to set up your Zapier account to use the Model Context Protocol (MCP). Visit the <link>Zapier MCP website</link> to generate your custom MCP url, and paste it above."
+      "instructions": "To connect Zapier to Letta, you need to set up your Zapier account to use the Model Context Protocol (MCP). Visit the <link>Zapier MCP website</link> to generate your Zapier API key, and paste it above."
+    },
+    "github": {
+      "description": "GitHub MCP gives your AI assistant direct access to GitHub repositories, issues, pull requests, and more for seamless development workflows.",
+      "instructions": "To connect GitHub to Letta, you need to create a GitHub Personal Access Token. Visit the <link>GitHub MCP Server repository</link> for detailed setup instructions, then paste your token above."
+    },
+    "apify": {
+      "description": "Apify MCP gives your AI assistant access to over 5,000+ web scraping and automation Actors for data extraction and task automation.",
+      "instructions": "To connect Apify to Letta, you need to provide your Apify API token. Visit the <link>Apify MCP documentation</link> for setup instructions, then paste your API token above."
+    },
+    "deepwiki": {
+      "description": "DeepWiki provides up-to-date documentation you can talk to, for every repo in the world. Think Deep Research for GitHub.",
+      "instructions": "DeepWiki is a free service that provides access to documentation and search capabilities for GitHub repositories. No authentication required."
+    },
+    "stripe": {
+      "description": "Stripe MCP gives your AI assistant direct access to Stripe's payment APIs, customer data, and financial operations for seamless payment integrations.",
+      "instructions": "To connect Stripe to Letta, you need to provide your Stripe API key. Visit the <link>Stripe MCP documentation</link> for setup instructions, then paste your API key above."
+    },
+    "pipedream": {
+      "description": "Pipedream provides 2,700+ APIs and 10,000+ tools in a single MCP server. Get your unique server URL from mcp.pipedream.com after connecting your accounts.",
+      "instructions": "Visit <link>mcp.pipedream.com</link> to sign up, connect your accounts, and get your unique server URL. Then paste your server URL here to connect."
     }
   },
   "ToolsEditor/MCPServerExplorer": {
@@ -1365,12 +1385,53 @@
       "customUrlInputPlaceholder": "Enter your custom MCP server URL here",
       "customUrlInputLabel": "Custom URL"
     },
+    "StreamableHttpSetupServer": {
+      "serverUrlRequired": "Please enter a valid server URL.",
+      "apiKeyRequired": "Please enter your API key.",
+      "errorMessage": "There was an error connecting to the server, please check your URL and API key and try again or contact support.",
+      "instructionsTitle": "Setup Instructions",
+      "serverUrlPlaceholder": "https://mcp.zapier.com/api/mcp/mcp",
+      "serverUrlLabel": "Server URL",
+      "apiKeyPlaceholder": "Enter your API key",
+      "apiKeyLabel": "API Key"
+    },
+    "GitHubSetupServer": {
+      "serverUrlRequired": "Please enter a valid server URL.",
+      "apiKeyRequired": "Please enter your GitHub Personal Access Token.",
+      "errorMessage": "There was an error connecting to GitHub, please check your URL and token and try again or contact support.",
+      "instructionsTitle": "Setup Instructions",
+      "serverUrlPlaceholder": "https://api.githubcopilot.com/mcp/",
+      "serverUrlLabel": "Server URL",
+      "apiKeyPlaceholder": "Enter your GitHub Personal Access Token",
+      "apiKeyLabel": "GitHub Personal Access Token"
+    },
+    "DeepWikiSetupServer": {
+      "errorMessage": "There was an error adding the DeepWiki server. Please try again or contact support.",
+      "instructionsTitle": "Setup Instructions"
+    },
+    "OpenAccessMCPServer": {
+      "openLabel": "Open Access",
+      "instructions": "This is a free service that doesn'tadasv require any authentication or API keys. Click 'Add Server' to connect it to your Letta instance.",
+      "instructionsTitle": "Setup Instructions",
+      "errorMessage": "There was an error adding the server. Please try again or contact support."
+    },
+    "ApiKeyRequiredMCPServer": {
+      "apiKeyLabel": "API Key Required",
+      "addedLabel": "API Key Added"
+    },
+    "PatKeyRequiredMCPServer": {
+      "patKeyLabel": "Personal Access Token Required"
+    },
+    "ServerUrlRequiredMCPServer": {
+      "serverUrlLabel": "Server URL Required"
+    },
     "types": {
       "custom": {
         "label": "Custom server",
         "description": "Add a custom Model Context Protocol server to your Letta instance."
       }
-    }
+    },
+    "alreadyAddedLabel": "Already Added"
   },
   "ToolsEditor/ComposioToolsRoot": {
     "visitWebsite": "Visit composio.dev",
@@ -1579,6 +1640,12 @@
       "attach": "Attach tool",
       "detach": "Detach tool",
       "attached": "Attached"
+    },
+    "ToolsEditor/MCPServerExplorer": {
+      "zapier": {
+        "description": "Zapier MCP gives your AI assistant direct access to over 7,000+ apps and 30,000+ actions without complex API integrations.",
+        "instructions": "To connect Zapier to Letta, you need to set up your Zapier account to use the Model Context Protocol (MCP). Visit the <link>Zapier MCP website</link> to generate your Zapier API key, and paste it above."
+      }
     },
     "connectComposio": {
       "title": "To attach this tool and 4000+ other tools to your agent, connect to Composio",
@@ -2009,7 +2076,7 @@
     },
     "persona": {
       "title": "Persona",
-      "description": "A memory block for storing the agent’s core personality details and behavior profile."
+      "description": "A memory block for storing the agent's core personality details and behavior profile."
     },
     "organization": {
       "title": "Organization",

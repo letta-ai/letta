@@ -2,7 +2,15 @@
 
 import { useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { Link, ZapierLogoMark } from '@letta-cloud/ui-component-library';
+import {
+  Link,
+  ZapierLogoMark,
+  GithubLogoMarkDynamic,
+  PipedreamIcon,
+  StripeIcon,
+  DeepWikiIcon,
+  ApifyIcon,
+} from '@letta-cloud/ui-component-library';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface DefinedUrlSetupType {
@@ -12,6 +20,9 @@ interface DefinedUrlSetupType {
 
 interface CustomUrlSetupType {
   type: 'custom-url';
+  baseUrl: string;
+  requiresApiKey: boolean;
+  requiresServerUrl?: boolean;
   instructions: React.ReactNode;
 }
 
@@ -19,7 +30,7 @@ export interface RecommendedServer {
   logo: React.ReactNode;
   baseUrl: string;
   name: string;
-  id: 'zapier';
+  id: 'apify' | 'deepwiki' | 'github' | 'pipedream' | 'stripe' | 'zapier';
   description: string;
   setup: CustomUrlSetupType | DefinedUrlSetupType;
 }
@@ -39,6 +50,8 @@ export function useRecommendedMCPServers(): RecommendedServer[] {
         baseUrl: 'https://mcp.zapier.com',
         setup: {
           type: 'custom-url',
+          baseUrl: 'https://mcp.zapier.com/api/mcp/mcp',
+          requiresApiKey: true,
           instructions: t.rich('zapier.instructions', {
             link: (chunks) => (
               <Link target="_blank" href="https://mcp.zapier.com/">
@@ -50,6 +63,111 @@ export function useRecommendedMCPServers(): RecommendedServer[] {
         logo: <ZapierLogoMark />,
         name: 'Zapier',
         description: t('zapier.description'),
+      },
+      {
+        id: 'github',
+        baseUrl: 'https://api.githubcopilot.com',
+        setup: {
+          type: 'custom-url',
+          baseUrl: 'https://api.githubcopilot.com/mcp/',
+          requiresApiKey: true,
+          instructions: t.rich('github.instructions', {
+            link: (chunks) => (
+              <Link
+                target="_blank"
+                href="https://github.com/github/github-mcp-server"
+              >
+                {chunks}
+              </Link>
+            ),
+          }),
+        },
+        logo: <GithubLogoMarkDynamic />,
+        name: 'GitHub',
+        description: t('github.description'),
+      },
+      {
+        id: 'apify',
+        baseUrl: 'https://mcp.apify.com',
+        setup: {
+          type: 'custom-url',
+          baseUrl: 'https://mcp.apify.com',
+          requiresApiKey: true,
+          instructions: t.rich('apify.instructions', {
+            link: (chunks) => (
+              <Link
+                target="_blank"
+                href="https://docs.apify.com/platform/integrations/mcp"
+              >
+                {chunks}
+              </Link>
+            ),
+          }),
+        },
+        logo: <ApifyIcon />,
+        name: 'Apify',
+        description: t('apify.description'),
+      },
+      {
+        id: 'deepwiki',
+        baseUrl: 'https://mcp.deepwiki.com',
+        setup: {
+          type: 'custom-url',
+          baseUrl: 'https://mcp.deepwiki.com/mcp',
+          requiresApiKey: false,
+          instructions: t.rich('deepwiki.instructions', {
+            link: (chunks) => (
+              <Link target="_blank" href="https://docs.devin.ai/deepwiki-mcp">
+                {chunks}
+              </Link>
+            ),
+          }),
+        },
+        logo: <DeepWikiIcon />,
+        name: 'DeepWiki',
+        description: t('deepwiki.description'),
+      },
+      {
+        id: 'stripe',
+        baseUrl: 'https://mcp.stripe.com',
+        setup: {
+          type: 'custom-url',
+          baseUrl: 'https://mcp.stripe.com',
+          requiresApiKey: true,
+          instructions: t.rich('stripe.instructions', {
+            link: (chunks) => (
+              <Link
+                target="_blank"
+                href="https://docs.stripe.com/building-with-llms"
+              >
+                {chunks}
+              </Link>
+            ),
+          }),
+        },
+        logo: <StripeIcon />,
+        name: 'Stripe',
+        description: t('stripe.description'),
+      },
+      {
+        id: 'pipedream',
+        baseUrl: 'https://mcp.pipedream.net',
+        setup: {
+          type: 'custom-url',
+          baseUrl: '',
+          requiresApiKey: false,
+          requiresServerUrl: true,
+          instructions: t.rich('pipedream.instructions', {
+            link: (chunks) => (
+              <Link target="_blank" href="https://mcp.pipedream.com">
+                {chunks}
+              </Link>
+            ),
+          }),
+        },
+        logo: <PipedreamIcon />,
+        name: 'Pipedream',
+        description: t('pipedream.description'),
       },
     ];
 

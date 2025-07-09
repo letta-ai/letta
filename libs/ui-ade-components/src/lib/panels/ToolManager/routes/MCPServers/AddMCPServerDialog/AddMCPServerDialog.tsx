@@ -43,6 +43,27 @@ interface AddStdioServerFormProps {
   onSuccess: () => void;
 }
 
+export function generateServerName(
+  baseName: string,
+  existingServers: ListMcpServersResponse | undefined,
+) {
+  if (!existingServers) {
+    return baseName;
+  }
+
+  // Check if this is the first server with this base name
+  const similarServers = Object.values(existingServers).filter((server) =>
+    server.server_name.startsWith(baseName),
+  );
+
+  if (similarServers.length === 0) {
+    return baseName;
+  }
+
+  // If there are existing servers, add a number
+  return `${baseName} ${similarServers.length}`;
+}
+
 function AddStdioServerForm(props: AddStdioServerFormProps) {
   const { onCancel, onSuccess } = props;
 

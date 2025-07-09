@@ -162,9 +162,9 @@ export function MCPServers() {
       } else {
         // Check if the currently selected server still exists after updates
         const currentServerStillExists = serversAsArray.some(
-          server => server.server_name === selectedServerKey
+          (server) => server.server_name === selectedServerKey,
         );
-        
+
         // If current selection is invalid, fall back to first server
         if (!currentServerStillExists) {
           setSelectedServerKey(serversAsArray[0].server_name);
@@ -180,12 +180,14 @@ export function MCPServers() {
   }, [selectedServerKey, servers]);
 
   const filteredServers = useMemo(() => {
-    return serversAsArray.filter(
-      (server) => {
+    return serversAsArray
+      .filter((server) => {
         return server.server_name?.toLowerCase().includes(search.toLowerCase());
-      },
-      [search],
-    );
+      })
+      .sort((a, b) => {
+        // Sort by server name alphabetically
+        return (a.server_name || '').localeCompare(b.server_name || '');
+      });
   }, [search, serversAsArray]);
 
   const { setPath } = useToolManagerState();
@@ -255,9 +257,7 @@ export function MCPServers() {
             {!selectedServer ? (
               <LoadingEmptyStatusComponent emptyMessage={t('select')} />
             ) : (
-              <SingleMCPServer 
-                server={selectedServer} 
-              />
+              <SingleMCPServer server={selectedServer} />
             )}
           </VStack>
         </HStack>

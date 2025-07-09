@@ -10,9 +10,6 @@ import {
 } from '@letta-cloud/ui-component-library';
 import {
   useToolsServiceTestMcpServer,
-  type SSEServerConfig,
-  type StdioServerConfig,
-  type StreamableHTTPServerConfig,
   type MCPServerType,
 } from '@letta-cloud/sdk-core';
 import { MCPServerTypes, type MCPTool } from './types';
@@ -28,7 +25,10 @@ export function TestMCPConnectionButton({
   serverType,
 }: TestMCPConnectionButtonProps) {
   const { watch, getValues } = useFormContext();
-  const serverUrl = watch('serverUrl');
+
+  // Try multiple field names since different forms use different names
+  const serverUrl = watch('serverUrl') || watch('input');
+
   const [testingStatus, setTestingStatus] = useState<
     'failed' | 'pending' | 'success' | null
   >(null);
@@ -46,16 +46,18 @@ export function TestMCPConnectionButton({
     },
   });
 
+  const isDisabled = isPending || serverType === MCPServerTypes.Stdio;
+
   const testConnection = useCallback(() => {
     setTestingStatus('pending');
     setAvailableTools([]);
 
-    let requestBody:
-      | SSEServerConfig
-      | StdioServerConfig
-      | StreamableHTTPServerConfig;
-
     if (serverType === MCPServerTypes.Stdio) {
+      return;
+    }
+
+    if (!serverUrl) {
+      setTestingStatus('failed');
       return;
     }
 
@@ -75,39 +77,18 @@ export function TestMCPConnectionButton({
       options: { formatToken: true, includeAuthHeader: true },
     });
 
-    if (serverType === MCPServerTypes.Sse) {
-      if (!serverUrl) {
-        setTestingStatus('failed');
-        return;
-      }
-      requestBody = {
-        server_name: 'test_server',
-        type: serverType as MCPServerType,
-        server_url: serverUrl,
-        auth_header: authHeader,
-        auth_token: authTokenValue,
-        custom_headers: authHeaders,
-      } as SSEServerConfig;
-    } else {
-      if (!serverUrl) {
-        setTestingStatus('failed');
-        return;
-      }
-      requestBody = {
-        server_name: 'test_server',
-        type: serverType as MCPServerType,
-        server_url: serverUrl,
-        auth_header: authHeader,
-        auth_token: authTokenValue,
-        custom_headers: authHeaders,
-      } as StreamableHTTPServerConfig;
-    }
+    // Single request body for both SSE and StreamableHTTP
+    const requestBody = {
+      server_name: 'test_server',
+      type: serverType as MCPServerType,
+      server_url: serverUrl,
+      auth_header: authHeader,
+      auth_token: authTokenValue,
+      custom_headers: authHeaders,
+    };
 
     testServer({ requestBody });
   }, [serverType, serverUrl, getValues, testServer]);
-
-  const isDisabled =
-    isPending || serverType === MCPServerTypes.Stdio || !serverUrl;
 
   return (
     <VStack gap="large" padding="small" border fullWidth>
