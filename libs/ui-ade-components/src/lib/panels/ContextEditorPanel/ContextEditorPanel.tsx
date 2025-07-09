@@ -17,6 +17,7 @@ import type { VerticalBarChartChunk } from '@letta-cloud/ui-component-library';
 
 import type { EChartsOption } from 'echarts';
 import { useTranslations } from '@letta-cloud/translations';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { atom, useAtom } from 'jotai';
 import './ContextEditorPanel.scss';
 import { useCurrentAgent } from '../../hooks';
@@ -177,8 +178,6 @@ function useContextWindowDetails() {
 }
 
 export function ContextWindowPanel() {
-  const t = useTranslations('ADE/ContextEditorPanel');
-
   const {
     systemPromptLength,
     toolLength,
@@ -191,6 +190,15 @@ export function ContextWindowPanel() {
     totalLength,
     totalLengthForChart,
   } = useContextWindowDetails();
+
+  const t = useTranslations('ADE/ContextEditorPanel');
+  const { formatNumber } = useFormatters();
+
+  // Add percentage calculation
+  const percentageRemaining = useMemo(() => {
+    if (totalLength === 0) return 0;
+    return Math.round((remainingLength / totalLength) * 100);
+  }, [remainingLength, totalLength]);
 
   const standardChartOptions = useMemo(() => {
     const commonSeriesStyles = {
@@ -242,9 +250,13 @@ export function ContextWindowPanel() {
           },
           tooltip: {
             formatter: (e) => {
+              const percentage =
+                totalLength > 0
+                  ? Math.round((systemPromptLength / totalLength) * 100)
+                  : 0;
               return makeFormattedTooltip({
                 color: `${e.color}`,
-                label: e.seriesName || '',
+                label: `${e.seriesName || ''} (${formatNumber(percentage / 100, { style: 'percent' })})`,
                 value: `${systemPromptLength}`,
               });
             },
@@ -263,9 +275,13 @@ export function ContextWindowPanel() {
           },
           tooltip: {
             formatter: (e) => {
+              const percentage =
+                totalLength > 0
+                  ? Math.round((toolLength / totalLength) * 100)
+                  : 0;
               return makeFormattedTooltip({
                 color: `${e.color}`,
-                label: e.seriesName || '',
+                label: `${e.seriesName || ''} (${formatNumber(percentage / 100, { style: 'percent' })})`,
                 value: `${toolLength}`,
               });
             },
@@ -284,9 +300,13 @@ export function ContextWindowPanel() {
           },
           tooltip: {
             formatter: (e) => {
+              const percentage =
+                totalLength > 0
+                  ? Math.round((externalSummaryLength / totalLength) * 100)
+                  : 0;
               return makeFormattedTooltip({
                 color: `${e.color}`,
-                label: e.seriesName || '',
+                label: `${e.seriesName || ''} (${formatNumber(percentage / 100, { style: 'percent' })})`,
                 value: `${externalSummaryLength}`,
               });
             },
@@ -305,9 +325,13 @@ export function ContextWindowPanel() {
           },
           tooltip: {
             formatter: (e) => {
+              const percentage =
+                totalLength > 0
+                  ? Math.round((coreMemoryLength / totalLength) * 100)
+                  : 0;
               return makeFormattedTooltip({
                 color: `${e.color}`,
-                label: e.seriesName || '',
+                label: `${e.seriesName || ''} (${formatNumber(percentage / 100, { style: 'percent' })})`,
                 value: `${coreMemoryLength}`,
               });
             },
@@ -323,9 +347,13 @@ export function ContextWindowPanel() {
           },
           tooltip: {
             formatter: (e) => {
+              const percentage =
+                totalLength > 0
+                  ? Math.round((recursiveMemoryLength / totalLength) * 100)
+                  : 0;
               return makeFormattedTooltip({
                 color: `${e.color}`,
-                label: e.seriesName || '',
+                label: `${e.seriesName || ''} (${formatNumber(percentage / 100, { style: 'percent' })})`,
                 value: `${recursiveMemoryLength}`,
               });
             },
@@ -341,9 +369,13 @@ export function ContextWindowPanel() {
           },
           tooltip: {
             formatter: (e) => {
+              const percentage =
+                totalLength > 0
+                  ? Math.round((messagesTokensLength / totalLength) * 100)
+                  : 0;
               return makeFormattedTooltip({
                 color: `${e.color}`,
-                label: e.seriesName || '',
+                label: `${e.seriesName || ''} (${formatNumber(percentage / 100, { style: 'percent' })})`,
                 value: `${messagesTokensLength}`,
               });
             },
@@ -359,9 +391,13 @@ export function ContextWindowPanel() {
           },
           tooltip: {
             formatter: (e) => {
+              const percentage =
+                totalLength > 0
+                  ? Math.round((remainingLength / totalLength) * 100)
+                  : 0;
               return makeFormattedTooltip({
                 color: `${e.color}`,
-                label: e.seriesName || '',
+                label: `${e.seriesName || ''} (${formatNumber(percentage / 100, { style: 'percent' })})`,
                 value: `${remainingLength}`,
               });
             },
@@ -412,6 +448,8 @@ export function ContextWindowPanel() {
     recursiveMemoryLength,
     messagesTokensLength,
     remainingLength,
+    totalLength, // Add this dependency
+    formatNumber, // Add this dependency
   ]);
 
   return (
@@ -439,24 +477,31 @@ export function ContextWindowPanel() {
           }
         />
       </HStack>
-      <HStack fullWidth justify="end">
-        <Typography
-          color={totalUsedLength > totalLength ? 'destructive' : 'muted'}
-          variant="body4"
-        >
-          <span
-            className="font-semibold"
-            style={{
-              color:
-                totalUsedLength > totalLength
-                  ? 'hsl(var(--destructive))'
-                  : 'hsl(var(--text-default))',
-            }}
+      <HStack fullWidth>
+        <HStack fullWidth justify="start">
+          <Typography
+            color={totalUsedLength > totalLength ? 'destructive' : 'muted'}
+            variant="body4"
           >
-            {totalUsedLength}
-          </span>
-          {` of ${totalLength} tokens used`}
-        </Typography>
+            <span
+              className="font-semibold"
+              style={{
+                color:
+                  totalUsedLength > totalLength
+                    ? 'hsl(var(--destructive))'
+                    : 'hsl(var(--text-default))',
+              }}
+            >
+              {totalUsedLength}
+            </span>
+            {` of ${totalLength} tokens used`}
+          </Typography>
+        </HStack>
+        <HStack fullWidth justify="end">
+          <Typography color="muted" variant="body4" className="ml-2">
+            {percentageRemaining}% remaining
+          </Typography>
+        </HStack>
       </HStack>
     </VStack>
   );
@@ -476,6 +521,7 @@ export function ContextWindowSimulator() {
     coreMemorySummary,
     recursiveMemorySummary,
     messagesJsonString,
+    totalLength,
   } = useContextWindowDetails();
 
   const t = useTranslations('ADE/ContextEditorPanel');
@@ -591,7 +637,12 @@ export function ContextWindowSimulator() {
 
   return (
     <VStack fullHeight fullWidth>
-      <VerticalDelineatedTextChunker fullHeight fullWidth chunks={chunks} />
+      <VerticalDelineatedTextChunker
+        fullHeight
+        fullWidth
+        chunks={chunks}
+        totalContextSize={totalLength}
+      />
     </VStack>
   );
 }

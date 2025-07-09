@@ -18,10 +18,17 @@ interface VerticalBarChartProps {
   baseId: string;
   selectedChunkId?: string | null;
   setSelectedChunkId: (chunkId: string) => void;
+  totalContextSize?: number; // Add this prop
 }
 
 function VerticalBarChart(props: VerticalBarChartProps) {
-  const { chunks, setSelectedChunkId, selectedChunkId, baseId } = props;
+  const {
+    chunks,
+    setSelectedChunkId,
+    selectedChunkId,
+    baseId,
+    totalContextSize,
+  } = props;
 
   const onClickBar = useCallback(
     (chunkId: string) => {
@@ -72,16 +79,23 @@ interface TextChunksProps {
   baseId: string;
   selectedChunkId?: string | null;
   ref?: React.Ref<HTMLDivElement>;
+  totalContextSize?: number; // Add this prop
 }
 
 function TextChunks(props: TextChunksProps) {
-  const { chunks, baseId, ref } = props;
+  const { chunks, baseId, ref, totalContextSize } = props;
   return (
     <VStack ref={ref} gap={false} fullHeight overflow="auto">
       {chunks.map((c) => {
         if (c.size === 0) {
           return null;
         }
+
+        // Calculate percentage of total context window
+        const percentageOfTotal =
+          totalContextSize && totalContextSize > 0
+            ? Math.round((c.size / totalContextSize) * 100)
+            : null;
 
         return (
           <VStack
@@ -109,6 +123,7 @@ function TextChunks(props: TextChunksProps) {
               </HStack>
               <Typography color="lighter" variant="body2">
                 {c.size} tokens
+                {percentageOfTotal !== null && ` (${percentageOfTotal}%)`}
               </Typography>
             </HStack>
             <div
@@ -128,12 +143,13 @@ interface VerticalDelineatedTextChunkerProps {
   chunks: VerticalBarChartChunk[];
   fullHeight?: boolean;
   fullWidth?: boolean;
+  totalContextSize?: number; // Add this prop
 }
 
 export function VerticalDelineatedTextChunker(
   props: VerticalDelineatedTextChunkerProps,
 ) {
-  const { fullHeight, chunks, fullWidth } = props;
+  const { fullHeight, chunks, fullWidth, totalContextSize } = props;
   const baseId = useId();
   const [selectedChunkId, setSelectedChunkId] = React.useState<string | null>(
     chunks[0].id,
@@ -197,12 +213,14 @@ export function VerticalDelineatedTextChunker(
         selectedChunkId={selectedChunkId}
         baseId={baseId}
         chunks={chunks}
+        totalContextSize={totalContextSize}
       />
       <TextChunks
         ref={scrollRef}
         selectedChunkId={selectedChunkId}
         baseId={baseId}
         chunks={chunks}
+        totalContextSize={totalContextSize}
       />
     </HStack>
   );
