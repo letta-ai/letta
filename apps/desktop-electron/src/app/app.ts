@@ -86,6 +86,8 @@ const lettaServerLogs = new ServerLogs();
 })();
 
 import * as todesktop from '@todesktop/runtime';
+import { getIsEmbeddedPostgres } from './utils/getIsEmbeddedPostgres/getIsEmbeddedPostgres';
+import { getIsSQLLiteConfig } from './utils/getIsSQLLiteConfig/getIsSQLLiteConfig';
 
 todesktop.init();
 
@@ -260,10 +262,13 @@ export default class App {
       return;
     }
 
-    if (copyFiles) {
-      copyAlembicToLettaDir();
-      copyLettaServerToLettaDir();
+    if (getIsEmbeddedPostgres(config)) {
+      if (copyFiles) {
+        copyAlembicToLettaDir();
+      }
     }
+
+    copyLettaServerToLettaDir();
 
     console.log('Starting Letta Server...');
 
@@ -273,7 +278,10 @@ export default class App {
     setServerId(serverId);
     lettaServer = execFile(
       lettaServerPath,
-      ['--use-file-pg-uri', `--look-for-server-id=${serverId}`],
+      [
+        ...(getIsSQLLiteConfig(config) ? '' : '--use-file-pg-uri'),
+        `--look-for-server-id=${serverId}`,
+      ],
       {
         env: {
           // Keep the user's existing environment, but override to ensure UTF-8
@@ -611,9 +619,8 @@ export default class App {
           const desktopConfig = getDesktopConfig();
           if (
             !process.env.IGNORE_POSTGRES &&
-            (!desktopConfig ||
-              (desktopConfig?.databaseConfig?.type === 'embedded' &&
-                desktopConfig.databaseConfig.embeddedType !== 'sqlite'))
+            desktopConfig &&
+            getIsEmbeddedPostgres(desktopConfig)
           ) {
             try {
               await App.startPostgres();
@@ -627,7 +634,6 @@ export default class App {
                 '[postgres] Detected external database config type, skipping embedded PG bootup',
               );
             }
-
           }
 
           App.startLettaServer();

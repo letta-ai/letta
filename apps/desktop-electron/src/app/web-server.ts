@@ -38,7 +38,7 @@ export function createWebServer() {
   const port = 8285;
 
   server.listen(port, () => {
-    console.log(`Web server is running on port ${port}`);
+    console.log(`Desktop electron server is running on port ${port} (this is not the Letta API server)`);
   });
 
   server.on('error', (err: any) => {

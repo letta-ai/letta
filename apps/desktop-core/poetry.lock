@@ -2717,7 +2717,7 @@ pytest = ["pytest (>=7.0.0)", "rich (>=13.9.4,<14.0.0)"]
 
 [[package]]
 name = "letta"
-version = "0.7.14"
+version = "0.8.10"
 description = "Create LLM agents with long-term memory and custom tools"
 optional = false
 python-versions = "<3.14,>=3.10"
@@ -2729,7 +2729,6 @@ aiomultiprocess = "^0.9.1"
 alembic = "^1.13.3"
 anthropic = "^0.49.0"
 apscheduler = "^3.11.0"
-async-lru = "^2.0.5"
 brotli = "^1.1.0"
 certifi = "^2025.6.15"
 colorama = "^0.4.6"
@@ -2748,7 +2747,7 @@ httpx-sse = "^0.4.0"
 jinja2 = "^3.1.5"
 langchain = {version = "^0.3.7", optional = true}
 langchain-community = {version = "^0.3.7", optional = true}
-letta_client = "^0.1.160"
+letta_client = "^0.1.183"
 llama-index = "^0.12.2"
 llama-index-embeddings-openai = "^0.3.1"
 locust = {version = "^2.31.5", optional = true}
@@ -2793,7 +2792,7 @@ uvicorn = {version = "^0.24.0.post1", optional = true}
 wikipedia = {version = "^1.4.0", optional = true}
 
 [package.extras]
-all = ["autoflake (>=2.3.0,<3.0.0)", "black[jupyter] (>=24.2.0,<25.0.0)", "docker (>=7.1.0,<8.0.0)", "fastapi (>=0.115.6,<0.116.0)", "granian[reload,uvloop] (>=2.3.2,<3.0.0)", "isort (>=5.13.2,<6.0.0)", "langchain (>=0.3.7,<0.4.0)", "langchain-community (>=0.3.7,<0.4.0)", "locust (>=2.31.5,<3.0.0)", "pexpect (>=4.9.0,<5.0.0)", "pg8000 (>=1.30.3,<2.0.0)", "pgvector (>=0.2.3,<0.3.0)", "pre-commit (>=3.5.0,<4.0.0)", "psycopg2 (>=2.9.10,<3.0.0)", "psycopg2-binary (>=2.9.10,<3.0.0)", "pyright (>=1.1.347,<2.0.0)", "pytest-asyncio (>=0.24.0,<0.25.0)", "pytest-order (>=1.2.0,<2.0.0)", "redis (>=6.2.0,<7.0.0)", "uvicorn (>=0.24.0.post1,<0.25.0)", "uvloop (>=0.21.0,<0.22.0)", "wikipedia (>=1.4.0,<2.0.0)"]
+all = ["autoflake (>=2.3.0,<3.0.0)", "black[jupyter] (>=24.2.0,<25.0.0)", "docker (>=7.1.0,<8.0.0)", "fastapi (>=0.115.6,<0.116.0)", "granian[reload,uvloop] (>=2.3.2,<3.0.0)", "isort (>=5.13.2,<6.0.0)", "langchain (>=0.3.7,<0.4.0)", "langchain-community (>=0.3.7,<0.4.0)", "locust (>=2.31.5,<3.0.0)", "pexpect (>=4.9.0,<5.0.0)", "pg8000 (>=1.30.3,<2.0.0)", "pgvector (>=0.2.3,<0.3.0)", "pinecone[asyncio] (>=7.3.0,<8.0.0)", "pre-commit (>=3.5.0,<4.0.0)", "psycopg2 (>=2.9.10,<3.0.0)", "psycopg2-binary (>=2.9.10,<3.0.0)", "pyright (>=1.1.347,<2.0.0)", "pytest-asyncio (>=0.24.0,<0.25.0)", "pytest-order (>=1.2.0,<2.0.0)", "redis (>=6.2.0,<7.0.0)", "uvicorn (>=0.24.0.post1,<0.25.0)", "uvloop (>=0.21.0,<0.22.0)", "wikipedia (>=1.4.0,<2.0.0)"]
 bedrock = ["aioboto3 (>=14.3.0,<15.0.0)", "boto3 (>=1.36.24,<2.0.0)"]
 cloud-tool-sandbox = ["e2b-code-interpreter (>=1.0.3,<2.0.0)"]
 desktop = ["docker (>=7.1.0,<8.0.0)", "fastapi (>=0.115.6,<0.116.0)", "langchain (>=0.3.7,<0.4.0)", "langchain-community (>=0.3.7,<0.4.0)", "locust (>=2.31.5,<3.0.0)", "pg8000 (>=1.30.3,<2.0.0)", "pgvector (>=0.2.3,<0.3.0)", "psycopg2 (>=2.9.10,<3.0.0)", "psycopg2-binary (>=2.9.10,<3.0.0)", "pyright (>=1.1.347,<2.0.0)", "uvicorn (>=0.24.0.post1,<0.25.0)", "wikipedia (>=1.4.0,<2.0.0)"]
@@ -2801,6 +2800,7 @@ dev = ["autoflake (>=2.3.0,<3.0.0)", "black[jupyter] (>=24.2.0,<25.0.0)", "isort
 experimental = ["granian[reload,uvloop] (>=2.3.2,<3.0.0)", "uvloop (>=0.21.0,<0.22.0)"]
 external-tools = ["docker (>=7.1.0,<8.0.0)", "firecrawl-py (>=2.8.0,<3.0.0)", "langchain (>=0.3.7,<0.4.0)", "langchain-community (>=0.3.7,<0.4.0)", "wikipedia (>=1.4.0,<2.0.0)"]
 google = ["google-genai (>=1.15.0,<2.0.0)"]
+pinecone = ["pinecone[asyncio] (>=7.3.0,<8.0.0)"]
 postgres = ["asyncpg (>=0.30.0,<0.31.0)", "pg8000 (>=1.30.3,<2.0.0)", "pgvector (>=0.2.3,<0.3.0)", "psycopg2 (>=2.9.10,<3.0.0)", "psycopg2-binary (>=2.9.10,<3.0.0)"]
 redis = ["redis (>=6.2.0,<7.0.0)"]
 server = ["fastapi (>=0.115.6,<0.116.0)", "uvicorn (>=0.24.0.post1,<0.25.0)"]
@@ -2812,13 +2812,13 @@ url = "../core"
 
 [[package]]
 name = "letta-client"
-version = "0.1.167"
+version = "0.1.194"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "letta_client-0.1.167-py3-none-any.whl", hash = "sha256:2027d0e2c0bc4b7452ba59f59b62e20348a810388dd1c0259121cb1b3e1ae25c"},
-    {file = "letta_client-0.1.167.tar.gz", hash = "sha256:585f25d74184836b0ae27203b785dbe5839e39a43bda6dff00b955a9472aa050"},
+    {file = "letta_client-0.1.194-py3-none-any.whl", hash = "sha256:96aa465b286f0010a5eca2900b0b0b5ce6c69f31a5cfb3355f175d2fa90fb2d8"},
+    {file = "letta_client-0.1.194.tar.gz", hash = "sha256:8e6b47458a56d157c146994168acf917012a0fbb606582faa39cd40348ff222d"},
 ]
 
 [package.dependencies]

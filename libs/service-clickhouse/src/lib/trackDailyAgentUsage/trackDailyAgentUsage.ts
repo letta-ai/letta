@@ -3,7 +3,6 @@ import { getClickhouseData } from '../getClickhouseData/getClickhouseData';
 import { getDate, getMonth, getYear } from 'date-fns';
 import { db, deployedAgentMetadata } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
-import { AgentsService } from '@letta-cloud/sdk-core';
 
 interface ClickhouseQueryResponse {
   data: Array<{

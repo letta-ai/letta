@@ -210,6 +210,7 @@ if __name__ == "__main__":
     except KeyError:
       pass  # do nothing, use sqlite
 
+
     from letta.server.rest_api.app import app
 
     print("Starting the Letta Server...")
