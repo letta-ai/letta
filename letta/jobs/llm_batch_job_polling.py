@@ -6,6 +6,7 @@ from letta.agents.letta_agent_batch import LettaAgentBatch
 from letta.jobs.helpers import map_anthropic_batch_job_status_to_job_status, map_anthropic_individual_batch_item_status_to_job_status
 from letta.jobs.types import BatchPollingResult, ItemUpdateInfo
 from letta.log import get_logger
+from letta.otel.tracing import trace_method
 from letta.schemas.enums import JobStatus, ProviderType
 from letta.schemas.letta_response import LettaBatchResponse
 from letta.schemas.llm_batch_job import LLMBatchJob
@@ -37,6 +38,7 @@ class BatchPollingMetrics:
         logger.info(f"[Poll BatchJob] Updated {self.updated_items_count} items for newly completed batch(es).")
 
 
+@trace_method
 async def fetch_batch_status(server: SyncServer, batch_job: LLMBatchJob) -> BatchPollingResult:
     """
     Fetch the current status of a single batch job from the provider.
@@ -60,6 +62,7 @@ async def fetch_batch_status(server: SyncServer, batch_job: LLMBatchJob) -> Batc
         return BatchPollingResult(batch_job.id, JobStatus.running, None)
 
 
+@trace_method
 async def fetch_batch_items(server: SyncServer, batch_id: str, batch_resp_id: str) -> List[ItemUpdateInfo]:
     """
     Fetch individual item results for a completed batch.
@@ -86,6 +89,7 @@ async def fetch_batch_items(server: SyncServer, batch_id: str, batch_resp_id: st
     return updates
 
 
+@trace_method
 async def poll_batch_updates(server: SyncServer, batch_jobs: List[LLMBatchJob], metrics: BatchPollingMetrics) -> List[BatchPollingResult]:
     """
     Poll for updates to multiple batch jobs concurrently.
@@ -113,6 +117,7 @@ async def poll_batch_updates(server: SyncServer, batch_jobs: List[LLMBatchJob], 
     return results
 
 
+@trace_method
 async def process_completed_batches(
     server: SyncServer, batch_results: List[BatchPollingResult], metrics: BatchPollingMetrics
 ) -> List[ItemUpdateInfo]:
@@ -161,6 +166,7 @@ async def process_completed_batches(
     return item_updates
 
 
+@trace_method
 async def poll_running_llm_batches(server: "SyncServer") -> List[LettaBatchResponse]:
     """
     Cron job to poll all running LLM batch jobs and update their polling responses in bulk.
