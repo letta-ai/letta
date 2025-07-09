@@ -57,12 +57,12 @@ For legacy MCP servers that only support SSE.
 <CodeGroup>
 ```python title="python" maxLines=50
 from letta_client import Letta
-from letta_client.types import SSEServerConfig
+from letta_client.types import SseServerConfig
 
 client = Letta(token="LETTA_API_KEY")
 
-# Connect an SSE server (legacy)
-sse_config = SSEServerConfig(
+# Connect a SSE server (legacy)
+sse_config = SseServerConfig(
     server_name="legacy-server",
     server_url="https://legacy-mcp.example.com/sse",
     auth_token="optional-token"  # Optional: Authorization: Bearer optional-token
