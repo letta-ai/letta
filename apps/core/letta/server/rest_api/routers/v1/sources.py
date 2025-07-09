@@ -360,6 +360,13 @@ async def get_file_metadata(
         file_id=file_id, actor=actor, include_content=include_content, strip_directory_prefix=True
     )
 
+    if not file_metadata:
+        raise HTTPException(status_code=404, detail=f"File with id={file_id} not found.")
+
+    # Verify the file belongs to the specified source
+    if file_metadata.source_id != source_id:
+        raise HTTPException(status_code=404, detail=f"File with id={file_id} not found in source {source_id}.")
+
     if should_use_pinecone() and not file_metadata.is_processing_terminal():
         ids = await list_pinecone_index_for_files(file_id=file_id, actor=actor, limit=file_metadata.total_chunks)
         logger.info(
@@ -374,13 +381,6 @@ async def get_file_metadata(
             await server.file_manager.update_file_status(
                 file_id=file_metadata.id, actor=actor, chunks_embedded=len(ids), processing_status=file_status
             )
-
-    if not file_metadata:
-        raise HTTPException(status_code=404, detail=f"File with id={file_id} not found.")
-
-    # Verify the file belongs to the specified source
-    if file_metadata.source_id != source_id:
-        raise HTTPException(status_code=404, detail=f"File with id={file_id} not found in source {source_id}.")
 
     return file_metadata
 
