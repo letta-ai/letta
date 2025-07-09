@@ -29,6 +29,32 @@ def disable_e2b_api_key() -> Generator[None, None, None]:
 
 
 @pytest.fixture
+def e2b_sandbox_mode(request) -> Generator[None, None, None]:
+    """
+    Parametrizable fixture to enable/disable E2B sandbox mode.
+
+    Usage:
+        @pytest.mark.parametrize("e2b_sandbox_mode", [True, False], indirect=True)
+        def test_function(e2b_sandbox_mode, ...):
+            # Test runs twice - once with E2B enabled, once disabled
+    """
+    from letta.settings import tool_settings
+
+    enable_e2b = request.param
+    original_api_key = tool_settings.e2b_api_key
+
+    if not enable_e2b:
+        # Disable E2B by setting API key to None
+        tool_settings.e2b_api_key = None
+    # If enable_e2b is True, leave the original API key unchanged
+
+    yield
+
+    # Restore original API key
+    tool_settings.e2b_api_key = original_api_key
+
+
+@pytest.fixture
 def disable_pinecone() -> Generator[None, None, None]:
     """
     Temporarily disables Pinecone by setting `settings.enable_pinecone` to False
