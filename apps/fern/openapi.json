@@ -2888,7 +2888,7 @@
       "patch": {
         "tags": ["agents"],
         "summary": "Attach Block",
-        "description": "Attach a core memoryblock to an agent.",
+        "description": "Attach a core memory block to an agent.",
         "operationId": "attach_core_memory_block",
         "parameters": [
           {

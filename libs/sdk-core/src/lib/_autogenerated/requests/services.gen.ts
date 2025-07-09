@@ -1768,7 +1768,7 @@ export class AgentsService {
 
   /**
    * Attach Block
-   * Attach a core memoryblock to an agent.
+   * Attach a core memory block to an agent.
    * @param data The data for the request.
    * @param data.agentId
    * @param data.blockId

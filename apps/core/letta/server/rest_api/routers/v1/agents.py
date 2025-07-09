@@ -522,7 +522,7 @@ async def attach_block(
     actor_id: str | None = Header(None, alias="user_id"),
 ):
     """
-    Attach a core memoryblock to an agent.
+    Attach a core memory block to an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     return await server.agent_manager.attach_block_async(agent_id=agent_id, block_id=block_id, actor=actor)
