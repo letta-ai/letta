@@ -42,7 +42,9 @@ export function EventDetailRow(props: KeyValueRenderProps) {
           <Typography variant="body2" bold>
             {label}
           </Typography>
-          <Typography variant="body2">{value}</Typography>
+          <Typography overrideEl="span" variant="body2">
+            {value}
+          </Typography>
         </HStack>
       </HStack>
       {open && !!details && <VStack>{details}</VStack>}

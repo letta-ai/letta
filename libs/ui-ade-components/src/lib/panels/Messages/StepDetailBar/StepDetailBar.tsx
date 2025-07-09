@@ -13,28 +13,26 @@ import { useFormatters } from '@letta-cloud/utils-client';
 import { getIfUsage } from '../DetailedMessageView/ResponseEvent/ResponseEvent';
 import { useTranslations } from '@letta-cloud/translations';
 import { cn } from '@letta-cloud/ui-styles';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import type { AgentSimulatorMessageType } from '../../AgentSimulator/types';
 
 interface StepDetailBarProps {
-  timestamp: string;
-  stepId: string;
+  message: AgentSimulatorMessageType;
   showDetails: boolean;
   setShowDetails: (show: boolean) => void;
 }
 
 export function StepDetailBar(props: StepDetailBarProps) {
-  const { timestamp, stepId, setShowDetails, showDetails } = props;
+  const { message, setShowDetails, showDetails } = props;
   const t = useTranslations('components/Messages');
 
-  const { data: enabled } = useFeatureFlag('DETAILED_MESSAGE_VIEW');
-
+  const { stepId, timestamp } = message;
   const { data: stepDetails } = useTelemetryServiceRetrieveProviderTrace(
     {
-      stepId,
+      stepId: stepId || '',
     },
     undefined,
     {
-      enabled,
+      enabled: !!stepId,
     },
   );
 
@@ -42,7 +40,7 @@ export function StepDetailBar(props: StepDetailBarProps) {
 
   const usage = getIfUsage(stepDetails?.response_json?.usage);
 
-  if (!enabled) {
+  if (!message.stepId) {
     return null;
   }
 
@@ -54,52 +52,56 @@ export function StepDetailBar(props: StepDetailBarProps) {
         )}
       >
         <HStack align="center" gap="small">
-          <Button
-            preIcon={
-              !showDetails ? (
-                <ChevronDownIcon size="small" />
-              ) : (
-                <ChevronUpIcon size="small" />
-              )
-            }
-            onClick={() => {
-              setShowDetails(!showDetails);
-            }}
-            size="3xsmall"
-            hideLabel
-            square
-            active={showDetails}
-            _use_rarely_className="text-muted w-4 h-4"
-            label={showDetails ? t('details.hide') : t('details.show')}
-            color="tertiary"
-          />
-          <FeedbackButtons stepId={stepId} />
+          {stepId && (
+            <HStack paddingRight="xxsmall">
+              <Button
+                preIcon={
+                  !showDetails ? (
+                    <ChevronDownIcon color="muted" size="small" />
+                  ) : (
+                    <ChevronUpIcon color="muted" size="small" />
+                  )
+                }
+                onClick={() => {
+                  setShowDetails(!showDetails);
+                }}
+                size="3xsmall"
+                hideLabel
+                square
+                active={showDetails}
+                _use_rarely_className="w-4 h-4"
+                label={showDetails ? t('details.hide') : t('details.show')}
+                color="tertiary"
+              />
+            </HStack>
+          )}
+
+          {stepId && <FeedbackButtons stepId={stepId} />}
         </HStack>
         <HStack gap="small">
-          <Typography
-            className="messages-step-detail--timestamp"
-            variant="body4"
-            color="muted"
-          >
+          {usage?.output_tokens && (
+            <>
+              <Typography variant="body4" color="muted">
+                {usage?.output_tokens &&
+                  t('tokens', {
+                    count: usage.output_tokens,
+                  })}
+              </Typography>
+              <Typography variant="body4" color="muted">
+                •
+              </Typography>
+            </>
+          )}
+          <Typography variant="body4" color="muted">
             {formatTime(timestamp, {
               hour: '2-digit',
               minute: '2-digit',
               second: '2-digit',
             })}
           </Typography>
-          <Typography
-            className="messages-step-detail--timestamp"
-            variant="body4"
-            color="muted"
-          >
-            {usage?.output_tokens &&
-              t('tokens', {
-                count: usage.output_tokens,
-              })}
-          </Typography>
         </HStack>
       </div>
-      {showDetails && (
+      {showDetails && stepId && (
         <div className="py-1 pt-4">
           <DetailedMessageView stepId={stepId} />
         </div>

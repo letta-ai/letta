@@ -3,3 +3,14 @@
   width: calc(100% + 1.2rem);
   margin-top: -0.625rem;
 }
+
+.messages-step-editor {
+  display: none;
+}
+
+.messages-step:hover {
+  .messages-step-editor {
+    display: block;
+  }
+}
+

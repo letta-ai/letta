@@ -942,6 +942,10 @@
   "components/Messages": {
     "reasoning": "Reasoning",
     "traceViewer": "Trace debug",
+    "edit": {
+      "start": "Edit message",
+      "stop": "Stop editing"
+    },
     "details": {
       "show": "Show details",
       "hide": "Hide details"
@@ -969,6 +973,17 @@
       "conflict": "This {agentBaseType} name is already in use, please choose another name",
       "default": "There was an error updating the agent name, please try again or contact support."
     }
+  },
+  "ADE/AgentSimulator/EditMessage": {
+    "errors": {
+      "noContent": "There is no content you entered to edit, please enter some content to save",
+      "unknown": "There was an error while saving the message, please try again or contact support."
+    },
+    "disclaimer": "Disclaimer",
+    "tooltip": "Editing your message will not change the evaluation or metrics behind this message, this can lead to inconsistencies in data reporting",
+    "placeholder": "Enter your message here",
+    "save": "Save",
+    "cancel": "Cancel"
   },
   "ADE/AgentSimulator/TraceViewer": {
     "raw": {

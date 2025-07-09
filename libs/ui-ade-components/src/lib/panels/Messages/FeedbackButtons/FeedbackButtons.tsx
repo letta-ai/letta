@@ -100,7 +100,7 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
           isPositiveFeedback ? (
             <ThumbsUpIcon color="positive" size="auto" />
           ) : (
-            <ThumbsUpIcon size="auto" />
+            <ThumbsUpIcon color="muted" size="auto" />
           )
         }
         size="3xsmall"
@@ -118,7 +118,7 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
           isNegativeFeedback ? (
             <ThumbsDownIcon color="destructive" size="auto" />
           ) : (
-            <ThumbsDownIcon size="auto" />
+            <ThumbsDownIcon color="muted" size="auto" />
           )
         }
         onClick={() => {

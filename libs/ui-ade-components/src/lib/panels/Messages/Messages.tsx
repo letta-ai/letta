@@ -30,6 +30,8 @@ import {
   InnerMonologueIcon,
   AnthropicLogoMarkDynamic,
   InteractiveSystemMessage,
+  EditIcon,
+  CircleIcon,
 } from '@letta-cloud/ui-component-library';
 import type {
   AgentMessage,
@@ -60,6 +62,7 @@ import { cn } from '@letta-cloud/ui-styles';
 import { DebugTraceSidebar } from './DebugTraceSidebar/DebugTraceSidebar';
 import './Messages.scss';
 import { StepDetailBar } from './StepDetailBar/StepDetailBar';
+import { EditMessage } from './EditMessage/EditMessage';
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty
@@ -185,6 +188,10 @@ interface MessageProps {
 
 function Message({ message }: MessageProps) {
   const [showDetails, setShowDetails] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const t = useTranslations('components/Messages');
+
+  const { data: enabledEditing } = useFeatureFlag('EDIT_MESSAGE');
 
   return (
     <VStack gap={false} fullWidth>
@@ -196,15 +203,42 @@ function Message({ message }: MessageProps) {
             : '',
         )}
       >
-        {message.content}
-        {message.stepId && (
-          <StepDetailBar
-            showDetails={showDetails}
-            setShowDetails={setShowDetails}
-            stepId={message.stepId}
-            timestamp={message.timestamp}
+        {showEdit ? (
+          <EditMessage
+            onClose={() => {
+              setShowEdit(false);
+            }}
+            onSuccess={() => {
+              setShowEdit(false);
+            }}
+            message={message}
           />
+        ) : (
+          <HStack justify="spaceBetween" align="start">
+            {message.content}
+
+            {message.editId && enabledEditing && (
+              <Button
+                preIcon={<EditIcon color="muted" size="small" />}
+                onClick={() => {
+                  setShowEdit(!showEdit);
+                }}
+                size="3xsmall"
+                hideLabel
+                square
+                active={showEdit}
+                _use_rarely_className="w-4 h-4 messages-step-editor"
+                label={showDetails ? t('edit.stop') : t('edit.start')}
+                color="tertiary"
+              />
+            )}
+          </HStack>
         )}
+        <StepDetailBar
+          showDetails={showDetails}
+          setShowDetails={setShowDetails}
+          message={message}
+        />
       </div>
     </VStack>
   );
@@ -289,14 +323,14 @@ function MessageGroup({ group }: MessageGroupType) {
       gap="medium"
     >
       {isAdvancedDebugView && firstMessageWithStepId?.stepId && (
-        <div className="absolute right-[5px] top-[5px]">
+        <div className="absolute right-[10px] top-[5px]">
           <DebugTraceSidebar
             stepId={firstMessageWithStepId.stepId}
             trigger={
               <Button
                 label={t('traceViewer')}
-                size="xsmall"
-                preIcon={<SystemIcon />}
+                size="3xsmall"
+                preIcon={<CircleIcon color="muted" size="auto" />}
                 hideLabel
                 square
                 color="tertiary"
@@ -511,6 +545,7 @@ export function Messages(props: MessagesProps) {
     ): AgentSimulatorMessageType | null | undefined {
       if (mode === 'debug') {
         return {
+          type: agentMessage.message_type,
           stepId: agentMessage.step_id,
           id: `${agentMessage.id}-${agentMessage.message_type}`,
           content: (
@@ -545,6 +580,7 @@ export function Messages(props: MessagesProps) {
           }
 
           return {
+            type: agentMessage.message_type,
             stepId: agentMessage.step_id,
             id: `${agentMessage.id}-${agentMessage.message_type}`,
             name: 'System',
@@ -606,6 +642,7 @@ export function Messages(props: MessagesProps) {
                 ></Code>
               </MessageWrapper>
             ),
+            type: agentMessage.message_type,
             timestamp: new Date(agentMessage.date).toISOString(),
             name: 'Agent',
           };
@@ -640,7 +677,10 @@ export function Messages(props: MessagesProps) {
                       <Markdown text={agentIdWrapper(out.data.message)} />
                     </VStack>
                   ),
+                  type: agentMessage.message_type,
+                  raw: out.data.message,
                   name: 'Agent',
+                  editId: agentMessage.tool_call.tool_call_id || null,
                   timestamp: new Date(agentMessage.date).toISOString(),
                 };
               } catch (_e) {
@@ -648,6 +688,7 @@ export function Messages(props: MessagesProps) {
                   stepId: agentMessage.step_id,
                   id: `${agentMessage.id}-${agentMessage.message_type}`,
                   content: '',
+                  type: agentMessage.message_type,
                   timestamp: new Date(agentMessage.date).toISOString(),
                   name: 'Agent',
                 };
@@ -663,6 +704,7 @@ export function Messages(props: MessagesProps) {
               );
               return {
                 stepId: agentMessage.step_id,
+                type: agentMessage.message_type,
                 id: `${agentMessage.id}-${agentMessage.message_type}`,
                 content: (
                   <FunctionCall
@@ -684,6 +726,7 @@ export function Messages(props: MessagesProps) {
 
           return {
             stepId: agentMessage.step_id,
+            type: agentMessage.message_type,
             id: `${agentMessage.id}-${agentMessage.message_type}`,
             content: (
               <MessageWrapper
@@ -722,7 +765,10 @@ export function Messages(props: MessagesProps) {
 
           if (mode === 'interactive') {
             return {
+              type: agentMessage.message_type,
               id: `${agentMessage.id}-${agentMessage.message_type}`,
+              editId: agentMessage.id,
+              raw: agentMessage.reasoning,
               content: (
                 <BlockQuote fullWidth>
                   <VStack gap="small">
@@ -757,6 +803,7 @@ export function Messages(props: MessagesProps) {
           }
 
           return {
+            type: agentMessage.message_type,
             stepId: agentMessage.step_id,
             id: `${agentMessage.id}-${agentMessage.message_type}`,
             content: (
@@ -779,6 +826,7 @@ export function Messages(props: MessagesProps) {
           }
           if (mode === 'interactive') {
             return {
+              type: agentMessage.message_type,
               stepId: agentMessage.step_id,
               id: `${agentMessage.id}-${agentMessage.message_type}`,
               content: (
@@ -809,6 +857,7 @@ export function Messages(props: MessagesProps) {
           }
 
           return {
+            type: agentMessage.message_type,
             stepId: agentMessage.step_id,
             id: `${agentMessage.id}-${agentMessage.message_type}`,
             content: (
@@ -836,6 +885,7 @@ export function Messages(props: MessagesProps) {
           if (Array.isArray(content)) {
             if (mode === 'simple' || mode === 'interactive') {
               return {
+                type: agentMessage.message_type,
                 stepId: agentMessage.step_id,
                 id: `${agentMessage.id}-${agentMessage.message_type}`,
                 content: <ContentPartsRenderer contentParts={content} />,
@@ -858,6 +908,7 @@ export function Messages(props: MessagesProps) {
               }
 
               return {
+                type: agentMessage.message_type,
                 stepId: agentMessage.step_id,
                 id: `${agentMessage.id}-${agentMessage.message_type}`,
                 content: (
@@ -865,8 +916,10 @@ export function Messages(props: MessagesProps) {
                     <Markdown text={agentIdWrapper(content)} />
                   </VStack>
                 ),
+                raw: content,
                 timestamp: new Date(agentMessage.date).toISOString(),
                 name: 'User',
+                editId: agentMessage.id,
               };
             }
 
@@ -875,6 +928,7 @@ export function Messages(props: MessagesProps) {
 
               if (tryParseResp) {
                 return {
+                  type: agentMessage.message_type,
                   stepId: agentMessage.step_id,
                   id: `${agentMessage.id}-${agentMessage.message_type}`,
                   content: (
@@ -895,22 +949,28 @@ export function Messages(props: MessagesProps) {
                   ),
                   timestamp: new Date(agentMessage.date).toISOString(),
                   name: 'User',
+                  editId: agentMessage.id,
                 };
               }
 
               return {
+                type: agentMessage.message_type,
                 stepId: agentMessage.step_id,
                 id: `${agentMessage.id}-${agentMessage.message_type}`,
                 content: <Typography>{content}</Typography>,
+                raw: content,
                 timestamp: new Date(agentMessage.date).toISOString(),
                 name: 'User',
+                editId: agentMessage.id,
               };
             }
 
             return {
+              type: agentMessage.message_type,
               stepId: agentMessage.step_id,
               id: `${agentMessage.id}-${agentMessage.message_type}`,
               content: <Typography>{content}</Typography>,
+              raw: content,
               timestamp: new Date(agentMessage.date).toISOString(),
               name: 'User',
             };
@@ -965,6 +1025,9 @@ export function Messages(props: MessagesProps) {
         name: message.name,
         stepId: message.stepId || '',
         timestamp: message.timestamp || '',
+        raw: message.raw || '',
+        type: message.type || 'user_message',
+        editId: message.editId || null,
       };
 
       if (index !== 0 && lastGroup.name === message.name) {

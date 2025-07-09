@@ -124,6 +124,7 @@ function TraceDetails({ trace }: TraceDetailsProps) {
           <HStack align="center" gap="small">
             {trace.children.length > 0 && (
               <Tooltip
+                asChild
                 content={showChildren ? t('children.hide') : t('children.view')}
               >
                 <button
@@ -140,7 +141,10 @@ function TraceDetails({ trace }: TraceDetailsProps) {
               </Tooltip>
             )}
             {trace.traceDetails.SpanAttributes && (
-              <Tooltip content={showRaw ? t('raw.hide') : t('raw.view')}>
+              <Tooltip
+                asChild
+                content={showRaw ? t('raw.hide') : t('raw.view')}
+              >
                 <button
                   onClick={() => {
                     setShowRaw((prev) => !prev);

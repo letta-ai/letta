@@ -86,16 +86,16 @@ export const featureFlags = {
     expiryDate: '2025-07-01',
     flagValue: z.boolean(),
   },
+  EDIT_MESSAGE: {
+    description: 'Edit message',
+    expiryDate: '2025-07-01',
+    flagValue: z.boolean(),
+  },
   SYSTEM_WARNING: {
     flagValue: z.object({
       title: z.string(),
     }),
     description: 'System warning',
-  },
-  DETAILED_MESSAGE_VIEW: {
-    description: 'See detailed message view from the agent chat page',
-    expiryDate: '2024-06-01',
-    flagValue: z.boolean(),
   },
   ADVANCED_MESSAGE_DEBUG: {
     description: 'Advanced message debug features',
