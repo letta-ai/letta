@@ -45,6 +45,7 @@ async def _try_acquire_lock_and_start_scheduler(server: SyncServer) -> bool:
                     text("SELECT pg_try_advisory_lock(CAST(:lock_key AS bigint))"), {"lock_key": ADVISORY_LOCK_KEY}
                 )
                 acquired_lock = result.scalar()
+                await lock_session.commit()
 
         if not acquired_lock:
             if lock_session:
@@ -90,7 +91,7 @@ async def _try_acquire_lock_and_start_scheduler(server: SyncServer) -> bool:
             logger.warning("Attempting to release lock due to error during startup.")
             try:
                 _advisory_lock_session = lock_session
-                await _release_advisory_lock()
+                await _release_advisory_lock(lock_session)
             except Exception as unlock_err:
                 logger.error(f"Failed to release lock during error handling: {unlock_err}", exc_info=True)
             finally:
@@ -140,11 +141,11 @@ async def _background_lock_retry_loop(server: SyncServer):
             await asyncio.sleep(settings.poll_lock_retry_interval_seconds)
 
 
-async def _release_advisory_lock():
+async def _release_advisory_lock(lock_session=None):
     """Releases the advisory lock using the stored session."""
     global _advisory_lock_session
 
-    lock_session = _advisory_lock_session
+    lock_session = _advisory_lock_session or lock_session
     _advisory_lock_session = None
 
     if lock_session is not None:
@@ -152,6 +153,7 @@ async def _release_advisory_lock():
         try:
             await lock_session.execute(text("SELECT pg_advisory_unlock(CAST(:lock_key AS bigint))"), {"lock_key": ADVISORY_LOCK_KEY})
             logger.info(f"Executed pg_advisory_unlock for lock {ADVISORY_LOCK_KEY}")
+            await lock_session.commit()
         except Exception as e:
             logger.error(f"Error executing pg_advisory_unlock: {e}", exc_info=True)
         finally:
