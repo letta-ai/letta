@@ -286,14 +286,20 @@ class BlockManager:
 
     @trace_method
     @enforce_types
-    async def get_agents_for_block_async(self, block_id: str, actor: PydanticUser) -> List[PydanticAgentState]:
+    async def get_agents_for_block_async(
+        self,
+        block_id: str,
+        actor: PydanticUser,
+        include_relationships: Optional[List[str]] = None,
+    ) -> List[PydanticAgentState]:
         """
         Retrieve all agents associated with a given block.
         """
         async with db_registry.async_session() as session:
             block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
             agents_orm = block.agents
-            return await asyncio.gather(*[agent.to_pydantic_async() for agent in agents_orm])
+            agents = await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents_orm])
+            return agents
 
     @trace_method
     @enforce_types
