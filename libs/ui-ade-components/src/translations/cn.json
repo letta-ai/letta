@@ -1104,6 +1104,7 @@
         "errors": "代码和错误",
         "code": "仅代码",
         "codeAndSimulator": "代码和模拟器",
+        "codeAndDependencies": "代码和依赖项",
         "settings": "设置"
       }
     }
@@ -1214,6 +1215,26 @@
     "addVariable": "添加变量",
     "description": "环境变量可用于存储可在您的智能体中使用的任意数据。这对于存储不属于智能体记忆的数据很有用，例如API密钥或其他配置数据。",
     "templateDetails": "在下方设置环境变量将为使用此模板的所有智能体设置默认变量。您也可以在部署智能体时覆盖此变量。"
+  },
+  "DependencyViewer": {
+    "filter": {
+      "all": "全部",
+      "added": "已添加",
+      "notAdded": "未添加"
+    },
+    "search": {
+      "placeholder": "搜索包",
+      "label": "搜索依赖项"
+    },
+    "error": {
+      "addingDependency": "添加依赖项时出错",
+      "unknown": "未知错误"
+    },
+    "button": {
+      "add": "添加",
+      "added": "已添加",
+      "adding": "正在添加..."
+    }
   },
   "ToolManager": {
     "close": "返回ADE",

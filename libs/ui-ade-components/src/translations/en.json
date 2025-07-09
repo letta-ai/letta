@@ -1306,6 +1306,26 @@
       "description": "Dependencies can be used as simply as importing them in your code, see the example below"
     }
   },
+  "DependencyViewer": {
+    "filter": {
+      "all": "All",
+      "added": "Added",
+      "notAdded": "Not Added"
+    },
+    "search": {
+      "placeholder": "Search packages",
+      "label": "Search dependencies"
+    },
+    "error": {
+      "addingDependency": "Error adding dependency",
+      "unknown": "Unknown error"
+    },
+    "button": {
+      "add": "Add",
+      "added": "Added",
+      "adding": "Adding..."
+    }
+  },
   "ToolManager/ComposioAppHeader": {
     "open": "View on Composio"
   },
@@ -1531,6 +1551,7 @@
         "errors": "Code and errors",
         "code": "Code Only",
         "codeAndSimulator": "Code and Simulator",
+        "dependencies": "Dependencies",
         "settings": "Settings"
       }
     }

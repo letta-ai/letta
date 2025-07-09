@@ -19,6 +19,7 @@ import {
   RawToggleGroup,
   SaveIcon,
   SplitscreenRightIcon,
+  ToolboxIcon,
   ToolsIcon,
   Tooltip,
   Typography,
@@ -46,6 +47,7 @@ import {
 import { useDebouncedCallback, useDebouncedValue } from '@mantine/hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import { ToolSimulator } from '../ToolSimulator/ToolSimulator';
+import { DependencyViewer } from '../DependencyViewer/DependencyViewer';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
@@ -59,6 +61,7 @@ import {
 import { atom, useAtom } from 'jotai';
 import { RESTRICTED_FN_PROPS } from '../../constants';
 import { ToolSettings } from '../ToolsSettings/ToolSettings';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface CurrentToolContextState {
   tool: Tool;
@@ -143,6 +146,36 @@ function CodeAndSimulator() {
       />
       <Panel defaultSize={30} defaultValue={30} className="h-full" minSize={20}>
         <ToolSimulator key={tool.id} tool={tool} />
+      </Panel>
+    </PanelGroup>
+  );
+}
+
+function Dependencies() {
+  const tool = useCurrentTool();
+
+  const isMobile = useIsMobile();
+
+  if (!tool) {
+    return null;
+  }
+
+  return (
+    <PanelGroup
+      /* eslint-disable-next-line react/forbid-component-props */
+      className="h-full w-full"
+      direction={isMobile ? 'vertical' : 'horizontal'}
+      autoSaveId="code-and-simulator"
+    >
+      <Panel defaultSize={70} defaultValue={70} className="h-full" minSize={20}>
+        <CodeEditor key={tool.id} tool={tool} />
+      </Panel>
+      <PanelResizeHandle
+        /* eslint-disable-next-line react/forbid-component-props */
+        className={isMobile ? 'h-[1px] w-full bg-border' : 'w-[1px] h-full'}
+      />
+      <Panel defaultSize={30} defaultValue={30} className="h-full" minSize={20}>
+        <DependencyViewer tool={tool} />
       </Panel>
     </PanelGroup>
   );
@@ -513,13 +546,21 @@ function JSONViewer() {
   );
 }
 
-type EditMode = 'code' | 'codeAndSimulator' | 'errors' | 'json' | 'settings';
+type EditMode =
+  | 'code'
+  | 'codeAndSimulator'
+  | 'dependencies'
+  | 'errors'
+  | 'json'
+  | 'settings';
 
 function EditModes() {
   const { mode, setMode } = useEditMode();
   const { error } = useToolErrors();
   const t = useTranslations('ToolsEditor/LocalToolsViewer');
   const { isDifferent } = useIsCodeAndSchemaDifferent();
+  const { data: isDependencyViewerEnabled } =
+    useFeatureFlag('DEPENDENCY_VIEWER');
 
   return (
     <RawToggleGroup
@@ -547,6 +588,16 @@ function EditModes() {
           label: t('EditModes.modes.codeAndSimulator'),
           value: 'codeAndSimulator',
         },
+        ...(isDependencyViewerEnabled
+          ? [
+              {
+                hideLabel: true,
+                icon: <ToolboxIcon />,
+                label: t('EditModes.modes.dependencies'),
+                value: 'dependencies',
+              },
+            ]
+          : []),
         {
           hideLabel: true,
           icon: <CogIcon />,
@@ -725,6 +776,8 @@ function ToolContent() {
       );
     case 'codeAndSimulator':
       return <CodeAndSimulator />;
+    case 'dependencies':
+      return <Dependencies />;
     case 'errors':
       return <CodeAndError />;
     case 'json':
