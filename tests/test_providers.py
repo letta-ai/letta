@@ -9,6 +9,7 @@ from letta.schemas.providers import (
     GroqProvider,
     OpenAIProvider,
     TogetherProvider,
+    VoyageAIProvider,
 )
 from letta.settings import model_settings
 
@@ -223,6 +224,12 @@ def test_custom_anthropic():
     models = provider.list_llm_models()
     assert len(models) > 0
     assert models[0].handle == f"{provider.name}/{models[0].model}"
+
+
+def test_voyageai():
+    provider = VoyageAIProvider(api_key=os.getenv("VOYAGEAI_API_KEY"))
+    embedding_models = provider.list_embedding_models()
+    print([m.embedding_model for m in embedding_models])
 
 
 # def test_vllm():
