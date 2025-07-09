@@ -115,7 +115,7 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
               </HStack>
             </VStack>
             {subtitle && (
-              <VStack>
+              <VStack width="largeContained">
                 <Typography variant="heading6">{subtitle}</Typography>
               </VStack>
             )}
