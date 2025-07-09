@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional, Set, Tuple
 
 import sqlalchemy as sa
-from sqlalchemy import delete, func, insert, literal, or_, select
+from sqlalchemy import delete, func, insert, literal, or_, select, tuple_
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from letta.constants import (
@@ -224,13 +224,44 @@ class AgentManager:
     @staticmethod
     async def _replace_pivot_rows_async(session, table, agent_id: str, rows: list[dict]):
         """
-        Replace all pivot rows for an agent with *exactly* the provided list.
-        Uses two bulk statements (DELETE + INSERT ... ON CONFLICT DO NOTHING).
+        Replace all pivot rows for an agent atomically using MERGE pattern.
         """
-        # delete all existing rows for this agent
-        await session.execute(delete(table).where(table.c.agent_id == agent_id))
-        if rows:
-            await AgentManager._bulk_insert_pivot_async(session, table, rows)
+        dialect = session.bind.dialect.name
+
+        if dialect == "postgresql":
+            if rows:
+                # separate upsert and delete operations
+                stmt = pg_insert(table).values(rows)
+                stmt = stmt.on_conflict_do_nothing()
+                await session.execute(stmt)
+
+                # delete rows not in new set
+                pk_names = [c.name for c in table.primary_key.columns]
+                new_keys = [tuple(r[c] for c in pk_names) for r in rows]
+                await session.execute(
+                    delete(table).where(table.c.agent_id == agent_id, ~tuple_(*[table.c[c] for c in pk_names]).in_(new_keys))
+                )
+            else:
+                # if no rows to insert, just delete all
+                await session.execute(delete(table).where(table.c.agent_id == agent_id))
+
+        elif dialect == "sqlite":
+            if rows:
+                stmt = sa.insert(table).values(rows).prefix_with("OR REPLACE")
+                await session.execute(stmt)
+
+            if rows:
+                primary_key_cols = [table.c[c.name] for c in table.primary_key.columns]
+                new_keys = [tuple(r[c.name] for c in table.primary_key.columns) for r in rows]
+                await session.execute(delete(table).where(table.c.agent_id == agent_id, ~tuple_(*primary_key_cols).in_(new_keys)))
+            else:
+                await session.execute(delete(table).where(table.c.agent_id == agent_id))
+
+        else:
+            # fallback: use original DELETE + INSERT pattern
+            await session.execute(delete(table).where(table.c.agent_id == agent_id))
+            if rows:
+                await AgentManager._bulk_insert_pivot_async(session, table, rows)
 
     # ======================================================================================================================
     # Basic CRUD operations
