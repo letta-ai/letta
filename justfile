@@ -90,7 +90,6 @@ configure-kubectl cluster-name="letta":
     npm run slack-bot-says "Deploying web service Helm chart with tag: {{TAG}}..."
     if [[ "{{USES_SECRETS_V2}}" = "false" ]]; then
         helm upgrade --install {{WEB_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{WEB_HELM_CHART_NAME}} \
-            --force \
             --set image.repository={{DOCKER_REGISTRY}}/web \
             --set image.tag={{TAG}} \
             --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
@@ -131,7 +130,6 @@ configure-kubectl cluster-name="letta":
     else
         helm upgrade --install {{WEB_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{WEB_HELM_CHART_NAME}} \
             --set image.tag={{TAG}} \
-            --force \
             --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)";
     fi
     npm run slack-bot-says "Successfully deployed web service Helm chart with tag: {{TAG}}."
