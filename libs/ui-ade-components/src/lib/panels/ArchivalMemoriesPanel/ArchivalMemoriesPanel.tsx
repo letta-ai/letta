@@ -40,6 +40,7 @@ import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissio
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { InfiniteData } from '@tanstack/query-core';
+import { useNetworkInspector } from '../../hooks/useNetworkInspector/useNetworkInspector';
 
 function UseInfiniteAgentPassagesQueryFn(
   args: Parameters<typeof UseAgentsServiceListPassagesKeyFn>,
@@ -106,10 +107,19 @@ function MemoryItem(props: MemoryItemProps) {
 
   const { formatDateAndTime } = useFormatters();
 
+  const { handleInspectErrorWithClose } = useNetworkInspector();
+  function handleInspectError() {
+    function closeDialog() {
+      setOpen(false);
+    }
+    handleInspectErrorWithClose(closeDialog);
+  }
+
   const {
     mutate: deleteMemory,
     isPending: isDeletingMemory,
     isError,
+    reset,
   } = useAgentsServiceDeletePassage({
     onSuccess: async () => {
       setOpen(false);
@@ -152,6 +162,13 @@ function MemoryItem(props: MemoryItemProps) {
 
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
+  function handleDialogOpenChange(open: boolean) {
+    setOpen(open);
+    if (!open) {
+      reset();
+    }
+  }
+
   return (
     <ActionCard
       color="transparent"
@@ -170,7 +187,17 @@ function MemoryItem(props: MemoryItemProps) {
           {canUpdateAgent && (
             <Dialog
               errorMessage={isError ? t('MemoryItem.error') : undefined}
-              onOpenChange={setOpen}
+              errorMessageAction={
+                isError ? (
+                  <Button
+                    size="xsmall"
+                    label="Inspect Error"
+                    color="tertiary"
+                    onClick={handleInspectError}
+                  />
+                ) : undefined
+              }
+              onOpenChange={handleDialogOpenChange}
               isOpen={open}
               trigger={
                 <Button
@@ -184,7 +211,8 @@ function MemoryItem(props: MemoryItemProps) {
               }
               isConfirmBusy={isDeletingMemory}
               onConfirm={() => {
-                handleRemoveMemory(memory.id || '');
+                const memoryId = memory.id || '';
+                handleRemoveMemory(memoryId);
               }}
               confirmText={t('MemoryItem.deleteConfirm')}
               cancelText="Cancel"

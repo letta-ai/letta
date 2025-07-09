@@ -1,9 +1,7 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
-import { OpenAPI } from '@letta-cloud/sdk-core';
+import { useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { ADEGroup } from '../shared/ADEGroup/ADEGroup';
-import type { AxiosResponse } from 'axios';
 import {
   Alert,
   Badge,
@@ -26,14 +24,22 @@ import {
 import { jsonToCurl } from '@letta-cloud/utils-shared';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useNetworkInspectorVisibility } from '../hooks/useNetworkInspectorVisibility/useNetworkInspectorVisibility';
+import {
+  useNetworkRequest,
+  type NetworkRequest,
+} from '../hooks/useNetworkRequest/useNetworkRequest';
+import { atom, useAtom } from 'jotai';
+import React from 'react';
 
 interface RequestItemProps {
   request: NetworkRequest;
+  expanded?: boolean;
+  onToggle?: () => void;
 }
 
 interface RequestSectionProps {
   title: string;
-  copyData?: any;
+  copyData?: Record<string, unknown>;
   children: React.ReactNode;
 }
 
@@ -62,18 +68,16 @@ function RequestSection(props: RequestSectionProps) {
         )}
       </HStack>
       <VStack className="max-h-[200px]" overflowY="auto" padding="xsmall">
-        {children}
+        <div style={{ fontSize: '12px' }}>{children}</div>
       </VStack>
     </VStack>
   );
 }
 
 function RequestItem(props: RequestItemProps) {
-  const { request } = props;
+  const { request, expanded, onToggle } = props;
 
   const { isLocal } = useCurrentAgentMetaData();
-
-  const [expanded, setExpanded] = useState(false);
 
   const { formatTime } = useFormatters();
   const t = useTranslations('ADE/NetworkInspector');
@@ -119,9 +123,7 @@ function RequestItem(props: RequestItemProps) {
         border={!expanded ? 'transparent' : false}
         borderBottom={expanded}
         color={expanded ? 'background-grey2' : 'transparent'}
-        onClick={() => {
-          setExpanded(!expanded);
-        }}
+        onClick={onToggle}
         align="center"
         fullWidth
         gap="small"
@@ -200,8 +202,13 @@ interface RequestListProps {
   networkLogs: NetworkRequest[];
 }
 
+export const expandedRequestIdAtom = atom<string | null>(null);
+
 function RequestList(props: RequestListProps) {
   const { networkLogs } = props;
+  const [expandedRequestId, setExpandedRequestId] = useAtom(
+    expandedRequestIdAtom,
+  );
 
   const t = useTranslations('ADE/NetworkInspector');
 
@@ -218,59 +225,70 @@ function RequestList(props: RequestListProps) {
   return (
     <VStack overflowY="auto" fullHeight fullWidth padding="xsmall">
       {networkLogs.map((request, index) => (
-        <RequestItem key={index} request={request} />
+        <RequestItem
+          key={request.id || index}
+          request={request}
+          expanded={expandedRequestId === request.id}
+          onToggle={() => {
+            setExpandedRequestId((existingId) => {
+              if (existingId === request.id) {
+                return null;
+              }
+              return request.id || null;
+            });
+          }}
+        />
       ))}
       {networkLogs.length === 0 && <span>{t('noRequests')}</span>}
     </VStack>
   );
 }
 
-interface NetworkRequest {
-  date: Date;
-  url: string;
-  method: string;
-  status: number;
-  payload: any;
-  response?: any;
-}
-
 export function NetworkInspector() {
-  const [networkLogs, setNetworkLogs] = useState<NetworkRequest[]>([]);
+  const { networkRequests } = useNetworkRequest();
 
   const t = useTranslations('ADE/NetworkInspector');
 
-  useEffect(() => {
-    function interceptor(response: AxiosResponse) {
-      // filter out GET
-      if (response.config.method?.toLowerCase() === 'get') {
-        return response;
-      }
+  const [networkInspectorState, setNetworkInspectorState] =
+    useNetworkInspectorVisibility();
+  const [, setExpandedRequestId] = useAtom(expandedRequestIdAtom);
 
-      const networkRequest: NetworkRequest = {
-        date: new Date(),
-        url: response.config.url || '',
-        method: response.config.method?.toUpperCase() || 'UNKNOWN',
-        status: response.status,
-        payload: response.config.data,
-        response: response.data,
-      };
+  React.useEffect(() => {
+    const { expandRequestId } = networkInspectorState;
 
-      setNetworkLogs((prevLogs) => {
-        const newLogs = [networkRequest, ...prevLogs];
-        return newLogs.slice(0, 400);
-      });
-      return response;
+    if (!expandRequestId) {
+      return;
     }
 
-    OpenAPI.interceptors.response.use(interceptor);
+    if (networkInspectorState.isOpen) {
+      setExpandedRequestId(expandRequestId);
+      setNetworkInspectorState((prev) => ({
+        ...prev,
+        expandRequestId: null,
+      }));
+      return;
+    }
 
-    return () => {
-      // Cleanup interceptor
-      OpenAPI.interceptors.response.eject(interceptor);
-    };
-  }, [setNetworkLogs]);
-
-  const [_, setNetworkInspectorOpen] = useNetworkInspectorVisibility();
+    if (networkRequests.length > 0) {
+      const requestExists = networkRequests.some(
+        (req) => req.id === expandRequestId,
+      );
+      if (requestExists) {
+        setExpandedRequestId(expandRequestId);
+        setNetworkInspectorState((prev) => ({
+          ...prev,
+          expandRequestId: null,
+        }));
+      }
+    }
+  }, [
+    networkInspectorState,
+    networkInspectorState.isOpen,
+    networkInspectorState.expandRequestId,
+    networkRequests,
+    setExpandedRequestId,
+    setNetworkInspectorState,
+  ]);
 
   return (
     <ADEGroup
@@ -292,12 +310,15 @@ export function NetworkInspector() {
                 preIcon={<CloseIcon />}
                 color="tertiary"
                 onClick={() => {
-                  setNetworkInspectorOpen(false);
+                  setNetworkInspectorState({
+                    isOpen: false,
+                    expandRequestId: null,
+                  });
                 }}
               />
             </HStack>
           ),
-          content: <RequestList networkLogs={networkLogs} />,
+          content: <RequestList networkLogs={networkRequests} />,
         },
       ]}
     />

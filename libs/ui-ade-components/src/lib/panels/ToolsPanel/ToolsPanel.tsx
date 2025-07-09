@@ -35,6 +35,7 @@ import {
   useToolManagerState,
 } from '../ToolManager/hooks/useToolManagerState/useToolManagerState';
 import { useADETour } from '../../hooks/useADETour/useADETour';
+import { useNetworkInspector } from '../../hooks/useNetworkInspector/useNetworkInspector';
 
 interface RemoveToolPayload {
   toolName: string;
@@ -50,6 +51,7 @@ function RemoveToolDialog(props: RemoveToolFromAgentDialogProps) {
   const { id: agentId } = useCurrentAgent();
   const t = useTranslations('ADE/Tools');
   const queryClient = useQueryClient();
+  const { handleInspectErrorWithClose } = useNetworkInspector();
 
   const {
     mutate,
@@ -86,6 +88,10 @@ function RemoveToolDialog(props: RemoveToolFromAgentDialogProps) {
     });
   }, [agentId, toolId, mutate]);
 
+  const handleInspectError = useCallback(() => {
+    handleInspectErrorWithClose(onClose);
+  }, [handleInspectErrorWithClose, onClose]);
+
   return (
     <Dialog
       isOpen
@@ -95,6 +101,16 @@ function RemoveToolDialog(props: RemoveToolFromAgentDialogProps) {
         }
       }}
       errorMessage={isError ? t('RemoveToolDialog.error') : undefined}
+      errorMessageAction={
+        isError ? (
+          <Button
+            size="xsmall"
+            label="Inspect Error"
+            color="tertiary"
+            onClick={handleInspectError}
+          />
+        ) : undefined
+      }
       title={t('RemoveToolDialog.title', { toolName })}
       confirmText={t('RemoveToolDialog.confirm')}
       onConfirm={handleRemove}

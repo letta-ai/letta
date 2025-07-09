@@ -90,7 +90,10 @@ import { createPortal } from 'react-dom';
 import { useADETour } from '../hooks/useADETour/useADETour';
 import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 import { NetworkInspector } from '../NetworkInspector/NetworkInspector';
-import { useNetworkInspectorVisibility } from '../hooks';
+import {
+  useNetworkInspectorVisibility,
+  useGlobalNetworkInterceptor,
+} from '../hooks';
 import { useHotkeys } from '@mantine/hooks';
 import { adeKeyMap } from '../adeKeyMap';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
@@ -115,7 +118,10 @@ function DesktopLayout() {
     [
       adeKeyMap.OPEN_NETWORK_INSPECTOR.command,
       () => {
-        setNetworkInspectorOpen((prev) => !prev);
+        setNetworkInspectorOpen((prev) => ({
+          ...prev,
+          isOpen: !prev.isOpen,
+        }));
       },
     ],
   ]);
@@ -238,7 +244,7 @@ function DesktopLayout() {
             />
           </VStack>
         </Panel>
-        {networkInspectorOpen && (
+        {networkInspectorOpen.isOpen && (
           <>
             <PanelResizeHandle className="w-[1px] bg-border" />
             <Panel
@@ -505,6 +511,8 @@ function ADEOnboarding() {
 
 export function ADELayout(props: ADELayoutProps) {
   const { user, projectId, projectSlug } = props;
+
+  useGlobalNetworkInterceptor();
 
   return (
     <AppContextProvider

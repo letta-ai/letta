@@ -312,7 +312,10 @@ function NetworkInspectorButton() {
       label={t('AgentSettingsDropdown.networkInspector')}
       badge={<HotKey command={adeKeyMap.OPEN_NETWORK_INSPECTOR.command} />}
       onClick={() => {
-        setNetworkInspectorOpen((prev) => !prev);
+        setNetworkInspectorOpen((prev) => ({
+          ...prev,
+          isOpen: !prev.isOpen,
+        }));
       }}
     />
   );

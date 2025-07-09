@@ -66,6 +66,7 @@ type DialogContentProps = React.ComponentPropsWithoutRef<
   size?: VariantProps<typeof dialogVariants>['size'];
   errorMessage?: React.ReactNode;
   errorAdditionalMessage?: string;
+  errorMessageAction?: React.ReactNode;
   additionalActions?: React.ReactNode;
 };
 
@@ -82,6 +83,7 @@ const DialogContent = React.forwardRef<
       errorMessage,
       headerVariant,
       errorAdditionalMessage,
+      errorMessageAction,
       additionalActions,
       ...props
     },
@@ -115,6 +117,7 @@ const DialogContent = React.forwardRef<
                     title={errorMessage}
                     children={errorAdditionalMessage}
                     variant="destructive"
+                    action={errorMessageAction}
                   />
                 )}
                 <VStack
@@ -407,6 +410,7 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
   testId?: string;
   errorMessage?: React.ReactNode;
   errorAdditionalMessage?: string;
+  errorMessageAction?: React.ReactNode;
   onOpenChange?: (open: boolean) => void;
   title?: string;
   children?: React.ReactNode;
@@ -441,6 +445,7 @@ export function Dialog(props: DialogProps) {
     disableSubmit,
     errorMessage,
     errorAdditionalMessage,
+    errorMessageAction,
     maintainAspectRatio,
     onOpenChange,
     title,
@@ -501,6 +506,7 @@ export function Dialog(props: DialogProps) {
         headerVariant={headerVariant}
         errorMessage={errorMessage}
         errorAdditionalMessage={errorAdditionalMessage}
+        errorMessageAction={errorMessageAction}
         className={dialogVariants({ size, maintainAspectRatio })}
         onInteractOutside={(e) => {
           if (preventCloseFromOutside) {
