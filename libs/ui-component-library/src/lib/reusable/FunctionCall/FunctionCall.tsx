@@ -7,8 +7,9 @@ import {
   ChevronRightIcon,
   ContextWindowIcon,
   FunctionIcon,
-  HeartIcon,
+  HeartbeatIcon,
 } from '../../icons';
+import { Tooltip } from '../../core/Tooltip/Tooltip';
 import { Typography } from '../../core/Typography/Typography';
 import { RawCodeEditor } from '../../core/Code/Code';
 import { useTranslations } from '@letta-cloud/translations';
@@ -176,10 +177,23 @@ export function FunctionCall(props: FunctionCallProps) {
             <StatusBadge status={status} toolReturn={toolReturn} />
           </HStack>
           {typeof requestHeartbeatState === 'boolean' && (
-            <HeartIcon
-              color={requestHeartbeatState === true ? 'destructive' : 'lighter'}
-              size="small"
-            />
+            <Tooltip
+              asChild
+              content={t(
+                requestHeartbeatState === true
+                  ? 'heartbeatTooltip.requested'
+                  : 'heartbeatTooltip.notRequested',
+              )}
+            >
+              <div>
+                <HeartbeatIcon
+                  color={
+                    requestHeartbeatState === true ? 'destructive' : 'lighter'
+                  }
+                  size="xsmall"
+                />
+              </div>
+            </Tooltip>
           )}
         </HStack>
       </HStack>

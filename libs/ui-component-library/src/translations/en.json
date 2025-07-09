@@ -42,6 +42,10 @@
     "request": "Tool input",
     "seeMore": "Tool output truncated, click to view all",
     "response": "Tool output",
+    "heartbeatTooltip": {
+      "requested": "The agent requested a heartbeat to continue execution",
+      "notRequested": "The agent did not request a heartbeat so execution was terminated"
+    },
     "FunctionCallDataViewerDialog": {
       "title": "View response",
       "copy": "Copy to clipboard"
