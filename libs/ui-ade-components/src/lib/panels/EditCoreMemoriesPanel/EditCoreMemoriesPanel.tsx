@@ -93,15 +93,21 @@ function EditMemoryForm(props: EditMemoryFormProps) {
       return [];
     }
 
-    return agents.map((agent) => ({
-      id: agent.id,
-      name: agent.name,
-      agentType: agent.agent_type,
-      onClick: () => {
-        handleMoveToAgent(agent.id);
-      },
-      isCurrentAgent: agent.id === id,
-    }));
+    return agents
+      .toSorted((a, b) => {
+        if (a.id === id) return -1;
+        if (b.id === id) return 1;
+        return a.name.localeCompare(b.name);
+      })
+      .map((agent) => ({
+        id: agent.id,
+        name: agent.name,
+        agentType: agent.agent_type,
+        onClick() {
+          handleMoveToAgent(agent.id);
+        },
+        isCurrentAgent: agent.id === id,
+      }));
   }, [agents, handleMoveToAgent, id]);
 
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
