@@ -1,0 +1,136 @@
+name: Lint Command
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  lint-command:
+    name: Handle /lint command
+    runs-on: ubuntu-latest
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/lint') &&
+      startsWith(github.event.comment.body, '/lint')
+    
+    steps:
+    - name: Add acknowledgment reaction
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        comment-id: ${{ github.event.comment.id }}
+        reactions: eyes
+
+    - name: Check permissions
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { data: collaborator } = await github.rest.repos.getCollaboratorPermissionLevel({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            username: context.actor
+          });
+          
+          if (!['admin', 'write'].includes(collaborator.permission)) {
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '❌ You need write permissions to run lint commands.'
+            });
+            core.setFailed('Insufficient permissions');
+          }
+
+    - name: Get PR information
+      id: pr
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { data: pr } = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.issue.number
+          });
+          
+          core.setOutput('branch', pr.head.ref);
+          core.setOutput('repo', pr.head.repo.full_name);
+          core.setOutput('sha', pr.head.sha);
+
+    - name: Checkout PR branch
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ steps.pr.outputs.branch }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        enable-cache: true
+
+    - name: Set up Python
+      run: uv python install 3.12
+
+    - name: Install dependencies
+      run: uv sync --extra dev --extra postgres --extra external-tools --extra tests
+
+    - name: Run ruff check with fixes
+      run: uv run ruff check --fix .
+
+    - name: Run ruff format
+      run: uv run ruff format .
+
+    - name: Check for changes
+      id: changes
+      run: |
+        if [[ -n $(git status --porcelain) ]]; then
+          echo "changes=true" >> $GITHUB_OUTPUT
+        else
+          echo "changes=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Commit and push changes
+      if: steps.changes.outputs.changes == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git commit -m "style: auto-fix lint issues with ruff
+
+        Triggered by /lint command from @${{ github.actor }}"
+        git push
+
+    - name: Comment on success
+      if: steps.changes.outputs.changes == 'true'
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        issue-number: ${{ github.event.issue.number }}
+        body: |
+          ✅ **Lint fixes applied successfully!**
+          
+          Ruff has automatically fixed linting issues and formatted the code.
+          Changes have been committed to the PR branch.
+
+    - name: Comment on no changes
+      if: steps.changes.outputs.changes == 'false'
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        issue-number: ${{ github.event.issue.number }}
+        body: |
+          ✅ **No lint issues found!**
+          
+          The code is already properly formatted and passes all linting checks.
+
+    - name: Comment on failure
+      if: failure()
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        issue-number: ${{ github.event.issue.number }}
+        body: |
+          ❌ **Lint command failed!**
+          
+          There was an error while running the lint fixes. Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
