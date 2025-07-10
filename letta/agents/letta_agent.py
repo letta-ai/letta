@@ -654,7 +654,7 @@ class LettaAgent(BaseAgent):
             )
 
             # log LLM request time
-            llm_request_ms = ns_to_ms(stream_end_time_ns - request_start_timestamp_ns)
+            llm_request_ms = ns_to_ms(stream_end_time_ns - provider_request_start_timestamp_ns)
             agent_step_span.add_event(name="llm_request_ms", attributes={"duration_ms": llm_request_ms})
             MetricRegistry().llm_execution_time_ms_histogram.record(
                 llm_request_ms,
