@@ -3892,7 +3892,15 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LettaRequest"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/LettaRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LettaStreamingRequest"
+                  }
+                ],
+                "title": "Request"
               }
             }
           }

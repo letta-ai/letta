@@ -7415,7 +7415,11 @@ export const post_Preview_raw_payload = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
-    body: LettaRequest,
+    body: z.union([
+      LettaRequest,
+      LettaStreamingRequest,
+      z.array(z.union([LettaRequest, LettaStreamingRequest])),
+    ]),
   }),
   response: z.unknown(),
 };

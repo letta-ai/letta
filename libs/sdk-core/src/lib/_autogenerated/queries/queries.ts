@@ -3666,7 +3666,7 @@ export const useAgentsServicePreviewRawPayload = <
       TError,
       {
         agentId: string;
-        requestBody: LettaRequest;
+        requestBody: LettaRequest | LettaStreamingRequest;
         userId?: string;
       },
       TContext
@@ -3679,7 +3679,7 @@ export const useAgentsServicePreviewRawPayload = <
     TError,
     {
       agentId: string;
-      requestBody: LettaRequest;
+      requestBody: LettaRequest | LettaStreamingRequest;
       userId?: string;
     },
     TContext

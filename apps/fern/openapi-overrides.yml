@@ -398,6 +398,12 @@ paths:
         - agents
         - messages
       x-fern-sdk-method-name: cancel
+  /v1/agents/{agent_id}/messages/preview-raw-payload:
+    post:
+      x-fern-sdk-group-name:
+        - agents
+        - messages
+      x-fern-sdk-method-name: preview_raw_payload
   /v1/agents/{agent_id}/template:
     post:
       x-fern-sdk-group-name:

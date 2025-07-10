@@ -9,7 +9,7 @@ import pytest
 from dotenv import load_dotenv
 from letta_client import CreateBlock
 from letta_client import Letta as LettaSDKClient
-from letta_client import MessageCreate
+from letta_client import MessageCreate, TextContent
 from letta_client.client import BaseTool
 from letta_client.core import ApiError
 from letta_client.types import AgentState, ToolReturnMessage
@@ -967,3 +967,67 @@ def test_create_tool_from_function_with_docstring(e2b_sandbox_mode, client: Lett
     assert "roll_dice" in tool_names
 
     client.tools.delete(tool.id)
+
+
+def test_preview_payload(client: LettaSDKClient, agent):
+    payload = client.agents.messages.preview_raw_payload(
+        agent_id=agent.id,
+        messages=[
+            MessageCreate(
+                role="user",
+                content=[
+                    TextContent(
+                        text="text",
+                    )
+                ],
+            )
+        ],
+    )
+
+    assert isinstance(payload, dict)
+    assert "model" in payload
+    assert "messages" in payload
+    assert "tools" in payload
+    assert "frequency_penalty" in payload
+    assert "max_completion_tokens" in payload
+    assert "temperature" in payload
+    assert "user" in payload
+    assert "parallel_tool_calls" in payload
+    assert "tool_choice" in payload
+
+    assert payload["model"] == "gpt-4o-mini"
+
+    assert isinstance(payload["messages"], list)
+    assert len(payload["messages"]) >= 3
+
+    system_message = payload["messages"][0]
+    assert system_message["role"] == "system"
+    assert "base_instructions" in system_message["content"]
+    assert "memory_blocks" in system_message["content"]
+    assert "tool_usage_rules" in system_message["content"]
+    assert "Letta" in system_message["content"]
+
+    assert isinstance(payload["tools"], list)
+    assert len(payload["tools"]) > 0
+
+    tool_names = [tool["function"]["name"] for tool in payload["tools"]]
+    expected_tools = ["send_message", "conversation_search", "core_memory_replace", "core_memory_append"]
+    for tool_name in expected_tools:
+        assert tool_name in tool_names, f"Expected tool {tool_name} not found in tools"
+
+    for tool in payload["tools"]:
+        assert tool["type"] == "function"
+        assert "function" in tool
+        assert "name" in tool["function"]
+        assert "description" in tool["function"]
+        assert "parameters" in tool["function"]
+        assert tool["function"]["strict"] is True
+
+    assert payload["frequency_penalty"] == 1.0
+    assert payload["max_completion_tokens"] == 4096
+    assert payload["temperature"] == 0.7
+    assert payload["parallel_tool_calls"] is False
+    assert payload["tool_choice"] == "required"
+    assert payload["user"].startswith("user-")
+
+    print(payload)

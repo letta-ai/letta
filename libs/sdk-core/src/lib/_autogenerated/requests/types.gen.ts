@@ -5311,7 +5311,7 @@ export type ListAgentGroupsResponse = Array<Group>;
 
 export type PreviewRawPayloadData = {
   agentId: string;
-  requestBody: LettaRequest;
+  requestBody: LettaRequest | LettaStreamingRequest;
   userId?: string | null;
 };
 
