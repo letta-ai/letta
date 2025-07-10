@@ -29,6 +29,7 @@ async def _try_acquire_lock_and_start_scheduler(server: SyncServer) -> bool:
     if _is_scheduler_leader:
         return True  # Already leading
 
+    engine_name = None
     lock_session = None
     acquired_lock = False
     try:
@@ -36,32 +37,25 @@ async def _try_acquire_lock_and_start_scheduler(server: SyncServer) -> bool:
             engine = session.get_bind()
             engine_name = engine.name
             logger.info(f"Database engine type: {engine_name}")
-            if engine_name != "postgresql":
-                logger.warning(f"Advisory locks not supported for {engine_name} database. Starting scheduler without leader election.")
-                acquired_lock = True
-            else:
-                lock_session = db_registry.get_async_session_factory()()
-                result = await lock_session.execute(
-                    text("SELECT pg_try_advisory_lock(CAST(:lock_key AS bigint))"), {"lock_key": ADVISORY_LOCK_KEY}
-                )
-                acquired_lock = result.scalar()
-                await lock_session.commit()
 
-        if not acquired_lock:
-            if lock_session:
-                await lock_session.close()
-            logger.info("Scheduler lock held by another instance.")
-            return False
-
-        if engine_name == "postgresql":
-            logger.info("Acquired PostgreSQL advisory lock.")
-            _advisory_lock_session = lock_session
-            lock_session = None
+        if engine_name != "postgresql":
+            logger.warning(f"Advisory locks not supported for {engine_name} database. Starting scheduler without leader election.")
+            acquired_lock = True
         else:
-            logger.info("Starting scheduler for non-PostgreSQL database.")
-            if lock_session:
+            lock_session = db_registry.get_async_session_factory()()
+            result = await lock_session.execute(
+                text("SELECT pg_try_advisory_lock(CAST(:lock_key AS bigint))"), {"lock_key": ADVISORY_LOCK_KEY}
+            )
+            acquired_lock = result.scalar()
+            await lock_session.commit()
+
+            if not acquired_lock:
                 await lock_session.close()
-            lock_session = None
+                logger.info("Scheduler lock held by another instance.")
+                return False
+            else:
+                _advisory_lock_session = lock_session
+                lock_session = None
 
         trigger = IntervalTrigger(
             seconds=settings.poll_running_llm_batches_interval_seconds,
@@ -90,7 +84,6 @@ async def _try_acquire_lock_and_start_scheduler(server: SyncServer) -> bool:
         if acquired_lock:
             logger.warning("Attempting to release lock due to error during startup.")
             try:
-                _advisory_lock_session = lock_session
                 await _release_advisory_lock(lock_session)
             except Exception as unlock_err:
                 logger.error(f"Failed to release lock during error handling: {unlock_err}", exc_info=True)
@@ -108,8 +101,8 @@ async def _try_acquire_lock_and_start_scheduler(server: SyncServer) -> bool:
         if lock_session:
             try:
                 await lock_session.close()
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"Failed to close session during error handling: {e}", exc_info=True)
 
 
 async def _background_lock_retry_loop(server: SyncServer):
@@ -138,15 +131,13 @@ async def _background_lock_retry_loop(server: SyncServer):
             break
         except Exception as e:
             logger.error(f"Error in background lock retry loop: {e}", exc_info=True)
-            await asyncio.sleep(settings.poll_lock_retry_interval_seconds)
 
 
-async def _release_advisory_lock(lock_session=None):
+async def _release_advisory_lock(target_lock_session=None):
     """Releases the advisory lock using the stored session."""
     global _advisory_lock_session
 
-    lock_session = _advisory_lock_session or lock_session
-    _advisory_lock_session = None
+    lock_session = target_lock_session or _advisory_lock_session
 
     if lock_session is not None:
         logger.info(f"Attempting to release PostgreSQL advisory lock {ADVISORY_LOCK_KEY}")
@@ -161,6 +152,8 @@ async def _release_advisory_lock(lock_session=None):
                 if lock_session:
                     await lock_session.close()
                 logger.info("Closed database session that held advisory lock.")
+                if lock_session == _advisory_lock_session:
+                    _advisory_lock_session = None
             except Exception as e:
                 logger.error(f"Error closing advisory lock session: {e}", exc_info=True)
     else:
