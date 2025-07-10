@@ -134,6 +134,7 @@ interface CoreMemoryEditorHeaderProps {
   isLocked: boolean;
   editedValue: string;
   openInAdvanced?: VoidFunction;
+  hideHeaderChips?: boolean;
   isCollapsed: boolean;
   hasSimulatedDiff: boolean;
   onCollapseChange: (collapsed: boolean) => void;
@@ -148,6 +149,7 @@ function CoreMemoryEditorHeader(props: CoreMemoryEditorHeaderProps) {
     disabled,
     isCollapsed,
     hasSimulatedDiff = false,
+    hideHeaderChips,
     onCollapseChange,
     openInAdvanced,
     onLockChange,
@@ -164,65 +166,67 @@ function CoreMemoryEditorHeader(props: CoreMemoryEditorHeaderProps) {
         <Typography semibold color="lighter" variant="body3">
           {label}
         </Typography>
-        <HStack gap="small">
-          <InfoChip
-            onClick={() => {
-              onLockChange(!isLocked);
-            }}
-            disabled={disabled}
-            label={
-              isLocked
-                ? t('CoreMemoryEditorHeader.isLocked.locked')
-                : t('CoreMemoryEditorHeader.isLocked.unlocked')
-            }
-            icon={isLocked ? <LockClosedIcon /> : <LockOpenRightIcon />}
-          />
-          {sharedAgents.length > 0 && (
-            <SharedAgentsPopover
-              agents={sharedAgents}
-              trigger={
-                <InfoChip
-                  variant="brand"
-                  value={`${sharedAgents.length}`}
-                  label={t('CoreMemoryEditorHeader.sharedAgents', {
-                    count: `${sharedAgents.length}`,
-                  })}
-                  icon={<InvaderSharedAgentIcon />}
-                />
-              }
-            ></SharedAgentsPopover>
-          )}
-          {read_only ? (
-            <InfoChip
-              onClick={openInAdvanced}
-              label={t('CoreMemoryEditorHeader.readOnly')}
-              icon={<VisibilityLockIcon />}
-            />
-          ) : (
-            <InfoChip
-              onClick={openInAdvanced}
-              label={t('CoreMemoryEditorHeader.editable')}
-              icon={<EyeOpenIcon />}
-            />
-          )}
-          {preserve_on_migration && (
-            <InfoChip
-              onClick={openInAdvanced}
-              label={t('CoreMemoryEditorHeader.preserved')}
-              icon={<MoveUpIcon />}
-            />
-          )}
-          {hasSimulatedDiff && (
+        {!hideHeaderChips && (
+          <HStack gap="small">
             <InfoChip
               onClick={() => {
-                setVisibleMemoryType('simulated');
+                onLockChange(!isLocked);
               }}
-              variant="brand"
-              label={t('CoreMemoryEditorHeader.simulatedDiff')}
-              icon={<SplitscreenRightIcon color="brand" />}
+              disabled={disabled}
+              label={
+                isLocked
+                  ? t('CoreMemoryEditorHeader.isLocked.locked')
+                  : t('CoreMemoryEditorHeader.isLocked.unlocked')
+              }
+              icon={isLocked ? <LockClosedIcon /> : <LockOpenRightIcon />}
             />
-          )}
-        </HStack>
+            {sharedAgents.length > 0 && (
+              <SharedAgentsPopover
+                agents={sharedAgents}
+                trigger={
+                  <InfoChip
+                    variant="brand"
+                    value={`${sharedAgents.length}`}
+                    label={t('CoreMemoryEditorHeader.sharedAgents', {
+                      count: `${sharedAgents.length}`,
+                    })}
+                    icon={<InvaderSharedAgentIcon />}
+                  />
+                }
+              ></SharedAgentsPopover>
+            )}
+            {read_only ? (
+              <InfoChip
+                onClick={openInAdvanced}
+                label={t('CoreMemoryEditorHeader.readOnly')}
+                icon={<VisibilityLockIcon />}
+              />
+            ) : (
+              <InfoChip
+                onClick={openInAdvanced}
+                label={t('CoreMemoryEditorHeader.editable')}
+                icon={<EyeOpenIcon />}
+              />
+            )}
+            {preserve_on_migration && (
+              <InfoChip
+                onClick={openInAdvanced}
+                label={t('CoreMemoryEditorHeader.preserved')}
+                icon={<MoveUpIcon />}
+              />
+            )}
+            {hasSimulatedDiff && (
+              <InfoChip
+                onClick={() => {
+                  setVisibleMemoryType('simulated');
+                }}
+                variant="brand"
+                label={t('CoreMemoryEditorHeader.simulatedDiff')}
+                icon={<SplitscreenRightIcon color="brand" />}
+              />
+            )}
+          </HStack>
+        )}
       </HStack>
       <HStack>
         <Limit limit={limit || 0} value={editedValue} />
@@ -236,7 +240,7 @@ function CoreMemoryEditorHeader(props: CoreMemoryEditorHeaderProps) {
 }
 
 const TEXTAREA_CLASSNAME =
-  'w-full h-full resize-none  overflow-y-auto text-xs bg-panel-input-background whitespace-pre-line inline-block border border-border p-2 text-lighter-text outline-none';
+  'w-full h-full resize-none  overflow-y-auto text-xs whitespace-pre-line inline-block border border-border p-2 text-lighter-text outline-none';
 
 interface InlineMemoryDiffProps {
   value: string;
@@ -268,6 +272,7 @@ interface CoreMemoryContentProps {
   isSaving: boolean;
   onReset: () => void;
   isLocked: boolean;
+  greyOutDisabledTextArea?: boolean;
   isDifferent?: boolean;
   showDiff?: boolean;
   disabled?: boolean;
@@ -277,6 +282,7 @@ function CoreMemoryContent(props: CoreMemoryContentProps) {
   const {
     disabled,
     value,
+    greyOutDisabledTextArea,
     isDifferent,
     onValueChange,
     onReset,
@@ -315,7 +321,13 @@ function CoreMemoryContent(props: CoreMemoryContentProps) {
             onDoubleClick={() => {
               onLockChange(false);
             }}
-            className={cn(TEXTAREA_CLASSNAME, 'relative')}
+            className={cn(
+              TEXTAREA_CLASSNAME,
+              'relative',
+              greyOutDisabledTextArea
+                ? 'bg-background-grey3'
+                : 'bg-panel-input-background',
+            )}
             data-testid={testId}
           >
             {showDiff ? <InlineMemoryDiff value={value} /> : value}
@@ -361,7 +373,11 @@ function CoreMemoryContent(props: CoreMemoryContentProps) {
         onScroll={(e) => {
           setScrollTop(e.currentTarget.scrollTop);
         }}
-        className={cn(TEXTAREA_CLASSNAME, 'absolute top-0')}
+        className={cn(
+          TEXTAREA_CLASSNAME,
+          'bg-panel-input-background',
+          'absolute top-0',
+        )}
         data-testid={testId}
         value={value}
         onChange={(e) => {
@@ -372,6 +388,7 @@ function CoreMemoryContent(props: CoreMemoryContentProps) {
       <div
         className={cn(
           TEXTAREA_CLASSNAME,
+
           'relative pointer-events-none z-[-1]',
         )}
       >
@@ -405,6 +422,9 @@ interface CoreMemoryEditorProps {
   showDiff?: boolean;
   hasSimulatedDiff?: boolean;
   isSaving: boolean;
+  hideDescription?: boolean;
+  hideHeaderChips?: boolean;
+  greyOutDisabledTextArea?: boolean;
   errorMessage?: string;
 }
 
@@ -421,7 +441,10 @@ export function CoreMemoryEditor(props: CoreMemoryEditorProps) {
     openInAdvanced,
     hasSimulatedDiff = false,
     testId,
+    greyOutDisabledTextArea,
     onSave,
+    hideDescription = false,
+    hideHeaderChips = false,
     errorMessage,
   } = props;
 
@@ -463,6 +486,7 @@ export function CoreMemoryEditor(props: CoreMemoryEditorProps) {
         isCollapsed={isCollapsed}
         sharedAgents={sharedAgents}
         memoryBlock={memoryBlock}
+        hideHeaderChips={hideHeaderChips}
         disabled={disabled}
         openInAdvanced={openInAdvanced}
         hasSimulatedDiff={hasSimulatedDiff}
@@ -472,7 +496,7 @@ export function CoreMemoryEditor(props: CoreMemoryEditorProps) {
 
       {!isCollapsed && (
         <div className="relative w-full overflow-hidden flex-col h-0 flex-1 flex">
-          {memoryBlock.description && (
+          {memoryBlock.description && !hideDescription && (
             <DescriptionView description={memoryBlock.description || ''} />
           )}
           <VStack collapseHeight flex>
@@ -483,6 +507,7 @@ export function CoreMemoryEditor(props: CoreMemoryEditorProps) {
               isDifferent={isDifferent}
               isSaving={isSaving}
               onSave={handleSave}
+              greyOutDisabledTextArea={greyOutDisabledTextArea}
               value={editedValue}
               onValueChange={setEditedValue}
               testId={testId}

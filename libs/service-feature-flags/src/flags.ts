@@ -91,6 +91,11 @@ export const featureFlags = {
     expiryDate: '2025-07-01',
     flagValue: z.boolean(),
   },
+  SPLIT_VIEW_MEMORY_EDITOR: {
+    description: 'Split view memory editor',
+    expiryDate: '2025-07-01',
+    flagValue: z.boolean(),
+  },
   SYSTEM_WARNING: {
     flagValue: z.object({
       title: z.string(),

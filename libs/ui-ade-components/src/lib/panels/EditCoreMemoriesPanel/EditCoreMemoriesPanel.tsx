@@ -6,6 +6,7 @@ import {
   type MemoryType,
   OnboardingAsideFocus,
   PlusIcon,
+  SplitscreenRightIcon,
   TabGroup,
   Typography,
   useVisibleMemoryTypeContext,
@@ -18,7 +19,7 @@ import { VStack } from '@letta-cloud/ui-component-library';
 import { PanelMainContent } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent } from '../../hooks';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import React, { useMemo } from 'react';
 import { useSortedMemories } from '@letta-cloud/utils-client';
 import { useUpdateMemory } from '../../hooks';
@@ -39,6 +40,7 @@ import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { useADEAppContext } from '../../AppContext/AppContext';
 import { CreateNewMemoryBlockDialog } from './CreateNewMemoryBlockDialog/CreateNewMemoryBlockDialog';
 import { useQuickADETour } from '../../hooks/useQuickADETour/useQuickADETour';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface AdvancedEditorPayload {
   label: string;
@@ -49,10 +51,12 @@ interface EditMemoryFormProps extends AdvancedEditorPayload {
   memoryType: 'simulated' | 'templated';
   disabled?: boolean;
   hasSimulatedDiff?: boolean;
+  minimal?: boolean;
 }
 
 function EditMemoryForm(props: EditMemoryFormProps) {
-  const { label, memory, memoryType, hasSimulatedDiff, disabled } = props;
+  const { label, memory, memoryType, minimal, hasSimulatedDiff, disabled } =
+    props;
   const { id } = useCurrentAgent();
   const { isLocal } = useCurrentAgentMetaData();
   const { projectSlug } = useADEAppContext();
@@ -152,6 +156,9 @@ function EditMemoryForm(props: EditMemoryFormProps) {
             }
       }
       showDiff
+      hideHeaderChips={minimal}
+      greyOutDisabledTextArea={minimal}
+      hideDescription={minimal}
       hasSimulatedDiff={hasSimulatedDiff}
       sharedAgents={sharedAgents}
       isSaving={isUpdating}
@@ -181,6 +188,7 @@ function MemoryWrapper(props: MemoryWrapperProps) {
         align="center"
         justify="center"
         fullWidth
+        paddingTop="xxsmall"
         fullHeight
         border="dashed"
       >
@@ -206,7 +214,7 @@ function MemoryWrapper(props: MemoryWrapperProps) {
   }
 
   return (
-    <VStack fullHeight gap="medium">
+    <VStack paddingTop="xxsmall" fullHeight gap="medium">
       {children}
     </VStack>
   );
@@ -250,7 +258,12 @@ function DefaultMemory() {
   );
 }
 
-function SimulatedMemory() {
+interface SimulatedMemoryProps {
+  minimal?: boolean;
+}
+
+function SimulatedMemory(props: SimulatedMemoryProps) {
+  const { minimal } = props;
   const { agentSession } = useCurrentSimulatedAgent();
   const agent = useMemo(() => {
     return agentSession?.body.agent;
@@ -269,6 +282,7 @@ function SimulatedMemory() {
           key={block.label}
           disabled
           memory={block}
+          minimal={minimal}
           memoryType="simulated"
           label={block.label || ''}
         />
@@ -368,7 +382,6 @@ function AdvancedEditorButton() {
 
   return (
     <HStack
-      fullWidth
       fullHeight
       paddingTop="xxsmall"
       paddingBottom="xxsmall"
@@ -414,8 +427,7 @@ function MemoryTabs() {
     <TabGroup
       color="transparent"
       bold
-      extendBorder
-      rightContent={<AdvancedEditorButton />}
+      border={false}
       size="xsmall"
       value={visibleMemoryType}
       onValueChange={(value) => {
@@ -457,7 +469,9 @@ function MemoryTabs() {
   );
 }
 
-function MemoryRenderer() {
+type VisualMode = 'aside' | 'page';
+
+function MemoryPageRenderer() {
   const { visibleMemoryType } = useVisibleMemoryTypeContext();
 
   if (visibleMemoryType === 'simulated') {
@@ -467,7 +481,34 @@ function MemoryRenderer() {
   return <DefaultMemory />;
 }
 
+function MemoryAsideRender() {
+  return (
+    <HStack fullWidth gap={false} fullHeight>
+      <VStack paddingRight="xsmall" borderRight fullHeight fullWidth>
+        <DefaultMemory />
+      </VStack>
+      <VStack
+        paddingLeft="xsmall"
+        fullHeight
+        fullWidth
+        color="background-grey2"
+      >
+        <SimulatedMemory minimal />
+      </VStack>
+    </HStack>
+  );
+}
+
 export function EditMemory() {
+  const [visualMode, setVisualMode] = useState<VisualMode>('page');
+  const { isTemplate } = useCurrentAgentMetaData();
+
+  const t = useTranslations('ADE/EditCoreMemoriesPanel');
+
+  const { data: isSplitViewEnabled } = useFeatureFlag(
+    'SPLIT_VIEW_MEMORY_EDITOR',
+  );
+
   return (
     <PanelMainContent variant="noPadding">
       <QuickMemoryOnboarding>
@@ -479,22 +520,85 @@ export function EditMemory() {
               fullHeight
               gap={false}
             >
-              <VStack fullWidth paddingX="small">
-                <MemoryTabs />
-              </VStack>
+              <HStack
+                borderBottom
+                align="end"
+                gap={false}
+                fullWidth
+                paddingX="small"
+              >
+                <HStack
+                  paddingTop="xxsmall"
+                  paddingBottom="xxsmall"
+                  paddingRight="xsmall"
+                  className="h-[28px]"
+                >
+                  {isTemplate && isSplitViewEnabled && (
+                    <Button
+                      hideLabel
+                      size="3xsmall"
+                      onClick={() => {
+                        setVisualMode((prev) =>
+                          prev === 'page' ? 'aside' : 'page',
+                        );
+                      }}
+                      active={visualMode === 'aside'}
+                      color="tertiary"
+                      label={
+                        visualMode === 'page'
+                          ? t('VisualMode.viewAside')
+                          : t('VisualMode.viewPage')
+                      }
+                      preIcon={<SplitscreenRightIcon size="auto" />}
+                    />
+                  )}
+                </HStack>
+
+                {visualMode === 'page' ? (
+                  <HStack fullWidth>
+                    <MemoryTabs />
+                  </HStack>
+                ) : (
+                  <HStack
+                    gap={false}
+                    fullWidth
+                    className="h-[28px]"
+                    align="center"
+                  >
+                    <HStack fullWidth>
+                      <Typography bold variant="body3">
+                        {t('toggleMemoryType.templated.label')}
+                      </Typography>
+                    </HStack>
+                    {/* this is a hack to allow the width to be correctly sized since advanced button adds extra space and is a dynamic button */}
+                    <div className="opacity-0 pointer-events-none">
+                      <AdvancedEditorButton />
+                    </div>
+                    <HStack fullWidth>
+                      <Typography bold variant="body3">
+                        {t('toggleMemoryType.simulated.label')}
+                      </Typography>
+                    </HStack>
+                  </HStack>
+                )}
+                <AdvancedEditorButton />
+              </HStack>
               <VStack
-                paddingTop="xsmall"
                 fullWidth
                 collapseHeight
                 flex
                 overflow="auto"
-                gap="small"
                 paddingX="small"
+                gap={false}
                 paddingBottom="small"
               >
                 <AdvancedCoreMemoryEditor />
 
-                <MemoryRenderer />
+                {visualMode === 'page' ? (
+                  <MemoryPageRenderer />
+                ) : (
+                  <MemoryAsideRender />
+                )}
               </VStack>
             </VStack>
           </MemoryOnboarding>

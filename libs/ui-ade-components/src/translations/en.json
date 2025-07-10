@@ -743,6 +743,10 @@
     }
   },
   "ADE/EditCoreMemoriesPanel": {
+    "VisualMode": {
+      "viewAside": "View elements side by side",
+      "viewPage": "View elements as seperate tabs"
+    },
     "QuickOnboarding": {
       "title": "Inspect your agent’s memory",
       "description": "Your agent long-term memory is divided into blocks, which can be updated by you (the developer) and the agent itself.",
