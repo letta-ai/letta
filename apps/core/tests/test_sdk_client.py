@@ -9,7 +9,7 @@ import pytest
 from dotenv import load_dotenv
 from letta_client import CreateBlock
 from letta_client import Letta as LettaSDKClient
-from letta_client import MessageCreate, TextContent
+from letta_client import LettaRequest, MessageCreate, TextContent
 from letta_client.client import BaseTool
 from letta_client.core import ApiError
 from letta_client.types import AgentState, ToolReturnMessage
@@ -972,16 +972,18 @@ def test_create_tool_from_function_with_docstring(e2b_sandbox_mode, client: Lett
 def test_preview_payload(client: LettaSDKClient, agent):
     payload = client.agents.messages.preview_raw_payload(
         agent_id=agent.id,
-        messages=[
-            MessageCreate(
-                role="user",
-                content=[
-                    TextContent(
-                        text="text",
-                    )
-                ],
-            )
-        ],
+        request=LettaRequest(
+            messages=[
+                MessageCreate(
+                    role="user",
+                    content=[
+                        TextContent(
+                            text="text",
+                        )
+                    ],
+                )
+            ],
+        ),
     )
 
     assert isinstance(payload, dict)
