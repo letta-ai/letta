@@ -12,6 +12,7 @@ import {
   InvaderSharedAgentIcon,
   LockClosedIcon,
   LockOpenRightIcon,
+  MoveUpIcon,
   SplitscreenRightIcon,
   VisibilityLockIcon,
 } from '../../icons';
@@ -208,7 +209,7 @@ function CoreMemoryEditorHeader(props: CoreMemoryEditorHeaderProps) {
             <InfoChip
               onClick={openInAdvanced}
               label={t('CoreMemoryEditorHeader.preserved')}
-              icon={<EyeOpenIcon />}
+              icon={<MoveUpIcon />}
             />
           )}
           {hasSimulatedDiff && (
