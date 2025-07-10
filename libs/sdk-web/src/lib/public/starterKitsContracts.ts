@@ -5,10 +5,11 @@ const c = initContract();
 
 const CreatedAgentFromStarterKitSchema = z.object({
   agentId: z.string(),
+  projectSlug: z.string(),
 });
 
 const CreateAgentFromStarterKitBodySchema = z.object({
-  projectId: z.string(),
+  projectId: z.string().optional(),
 });
 
 const createAgentFromStarterKitContract = c.mutation({
@@ -25,6 +26,7 @@ const createAgentFromStarterKitContract = c.mutation({
 
 const CreatedTemplateFromStarterKitSchema = z.object({
   templateName: z.string(),
+  projectSlug: z.string(),
 });
 
 const createTemplateFromStarterKitContract = c.mutation({

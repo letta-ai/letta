@@ -697,6 +697,19 @@
     "description": "Are you sure you want to pause the onboarding tour? You can always restart it later in the settings."
   },
   "ADELayout": {
+    "QuickADEOnboarding": {
+      "welcome": "Welcome to your Agent Development Environment",
+      "description": "Welcome to your workspace for creating, editing and deploying AI agents. Let's start with a quick tour.",
+      "continue": "Continue",
+      "complete": "Finish",
+      "done": {
+        "label": "Tutorial Complete",
+        "part1": "Now you know the basics of using the ADE. To connect your agents to your applications, use the Letta Agents API:",
+        "part2": "View Python / TypeScript SDK",
+        "part3": "Interested in the full tutorial? Press the button below to start the deep-dive tutorial.",
+        "part4": "Start deep dive tutorial"
+      }
+    },
     "apps": "All apps",
     "contextWindow": "Context Window",
     "agentSimulator": "Agent simulator",
@@ -730,6 +743,11 @@
     }
   },
   "ADE/EditCoreMemoriesPanel": {
+    "QuickOnboarding": {
+      "title": "Inspect your agent’s memory",
+      "description": "Your agent long-term memory is divided into blocks, which can be updated by you (the developer) and the agent itself.",
+      "next": "Next"
+    },
     "MemoryWrapper": {
       "addMemory": "Create memory",
       "emptyMemoryBlock": "No memory blocks yet"
@@ -1075,6 +1093,10 @@
     }
   },
   "ADE/AgentSimulator": {
+    "QuickOnboarding": {
+      "title": "Message your agent",
+      "description": "The agent simulator allows you to test your agent in real-time, before deploying it. You can chat with your agent, see how it uses tools, and verify that memory edits are working correctly.\n\nSend a message to your agent to get started."
+    },
     "FeedbackButtons": {
       "positive": "This was valid",
       "negative": "This was invalid",
@@ -1768,7 +1790,8 @@
     "ToolsOnboarding": {
       "title": "Connect Agents to Tools",
       "description": "Tools allow your agent to take actions in the real world. Configure custom tools, use built-in Letta tools, or connect to external services via MCP servers.\n\nWith tools, your agent can search the web, access external databases, help users complete tasks, and connect with other applications.",
-      "next": "Next: Agent Simulator"
+      "next": "Next: Agent Simulator",
+      "quickNext": "Next"
     },
     "DeleteToolButton": {
       "title": "Delete tool",

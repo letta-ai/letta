@@ -38,6 +38,7 @@ import { useRouter } from 'next/navigation';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { useADEAppContext } from '../../AppContext/AppContext';
 import { CreateNewMemoryBlockDialog } from './CreateNewMemoryBlockDialog/CreateNewMemoryBlockDialog';
+import { useQuickADETour } from '../../hooks/useQuickADETour/useQuickADETour';
 
 interface AdvancedEditorPayload {
   label: string;
@@ -316,6 +317,46 @@ function MemoryOnboarding(props: MemoryOnboardingProps) {
   );
 }
 
+interface QuickMemoryOnboardingProps {
+  children: React.ReactNode;
+}
+
+function QuickMemoryOnboarding(props: QuickMemoryOnboardingProps) {
+  const t = useTranslations('ADE/EditCoreMemoriesPanel.QuickOnboarding');
+  const { children } = props;
+
+  const { currentStep, setStep } = useQuickADETour();
+
+  if (currentStep !== 'memory') {
+    return <>{children}</>;
+  }
+
+  return (
+    <OnboardingAsideFocus
+      className="w-full h-full"
+      title={t('title')}
+      placement="left-start"
+      description={t('description')}
+      isOpen
+      totalSteps={4}
+      nextStep={
+        <Button
+          fullWidth
+          size="large"
+          bold
+          onClick={() => {
+            setStep('tools');
+          }}
+          label={t('next')}
+        />
+      }
+      currentStep={2}
+    >
+      {children}
+    </OnboardingAsideFocus>
+  );
+}
+
 function AdvancedEditorButton() {
   const { open } = useAdvancedCoreMemoryEditor();
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
@@ -429,34 +470,36 @@ function MemoryRenderer() {
 export function EditMemory() {
   return (
     <PanelMainContent variant="noPadding">
-      <VisibleMemoryTypeProvider>
-        <MemoryOnboarding>
-          <VStack
-            className="core-memory-panel"
-            overflow="auto"
-            fullHeight
-            gap={false}
-          >
-            <VStack fullWidth paddingX="small">
-              <MemoryTabs />
-            </VStack>
+      <QuickMemoryOnboarding>
+        <VisibleMemoryTypeProvider>
+          <MemoryOnboarding>
             <VStack
-              paddingTop="xsmall"
-              fullWidth
-              collapseHeight
-              flex
+              className="core-memory-panel"
               overflow="auto"
-              gap="small"
-              paddingX="small"
-              paddingBottom="small"
+              fullHeight
+              gap={false}
             >
-              <AdvancedCoreMemoryEditor />
+              <VStack fullWidth paddingX="small">
+                <MemoryTabs />
+              </VStack>
+              <VStack
+                paddingTop="xsmall"
+                fullWidth
+                collapseHeight
+                flex
+                overflow="auto"
+                gap="small"
+                paddingX="small"
+                paddingBottom="small"
+              >
+                <AdvancedCoreMemoryEditor />
 
-              <MemoryRenderer />
+                <MemoryRenderer />
+              </VStack>
             </VStack>
-          </VStack>
-        </MemoryOnboarding>
-      </VisibleMemoryTypeProvider>
+          </MemoryOnboarding>
+        </VisibleMemoryTypeProvider>
+      </QuickMemoryOnboarding>
     </PanelMainContent>
   );
 }

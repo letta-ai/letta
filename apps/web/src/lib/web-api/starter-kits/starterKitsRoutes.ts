@@ -17,6 +17,7 @@ import {
   getCustomerSubscription,
 } from '@letta-cloud/service-payments';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
+import { getDefaultProject } from '@letta-cloud/utils-server';
 
 type CreateAgentFromStarterKitsRequest = ServerInferRequest<
   typeof contracts.starterKits.createAgentFromStarterKit
@@ -82,9 +83,18 @@ async function createAgentFromStarterKit(
   req: CreateAgentFromStarterKitsRequest,
 ): Promise<CreateAgentFromStarterKitsResponse> {
   const { starterKitId } = req.params;
-  const { projectId } = req.body;
   const { lettaAgentsId, activeOrganizationId, id } =
     await getUserWithActiveOrganizationIdOrThrow();
+
+  let { projectId } = req.body;
+
+  if (!projectId) {
+    projectId = (
+      await getDefaultProject({
+        organizationId: activeOrganizationId,
+      })
+    ).id;
+  }
 
   if (!isAStarterKitName(starterKitId)) {
     return {
@@ -181,6 +191,7 @@ async function createAgentFromStarterKit(
   return {
     status: 201,
     body: {
+      projectSlug: project.slug,
       agentId: agent.body.id,
     },
   };
@@ -198,12 +209,20 @@ async function createTemplateFromStarterKit(
   req: CreateTemplateFromStarterKitsRequest,
 ): Promise<CreateTemplateFromStarterKitsResponse> {
   const { starterKitId } = req.params;
-  const { projectId } = req.body;
   const {
     lettaAgentsId,
     activeOrganizationId,
     id: userId,
   } = await getUserWithActiveOrganizationIdOrThrow();
+  let { projectId } = req.body;
+
+  if (!projectId) {
+    projectId = (
+      await getDefaultProject({
+        organizationId: activeOrganizationId,
+      })
+    ).id;
+  }
 
   if (!isAStarterKitName(starterKitId)) {
     return {
@@ -221,6 +240,23 @@ async function createTemplateFromStarterKit(
       status: 404,
       body: {
         message: 'Starter kit not found',
+      },
+    };
+  }
+
+  // lookup projectId
+  const project = await db.query.projects.findFirst({
+    where: and(
+      eq(projects.id, projectId),
+      eq(projects.organizationId, activeOrganizationId),
+    ),
+  });
+
+  if (!project) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
       },
     };
   }
@@ -269,6 +305,7 @@ async function createTemplateFromStarterKit(
   return {
     status: 201,
     body: {
+      projectSlug: project.slug,
       templateName: template.templateName,
     },
   };

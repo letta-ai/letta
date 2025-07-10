@@ -30,6 +30,7 @@ import { HiddenOnMobile } from '../../framing/HiddenOnMobile/HiddenOnMobile';
 import { ImagePreview } from '../../core/ImagePreview/ImagePreview';
 import { VisibleOnMobile } from '../../framing/VisibleOnMobile/VisibleOnMobile';
 import type { LettaUserMessageContentUnion } from '@letta-cloud/sdk-core';
+import { useSearchParams } from 'next/navigation';
 
 export interface RoleOption {
   value: string;
@@ -232,7 +233,14 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
       isSendingMessage,
       hasFailedToSendMessageText,
     } = props;
-    const [text, setText] = useState('');
+    const searchParams = useSearchParams();
+
+    const message = useMemo(() => {
+      const messageParam = searchParams.get('message');
+      return messageParam ? decodeURIComponent(messageParam) : '';
+    }, [searchParams]);
+
+    const [text, setText] = useState(message || '');
     const [role, setRole] = useState(roles?.[0]);
     const [images, setImages] = useState<ImageAttachment[]>([]);
     const [isDraggedOver, setIsDraggedOver] = useState(false);
@@ -573,11 +581,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                         type="submit"
                         color="primary"
                         preIcon={<SendIcon />}
-                        disabled={
-                          disabled ||
-                          isDraggedOver ||
-                          hasImageErrors
-                        }
+                        disabled={disabled || isDraggedOver || hasImageErrors}
                         label={t('send')}
                         hideLabel
                         square={true}

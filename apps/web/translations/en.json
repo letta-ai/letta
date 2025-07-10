@@ -41,11 +41,22 @@
   },
   "onboarding/StartOnboardingDialog": {
     "skip": "Skip onboarding",
+    "time": "~15 minutes",
     "startModels": "Explore models",
     "title": "Welcome to Letta Cloud",
-    "description": "Start your onboarding to learn how to use the platform and get your agents ready for deployment.",
+    "descriptionOld": "Start your onboarding to learn how to use the platform and get your agents ready for deployment.",
+    "description": "Choose how you want to start your onboarding experience. You can always come back to do a different onboarding.",
     "reward": "Reward: <lettacoin></lettacoin> {credits} credits",
-    "time": "Approx. 15 minutes",
+    "deepDive": {
+      "title": "Full onboarding",
+      "time": "~15 minutes",
+      "description": "A walkthrough on how to build production ready agents with templates"
+    },
+    "short": {
+      "title": "Quick start",
+      "time": "~5 minutes",
+      "description": "A quick dive into the ADE and Letta's core functionality"
+    },
     "steps": {
       "models": "Explore models",
       "createATemplate": "Create an agent template",

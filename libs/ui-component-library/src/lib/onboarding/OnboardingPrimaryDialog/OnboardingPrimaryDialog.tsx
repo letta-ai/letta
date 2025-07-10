@@ -10,7 +10,7 @@ import { DialogTitle } from '@radix-ui/react-dialog';
 
 interface OnboardingPrimaryHeadingProps {
   title: React.ReactNode;
-  description: React.ReactNode;
+  description?: React.ReactNode;
   badge?: React.ReactNode;
 }
 
@@ -21,9 +21,11 @@ export function OnboardingPrimaryHeading(props: OnboardingPrimaryHeadingProps) {
       <HStack paddingBottom="small">{badge}</HStack>
       <VStack gap="small">
         <Typography variant="heading4">{title}</Typography>
-        <Typography variant="heading6" color="lighter">
-          {description}
-        </Typography>
+        {description && (
+          <Typography variant="heading6" color="lighter">
+            {description}
+          </Typography>
+        )}
       </VStack>
     </VStack>
   );
@@ -33,8 +35,8 @@ interface OnboardingPrimaryDialogProps {
   imageUrl: StaticImport | string;
   title: string;
   children: React.ReactNode;
-  primaryAction: React.ReactNode;
-  secondaryAction: React.ReactNode;
+  primaryAction?: React.ReactNode;
+  secondaryAction?: React.ReactNode;
   isOpen?: boolean;
 }
 
@@ -50,10 +52,12 @@ export function OnboardingPrimaryDialog(props: OnboardingPrimaryDialogProps) {
           <VStack gap="xlarge" padding color="background-grey">
             <DialogTitle className="sr-only">{title}</DialogTitle>
             <VStack>{children}</VStack>
-            <HStack align="center" justify="spaceBetween">
-              {secondaryAction || <div />}
-              {primaryAction}
-            </HStack>
+            {(secondaryAction || primaryAction) && (
+              <HStack align="center" justify="spaceBetween">
+                {secondaryAction || <div />}
+                {primaryAction}
+              </HStack>
+            )}
           </VStack>
         </DialogPrimitive.Content>
       </div>

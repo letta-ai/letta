@@ -117,6 +117,11 @@ export const featureFlags = {
     expiryDate: '9999-99-99',
     flagValue: z.boolean(),
   },
+  QUICK_ONBOARDING: {
+    description: 'Quick onboarding for new users',
+    expiryDate: '2025-08-01',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;

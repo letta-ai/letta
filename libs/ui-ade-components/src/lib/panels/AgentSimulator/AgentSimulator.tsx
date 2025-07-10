@@ -96,6 +96,7 @@ import type { InfiniteData } from '@tanstack/query-core';
 import { ErrorBoundary } from 'react-error-boundary';
 import type { RateLimitReason } from '@letta-cloud/types';
 import { useNetworkRequest } from '../../hooks/useNetworkRequest/useNetworkRequest';
+import { useQuickADETour } from '../../hooks/useQuickADETour/useQuickADETour';
 
 type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
@@ -797,6 +798,36 @@ function AgentSimulatorOptionsMenu() {
   );
 }
 
+interface QuickAgentSimulatorOnboardingProps {
+  children: React.ReactNode;
+}
+
+function QuickAgentSimulatorOnboarding(
+  props: QuickAgentSimulatorOnboardingProps,
+) {
+  const t = useTranslations('ADE/AgentSimulator.QuickOnboarding');
+  const { children } = props;
+
+  const { currentStep } = useQuickADETour();
+
+  if (currentStep !== 'message') {
+    return <>{children}</>;
+  }
+
+  return (
+    <OnboardingAsideFocus
+      title={t('title')}
+      placement="top-start"
+      description={t('description')}
+      isOpen
+      totalSteps={4}
+      currentStep={1}
+    >
+      {children}
+    </OnboardingAsideFocus>
+  );
+}
+
 interface AgentSimulatorOnboardingProps {
   children: React.ReactNode;
 }
@@ -1161,6 +1192,8 @@ export function AgentSimulator() {
 
   const identities = useSimulatorIdentities();
 
+  const { currentStep, setStep } = useQuickADETour();
+
   return (
     <AgentSimulatorOnboarding>
       <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
@@ -1209,44 +1242,50 @@ export function AgentSimulator() {
                   />
                 </ErrorBoundary>
               </VStack>
-              <ChatInput
-                disabled={!agentIdToUse}
-                roles={[
-                  ...(identities.length > 0
-                    ? identities.map((identity) => ({
-                        value: identity?.identity_type || '',
-                        identityId: identity?.id || '',
-                        label: identity?.name || '',
-                        icon: (
-                          <Avatar name={identity?.name || ''} size="xsmall" />
-                        ),
-                      }))
-                    : []),
-                  {
-                    value: 'user',
-                    identityId: 'placeholderId',
-                    label: t('role.user'),
-                    icon: <PersonIcon />,
-                  },
-                  {
-                    value: 'system',
-                    label: t('role.system'),
-                    icon: <SystemIcon />,
-                  },
-                ]}
-                ref={ref}
-                getSendSnippet={getSendSnippet}
-                hasFailedToSendMessageText={hasFailedToSendMessageText}
-                sendingMessageText={t('sendingMessage')}
-                onSendMessage={(
-                  role: RoleOption,
-                  content: LettaUserMessageContentUnion[] | string,
-                ) => {
-                  sendMessage({ role, content });
-                }}
-                onStopMessage={stopMessage}
-                isSendingMessage={isPending}
-              />
+              <QuickAgentSimulatorOnboarding>
+                <ChatInput
+                  disabled={!agentIdToUse}
+                  roles={[
+                    ...(identities.length > 0
+                      ? identities.map((identity) => ({
+                          value: identity?.identity_type || '',
+                          identityId: identity?.id || '',
+                          label: identity?.name || '',
+                          icon: (
+                            <Avatar name={identity?.name || ''} size="xsmall" />
+                          ),
+                        }))
+                      : []),
+                    {
+                      value: 'user',
+                      identityId: 'placeholderId',
+                      label: t('role.user'),
+                      icon: <PersonIcon />,
+                    },
+                    {
+                      value: 'system',
+                      label: t('role.system'),
+                      icon: <SystemIcon />,
+                    },
+                  ]}
+                  ref={ref}
+                  getSendSnippet={getSendSnippet}
+                  hasFailedToSendMessageText={hasFailedToSendMessageText}
+                  sendingMessageText={t('sendingMessage')}
+                  onSendMessage={(
+                    role: RoleOption,
+                    content: LettaUserMessageContentUnion[] | string,
+                  ) => {
+                    sendMessage({ role, content });
+
+                    if (currentStep === 'message') {
+                      setStep('memory');
+                    }
+                  }}
+                  onStopMessage={stopMessage}
+                  isSendingMessage={isPending}
+                />
+              </QuickAgentSimulatorOnboarding>
             </VStack>
           </VStack>
         </VStack>

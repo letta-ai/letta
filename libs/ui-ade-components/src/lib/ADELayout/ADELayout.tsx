@@ -59,7 +59,7 @@ import {
   ArchivalMemoriesPanel,
   useArchivalMemoriesTitle,
 } from '../panels/ArchivalMemoriesPanel/ArchivalMemoriesPanel';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import WelcomeWebp from './welcome-to-ade.webp';
 
 interface ADELayoutProps {
@@ -96,8 +96,14 @@ import {
 } from '../hooks';
 import { useHotkeys } from '@mantine/hooks';
 import { adeKeyMap } from '../adeKeyMap';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import {
+  useFeatureFlag,
+  useSetOnboardingStep,
+  useUnpauseOnboarding,
+} from '@letta-cloud/sdk-web';
 import { DataSourcesPanel } from '../panels/DataSourcesV2/DataSourcesPanel';
+import { useQuickADETour } from '../hooks/useQuickADETour/useQuickADETour';
+import { useRouter } from 'next/navigation';
 
 function DesktopLayout() {
   const t = useTranslations('ADELayout');
@@ -466,6 +472,104 @@ function MobileLayout() {
   );
 }
 
+function QuickADEOnboarding() {
+  const t = useTranslations('ADELayout.QuickADEOnboarding');
+  const { unpauseOnboarding } = useUnpauseOnboarding();
+
+  const { setOnboardingStep, isPending, isSuccess } = useSetOnboardingStep();
+  const { push } = useRouter();
+  const { currentStep, setStep, resetTour } = useQuickADETour();
+
+  const handleStart = useCallback(() => {
+    setOnboardingStep({
+      onboardingStep: 'about_credits',
+      onSuccess: () => {
+        unpauseOnboarding();
+        resetTour();
+        push('/models');
+      },
+    });
+  }, [unpauseOnboarding, setOnboardingStep, resetTour, push]);
+
+  if (currentStep === 'welcome') {
+    return (
+      <OnboardingPrimaryDialog
+        isOpen
+        imageUrl={WelcomeWebp}
+        title={t('welcome')}
+        primaryAction={
+          <Button
+            onClick={() => {
+              setStep('message');
+            }}
+            label={t('continue')}
+            color="primary"
+          />
+        }
+      >
+        <VStack>
+          <OnboardingPrimaryHeading
+            title={t('welcome')}
+            description={t('description')}
+          ></OnboardingPrimaryHeading>
+        </VStack>
+      </OnboardingPrimaryDialog>
+    );
+  }
+
+  if (currentStep === 'done') {
+    return (
+      <OnboardingPrimaryDialog
+        isOpen
+        imageUrl={WelcomeWebp}
+        title={t('done.label')}
+        primaryAction={
+          <Button
+            onClick={() => {
+              resetTour();
+            }}
+            disabled={isPending || isSuccess}
+            label={t('complete')}
+            color="primary"
+          />
+        }
+      >
+        <VStack>
+          <OnboardingPrimaryHeading
+            title={t('done.label')}
+          ></OnboardingPrimaryHeading>
+          <VStack gap="xlarge">
+            <VStack>
+              <Typography variant="large">{t('done.part1')}</Typography>
+              <HStack>
+                <Button
+                  target="_blank"
+                  href="https://docs.letta.com"
+                  label={t('done.part2')}
+                  color="secondary"
+                />
+              </HStack>
+            </VStack>
+            <VStack>
+              <Typography variant="large">{t('done.part3')}</Typography>
+              <HStack>
+                <Button
+                  onClick={handleStart}
+                  label={t('done.part4')}
+                  color="secondary"
+                  busy={isPending || isSuccess}
+                />
+              </HStack>
+            </VStack>
+          </VStack>
+        </VStack>
+      </OnboardingPrimaryDialog>
+    );
+  }
+
+  return null;
+}
+
 function ADEOnboarding() {
   const t = useTranslations('ADELayout');
 
@@ -528,6 +632,7 @@ export function ADELayout(props: ADELayoutProps) {
         zIndex="rightAboveZero"
       >
         <HiddenOnMobile checkWithJs>
+          <QuickADEOnboarding />
           <ADEOnboarding />
           <DesktopLayout />
         </HiddenOnMobile>

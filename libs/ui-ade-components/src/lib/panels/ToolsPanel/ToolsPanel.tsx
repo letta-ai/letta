@@ -35,6 +35,7 @@ import {
   useToolManagerState,
 } from '../ToolManager/hooks/useToolManagerState/useToolManagerState';
 import { useADETour } from '../../hooks/useADETour/useADETour';
+import { useQuickADETour } from '../../hooks/useQuickADETour/useQuickADETour';
 import { useNetworkInspector } from '../../hooks/useNetworkInspector/useNetworkInspector';
 
 interface RemoveToolPayload {
@@ -296,35 +297,63 @@ function ToolsOnboarding(props: ToolsOnboardingProps) {
   const { children } = props;
 
   const { currentStep, setStep } = useADETour();
+  const { currentStep: quickStep, setStep: setQuickStep } = useQuickADETour();
 
-  if (currentStep !== 'tools') {
-    return <PanelMainContent variant="noPadding">{children}</PanelMainContent>;
+  if (currentStep === 'tools') {
+    return (
+      <OnboardingAsideFocus
+        className="w-full h-full"
+        title={t('ToolsOnboarding.title')}
+        placement="right-start"
+        description={t('ToolsOnboarding.description')}
+        isOpen
+        totalSteps={4}
+        nextStep={
+          <Button
+            fullWidth
+            size="large"
+            bold
+            onClick={() => {
+              setStep('chat');
+            }}
+            label={t('ToolsOnboarding.next')}
+          />
+        }
+        currentStep={3}
+      >
+        <div className="h-full w-full">{children}</div>
+      </OnboardingAsideFocus>
+    );
   }
 
-  return (
-    <OnboardingAsideFocus
-      className="w-full h-full"
-      title={t('ToolsOnboarding.title')}
-      placement="right-start"
-      description={t('ToolsOnboarding.description')}
-      isOpen
-      totalSteps={4}
-      nextStep={
-        <Button
-          fullWidth
-          size="large"
-          bold
-          onClick={() => {
-            setStep('chat');
-          }}
-          label={t('ToolsOnboarding.next')}
-        />
-      }
-      currentStep={3}
-    >
-      <div className="h-full w-full">{children}</div>
-    </OnboardingAsideFocus>
-  );
+  if (quickStep === 'tools') {
+    return (
+      <OnboardingAsideFocus
+        className="w-full h-full"
+        title={t('ToolsOnboarding.title')}
+        placement="right-start"
+        description={t('ToolsOnboarding.description')}
+        isOpen
+        totalSteps={4}
+        nextStep={
+          <Button
+            fullWidth
+            size="large"
+            bold
+            onClick={() => {
+              setQuickStep('done');
+            }}
+            label={t('ToolsOnboarding.quickNext')}
+          />
+        }
+        currentStep={3}
+      >
+        <div className="h-full w-full">{children}</div>
+      </OnboardingAsideFocus>
+    );
+  }
+
+  return <PanelMainContent variant="noPadding">{children}</PanelMainContent>;
 }
 
 function ToolUtilities() {

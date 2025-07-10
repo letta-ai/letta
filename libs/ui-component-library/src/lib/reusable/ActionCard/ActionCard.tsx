@@ -21,7 +21,7 @@ const actionCardVariants = cva('', {
       medium: 'max-w-[300px]',
     },
     clickable: {
-      true: 'cursor-pointer hover:bg-background-grey2',
+      true: 'cursor-pointer hover:bg-background-grey3',
     },
     fullWidthOnMobile: {
       true: '',
@@ -40,7 +40,7 @@ const actionCardVariants = cva('', {
 });
 
 interface ToggleCardProps extends VariantProps<typeof actionCardVariants> {
-  title: string;
+  title: React.ReactNode;
   subtitle?: React.ReactNode;
   isActive?: boolean;
   icon?: React.ReactNode;
