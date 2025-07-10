@@ -17,7 +17,7 @@ export function SendMessageEvent(props: SendMessageEventProps) {
 
   const t = useTranslations('components/MessageReplay');
 
-  const [showMore, setShowMore] = useState(true);
+  const [showMore, setShowMore] = useState(false);
 
   const status = useMemo(() => {
     return get(trace['Events.Attributes'], '1.status') === 'error'
@@ -48,19 +48,21 @@ export function SendMessageEvent(props: SendMessageEventProps) {
           <StatusBadge status={status} />
         </div>
       ) : (
-        <div className="bg-background-grey w-full p-2 line-clamp-2">
+        <div className="bg-background-grey w-full p-2">
           <Typography variant="body3" className="text-text-lighter">
-            {showMore ? message.slice(0, MAX_MESSAGE_LENGTH) : message}
+            {showMore
+              ? message
+              : `${message.slice(0, MAX_MESSAGE_LENGTH)}${isLongMessage ? '...' : ''}`}
             {isLongMessage && (
               <>
                 {' '}
                 <button
-                  className="text-primary"
+                  className="text-primary font-semibold"
                   onClick={() => {
                     setShowMore((prev) => !prev);
                   }}
                 >
-                  {showMore ? t('showMore') : t('showLess')}
+                  {showMore ? t('showLess') : t('showMore')}
                 </button>
               </>
             )}
