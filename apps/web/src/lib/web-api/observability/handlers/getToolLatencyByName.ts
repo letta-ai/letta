@@ -1,4 +1,8 @@
-import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
+import type {
+  ServerInferRequest,
+  ServerInferResponses,
+  ServerInferResponseBody,
+} from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/sdk-web';
 import {
   getClickhouseClient,
@@ -6,6 +10,7 @@ import {
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
+import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
 
 type GetToolLatencyByNameRequest = ServerInferRequest<
   typeof contracts.observability.getToolLatencyByName
@@ -21,6 +26,36 @@ export async function getToolLatencyByName(
   const { projectId, startDate, endDate, baseTemplateId } = request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  // Check cache first
+  try {
+    const cachedBody = await getObservabilityCache<
+      ServerInferResponseBody<
+        typeof contracts.observability.getToolLatencyByName,
+        200
+      >
+    >('tool_latency_by_name', {
+      projectId,
+      startDate,
+      endDate,
+      baseTemplateId,
+      organizationId: user.activeOrganizationId,
+    });
+    if (cachedBody) {
+      return {
+        status: 200 as const,
+        body: cachedBody,
+      };
+    }
+  } catch (_error) {
+    return {
+      status: 500 as const,
+      body: {
+        items: [],
+      },
+    };
+  }
+
   const client = getClickhouseClient();
 
   if (!client) {
@@ -96,17 +131,37 @@ export async function getToolLatencyByName(
     }>
   >(result);
 
+  const responseBody = {
+    items: response.map((item) => ({
+      date: item.date,
+      toolName: item.tool_name,
+      count: parseInt(item.count, 10),
+      avgLatencyMs: parseFloat(item.avg_latency_ms),
+      p50LatencyMs: parseFloat(item.p50_latency_ms),
+      p99LatencyMs: parseFloat(item.p99_latency_ms),
+    })),
+  };
+
+  // Cache the result
+  try {
+    await setObservabilityCache(
+      'tool_latency_by_name',
+      {
+        projectId,
+        startDate,
+        endDate,
+        baseTemplateId,
+        organizationId: user.activeOrganizationId,
+      },
+      responseBody,
+    );
+  } catch (error) {
+    // If caching fails, still return the result
+    console.error('Failed to cache tool latency by name:', error);
+  }
+
   return {
-    status: 200,
-    body: {
-      items: response.map((item) => ({
-        date: item.date,
-        toolName: item.tool_name,
-        count: parseInt(item.count, 10),
-        avgLatencyMs: 0,
-        p50LatencyMs: parseFloat(item.p50_latency_ms),
-        p99LatencyMs: parseFloat(item.p99_latency_ms),
-      })),
-    },
+    status: 200 as const,
+    body: responseBody,
   };
 }

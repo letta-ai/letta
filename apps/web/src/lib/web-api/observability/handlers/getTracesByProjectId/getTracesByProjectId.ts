@@ -1,4 +1,8 @@
-import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
+import type {
+  ServerInferRequest,
+  ServerInferResponses,
+  ServerInferResponseBody,
+} from '@ts-rest/core';
 import type {
   contracts,
   SearchResponsesByDurationType,
@@ -11,6 +15,10 @@ import {
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import type { RawAgentTraceRecord } from '$web/web-api/observability/handlers/getTracesByProjectId/types';
 import { safeTransformToParentSpanResponses } from '$web/web-api/observability/handlers/getTracesByProjectId/safeTransformToParentSpanResponses';
+import {
+  getObservabilityCache,
+  setObservabilityCache,
+} from '../../cacheHelpers';
 
 type GetToolErrorMessagesRequest = ServerInferRequest<
   typeof contracts.observability.getTracesByProjectId
@@ -128,6 +136,40 @@ export async function getTracesByProjectId(
   const { projectId, limit = 10, offset = 0, search } = request.body;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  // Extract search parameters
+  // Parameters already extracted above for caching
+
+  // Check cache first
+  try {
+    const cachedBody = await getObservabilityCache<
+      ServerInferResponseBody<
+        typeof contracts.observability.getTracesByProjectId,
+        200
+      >
+    >('traces_by_project_id', {
+      projectId,
+      search,
+      limit,
+      offset,
+      organizationId: user.activeOrganizationId,
+    });
+    if (cachedBody) {
+      return {
+        status: 200 as const,
+        body: cachedBody,
+      };
+    }
+  } catch (_error) {
+    return {
+      status: 500 as const,
+      body: {
+        items: [],
+        totalCount: 0,
+        hasNextPage: false,
+      },
+    };
+  }
   const client = getClickhouseClient();
 
   if (!client) {
@@ -206,11 +248,31 @@ export async function getTracesByProjectId(
 
   const totalCount = items.successful.length + items.errors.length;
 
+  const responseBody = {
+    items: items.successful.slice(0, limit),
+    hasNextPage: totalCount > limit,
+  };
+
+  // Cache the result
+  try {
+    await setObservabilityCache(
+      'traces_by_project_id',
+      {
+        projectId,
+        search,
+        limit,
+        offset,
+        organizationId: user.activeOrganizationId,
+      },
+      responseBody,
+    );
+  } catch (error) {
+    // If caching fails, still return the result
+    console.error('Failed to cache traces by project id:', error);
+  }
+
   return {
-    status: 200,
-    body: {
-      items: items.successful.slice(0, limit),
-      hasNextPage: totalCount > limit,
-    },
+    status: 200 as const,
+    body: responseBody,
   };
 }

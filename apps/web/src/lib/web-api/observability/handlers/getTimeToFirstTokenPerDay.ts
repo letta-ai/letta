@@ -1,4 +1,8 @@
-import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
+import type {
+  ServerInferRequest,
+  ServerInferResponses,
+  ServerInferResponseBody,
+} from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/sdk-web';
 import {
   getClickhouseClient,
@@ -6,6 +10,7 @@ import {
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { attachFilterByBaseTemplateIdToMetricsCounters } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToMetricsCounters/attachFilterByBaseTemplateIdToMetricsCounters';
+import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
 
 type GetTimeToFirstTokenPerDayRequest = ServerInferRequest<
   typeof contracts.observability.getTimeToFirstTokenPerDay
@@ -21,6 +26,36 @@ export async function getTimeToFirstTokenPerDay(
   const { projectId, startDate, endDate, baseTemplateId } = request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  // Check cache first
+  try {
+    const cachedBody = await getObservabilityCache<
+      ServerInferResponseBody<
+        typeof contracts.observability.getTimeToFirstTokenPerDay,
+        200
+      >
+    >('time_to_first_token_per_day', {
+      projectId,
+      startDate,
+      endDate,
+      baseTemplateId,
+      organizationId: user.activeOrganizationId,
+    });
+    if (cachedBody) {
+      return {
+        status: 200 as const,
+        body: cachedBody,
+      };
+    }
+  } catch (_error) {
+    return {
+      status: 500 as const,
+      body: {
+        items: [],
+      },
+    };
+  }
+
   const client = getClickhouseClient();
 
   if (!client) {
@@ -79,16 +114,36 @@ export async function getTimeToFirstTokenPerDay(
     }>
   >(result);
 
+  const responseBody = {
+    items: response.map((item) => ({
+      date: item.date,
+      count: parseInt(item.count, 10),
+      avgTtftMs: parseFloat(item.avg_ttft_ms),
+      p50TtftMs: parseFloat(item.p50_ttft_ms),
+      p99TtftMs: parseFloat(item.p99_ttft_ms),
+    })),
+  };
+
+  // Cache the result
+  try {
+    await setObservabilityCache(
+      'time_to_first_token_per_day',
+      {
+        projectId,
+        startDate,
+        endDate,
+        baseTemplateId,
+        organizationId: user.activeOrganizationId,
+      },
+      responseBody,
+    );
+  } catch (error) {
+    // If caching fails, still return the result
+    console.error('Failed to cache time to first token per day:', error);
+  }
+
   return {
-    status: 200,
-    body: {
-      items: response.map((item) => ({
-        date: item.date,
-        count: parseInt(item.count, 10),
-        avgTtftMs: parseFloat(item.avg_ttft_ms),
-        p50TtftMs: parseFloat(item.p50_ttft_ms),
-        p99TtftMs: parseFloat(item.p99_ttft_ms),
-      })),
-    },
+    status: 200 as const,
+    body: responseBody,
   };
 }

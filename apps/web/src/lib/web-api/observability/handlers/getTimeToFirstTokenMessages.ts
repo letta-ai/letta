@@ -1,4 +1,8 @@
-import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
+import type {
+  ServerInferRequest,
+  ServerInferResponses,
+  ServerInferResponseBody,
+} from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/sdk-web';
 import {
   getClickhouseClient,
@@ -7,6 +11,7 @@ import {
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import type { MessageCreate } from '@letta-cloud/sdk-core';
 import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
+import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
 
 type GetTimeToFirstTokenMessagesRequest = ServerInferRequest<
   typeof contracts.observability.getTimeToFirstTokenMessages
@@ -30,6 +35,38 @@ export async function getTimeToFirstTokenMessages(
 
   const client = getClickhouseClient();
   const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  // Check cache first
+  try {
+    const cachedBody = await getObservabilityCache<
+      ServerInferResponseBody<
+        typeof contracts.observability.getTimeToFirstTokenMessages,
+        200
+      >
+    >('time_to_first_token_messages', {
+      projectId,
+      startDate,
+      endDate,
+      limit,
+      offset,
+      baseTemplateId,
+      organizationId: user.activeOrganizationId,
+    });
+    if (cachedBody) {
+      return {
+        status: 200 as const,
+        body: cachedBody,
+      };
+    }
+  } catch (_error) {
+    return {
+      status: 500 as const,
+      body: {
+        items: [],
+        hasNextPage: false,
+      },
+    };
+  }
 
   if (!client) {
     return {
@@ -143,11 +180,33 @@ export async function getTimeToFirstTokenMessages(
     };
   });
 
+  const responseBody = {
+    items,
+    hasNextPage,
+  };
+
+  // Cache the result
+  try {
+    await setObservabilityCache(
+      'time_to_first_token_messages',
+      {
+        projectId,
+        startDate,
+        endDate,
+        limit,
+        offset,
+        baseTemplateId,
+        organizationId: user.activeOrganizationId,
+      },
+      responseBody,
+    );
+  } catch (error) {
+    // If caching fails, still return the result
+    console.error('Failed to cache time to first token messages:', error);
+  }
+
   return {
-    status: 200,
-    body: {
-      items,
-      hasNextPage,
-    },
+    status: 200 as const,
+    body: responseBody,
   };
 }

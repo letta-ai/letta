@@ -1,4 +1,8 @@
-import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
+import type {
+  ServerInferRequest,
+  ServerInferResponses,
+  ServerInferResponseBody,
+} from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/sdk-web';
 import {
   getClickhouseClient,
@@ -6,6 +10,7 @@ import {
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { attachFilterByBaseTemplateIdToMetricsCounters } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToMetricsCounters/attachFilterByBaseTemplateIdToMetricsCounters';
+import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
 
 type GetToolUsageByFrequencyRequest = ServerInferRequest<
   typeof contracts.observability.getToolUsageByFrequency
@@ -21,6 +26,35 @@ export async function getToolUsageByFrequency(
   const { projectId, startDate, endDate, baseTemplateId } = request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  // Check cache first
+  try {
+    const cachedBody = await getObservabilityCache<
+      ServerInferResponseBody<
+        typeof contracts.observability.getToolUsageByFrequency,
+        200
+      >
+    >('tool_usage_by_frequency', {
+      projectId,
+      startDate,
+      endDate,
+      baseTemplateId,
+      organizationId: user.activeOrganizationId,
+    });
+    if (cachedBody) {
+      return {
+        status: 200 as const,
+        body: cachedBody,
+      };
+    }
+  } catch (_error) {
+    return {
+      status: 500 as const,
+      body: {
+        items: [],
+      },
+    };
+  }
   const client = getClickhouseClient();
 
   if (!client) {
@@ -67,14 +101,34 @@ export async function getToolUsageByFrequency(
     }>
   >(result);
 
+  const responseBody = {
+    items: response.map((item) => ({
+      date: item.date,
+      toolName: item.tool_name,
+      usageCount: parseInt(item.usage_count, 10),
+    })),
+  };
+
+  // Cache the result
+  try {
+    await setObservabilityCache(
+      'tool_usage_by_frequency',
+      {
+        projectId,
+        startDate,
+        endDate,
+        baseTemplateId,
+        organizationId: user.activeOrganizationId,
+      },
+      responseBody,
+    );
+  } catch (error) {
+    // If caching fails, still return the result
+    console.error('Failed to cache tool usage by frequency:', error);
+  }
+
   return {
-    status: 200,
-    body: {
-      items: response.map((item) => ({
-        date: item.date,
-        toolName: item.tool_name,
-        usageCount: parseInt(item.usage_count, 10),
-      })),
-    },
+    status: 200 as const,
+    body: responseBody,
   };
 }

@@ -1,4 +1,8 @@
-import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
+import type {
+  ServerInferRequest,
+  ServerInferResponses,
+  ServerInferResponseBody,
+} from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/sdk-web';
 import {
   getClickhouseClient,
@@ -6,6 +10,7 @@ import {
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
+import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
 
 const DEFAULT_SPAN_SEARCH = `(SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
                    SpanName = 'POST /v1/agents/{agent_id}/messages' OR
@@ -33,6 +38,40 @@ export async function getToolErrorMessages(
   } = request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  // Check cache first
+  try {
+    const cachedBody = await getObservabilityCache<
+      ServerInferResponseBody<
+        typeof contracts.observability.getToolErrorMessages,
+        200
+      >
+    >('tool_error_messages', {
+      projectId,
+      startDate,
+      endDate,
+      functionName,
+      limit,
+      offset,
+      baseTemplateId,
+      organizationId: user.activeOrganizationId,
+    });
+    if (cachedBody) {
+      return {
+        status: 200 as const,
+        body: cachedBody,
+      };
+    }
+  } catch (_error) {
+    return {
+      status: 500 as const,
+      body: {
+        items: [],
+        totalCount: 0,
+      },
+    };
+  }
+
   const client = getClickhouseClient();
 
   if (!client) {
@@ -209,11 +248,34 @@ export async function getToolErrorMessages(
     };
   });
 
+  const responseBody = {
+    items,
+    totalCount,
+  };
+
+  // Cache the result
+  try {
+    await setObservabilityCache(
+      'tool_error_messages',
+      {
+        projectId,
+        startDate,
+        endDate,
+        functionName,
+        limit,
+        offset,
+        baseTemplateId,
+        organizationId: user.activeOrganizationId,
+      },
+      responseBody,
+    );
+  } catch (error) {
+    // If caching fails, still return the result
+    console.error('Failed to cache tool error messages:', error);
+  }
+
   return {
-    status: 200,
-    body: {
-      items,
-      totalCount,
-    },
+    status: 200 as const,
+    body: responseBody,
   };
 }

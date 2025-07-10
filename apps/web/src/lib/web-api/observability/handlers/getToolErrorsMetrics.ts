@@ -1,4 +1,8 @@
-import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
+import type {
+  ServerInferRequest,
+  ServerInferResponses,
+  ServerInferResponseBody,
+} from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/sdk-web';
 import {
   getClickhouseClient,
@@ -6,6 +10,7 @@ import {
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { attachFilterByBaseTemplateIdToMetricsCounters } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToMetricsCounters/attachFilterByBaseTemplateIdToMetricsCounters';
+import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
 
 type GetToolErrorsMetricsRequest = ServerInferRequest<
   typeof contracts.observability.getToolErrorsMetrics
@@ -21,6 +26,35 @@ export async function getToolErrorsMetrics(
   const { projectId, startDate, endDate, baseTemplateId } = request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  // Check cache first
+  try {
+    const cachedBody = await getObservabilityCache<
+      ServerInferResponseBody<
+        typeof contracts.observability.getToolErrorsMetrics,
+        200
+      >
+    >('tool_errors_metrics', {
+      projectId,
+      startDate,
+      endDate,
+      baseTemplateId,
+      organizationId: user.activeOrganizationId,
+    });
+    if (cachedBody) {
+      return {
+        status: 200 as const,
+        body: cachedBody,
+      };
+    }
+  } catch (_error) {
+    return {
+      status: 500 as const,
+      body: {
+        items: [],
+      },
+    };
+  }
   const client = getClickhouseClient();
 
   if (!client) {
@@ -66,13 +100,33 @@ export async function getToolErrorsMetrics(
     }>
   >(result);
 
+  const responseBody = {
+    items: response.map((item) => ({
+      date: item.error_date,
+      errorCount: parseInt(item.error_count, 10),
+    })),
+  };
+
+  // Cache the result
+  try {
+    await setObservabilityCache(
+      'tool_errors_metrics',
+      {
+        projectId,
+        startDate,
+        endDate,
+        baseTemplateId,
+        organizationId: user.activeOrganizationId,
+      },
+      responseBody,
+    );
+  } catch (error) {
+    // If caching fails, still return the result
+    console.error('Failed to cache tool errors metrics:', error);
+  }
+
   return {
-    status: 200,
-    body: {
-      items: response.map((item) => ({
-        date: item.error_date,
-        errorCount: parseInt(item.error_count, 10),
-      })),
-    },
+    status: 200 as const,
+    body: responseBody,
   };
 }
