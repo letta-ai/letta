@@ -19,7 +19,7 @@ from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import FileProcessingStatus
+from letta.schemas.enums import DuplicateFileHandling, FileProcessingStatus
 from letta.schemas.file import FileMetadata
 from letta.schemas.passage import Passage
 from letta.schemas.source import Source, SourceCreate, SourceUpdate
@@ -208,6 +208,7 @@ async def delete_source(
 async def upload_file_to_source(
     file: UploadFile,
     source_id: str,
+    duplicate_handling: DuplicateFileHandling = Query(DuplicateFileHandling.SUFFIX, description="How to handle duplicate filenames"),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
@@ -264,8 +265,31 @@ async def upload_file_to_source(
 
     content = await file.read()
 
-    # Store original filename and generate unique filename
+    # Store original filename and handle duplicate logic
     original_filename = sanitize_filename(file.filename)  # Basic sanitization only
+
+    # Check if duplicate exists
+    existing_file = await server.file_manager.get_file_by_original_name_and_source(
+        original_filename=original_filename, source_id=source_id, actor=actor
+    )
+
+    if existing_file:
+        # Duplicate found, handle based on strategy
+        if duplicate_handling == DuplicateFileHandling.ERROR:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail=f"File '{original_filename}' already exists in source '{source.name}'"
+            )
+        elif duplicate_handling == DuplicateFileHandling.SKIP:
+            # Return existing file metadata with custom header to indicate it was skipped
+            from fastapi import Response
+
+            response = Response(
+                content=existing_file.model_dump_json(), media_type="application/json", headers={"X-Upload-Result": "skipped"}
+            )
+            return response
+        # For SUFFIX, continue to generate unique filename
+
+    # Generate unique filename (adds suffix if needed)
     unique_filename = await server.file_manager.generate_unique_filename(
         original_filename=original_filename, source=source, organization_id=actor.organization_id
     )
@@ -360,6 +384,13 @@ async def get_file_metadata(
         file_id=file_id, actor=actor, include_content=include_content, strip_directory_prefix=True
     )
 
+    if not file_metadata:
+        raise HTTPException(status_code=404, detail=f"File with id={file_id} not found.")
+
+    # Verify the file belongs to the specified source
+    if file_metadata.source_id != source_id:
+        raise HTTPException(status_code=404, detail=f"File with id={file_id} not found in source {source_id}.")
+
     if should_use_pinecone() and not file_metadata.is_processing_terminal():
         ids = await list_pinecone_index_for_files(file_id=file_id, actor=actor, limit=file_metadata.total_chunks)
         logger.info(
@@ -374,13 +405,6 @@ async def get_file_metadata(
             await server.file_manager.update_file_status(
                 file_id=file_metadata.id, actor=actor, chunks_embedded=len(ids), processing_status=file_status
             )
-
-    if not file_metadata:
-        raise HTTPException(status_code=404, detail=f"File with id={file_id} not found.")
-
-    # Verify the file belongs to the specified source
-    if file_metadata.source_id != source_id:
-        raise HTTPException(status_code=404, detail=f"File with id={file_id} not found in source {source_id}.")
 
     return file_metadata
 

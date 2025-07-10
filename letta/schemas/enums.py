@@ -139,3 +139,11 @@ class MCPServerType(str, Enum):
     SSE = "sse"
     STDIO = "stdio"
     STREAMABLE_HTTP = "streamable_http"
+
+
+class DuplicateFileHandling(str, Enum):
+    """How to handle duplicate filenames when uploading files"""
+
+    SKIP = "skip"  # skip files with duplicate names
+    ERROR = "error"  # error when duplicate names are encountered
+    SUFFIX = "suffix"  # add numeric suffix to make names unique (default behavior)

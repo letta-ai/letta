@@ -3,7 +3,7 @@ import json
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 
 from openai import AsyncStream
 from openai.types.chat import ChatCompletionChunk
@@ -165,18 +165,28 @@ class LettaAgent(BaseAgent):
         use_assistant_message: bool = True,
         request_start_timestamp_ns: int | None = None,
         include_return_message_types: list[MessageType] | None = None,
-    ) -> LettaResponse:
+        dry_run: bool = False,
+    ) -> Union[LettaResponse, dict]:
         # TODO (cliandy): pass in run_id and use at send_message endpoints for all step functions
         agent_state = await self.agent_manager.get_agent_by_id_async(
-            agent_id=self.agent_id, include_relationships=["tools", "memory", "tool_exec_environment_variables"], actor=self.actor
+            agent_id=self.agent_id,
+            include_relationships=["tools", "memory", "tool_exec_environment_variables", "sources"],
+            actor=self.actor,
         )
-        _, new_in_context_messages, stop_reason, usage = await self._step(
+        result = await self._step(
             agent_state=agent_state,
             input_messages=input_messages,
             max_steps=max_steps,
             run_id=run_id,
             request_start_timestamp_ns=request_start_timestamp_ns,
+            dry_run=dry_run,
         )
+
+        # If dry run, return the request payload directly
+        if dry_run:
+            return result
+
+        _, new_in_context_messages, stop_reason, usage = result
         return _create_letta_response(
             new_in_context_messages=new_in_context_messages,
             use_assistant_message=use_assistant_message,
@@ -195,7 +205,9 @@ class LettaAgent(BaseAgent):
         include_return_message_types: list[MessageType] | None = None,
     ):
         agent_state = await self.agent_manager.get_agent_by_id_async(
-            agent_id=self.agent_id, include_relationships=["tools", "memory", "tool_exec_environment_variables"], actor=self.actor
+            agent_id=self.agent_id,
+            include_relationships=["tools", "memory", "tool_exec_environment_variables", "sources"],
+            actor=self.actor,
         )
         current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_no_persist_async(
             input_messages, agent_state, self.message_manager, self.actor
@@ -279,6 +291,7 @@ class LettaAgent(BaseAgent):
                 tool_rules_solver,
                 response.usage,
                 reasoning_content=reasoning,
+                step_id=step_id,
                 initial_messages=initial_messages,
                 agent_step_span=agent_step_span,
                 is_final_step=(i == max_steps - 1),
@@ -357,7 +370,8 @@ class LettaAgent(BaseAgent):
         max_steps: int = DEFAULT_MAX_STEPS,
         run_id: str | None = None,
         request_start_timestamp_ns: int | None = None,
-    ) -> tuple[list[Message], list[Message], LettaStopReason | None, LettaUsageStatistics]:
+        dry_run: bool = False,
+    ) -> Union[tuple[list[Message], list[Message], LettaStopReason | None, LettaUsageStatistics], dict]:
         """
         Carries out an invocation of the agent loop. In each step, the agent
             1. Rebuilds its memory
@@ -393,6 +407,16 @@ class LettaAgent(BaseAgent):
             step_start = get_utc_timestamp_ns()
             agent_step_span = tracer.start_span("agent_step", start_time=step_start)
             agent_step_span.set_attributes({"step_id": step_id})
+
+            # If dry run, build request data and return it without making LLM call
+            if dry_run:
+                request_data, valid_tool_names = await self._create_llm_request_data_async(
+                    llm_client=llm_client,
+                    in_context_messages=current_in_context_messages + new_in_context_messages,
+                    agent_state=agent_state,
+                    tool_rules_solver=tool_rules_solver,
+                )
+                return request_data
 
             request_data, response_data, current_in_context_messages, new_in_context_messages, valid_tool_names = (
                 await self._build_and_request_from_llm(
@@ -530,7 +554,9 @@ class LettaAgent(BaseAgent):
             4. Processes the response
         """
         agent_state = await self.agent_manager.get_agent_by_id_async(
-            agent_id=self.agent_id, include_relationships=["tools", "memory", "tool_exec_environment_variables"], actor=self.actor
+            agent_id=self.agent_id,
+            include_relationships=["tools", "memory", "tool_exec_environment_variables", "sources"],
+            actor=self.actor,
         )
         current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_no_persist_async(
             input_messages, agent_state, self.message_manager, self.actor
@@ -628,7 +654,7 @@ class LettaAgent(BaseAgent):
             )
 
             # log LLM request time
-            llm_request_ms = ns_to_ms(stream_end_time_ns - request_start_timestamp_ns)
+            llm_request_ms = ns_to_ms(stream_end_time_ns - provider_request_start_timestamp_ns)
             agent_step_span.add_event(name="llm_request_ms", attributes={"duration_ms": llm_request_ms})
             MetricRegistry().llm_execution_time_ms_histogram.record(
                 llm_request_ms,

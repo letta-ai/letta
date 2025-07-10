@@ -1,6 +1,7 @@
 from typing import List
 
 from letta.log import get_logger
+from letta.otel.context import get_ctx_attributes
 from letta.otel.tracing import log_event, trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import FileProcessingStatus
@@ -121,6 +122,10 @@ class FileProcessor:
             # Ensure we're working with bytes
             if isinstance(content, str):
                 content = content.encode("utf-8")
+
+            from letta.otel.metric_registry import MetricRegistry
+
+            MetricRegistry().file_process_bytes_histogram.record(len(content), attributes=get_ctx_attributes())
 
             if len(content) > self.max_file_size:
                 log_event(
