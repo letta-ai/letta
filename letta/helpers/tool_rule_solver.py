@@ -1,4 +1,4 @@
-from typing import List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 from pydantic import BaseModel, Field
 
@@ -233,6 +233,37 @@ class ToolRulesSolver(BaseModel):
                     violated_rules.append(rendered_prompt)
 
         return violated_rules
+
+    def override_tool_args(self, tool_name: str, tool_args: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Override the llm-provided arguments for a tool if it is provided in a tool rule. Currently only supports init_tool_rules and child_based_tool_rules.
+        """
+        for rule in self.init_tool_rules:
+            if rule.tool_name == tool_name:
+                return rule.args or tool_args
+
+        for rule in self.child_based_tool_rules:
+            if rule.tool_name == tool_name:
+                return rule.args or tool_args
+        return tool_args
+
+    def get_predefined_tool_args(self, tool_name: str) -> Optional[dict]:
+        """Get predefined arguments for a tool if they exist in any tool rule."""
+        # Check init tool rules first
+        for rule in self.init_tool_rules:
+            if rule.tool_name == tool_name and rule.args:
+                return rule.args
+
+        # Check child tool rules
+        for rule in self.child_based_tool_rules:
+            if rule.tool_name == tool_name and rule.args:
+                return rule.args
+
+        # Check other rule types
+        for rule in self.continue_tool_rules + self.terminal_tool_rules + self.required_before_exit_tool_rules:
+            if rule.tool_name == tool_name and rule.args:
+                return rule.args
+        return None
 
     @staticmethod
     def validate_conditional_tool(rule: ConditionalToolRule):

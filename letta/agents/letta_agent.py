@@ -42,7 +42,7 @@ from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
-from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
+from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall, UsageStatistics
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
@@ -241,16 +241,20 @@ class LettaAgent(BaseAgent):
 
             log_event("agent.stream_no_tokens.llm_response.received")  # [3^]
 
-            response = llm_client.convert_response_to_chat_completion(response_data, in_context_messages, agent_state.llm_config)
+            if response_data.get("skip_llm", False):
+                response = response_data
+            else:
+                response = llm_client.convert_response_to_chat_completion(response_data, in_context_messages, agent_state.llm_config)
 
-            # update usage
-            usage.step_count += 1
-            usage.completion_tokens += response.usage.completion_tokens
-            usage.prompt_tokens += response.usage.prompt_tokens
-            usage.total_tokens += response.usage.total_tokens
-            MetricRegistry().message_output_tokens.record(
-                response.usage.completion_tokens, dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model})
-            )
+                # update usage
+                usage.step_count += 1
+                usage.completion_tokens += response.usage.completion_tokens
+                usage.prompt_tokens += response.usage.prompt_tokens
+                usage.total_tokens += response.usage.total_tokens
+                usage.run_ids = [self.current_run_id] if self.current_run_id else None
+                MetricRegistry().message_output_tokens.record(
+                    response.usage.completion_tokens, dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model})
+                )
 
             if not response.choices[0].message.tool_calls:
                 # TODO: make into a real error
@@ -277,7 +281,7 @@ class LettaAgent(BaseAgent):
                 valid_tool_names,
                 agent_state,
                 tool_rules_solver,
-                response.usage,
+                response.usage or UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
                 reasoning_content=reasoning,
                 initial_messages=initial_messages,
                 agent_step_span=agent_step_span,
@@ -403,16 +407,19 @@ class LettaAgent(BaseAgent):
 
             log_event("agent.step.llm_response.received")  # [3^]
 
-            response = llm_client.convert_response_to_chat_completion(response_data, in_context_messages, agent_state.llm_config)
+            if response_data.get("skip_llm", False):
+                response = response_data
+            else:
+                response = llm_client.convert_response_to_chat_completion(response_data, in_context_messages, agent_state.llm_config)
 
-            usage.step_count += 1
-            usage.completion_tokens += response.usage.completion_tokens
-            usage.prompt_tokens += response.usage.prompt_tokens
-            usage.total_tokens += response.usage.total_tokens
-            usage.run_ids = [run_id] if run_id else None
-            MetricRegistry().message_output_tokens.record(
-                response.usage.completion_tokens, dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model})
-            )
+                usage.step_count += 1
+                usage.completion_tokens += response.usage.completion_tokens
+                usage.prompt_tokens += response.usage.prompt_tokens
+                usage.total_tokens += response.usage.total_tokens
+                usage.run_ids = [run_id] if run_id else None
+                MetricRegistry().message_output_tokens.record(
+                    response.usage.completion_tokens, dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model})
+                )
 
             if not response.choices[0].message.tool_calls:
                 # TODO: make into a real error
@@ -754,7 +761,7 @@ class LettaAgent(BaseAgent):
             try:
                 log_event("agent.stream_no_tokens.messages.refreshed")
                 # Create LLM request data
-                request_data, valid_tool_names = await self._create_llm_request_data_async(
+                request_data, valid_tool_names, skip_llm, force_tool_call, predefined_args = await self._create_llm_request_data_async(
                     llm_client=llm_client,
                     in_context_messages=current_in_context_messages + new_in_context_messages,
                     agent_state=agent_state,
@@ -762,16 +769,38 @@ class LettaAgent(BaseAgent):
                 )
                 log_event("agent.stream_no_tokens.llm_request.created")
 
-                async with AsyncTimer() as timer:
-                    # Attempt LLM request
-                    response = await llm_client.request_async(request_data, agent_state.llm_config)
-                MetricRegistry().llm_execution_time_ms_histogram.record(
-                    timer.elapsed_ms,
-                    dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model}),
-                )
-                agent_step_span.add_event(name="llm_request_ms", attributes={"duration_ms": timer.elapsed_ms})
+                if skip_llm:
+                    # Create synthetic tool call with predefined args
+                    self.logger.info(f"Skipping LLM call for tool '{force_tool_call}' with predefined args: {predefined_args}")
+                    tool_call = ToolCall(
+                        id=f"call_{uuid.uuid4().hex[:8]}",
+                        function=FunctionCall(name=force_tool_call, arguments=json.dumps(predefined_args)),
+                    )
 
-                return request_data, response, current_in_context_messages, new_in_context_messages, valid_tool_names
+                    # Mock a response with the necessary fields
+                    response = {
+                        "choices": [
+                            {
+                                "message": {
+                                    "tool_calls": [tool_call],
+                                }
+                            }
+                        ],
+                        "skip_llm": True,
+                    }
+
+                    return request_data, response, current_in_context_messages, new_in_context_messages, valid_tool_names
+                else:
+                    async with AsyncTimer() as timer:
+                        # Attempt LLM request
+                        response = await llm_client.request_async(request_data, agent_state.llm_config)
+                    MetricRegistry().llm_execution_time_ms_histogram.record(
+                        timer.elapsed_ms,
+                        dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model}),
+                    )
+                    agent_step_span.add_event(name="llm_request_ms", attributes={"duration_ms": timer.elapsed_ms})
+
+                    return request_data, response, current_in_context_messages, new_in_context_messages, valid_tool_names
 
             except Exception as e:
                 if attempt == self.max_summarization_retries:
@@ -805,7 +834,7 @@ class LettaAgent(BaseAgent):
             try:
                 log_event("agent.stream_no_tokens.messages.refreshed")
                 # Create LLM request data
-                request_data, valid_tool_names = await self._create_llm_request_data_async(
+                request_data, valid_tool_names, skip_llm, force_tool_call, predefined_args = await self._create_llm_request_data_async(
                     llm_client=llm_client,
                     in_context_messages=current_in_context_messages + new_in_context_messages,
                     agent_state=agent_state,
@@ -970,8 +999,13 @@ class LettaAgent(BaseAgent):
         # TODO: Copied from legacy agent loop, so please be cautious
         # Set force tool
         force_tool_call = None
+        predefined_args = None
+        skip_llm = False
         if len(valid_tool_names) == 1:
             force_tool_call = valid_tool_names[0]
+            predefined_args = tool_rules_solver.get_predefined_tool_args(force_tool_call)
+            if predefined_args:
+                skip_llm = True
 
         allowed_tools = [enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names)]
         allowed_tools = runtime_override_tool_json_schema(
@@ -986,6 +1020,9 @@ class LettaAgent(BaseAgent):
                 force_tool_call,
             ),
             valid_tool_names,
+            skip_llm,
+            force_tool_call,
+            predefined_args,
         )
 
     @trace_method
@@ -1012,6 +1049,7 @@ class LettaAgent(BaseAgent):
         tool_call_name: str = tool_call.function.name
         tool_call_id: str = tool_call.id or f"call_{uuid.uuid4().hex[:8]}"
         tool_args = _safe_load_tool_call_str(tool_call.function.arguments)
+        # tool_args = tool_rules_solver.override_tool_args(tool_name=tool_call_name, tool_args=tool_args)
         request_heartbeat: bool = _pop_heartbeat(tool_args)
         tool_args.pop(INNER_THOUGHTS_KWARG, None)
 
