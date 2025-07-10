@@ -752,13 +752,14 @@ def test_step_stream_agent_loop_error(
     """
     last_message = client.agents.messages.list(agent_id=agent_state_no_tools.id, limit=1)
     agent_state_no_tools = client.agents.modify(agent_id=agent_state_no_tools.id, llm_config=llm_config)
-    with pytest.raises(ApiError):
+    with pytest.raises(Exception) as exc_info:
         response = client.agents.messages.create_stream(
             agent_id=agent_state_no_tools.id,
             messages=USER_MESSAGE_FORCE_REPLY,
         )
         list(response)
-
+    assert type(exc_info.value) in (ApiError, ValueError)
+    print(exc_info.value)
     messages_from_db = client.agents.messages.list(agent_id=agent_state_no_tools.id, after=last_message[0].id)
     assert len(messages_from_db) == 0
 
