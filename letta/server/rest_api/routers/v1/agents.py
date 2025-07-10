@@ -2,7 +2,7 @@ import asyncio
 import json
 import traceback
 from datetime import datetime, timezone
-from typing import Annotated, Any, List, Optional
+from typing import Annotated, Any, Dict, List, Optional, Union
 
 from fastapi import APIRouter, Body, Depends, File, Header, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import JSONResponse
@@ -1162,12 +1162,12 @@ async def list_agent_groups(
 
 @router.post(
     "/{agent_id}/messages/preview-raw-payload",
-    response_model=dict,
+    response_model=Dict[str, Any],
     operation_id="preview_raw_payload",
 )
 async def preview_raw_payload(
     agent_id: str,
-    request: LettaRequest = Body(...),
+    request: Union[LettaRequest, LettaStreamingRequest] = Body(...),
     server: SyncServer = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),
 ):
@@ -1214,6 +1214,7 @@ async def preview_raw_payload(
             include_return_message_types=request.include_return_message_types,
             dry_run=True,
         )
+
     else:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
