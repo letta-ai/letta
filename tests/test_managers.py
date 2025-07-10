@@ -5118,6 +5118,137 @@ async def test_delete_cascades_to_content(server, default_user, default_source, 
 
 
 @pytest.mark.asyncio
+async def test_get_file_by_original_name_and_source_found(server: SyncServer, default_user, default_source):
+    """Test retrieving a file by original filename and source when it exists."""
+    original_filename = "test_original_file.txt"
+    file_metadata = PydanticFileMetadata(
+        file_name="some_generated_name.txt",
+        original_file_name=original_filename,
+        file_path="/path/to/test_file.txt",
+        file_type="text/plain",
+        file_size=1024,
+        source_id=default_source.id,
+    )
+    created_file = await server.file_manager.create_file(file_metadata=file_metadata, actor=default_user)
+
+    # Retrieve the file by original name and source
+    retrieved_file = await server.file_manager.get_file_by_original_name_and_source(
+        original_filename=original_filename, source_id=default_source.id, actor=default_user
+    )
+
+    # Assertions to verify the retrieved file matches the created one
+    assert retrieved_file is not None
+    assert retrieved_file.id == created_file.id
+    assert retrieved_file.original_file_name == original_filename
+    assert retrieved_file.source_id == default_source.id
+
+
+@pytest.mark.asyncio
+async def test_get_file_by_original_name_and_source_not_found(server: SyncServer, default_user, default_source):
+    """Test retrieving a file by original filename and source when it doesn't exist."""
+    non_existent_filename = "does_not_exist.txt"
+
+    # Try to retrieve a non-existent file
+    retrieved_file = await server.file_manager.get_file_by_original_name_and_source(
+        original_filename=non_existent_filename, source_id=default_source.id, actor=default_user
+    )
+
+    # Should return None for non-existent file
+    assert retrieved_file is None
+
+
+@pytest.mark.asyncio
+async def test_get_file_by_original_name_and_source_different_sources(server: SyncServer, default_user, default_source):
+    """Test that files with same original name in different sources are handled correctly."""
+    from letta.schemas.source import Source as PydanticSource
+
+    # Create a second source
+    second_source_pydantic = PydanticSource(
+        name="second_test_source",
+        description="This is a test source.",
+        metadata={"type": "test"},
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+    )
+    second_source = await server.source_manager.create_source(source=second_source_pydantic, actor=default_user)
+
+    original_filename = "shared_filename.txt"
+
+    # Create file in first source
+    file_metadata_1 = PydanticFileMetadata(
+        file_name="file_in_source_1.txt",
+        original_file_name=original_filename,
+        file_path="/path/to/file1.txt",
+        file_type="text/plain",
+        file_size=1024,
+        source_id=default_source.id,
+    )
+    created_file_1 = await server.file_manager.create_file(file_metadata=file_metadata_1, actor=default_user)
+
+    # Create file with same original name in second source
+    file_metadata_2 = PydanticFileMetadata(
+        file_name="file_in_source_2.txt",
+        original_file_name=original_filename,
+        file_path="/path/to/file2.txt",
+        file_type="text/plain",
+        file_size=2048,
+        source_id=second_source.id,
+    )
+    created_file_2 = await server.file_manager.create_file(file_metadata=file_metadata_2, actor=default_user)
+
+    # Retrieve file from first source
+    retrieved_file_1 = await server.file_manager.get_file_by_original_name_and_source(
+        original_filename=original_filename, source_id=default_source.id, actor=default_user
+    )
+
+    # Retrieve file from second source
+    retrieved_file_2 = await server.file_manager.get_file_by_original_name_and_source(
+        original_filename=original_filename, source_id=second_source.id, actor=default_user
+    )
+
+    # Should retrieve different files
+    assert retrieved_file_1 is not None
+    assert retrieved_file_2 is not None
+    assert retrieved_file_1.id == created_file_1.id
+    assert retrieved_file_2.id == created_file_2.id
+    assert retrieved_file_1.id != retrieved_file_2.id
+    assert retrieved_file_1.source_id == default_source.id
+    assert retrieved_file_2.source_id == second_source.id
+
+
+@pytest.mark.asyncio
+async def test_get_file_by_original_name_and_source_ignores_deleted(server: SyncServer, default_user, default_source):
+    """Test that deleted files are ignored when searching by original name and source."""
+    original_filename = "to_be_deleted.txt"
+    file_metadata = PydanticFileMetadata(
+        file_name="deletable_file.txt",
+        original_file_name=original_filename,
+        file_path="/path/to/deletable.txt",
+        file_type="text/plain",
+        file_size=512,
+        source_id=default_source.id,
+    )
+    created_file = await server.file_manager.create_file(file_metadata=file_metadata, actor=default_user)
+
+    # Verify file can be found before deletion
+    retrieved_file = await server.file_manager.get_file_by_original_name_and_source(
+        original_filename=original_filename, source_id=default_source.id, actor=default_user
+    )
+    assert retrieved_file is not None
+    assert retrieved_file.id == created_file.id
+
+    # Delete the file
+    await server.file_manager.delete_file(created_file.id, actor=default_user)
+
+    # Try to retrieve the deleted file
+    retrieved_file_after_delete = await server.file_manager.get_file_by_original_name_and_source(
+        original_filename=original_filename, source_id=default_source.id, actor=default_user
+    )
+
+    # Should return None for deleted file
+    assert retrieved_file_after_delete is None
+
+
+@pytest.mark.asyncio
 async def test_list_files(server: SyncServer, default_user, default_source):
     """Test listing files with pagination."""
     # Create multiple files
