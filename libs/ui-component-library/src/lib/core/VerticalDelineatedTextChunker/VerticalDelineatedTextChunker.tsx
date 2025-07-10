@@ -22,13 +22,7 @@ interface VerticalBarChartProps {
 }
 
 function VerticalBarChart(props: VerticalBarChartProps) {
-  const {
-    chunks,
-    setSelectedChunkId,
-    selectedChunkId,
-    baseId,
-    totalContextSize,
-  } = props;
+  const { chunks, setSelectedChunkId, selectedChunkId, baseId } = props;
 
   const onClickBar = useCallback(
     (chunkId: string) => {
@@ -58,6 +52,7 @@ function VerticalBarChart(props: VerticalBarChartProps) {
         return (
           <Tooltip key={id} asChild content={`${label}: ${size}`}>
             <div
+              id={`${baseId}-${id}-bar`}
               onClick={() => {
                 onClickBar(id);
               }}
@@ -143,14 +138,16 @@ interface VerticalDelineatedTextChunkerProps {
   chunks: VerticalBarChartChunk[];
   fullHeight?: boolean;
   fullWidth?: boolean;
+  id?: string;
   totalContextSize?: number; // Add this prop
 }
 
 export function VerticalDelineatedTextChunker(
   props: VerticalDelineatedTextChunkerProps,
 ) {
-  const { fullHeight, chunks, fullWidth, totalContextSize } = props;
-  const baseId = useId();
+  const { fullHeight, id, chunks, fullWidth, totalContextSize } = props;
+  const defaultId = useId();
+  const baseId = id || defaultId;
   const [selectedChunkId, setSelectedChunkId] = React.useState<string | null>(
     chunks[0].id,
   );

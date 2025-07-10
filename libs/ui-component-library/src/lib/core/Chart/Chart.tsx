@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 import type { EChartsOption } from 'echarts';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as echarts from 'echarts';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../Typography/Typography';
@@ -14,6 +14,7 @@ interface ChartOptions {
   showLegend?: boolean;
   height?: number;
   width?: number;
+  onInit?: (chart: echarts.ECharts) => void;
 }
 
 interface MakeFormattedTooltipOptions {
@@ -70,7 +71,7 @@ export function makeFormattedTooltip(options: MakeFormattedTooltipOptions) {
 }
 
 export function Chart(props: ChartOptions) {
-  const { options, width, height, showLegend } = props;
+  const { options, width, onInit, height, showLegend } = props;
   const mounted = useRef(false);
   const chartRef = React.useRef<HTMLDivElement>(null);
   const chart = useRef<echarts.ECharts | null>(null);
@@ -101,6 +102,7 @@ export function Chart(props: ChartOptions) {
     }
 
     if (chartRef.current) {
+      mounted.current = true;
       if (!chart.current) {
         chart.current = echarts.init(chartRef.current);
       }
@@ -109,11 +111,34 @@ export function Chart(props: ChartOptions) {
         ...defaultOptions,
         ...options,
       });
-      mounted.current = true;
-    }
 
+      if (onInit) {
+        onInit(chart.current);
+      }
+    }
+    //
     return () => {
       mounted.current = false;
+    };
+  }, [onInit, options]);
+
+  const newOptions = useMemo(() => {
+    return {
+      ...defaultOptions,
+      ...options,
+      tooltip: {
+        borderWidth: 0,
+        height: 28,
+        padding: 0,
+        trigger: 'item',
+        position: 'top',
+        backgroundColor: 'hsl(var(--background-inverted))',
+        ...options.tooltip,
+        className: 'chart-tooltip',
+      },
+      legend: {
+        show: false,
+      },
     };
   }, [options]);
 
@@ -121,35 +146,17 @@ export function Chart(props: ChartOptions) {
     if (chart.current) {
       const currentChart = chart.current;
 
-      currentChart.setOption(
-        {
-          ...defaultOptions,
-          ...options,
-          tooltip: {
-            borderWidth: 0,
-            height: 28,
-            padding: 0,
-            trigger: 'item',
-            position: 'top',
-            backgroundColor: 'hsl(var(--background-inverted))',
-            ...options.tooltip,
-            className: 'chart-tooltip',
-          },
-          legend: {
-            show: false,
-          },
-        },
-        {
-          notMerge: true,
-          lazyUpdate: true,
-        },
-      );
+      currentChart.setOption(newOptions, {
+        silent: true,
+        notMerge: true,
+        lazyUpdate: true,
+      });
 
       requestAnimationFrame(() => {
         currentChart.resize();
       });
     }
-  }, [options]);
+  }, [newOptions]);
 
   return (
     <VStack ref={chartContainer} fullHeight fullWidth>

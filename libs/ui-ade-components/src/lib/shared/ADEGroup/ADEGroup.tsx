@@ -31,6 +31,7 @@ export function ADEGroup(props: ADEGroupProps) {
           return (
             <HStack
               data-testid={`tab:${item.id}`}
+              id={`tab:${item.id}`}
               fullWidth
               className="cursor-pointer"
               borderLeft={index !== 0}

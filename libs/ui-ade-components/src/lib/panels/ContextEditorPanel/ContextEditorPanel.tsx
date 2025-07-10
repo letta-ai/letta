@@ -1,5 +1,5 @@
 import { useAgentsServiceRetrieveAgentContextWindow } from '@letta-cloud/sdk-core';
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useCoreMemorySummaryWorker } from './hooks/useCoreMemorySummaryWorker/useCoreMemorySummaryWorker';
 import type { WorkerResponse } from './types';
 import {
@@ -23,6 +23,16 @@ import './ContextEditorPanel.scss';
 import { useCurrentAgent } from '../../hooks';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { SummerizerDialog } from '../../SummerizerDialog/SummerizerDialog';
+import type * as echarts from 'echarts';
+
+const CONTEXT_PARTS = {
+  system: 'system',
+  tool: 'tool',
+  external: 'external',
+  coreMemory: 'coreMemory',
+  recursiveMemory: 'recursiveMemory',
+  messages: 'messages',
+};
 
 const computedMemoryStringAtom = atom<string | null>(null);
 
@@ -452,6 +462,47 @@ export function ContextWindowPanel() {
     formatNumber, // Add this dependency
   ]);
 
+  const onChartInit = useCallback(
+    (chart: echarts.ECharts) => {
+      chart.on('click', (params) => {
+        if (params.componentType === 'series') {
+          const seriesName = params.seriesName;
+
+          document.getElementById(`tab:context-window-simulator`)?.click();
+
+          const idMap: Record<string, string> = {
+            [t('ContextWindowPreview.systemPrompt')]: CONTEXT_PARTS.system,
+            [t('ContextWindowPreview.toolPrompt')]: CONTEXT_PARTS.tool,
+            [t('ContextWindowPreview.externalSummaryLength')]:
+              CONTEXT_PARTS.external,
+            [t('ContextWindowPreview.memoryBlocks')]: CONTEXT_PARTS.coreMemory,
+            [t('ContextWindowPreview.summaryMemory')]:
+              CONTEXT_PARTS.recursiveMemory,
+            [t('ContextWindowPreview.messagesTokens')]: CONTEXT_PARTS.messages,
+          };
+
+          if (!seriesName) {
+            return;
+          }
+
+          const elementId = idMap[seriesName];
+
+          requestAnimationFrame(() => {
+            if (elementId) {
+              const element = document.getElementById(
+                `context-window-simulator-${elementId}-bar`,
+              );
+              if (element) {
+                element.click();
+              }
+            }
+          });
+        }
+      });
+    },
+    [t],
+  );
+
   return (
     <VStack fullWidth gap="small" paddingX="small" paddingY="xsmall">
       <Typography variant="body4" uppercase bold className="tracking-[0.04em]">
@@ -460,7 +511,11 @@ export function ContextWindowPanel() {
       <HStack fullWidth>
         <div className="w-full relative">
           <div className="w-full relative z-[1] px-[1px]">
-            <Chart height={25} options={standardChartOptions} />
+            <Chart
+              onInit={onChartInit}
+              height={25}
+              options={standardChartOptions}
+            />
           </div>
           <div className="h-[19px] mt-[3px] w-full absolute z-[0] pointer-events-none top-0 bg-panel-input-background border border-input" />
         </div>
@@ -529,7 +584,7 @@ export function ContextWindowSimulator() {
   const chunks: VerticalBarChartChunk[] = useMemo(() => {
     return [
       {
-        id: 'system',
+        id: CONTEXT_PARTS.system,
         label: t('ContextWindowPreview.systemPrompt'),
         content: (
           <Code
@@ -544,7 +599,7 @@ export function ContextWindowSimulator() {
         color: '#3f5ff9',
       },
       {
-        id: 'tool',
+        id: CONTEXT_PARTS.tool,
         label: t('ContextWindowPreview.toolPrompt'),
         content: (
           <Code
@@ -559,7 +614,7 @@ export function ContextWindowSimulator() {
         color: '#6ba5b3',
       },
       {
-        id: 'external',
+        id: CONTEXT_PARTS.external,
         label: t('ContextWindowPreview.externalSummaryLength'),
         content: (
           <Code
@@ -574,7 +629,7 @@ export function ContextWindowSimulator() {
         color: '#36a373',
       },
       {
-        id: 'coreMemory',
+        id: CONTEXT_PARTS.coreMemory,
         label: t('ContextWindowPreview.memoryBlocks'),
         content: (
           <Code
@@ -589,7 +644,7 @@ export function ContextWindowSimulator() {
         color: '#fce054',
       },
       {
-        id: 'recursiveMemory',
+        id: CONTEXT_PARTS.recursiveMemory,
         label: t('ContextWindowPreview.summaryMemory'),
         content: (
           <Code
@@ -604,7 +659,7 @@ export function ContextWindowSimulator() {
         color: '#ff8c00',
       },
       {
-        id: 'messages',
+        id: CONTEXT_PARTS.messages,
         label: t('ContextWindowPreview.messagesTokens'),
         content: (
           <Code
@@ -640,6 +695,7 @@ export function ContextWindowSimulator() {
       <VerticalDelineatedTextChunker
         fullHeight
         fullWidth
+        id="context-window-simulator"
         chunks={chunks}
         totalContextSize={totalLength}
       />
