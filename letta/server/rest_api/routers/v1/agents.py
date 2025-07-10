@@ -1160,6 +1160,67 @@ async def list_agent_groups(
     return server.agent_manager.list_groups(agent_id=agent_id, manager_type=manager_type, actor=actor)
 
 
+@router.post(
+    "/{agent_id}/messages/preview-raw-payload",
+    response_model=dict,
+    operation_id="preview_raw_payload",
+)
+async def preview_raw_payload(
+    agent_id: str,
+    request: LettaRequest = Body(...),
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: str | None = Header(None, alias="user_id"),
+):
+    """
+    Inspect the raw LLM request payload without sending it.
+
+    This endpoint processes the message through the agent loop up until
+    the LLM request, then returns the raw request payload that would
+    be sent to the LLM provider. Useful for debugging and inspection.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
+    agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
+    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex", "bedrock"]
+
+    if agent_eligible and model_compatible:
+        if agent.enable_sleeptime:
+            # TODO: @caren need to support this for sleeptime
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Payload inspection is not supported for agents with sleeptime enabled.",
+            )
+        else:
+            agent_loop = LettaAgent(
+                agent_id=agent_id,
+                message_manager=server.message_manager,
+                agent_manager=server.agent_manager,
+                block_manager=server.block_manager,
+                job_manager=server.job_manager,
+                passage_manager=server.passage_manager,
+                actor=actor,
+                step_manager=server.step_manager,
+                telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
+                summarizer_mode=(
+                    SummarizationMode.STATIC_MESSAGE_BUFFER
+                    if agent.agent_type == AgentType.voice_convo_agent
+                    else SummarizationMode.PARTIAL_EVICT_MESSAGE_BUFFER
+                ),
+            )
+
+        return await agent_loop.step(
+            input_messages=request.messages,
+            use_assistant_message=request.use_assistant_message,
+            include_return_message_types=request.include_return_message_types,
+            dry_run=True,
+        )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Payload inspection is not currently supported for this agent configuration.",
+        )
+
+
 @router.post("/{agent_id}/summarize", response_model=AgentState, operation_id="summarize_agent_conversation")
 async def summarize_agent_conversation(
     agent_id: str,
