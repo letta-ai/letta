@@ -8,8 +8,6 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import List
 
-import httpx
-
 # tests/test_file_content_flow.py
 import pytest
 from _pytest.python_api import approx
@@ -6001,7 +5999,9 @@ async def test_e2e_job_callback(monkeypatch, server: SyncServer, default_user):
             return await mock_post(url, json, timeout)
 
     # Patch the AsyncClient
-    monkeypatch.setattr(httpx, "AsyncClient", MockAsyncClient)
+    import letta.services.job_manager as job_manager_module
+
+    monkeypatch.setattr(job_manager_module, "AsyncClient", MockAsyncClient)
 
     job_in = PydanticJob(status=JobStatus.created, metadata={"foo": "bar"}, callback_url="http://example.test/webhook/jobs")
     created = await server.job_manager.create_job_async(pydantic_job=job_in, actor=default_user)
