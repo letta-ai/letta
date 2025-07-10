@@ -291,6 +291,7 @@ class LettaAgent(BaseAgent):
                 tool_rules_solver,
                 response.usage,
                 reasoning_content=reasoning,
+                step_id=step_id,
                 initial_messages=initial_messages,
                 agent_step_span=agent_step_span,
                 is_final_step=(i == max_steps - 1),
