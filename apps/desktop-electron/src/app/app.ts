@@ -281,6 +281,7 @@ export default class App {
       [
         ...(getIsSQLLiteConfig(config) ? '' : '--use-file-pg-uri'),
         `--look-for-server-id=${serverId}`,
+        '--no-generation',
       ],
       {
         env: {

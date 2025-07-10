@@ -128,6 +128,7 @@ def upgrade_db(pg_uri):
 argparser = ArgumentParser()
 argparser.add_argument("--look-for-server-id", type=str, help="Look for server id")
 argparser.add_argument("--use-file-pg-uri", action="store_true")
+argparser.add_argument("--no-generation", action="store_true", help="Disable generation features")
 
 
 class ThreadedUvicorn:
