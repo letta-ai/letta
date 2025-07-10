@@ -2,6 +2,7 @@ from functools import partial, reduce
 from operator import add
 from typing import List, Literal, Optional, Union
 
+from httpx import AsyncClient, post
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -683,10 +684,8 @@ class JobManager:
             "metadata": job.metadata_,
         }
         try:
-            import httpx
-
             log_event("POST callback dispatched", payload)
-            resp = httpx.post(job.callback_url, json=payload, timeout=5.0)
+            resp = post(job.callback_url, json=payload, timeout=5.0)
             log_event("POST callback finished")
             job.callback_sent_at = get_utc_time().replace(tzinfo=None)
             job.callback_status_code = resp.status_code
@@ -712,9 +711,7 @@ class JobManager:
         }
 
         try:
-            import httpx
-
-            async with httpx.AsyncClient() as client:
+            async with AsyncClient() as client:
                 log_event("POST callback dispatched", payload)
                 resp = await client.post(job.callback_url, json=payload, timeout=5.0)
                 log_event("POST callback finished")
