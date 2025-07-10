@@ -169,7 +169,9 @@ class LettaAgent(BaseAgent):
     ) -> Union[LettaResponse, dict]:
         # TODO (cliandy): pass in run_id and use at send_message endpoints for all step functions
         agent_state = await self.agent_manager.get_agent_by_id_async(
-            agent_id=self.agent_id, include_relationships=["tools", "memory", "tool_exec_environment_variables"], actor=self.actor
+            agent_id=self.agent_id,
+            include_relationships=["tools", "memory", "tool_exec_environment_variables", "sources"],
+            actor=self.actor,
         )
         result = await self._step(
             agent_state=agent_state,
@@ -203,7 +205,9 @@ class LettaAgent(BaseAgent):
         include_return_message_types: list[MessageType] | None = None,
     ):
         agent_state = await self.agent_manager.get_agent_by_id_async(
-            agent_id=self.agent_id, include_relationships=["tools", "memory", "tool_exec_environment_variables"], actor=self.actor
+            agent_id=self.agent_id,
+            include_relationships=["tools", "memory", "tool_exec_environment_variables", "sources"],
+            actor=self.actor,
         )
         current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_no_persist_async(
             input_messages, agent_state, self.message_manager, self.actor
@@ -549,7 +553,9 @@ class LettaAgent(BaseAgent):
             4. Processes the response
         """
         agent_state = await self.agent_manager.get_agent_by_id_async(
-            agent_id=self.agent_id, include_relationships=["tools", "memory", "tool_exec_environment_variables"], actor=self.actor
+            agent_id=self.agent_id,
+            include_relationships=["tools", "memory", "tool_exec_environment_variables", "sources"],
+            actor=self.actor,
         )
         current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_no_persist_async(
             input_messages, agent_state, self.message_manager, self.actor
