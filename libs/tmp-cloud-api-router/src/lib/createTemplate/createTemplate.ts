@@ -37,7 +37,7 @@ export async function createTemplate(props: CreateTemplateOptions) {
     createAgentState,
   } = props;
 
-  trackServerSideEvent(AnalyticsEvent.CREATED_TEMPLATE, {
+  void trackServerSideEvent(AnalyticsEvent.CREATED_TEMPLATE, {
     userId: userId,
   });
 

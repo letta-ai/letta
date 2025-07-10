@@ -10,13 +10,14 @@ import {
 } from '@tanstack/react-query';
 import { GlobalSessionSettingsProvider } from '$web/client/hooks/session';
 import { queryClientKeys } from '$web/web-api/contracts';
-import { IdentifyUserForMixpanel } from '@letta-cloud/service-analytics/client';
+import { IdentifyUserForPostHog } from '@letta-cloud/service-analytics/client';
 import { webApiQueryKeys } from '$web/client';
 import { LoggedInClientSideProviders } from './LoggedInClientSideProviders/LoggedInClientSideProviders';
 import { WelcomeOverlayWrapper } from './WelcomeOverlayWrapper/WelcomeOverlayWrapper';
 import { router } from '$web/web-api/router';
 import { OnboardingProvider } from '$web/client/hooks/useOnboarding';
 import { VerifyAccountLoginWrapper } from '$web/server/components/LoggedInLayout/VerifyAccountLoginWrapper/VerifyAccountLoginWrapper';
+import { IdentifyUserForMixpanel } from '@letta-cloud/service-analytics/client';
 
 interface InAppProps {
   children: ReactNode;
@@ -62,6 +63,7 @@ export async function LoggedInLayout(props: InAppProps) {
   return (
     <GlobalSessionSettingsProvider>
       <IdentifyUserForMixpanel userId={user.id} />
+      <IdentifyUserForPostHog userId={user.id} />
       <HydrationBoundary state={dehydrate(queryClient)}>
         <LoggedInClientSideProviders>
           <VerifyAccountLoginWrapper>

@@ -45,7 +45,7 @@ async function getOrganizationIdFromPaymentCustomerId(
 async function trackSubscriptionChange(organizationId: string) {
   const subscriptionTier = await getCustomerSubscription(organizationId);
 
-  trackServerSideEvent(AnalyticsEvent.SUBSCRIPTION_CHANGED, {
+  void trackServerSideEvent(AnalyticsEvent.SUBSCRIPTION_CHANGED, {
     tier: subscriptionTier.tier,
     organizationId,
   });
@@ -53,7 +53,7 @@ async function trackSubscriptionChange(organizationId: string) {
 
 export async function handleStripeCustomerChange(customerId: string) {
   const organizationId =
-    await getOrganizationIdFromPaymentCustomerId(customerId);
+    void getOrganizationIdFromPaymentCustomerId(customerId);
 
   if (!organizationId) {
     return;

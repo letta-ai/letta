@@ -100,6 +100,8 @@ configure-kubectl cluster-name="letta":
             --set env.LETTA_AGENTS_ENDPOINT="${LETTA_AGENTS_ENDPOINT}" \
             --set env.MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
             --set env.NEXT_PUBLIC_MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
+            --set env.NEXT_PUBLIC_POSTHOG_KEY="${NEXT_PUBLIC_POSTHOG_KEY}" \
+            --set env.NEXT_PUBLIC_POSTHOG_HOST="${NEXT_PUBLIC_POSTHOG_HOST}" \
             --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
             --set env.WORKOS_CLIENT_ID="${WORKOS_CLIENT_ID}" \
             --set env.WORKOS_API_KEY="${WORKOS_API_KEY}" \
@@ -388,6 +390,9 @@ deploy-cloud-api: push-cloud-api
             --set env.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
             --set env.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} \
             --set env.MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
+            --set env.NEXT_PUBLIC_POSTHOG_KEY="${NEXT_PUBLIC_POSTHOG_KEY}" \
+            --set env.NEXT_PUBLIC_POSTHOG_HOST="${NEXT_PUBLIC_POSTHOG_HOST}" \
+
             --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}"
     else
         helm upgrade --install cloud-api {{HELM_CHARTS_DIR}}/cloud-api \

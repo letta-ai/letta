@@ -1,9 +1,10 @@
 /*
  * Right now only trigger events on the server side only!
  */
-import * as mixpanel from 'mixpanel';
 import { environment } from '@letta-cloud/config-environment-variables';
 import type { AnalyticsEvent, AnalyticsEventProperties } from '../events';
+import { PostHog } from 'posthog-node';
+import * as mixpanel from 'mixpanel';
 
 let mixpanelSingleton: mixpanel.Mixpanel | null = null;
 
@@ -25,40 +26,85 @@ export interface TrackUserPayload {
   email: string;
 }
 
-export function trackUserOnServer(user: TrackUserPayload) {
-  const mixpanel = getMixpanel();
-
-  if (!mixpanel) {
-    return;
+function PostHogClient() {
+  if (!environment.POSTHOG_KEY || !environment.NEXT_PUBLIC_POSTHOG_HOST) {
+    return null;
   }
 
-  mixpanel.people.set(user.userId, {
-    $name: user.name,
-    $email: user.email,
+  const posthogClient = new PostHog(environment.POSTHOG_KEY, {
+    host: environment.NEXT_PUBLIC_POSTHOG_HOST,
+    flushAt: 1,
+    flushInterval: 0,
   });
+
+  return posthogClient;
 }
 
-export function trackServerSideEvent<Event extends AnalyticsEvent>(
+export function trackUserOnServer(user: TrackUserPayload) {
+  try {
+    const posthog = PostHogClient();
+
+    posthog?.identify({
+      distinctId: user.userId,
+      properties: {
+        email: user.email,
+        name: user.name,
+      },
+    });
+  } catch (error) {
+    console.error('Failed to identify user on PostHog', error);
+  }
+
+  try {
+    const mixpanel = getMixpanel();
+
+    mixpanel?.people.set(user.userId, {
+      $name: user.name,
+      $email: user.email,
+    });
+  } catch (error) {
+    console.error('Failed to identify user on Mixpanel', error);
+  }
+}
+
+export async function trackServerSideEvent<Event extends AnalyticsEvent>(
   eventName: Event,
   properties: AnalyticsEventProperties[Event],
 ) {
   try {
-    const mixpanel = getMixpanel();
+    const posthog = PostHogClient();
 
-    if (!mixpanel) {
+    if (properties) {
+      posthog?.capture({
+        distinctId: 'userId' in properties ? properties.userId : '',
+        event: eventName,
+        properties: {
+          ...properties,
+        },
+      });
+      await posthog?.shutdown();
       return;
     }
 
+    posthog?.capture({ event: eventName, distinctId: '' });
+    await posthog?.shutdown();
+  } catch (error) {
+    console.error('Failed to track event on PostHog', error);
+  }
+
+  try {
+    const mixpanel = getMixpanel();
+
     if (properties) {
-      mixpanel.track(eventName, {
+      mixpanel?.track(eventName, {
         ...('userId' in properties ? { distinct_id: properties.userId } : {}),
         ...properties,
       });
       return;
     }
 
-    mixpanel.track(eventName);
+    mixpanel?.track(eventName);
   } catch (error) {
-    console.error('Failed to track event', error);
+    console.error('Failed to track event on Mixpanel', error);
   }
 }

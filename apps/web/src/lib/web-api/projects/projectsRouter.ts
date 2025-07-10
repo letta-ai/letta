@@ -158,7 +158,7 @@ export async function createProject(
     };
   }
 
-  trackServerSideEvent(AnalyticsEvent.CREATED_PROJECT, {
+  void trackServerSideEvent(AnalyticsEvent.CREATED_PROJECT, {
     userId: user.id,
   });
 

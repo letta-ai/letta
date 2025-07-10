@@ -148,6 +148,8 @@
     "path-to-regexp": "0.1.12",
     "pg": "^8.14.1",
     "postgres": "^3.4.5",
+    "posthog-js": "^1.256.2",
+    "posthog-node": "^5.3.1",
     "promise-worker": "^2.0.1",
     "ps-node": "^0.1.6",
     "pyodide": "^0.26.4",

@@ -192,6 +192,7 @@ function UserProperties() {
           />
         ),
       },
+      // TODO: ADD POSTHOG
       {
         name: 'Letta Agents User ID',
         value: user.lettaAgentsUserId || 'None (Bugged User)',

@@ -1,7 +1,6 @@
 import './global.scss';
 import { ClientSideProviders } from './_components/ClientSideProviders/ClientSideProviders';
 import React from 'react';
-import { LoadMixpanelAnalytics } from '@letta-cloud/service-analytics/client';
 import { getLocale, getMessages } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
 import { Body } from './_components/ThemeProvider/Body';
@@ -12,6 +11,7 @@ import { cookies } from 'next/headers';
 import { QueryClientProviders } from './_components/ClientSideProviders/QueryClientProviders/QueryClientProviders';
 import './global.scss';
 import { VStack } from '@letta-cloud/ui-component-library';
+import { LoadMixpanelAnalytics } from '@letta-cloud/service-analytics/client';
 
 export const metadata = {
   title: 'Letta',

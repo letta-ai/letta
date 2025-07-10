@@ -415,11 +415,11 @@ export async function findOrCreateUserAndOrganizationFromProviderLogin(
 
   if (trackServerSideEvent) {
     if (isNewUser) {
-      trackServerSideEvent(AnalyticsEvent.USER_CREATED, {
+      void trackServerSideEvent(AnalyticsEvent.USER_CREATED, {
         userId: user.id,
       });
     } else {
-      trackServerSideEvent(AnalyticsEvent.USER_LOGGED_IN, {
+      void trackServerSideEvent(AnalyticsEvent.USER_LOGGED_IN, {
         userId: user.id,
       });
     }

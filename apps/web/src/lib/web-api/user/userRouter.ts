@@ -437,7 +437,7 @@ async function setUserAsOnboarded(
           .set({ hubSpotContactId: res.id })
           .where(eq(userMarketingDetails.userId, user.id));
 
-        trackServerSideEvent(AnalyticsEvent.ANSWERED_ONBOARDING_SURVEY, {
+        void trackServerSideEvent(AnalyticsEvent.ANSWERED_ONBOARDING_SURVEY, {
           consentedToEmailMarketing: !!emailConsent,
           reasonsForUsingLetta: reasons,
           usecasesForUsingLetta: useCases,
@@ -702,14 +702,14 @@ async function updateUserOnboardingStep(
   }
 
   if (stepToClaim) {
-    trackServerSideEvent(AnalyticsEvent.MOVED_ONBOARDING_STEP, {
+    void trackServerSideEvent(AnalyticsEvent.MOVED_ONBOARDING_STEP, {
       step: stepToClaim,
       userId: user.id,
     });
   }
 
   if (stepToClaim === 'completed') {
-    trackServerSideEvent(AnalyticsEvent.COMPLETED_ONBOARDING, {
+    void trackServerSideEvent(AnalyticsEvent.COMPLETED_ONBOARDING, {
       userId: user.id,
     });
   }
@@ -888,7 +888,7 @@ async function pauseUserOnboarding(): Promise<PauseUserOnboardingResponse> {
     };
   }
 
-  trackServerSideEvent(AnalyticsEvent.PAUSED_ONBOARDING, {
+  void trackServerSideEvent(AnalyticsEvent.PAUSED_ONBOARDING, {
     userId: user.id,
   });
 

@@ -22,9 +22,12 @@ export async function trackingMiddleware(
       return;
     }
 
-    trackServerSideEvent(AnalyticsEvent.CLOUD_AGENT_MESSAGE_CREATED_IN_API, {
-      organizationId: req.actor.cloudOrganizationId,
-    });
+    void trackServerSideEvent(
+      AnalyticsEvent.CLOUD_AGENT_MESSAGE_CREATED_IN_API,
+      {
+        organizationId: req.actor.cloudOrganizationId,
+      },
+    );
 
     next();
   } catch (e) {

@@ -200,7 +200,7 @@ Environment variables are defined in GitHub Secrets and the workflow file. These
 - Service endpoints and credentials
 - Database and Redis configuration
 - Authentication settings
-- Monitoring tokens (Sentry, Mixpanel, etc.)
+- Monitoring tokens (Sentry, PostHog, etc.)
 
 To modify these variables, update either:
 - GitHub repository secrets for sensitive values
