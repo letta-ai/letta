@@ -135,6 +135,7 @@ class ModelSettings(BaseSettings):
     # google vertex
     google_cloud_project: Optional[str] = None
     google_cloud_location: Optional[str] = None
+    vertex_ai_region: Optional[str] = None
 
     # together
     together_api_key: Optional[str] = None
