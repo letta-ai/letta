@@ -1208,6 +1208,7 @@ async def preview_raw_payload(
                 ),
             )
 
+        # TODO: Support step_streaming
         return await agent_loop.step(
             input_messages=request.messages,
             use_assistant_message=request.use_assistant_message,

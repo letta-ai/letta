@@ -7,16 +7,35 @@ import pytest
 from dotenv import load_dotenv
 from letta_client import CreateBlock
 from letta_client import Letta as LettaSDKClient
+from letta_client import LettaRequest
+from letta_client import MessageCreate as ClientMessageCreate
 from letta_client.types import AgentState
 
 from letta.constants import DEFAULT_ORG_ID, FILES_TOOLS
 from letta.orm.enums import ToolType
 from letta.schemas.message import MessageCreate
 from letta.schemas.user import User
+from letta.settings import settings
 from tests.utils import wait_for_server
 
 # Constants
 SERVER_PORT = 8283
+
+
+def get_raw_system_message(client: LettaSDKClient, agent_id: str) -> str:
+    """Helper function to get the raw system message from an agent's preview payload."""
+    raw_payload = client.agents.messages.preview_raw_payload(
+        agent_id=agent_id,
+        request=LettaRequest(
+            messages=[
+                ClientMessageCreate(
+                    role="user",
+                    content="Testing",
+                )
+            ],
+        ),
+    )
+    return raw_payload["messages"][0]["content"]
 
 
 @pytest.fixture(autouse=True)
@@ -172,6 +191,10 @@ def test_file_upload_creates_source_blocks_correctly(
     expected_value: str,
     expected_label_regex: str,
 ):
+    # skip pdf tests if mistral api key is missing
+    if file_path.endswith(".pdf") and not settings.mistral_api_key:
+        pytest.skip("mistral api key required for pdf processing")
+
     # Create a new source
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
     assert len(client.sources.list()) == 1
@@ -195,6 +218,15 @@ def test_file_upload_creates_source_blocks_correctly(
     assert any(b.value.startswith("[Viewing file start") for b in blocks)
     assert any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
 
+    # verify raw system message contains source information
+    raw_system_message = get_raw_system_message(client, agent_state.id)
+    assert "test_source" in raw_system_message
+    assert "<directories>" in raw_system_message
+    # verify file-specific details in raw system message
+    file_name = files[0].file_name
+    assert f'name="test_source/{file_name}"' in raw_system_message
+    assert 'status="open"' in raw_system_message
+
     # Remove file from source
     client.sources.files.delete(source_id=source.id, file_id=files[0].id)
 
@@ -204,6 +236,14 @@ def test_file_upload_creates_source_blocks_correctly(
     assert len(blocks) == 0
     assert not any(expected_value in b.value for b in blocks)
     assert not any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
+
+    # verify raw system message no longer contains source information
+    raw_system_message_after_removal = get_raw_system_message(client, agent_state.id)
+    # this should be in, because we didn't delete the source
+    assert "test_source" in raw_system_message_after_removal
+    assert "<directories>" in raw_system_message_after_removal
+    # verify file-specific details are also removed
+    assert f'name="test_source/{file_name}"' not in raw_system_message_after_removal
 
 
 def test_attach_existing_files_creates_source_blocks_correctly(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
@@ -224,6 +264,25 @@ def test_attach_existing_files_creates_source_blocks_correctly(disable_pinecone,
 
     # Attach after uploading the file
     client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+    raw_system_message = get_raw_system_message(client, agent_state.id)
+
+    # Assert that the expected chunk is in the raw system message
+    expected_chunk = """<directories>
+<directory name="test_source">
+<file status="open" name="test_source/test.txt">
+<metadata>
+- read_only=true
+- chars_current=46
+- chars_limit=50000
+</metadata>
+<value>
+[Viewing file start (out of 1 chunks)]
+1: test
+</value>
+</file>
+</directory>
+</directories>"""
+    assert expected_chunk in raw_system_message
 
     # Get the agent state, check blocks exist
     agent_state = client.agents.retrieve(agent_id=agent_state.id)
@@ -241,20 +300,46 @@ def test_attach_existing_files_creates_source_blocks_correctly(disable_pinecone,
     assert len(blocks) == 0
     assert not any("test" in b.value for b in blocks)
 
+    # Verify no traces of the prompt exist in the raw system message after detaching
+    raw_system_message_after_detach = get_raw_system_message(client, agent_state.id)
+    assert expected_chunk not in raw_system_message_after_detach
+    assert "test_source" not in raw_system_message_after_detach
+    assert "<directories>" not in raw_system_message_after_detach
+
 
 def test_delete_source_removes_source_blocks_correctly(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
     assert len(client.sources.list()) == 1
 
-    # Attach
     client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+    raw_system_message = get_raw_system_message(client, agent_state.id)
+    assert "test_source" in raw_system_message
+    assert "<directories>" in raw_system_message
 
     # Load files into the source
     file_path = "tests/data/test.txt"
 
     # Upload the files
     upload_file_and_wait(client, source.id, file_path)
+    raw_system_message = get_raw_system_message(client, agent_state.id)
+    # Assert that the expected chunk is in the raw system message
+    expected_chunk = """<directories>
+<directory name="test_source">
+<file status="open" name="test_source/test.txt">
+<metadata>
+- read_only=true
+- chars_current=46
+- chars_limit=50000
+</metadata>
+<value>
+[Viewing file start (out of 1 chunks)]
+1: test
+</value>
+</file>
+</directory>
+</directories>"""
+    assert expected_chunk in raw_system_message
 
     # Get the agent state, check blocks exist
     agent_state = client.agents.retrieve(agent_id=agent_state.id)
@@ -264,6 +349,10 @@ def test_delete_source_removes_source_blocks_correctly(disable_pinecone, client:
 
     # Remove file from source
     client.sources.delete(source_id=source.id)
+    raw_system_message_after_detach = get_raw_system_message(client, agent_state.id)
+    assert expected_chunk not in raw_system_message_after_detach
+    assert "test_source" not in raw_system_message_after_detach
+    assert "<directories>" not in raw_system_message_after_detach
 
     # Get the agent state, check blocks do NOT exist
     agent_state = client.agents.retrieve(agent_id=agent_state.id)
