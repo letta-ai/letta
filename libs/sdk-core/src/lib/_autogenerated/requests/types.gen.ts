@@ -1354,6 +1354,11 @@ export type CreateBlock = {
   } | null;
 };
 
+/**
+ * How to handle duplicate filenames when uploading files
+ */
+export type DuplicateFileHandling = 'skip' | 'error' | 'suffix';
+
 export type DynamicManager = {
   manager_type?: 'dynamic';
   manager_agent_id: string;
@@ -4834,6 +4839,10 @@ export type CreateSourceData = {
 export type CreateSourceResponse = Source;
 
 export type UploadFileToSourceData = {
+  /**
+   * How to handle duplicate filenames
+   */
+  duplicateHandling?: DuplicateFileHandling;
   formData: Body_upload_file_to_source;
   sourceId: string;
   userId?: string | null;

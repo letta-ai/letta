@@ -4203,6 +4203,13 @@ export const $CreateBlock = {
   description: 'Create a block',
 } as const;
 
+export const $DuplicateFileHandling = {
+  type: 'string',
+  enum: ['skip', 'error', 'suffix'],
+  title: 'DuplicateFileHandling',
+  description: 'How to handle duplicate filenames when uploading files',
+} as const;
+
 export const $DynamicManager = {
   properties: {
     manager_type: {

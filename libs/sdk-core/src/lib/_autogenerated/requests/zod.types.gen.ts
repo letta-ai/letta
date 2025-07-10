@@ -3492,6 +3492,13 @@ export const CreateBatch = z.object({
     .optional(),
 });
 
+export type DuplicateFileHandling = z.infer<typeof DuplicateFileHandling>;
+export const DuplicateFileHandling = z.union([
+  z.literal('skip'),
+  z.literal('error'),
+  z.literal('suffix'),
+]);
+
 export type DynamicManager = z.infer<typeof DynamicManager>;
 export const DynamicManager = z.object({
   manager_type: z.union([z.string(), z.undefined()]).optional(),
@@ -6515,6 +6522,11 @@ export const post_Upload_file_to_source = {
   path: z.literal('/v1/sources/{source_id}/upload'),
   requestFormat: z.literal('form-data'),
   parameters: z.object({
+    query: z.object({
+      duplicate_handling: z
+        .union([z.literal('skip'), z.literal('error'), z.literal('suffix')])
+        .optional(),
+    }),
     path: z.object({
       source_id: z.string(),
     }),

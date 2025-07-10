@@ -1296,6 +1296,17 @@
               "type": "string",
               "title": "Source Id"
             }
+          },
+          {
+            "name": "duplicate_handling",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/DuplicateFileHandling",
+              "description": "How to handle duplicate filenames",
+              "default": "suffix"
+            },
+            "description": "How to handle duplicate filenames"
           }
         ],
         "requestBody": {
@@ -12722,6 +12733,12 @@
         "required": ["value", "label"],
         "title": "CreateBlock",
         "description": "Create a block"
+      },
+      "DuplicateFileHandling": {
+        "type": "string",
+        "enum": ["skip", "error", "suffix"],
+        "title": "DuplicateFileHandling",
+        "description": "How to handle duplicate filenames when uploading files"
       },
       "DynamicManager": {
         "properties": {

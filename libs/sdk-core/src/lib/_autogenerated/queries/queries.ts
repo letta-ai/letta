@@ -42,6 +42,7 @@ import {
   CreateArchivalMemory,
   CreateBatch,
   CreateBlock,
+  DuplicateFileHandling,
   FeedbackType,
   GroupCreate,
   GroupUpdate,
@@ -3243,6 +3244,7 @@ export const useSourcesServiceCreateSource = <
  * @param data The data for the request.
  * @param data.sourceId
  * @param data.formData
+ * @param data.duplicateHandling How to handle duplicate filenames
  * @param data.userId
  * @returns FileMetadata Successful Response
  * @throws ApiError
@@ -3257,6 +3259,7 @@ export const useSourcesServiceUploadFileToSource = <
       TData,
       TError,
       {
+        duplicateHandling?: DuplicateFileHandling;
         formData: Body_upload_file_to_source;
         sourceId: string;
         userId?: string;
@@ -3270,14 +3273,16 @@ export const useSourcesServiceUploadFileToSource = <
     TData,
     TError,
     {
+      duplicateHandling?: DuplicateFileHandling;
       formData: Body_upload_file_to_source;
       sourceId: string;
       userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ formData, sourceId, userId }) =>
+    mutationFn: ({ duplicateHandling, formData, sourceId, userId }) =>
       SourcesService.uploadFileToSource({
+        duplicateHandling,
         formData,
         sourceId,
         userId,

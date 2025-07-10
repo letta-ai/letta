@@ -1030,6 +1030,7 @@ export class SourcesService {
    * @param data The data for the request.
    * @param data.sourceId
    * @param data.formData
+   * @param data.duplicateHandling How to handle duplicate filenames
    * @param data.userId
    * @returns FileMetadata Successful Response
    * @throws ApiError
@@ -1043,6 +1044,9 @@ export class SourcesService {
       url: '/v1/sources/{source_id}/upload',
       path: {
         source_id: data.sourceId,
+      },
+      query: {
+        duplicate_handling: data.duplicateHandling,
       },
       formData: data.formData,
       mediaType: 'multipart/form-data',
