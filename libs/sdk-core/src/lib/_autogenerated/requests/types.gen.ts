@@ -5309,6 +5309,16 @@ export type ListAgentGroupsData = {
 
 export type ListAgentGroupsResponse = Array<Group>;
 
+export type PreviewRawPayloadData = {
+  agentId: string;
+  requestBody: LettaRequest;
+  userId?: string | null;
+};
+
+export type PreviewRawPayloadResponse = {
+  [key: string]: unknown;
+};
+
 export type SummarizeAgentConversationData = {
   agentId: string;
   /**
@@ -7169,6 +7179,23 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Array<Group>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/messages/preview-raw-payload': {
+    post: {
+      req: PreviewRawPayloadData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: {
+          [key: string]: unknown;
+        };
         /**
          * Validation Error
          */

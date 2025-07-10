@@ -138,6 +138,8 @@ import type {
   ResetMessagesResponse,
   ListAgentGroupsData,
   ListAgentGroupsResponse,
+  PreviewRawPayloadData,
+  PreviewRawPayloadResponse,
   SummarizeAgentConversationData,
   SummarizeAgentConversationResponse,
   ListGroupsData,
@@ -2199,6 +2201,39 @@ export class AgentsService {
       query: {
         manager_type: data.managerType,
       },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Preview Raw Payload
+   * Inspect the raw LLM request payload without sending it.
+   *
+   * This endpoint processes the message through the agent loop up until
+   * the LLM request, then returns the raw request payload that would
+   * be sent to the LLM provider. Useful for debugging and inspection.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static previewRawPayload(
+    data: PreviewRawPayloadData,
+    headers?: { user_id: string },
+  ): CancelablePromise<PreviewRawPayloadResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/agents/{agent_id}/messages/preview-raw-payload',
+      path: {
+        agent_id: data.agentId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
       errors: {
         422: 'Validation Error',
       },

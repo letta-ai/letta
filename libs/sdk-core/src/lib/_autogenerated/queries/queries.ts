@@ -3642,6 +3642,57 @@ export const useAgentsServiceCreateAgentMessageAsync = <
     ...options,
   });
 /**
+ * Preview Raw Payload
+ * Inspect the raw LLM request payload without sending it.
+ *
+ * This endpoint processes the message through the agent loop up until
+ * the LLM request, then returns the raw request payload that would
+ * be sent to the LLM provider. Useful for debugging and inspection.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.requestBody
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServicePreviewRawPayload = <
+  TData = Common.AgentsServicePreviewRawPayloadMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        requestBody: LettaRequest;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      requestBody: LettaRequest;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, requestBody, userId }) =>
+      AgentsService.previewRawPayload({
+        agentId,
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
  * Summarize Agent Conversation
  * Summarize an agent's conversation history to a target message length.
  *

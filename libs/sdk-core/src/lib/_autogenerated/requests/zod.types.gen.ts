@@ -7401,6 +7401,25 @@ export const get_List_agent_groups = {
   response: z.array(Group),
 };
 
+export type post_Preview_raw_payload = typeof post_Preview_raw_payload;
+export const post_Preview_raw_payload = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/agents/{agent_id}/messages/preview-raw-payload'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: LettaRequest,
+  }),
+  response: z.unknown(),
+};
+
 export type post_Summarize_agent_conversation =
   typeof post_Summarize_agent_conversation;
 export const post_Summarize_agent_conversation = {
@@ -9318,6 +9337,8 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/messages/stream': post_Create_agent_message_stream,
     '/v1/agents/{agent_id}/messages/cancel': post_Cancel_agent_run,
     '/v1/agents/{agent_id}/messages/async': post_Create_agent_message_async,
+    '/v1/agents/{agent_id}/messages/preview-raw-payload':
+      post_Preview_raw_payload,
     '/v1/agents/{agent_id}/summarize': post_Summarize_agent_conversation,
     '/v1/groups/': post_Create_group,
     '/v1/groups/{group_id}/messages': post_Send_group_message,

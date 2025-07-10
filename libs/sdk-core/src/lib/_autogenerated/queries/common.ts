@@ -1778,6 +1778,9 @@ export type AgentsServiceCancelAgentRunMutationResult = Awaited<
 export type AgentsServiceCreateAgentMessageAsyncMutationResult = Awaited<
   ReturnType<typeof AgentsService.createAgentMessageAsync>
 >;
+export type AgentsServicePreviewRawPayloadMutationResult = Awaited<
+  ReturnType<typeof AgentsService.previewRawPayload>
+>;
 export type AgentsServiceSummarizeAgentConversationMutationResult = Awaited<
   ReturnType<typeof AgentsService.summarizeAgentConversation>
 >;
