@@ -19,7 +19,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { ConnectToLocalServerCommand, Tutorials } from '$web/client/components';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import bannerBlue from './banner_blue.png';
 import bannerOrange from './banner_orange.png';
 import { useCurrentUser } from '$web/client/hooks';
@@ -43,6 +43,21 @@ function UserIsNotConnectedComponent() {
   const t = useTranslations(
     'development-servers/components/UserIsNotConnectedComponent',
   );
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setIsDarkMode(mediaQuery.matches);
+
+    function listener(e: MediaQueryListEvent) {
+      setIsDarkMode(e.matches);
+    }
+    mediaQuery.addEventListener('change', listener);
+
+    return () => {
+      mediaQuery.removeEventListener('change', listener);
+    };
+  }, []);
 
   return (
     <VStack
@@ -53,7 +68,7 @@ function UserIsNotConnectedComponent() {
       fullHeight
       fullWidth
     >
-      <LettaLoader variant="flipper" size="large" />
+      <LettaLoader variant="spinner3d" size="default" isDarkMode={isDarkMode} />
       <VStack gap="small" paddingTop>
         <Typography align="center" fullWidth variant="heading5">
           {t('connecting')}

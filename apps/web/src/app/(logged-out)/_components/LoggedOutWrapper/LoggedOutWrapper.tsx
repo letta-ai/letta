@@ -1,16 +1,18 @@
-import { Button, OfficesIcon, VStack } from '@letta-cloud/ui-component-library';
+import {
+  Button,
+  LettaLoader,
+  OfficesIcon,
+  VStack,
+} from '@letta-cloud/ui-component-library';
 import { HStack } from '@letta-cloud/ui-component-library';
 import { Typography } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { Ref } from 'react';
 import { usePathname } from 'next/navigation';
 import { AuthFlowSwitch } from './AuthFlowSwitch';
 import './Login.scss';
 import type { Mode } from '../../constants';
-import Lottie from 'react-lottie';
-import darkLogo from '../../_logo/dark-sygnetrotate.json';
-import lightLogo from '../../_logo/light-sygnetrotate.json';
 
 interface LoggedOutWrapperProps {
   children: React.ReactNode;
@@ -39,49 +41,17 @@ export function LoggedOutWrapper(props: LoggedOutWrapperProps) {
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setIsDarkMode(mediaQuery.matches);
 
-    function handleThemeChange(e: MediaQueryList | MediaQueryListEvent) {
-      const isDark = e.matches;
-      setIsDarkMode(isDark);
-
-      // Apply dark mode classes/attributes to html element for proper styling
-      if (isDark) {
-        document.documentElement.setAttribute('data-mode', 'dark');
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.setAttribute('data-mode', 'light');
-        document.documentElement.classList.remove('dark');
-      }
+    function listener(e: MediaQueryListEvent) {
+      setIsDarkMode(e.matches);
     }
-
-    // Set initial theme
-    handleThemeChange(mediaQuery);
-
-    // Listen for theme changes
-    mediaQuery.addEventListener('change', handleThemeChange);
+    mediaQuery.addEventListener('change', listener);
 
     return () => {
-      mediaQuery.removeEventListener('change', handleThemeChange);
+      mediaQuery.removeEventListener('change', listener);
     };
   }, []);
-
-  const darkLogoOptions = {
-    loop: true,
-    autoplay: true,
-    animationData: darkLogo,
-    rendererSettings: {
-      preserveAspectRatio: 'xMidYMid slice',
-    },
-  };
-
-  const lightLogoOptions = {
-    loop: true,
-    autoplay: true,
-    animationData: lightLogo,
-    rendererSettings: {
-      preserveAspectRatio: 'xMidYMid slice',
-    },
-  };
 
   return (
     <HStack
@@ -123,21 +93,11 @@ export function LoggedOutWrapper(props: LoggedOutWrapperProps) {
                     className="relative lottie-non-interactive"
                     ref={logoRef}
                   >
-                    {isDarkMode ? (
-                      <Lottie
-                        options={lightLogoOptions}
-                        height={36}
-                        width={36}
-                        isClickToPauseDisabled={true}
-                      />
-                    ) : (
-                      <Lottie
-                        options={darkLogoOptions}
-                        height={36}
-                        width={36}
-                        isClickToPauseDisabled={true}
-                      />
-                    )}
+                    <LettaLoader
+                      variant="spinner3d"
+                      size="big"
+                      isDarkMode={isDarkMode}
+                    />
                   </div>
                 )}
                 {showAuthFlowSwitcher && <AuthFlowSwitch mode={mode} />}

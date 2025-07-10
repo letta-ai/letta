@@ -10,6 +10,9 @@ import { cva } from 'class-variance-authority';
 import { cn } from '@letta-cloud/ui-styles';
 import { useEffect, useRef } from 'react';
 import { LettaSpinnerInner, LettaSpinnerOuter } from './LettaSpinner';
+import Lottie from 'react-lottie';
+import darkLogo from './_logo/dark-sygnetrotate.json';
+import lightLogo from './_logo/light-sygnetrotate.json';
 
 function LettaFlipLoader(props: LettaLoaderProps) {
   const { size, id, color, stopAnimation } = props;
@@ -55,6 +58,7 @@ const loaderVariants = cva('', {
     size: {
       small: 'w-[16px]',
       medium: 'w-[20px]',
+      big: 'w-[36px]',
       default: 'w-[64px]',
       large: 'w-[96px]',
       xlarge: 'w-[256px]',
@@ -69,6 +73,7 @@ interface LettaLoaderBaseProps extends VariantProps<typeof loaderVariants> {
   color?: LogoBaseProps['color'];
   stopAnimation?: boolean;
   id?: string;
+  isDarkMode?: boolean;
 }
 
 function LettaSpinLoader(props: LettaLoaderBaseProps) {
@@ -97,6 +102,25 @@ function LettaSpinLoader(props: LettaLoaderBaseProps) {
   );
 }
 
+function LettaSpinLoader3d(props: LettaLoaderBaseProps) {
+  const { id, size, isDarkMode } = props;
+
+  const logoOptions = {
+    loop: true,
+    autoplay: true,
+    animationData: isDarkMode ? lightLogo : darkLogo,
+    rendererSettings: {
+      preserveAspectRatio: 'xMidYMid slice',
+    },
+  };
+
+  return (
+    <div id={id} className={loaderVariants({ size })}>
+      <Lottie options={logoOptions} isClickToPauseDisabled={true} />
+    </div>
+  );
+}
+
 function LettaLoaderGrow(props: LettaLoaderBaseProps) {
   const { id } = props;
 
@@ -108,7 +132,7 @@ function LettaLoaderGrow(props: LettaLoaderBaseProps) {
 }
 
 export interface LettaLoaderProps extends LettaLoaderBaseProps {
-  variant?: 'flipper' | 'grower' | 'spinner';
+  variant?: 'flipper' | 'grower' | 'spinner' | 'spinner3d';
 }
 
 export function LettaLoader(props: LettaLoaderProps) {
@@ -120,6 +144,10 @@ export function LettaLoader(props: LettaLoaderProps) {
 
   if (variant === 'spinner') {
     return <LettaSpinLoader {...rest} />;
+  }
+
+  if (variant === 'spinner3d') {
+    return <LettaSpinLoader3d {...rest} />;
   }
 
   return <LettaLoaderGrow {...rest} />;
