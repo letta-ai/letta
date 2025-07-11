@@ -22,6 +22,15 @@ from letta.server.db import db_registry
 from letta.utils import enforce_types
 
 
+class DuplicateFileError(Exception):
+    """Raised when a duplicate file is encountered and error handling is specified"""
+
+    def __init__(self, filename: str, source_name: str):
+        self.filename = filename
+        self.source_name = source_name
+        super().__init__(f"File '{filename}' already exists in source '{source_name}'")
+
+
 class FileManager:
     """Manager class to handle business logic related to files."""
 
@@ -237,16 +246,16 @@ class FileManager:
     @trace_method
     async def generate_unique_filename(self, original_filename: str, source: PydanticSource, organization_id: str) -> str:
         """
-        Generate a unique filename by checking for duplicates and adding a numeric suffix if needed.
-        Similar to how filesystems handle duplicates (e.g., file.txt, file (1).txt, file (2).txt).
+        Generate a unique filename by adding a numeric suffix if duplicates exist.
+        Always returns a unique filename - does not handle duplicate policies.
 
         Parameters:
             original_filename (str): The original filename as uploaded.
-            source_id (str): Source ID to check for duplicates within.
+            source (PydanticSource): Source to check for duplicates within.
             organization_id (str): Organization ID to check for duplicates within.
 
         Returns:
-            str: A unique filename with numeric suffix if needed.
+            str: A unique filename with source.name prefix and numeric suffix if needed.
         """
         base, ext = os.path.splitext(original_filename)
 
@@ -271,8 +280,43 @@ class FileManager:
                 # No duplicates, return original filename with source.name
                 return f"{source.name}/{original_filename}"
             else:
-                # Add numeric suffix
+                # Add numeric suffix to make unique
                 return f"{source.name}/{base}_({count}){ext}"
+
+    @enforce_types
+    @trace_method
+    async def get_file_by_original_name_and_source(
+        self, original_filename: str, source_id: str, actor: PydanticUser
+    ) -> Optional[PydanticFileMetadata]:
+        """
+        Get a file by its original filename and source ID.
+
+        Parameters:
+            original_filename (str): The original filename to search for.
+            source_id (str): The source ID to search within.
+            actor (PydanticUser): The actor performing the request.
+
+        Returns:
+            Optional[PydanticFileMetadata]: The file metadata if found, None otherwise.
+        """
+        async with db_registry.async_session() as session:
+            query = (
+                select(FileMetadataModel)
+                .where(
+                    FileMetadataModel.original_file_name == original_filename,
+                    FileMetadataModel.source_id == source_id,
+                    FileMetadataModel.organization_id == actor.organization_id,
+                    FileMetadataModel.is_deleted == False,
+                )
+                .limit(1)
+            )
+
+            result = await session.execute(query)
+            file_orm = result.scalar_one_or_none()
+
+            if file_orm:
+                return await file_orm.to_pydantic_async()
+            return None
 
     @enforce_types
     @trace_method

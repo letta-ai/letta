@@ -5,7 +5,7 @@ try:
     __version__ = version("letta")
 except PackageNotFoundError:
     # Fallback for development installations
-    __version__ = "0.8.12"
+    __version__ = "0.8.13"
 
 if os.environ.get("LETTA_VERSION"):
     __version__ = os.environ["LETTA_VERSION"]

@@ -26,9 +26,32 @@ agent_state = {{ 'pickle.loads(' ~ agent_state_pickle ~ ')' if agent_state_pickl
 
 {# Async wrapper to handle the function call and store the result #}
 async def _async_wrapper():
-    result = await {{ invoke_function_call }}
+    _function_result = await {{ invoke_function_call }}
+
+    {# Use a temporary Pydantic wrapper to recursively serialize any nested Pydantic objects #}
+    try:
+        from pydantic import BaseModel
+        from typing import Any
+
+        class _TempResultWrapper(BaseModel):
+            result: Any
+
+            class Config:
+                arbitrary_types_allowed = True
+
+        _wrapped = _TempResultWrapper(result=_function_result)
+        _serialized_result = _wrapped.model_dump()['result']
+    except ImportError:
+        # Pydantic not available in sandbox, fall back to string conversion
+        print("Pydantic not available in sandbox environment, falling back to string conversion")
+        _serialized_result = str(_function_result)
+    except Exception as e:
+        # If wrapping fails, print the error and stringify the result
+        print(f"Failed to serialize result with Pydantic wrapper: {e}")
+        _serialized_result = str(_function_result)
+
     return {
-        "results": result,
+        "results": _serialized_result,
         "agent_state": agent_state
     }
 

@@ -1,6 +1,12 @@
 from typing import Any, Dict, List
 
-from pinecone import PineconeAsyncio
+try:
+    from pinecone import IndexEmbed, PineconeAsyncio
+    from pinecone.exceptions.exceptions import NotFoundException
+
+    PINECONE_AVAILABLE = True
+except ImportError:
+    PINECONE_AVAILABLE = False
 
 from letta.constants import (
     PINECONE_CLOUD,
@@ -27,11 +33,20 @@ def should_use_pinecone(verbose: bool = False):
             bool(settings.pinecone_source_index),
         )
 
-    return settings.enable_pinecone and settings.pinecone_api_key and settings.pinecone_agent_index and settings.pinecone_source_index
+    return all(
+        (
+            PINECONE_AVAILABLE,
+            settings.enable_pinecone,
+            settings.pinecone_api_key,
+            settings.pinecone_agent_index,
+            settings.pinecone_source_index,
+        )
+    )
 
 
 async def upsert_pinecone_indices():
-    from pinecone import IndexEmbed, PineconeAsyncio
+    if not PINECONE_AVAILABLE:
+        raise ImportError("Pinecone is not available. Please install pinecone to use this feature.")
 
     for index_name in get_pinecone_indices():
         async with PineconeAsyncio(api_key=settings.pinecone_api_key) as pc:
@@ -49,6 +64,9 @@ def get_pinecone_indices() -> List[str]:
 
 
 async def upsert_file_records_to_pinecone_index(file_id: str, source_id: str, chunks: List[str], actor: User):
+    if not PINECONE_AVAILABLE:
+        raise ImportError("Pinecone is not available. Please install pinecone to use this feature.")
+
     records = []
     for i, chunk in enumerate(chunks):
         record = {
@@ -63,7 +81,8 @@ async def upsert_file_records_to_pinecone_index(file_id: str, source_id: str, ch
 
 
 async def delete_file_records_from_pinecone_index(file_id: str, actor: User):
-    from pinecone.exceptions.exceptions import NotFoundException
+    if not PINECONE_AVAILABLE:
+        raise ImportError("Pinecone is not available. Please install pinecone to use this feature.")
 
     namespace = actor.organization_id
     try:
@@ -81,7 +100,8 @@ async def delete_file_records_from_pinecone_index(file_id: str, actor: User):
 
 
 async def delete_source_records_from_pinecone_index(source_id: str, actor: User):
-    from pinecone.exceptions.exceptions import NotFoundException
+    if not PINECONE_AVAILABLE:
+        raise ImportError("Pinecone is not available. Please install pinecone to use this feature.")
 
     namespace = actor.organization_id
     try:
@@ -94,6 +114,9 @@ async def delete_source_records_from_pinecone_index(source_id: str, actor: User)
 
 
 async def upsert_records_to_pinecone_index(records: List[dict], actor: User):
+    if not PINECONE_AVAILABLE:
+        raise ImportError("Pinecone is not available. Please install pinecone to use this feature.")
+
     async with PineconeAsyncio(api_key=settings.pinecone_api_key) as pc:
         description = await pc.describe_index(name=settings.pinecone_source_index)
         async with pc.IndexAsyncio(host=description.index.host) as dense_index:
@@ -104,6 +127,9 @@ async def upsert_records_to_pinecone_index(records: List[dict], actor: User):
 
 
 async def search_pinecone_index(query: str, limit: int, filter: Dict[str, Any], actor: User) -> Dict[str, Any]:
+    if not PINECONE_AVAILABLE:
+        raise ImportError("Pinecone is not available. Please install pinecone to use this feature.")
+
     async with PineconeAsyncio(api_key=settings.pinecone_api_key) as pc:
         description = await pc.describe_index(name=settings.pinecone_source_index)
         async with pc.IndexAsyncio(host=description.index.host) as dense_index:
@@ -127,7 +153,8 @@ async def search_pinecone_index(query: str, limit: int, filter: Dict[str, Any], 
 
 
 async def list_pinecone_index_for_files(file_id: str, actor: User, limit: int = None, pagination_token: str = None) -> List[str]:
-    from pinecone.exceptions.exceptions import NotFoundException
+    if not PINECONE_AVAILABLE:
+        raise ImportError("Pinecone is not available. Please install pinecone to use this feature.")
 
     namespace = actor.organization_id
     try:

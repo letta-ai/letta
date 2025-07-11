@@ -129,7 +129,8 @@ def get_function_name_and_docstring(source_code: str, name: Optional[str] = None
             raise LettaToolCreateError("Could not determine function name")
 
         if not docstring:
-            raise LettaToolCreateError("Docstring is missing")
+            # For tools with args_json_schema, the docstring is optional
+            docstring = f"The {function_name} tool"
 
         return function_name, docstring
 

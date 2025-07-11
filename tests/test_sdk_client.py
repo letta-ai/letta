@@ -1,15 +1,19 @@
+import json
 import os
 import threading
 import time
 import uuid
+from typing import List, Type
 
 import pytest
 from dotenv import load_dotenv
 from letta_client import CreateBlock
 from letta_client import Letta as LettaSDKClient
-from letta_client import MessageCreate
+from letta_client import LettaRequest, MessageCreate, TextContent
+from letta_client.client import BaseTool
 from letta_client.core import ApiError
 from letta_client.types import AgentState, ToolReturnMessage
+from pydantic import BaseModel, Field
 
 # Constants
 SERVER_PORT = 8283
@@ -762,3 +766,270 @@ def test_base_tools_upsert_on_list(client: LettaSDKClient):
     final_tool_names = {tool.name for tool in final_tools}
     for deleted_tool in tools_to_delete:
         assert deleted_tool.name in final_tool_names, f"Deleted tool {deleted_tool.name} was not properly restored"
+
+
+@pytest.mark.parametrize("e2b_sandbox_mode", [True, False], indirect=True)
+def test_pydantic_inventory_management_tool(e2b_sandbox_mode, client: LettaSDKClient):
+    class InventoryItem(BaseModel):
+        sku: str
+        name: str
+        price: float
+        category: str
+
+    class InventoryEntry(BaseModel):
+        timestamp: int
+        item: InventoryItem
+        transaction_id: str
+
+    class InventoryEntryData(BaseModel):
+        data: InventoryEntry
+        quantity_change: int
+
+    class ManageInventoryTool(BaseTool):
+        name: str = "manage_inventory"
+        args_schema: Type[BaseModel] = InventoryEntryData
+        description: str = "Update inventory catalogue with a new data entry"
+        tags: List[str] = ["inventory", "shop"]
+
+        def run(self, data: InventoryEntry, quantity_change: int) -> bool:
+            print(f"Updated inventory for {data.item.name} with a quantity change of {quantity_change}")
+            return True
+
+    tool = client.tools.add(
+        tool=ManageInventoryTool(),
+    )
+
+    assert tool is not None
+    assert tool.name == "manage_inventory"
+    assert "inventory" in tool.tags
+    assert "shop" in tool.tags
+
+    temp_agent = client.agents.create(
+        memory_blocks=[
+            CreateBlock(
+                label="persona",
+                value="You are a helpful inventory management assistant.",
+            ),
+        ],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-3-small",
+        tool_ids=[tool.id],
+        include_base_tools=False,
+    )
+
+    response = client.agents.messages.create(
+        agent_id=temp_agent.id,
+        messages=[
+            MessageCreate(
+                role="user",
+                content="Update the inventory for product 'iPhone 15' with SKU 'IPH15-001', price $999.99, category 'Electronics', transaction ID 'TXN-12345', timestamp 1640995200, with a quantity change of +10",
+            ),
+        ],
+    )
+
+    assert response is not None
+
+    tool_call_messages = [msg for msg in response.messages if msg.message_type == "tool_call_message"]
+    assert len(tool_call_messages) > 0, "Expected at least one tool call message"
+
+    first_tool_call = tool_call_messages[0]
+    assert first_tool_call.tool_call.name == "manage_inventory"
+
+    args = json.loads(first_tool_call.tool_call.arguments)
+    assert "data" in args
+    assert "quantity_change" in args
+    assert "item" in args["data"]
+    assert "name" in args["data"]["item"]
+    assert "sku" in args["data"]["item"]
+    assert "price" in args["data"]["item"]
+    assert "category" in args["data"]["item"]
+    assert "transaction_id" in args["data"]
+    assert "timestamp" in args["data"]
+
+    tool_return_messages = [msg for msg in response.messages if msg.message_type == "tool_return_message"]
+    assert len(tool_return_messages) > 0, "Expected at least one tool return message"
+
+    first_tool_return = tool_return_messages[0]
+    assert first_tool_return.status == "success"
+    assert first_tool_return.tool_return == "True"
+    assert "Updated inventory for iPhone 15 with a quantity change of 10" in "\n".join(first_tool_return.stdout)
+
+    client.agents.delete(temp_agent.id)
+    client.tools.delete(tool.id)
+
+
+@pytest.mark.parametrize("e2b_sandbox_mode", [True, False], indirect=True)
+def test_pydantic_task_planning_tool(e2b_sandbox_mode, client: LettaSDKClient):
+
+    class Step(BaseModel):
+        name: str = Field(..., description="Name of the step.")
+        description: str = Field(..., description="An exhaustive description of what this step is trying to achieve.")
+
+    class StepsList(BaseModel):
+        steps: List[Step] = Field(..., description="List of steps to add to the task plan.")
+        explanation: str = Field(..., description="Explanation for the list of steps.")
+
+    def create_task_plan(steps, explanation):
+        """Creates a task plan for the current task."""
+        print(f"Created task plan with {len(steps)} steps: {explanation}")
+        return steps
+
+    tool = client.tools.upsert_from_function(func=create_task_plan, args_schema=StepsList, tags=["planning", "task", "pydantic_test"])
+
+    assert tool is not None
+    assert tool.name == "create_task_plan"
+    assert "planning" in tool.tags
+    assert "task" in tool.tags
+
+    temp_agent = client.agents.create(
+        memory_blocks=[
+            CreateBlock(
+                label="persona",
+                value="You are a helpful task planning assistant.",
+            ),
+        ],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-3-small",
+        tool_ids=[tool.id],
+        include_base_tools=False,
+    )
+
+    response = client.agents.messages.create(
+        agent_id=temp_agent.id,
+        messages=[
+            MessageCreate(
+                role="user",
+                content="Create a task plan for organizing a team meeting with 3 steps: 1) Schedule meeting (find available time slots), 2) Send invitations (notify all team members), 3) Prepare agenda (outline discussion topics). Explanation: This plan ensures a well-organized team meeting.",
+            ),
+        ],
+    )
+
+    assert response is not None
+    assert hasattr(response, "messages")
+    assert len(response.messages) > 0
+
+    tool_call_messages = [msg for msg in response.messages if msg.message_type == "tool_call_message"]
+    assert len(tool_call_messages) > 0, "Expected at least one tool call message"
+
+    first_tool_call = tool_call_messages[0]
+    assert first_tool_call.tool_call.name == "create_task_plan"
+
+    args = json.loads(first_tool_call.tool_call.arguments)
+    assert "steps" in args
+    assert "explanation" in args
+    assert isinstance(args["steps"], list)
+    assert len(args["steps"]) > 0
+
+    for step in args["steps"]:
+        assert "name" in step
+        assert "description" in step
+
+    tool_return_messages = [msg for msg in response.messages if msg.message_type == "tool_return_message"]
+    assert len(tool_return_messages) > 0, "Expected at least one tool return message"
+
+    first_tool_return = tool_return_messages[0]
+    assert first_tool_return.status == "success"
+
+    client.agents.delete(temp_agent.id)
+    client.tools.delete(tool.id)
+
+
+@pytest.mark.parametrize("e2b_sandbox_mode", [True, False], indirect=True)
+def test_create_tool_from_function_with_docstring(e2b_sandbox_mode, client: LettaSDKClient):
+    """Test creating a tool from a function with a docstring using create_from_function"""
+
+    def roll_dice() -> str:
+        """
+        Simulate the roll of a 20-sided die (d20).
+
+        This function generates a random integer between 1 and 20, inclusive,
+        which represents the outcome of a single roll of a d20.
+
+        Returns:
+            str: The result of the die roll.
+        """
+        import random
+
+        dice_role_outcome = random.randint(1, 20)
+        output_string = f"You rolled a {dice_role_outcome}"
+        return output_string
+
+    tool = client.tools.create_from_function(func=roll_dice)
+
+    assert tool is not None
+    assert tool.name == "roll_dice"
+    assert "Simulate the roll of a 20-sided die" in tool.description
+    assert tool.source_code is not None
+    assert "random.randint(1, 20)" in tool.source_code
+
+    all_tools = client.tools.list()
+    tool_names = [t.name for t in all_tools]
+    assert "roll_dice" in tool_names
+
+    client.tools.delete(tool.id)
+
+
+def test_preview_payload(client: LettaSDKClient, agent):
+    payload = client.agents.messages.preview_raw_payload(
+        agent_id=agent.id,
+        request=LettaRequest(
+            messages=[
+                MessageCreate(
+                    role="user",
+                    content=[
+                        TextContent(
+                            text="text",
+                        )
+                    ],
+                )
+            ],
+        ),
+    )
+
+    assert isinstance(payload, dict)
+    assert "model" in payload
+    assert "messages" in payload
+    assert "tools" in payload
+    assert "frequency_penalty" in payload
+    assert "max_completion_tokens" in payload
+    assert "temperature" in payload
+    assert "user" in payload
+    assert "parallel_tool_calls" in payload
+    assert "tool_choice" in payload
+
+    assert payload["model"] == "gpt-4o-mini"
+
+    assert isinstance(payload["messages"], list)
+    assert len(payload["messages"]) >= 3
+
+    system_message = payload["messages"][0]
+    assert system_message["role"] == "system"
+    assert "base_instructions" in system_message["content"]
+    assert "memory_blocks" in system_message["content"]
+    assert "tool_usage_rules" in system_message["content"]
+    assert "Letta" in system_message["content"]
+
+    assert isinstance(payload["tools"], list)
+    assert len(payload["tools"]) > 0
+
+    tool_names = [tool["function"]["name"] for tool in payload["tools"]]
+    expected_tools = ["send_message", "conversation_search", "core_memory_replace", "core_memory_append"]
+    for tool_name in expected_tools:
+        assert tool_name in tool_names, f"Expected tool {tool_name} not found in tools"
+
+    for tool in payload["tools"]:
+        assert tool["type"] == "function"
+        assert "function" in tool
+        assert "name" in tool["function"]
+        assert "description" in tool["function"]
+        assert "parameters" in tool["function"]
+        assert tool["function"]["strict"] is True
+
+    assert payload["frequency_penalty"] == 1.0
+    assert payload["max_completion_tokens"] == 4096
+    assert payload["temperature"] == 0.7
+    assert payload["parallel_tool_calls"] is False
+    assert payload["tool_choice"] == "required"
+    assert payload["user"].startswith("user-")
+
+    print(payload)

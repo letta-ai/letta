@@ -1,7 +1,7 @@
 import ast
 import base64
 import pickle
-from typing import Any
+from typing import Any, Union
 
 from letta.constants import REQUEST_HEARTBEAT_DESCRIPTION, REQUEST_HEARTBEAT_PARAM, SEND_MESSAGE_TOOL_NAME
 from letta.schemas.agent import AgentState
@@ -9,7 +9,7 @@ from letta.schemas.response_format import ResponseFormatType, ResponseFormatUnio
 from letta.types import JsonDict, JsonValue
 
 
-def parse_stdout_best_effort(text: str | bytes) -> tuple[Any, AgentState | None]:
+def parse_stdout_best_effort(text: Union[str, bytes]) -> tuple[Any, AgentState | None]:
     """
     Decode and unpickle the result from the function execution if possible.
     Returns (function_return_value, agent_state).

@@ -337,8 +337,11 @@ def create_application() -> "FastAPI":
     # / static files
     mount_static_files(app)
 
+    no_generation = "--no-generation" in sys.argv
+
     # Generate OpenAPI schema after all routes are mounted
-    generate_openapi_schema(app)
+    if not no_generation:
+        generate_openapi_schema(app)
 
     return app
 

@@ -96,7 +96,7 @@ class BaseAgent(ABC):
         """
         try:
             # [DB Call] loading blocks (modifies: agent_state.memory.blocks)
-            await self.agent_manager.refresh_memory_async(agent_state=agent_state, actor=self.actor)
+            agent_state = await self.agent_manager.refresh_memory_async(agent_state=agent_state, actor=self.actor)
 
             tool_constraint_block = None
             if tool_rules_solver is not None:
@@ -104,18 +104,37 @@ class BaseAgent(ABC):
 
             # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
             curr_system_message = in_context_messages[0]
-            curr_memory_str = agent_state.memory.compile(tool_usage_rules=tool_constraint_block, sources=agent_state.sources)
             curr_system_message_text = curr_system_message.content[0].text
-            if curr_memory_str in curr_system_message_text:
+
+            # extract the dynamic section that includes memory blocks, tool rules, and directories
+            # this avoids timestamp comparison issues
+            def extract_dynamic_section(text):
+                start_marker = "</base_instructions>"
+                end_marker = "<memory_metadata>"
+
+                start_idx = text.find(start_marker)
+                end_idx = text.find(end_marker)
+
+                if start_idx != -1 and end_idx != -1:
+                    return text[start_idx:end_idx]
+                return text  # fallback to full text if markers not found
+
+            curr_dynamic_section = extract_dynamic_section(curr_system_message_text)
+
+            # generate just the memory string with current state for comparison
+            curr_memory_str = agent_state.memory.compile(tool_usage_rules=tool_constraint_block, sources=agent_state.sources)
+            new_dynamic_section = extract_dynamic_section(curr_memory_str)
+
+            # compare just the dynamic sections (memory blocks, tool rules, directories)
+            if curr_dynamic_section == new_dynamic_section:
                 logger.debug(
-                    f"Memory hasn't changed for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name}), skipping system prompt rebuild"
+                    f"Memory and sources haven't changed for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name}), skipping system prompt rebuild"
                 )
                 return in_context_messages
 
             memory_edit_timestamp = get_utc_time()
 
-            # [DB Call] size of messages and archival memories
-            # todo: blocking for now
+            # size of messages and archival memories
             if num_messages is None:
                 num_messages = await self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id)
             if num_archival_memories is None:

@@ -186,9 +186,10 @@ speedups = ["Brotli ; platform_python_implementation == \"CPython\"", "aiodns (>
 name = "aiohttp-retry"
 version = "2.9.1"
 description = "Simple retry client for aiohttp"
-optional = false
+optional = true
 python-versions = ">=3.7"
 groups = ["main"]
+markers = "extra == \"pinecone\" or extra == \"all\""
 files = [
     {file = "aiohttp_retry-2.9.1-py3-none-any.whl", hash = "sha256:66d2759d1921838256a05a3f80ad7e724936f083e35be5abb5e16eed6be6dc54"},
     {file = "aiohttp_retry-2.9.1.tar.gz", hash = "sha256:8eb75e904ed4ee5c2ec242fefe85bf04240f685391c4879d8f541d6028ff01f1"},
@@ -944,7 +945,7 @@ version = "2025.6.15"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
 python-versions = ">=3.7"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "certifi-2025.6.15-py3-none-any.whl", hash = "sha256:2e0c7ce7cb5d8f8634ca55d2ba7e6ec2689a2fd6537d8dec1296a477a4910057"},
     {file = "certifi-2025.6.15.tar.gz", hash = "sha256:d747aa5a8b9bbbb1bb8c22bb13e22bd1f18e9796defa16bab421f7f7a317323b"},
@@ -1050,7 +1051,7 @@ version = "3.4.2"
 description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
 optional = false
 python-versions = ">=3.7"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "charset_normalizer-3.4.2-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:7c48ed483eb946e6c04ccbe02c6b4d1d48e51944b6db70f697e089c193404941"},
     {file = "charset_normalizer-3.4.2-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b2d318c11350e10662026ad0eb71bb51c7812fc8590825304ae0bdd4ac283acd"},
@@ -2792,7 +2793,7 @@ version = "3.10"
 description = "Internationalized Domain Names in Applications (IDNA)"
 optional = false
 python-versions = ">=3.6"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "idna-3.10-py3-none-any.whl", hash = "sha256:946d195a0d259cbba61165e88e65941f16e9b36ea6ddb97f00452bae8b1287d3"},
     {file = "idna-3.10.tar.gz", hash = "sha256:12f65c9b470abda6dc35cf8e63cc574b1c52b11df2c86030af0ac09b01b13ea9"},
@@ -3590,14 +3591,14 @@ pytest = ["pytest (>=7.0.0)", "rich (>=13.9.4,<14.0.0)"]
 
 [[package]]
 name = "letta-client"
-version = "0.1.191"
+version = "0.1.198"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.8"
 groups = ["main"]
 files = [
-    {file = "letta_client-0.1.191-py3-none-any.whl", hash = "sha256:2cc234668784b022a25aeab4db48b944a0a188e42112870efd8b028ad223347b"},
-    {file = "letta_client-0.1.191.tar.gz", hash = "sha256:95957695e679183ec0d87673c8dd169a83f9807359c4740d42ed84fbb6b05efc"},
+    {file = "letta_client-0.1.198-py3-none-any.whl", hash = "sha256:08bbc238b128da2552b2a6e54feb3294794b5586e0962ce0bb95bb525109f58f"},
+    {file = "letta_client-0.1.198.tar.gz", hash = "sha256:990c9132423e2955d9c7f7549e5064b2366616232d270e5927788cddba4ef9da"},
 ]
 
 [package.dependencies]
@@ -5207,9 +5208,10 @@ xmp = ["defusedxml"]
 name = "pinecone"
 version = "7.3.0"
 description = "Pinecone client and SDK"
-optional = false
+optional = true
 python-versions = "<4.0,>=3.9"
-groups = ["main", "dev"]
+groups = ["main"]
+markers = "extra == \"pinecone\" or extra == \"all\""
 files = [
     {file = "pinecone-7.3.0-py3-none-any.whl", hash = "sha256:315b8fef20320bef723ecbb695dec0aafa75d8434d86e01e5a0e85933e1009a8"},
     {file = "pinecone-7.3.0.tar.gz", hash = "sha256:307edc155621d487c20dc71b76c3ad5d6f799569ba42064190d03917954f9a7b"},
@@ -5236,9 +5238,10 @@ grpc = ["googleapis-common-protos (>=1.66.0)", "grpcio (>=1.44.0) ; python_versi
 name = "pinecone-plugin-assistant"
 version = "1.7.0"
 description = "Assistant plugin for Pinecone SDK"
-optional = false
+optional = true
 python-versions = "<4.0,>=3.9"
-groups = ["main", "dev"]
+groups = ["main"]
+markers = "extra == \"pinecone\" or extra == \"all\""
 files = [
     {file = "pinecone_plugin_assistant-1.7.0-py3-none-any.whl", hash = "sha256:864cb8e7930588e6c2da97c6d44f0240969195f43fa303c5db76cbc12bf903a5"},
     {file = "pinecone_plugin_assistant-1.7.0.tar.gz", hash = "sha256:e26e3ba10a8b71c3da0d777cff407668022e82963c4913d0ffeb6c552721e482"},
@@ -5252,9 +5255,10 @@ requests = ">=2.32.3,<3.0.0"
 name = "pinecone-plugin-interface"
 version = "0.0.7"
 description = "Plugin interface for the Pinecone python client"
-optional = false
+optional = true
 python-versions = "<4.0,>=3.8"
-groups = ["main", "dev"]
+groups = ["main"]
+markers = "extra == \"pinecone\" or extra == \"all\""
 files = [
     {file = "pinecone_plugin_interface-0.0.7-py3-none-any.whl", hash = "sha256:875857ad9c9fc8bbc074dbe780d187a2afd21f5bfe0f3b08601924a61ef1bba8"},
     {file = "pinecone_plugin_interface-0.0.7.tar.gz", hash = "sha256:b8e6675e41847333aa13923cc44daa3f85676d7157324682dc1640588a982846"},
@@ -6578,7 +6582,7 @@ version = "2.32.4"
 description = "Python HTTP for Humans."
 optional = false
 python-versions = ">=3.8"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "requests-2.32.4-py3-none-any.whl", hash = "sha256:27babd3cda2a6d50b30443204ee89830707d396671944c998b5975b031ac2b2c"},
     {file = "requests-2.32.4.tar.gz", hash = "sha256:27d0316682c8a29834d3264820024b62a36942083d52caf2f14c0591336d3422"},
@@ -7473,7 +7477,7 @@ files = [
     {file = "typing_extensions-4.14.1-py3-none-any.whl", hash = "sha256:d1e1e3b58374dc93031d6eda2420a48ea44a36c2b4766a4fdeb3710755731d76"},
     {file = "typing_extensions-4.14.1.tar.gz", hash = "sha256:38b39f4aeeab64884ce9f74c94263ef78f3c22467c8724005483154c26648d36"},
 ]
-markers = {"dev,tests" = "python_version == \"3.10\""}
+markers = {dev = "python_version < \"3.12\"", "dev,tests" = "python_version == \"3.10\""}
 
 [[package]]
 name = "typing-inspect"
@@ -7542,7 +7546,7 @@ version = "2.5.0"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 optional = false
 python-versions = ">=3.9"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "urllib3-2.5.0-py3-none-any.whl", hash = "sha256:e6b01673c0fa6a13e374b50871808eb3bf7046c4b125b216f6bf1cc604cff0dc"},
     {file = "urllib3-2.5.0.tar.gz", hash = "sha256:3fc47733c7e419d4bc3f6b3dc2b4f890bb743906a30d56ba4a5bfa4bbff92760"},
@@ -8348,7 +8352,7 @@ cffi = {version = ">=1.11", markers = "platform_python_implementation == \"PyPy\
 cffi = ["cffi (>=1.11)"]
 
 [extras]
-all = ["autoflake", "black", "docker", "fastapi", "granian", "isort", "langchain", "langchain-community", "locust", "pexpect", "pg8000", "pgvector", "pre-commit", "psycopg2", "psycopg2-binary", "pyright", "pytest-asyncio", "pytest-order", "redis", "uvicorn", "uvloop", "wikipedia"]
+all = ["autoflake", "black", "docker", "fastapi", "granian", "isort", "langchain", "langchain-community", "locust", "pexpect", "pg8000", "pgvector", "pinecone", "pre-commit", "psycopg2", "psycopg2-binary", "pyright", "pytest-asyncio", "pytest-order", "redis", "uvicorn", "uvloop", "wikipedia"]
 bedrock = ["aioboto3", "boto3"]
 cloud-tool-sandbox = ["e2b-code-interpreter"]
 desktop = ["docker", "fastapi", "langchain", "langchain-community", "locust", "pg8000", "pgvector", "psycopg2", "psycopg2-binary", "pyright", "uvicorn", "wikipedia"]
@@ -8356,6 +8360,7 @@ dev = ["autoflake", "black", "isort", "locust", "pexpect", "pre-commit", "pyrigh
 experimental = ["granian", "uvloop"]
 external-tools = ["docker", "firecrawl-py", "langchain", "langchain-community", "wikipedia"]
 google = ["google-genai"]
+pinecone = ["pinecone"]
 postgres = ["asyncpg", "pg8000", "pgvector", "psycopg2", "psycopg2-binary"]
 redis = ["redis"]
 server = ["fastapi", "uvicorn"]
@@ -8364,4 +8369,4 @@ tests = ["wikipedia"]
 [metadata]
 lock-version = "2.1"
 python-versions = "<3.14,>=3.10"
-content-hash = "b2f23b566c52a2ecb9d656383d00f8ac64293690e0f6fcc0d354ed2d2ad8807b"
+content-hash = "c4fa225d582dac743e5eb8a1338a71c32bd8c8eb8283dec2331c28599bdf7698"

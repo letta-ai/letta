@@ -58,7 +58,12 @@ class MetricRegistry:
     def tool_execution_counter(self) -> Counter:
         return self._get_or_create_metric(
             "count_tool_execution",
-            partial(self._meter.create_counter, name="count_tool_execution", description="Counts the number of tools executed.", unit="1"),
+            partial(
+                self._meter.create_counter,
+                name="count_tool_execution",
+                description="Counts the number of tools executed.",
+                unit="1",
+            ),
         )
 
     # project_id + model
@@ -66,7 +71,12 @@ class MetricRegistry:
     def ttft_ms_histogram(self) -> Histogram:
         return self._get_or_create_metric(
             "hist_ttft_ms",
-            partial(self._meter.create_histogram, name="hist_ttft_ms", description="Histogram for the Time to First Token (ms)", unit="ms"),
+            partial(
+                self._meter.create_histogram,
+                name="hist_ttft_ms",
+                description="Histogram for the Time to First Token (ms)",
+                unit="ms",
+            ),
         )
 
     # (includes model name)
@@ -156,5 +166,17 @@ class MetricRegistry:
                 name="count_endpoint_requests",
                 description="Counts the number of endpoint requests",
                 unit="1",
+            ),
+        )
+
+    @property
+    def file_process_bytes_histogram(self) -> Histogram:
+        return self._get_or_create_metric(
+            "hist_file_process_bytes",
+            partial(
+                self._meter.create_histogram,
+                name="hist_file_process_bytes",
+                description="Histogram for file process in bytes",
+                unit="By",
             ),
         )
