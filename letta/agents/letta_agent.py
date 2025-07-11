@@ -22,7 +22,7 @@ from letta.agents.helpers import (
 from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX
 from letta.errors import ContextWindowExceededError
 from letta.helpers import ToolRulesSolver
-from letta.helpers.datetime_helpers import AsyncTimer, get_utc_time, get_utc_time_int, get_utc_timestamp_ns, ns_to_ms
+from letta.helpers.datetime_helpers import AsyncTimer, get_utc_time, get_utc_timestamp_ns, ns_to_ms
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
@@ -246,7 +246,7 @@ class LettaAgent(BaseAgent):
                 response = ChatCompletionResponse(
                     id=str(uuid.uuid4()),
                     choices=response_data["choices"],
-                    created=get_utc_time_int(),
+                    created=get_utc_time(),
                     model=agent_state.llm_config.model,
                     object="chat.completion",
                     usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
@@ -420,7 +420,7 @@ class LettaAgent(BaseAgent):
                 response = ChatCompletionResponse(
                     id=str(uuid.uuid4()),
                     choices=response_data["choices"],
-                    created=get_utc_time_int(),
+                    created=get_utc_time(),
                     model=agent_state.llm_config.model,
                     object="chat.completion",
                     usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
