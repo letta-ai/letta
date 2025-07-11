@@ -23,6 +23,7 @@ from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX
 from letta.errors import ContextWindowExceededError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import AsyncTimer, get_utc_time, get_utc_timestamp_ns, ns_to_ms
+from letta.helpers.skip_llm_helpers import mock_chat_completion_resposne, mock_tool_call_response_dict
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
@@ -42,7 +43,7 @@ from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
-from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, FunctionCall, Message, ToolCall, UsageStatistics
+from letta.schemas.openai.chat_completion_response import Message, ToolCall, UsageStatistics
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
@@ -242,15 +243,7 @@ class LettaAgent(BaseAgent):
             log_event("agent.stream_no_tokens.llm_response.received")  # [3^]
 
             if response_data.get("skip_llm", False):
-                # Wrap the mock response data in a proper ChatCompletionResponse object
-                response = ChatCompletionResponse(
-                    id=str(uuid.uuid4()),
-                    choices=response_data["choices"],
-                    created=get_utc_time(),
-                    model=agent_state.llm_config.model,
-                    object="chat.completion",
-                    usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
-                )
+                response = mock_chat_completion_resposne(response_data, agent_state)
             else:
                 response = llm_client.convert_response_to_chat_completion(response_data, in_context_messages, agent_state.llm_config)
 
@@ -258,10 +251,10 @@ class LettaAgent(BaseAgent):
                 usage.completion_tokens += response.usage.completion_tokens
                 usage.prompt_tokens += response.usage.prompt_tokens
                 usage.total_tokens += response.usage.total_tokens
-                usage.run_ids = [self.current_run_id] if self.current_run_id else None
                 MetricRegistry().message_output_tokens.record(
                     response.usage.completion_tokens, dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model})
                 )
+            usage.run_ids = [self.current_run_id] if self.current_run_id else None
             usage.step_count += 1
 
             if not response.choices[0].message.tool_calls:
@@ -416,25 +409,17 @@ class LettaAgent(BaseAgent):
             log_event("agent.step.llm_response.received")  # [3^]
 
             if response_data.get("skip_llm", False):
-                # Wrap the mock response data in a proper ChatCompletionResponse object
-                response = ChatCompletionResponse(
-                    id=str(uuid.uuid4()),
-                    choices=response_data["choices"],
-                    created=get_utc_time(),
-                    model=agent_state.llm_config.model,
-                    object="chat.completion",
-                    usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
-                )
+                response = mock_chat_completion_resposne(response_data, agent_state)
             else:
                 response = llm_client.convert_response_to_chat_completion(response_data, in_context_messages, agent_state.llm_config)
 
                 usage.completion_tokens += response.usage.completion_tokens
                 usage.prompt_tokens += response.usage.prompt_tokens
                 usage.total_tokens += response.usage.total_tokens
-                usage.run_ids = [run_id] if run_id else None
                 MetricRegistry().message_output_tokens.record(
                     response.usage.completion_tokens, dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model})
                 )
+            usage.run_ids = [run_id] if run_id else None
             usage.step_count += 1
 
             if not response.choices[0].message.tool_calls:
@@ -788,27 +773,8 @@ class LettaAgent(BaseAgent):
                 if skip_llm:
                     # Create synthetic tool call with predefined args
                     self.logger.info(f"Skipping LLM call for tool '{force_tool_call}' with predefined args: {predefined_args}")
-                    tool_call = ToolCall(
-                        id=f"call_{uuid.uuid4().hex[:8]}",
-                        function=FunctionCall(name=force_tool_call, arguments=json.dumps(predefined_args)),
-                    )
 
-                    # Mock a response with the necessary fields
-                    response = {
-                        "choices": [
-                            {
-                                "finish_reason": "",
-                                "index": 0,
-                                "message": {
-                                    "tool_calls": [tool_call],
-                                    "role": "tool_rule_solver",
-                                },
-                                "logprobs": None,
-                                "seed": None,
-                            }
-                        ],
-                        "skip_llm": True,
-                    }
+                    response = mock_tool_call_response_dict(force_tool_call, predefined_args)
 
                     return request_data, response, current_in_context_messages, new_in_context_messages, valid_tool_names
                 else:
