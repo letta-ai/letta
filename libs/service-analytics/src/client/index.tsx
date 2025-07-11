@@ -100,6 +100,7 @@ interface IdentifyUserProps {
 
 export function IdentifyUserForPostHog(props: IdentifyUserProps) {
   const { userId } = props;
+  const posthogClient = usePostHog();
 
   useEffect(() => {
     try {
@@ -109,7 +110,7 @@ export function IdentifyUserForPostHog(props: IdentifyUserProps) {
       ) {
         return;
       }
-      const posthogClient = usePostHog();
+
       posthogClient.identify(userId);
     } catch (error) {
       console.error('Error identifying user on PostHog', error);
@@ -124,8 +125,7 @@ export function trackClientSideEvent<Event extends AnalyticsEvent>(
   properties: AnalyticsEventProperties[Event],
 ) {
   try {
-    const posthogClient = usePostHog();
-    posthogClient.capture(eventName, properties);
+    posthog.capture(eventName, properties);
   } catch (error) {
     console.error('Error tracking PostHog event', error);
   }
