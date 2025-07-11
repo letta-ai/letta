@@ -29,3 +29,15 @@ export function usePathname() {
   const location = useLocation();
   return location.pathname;
 }
+
+export function useSearchParams() {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+
+  return {
+    get: (key: string) => searchParams.get(key),
+    has: (key: string) => searchParams.has(key),
+    getAll: (key: string) => searchParams.getAll(key),
+    entries: () => searchParams.entries(),
+  };
+}
