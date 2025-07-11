@@ -36,7 +36,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      data-mode={theme?.value}
+      data-mode={theme?.value || 'auto'}
       className={cn(manrope.className, 'overflow-x-hidden', theme?.value)}
     >
       <head>
