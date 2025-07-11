@@ -210,7 +210,7 @@ class BasicBlockMemory(Memory):
         Append to the contents of core memory.
 
         Args:
-            label (str): Section of the memory to be edited (persona or human).
+            label (str): Section of the memory to be edited.
             content (str): Content to write to the memory. All unicode (including emojis) are supported.
 
         Returns:
@@ -226,7 +226,7 @@ class BasicBlockMemory(Memory):
         Replace the contents of core memory. To delete memories, use an empty string for new_content.
 
         Args:
-            label (str): Section of the memory to be edited (persona or human).
+            label (str): Section of the memory to be edited.
             old_content (str): String to replace. Must be an exact match.
             new_content (str): Content to write to the memory. All unicode (including emojis) are supported.
 
