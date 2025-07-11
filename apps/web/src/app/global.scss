@@ -24,3 +24,9 @@ body {
   container-type: inline-size;
 }
 
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    @include dark;
+  }
+}
