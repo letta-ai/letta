@@ -1033,3 +1033,36 @@ def test_preview_payload(client: LettaSDKClient, agent):
     assert payload["user"].startswith("user-")
 
     print(payload)
+
+
+def test_agent_tools_list(client: LettaSDKClient):
+    """Test the optimized agent tools list endpoint for correctness."""
+    # Create a test agent
+    agent_state = client.agents.create(
+        name="test_agent_tools_list",
+        memory_blocks=[
+            CreateBlock(
+                label="persona",
+                value="You are a helpful assistant.",
+            ),
+        ],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-3-small",
+        include_base_tools=True,
+    )
+
+    try:
+        # Test basic functionality
+        tools = client.agents.tools.list(agent_id=agent_state.id)
+        assert len(tools) > 0, "Agent should have base tools attached"
+
+        # Verify tool objects have expected attributes
+        for tool in tools:
+            assert hasattr(tool, "id"), "Tool should have id attribute"
+            assert hasattr(tool, "name"), "Tool should have name attribute"
+            assert tool.id is not None, "Tool id should not be None"
+            assert tool.name is not None, "Tool name should not be None"
+
+    finally:
+        # Clean up
+        client.agents.delete(agent_id=agent_state.id)
