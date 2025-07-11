@@ -15,34 +15,32 @@ import { useObservabilityContext } from '$web/client/hooks/useObservabilityConte
 import { useMemo } from 'react';
 import type { EChartsOption } from 'echarts';
 
-interface ToolLatencyByToolNameChartProps {
+interface StepDurationByNameChartProps {
   analysisLink?: string;
   type: 'p50' | 'p99';
 }
 
-export function LLMLatencyByModelNameChart(
-  props: ToolLatencyByToolNameChartProps,
-) {
+export function StepDurationByNameChart(props: StepDurationByNameChartProps) {
   const { startDate, endDate, baseTemplateId } = useObservabilityContext();
   const { analysisLink, type = 'p50' } = props;
   const { id: projectId } = useCurrentProject();
 
   const t = useTranslations(
-    'pages/projects/observability/LLMLatencyByModelNameChart',
+    'pages/projects/observability/StepDurationByNameChart',
   );
 
-  const { data } = webApi.observability.getLLMLatencyByModel.useQuery({
-    queryKey: webApiQueryKeys.observability.getLLMLatencyByModel({
+  const { data } = webApi.observability.getStepDurationMetrics.useQuery({
+    queryKey: webApiQueryKeys.observability.getStepDurationMetrics({
       projectId,
       startDate,
-      baseTemplateId: baseTemplateId?.value,
       endDate,
+      baseTemplateId: baseTemplateId?.value,
     }),
     queryData: {
       query: {
+        baseTemplateId: baseTemplateId?.value,
         projectId,
         startDate,
-        baseTemplateId: baseTemplateId?.value,
         endDate,
       },
     },
@@ -50,51 +48,57 @@ export function LLMLatencyByModelNameChart(
 
   const { formatSmallDuration } = useFormatters();
 
-  interface ToolSeriesData {
+  interface StepSeriesData {
     date: string;
-    latencyMs: number;
+    durationNs: number;
     name: string;
   }
 
-  // Group data by tool name for multiple series
-  interface ToolSeriesType {
-    toolName: string;
-    data: ToolSeriesData[];
+  // Group data by step name for multiple series
+  interface StepSeriesType {
+    stepName: string;
+    data: StepSeriesData[];
   }
 
-  const toolSeries: ToolSeriesType[] = useMemo(() => {
+  const stepSeries: StepSeriesType[] = useMemo(() => {
     if (!data?.body.items) return [];
 
-    const toolMap = new Map<string, ToolSeriesData[]>();
+    const stepMap = new Map<string, StepSeriesData[]>();
 
     data.body.items.forEach((item) => {
-      if (!toolMap.has(item.modelName)) {
-        toolMap.set(item.modelName, []);
+      if (!stepMap.has(item.stepName)) {
+        stepMap.set(item.stepName, []);
       }
-      toolMap.get(item.modelName)?.push({
+      stepMap.get(item.stepName)?.push({
         date: item.date,
-        latencyMs: type === 'p50' ? item.p50LatencyMs : item.p99LatencyMs,
-        name: item.modelName || '',
+        durationNs: type === 'p50' ? item.p50DurationNs : item.p99DurationNs,
+        name: item.stepName || '',
       });
     });
 
-    // Convert to array and sort by average latency
-    return Array.from(toolMap.entries()).map(([toolName, data]) => ({
-      toolName,
+    // Convert to array
+    return Array.from(stepMap.entries()).map(([stepName, data]) => ({
+      stepName,
       data,
     }));
   }, [data?.body.items, type]);
 
-  const tableOptions = useObservabilitySeriesData<ToolSeriesData>({
-    seriesData: toolSeries.map((tool) => ({
-      data: tool.data,
-      getterFn: (item) => item.latencyMs,
-      nameGetterFn: (item) => item.name,
+  const tableOptions = useObservabilitySeriesData<StepSeriesData>({
+    seriesData: stepSeries.map((step) => ({
+      data: step.data,
+      getterFn: (item) => item.durationNs,
+      nameGetterFn: (item) => {
+        if (item.name === 'send_message') {
+          return 'Assistant Message';
+        }
+
+        return `Tool Run (${item.name})`;
+      },
     })),
     startDate,
     endDate,
     formatter: (value: number) => {
-      return formatSmallDuration(value * 1_000_000).replace(' ', ''); // Convert ms to ns
+      return formatSmallDuration(value).replace(' ', ''); // Value is already in ns
     },
   });
 
@@ -135,7 +139,7 @@ export function LLMLatencyByModelNameChart(
               let value = get(param, 'data.value', '');
 
               if (typeof value !== 'number') {
-                // @ts-expect-error =-f afsd
+                // @ts-expect-error type conversion
                 value = parseInt(value, 10);
               }
 
@@ -146,14 +150,14 @@ export function LLMLatencyByModelNameChart(
               return {
                 color: param.color as string,
                 label: `${get(param, 'data.name', '')}`,
-                value: formatSmallDuration(value * 1_000_000), // Convert ms to ns
+                value: formatSmallDuration(value), // Value is already in ns
               };
             });
 
           if (options.length === 0) {
             return makeFormattedTooltip({
               date,
-              label: t('noData'),
+              label: 'No data',
             });
           }
 
@@ -164,14 +168,14 @@ export function LLMLatencyByModelNameChart(
         },
       },
     }),
-    [tableOptions, formatSmallDuration, t],
+    [tableOptions, formatSmallDuration],
   );
 
   return (
     <DashboardChartWrapper
-      info={t('info')}
       analysisLink={analysisLink}
       title={t('title', { type })}
+      info={t('info')}
       isLoading={!data}
       isEmpty={!data?.body.items?.length}
     >

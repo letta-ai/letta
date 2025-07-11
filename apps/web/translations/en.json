@@ -1503,8 +1503,8 @@
       "tooltip": "The API error rate is the percentage of messages that resulted in an API error. An API error is when a request to the agent API fails."
     },
     "avgToolLatencyNs": {
-      "label": "Average tool latency",
-      "tooltip": "The average tool latency is the average time it takes for a tool to execute. This is calculated as the time between the agent sending a request to the tool and receiving a response from the tool."
+      "label": "Average tool duration",
+      "tooltip": "The average tool duration is the average time it takes for a tool to execute. This is calculated as the time between the agent sending a request to the tool and receiving a response from the tool."
     },
     "p50TimeToFirstTokenMs": {
       "label": "Median time to first token",
@@ -1579,7 +1579,7 @@
     }
   },
   "pages/projects/observability/TotalResponseTimeChart": {
-    "title": "Response latency",
+    "title": "Response duration",
     "p50ResponseTime": {
       "label": "Median response time"
     },
@@ -1635,35 +1635,42 @@
     }
   },
   "pages/projects/observability/LLMLatencyChart": {
-    "title": "LLM latency",
+    "title": "LLM duration",
     "p50Latency": {
-      "label": "Median latency"
+      "label": "Median duration"
     },
     "p99Latency": {
-      "label": "99th percentile latency"
+      "label": "99th percentile duration"
     },
     "averageLatency": {
-      "label": "Average latency"
+      "label": "Average duration"
     }
   },
+  "pages/projects/observability/StepDurationByNameChart": {
+    "title": "Step duration ({type})",
+    "noData": "No data available",
+    "info": "Step duration measures how long an entire step takes to execute. It is calculated as the time starting from the start of a request or last executed step to when a tool execution is completed."
+  },
   "pages/projects/observability/ToolLatencyByToolNameChart": {
-    "title": "Tool latency by name ({type})",
+    "title": "Tool duration ({type})",
+    "info": "Tool duration measures how long it takes for a tool to execute. This is calculated as the time between after an agent has decided to use a tool and the time it receives a response from the tool.",
     "noData": "No data available"
   },
   "pages/projects/observability/LLMLatencyByModelNameChart": {
-    "title": "LLM latency by model ({type})",
+    "title": "LLM duration by model ({type})",
+    "info": "LLM duration measures how long it takes for an agent to generate a response. This is calculated from when the LLM is called from Letta to when the last token is generated.",
     "noData": "No data available"
   },
   "pages/projects/observability/ToolLatencyChart": {
-    "title": "Tool latency",
+    "title": "Tool duration",
     "avgLatencyMs": {
-      "label": "Average latency"
+      "label": "Average duration"
     },
     "p50Latency": {
-      "label": "Median latency"
+      "label": "Median duration"
     },
     "p99Latency": {
-      "label": "99th percentile latency"
+      "label": "99th percentile duration"
     }
   },
   "pages/projects/observability/ToolUsageFrequencyChart": {
@@ -1690,7 +1697,7 @@
     }
   },
   "pages/projects/observability/ToolLatencyByNameChart": {
-    "title": "Tool latency by name"
+    "title": "Tool duration by name"
   },
   "projects/(projectSlug)/responses/page": {
     "search": {

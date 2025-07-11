@@ -6,6 +6,7 @@ import {
   getToolLatencyByName,
   getToolUsageByFrequency,
   getTimeToFirstTokenPerDay,
+  getStepDurationMetrics,
   getTotalMessagesPerDay,
   getToolErrorsMetrics,
   getToolErrorMessages,
@@ -28,6 +29,7 @@ export const observabilityRouter = {
   getToolLatencyByName,
   getToolUsageByFrequency,
   getTimeToFirstTokenPerDay,
+  getStepDurationMetrics,
   getTotalMessagesPerDay,
   getLLMLatencyByModel,
   // Existing endpoints

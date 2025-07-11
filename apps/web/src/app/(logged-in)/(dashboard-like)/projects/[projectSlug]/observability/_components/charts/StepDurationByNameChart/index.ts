@@ -1,0 +1,1 @@
+export { StepDurationByNameChart } from './StepDurationByNameChart';

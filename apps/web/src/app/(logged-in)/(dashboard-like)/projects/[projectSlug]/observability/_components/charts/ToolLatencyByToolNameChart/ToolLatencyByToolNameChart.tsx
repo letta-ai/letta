@@ -175,6 +175,7 @@ export function ToolLatencyByToolNameChart(
   return (
     <DashboardChartWrapper
       analysisLink={analysisLink}
+      info={t('info')}
       title={t('title', { type })}
       isLoading={!data}
       isEmpty={!data?.body.items?.length}

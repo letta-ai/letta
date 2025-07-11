@@ -5,6 +5,7 @@ export { getToolLatencyPerDay } from './getToolLatencyPerDay';
 export { getToolLatencyByName } from './getToolLatencyByName';
 export { getToolUsageByFrequency } from './getToolUsageByFrequency';
 export { getTimeToFirstTokenPerDay } from './getTimeToFirstTokenPerDay';
+export { getStepDurationMetrics } from './getStepDurationMetrics';
 export { getTotalMessagesPerDay } from './getTotalMessagesPerDay';
 export { getToolErrorsMetrics } from './getToolErrorsMetrics';
 export { getToolErrorMessages } from './getToolErrorMessages';

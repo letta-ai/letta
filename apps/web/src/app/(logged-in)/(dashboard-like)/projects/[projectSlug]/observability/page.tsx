@@ -20,6 +20,7 @@ import { Fragment, useMemo } from 'react';
 import { LLMLatencyChart } from './_components/charts/LLMLatencyChart/LLMLatencyChart';
 import { LLMLatencyByModelNameChart } from './_components/charts/LLMLatencyByModelNameChart/LLMLatencyByModelNameChart';
 import { TimeToFirstTokenChart } from './_components/charts/TimeToFirstTokenChart/TimeToFirstTokenChart';
+import { StepDurationByNameChart } from './_components/charts/StepDurationByNameChart';
 
 interface ChartRowProps {
   children: React.ReactNode;
@@ -52,23 +53,27 @@ const activityCharts = [
 const performanceCharts = [
   <TotalResponseTimeChart key="total-response-time-chart" />,
   <LLMLatencyChart key="llm-latency-chart" />,
+
+  <StepDurationByNameChart type="p50" key="step-duration-by-name-chart" />,
+  <StepDurationByNameChart type="p99" key="step-duration-by-name-chart" />,
+  <LLMLatencyByModelNameChart
+    type="p50"
+    key="llm-latency-by-model-name-chart"
+  />,
+  <LLMLatencyByModelNameChart
+    type="p99"
+    key="llm-latency-by-model-name-chart"
+  />,
+  <ToolLatencyByToolNameChart
+    type="p50"
+    key="llm-latency-by-tool-name-chart"
+  />,
+  <ToolLatencyByToolNameChart
+    type="p99"
+    key="llm-latency-by-tool-name-chart"
+  />,
+
   <ToolLatencyChart key="tool-latency-chart" />,
-  <ToolLatencyByToolNameChart
-    type="p50"
-    key="llm-latency-by-tool-name-chart"
-  />,
-  <ToolLatencyByToolNameChart
-    type="p99"
-    key="llm-latency-by-tool-name-chart"
-  />,
-  <LLMLatencyByModelNameChart
-    type="p50"
-    key="llm-latency-by-model-name-chart"
-  />,
-  <LLMLatencyByModelNameChart
-    type="p99"
-    key="llm-latency-by-model-name-chart"
-  />,
   <TimeToFirstTokenChart key="time-to-first-token-chart" />,
 ];
 

@@ -6,19 +6,28 @@ import { cn } from '@letta-cloud/ui-styles';
 import { Button } from '../../core/Button/Button';
 import { useTranslations } from '@letta-cloud/translations';
 import { ExploreIcon } from '../../icons';
+import { InfoTooltip } from '../InfoTooltip/InfoTooltip';
 
 interface DashboardChartWrapperProps {
   title: string;
   children: React.ReactNode;
   isLoading?: boolean;
+  info?: string;
   isEmpty?: boolean;
   analysisLink?: string;
   headerActions?: React.ReactNode;
 }
 
 export function DashboardChartWrapper(props: DashboardChartWrapperProps) {
-  const { title, children, isEmpty, isLoading, analysisLink, headerActions } =
-    props;
+  const {
+    title,
+    info,
+    children,
+    isEmpty,
+    isLoading,
+    analysisLink,
+    headerActions,
+  } = props;
   const t = useTranslations('components/DashboardChartWrapper');
 
   return (
@@ -29,9 +38,12 @@ export function DashboardChartWrapper(props: DashboardChartWrapperProps) {
         padding="medium"
         paddingLeft="large"
       >
-        <Typography variant="body2" bold>
-          {title}
-        </Typography>
+        <HStack align="center">
+          <Typography variant="body2" bold>
+            {title}
+          </Typography>
+          {info && <InfoTooltip text={info} />}
+        </HStack>
         <HStack>
           {headerActions}
           {analysisLink && (

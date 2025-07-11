@@ -417,6 +417,27 @@ const getTimeToFirstTokenPerDayContract = c.query({
   },
 });
 
+const StepDurationMetricsItem = z.object({
+  date: z.string(),
+  stepName: z.string(),
+  count: z.number(),
+  p50DurationNs: z.number(),
+  p99DurationNs: z.number(),
+});
+
+const StepDurationMetricsResponseSchema = z.object({
+  items: z.array(StepDurationMetricsItem),
+});
+
+const getStepDurationMetricsContract = c.query({
+  path: '/observability/metrics/step-duration-metrics',
+  method: 'GET',
+  query: DefaultMetricsQuery,
+  responses: {
+    200: StepDurationMetricsResponseSchema,
+  },
+});
+
 export const StepDetail = z.object({
   stepId: z.string(),
   toolName: z.string(),
@@ -546,6 +567,7 @@ export const observabilityContracts = c.router({
   getToolUsageByFrequency: getToolUsageByFrequencyContract,
   getTimeToFirstTokenPerDay: getTimeToFirstTokenPerDayContract,
   getLLMLatencyByModel: getLLMLatencyByModelContract,
+  getStepDurationMetrics: getStepDurationMetricsContract,
   // Existing endpoints
   getTracesByProjectId: getTracesByProjectIdContract,
   getTimeToFirstTokenMetrics: timeToFirstTokenMetricsContract,
@@ -594,6 +616,11 @@ export const observabilityQueryKeys = {
   getTimeToFirstTokenPerDay: (query: z.infer<typeof DefaultMetricsQuery>) => [
     'observability',
     'getTimeToFirstTokenPerDay',
+    query,
+  ],
+  getStepDurationMetrics: (query: z.infer<typeof DefaultMetricsQuery>) => [
+    'observability',
+    'getStepDurationMetrics',
     query,
   ],
   // Existing query keys
