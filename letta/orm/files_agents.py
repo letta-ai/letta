@@ -12,7 +12,7 @@ from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.file import FileAgent as PydanticFileAgent
 
 if TYPE_CHECKING:
-    from letta.orm.file import FileMetadata
+    pass
 
 
 class FileAgent(SqlalchemyBase, OrganizationMixin):
@@ -55,6 +55,12 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
         nullable=False,
         doc="ID of the agent",
     )
+    source_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("sources.id", ondelete="CASCADE"),
+        nullable=False,
+        doc="ID of the source (denormalized from files.source_id)",
+    )
 
     file_name: Mapped[str] = mapped_column(
         String,
@@ -78,13 +84,6 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
         back_populates="file_agents",
         lazy="selectin",
     )
-    file: Mapped["FileMetadata"] = relationship(
-        "FileMetadata",
-        foreign_keys=[file_id],
-        lazy="selectin",
-        back_populates="file_agents",
-        passive_deletes=True,  # ← add this
-    )
 
     # TODO: This is temporary as we figure out if we want FileBlock as a first class citizen
     def to_pydantic_block(self) -> PydanticBlock:
@@ -99,8 +98,8 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
         return PydanticBlock(
             organization_id=self.organization_id,
             value=visible_content,
-            label=self.file.file_name,
+            label=self.file_name,  # use denormalized file_name instead of self.file.file_name
             read_only=True,
-            metadata={"source_id": self.file.source_id},
+            metadata={"source_id": self.source_id},  # use denormalized source_id
             limit=CORE_MEMORY_SOURCE_CHAR_LIMIT,
         )

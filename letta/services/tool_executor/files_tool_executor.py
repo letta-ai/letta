@@ -180,7 +180,12 @@ class LettaFileToolExecutor(ToolExecutor):
 
             # Handle LRU eviction and file opening
             closed_files, was_already_open = await self.files_agents_manager.enforce_max_open_files_and_open(
-                agent_id=agent_state.id, file_id=file_id, file_name=file_name, actor=self.actor, visible_content=visible_content
+                agent_id=agent_state.id,
+                file_id=file_id,
+                file_name=file_name,
+                source_id=file.source_id,
+                actor=self.actor,
+                visible_content=visible_content,
             )
 
             opened_files.append(file_name)
