@@ -9,8 +9,6 @@ from datetime import datetime, timedelta, timezone
 from typing import List
 
 import httpx
-
-# tests/test_file_content_flow.py
 import pytest
 from _pytest.python_api import approx
 from anthropic.types.beta import BetaMessage
@@ -21,6 +19,8 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.orm.exc import StaleDataError
 
+# tests/test_file_content_flow.py
+from letta.agents.letta_agent import LettaAgent
 from letta.config import LettaConfig
 from letta.constants import (
     BASE_MEMORY_TOOLS,
@@ -81,7 +81,7 @@ from letta.schemas.source import Source as PydanticSource
 from letta.schemas.source import SourceUpdate
 from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool import ToolCreate, ToolUpdate
-from letta.schemas.tool_rule import InitToolRule
+from letta.schemas.tool_rule import ChildToolRule, InitToolRule
 from letta.schemas.user import User as PydanticUser
 from letta.schemas.user import UserUpdate
 from letta.server.db import db_registry
@@ -1029,6 +1029,50 @@ async def test_update_agent(
     comprehensive_agent_checks(updated_agent, update_agent_request, actor=default_user)
     assert updated_agent.message_ids == update_agent_request.message_ids
     assert updated_agent.updated_at > last_updated_timestamp
+
+
+@pytest.mark.asyncio
+async def test_predefined_args_zero_llm_usage(server, default_user, print_tool, other_tool):
+    """Test that predefined args result in zero LLM token usage"""
+
+    # Create agent with predefined args
+    agent_state = await server.agent_manager.create_agent_async(
+        CreateAgent(
+            name="test_zero_llm_usage",
+            tool_ids=[print_tool.id, other_tool.id],
+            tool_rules=[
+                InitToolRule(tool_name=print_tool.name, args={"message": "Test", "prefix": "ZERO_USAGE"}),
+                ChildToolRule(tool_name=print_tool.name, children=[other_tool.name], args={"message": "Test", "prefix": "ZERO_USAGE"}),
+            ],
+            include_base_tools=False,
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        ),
+        actor=default_user,
+    )
+
+    agent_loop = LettaAgent(
+        agent_id=agent_state.id,
+        message_manager=server.message_manager,
+        agent_manager=server.agent_manager,
+        block_manager=server.block_manager,
+        job_manager=server.job_manager,
+        passage_manager=server.passage_manager,
+        actor=default_user,
+    )
+
+    response = await agent_loop.step(
+        input_messages=[MessageCreate(role="user", content="Test message")],
+        max_steps=2,
+        use_assistant_message=False,
+    )
+
+    # Verify usage shows zero LLM tokens
+    assert response.usage.completion_tokens == 0
+    assert response.usage.prompt_tokens == 0
+    assert response.usage.total_tokens == 0
+    # Step count should still be tracked
+    assert response.usage.step_count >= 2
 
 
 # ======================================================================================================================

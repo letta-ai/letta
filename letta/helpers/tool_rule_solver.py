@@ -255,9 +255,10 @@ class ToolRulesSolver(BaseModel):
                 return rule.args
 
         # Check child tool rules
-        for rule in self.child_based_tool_rules:
-            if rule.tool_name == tool_name and rule.args:
-                return rule.args
+        for tool_rule in self.child_based_tool_rules:
+            for child_rule in tool_rule.children:
+                if child_rule == tool_name and tool_rule.args:
+                    return tool_rule.args
 
         # Check other rule types
         for rule in self.continue_tool_rules + self.terminal_tool_rules + self.required_before_exit_tool_rules:
