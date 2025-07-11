@@ -4,6 +4,7 @@ from typing import Any, List, Optional, Tuple
 from openai.types.beta.function_tool import FunctionTool as OpenAITool
 
 from letta.log import get_logger
+from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.memory import ContextWindowOverview
@@ -56,7 +57,7 @@ class ContextWindowCalculator:
         return None, 1
 
     async def calculate_context_window(
-        self, agent_state: Any, actor: PydanticUser, token_counter: TokenCounter, message_manager: Any, passage_manager: Any
+        self, agent_state: AgentState, actor: PydanticUser, token_counter: TokenCounter, message_manager: Any, passage_manager: Any
     ) -> ContextWindowOverview:
         """Calculate context window information using the provided token counter"""
 
