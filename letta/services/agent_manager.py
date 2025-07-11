@@ -1540,29 +1540,42 @@ class AgentManager:
         else:
             return agent_state
 
-    @trace_method
+    # TODO: This is probably one of the worst pieces of code I've ever written please rip up as you see wish
     @enforce_types
+    @trace_method
     async def rebuild_system_prompt_async(
-        self, agent_id: str, actor: PydanticUser, force=False, update_timestamp=True, tool_rules_solver: Optional[ToolRulesSolver] = None
-    ) -> PydanticAgentState:
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        force=False,
+        update_timestamp=True,
+        tool_rules_solver: Optional[ToolRulesSolver] = None,
+        dry_run: bool = False,
+    ) -> Tuple[PydanticAgentState, Optional[PydanticMessage], int, int]:
         """Rebuilds the system message with the latest memory object and any shared memory block updates
 
         Updates to core memory blocks should trigger a "rebuild", which itself will create a new message object
 
         Updates to the memory header should *not* trigger a rebuild, since that will simply flood recall storage with excess messages
         """
-        # Get the current agent state
-        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory", "sources"], actor=actor)
+        num_messages_task = self.message_manager.size_async(actor=actor, agent_id=agent_id)
+        num_archival_memories_task = self.passage_manager.agent_passage_size_async(actor=actor, agent_id=agent_id)
+        agent_state_task = self.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory", "sources", "tools"], actor=actor)
+
+        num_messages, num_archival_memories, agent_state = await asyncio.gather(
+            num_messages_task,
+            num_archival_memories_task,
+            agent_state_task,
+        )
+
         if not tool_rules_solver:
             tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
 
-        curr_system_message = await self.get_system_message_async(
-            agent_id=agent_id, actor=actor
-        )  # this is the system + memory bank, not just the system prompt
+        curr_system_message = await self.message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)
 
         if curr_system_message is None:
             logger.warning(f"No system message found for agent {agent_state.id} and user {actor}")
-            return agent_state
+            return agent_state, curr_system_message, num_messages, num_archival_memories
 
         curr_system_message_openai = curr_system_message.to_openai_dict()
 
@@ -1576,7 +1589,7 @@ class AgentManager:
             logger.debug(
                 f"Memory hasn't changed for agent id={agent_id} and actor=({actor.id}, {actor.name}), skipping system prompt rebuild"
             )
-            return agent_state
+            return agent_state, curr_system_message, num_messages, num_archival_memories
 
         # If the memory didn't update, we probably don't want to update the timestamp inside
         # For example, if we're doing a system prompt swap, this should probably be False
@@ -1585,9 +1598,6 @@ class AgentManager:
         else:
             # NOTE: a bit of a hack - we pull the timestamp from the message created_by
             memory_edit_timestamp = curr_system_message.created_at
-
-        num_messages = await self.message_manager.size_async(actor=actor, agent_id=agent_id)
-        num_archival_memories = await self.passage_manager.agent_passage_size_async(actor=actor, agent_id=agent_id)
 
         # update memory (TODO: potentially update recall/archival stats separately)
 
@@ -1607,19 +1617,23 @@ class AgentManager:
             logger.debug(f"Rebuilding system with new memory...\nDiff:\n{diff}")
 
             # Swap the system message out (only if there is a diff)
-            message = PydanticMessage.dict_to_message(
+            temp_message = PydanticMessage.dict_to_message(
                 agent_id=agent_id,
                 model=agent_state.llm_config.model,
                 openai_message_dict={"role": "system", "content": new_system_message_str},
             )
-            message = await self.message_manager.update_message_by_id_async(
-                message_id=curr_system_message.id,
-                message_update=MessageUpdate(**message.model_dump()),
-                actor=actor,
-            )
-            return await self.set_in_context_messages_async(agent_id=agent_id, message_ids=agent_state.message_ids, actor=actor)
-        else:
-            return agent_state
+            temp_message.id = curr_system_message.id
+
+            if not dry_run:
+                await self.message_manager.update_message_by_id_async(
+                    message_id=curr_system_message.id,
+                    message_update=MessageUpdate(**temp_message.model_dump()),
+                    actor=actor,
+                )
+            else:
+                curr_system_message = temp_message
+
+        return agent_state, curr_system_message, num_messages, num_archival_memories
 
     @trace_method
     @enforce_types
@@ -1781,7 +1795,7 @@ class AgentManager:
             # NOTE: don't do this since re-buildin the memory is handled at the start of the step
             # rebuild memory - this records the last edited timestamp of the memory
             # TODO: pass in update timestamp from block edit time
-            agent_state = await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor)
+            await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor)
 
         return agent_state
 
@@ -1845,12 +1859,8 @@ class AgentManager:
             )
 
             # Commit the changes
-            await agent.update_async(session, actor=actor)
-
-        # Force rebuild of system prompt so that the agent is updated with passage count
-        pydantic_agent = await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
-
-        return pydantic_agent
+            agent = await agent.update_async(session, actor=actor)
+            return await agent.to_pydantic_async()
 
     @trace_method
     @enforce_types
@@ -2761,8 +2771,11 @@ class AgentManager:
             results = [row[0] for row in result.all()]
             return results
 
+    @trace_method
     async def get_context_window(self, agent_id: str, actor: PydanticUser) -> ContextWindowOverview:
-        agent_state = await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
+        agent_state, system_message, num_messages, num_archival_memories = await self.rebuild_system_prompt_async(
+            agent_id=agent_id, actor=actor, force=True, dry_run=True
+        )
         calculator = ContextWindowCalculator()
 
         if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" or agent_state.llm_config.model_endpoint_type == "anthropic":
@@ -2778,5 +2791,7 @@ class AgentManager:
             actor=actor,
             token_counter=token_counter,
             message_manager=self.message_manager,
-            passage_manager=self.passage_manager,
+            system_message_compiled=system_message,
+            num_archival_memories=num_archival_memories,
+            num_messages=num_messages,
         )

@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 from letta.helpers.decorators import async_redis_cache
 from letta.llm_api.anthropic_client import AnthropicClient
+from letta.otel.tracing import trace_method
 from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
 from letta.utils import count_tokens
 
@@ -36,6 +37,7 @@ class AnthropicTokenCounter(TokenCounter):
         self.client = anthropic_client
         self.model = model
 
+    @trace_method
     @async_redis_cache(
         key_func=lambda self, text: f"anthropic_text_tokens:{self.model}:{hashlib.sha256(text.encode()).hexdigest()[:16]}",
         prefix="token_counter",
@@ -46,6 +48,7 @@ class AnthropicTokenCounter(TokenCounter):
             return 0
         return await self.client.count_tokens(model=self.model, messages=[{"role": "user", "content": text}])
 
+    @trace_method
     @async_redis_cache(
         key_func=lambda self, messages: f"anthropic_message_tokens:{self.model}:{hashlib.sha256(json.dumps(messages, sort_keys=True).encode()).hexdigest()[:16]}",
         prefix="token_counter",
@@ -56,6 +59,7 @@ class AnthropicTokenCounter(TokenCounter):
             return 0
         return await self.client.count_tokens(model=self.model, messages=messages)
 
+    @trace_method
     @async_redis_cache(
         key_func=lambda self, tools: f"anthropic_tool_tokens:{self.model}:{hashlib.sha256(json.dumps([t.model_dump() for t in tools], sort_keys=True).encode()).hexdigest()[:16]}",
         prefix="token_counter",
@@ -76,6 +80,7 @@ class TiktokenCounter(TokenCounter):
     def __init__(self, model: str):
         self.model = model
 
+    @trace_method
     @async_redis_cache(
         key_func=lambda self, text: f"tiktoken_text_tokens:{self.model}:{hashlib.sha256(text.encode()).hexdigest()[:16]}",
         prefix="token_counter",
@@ -86,6 +91,7 @@ class TiktokenCounter(TokenCounter):
             return 0
         return count_tokens(text)
 
+    @trace_method
     @async_redis_cache(
         key_func=lambda self, messages: f"tiktoken_message_tokens:{self.model}:{hashlib.sha256(json.dumps(messages, sort_keys=True).encode()).hexdigest()[:16]}",
         prefix="token_counter",
@@ -98,6 +104,7 @@ class TiktokenCounter(TokenCounter):
 
         return num_tokens_from_messages(messages=messages, model=self.model)
 
+    @trace_method
     @async_redis_cache(
         key_func=lambda self, tools: f"tiktoken_tool_tokens:{self.model}:{hashlib.sha256(json.dumps([t.model_dump() for t in tools], sort_keys=True).encode()).hexdigest()[:16]}",
         prefix="token_counter",
