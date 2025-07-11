@@ -1,5 +1,5 @@
 import uuid
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import ForeignKey, Index, Integer, String, Text, UniqueConstraint, desc
 from sqlalchemy.ext.asyncio import AsyncAttrs
@@ -11,10 +11,7 @@ from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 
 if TYPE_CHECKING:
-    from letta.orm.files_agents import FileAgent
-    from letta.orm.organization import Organization
-    from letta.orm.passage import SourcePassage
-    from letta.orm.source import Source
+    pass
 
 
 # TODO: Note that this is NOT organization scoped, this is potentially dangerous if we misuse this
@@ -64,18 +61,6 @@ class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin, AsyncAttrs):
     chunks_embedded: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, doc="Number of chunks that have been embedded.")
 
     # relationships
-    organization: Mapped["Organization"] = relationship("Organization", back_populates="files", lazy="selectin")
-    source: Mapped["Source"] = relationship("Source", back_populates="files", lazy="selectin")
-    source_passages: Mapped[List["SourcePassage"]] = relationship(
-        "SourcePassage", back_populates="file", lazy="selectin", cascade="all, delete-orphan"
-    )
-    file_agents: Mapped[List["FileAgent"]] = relationship(
-        "FileAgent",
-        back_populates="file",
-        lazy="selectin",
-        cascade="all, delete-orphan",
-        passive_deletes=True,  # ← add this
-    )
     content: Mapped[Optional["FileContent"]] = relationship(
         "FileContent",
         uselist=False,

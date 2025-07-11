@@ -29,6 +29,7 @@ class FileAgentManager:
         agent_id: str,
         file_id: str,
         file_name: str,
+        source_id: str,
         actor: PydanticUser,
         is_open: bool = True,
         visible_content: Optional[str] = None,
@@ -47,7 +48,12 @@ class FileAgentManager:
         if is_open:
             # Use the efficient LRU + open method
             closed_files, was_already_open = await self.enforce_max_open_files_and_open(
-                agent_id=agent_id, file_id=file_id, file_name=file_name, actor=actor, visible_content=visible_content or ""
+                agent_id=agent_id,
+                file_id=file_id,
+                file_name=file_name,
+                source_id=source_id,
+                actor=actor,
+                visible_content=visible_content or "",
             )
 
             # Get the updated file agent to return
@@ -85,6 +91,7 @@ class FileAgentManager:
                     agent_id=agent_id,
                     file_id=file_id,
                     file_name=file_name,
+                    source_id=source_id,
                     organization_id=actor.organization_id,
                     is_open=is_open,
                     visible_content=visible_content,
@@ -327,7 +334,7 @@ class FileAgentManager:
     @enforce_types
     @trace_method
     async def enforce_max_open_files_and_open(
-        self, *, agent_id: str, file_id: str, file_name: str, actor: PydanticUser, visible_content: str
+        self, *, agent_id: str, file_id: str, file_name: str, source_id: str, actor: PydanticUser, visible_content: str
     ) -> tuple[List[str], bool]:
         """
         Efficiently handle LRU eviction and file opening in a single transaction.
@@ -336,6 +343,7 @@ class FileAgentManager:
             agent_id: ID of the agent
             file_id: ID of the file to open
             file_name: Name of the file to open
+            source_id: ID of the source (denormalized from files.source_id)
             actor: User performing the action
             visible_content: Content to set for the opened file
 
@@ -418,6 +426,7 @@ class FileAgentManager:
                     agent_id=agent_id,
                     file_id=file_id,
                     file_name=file_name,
+                    source_id=source_id,
                     organization_id=actor.organization_id,
                     is_open=True,
                     visible_content=visible_content,
@@ -516,6 +525,7 @@ class FileAgentManager:
                             agent_id=agent_id,
                             file_id=meta.id,
                             file_name=meta.file_name,
+                            source_id=meta.source_id,
                             organization_id=actor.organization_id,
                             is_open=is_now_open,
                             visible_content=vc,

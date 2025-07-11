@@ -107,6 +107,31 @@ class AgentManager:
         self.identity_manager = IdentityManager()
         self.file_agent_manager = FileAgentManager()
 
+    async def _validate_agent_exists_async(self, session, agent_id: str, actor: PydanticUser) -> None:
+        """
+        Validate that an agent exists and user has access to it using raw SQL for efficiency.
+
+        Args:
+            session: Database session
+            agent_id: ID of the agent to validate
+            actor: User performing the action
+
+        Raises:
+            NoResultFound: If agent doesn't exist or user doesn't have access
+        """
+        agent_check_query = sa.text(
+            """
+            SELECT 1 FROM agents
+            WHERE id = :agent_id
+            AND organization_id = :org_id
+            AND is_deleted = false
+        """
+        )
+        agent_exists = await session.execute(agent_check_query, {"agent_id": agent_id, "org_id": actor.organization_id})
+
+        if not agent_exists.fetchone():
+            raise NoResultFound(f"Agent with ID {agent_id} not found")
+
     @staticmethod
     def _resolve_tools(session, names: Set[str], ids: Set[str], org_id: str) -> Tuple[Dict[str, str], Dict[str, str]]:
         """
@@ -1133,8 +1158,8 @@ class AgentManager:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             return agent.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def get_agent_by_id_async(
         self,
         agent_id: str,
@@ -1853,28 +1878,8 @@ class AgentManager:
         # update agent in-context message IDs
         await self.append_to_in_context_messages_async(messages=[message], agent_id=agent_id, actor=actor)
 
-    @trace_method
     @enforce_types
-    def list_attached_sources(self, agent_id: str, actor: PydanticUser) -> List[PydanticSource]:
-        """
-        Lists all sources attached to an agent.
-
-        Args:
-            agent_id: ID of the agent to list sources for
-            actor: User performing the action
-
-        Returns:
-            List[str]: List of source IDs attached to the agent
-        """
-        with db_registry.session() as session:
-            # Verify agent exists and user has permission to access it
-            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
-
-            # Use the lazy-loaded relationship to get sources
-            return [source.to_pydantic() for source in agent.sources]
-
     @trace_method
-    @enforce_types
     async def list_attached_sources_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticSource]:
         """
         Lists all sources attached to an agent.
@@ -1885,41 +1890,31 @@ class AgentManager:
 
         Returns:
             List[str]: List of source IDs attached to the agent
+
+        Raises:
+            NoResultFound: If agent doesn't exist or user doesn't have access
         """
         async with db_registry.async_session() as session:
-            # Verify agent exists and user has permission to access it
-            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            # Validate agent exists and user has access
+            await self._validate_agent_exists_async(session, agent_id, actor)
 
-            # Use the lazy-loaded relationship to get sources
-            return [source.to_pydantic() for source in agent.sources]
+            # Use raw SQL to efficiently fetch sources - much faster than lazy loading
+            # Fast query without relationship loading
+            query = (
+                select(SourceModel)
+                .join(SourcesAgents, SourceModel.id == SourcesAgents.source_id)
+                .where(
+                    SourcesAgents.agent_id == agent_id,
+                    SourceModel.organization_id == actor.organization_id,
+                    SourceModel.is_deleted == False,
+                )
+                .order_by(SourceModel.created_at.desc(), SourceModel.id)
+            )
 
-    @trace_method
-    @enforce_types
-    def detach_source(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
-        """
-        Detaches a source from an agent.
+            result = await session.execute(query)
+            sources = result.scalars().all()
 
-        Args:
-            agent_id: ID of the agent to detach the source from
-            source_id: ID of the source to detach
-            actor: User performing the action
-        """
-        with db_registry.session() as session:
-            # Verify agent exists and user has permission to access it
-            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
-
-            # Remove the source from the relationship
-            remaining_sources = [s for s in agent.sources if s.id != source_id]
-
-            if len(remaining_sources) == len(agent.sources):  # Source ID was not in the relationship
-                logger.warning(f"Attempted to remove unattached source id={source_id} from agent id={agent_id} by actor={actor}")
-
-            # Update the sources relationship
-            agent.sources = remaining_sources
-
-            # Commit the changes
-            agent.update(session, actor=actor)
-            return agent.to_pydantic()
+            return [source.to_pydantic() for source in sources]
 
     @trace_method
     @enforce_types
@@ -1931,22 +1926,29 @@ class AgentManager:
             agent_id: ID of the agent to detach the source from
             source_id: ID of the source to detach
             actor: User performing the action
+
+        Raises:
+            NoResultFound: If agent doesn't exist or user doesn't have access
         """
         async with db_registry.async_session() as session:
-            # Verify agent exists and user has permission to access it
-            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            # Validate agent exists and user has access
+            await self._validate_agent_exists_async(session, agent_id, actor)
 
-            # Remove the source from the relationship
-            remaining_sources = [s for s in agent.sources if s.id != source_id]
+            # Check if the source is actually attached to this agent using junction table
+            attachment_check_query = select(SourcesAgents).where(SourcesAgents.agent_id == agent_id, SourcesAgents.source_id == source_id)
+            attachment_result = await session.execute(attachment_check_query)
+            attachment = attachment_result.scalar_one_or_none()
 
-            if len(remaining_sources) == len(agent.sources):  # Source ID was not in the relationship
+            if not attachment:
                 logger.warning(f"Attempted to remove unattached source id={source_id} from agent id={agent_id} by actor={actor}")
+            else:
+                # Delete the association directly from the junction table
+                delete_query = delete(SourcesAgents).where(SourcesAgents.agent_id == agent_id, SourcesAgents.source_id == source_id)
+                await session.execute(delete_query)
+                await session.commit()
 
-            # Update the sources relationship
-            agent.sources = remaining_sources
-
-            # Commit the changes
-            await agent.update_async(session, actor=actor)
+            # Get agent without loading relationships for return value
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             return await agent.to_pydantic_async()
 
     # ======================================================================================================================

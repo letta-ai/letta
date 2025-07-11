@@ -25,7 +25,6 @@ class OpenAIEmbedder(BaseEmbedder):
             else EmbeddingConfig.default_config(model_name="letta")
         )
         self.embedding_config = embedding_config or self.default_embedding_config
-        self.max_concurrent_requests = 20
 
         # TODO: Unify to global OpenAI client
         self.client: OpenAIClient = cast(
@@ -48,9 +47,55 @@ class OpenAIEmbedder(BaseEmbedder):
                 "embedding_endpoint_type": self.embedding_config.embedding_endpoint_type,
             },
         )
-        embeddings = await self.client.request_embeddings(inputs=batch, embedding_config=self.embedding_config)
-        log_event("embedder.batch_completed", {"batch_size": len(batch), "embeddings_generated": len(embeddings)})
-        return [(idx, e) for idx, e in zip(batch_indices, embeddings)]
+
+        try:
+            embeddings = await self.client.request_embeddings(inputs=batch, embedding_config=self.embedding_config)
+            log_event("embedder.batch_completed", {"batch_size": len(batch), "embeddings_generated": len(embeddings)})
+            return [(idx, e) for idx, e in zip(batch_indices, embeddings)]
+        except Exception as e:
+            # if it's a token limit error and we can split, do it
+            if self._is_token_limit_error(e) and len(batch) > 1:
+                logger.warning(f"Token limit exceeded for batch of size {len(batch)}, splitting in half and retrying")
+                log_event(
+                    "embedder.batch_split_retry",
+                    {
+                        "original_batch_size": len(batch),
+                        "error": str(e),
+                        "split_size": len(batch) // 2,
+                    },
+                )
+
+                # split batch in half
+                mid = len(batch) // 2
+                batch1 = batch[:mid]
+                batch1_indices = batch_indices[:mid]
+                batch2 = batch[mid:]
+                batch2_indices = batch_indices[mid:]
+
+                # retry with smaller batches
+                result1 = await self._embed_batch(batch1, batch1_indices)
+                result2 = await self._embed_batch(batch2, batch2_indices)
+
+                return result1 + result2
+            else:
+                # re-raise for other errors or if batch size is already 1
+                raise
+
+    def _is_token_limit_error(self, error: Exception) -> bool:
+        """Check if the error is due to token limit exceeded"""
+        # convert to string and check for token limit patterns
+        error_str = str(error).lower()
+
+        # TODO: This is quite brittle, works for now
+        # check for the specific patterns we see in token limit errors
+        is_token_limit = (
+            "max_tokens_per_request" in error_str
+            or ("requested" in error_str and "tokens" in error_str and "max" in error_str and "per request" in error_str)
+            or "token limit" in error_str
+            or ("bad request to openai" in error_str and "tokens" in error_str and "max" in error_str)
+        )
+
+        return is_token_limit
 
     @trace_method
     async def generate_embedded_passages(self, file_id: str, source_id: str, chunks: List[str], actor: User) -> List[Passage]:
@@ -100,7 +145,7 @@ class OpenAIEmbedder(BaseEmbedder):
 
         log_event(
             "embedder.concurrent_processing_started",
-            {"concurrent_tasks": len(tasks), "max_concurrent_requests": self.max_concurrent_requests},
+            {"concurrent_tasks": len(tasks)},
         )
         results = await asyncio.gather(*tasks)
         log_event("embedder.concurrent_processing_completed", {"batches_processed": len(results)})

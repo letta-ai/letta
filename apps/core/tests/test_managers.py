@@ -673,6 +673,7 @@ async def file_attachment(server, default_user, sarah_agent, default_file):
         agent_id=sarah_agent.id,
         file_id=default_file.id,
         file_name=default_file.file_name,
+        source_id=default_file.source_id,
         actor=default_user,
         visible_content="initial",
     )
@@ -903,6 +904,7 @@ async def test_get_context_window_basic(
         agent_id=created_agent.id,
         file_id=default_file.id,
         file_name=default_file.file_name,
+        source_id=default_file.source_id,
         actor=default_user,
         visible_content="hello",
     )
@@ -7221,6 +7223,7 @@ async def test_attach_creates_association(server, default_user, sarah_agent, def
         agent_id=sarah_agent.id,
         file_id=default_file.id,
         file_name=default_file.file_name,
+        source_id=default_file.source_id,
         actor=default_user,
         visible_content="hello",
     )
@@ -7243,6 +7246,7 @@ async def test_attach_is_idempotent(server, default_user, sarah_agent, default_f
         agent_id=sarah_agent.id,
         file_id=default_file.id,
         file_name=default_file.file_name,
+        source_id=default_file.source_id,
         actor=default_user,
         visible_content="first",
     )
@@ -7252,6 +7256,7 @@ async def test_attach_is_idempotent(server, default_user, sarah_agent, default_f
         agent_id=sarah_agent.id,
         file_id=default_file.id,
         file_name=default_file.file_name,
+        source_id=default_file.source_id,
         actor=default_user,
         is_open=False,
         visible_content="second",
@@ -7326,15 +7331,28 @@ async def test_list_files_and_agents(
 ):
     # default_file ↔ charles  (open)
     await server.file_agent_manager.attach_file(
-        agent_id=charles_agent.id, file_id=default_file.id, file_name=default_file.file_name, actor=default_user
+        agent_id=charles_agent.id,
+        file_id=default_file.id,
+        file_name=default_file.file_name,
+        source_id=default_file.source_id,
+        actor=default_user,
     )
     # default_file ↔ sarah    (open)
     await server.file_agent_manager.attach_file(
-        agent_id=sarah_agent.id, file_id=default_file.id, file_name=default_file.file_name, actor=default_user
+        agent_id=sarah_agent.id,
+        file_id=default_file.id,
+        file_name=default_file.file_name,
+        source_id=default_file.source_id,
+        actor=default_user,
     )
     # another_file ↔ sarah    (closed)
     await server.file_agent_manager.attach_file(
-        agent_id=sarah_agent.id, file_id=another_file.id, file_name=another_file.file_name, actor=default_user, is_open=False
+        agent_id=sarah_agent.id,
+        file_id=another_file.id,
+        file_name=another_file.file_name,
+        source_id=another_file.source_id,
+        actor=default_user,
+        is_open=False,
     )
 
     files_for_sarah = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
@@ -7384,6 +7402,7 @@ async def test_org_scoping(
         agent_id=sarah_agent.id,
         file_id=default_file.id,
         file_name=default_file.file_name,
+        source_id=default_file.source_id,
         actor=default_user,
     )
 
@@ -7420,6 +7439,7 @@ async def test_mark_access_bulk(server, default_user, sarah_agent, default_sourc
             agent_id=sarah_agent.id,
             file_id=file.id,
             file_name=file.file_name,
+            source_id=file.source_id,
             actor=default_user,
             visible_content=f"content for {file.file_name}",
         )
@@ -7478,6 +7498,7 @@ async def test_lru_eviction_on_attach(server, default_user, sarah_agent, default
             agent_id=sarah_agent.id,
             file_id=file.id,
             file_name=file.file_name,
+            source_id=file.source_id,
             actor=default_user,
             visible_content=f"content for {file.file_name}",
         )
@@ -7530,6 +7551,7 @@ async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, defa
             agent_id=sarah_agent.id,
             file_id=files[i].id,
             file_name=files[i].file_name,
+            source_id=files[i].source_id,
             actor=default_user,
             visible_content=f"content for {files[i].file_name}",
         )
@@ -7539,6 +7561,7 @@ async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, defa
         agent_id=sarah_agent.id,
         file_id=files[-1].id,
         file_name=files[-1].file_name,
+        source_id=files[-1].source_id,
         actor=default_user,
         is_open=False,
         visible_content=f"content for {files[-1].file_name}",
@@ -7555,7 +7578,12 @@ async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, defa
 
     # Now "open" the last file using the efficient method
     closed_files, was_already_open = await server.file_agent_manager.enforce_max_open_files_and_open(
-        agent_id=sarah_agent.id, file_id=files[-1].id, file_name=files[-1].file_name, actor=default_user, visible_content="updated content"
+        agent_id=sarah_agent.id,
+        file_id=files[-1].id,
+        file_name=files[-1].file_name,
+        source_id=files[-1].source_id,
+        actor=default_user,
+        visible_content="updated content",
     )
 
     # Should have closed 1 file (the oldest one)
@@ -7603,6 +7631,7 @@ async def test_lru_no_eviction_when_reopening_same_file(server, default_user, sa
             agent_id=sarah_agent.id,
             file_id=file.id,
             file_name=file.file_name,
+            source_id=file.source_id,
             actor=default_user,
             visible_content=f"content for {file.file_name}",
         )
@@ -7617,7 +7646,12 @@ async def test_lru_no_eviction_when_reopening_same_file(server, default_user, sa
 
     # "Reopen" the last file (which is already open)
     closed_files, was_already_open = await server.file_agent_manager.enforce_max_open_files_and_open(
-        agent_id=sarah_agent.id, file_id=files[-1].id, file_name=files[-1].file_name, actor=default_user, visible_content="updated content"
+        agent_id=sarah_agent.id,
+        file_id=files[-1].id,
+        file_name=files[-1].file_name,
+        source_id=files[-1].source_id,
+        actor=default_user,
+        visible_content="updated content",
     )
 
     # Should not have closed any files since we're within the limit
@@ -7645,7 +7679,12 @@ async def test_last_accessed_at_updates_correctly(server, default_user, sarah_ag
     file = await server.file_manager.create_file(file_metadata=file_metadata, actor=default_user, text="test content")
 
     file_agent, closed_files = await server.file_agent_manager.attach_file(
-        agent_id=sarah_agent.id, file_id=file.id, file_name=file.file_name, actor=default_user, visible_content="initial content"
+        agent_id=sarah_agent.id,
+        file_id=file.id,
+        file_name=file.file_name,
+        source_id=file.source_id,
+        actor=default_user,
+        visible_content="initial content",
     )
 
     initial_time = file_agent.last_accessed_at
@@ -7777,6 +7816,7 @@ async def test_attach_files_bulk_lru_eviction(server, default_user, sarah_agent,
             agent_id=sarah_agent.id,
             file_id=file.id,
             file_name=file.file_name,
+            source_id=file.source_id,
             actor=default_user,
             visible_content=f"existing content {i}",
         )
@@ -7842,6 +7882,7 @@ async def test_attach_files_bulk_mixed_existing_new(server, default_user, sarah_
         agent_id=sarah_agent.id,
         file_id=existing_file.id,
         file_name=existing_file.file_name,
+        source_id=existing_file.source_id,
         actor=default_user,
         visible_content="old content",
         is_open=False,  # Start as closed
