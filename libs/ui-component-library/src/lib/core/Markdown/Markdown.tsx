@@ -89,6 +89,48 @@ export function Markdown(props: MarkdownProps) {
             </Typography>
           );
         },
+        h1({ children }) {
+          return (
+            <Typography variant="heading1" className="block">
+              {children}
+            </Typography>
+          );
+        },
+        h2({ children }) {
+          return (
+            <Typography variant="heading2" className="block">
+              {children}
+            </Typography>
+          );
+        },
+        h3({ children }) {
+          return (
+            <Typography variant="heading3" className="block">
+              {children}
+            </Typography>
+          );
+        },
+        h4({ children }) {
+          return (
+            <Typography variant="heading4" className="block">
+              {children}
+            </Typography>
+          );
+        },
+        h5({ children }) {
+          return (
+            <Typography variant="heading5" className="block">
+              {children}
+            </Typography>
+          );
+        },
+        h6({ children }) {
+          return (
+            <Typography variant="heading6" className="block">
+              {children}
+            </Typography>
+          );
+        },
         code(props) {
           const { children, className } = props;
           const match = /language-(\w+)/.exec(className || '');
