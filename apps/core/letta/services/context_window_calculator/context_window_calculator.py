@@ -8,8 +8,10 @@ from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.memory import ContextWindowOverview
+from letta.schemas.message import Message
 from letta.schemas.user import User as PydanticUser
 from letta.services.context_window_calculator.token_counter import TokenCounter
+from letta.services.message_manager import MessageManager
 
 logger = get_logger(__name__)
 
@@ -57,16 +59,18 @@ class ContextWindowCalculator:
         return None, 1
 
     async def calculate_context_window(
-        self, agent_state: AgentState, actor: PydanticUser, token_counter: TokenCounter, message_manager: Any, passage_manager: Any
+        self,
+        agent_state: AgentState,
+        actor: PydanticUser,
+        token_counter: TokenCounter,
+        message_manager: MessageManager,
+        system_message_compiled: Message,
+        num_archival_memories: int,
+        num_messages: int,
     ) -> ContextWindowOverview:
         """Calculate context window information using the provided token counter"""
-
-        # Fetch data concurrently
-        (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
-            message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor),
-            passage_manager.agent_passage_size_async(actor=actor, agent_id=agent_state.id),
-            message_manager.size_async(actor=actor, agent_id=agent_state.id),
-        )
+        messages = await message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids[1:], actor=actor)
+        in_context_messages = [system_message_compiled] + messages
 
         # Convert messages to appropriate format
         converted_messages = token_counter.convert_messages(in_context_messages)
@@ -129,8 +133,8 @@ class ContextWindowCalculator:
         return ContextWindowOverview(
             # context window breakdown (in messages)
             num_messages=len(in_context_messages),
-            num_archival_memory=passage_manager_size,
-            num_recall_memory=message_manager_size,
+            num_archival_memory=num_archival_memories,
+            num_recall_memory=num_messages,
             num_tokens_external_memory_summary=num_tokens_external_memory_summary,
             external_memory_summary=external_memory_summary,
             # top-level information
