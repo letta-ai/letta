@@ -23,8 +23,8 @@ logger = get_logger(__name__)
 class BlockManager:
     """Manager class to handle business logic related to Blocks."""
 
-    @trace_method
     @enforce_types
+    @trace_method
     def create_or_update_block(self, block: PydanticBlock, actor: PydanticUser) -> PydanticBlock:
         """Create a new block based on the Block schema."""
         db_block = self.get_block_by_id(block.id, actor)
@@ -38,8 +38,8 @@ class BlockManager:
                 block.create(session, actor=actor)
             return block.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def create_or_update_block_async(self, block: PydanticBlock, actor: PydanticUser) -> PydanticBlock:
         """Create a new block based on the Block schema."""
         db_block = await self.get_block_by_id_async(block.id, actor)
@@ -53,8 +53,8 @@ class BlockManager:
                 await block.create_async(session, actor=actor)
                 return block.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     def batch_create_blocks(self, blocks: List[PydanticBlock], actor: PydanticUser) -> List[PydanticBlock]:
         """
         Batch-create multiple Blocks in one transaction for better performance.
@@ -77,8 +77,8 @@ class BlockManager:
             # Convert back to Pydantic
             return [m.to_pydantic() for m in created_models]
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def batch_create_blocks_async(self, blocks: List[PydanticBlock], actor: PydanticUser) -> List[PydanticBlock]:
         """
         Batch-create multiple Blocks in one transaction for better performance.
@@ -101,8 +101,8 @@ class BlockManager:
             # Convert back to Pydantic
             return [m.to_pydantic() for m in created_models]
 
-    @trace_method
     @enforce_types
+    @trace_method
     def update_block(self, block_id: str, block_update: BlockUpdate, actor: PydanticUser) -> PydanticBlock:
         """Update a block by its ID with the given BlockUpdate object."""
         # Safety check for block
@@ -117,8 +117,8 @@ class BlockManager:
             block.update(db_session=session, actor=actor)
             return block.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def update_block_async(self, block_id: str, block_update: BlockUpdate, actor: PydanticUser) -> PydanticBlock:
         """Update a block by its ID with the given BlockUpdate object."""
         # Safety check for block
@@ -133,8 +133,8 @@ class BlockManager:
             await block.update_async(db_session=session, actor=actor)
             return block.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     def delete_block(self, block_id: str, actor: PydanticUser) -> PydanticBlock:
         """Delete a block by its ID."""
         with db_registry.session() as session:
@@ -142,8 +142,8 @@ class BlockManager:
             block.hard_delete(db_session=session, actor=actor)
             return block.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def delete_block_async(self, block_id: str, actor: PydanticUser) -> PydanticBlock:
         """Delete a block by its ID."""
         async with db_registry.async_session() as session:
@@ -151,8 +151,8 @@ class BlockManager:
             await block.hard_delete_async(db_session=session, actor=actor)
             return block.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def get_blocks_async(
         self,
         actor: PydanticUser,
@@ -214,8 +214,8 @@ class BlockManager:
 
             return [block.to_pydantic() for block in blocks]
 
-    @trace_method
     @enforce_types
+    @trace_method
     def get_block_by_id(self, block_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticBlock]:
         """Retrieve a block by its name."""
         with db_registry.session() as session:
@@ -225,8 +225,8 @@ class BlockManager:
             except NoResultFound:
                 return None
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def get_block_by_id_async(self, block_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticBlock]:
         """Retrieve a block by its name."""
         async with db_registry.async_session() as session:
@@ -236,8 +236,8 @@ class BlockManager:
             except NoResultFound:
                 return None
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def get_all_blocks_by_ids_async(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
         """Retrieve blocks by their ids without loading unnecessary relationships. Async implementation."""
         from sqlalchemy import select
@@ -284,8 +284,8 @@ class BlockManager:
 
             return pydantic_blocks
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def get_agents_for_block_async(
         self,
         block_id: str,
@@ -301,8 +301,8 @@ class BlockManager:
             agents = await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents_orm])
             return agents
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def size_async(self, actor: PydanticUser) -> int:
         """
         Get the total count of blocks for the given user.
@@ -312,8 +312,8 @@ class BlockManager:
 
     # Block History Functions
 
-    @trace_method
     @enforce_types
+    @trace_method
     def checkpoint_block(
         self,
         block_id: str,
@@ -416,8 +416,8 @@ class BlockManager:
         updated_block = block.update(db_session=session, actor=actor, no_commit=True)
         return updated_block
 
-    @trace_method
     @enforce_types
+    @trace_method
     def undo_checkpoint_block(self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None) -> PydanticBlock:
         """
         Move the block to the immediately previous checkpoint in BlockHistory.
@@ -459,8 +459,8 @@ class BlockManager:
             session.commit()
             return block.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     def redo_checkpoint_block(self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None) -> PydanticBlock:
         """
         Move the block to the next checkpoint if it exists.
@@ -498,8 +498,8 @@ class BlockManager:
             session.commit()
             return block.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def bulk_update_block_values_async(
         self, updates: Dict[str, str], actor: PydanticUser, return_hydrated: bool = False
     ) -> Optional[List[PydanticBlock]]:

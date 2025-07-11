@@ -272,14 +272,14 @@ async def modify_agent(
 
 
 @router.get("/{agent_id}/tools", response_model=list[Tool], operation_id="list_agent_tools")
-def list_agent_tools(
+async def list_agent_tools(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """Get tools from an existing agent"""
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.agent_manager.list_attached_tools(agent_id=agent_id, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.agent_manager.list_attached_tools_async(agent_id=agent_id, actor=actor)
 
 
 @router.patch("/{agent_id}/tools/attach/{tool_id}", response_model=AgentState, operation_id="attach_tool")

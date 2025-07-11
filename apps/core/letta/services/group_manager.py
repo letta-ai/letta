@@ -19,8 +19,8 @@ from letta.utils import enforce_types
 
 class GroupManager:
 
-    @trace_method
     @enforce_types
+    @trace_method
     def list_groups(
         self,
         actor: PydanticUser,
@@ -45,22 +45,22 @@ class GroupManager:
             )
             return [group.to_pydantic() for group in groups]
 
-    @trace_method
     @enforce_types
+    @trace_method
     def retrieve_group(self, group_id: str, actor: PydanticUser) -> PydanticGroup:
         with db_registry.session() as session:
             group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
             return group.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def retrieve_group_async(self, group_id: str, actor: PydanticUser) -> PydanticGroup:
         async with db_registry.async_session() as session:
             group = await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
             return group.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     def create_group(self, group: GroupCreate, actor: PydanticUser) -> PydanticGroup:
         with db_registry.session() as session:
             new_group = GroupModel()
@@ -150,8 +150,8 @@ class GroupManager:
             await new_group.create_async(session, actor=actor)
             return new_group.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def modify_group_async(self, group_id: str, group_update: GroupUpdate, actor: PydanticUser) -> PydanticGroup:
         async with db_registry.async_session() as session:
             group = await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
@@ -213,16 +213,16 @@ class GroupManager:
             await group.update_async(session, actor=actor)
             return group.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     def delete_group(self, group_id: str, actor: PydanticUser) -> None:
         with db_registry.session() as session:
             # Retrieve the agent
             group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
             group.hard_delete(session)
 
-    @trace_method
     @enforce_types
+    @trace_method
     def list_group_messages(
         self,
         actor: PydanticUser,
@@ -258,8 +258,8 @@ class GroupManager:
 
             return messages
 
-    @trace_method
     @enforce_types
+    @trace_method
     def reset_messages(self, group_id: str, actor: PydanticUser) -> None:
         with db_registry.session() as session:
             # Ensure group is loadable by user
@@ -272,8 +272,8 @@ class GroupManager:
 
             session.commit()
 
-    @trace_method
     @enforce_types
+    @trace_method
     def bump_turns_counter(self, group_id: str, actor: PydanticUser) -> int:
         with db_registry.session() as session:
             # Ensure group is loadable by user
@@ -284,8 +284,8 @@ class GroupManager:
             group.update(session, actor=actor)
             return group.turns_counter
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def bump_turns_counter_async(self, group_id: str, actor: PydanticUser) -> int:
         async with db_registry.async_session() as session:
             # Ensure group is loadable by user
@@ -309,8 +309,8 @@ class GroupManager:
 
             return prev_last_processed_message_id
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def get_last_processed_message_id_and_update_async(
         self, group_id: str, last_processed_message_id: str, actor: PydanticUser
     ) -> str:
