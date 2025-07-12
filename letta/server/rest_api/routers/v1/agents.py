@@ -1072,7 +1072,7 @@ async def _process_message_background(
             completed_at=datetime.now(timezone.utc),
             metadata={"error": str(e)},
         )
-        await server.job_manager.update_job_by_id_async(job_id=job_id, job_update=job_update, actor=actor)
+        await server.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=actor)
 
 
 @router.post(
