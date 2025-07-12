@@ -2747,7 +2747,7 @@ httpx-sse = "^0.4.0"
 jinja2 = "^3.1.5"
 langchain = {version = "^0.3.7", optional = true}
 langchain-community = {version = "^0.3.7", optional = true}
-letta_client = "^0.1.183"
+letta_client = "^0.1.197"
 llama-index = "^0.12.2"
 llama-index-embeddings-openai = "^0.3.1"
 locust = {version = "^2.31.5", optional = true}
@@ -2812,13 +2812,13 @@ url = "../core"
 
 [[package]]
 name = "letta-client"
-version = "0.1.194"
+version = "0.1.198"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "letta_client-0.1.194-py3-none-any.whl", hash = "sha256:96aa465b286f0010a5eca2900b0b0b5ce6c69f31a5cfb3355f175d2fa90fb2d8"},
-    {file = "letta_client-0.1.194.tar.gz", hash = "sha256:8e6b47458a56d157c146994168acf917012a0fbb606582faa39cd40348ff222d"},
+    {file = "letta_client-0.1.198-py3-none-any.whl", hash = "sha256:08bbc238b128da2552b2a6e54feb3294794b5586e0962ce0bb95bb525109f58f"},
+    {file = "letta_client-0.1.198.tar.gz", hash = "sha256:990c9132423e2955d9c7f7549e5064b2366616232d270e5927788cddba4ef9da"},
 ]
 
 [package.dependencies]
@@ -6856,4 +6856,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "<3.14,>=3.10"
-content-hash = "bcc70694afeeee765f66e219919328b7761386fbf788841c74d0992ea711f672"
+content-hash = "37afbef6a226efc66c483f61a04867847f38a1990078c2b32b3b092f45b9f287"

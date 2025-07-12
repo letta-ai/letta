@@ -28,3 +28,7 @@ firecrawl-py = "^1.15.0"
 aiomultiprocess = "^0.9.1"
 async-lru = "^2.0.5"
 asyncpg = {version = "^0.30.0"}
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.41"}
+sqlalchemy-json = "^0.7.0"
+sqlalchemy-utils = "^0.41.2"
+marshmallow-sqlalchemy = "^1.4.1"
