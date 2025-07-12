@@ -19,6 +19,10 @@ class BaseToolRule(LettaBase):
         None,
         description="Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
     )
+    args: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Optional hardcoded arguments for the tool. If provided, the tool will be called with these arguments instead of the ones provided by the user.",
+    )
 
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> set[str]:
         raise NotImplementedError
