@@ -43,7 +43,7 @@ from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
-from letta.schemas.openai.chat_completion_response import Message, ToolCall, UsageStatistics
+from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
@@ -1062,7 +1062,6 @@ class LettaAgent(BaseAgent):
         tool_call_name: str = tool_call.function.name
         tool_call_id: str = tool_call.id or f"call_{uuid.uuid4().hex[:8]}"
         tool_args = _safe_load_tool_call_str(tool_call.function.arguments)
-        # tool_args = tool_rules_solver.override_tool_args(tool_name=tool_call_name, tool_args=tool_args)
         request_heartbeat: bool = _pop_heartbeat(tool_args)
         tool_args.pop(INNER_THOUGHTS_KWARG, None)
 
