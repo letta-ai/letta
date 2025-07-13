@@ -59,7 +59,7 @@ export function CurrentUserDetailsBlock() {
       <VStack gap={false} fullWidth align="start">
         <Typography bold>{user?.body.name}</Typography>
         {data && (
-          <Typography variant="body2" color="muted">
+          <Typography variant="body2" color="lighter">
             {data.body.name}
           </Typography>
         )}

@@ -4,7 +4,7 @@ import {
   Typography,
   VStack,
   Button,
-  ExternalLinkIcon,
+  ChevronRightIcon,
   Tooltip,
 } from '@letta-cloud/ui-component-library';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
@@ -15,15 +15,20 @@ import Link from 'next/link';
 
 interface RowProps {
   label: string;
-  value: string;
+  value: React.ReactNode | string;
 }
 
 function Row(props: RowProps) {
   const { label, value } = props;
   return (
     <HStack justify="spaceBetween" fullWidth>
-      <Typography variant="body2"> {label}</Typography>
-      <Typography variant="body2">{value}</Typography>
+      <Typography variant="body" color="lighter">
+        {' '}
+        {label}
+      </Typography>
+      <Typography variant="body" color="lighter">
+        {value}
+      </Typography>
     </HStack>
   );
 }
@@ -80,23 +85,33 @@ export function OrganizationUsageBlock() {
               <Typography overrideEl="span" variant="body2" bold>
                 {t('title')}
               </Typography>
-              <ExternalLinkIcon />
+              <ChevronRightIcon />
             </HStack>
           </Link>
         </Tooltip>
       </HStack>
       <Row
         label={t('premiumModels.label')}
-        value={t('premiumModels.usage', {
+        value={t.rich('premiumModels.usage', {
           total: limits.premiumInferencesPerMonth,
           used: usedPremiumModelRequests,
+          bold: (chunks) => (
+            <Typography variant="body" color="lighter" bold overrideEl="span">
+              {chunks}
+            </Typography>
+          ),
         })}
       />
       <Row
         label={t('standardModels.label')}
-        value={t('standardModels.usage', {
+        value={t.rich('standardModels.usage', {
           total: limits.freeInferencesPerMonth,
           used: usedStandardModelRequests,
+          bold: (chunks) => (
+            <Typography variant="body" color="lighter" bold overrideEl="span">
+              {chunks}
+            </Typography>
+          ),
         })}
       />
       {(billingTier === 'free' || billingTier === 'pro') && (
@@ -106,6 +121,7 @@ export function OrganizationUsageBlock() {
               fullWidth
               size="small"
               bold
+              _use_rarely_className="mt-1"
               label={
                 billingTier === 'pro' ? t('upgradeToScale') : t('upgradeToPro')
               }

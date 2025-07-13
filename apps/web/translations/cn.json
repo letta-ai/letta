@@ -406,6 +406,7 @@
     },
     "rootTitle": "控制面板",
     "secondaryNav": {
+      "account": "设置",
       "settings": "设置",
       "signOut": "退出登录",
       "organization": "组织",

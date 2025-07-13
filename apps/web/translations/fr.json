@@ -47,6 +47,7 @@
     },
     "rootTitle": "Tableau de bord",
     "secondaryNav": {
+      "account": "Account",
       "settings": "Paramètres",
       "signOut": "se déconnecter",
       "organization": "Organisation",

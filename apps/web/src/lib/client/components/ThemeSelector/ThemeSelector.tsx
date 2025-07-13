@@ -75,7 +75,11 @@ export function ThemeSelector() {
   return (
     <RawToggleGroup
       hideLabel
+      color="background"
       border
+      padding="xxsmall"
+      /* eslint-disable-next-line react/forbid-component-props */
+      className="theme-selector-border"
       onValueChange={(value) => {
         if (value) {
           handleThemeChange(value);

@@ -178,6 +178,8 @@
     'Helvetica Neue', sans-serif;
   --font-serif: Georgia, Times, serif;
   --font-mono: 'Fira Code', Menlo, Courier, monospace;
+
+  --toggle-selector-border: var(--background-grey3-border);
 }
 
 .hacker {
@@ -192,7 +194,7 @@
 
   --background-grey: var(--background);
   --background-grey-content: var(--background-content);
-  --background-grey2: var(--background-black-content);
+  --background-grey2: var(--background);
 
   --user-content-background: var(--background);
   --agent-content-background: var(--background);
@@ -342,6 +344,7 @@
   --card-background: 210, 3%, 12%;
   --list-item-background: 200, 4%, 13%;
 
+  --toggle-selector-border: 210, 3%, 28%;
 }
 
 html {

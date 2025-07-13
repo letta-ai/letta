@@ -451,6 +451,7 @@
     },
     "rootTitle": "Dashboard",
     "secondaryNav": {
+      "account": "Account",
       "settings": "Settings",
       "signOut": "Sign out",
       "organization": "Organization",
@@ -1056,15 +1057,15 @@
     "upgradeToScale": "Upgrade to Scale",
     "premiumModels": {
       "label": "Premium models",
-      "usage": "{used} left of {total}"
+      "usage": "<bold>{used}</bold> left of {total}"
     },
     "standardModels": {
       "label": "Standard models",
-      "usage": "{used} left of {total}"
+      "usage": "<bold>{used}</bold> left of {total}"
     },
     "agents": {
       "label": "Agents",
-      "usage": "{used} left of {total}"
+      "usage": "<bold>{used}</bold> left of {total}"
     },
     "cta": "Upgrade to Pro"
   },

@@ -21,6 +21,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { HiddenOnMobile } from '@letta-cloud/ui-component-library';
 import {
+  AccountIcon,
   Avatar,
   Button,
   BarChartIcon,
@@ -546,9 +547,9 @@ function SecondaryMenuItems(props: SecondaryMenuItemsProps) {
           {!isMobile && (
             <NavButton
               id="settings"
-              href="/settings"
-              label={t('secondaryNav.settings')}
-              icon={<CogIcon />}
+              href="/settings/organization/account"
+              label={t('secondaryNav.account')}
+              icon={<AccountIcon />}
             />
           )}
           <AdminNav />
@@ -579,7 +580,7 @@ function SecondaryMenuItems(props: SecondaryMenuItemsProps) {
           />
         </VStack>
       </VStack>
-      <HStack justify="spaceBetween" paddingX="small">
+      <HStack justify="spaceBetween" paddingX="small" align="center">
         <LocaleSelector />
         <ThemeSelector />
       </HStack>
@@ -638,6 +639,8 @@ export function ProfilePopover(props: ProfilePopoverProps) {
     <Popover
       align="end"
       triggerAsChild
+      /* eslint-disable-next-line react/forbid-component-props */
+      className="border-background-grey3-border"
       trigger={
         <Button
           color="tertiary"
@@ -653,7 +656,7 @@ export function ProfilePopover(props: ProfilePopoverProps) {
         />
       }
     >
-      <VStack border color="background-grey" gap={false}>
+      <VStack color="background-grey2" gap={false}>
         <HStack borderBottom>
           <CurrentUserDetailsBlock />
         </HStack>

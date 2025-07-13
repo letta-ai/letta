@@ -11,7 +11,7 @@ import { MaybeTooltip } from '../Tooltip/Tooltip';
 import './ToggleGroup.scss';
 
 const toggleVariants = cva(
-  'inline-flex items-center justify-center text-sm font-medium ring-offset-background transition-colors hover:bg-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:border data-[state=on]:bg-secondary-active ',
+  'inline-flex items-center justify-center text-sm font-medium ring-offset-background transition-colors hover:bg-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-secondary-active ',
   {
     variants: {
       hideLabel: {
@@ -141,6 +141,9 @@ interface ToggleGroupProps extends Omit<ToggleGroupSingleProps, 'type'> {
   vertical?: boolean;
   fullWidth?: boolean;
   size?: VariantProps<typeof toggleVariants>['size'];
+  color?: React.ComponentProps<typeof Frame>['color'];
+  className?: string;
+  padding?: React.ComponentProps<typeof Frame>['padding'];
 }
 
 function ToggleGroupWrapper(props: ToggleGroupProps) {
@@ -152,13 +155,19 @@ function ToggleGroupWrapper(props: ToggleGroupProps) {
     size,
     value,
     onValueChange,
+    color,
+    className,
+    padding,
   } = props;
 
   return (
     <Frame
+      color={color}
+      padding={padding}
       className={cn(
         border ? 'frame-border-hack' : '',
         fullWidth ? 'w-full' : '',
+        className,
       )}
     >
       <ToggleGroupRoot
