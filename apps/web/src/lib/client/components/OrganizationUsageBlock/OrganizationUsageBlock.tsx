@@ -22,11 +22,11 @@ function Row(props: RowProps) {
   const { label, value } = props;
   return (
     <HStack justify="spaceBetween" fullWidth>
-      <Typography variant="body" color="lighter">
+      <Typography variant="body2" color="lighter">
         {' '}
         {label}
       </Typography>
-      <Typography variant="body" color="lighter">
+      <Typography variant="body2" color="lighter">
         {value}
       </Typography>
     </HStack>
@@ -96,7 +96,7 @@ export function OrganizationUsageBlock() {
           total: limits.premiumInferencesPerMonth,
           used: usedPremiumModelRequests,
           bold: (chunks) => (
-            <Typography variant="body" color="lighter" bold overrideEl="span">
+            <Typography variant="body2" color="lighter" bold overrideEl="span">
               {chunks}
             </Typography>
           ),
@@ -108,7 +108,7 @@ export function OrganizationUsageBlock() {
           total: limits.freeInferencesPerMonth,
           used: usedStandardModelRequests,
           bold: (chunks) => (
-            <Typography variant="body" color="lighter" bold overrideEl="span">
+            <Typography variant="body2" color="lighter" bold overrideEl="span">
               {chunks}
             </Typography>
           ),
