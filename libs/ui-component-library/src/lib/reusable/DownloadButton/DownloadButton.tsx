@@ -9,7 +9,7 @@ interface CopyButtonProps {
   fileName?: string;
   fullWidth?: boolean;
   downloadButtonText?: string;
-  size?: 'default' | 'small';
+  size?: 'default' | 'small' | 'xsmall';
 }
 
 export function DownloadButton(props: CopyButtonProps) {

@@ -6,7 +6,7 @@ import { cva } from 'class-variance-authority';
 import { cn } from '@letta-cloud/ui-styles';
 
 const inlineCodeVariants = cva(
-  'inline-flex  text-sm gap-4 items-center border font-mono',
+  'inline-flex  text-sm gap-1 items-center border font-mono',
   {
     variants: {
       size: {

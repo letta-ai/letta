@@ -435,7 +435,7 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
 }
 
 :root {
-  --editor-lineNumber-gutter-width: 60px;
+  --editor-lineNumber-gutter-width: 45px;
 }
 
 .editor {
@@ -448,7 +448,7 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   position: absolute;
   display: block;
   padding-right: 10px;
-  width: 60px;
+  width: 45px;
   height: 100%;
   border-right: 1px solid hsl(var(--border));
   background-color: hsl(var(--background));
@@ -474,7 +474,7 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   left: 0;
   color: hsl(var(--muted));
   text-align: right;
-  width: 37px;
+  width: 32px;
   font-weight: 100;
   z-index: 1;
   display: flex;

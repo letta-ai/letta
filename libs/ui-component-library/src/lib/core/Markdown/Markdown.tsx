@@ -149,6 +149,7 @@ export function Markdown(props: MarkdownProps) {
                 label="Code"
                 hideLabel
                 language="text"
+                fontSize="small"
                 code={String(children).replace(/\n$/, '')}
               />
             );
@@ -160,6 +161,7 @@ export function Markdown(props: MarkdownProps) {
               toolbarPosition="bottom"
               hideLabel
               fullWidth
+              fontSize="small"
               code={String(children).replace(/\n$/, '')}
               language={language as SupportedLangauges}
             />

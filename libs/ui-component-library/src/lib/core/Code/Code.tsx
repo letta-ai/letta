@@ -175,7 +175,7 @@ export function Code(props: CodeProps) {
       <HStack
         align="center"
         wrap
-        className="py-1 font-sans px-2  border-t flex justify-between"
+        className="py-1 font-sans px-2 border-t bg-background flex justify-between"
       >
         <HStack wrap align="center">
           {toolbarAction}
@@ -184,12 +184,12 @@ export function Code(props: CodeProps) {
           <DownloadButton
             fileName={languageToFileNameMap[language]}
             textToDownload={code}
-            size="small"
+            size="xsmall"
           />
           <CopyButton
             testId={`${testId}-copy-button`}
             textToCopy={code}
-            size="small"
+            size="xsmall"
           />
         </HStack>
       </HStack>
