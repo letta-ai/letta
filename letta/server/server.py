@@ -1342,9 +1342,6 @@ class SyncServer(Server):
             new_passage_size = await self.agent_manager.passage_size_async(actor=actor, agent_id=agent_id)
             assert new_passage_size >= curr_passage_size  # in case empty files are added
 
-            # rebuild system prompt and force
-            agent_state = await self.agent_manager.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
-
         # update job status
         job.status = JobStatus.completed
         job.metadata["num_passages"] = num_passages

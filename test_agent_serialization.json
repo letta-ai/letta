@@ -306,7 +306,7 @@
           "properties": {
             "label": {
               "type": "string",
-              "description": "Section of the memory to be edited (persona or human)."
+              "description": "Section of the memory to be edited."
             },
             "content": {
               "type": "string",
@@ -343,7 +343,7 @@
           "properties": {
             "label": {
               "type": "string",
-              "description": "Section of the memory to be edited (persona or human)."
+              "description": "Section of the memory to be edited."
             },
             "old_content": {
               "type": "string",

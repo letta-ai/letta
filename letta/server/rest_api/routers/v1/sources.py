@@ -391,8 +391,8 @@ async def get_file_metadata(
     if file_metadata.source_id != source_id:
         raise HTTPException(status_code=404, detail=f"File with id={file_id} not found in source {source_id}.")
 
-    if should_use_pinecone() and not file_metadata.is_processing_terminal():
-        ids = await list_pinecone_index_for_files(file_id=file_id, actor=actor, limit=file_metadata.total_chunks)
+    if should_use_pinecone() and file_metadata.processing_status == FileProcessingStatus.EMBEDDING:
+        ids = await list_pinecone_index_for_files(file_id=file_id, actor=actor)
         logger.info(
             f"Embedded chunks {len(ids)}/{file_metadata.total_chunks} for {file_id} ({file_metadata.file_name}) in organization {actor.organization_id}"
         )
@@ -402,7 +402,7 @@ async def get_file_metadata(
                 file_status = file_metadata.processing_status
             else:
                 file_status = FileProcessingStatus.COMPLETED
-            await server.file_manager.update_file_status(
+            file_metadata = await server.file_manager.update_file_status(
                 file_id=file_metadata.id, actor=actor, chunks_embedded=len(ids), processing_status=file_status
             )
 

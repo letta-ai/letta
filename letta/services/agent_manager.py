@@ -107,6 +107,32 @@ class AgentManager:
         self.identity_manager = IdentityManager()
         self.file_agent_manager = FileAgentManager()
 
+    @trace_method
+    async def _validate_agent_exists_async(self, session, agent_id: str, actor: PydanticUser) -> None:
+        """
+        Validate that an agent exists and user has access to it using raw SQL for efficiency.
+
+        Args:
+            session: Database session
+            agent_id: ID of the agent to validate
+            actor: User performing the action
+
+        Raises:
+            NoResultFound: If agent doesn't exist or user doesn't have access
+        """
+        agent_check_query = sa.text(
+            """
+            SELECT 1 FROM agents
+            WHERE id = :agent_id
+            AND organization_id = :org_id
+            AND is_deleted = false
+        """
+        )
+        agent_exists = await session.execute(agent_check_query, {"agent_id": agent_id, "org_id": actor.organization_id})
+
+        if not agent_exists.fetchone():
+            raise NoResultFound(f"Agent with ID {agent_id} not found")
+
     @staticmethod
     def _resolve_tools(session, names: Set[str], ids: Set[str], org_id: str) -> Tuple[Dict[str, str], Dict[str, str]]:
         """
@@ -635,24 +661,24 @@ class AgentManager:
 
         return init_messages
 
-    @trace_method
     @enforce_types
+    @trace_method
     def append_initial_message_sequence_to_in_context_messages(
         self, actor: PydanticUser, agent_state: PydanticAgentState, initial_message_sequence: Optional[List[MessageCreate]] = None
     ) -> PydanticAgentState:
         init_messages = self._generate_initial_message_sequence(actor, agent_state, initial_message_sequence)
         return self.append_to_in_context_messages(init_messages, agent_id=agent_state.id, actor=actor)
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def append_initial_message_sequence_to_in_context_messages_async(
         self, actor: PydanticUser, agent_state: PydanticAgentState, initial_message_sequence: Optional[List[MessageCreate]] = None
     ) -> PydanticAgentState:
         init_messages = self._generate_initial_message_sequence(actor, agent_state, initial_message_sequence)
         return await self.append_to_in_context_messages_async(init_messages, agent_id=agent_state.id, actor=actor)
 
-    @trace_method
     @enforce_types
+    @trace_method
     def update_agent(
         self,
         agent_id: str,
@@ -773,8 +799,8 @@ class AgentManager:
 
             return agent.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def update_agent_async(
         self,
         agent_id: str,
@@ -1125,16 +1151,16 @@ class AgentManager:
         async with db_registry.async_session() as session:
             return await AgentModel.size_async(db_session=session, actor=actor)
 
-    @trace_method
     @enforce_types
+    @trace_method
     def get_agent_by_id(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         """Fetch an agent by its ID."""
         with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             return agent.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def get_agent_by_id_async(
         self,
         agent_id: str,
@@ -1147,8 +1173,8 @@ class AgentManager:
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             return await agent.to_pydantic_async(include_relationships=include_relationships)
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def get_agents_by_ids_async(
         self,
         agent_ids: list[str],
@@ -1164,16 +1190,16 @@ class AgentManager:
             )
             return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
 
-    @trace_method
     @enforce_types
+    @trace_method
     def get_agent_by_name(self, agent_name: str, actor: PydanticUser) -> PydanticAgentState:
         """Fetch an agent by its ID."""
         with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, name=agent_name, actor=actor)
             return agent.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     def delete_agent(self, agent_id: str, actor: PydanticUser) -> None:
         """
         Deletes an agent and its associated relationships.
@@ -1220,8 +1246,8 @@ class AgentManager:
             else:
                 logger.debug(f"Agent with ID {agent_id} successfully hard deleted")
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def delete_agent_async(self, agent_id: str, actor: PydanticUser) -> None:
         """
         Deletes an agent and its associated relationships.
@@ -1270,8 +1296,8 @@ class AgentManager:
             else:
                 logger.debug(f"Agent with ID {agent_id} successfully hard deleted")
 
-    @trace_method
     @enforce_types
+    @trace_method
     def serialize(self, agent_id: str, actor: PydanticUser) -> AgentSchema:
         with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
@@ -1279,8 +1305,8 @@ class AgentManager:
             data = schema.dump(agent)
             return AgentSchema(**data)
 
-    @trace_method
     @enforce_types
+    @trace_method
     def deserialize(
         self,
         serialized_agent: AgentSchema,
@@ -1349,8 +1375,8 @@ class AgentManager:
     # ======================================================================================================================
     # Per Agent Environment Variable Management
     # ======================================================================================================================
-    @trace_method
     @enforce_types
+    @trace_method
     def _set_environment_variables(
         self,
         agent_id: str,
@@ -1405,8 +1431,8 @@ class AgentManager:
             # Return the updated agent state
             return agent.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     def list_groups(self, agent_id: str, actor: PydanticUser, manager_type: Optional[str] = None) -> List[PydanticGroup]:
         with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
@@ -1422,20 +1448,20 @@ class AgentManager:
     # TODO: 2) These messages are ordered from oldest to newest
     # TODO: This can be fixed by having an actual relationship in the ORM for message_ids
     # TODO: This can also be made more efficient, instead of getting, setting, we can do it all in one db session for one query.
-    @trace_method
     @enforce_types
+    @trace_method
     def get_in_context_messages(self, agent_id: str, actor: PydanticUser) -> List[PydanticMessage]:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         return self.message_manager.get_messages_by_ids(message_ids=message_ids, actor=actor)
 
-    @trace_method
     @enforce_types
+    @trace_method
     def get_system_message(self, agent_id: str, actor: PydanticUser) -> PydanticMessage:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         return self.message_manager.get_message_by_id(message_id=message_ids[0], actor=actor)
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def get_system_message_async(self, agent_id: str, actor: PydanticUser) -> PydanticMessage:
         agent = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=[], actor=actor)
         return await self.message_manager.get_message_by_id_async(message_id=agent.message_ids[0], actor=actor)
@@ -1443,8 +1469,8 @@ class AgentManager:
     # TODO: This is duplicated below
     # TODO: This is legacy code and should be cleaned up
     # TODO: A lot of the memory "compilation" should be offset to a separate class
-    @trace_method
     @enforce_types
+    @trace_method
     def rebuild_system_prompt(self, agent_id: str, actor: PydanticUser, force=False, update_timestamp=True) -> PydanticAgentState:
         """Rebuilds the system message with the latest memory object and any shared memory block updates
 
@@ -1515,29 +1541,42 @@ class AgentManager:
         else:
             return agent_state
 
-    @trace_method
+    # TODO: This is probably one of the worst pieces of code I've ever written please rip up as you see wish
     @enforce_types
+    @trace_method
     async def rebuild_system_prompt_async(
-        self, agent_id: str, actor: PydanticUser, force=False, update_timestamp=True, tool_rules_solver: Optional[ToolRulesSolver] = None
-    ) -> PydanticAgentState:
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        force=False,
+        update_timestamp=True,
+        tool_rules_solver: Optional[ToolRulesSolver] = None,
+        dry_run: bool = False,
+    ) -> Tuple[PydanticAgentState, Optional[PydanticMessage], int, int]:
         """Rebuilds the system message with the latest memory object and any shared memory block updates
 
         Updates to core memory blocks should trigger a "rebuild", which itself will create a new message object
 
         Updates to the memory header should *not* trigger a rebuild, since that will simply flood recall storage with excess messages
         """
-        # Get the current agent state
-        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory", "sources"], actor=actor)
+        num_messages_task = self.message_manager.size_async(actor=actor, agent_id=agent_id)
+        num_archival_memories_task = self.passage_manager.agent_passage_size_async(actor=actor, agent_id=agent_id)
+        agent_state_task = self.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory", "sources", "tools"], actor=actor)
+
+        num_messages, num_archival_memories, agent_state = await asyncio.gather(
+            num_messages_task,
+            num_archival_memories_task,
+            agent_state_task,
+        )
+
         if not tool_rules_solver:
             tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
 
-        curr_system_message = await self.get_system_message_async(
-            agent_id=agent_id, actor=actor
-        )  # this is the system + memory bank, not just the system prompt
+        curr_system_message = await self.message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)
 
         if curr_system_message is None:
             logger.warning(f"No system message found for agent {agent_state.id} and user {actor}")
-            return agent_state
+            return agent_state, curr_system_message, num_messages, num_archival_memories
 
         curr_system_message_openai = curr_system_message.to_openai_dict()
 
@@ -1551,7 +1590,7 @@ class AgentManager:
             logger.debug(
                 f"Memory hasn't changed for agent id={agent_id} and actor=({actor.id}, {actor.name}), skipping system prompt rebuild"
             )
-            return agent_state
+            return agent_state, curr_system_message, num_messages, num_archival_memories
 
         # If the memory didn't update, we probably don't want to update the timestamp inside
         # For example, if we're doing a system prompt swap, this should probably be False
@@ -1560,9 +1599,6 @@ class AgentManager:
         else:
             # NOTE: a bit of a hack - we pull the timestamp from the message created_by
             memory_edit_timestamp = curr_system_message.created_at
-
-        num_messages = await self.message_manager.size_async(actor=actor, agent_id=agent_id)
-        num_archival_memories = await self.passage_manager.agent_passage_size_async(actor=actor, agent_id=agent_id)
 
         # update memory (TODO: potentially update recall/archival stats separately)
 
@@ -1582,63 +1618,67 @@ class AgentManager:
             logger.debug(f"Rebuilding system with new memory...\nDiff:\n{diff}")
 
             # Swap the system message out (only if there is a diff)
-            message = PydanticMessage.dict_to_message(
+            temp_message = PydanticMessage.dict_to_message(
                 agent_id=agent_id,
                 model=agent_state.llm_config.model,
                 openai_message_dict={"role": "system", "content": new_system_message_str},
             )
-            message = await self.message_manager.update_message_by_id_async(
-                message_id=curr_system_message.id,
-                message_update=MessageUpdate(**message.model_dump()),
-                actor=actor,
-            )
-            return await self.set_in_context_messages_async(agent_id=agent_id, message_ids=agent_state.message_ids, actor=actor)
-        else:
-            return agent_state
+            temp_message.id = curr_system_message.id
 
-    @trace_method
+            if not dry_run:
+                await self.message_manager.update_message_by_id_async(
+                    message_id=curr_system_message.id,
+                    message_update=MessageUpdate(**temp_message.model_dump()),
+                    actor=actor,
+                )
+            else:
+                curr_system_message = temp_message
+
+        return agent_state, curr_system_message, num_messages, num_archival_memories
+
     @enforce_types
+    @trace_method
     def set_in_context_messages(self, agent_id: str, message_ids: List[str], actor: PydanticUser) -> PydanticAgentState:
         return self.update_agent(agent_id=agent_id, agent_update=UpdateAgent(message_ids=message_ids), actor=actor)
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def set_in_context_messages_async(self, agent_id: str, message_ids: List[str], actor: PydanticUser) -> PydanticAgentState:
         return await self.update_agent_async(agent_id=agent_id, agent_update=UpdateAgent(message_ids=message_ids), actor=actor)
 
-    @trace_method
     @enforce_types
+    @trace_method
     def trim_older_in_context_messages(self, num: int, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         new_messages = [message_ids[0]] + message_ids[num:]  # 0 is system message
         return self.set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
 
-    @trace_method
     @enforce_types
+    @trace_method
     def trim_all_in_context_messages_except_system(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         # TODO: How do we know this?
         new_messages = [message_ids[0]]  # 0 is system message
         return self.set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
 
-    @trace_method
     @enforce_types
+    @trace_method
     def prepend_to_in_context_messages(self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         new_messages = self.message_manager.create_many_messages(messages, actor=actor)
         message_ids = [message_ids[0]] + [m.id for m in new_messages] + message_ids[1:]
         return self.set_in_context_messages(agent_id=agent_id, message_ids=message_ids, actor=actor)
 
-    @trace_method
     @enforce_types
+    @trace_method
     def append_to_in_context_messages(self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         messages = self.message_manager.create_many_messages(messages, actor=actor)
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids or []
         message_ids += [m.id for m in messages]
         return self.set_in_context_messages(agent_id=agent_id, message_ids=message_ids, actor=actor)
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def append_to_in_context_messages_async(
         self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser
     ) -> PydanticAgentState:
@@ -1648,8 +1688,8 @@ class AgentManager:
         message_ids += [m.id for m in messages]
         return await self.set_in_context_messages_async(agent_id=agent_id, message_ids=message_ids, actor=actor)
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def reset_messages_async(
         self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False
     ) -> PydanticAgentState:
@@ -1712,8 +1752,8 @@ class AgentManager:
         else:
             return agent_state
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def update_memory_if_changed_async(self, agent_id: str, new_memory: Memory, actor: PydanticUser) -> PydanticAgentState:
         """
         Update internal memory object and system prompt if there have been modifications.
@@ -1756,12 +1796,12 @@ class AgentManager:
             # NOTE: don't do this since re-buildin the memory is handled at the start of the step
             # rebuild memory - this records the last edited timestamp of the memory
             # TODO: pass in update timestamp from block edit time
-            agent_state = await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor)
+            await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor)
 
         return agent_state
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def refresh_memory_async(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
         # TODO: This will NOT work for new blocks/file blocks added intra-step
         block_ids = [b.id for b in agent_state.memory.blocks]
@@ -1779,8 +1819,8 @@ class AgentManager:
 
         return agent_state
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def refresh_file_blocks(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
         file_blocks = await self.file_agent_manager.list_files_for_agent(agent_id=agent_state.id, actor=actor, return_as_blocks=True)
         agent_state.memory.file_blocks = [b for b in file_blocks if b is not None]
@@ -1789,8 +1829,8 @@ class AgentManager:
     # ======================================================================================================================
     # Source Management
     # ======================================================================================================================
-    @trace_method
     @enforce_types
+    @trace_method
     async def attach_source_async(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Attaches a source to an agent.
@@ -1820,15 +1860,11 @@ class AgentManager:
             )
 
             # Commit the changes
-            await agent.update_async(session, actor=actor)
+            agent = await agent.update_async(session, actor=actor)
+            return await agent.to_pydantic_async()
 
-        # Force rebuild of system prompt so that the agent is updated with passage count
-        pydantic_agent = await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
-
-        return pydantic_agent
-
-    @trace_method
     @enforce_types
+    @trace_method
     def append_system_message(self, agent_id: str, content: str, actor: PydanticUser):
 
         # get the agent
@@ -1840,8 +1876,8 @@ class AgentManager:
         # update agent in-context message IDs
         self.append_to_in_context_messages(messages=[message], agent_id=agent_id, actor=actor)
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def append_system_message_async(self, agent_id: str, content: str, actor: PydanticUser):
 
         # get the agent
@@ -1853,28 +1889,8 @@ class AgentManager:
         # update agent in-context message IDs
         await self.append_to_in_context_messages_async(messages=[message], agent_id=agent_id, actor=actor)
 
-    @trace_method
     @enforce_types
-    def list_attached_sources(self, agent_id: str, actor: PydanticUser) -> List[PydanticSource]:
-        """
-        Lists all sources attached to an agent.
-
-        Args:
-            agent_id: ID of the agent to list sources for
-            actor: User performing the action
-
-        Returns:
-            List[str]: List of source IDs attached to the agent
-        """
-        with db_registry.session() as session:
-            # Verify agent exists and user has permission to access it
-            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
-
-            # Use the lazy-loaded relationship to get sources
-            return [source.to_pydantic() for source in agent.sources]
-
     @trace_method
-    @enforce_types
     async def list_attached_sources_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticSource]:
         """
         Lists all sources attached to an agent.
@@ -1885,44 +1901,34 @@ class AgentManager:
 
         Returns:
             List[str]: List of source IDs attached to the agent
+
+        Raises:
+            NoResultFound: If agent doesn't exist or user doesn't have access
         """
         async with db_registry.async_session() as session:
-            # Verify agent exists and user has permission to access it
-            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            # Validate agent exists and user has access
+            await self._validate_agent_exists_async(session, agent_id, actor)
 
-            # Use the lazy-loaded relationship to get sources
-            return [source.to_pydantic() for source in agent.sources]
+            # Use raw SQL to efficiently fetch sources - much faster than lazy loading
+            # Fast query without relationship loading
+            query = (
+                select(SourceModel)
+                .join(SourcesAgents, SourceModel.id == SourcesAgents.source_id)
+                .where(
+                    SourcesAgents.agent_id == agent_id,
+                    SourceModel.organization_id == actor.organization_id,
+                    SourceModel.is_deleted == False,
+                )
+                .order_by(SourceModel.created_at.desc(), SourceModel.id)
+            )
 
-    @trace_method
+            result = await session.execute(query)
+            sources = result.scalars().all()
+
+            return [source.to_pydantic() for source in sources]
+
     @enforce_types
-    def detach_source(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
-        """
-        Detaches a source from an agent.
-
-        Args:
-            agent_id: ID of the agent to detach the source from
-            source_id: ID of the source to detach
-            actor: User performing the action
-        """
-        with db_registry.session() as session:
-            # Verify agent exists and user has permission to access it
-            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
-
-            # Remove the source from the relationship
-            remaining_sources = [s for s in agent.sources if s.id != source_id]
-
-            if len(remaining_sources) == len(agent.sources):  # Source ID was not in the relationship
-                logger.warning(f"Attempted to remove unattached source id={source_id} from agent id={agent_id} by actor={actor}")
-
-            # Update the sources relationship
-            agent.sources = remaining_sources
-
-            # Commit the changes
-            agent.update(session, actor=actor)
-            return agent.to_pydantic()
-
     @trace_method
-    @enforce_types
     async def detach_source_async(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Detaches a source from an agent.
@@ -1931,29 +1937,36 @@ class AgentManager:
             agent_id: ID of the agent to detach the source from
             source_id: ID of the source to detach
             actor: User performing the action
+
+        Raises:
+            NoResultFound: If agent doesn't exist or user doesn't have access
         """
         async with db_registry.async_session() as session:
-            # Verify agent exists and user has permission to access it
-            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            # Validate agent exists and user has access
+            await self._validate_agent_exists_async(session, agent_id, actor)
 
-            # Remove the source from the relationship
-            remaining_sources = [s for s in agent.sources if s.id != source_id]
+            # Check if the source is actually attached to this agent using junction table
+            attachment_check_query = select(SourcesAgents).where(SourcesAgents.agent_id == agent_id, SourcesAgents.source_id == source_id)
+            attachment_result = await session.execute(attachment_check_query)
+            attachment = attachment_result.scalar_one_or_none()
 
-            if len(remaining_sources) == len(agent.sources):  # Source ID was not in the relationship
+            if not attachment:
                 logger.warning(f"Attempted to remove unattached source id={source_id} from agent id={agent_id} by actor={actor}")
+            else:
+                # Delete the association directly from the junction table
+                delete_query = delete(SourcesAgents).where(SourcesAgents.agent_id == agent_id, SourcesAgents.source_id == source_id)
+                await session.execute(delete_query)
+                await session.commit()
 
-            # Update the sources relationship
-            agent.sources = remaining_sources
-
-            # Commit the changes
-            await agent.update_async(session, actor=actor)
+            # Get agent without loading relationships for return value
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             return await agent.to_pydantic_async()
 
     # ======================================================================================================================
     # Block management
     # ======================================================================================================================
-    @trace_method
     @enforce_types
+    @trace_method
     def get_block_with_label(
         self,
         agent_id: str,
@@ -1968,8 +1981,8 @@ class AgentManager:
                     return block.to_pydantic()
             raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def get_block_with_label_async(
         self,
         agent_id: str,
@@ -1984,8 +1997,8 @@ class AgentManager:
                     return block.to_pydantic()
             raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def modify_block_by_label_async(
         self,
         agent_id: str,
@@ -2012,8 +2025,8 @@ class AgentManager:
             await block.update_async(session, actor=actor)
             return block.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     def update_block_with_label(
         self,
         agent_id: str,
@@ -2037,8 +2050,8 @@ class AgentManager:
             agent.update(session, actor=actor)
             return agent.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     def attach_block(self, agent_id: str, block_id: str, actor: PydanticUser) -> PydanticAgentState:
         """Attaches a block to an agent. For sleeptime agents, also attaches to paired agents in the same group."""
         with db_registry.session() as session:
@@ -2067,8 +2080,8 @@ class AgentManager:
 
             return agent.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def attach_block_async(self, agent_id: str, block_id: str, actor: PydanticUser) -> PydanticAgentState:
         """Attaches a block to an agent. For sleeptime agents, also attaches to paired agents in the same group."""
         async with db_registry.async_session() as session:
@@ -2103,8 +2116,8 @@ class AgentManager:
 
             return await agent.to_pydantic_async()
 
-    @trace_method
     @enforce_types
+    @trace_method
     def detach_block(
         self,
         agent_id: str,
@@ -2124,8 +2137,8 @@ class AgentManager:
             agent.update(session, actor=actor)
             return agent.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def detach_block_async(
         self,
         agent_id: str,
@@ -2145,8 +2158,8 @@ class AgentManager:
             await agent.update_async(session, actor=actor)
             return await agent.to_pydantic_async()
 
-    @trace_method
     @enforce_types
+    @trace_method
     def detach_block_with_label(
         self,
         agent_id: str,
@@ -2170,8 +2183,8 @@ class AgentManager:
     # Passage Management
     # ======================================================================================================================
 
-    @trace_method
     @enforce_types
+    @trace_method
     def list_passages(
         self,
         actor: PydanticUser,
@@ -2231,8 +2244,8 @@ class AgentManager:
 
             return [p.to_pydantic() for p in passages]
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def list_passages_async(
         self,
         actor: PydanticUser,
@@ -2292,8 +2305,8 @@ class AgentManager:
 
             return [p.to_pydantic() for p in passages]
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def list_source_passages_async(
         self,
         actor: PydanticUser,
@@ -2340,8 +2353,8 @@ class AgentManager:
             # Convert to Pydantic models
             return [p.to_pydantic() for p in passages]
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def list_agent_passages_async(
         self,
         actor: PydanticUser,
@@ -2384,8 +2397,8 @@ class AgentManager:
             # Convert to Pydantic models
             return [p.to_pydantic() for p in passages]
 
-    @trace_method
     @enforce_types
+    @trace_method
     def passage_size(
         self,
         actor: PydanticUser,
@@ -2465,8 +2478,8 @@ class AgentManager:
     # ======================================================================================================================
     # Tool Management
     # ======================================================================================================================
-    @trace_method
     @enforce_types
+    @trace_method
     def attach_tool(self, agent_id: str, tool_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Attaches a tool to an agent.
@@ -2501,8 +2514,8 @@ class AgentManager:
             agent.update(session, actor=actor)
             return agent.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def attach_tool_async(self, agent_id: str, tool_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Attaches a tool to an agent.
@@ -2537,8 +2550,8 @@ class AgentManager:
             await agent.update_async(session, actor=actor)
             return await agent.to_pydantic_async()
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def attach_missing_files_tools_async(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
         """
         Attaches missing core file tools to an agent.
@@ -2569,8 +2582,8 @@ class AgentManager:
 
         return agent_state
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def detach_all_files_tools_async(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
         """
         Detach all core file tools from an agent.
@@ -2596,8 +2609,8 @@ class AgentManager:
 
         return agent_state
 
-    @trace_method
     @enforce_types
+    @trace_method
     def detach_tool(self, agent_id: str, tool_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Detaches a tool from an agent.
@@ -2630,8 +2643,8 @@ class AgentManager:
             agent.update(session, actor=actor)
             return agent.to_pydantic()
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def detach_tool_async(self, agent_id: str, tool_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Detaches a tool from an agent.
@@ -2664,8 +2677,8 @@ class AgentManager:
             await agent.update_async(session, actor=actor)
             return await agent.to_pydantic_async()
 
-    @trace_method
     @enforce_types
+    @trace_method
     def list_attached_tools(self, agent_id: str, actor: PydanticUser) -> List[PydanticTool]:
         """
         List all tools attached to an agent.
@@ -2681,11 +2694,40 @@ class AgentManager:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             return [tool.to_pydantic() for tool in agent.tools]
 
+    @enforce_types
+    @trace_method
+    async def list_attached_tools_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticTool]:
+        """
+        List all tools attached to an agent (async version with optimized performance).
+        Uses direct SQL queries to avoid SqlAlchemyBase overhead.
+
+        Args:
+            agent_id: ID of the agent to list tools for.
+            actor: User performing the action.
+
+        Returns:
+            List[PydanticTool]: List of tools attached to the agent.
+        """
+        async with db_registry.async_session() as session:
+            # lightweight check for agent access
+            await self._validate_agent_exists_async(session, agent_id, actor)
+
+            # direct query for tools via join - much more performant
+            query = (
+                select(ToolModel)
+                .join(ToolsAgents, ToolModel.id == ToolsAgents.tool_id)
+                .where(ToolsAgents.agent_id == agent_id, ToolModel.organization_id == actor.organization_id)
+            )
+
+            result = await session.execute(query)
+            tools = result.scalars().all()
+            return [tool.to_pydantic() for tool in tools]
+
     # ======================================================================================================================
     # Tag Management
     # ======================================================================================================================
-    @trace_method
     @enforce_types
+    @trace_method
     def list_tags(
         self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, query_text: Optional[str] = None
     ) -> List[str]:
@@ -2719,8 +2761,8 @@ class AgentManager:
             results = [tag[0] for tag in query.all()]
             return results
 
-    @trace_method
     @enforce_types
+    @trace_method
     async def list_tags_async(
         self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, query_text: Optional[str] = None
     ) -> List[str]:
@@ -2759,8 +2801,11 @@ class AgentManager:
             results = [row[0] for row in result.all()]
             return results
 
+    @trace_method
     async def get_context_window(self, agent_id: str, actor: PydanticUser) -> ContextWindowOverview:
-        agent_state = await self.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
+        agent_state, system_message, num_messages, num_archival_memories = await self.rebuild_system_prompt_async(
+            agent_id=agent_id, actor=actor, force=True, dry_run=True
+        )
         calculator = ContextWindowCalculator()
 
         if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" and agent_state.llm_config.model_endpoint_type == "anthropic":
@@ -2776,5 +2821,7 @@ class AgentManager:
             actor=actor,
             token_counter=token_counter,
             message_manager=self.message_manager,
-            passage_manager=self.passage_manager,
+            system_message_compiled=system_message,
+            num_archival_memories=num_archival_memories,
+            num_messages=num_messages,
         )

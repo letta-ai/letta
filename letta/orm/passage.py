@@ -50,11 +50,6 @@ class SourcePassage(BasePassage, FileMixin, SourceMixin):
     file_name: Mapped[str] = mapped_column(doc="The name of the file that this passage was derived from")
 
     @declared_attr
-    def file(cls) -> Mapped["FileMetadata"]:
-        """Relationship to file"""
-        return relationship("FileMetadata", back_populates="source_passages", lazy="selectin")
-
-    @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", back_populates="source_passages", lazy="selectin")
 
@@ -73,11 +68,6 @@ class SourcePassage(BasePassage, FileMixin, SourceMixin):
             Index("source_passages_file_id_idx", "file_id"),
             {"extend_existing": True},
         )
-
-    @declared_attr
-    def source(cls) -> Mapped["Source"]:
-        """Relationship to source"""
-        return relationship("Source", back_populates="passages", lazy="selectin", passive_deletes=True)
 
 
 class AgentPassage(BasePassage, AgentMixin):

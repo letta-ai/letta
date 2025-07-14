@@ -1,8 +1,12 @@
 import asyncio
 from typing import List, Optional
 
+from sqlalchemy import select
+
+from letta.orm import Agent as AgentModel
 from letta.orm.errors import NoResultFound
 from letta.orm.source import Source as SourceModel
+from letta.orm.sources_agents import SourcesAgents
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.source import Source as PydanticSource
@@ -104,9 +108,21 @@ class SourceManager:
             # Verify source exists and user has permission to access it
             source = await SourceModel.read_async(db_session=session, identifier=source_id, actor=actor)
 
-            # The agents relationship is already loaded due to lazy="selectin" in the Source model
-            # and will be properly filtered by organization_id due to the OrganizationMixin
-            agents_orm = source.agents
+            # Use junction table query instead of relationship to avoid performance issues
+            query = (
+                select(AgentModel)
+                .join(SourcesAgents, AgentModel.id == SourcesAgents.agent_id)
+                .where(
+                    SourcesAgents.source_id == source_id,
+                    AgentModel.organization_id == actor.organization_id if actor else True,
+                    AgentModel.is_deleted == False,
+                )
+                .order_by(AgentModel.created_at.desc(), AgentModel.id)
+            )
+
+            result = await session.execute(query)
+            agents_orm = result.scalars().all()
+
             return await asyncio.gather(*[agent.to_pydantic_async() for agent in agents_orm])
 
     # TODO: We make actor optional for now, but should most likely be enforced due to security reasons

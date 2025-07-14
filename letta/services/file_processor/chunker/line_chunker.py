@@ -40,6 +40,10 @@ class LineChunker:
 
     def _chunk_by_lines(self, text: str, preserve_indentation: bool = False) -> List[str]:
         """Traditional line-based chunking for code and structured data"""
+        # early stop, can happen if the there's nothing on a specific file
+        if not text:
+            return []
+
         lines = []
         for line in text.splitlines():
             if preserve_indentation:
@@ -57,6 +61,10 @@ class LineChunker:
 
     def _chunk_by_sentences(self, text: str) -> List[str]:
         """Sentence-based chunking for documentation and markup"""
+        # early stop, can happen if the there's nothing on a specific file
+        if not text:
+            return []
+
         # Simple sentence splitting on periods, exclamation marks, and question marks
         # followed by whitespace or end of string
         sentence_pattern = r"(?<=[.!?])\s+(?=[A-Z])"
@@ -75,6 +83,10 @@ class LineChunker:
 
     def _chunk_by_characters(self, text: str, target_line_length: int = 100) -> List[str]:
         """Character-based wrapping for prose text"""
+        # early stop, can happen if the there's nothing on a specific file
+        if not text:
+            return []
+
         words = text.split()
         lines = []
         current_line = []
@@ -109,6 +121,11 @@ class LineChunker:
         """Content-aware text chunking based on file type"""
         strategy = self._determine_chunking_strategy(file_metadata)
         text = file_metadata.content
+
+        # early stop, can happen if the there's nothing on a specific file
+        if not text:
+            logger.warning(f"File ({file_metadata}) has no content")
+            return []
 
         # Apply the appropriate chunking strategy
         if strategy == ChunkingStrategy.DOCUMENTATION:
