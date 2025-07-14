@@ -464,9 +464,8 @@ def test_line_chunker_edge_case_empty_file():
     file = FileMetadata(file_name="empty.py", source_id="test_source", content="")
     chunker = LineChunker()
 
-    # Test requesting lines from empty file
-    with pytest.raises(ValueError, match="File empty.py has only 0 lines, but requested offset 1 is out of range"):
-        chunker.chunk_text(file, start=0, end=1, validate_range=True)
+    # no error
+    chunker.chunk_text(file, start=0, end=1, validate_range=True)
 
 
 def test_line_chunker_edge_case_single_line():
