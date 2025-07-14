@@ -56,3 +56,17 @@ letta server
 ```
 To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
 </Accordion>
+
+## Model support
+
+The following models have been tested with Letta as of 7-11-2025 on LM Studio `0.3.18`.
+
+- `qwen3-30b-a3b`
+- `qwen3-14b-mlx`
+- `qwen3-8b-mlx`
+- `qwen2.5-32b-instruct`
+- `qwen2.5-14b-instruct-1m`
+- `qwen2.5-7b-instruct`
+- `meta-llama-3.1-8b-instruct`
+
+Some models recommended on [LM Studio](https://lmstudio.ai/docs/advanced/tool-use#supported-models) such as `mlx-community/ministral-8b-instruct-2410` and `bartowski/ministral-8b-instruct-2410` may not work well with Letta due to default prompt templates being incompatible. Adjusting templates can enable compatibility but will impact model performance.
