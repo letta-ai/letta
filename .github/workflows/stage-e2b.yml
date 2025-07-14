@@ -65,7 +65,7 @@ jobs:
       env:
         E2B_ACCESS_TOKEN: ${{ env.E2B_ACCESS_TOKEN }}
       run: |
-        e2b template build --team 2f08c5f3-7dea-4d3b-bf14-898907e19621
+        e2b template build --team 2f08c5f3-7dea-4d3b-bf14-898907e19621 --cpu-count 2 --memory-mb 4096 -c "/root/.jupyter/start-up.sh"
         template_id=$(grep '^template_id' e2b.toml | cut -d'"' -f2)
         echo "template_id=$template_id" >> $GITHUB_OUTPUT
 
