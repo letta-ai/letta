@@ -152,7 +152,7 @@ def async_redis_cache(
         def get_cache_key(*args, **kwargs):
             return f"{prefix}:{key_func(*args, **kwargs)}"
 
-        # async_wrapper.cache_invalidate = invalidate
+        async_wrapper.cache_invalidate = invalidate
         async_wrapper.cache_key_func = get_cache_key
         async_wrapper.cache_stats = stats
         return async_wrapper
