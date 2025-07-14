@@ -46,12 +46,12 @@ async def grep_files(
     context_lines: Optional[int] = 3,
 ) -> str:
     """
-    Grep tool to search files across data sources using a keyword or regex pattern.
+    Searches file contents for pattern matches with surrounding context.
 
-    Use this when you want to:
-    - Quickly find occurrences of a variable, function, or keyword
-    - Locate log messages, error codes, or TODOs across files
-    - Understand surrounding code by including `context_lines`
+    Ideal for:
+    - Finding specific code elements (variables, functions, keywords)
+    - Locating error messages or specific text across multiple files
+    - Examining code in context to understand usage patterns
 
     Args:
         pattern (str): Keyword or regex pattern to search within file contents.
@@ -67,15 +67,15 @@ async def grep_files(
 
 async def semantic_search_files(agent_state: "AgentState", query: str, limit: int = 5) -> List["FileMetadata"]:
     """
-    Get list of most relevant chunks from any file using vector/embedding search.
+    Searches file contents using semantic meaning rather than exact matches.
 
-    Use this when you want to:
-    - Find related content that without using exact keywords (e.g., conceptually similar sections)
-    - Look up high-level descriptions, documentation, or config patterns
-    - Perform fuzzy search when grep isn't sufficient
+    Ideal for:
+    - Finding conceptually related information across files
+    - Discovering relevant content without knowing exact keywords
+    - Locating files with similar topics or themes
 
     Args:
-        query (str): The search query.
+        query (str): The search query text to find semantically similar content.
         limit: Maximum number of results to return (default: 5)
 
     Returns:
