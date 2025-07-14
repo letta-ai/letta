@@ -105,10 +105,4 @@ export const popularDependencies: Dependency[] = [
     version: '6.31.1',
     description: 'Cross-platform data format used to serialize structured data',
   },
-  {
-    id: 'humanize',
-    name: 'humanize',
-    version: '4.12.3',
-    description: 'Contains various common humanization utilities',
-  },
 ];

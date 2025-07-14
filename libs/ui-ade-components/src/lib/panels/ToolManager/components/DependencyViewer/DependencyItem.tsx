@@ -36,7 +36,12 @@ export function DependencyItem({
         <VStack gap="small" flex>
           <Typography bold>
             {dependency.name}{' '}
-            <Typography variant="body3" color="lighter" inline>
+            <Typography
+              variant="body3"
+              color="lighter"
+              inline
+              overrideEl="span"
+            >
               {dependency.version}
             </Typography>
           </Typography>
@@ -46,18 +51,14 @@ export function DependencyItem({
         </VStack>
         <HStack gap="small" align="start">
           <Button
-            label={
-              isAdded
-                ? t('button.added')
-                : isPending
-                  ? t('button.adding')
-                  : t('button.add')
-            }
+            label={isAdded ? t('button.added') : t('button.add')}
             size="small"
             color={isAdded ? 'primary' : 'secondary'}
             bold
-            preIcon={isAdded ? <CheckIcon /> : <PlusIcon />}
-            disabled={isPending}
+            preIcon={
+              isPending ? undefined : isAdded ? <CheckIcon /> : <PlusIcon />
+            }
+            busy={isPending}
             onClick={() => {
               if (!isAdded) {
                 onAdd(dependency);

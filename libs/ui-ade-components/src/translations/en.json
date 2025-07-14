@@ -1342,9 +1342,20 @@
       "placeholder": "Search packages",
       "label": "Search dependencies"
     },
+    "customDependency": {
+      "title": "Add Custom Dependency",
+      "namePlaceholder": "Package name",
+      "nameLabel": "Package name",
+      "versionPlaceholder": "Version (optional)",
+      "versionLabel": "Package version",
+      "addButton": "Add"
+    },
     "error": {
       "addingDependency": "Error adding dependency",
       "unknown": "Unknown error"
+    },
+    "description": {
+      "pipPackage": "Pip package required by this tool"
     },
     "button": {
       "add": "Add",
