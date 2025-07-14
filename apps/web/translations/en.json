@@ -1795,7 +1795,7 @@
     "nav": {
       "return": "Back",
       "allTools": "Hosted tools",
-      "mcpServers": "MCP Servers"
+      "mcpServers": "MCP servers"
     }
   },
   "projects/(projectSlug)/layout": {

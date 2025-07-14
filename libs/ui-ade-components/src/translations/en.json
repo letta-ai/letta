@@ -1274,7 +1274,7 @@
       "composio": "Composio Tools",
       "mcp": "All MCP Servers",
       "pythonTools": "Code Tools",
-      "mcpTools": "MCP Servers",
+      "mcpTools": "MCP servers",
       "createMcp": "Add MCP Server"
     },
     "ToolsViewerContent": {
@@ -1776,7 +1776,7 @@
       "toolRules": "Rules",
       "current": "Tools",
       "attachedToAgent": "Attached to agent",
-      "codeTools": "All tools",
+      "codeTools": "Hosted tools",
       "toolVariables": "Variables",
       "customTools": "Custom tools <count></count>",
       "lettaTools": "Base tools <count></count>",
