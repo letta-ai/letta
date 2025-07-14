@@ -23,7 +23,7 @@ import {
   useForm,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent, useCurrentAgentMetaData } from '../../hooks';
@@ -95,10 +95,11 @@ function CharacterCounter(props: CharacterCounterProps) {
 interface AdvancedMemoryEditorProps {
   memory: Block;
   onClose: () => void;
+  onFormDirtyChange?: (isDirty: boolean) => void;
 }
 
 function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
-  const { memory } = props;
+  const { memory, onFormDirtyChange } = props;
   const t = useTranslations('ADE/AdvancedCoreMemoryEditor');
 
   const agent = useCurrentAgent();
@@ -206,6 +207,8 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
             };
           },
         );
+
+        form.reset(values);
       } catch (_e) {
         setIsError(true);
       } finally {
@@ -215,6 +218,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
     [
       agent.id,
       canUpdateAgent,
+      form,
       isPending,
       memory.label,
       queryClient,
@@ -223,6 +227,10 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
   );
 
   const { isTemplate } = useCurrentAgentMetaData();
+
+  useEffect(() => {
+    onFormDirtyChange?.(form.formState.isDirty);
+  }, [form.formState.isDirty, onFormDirtyChange]);
 
   return (
     <VStack fullHeight fullWidth padding gap="form">
@@ -481,6 +489,8 @@ const currentAdvancedCoreMemoryAtom = atom<CurrentAdvancedCoreMemoryState>({
   isOpen: false,
 });
 
+const hasUnsavedChangesAtom = atom<boolean>(false);
+
 function CoreMemorySidebar() {
   const agent = useCurrentAgent();
 
@@ -656,12 +666,17 @@ function EditorContent() {
   const [{ selectedMemoryBlockLabel }] = useAtom(currentAdvancedCoreMemoryAtom);
   const { close } = useAdvancedCoreMemoryEditor();
   const { memory } = useCurrentAgent();
+  const setHasUnsavedChanges = useSetAtom(hasUnsavedChangesAtom);
 
   const selectedMemoryBlock = useMemo(() => {
     return memory?.blocks.find(
       (block) => block.label === selectedMemoryBlockLabel,
     );
   }, [memory, selectedMemoryBlockLabel]);
+
+  useEffect(() => {
+    setHasUnsavedChanges(false);
+  }, [selectedMemoryBlockLabel, setHasUnsavedChanges]);
 
   const t = useTranslations('ADE/AdvancedCoreMemoryEditor');
 
@@ -676,6 +691,7 @@ function EditorContent() {
       key={selectedMemoryBlock.id}
       memory={selectedMemoryBlock}
       onClose={close}
+      onFormDirtyChange={setHasUnsavedChanges}
     />
   );
 }
@@ -686,6 +702,9 @@ export function AdvancedCoreMemoryEditor() {
     { isOpen: isAdvancedCoreMemoryEditorOpen },
     setIsAdvancedCoreMemoryEditorOpen,
   ] = useAtom(currentAdvancedCoreMemoryAtom);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useAtom(
+    hasUnsavedChangesAtom,
+  );
 
   const [isConfirmLeaveOpen, setIsConfirmLeaveOpen] = useState(false);
 
@@ -697,6 +716,7 @@ export function AdvancedCoreMemoryEditor() {
         onOpenChange={setIsConfirmLeaveOpen}
         onConfirm={() => {
           setIsConfirmLeaveOpen(false);
+          setHasUnsavedChanges(false);
           setIsAdvancedCoreMemoryEditorOpen((prev) => ({
             ...prev,
             isOpen: false,
@@ -709,7 +729,14 @@ export function AdvancedCoreMemoryEditor() {
         isOpen={isAdvancedCoreMemoryEditorOpen}
         onOpenChange={(open) => {
           if (!open) {
-            setIsConfirmLeaveOpen(true);
+            if (hasUnsavedChanges) {
+              setIsConfirmLeaveOpen(true);
+              return;
+            }
+            setIsAdvancedCoreMemoryEditorOpen((prev) => ({
+              ...prev,
+              isOpen: false,
+            }));
             return;
           }
 
@@ -717,6 +744,7 @@ export function AdvancedCoreMemoryEditor() {
             isOpen: open,
             selectedMemoryBlockLabel: '',
           });
+          setHasUnsavedChanges(false);
         }}
         appName={t('title')}
       >
