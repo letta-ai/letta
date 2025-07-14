@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Body, Depends, Header, Query, status
+from fastapi import APIRouter, Body, Depends, Header, Query
 from fastapi.exceptions import HTTPException
 from starlette.requests import Request
 
@@ -45,12 +45,8 @@ async def create_messages_batch(
         if length > max_bytes:
             raise HTTPException(status_code=413, detail=f"Request too large ({length} bytes). Max is {max_bytes} bytes.")
 
-    # Reject request if env var is not set
     if not settings.enable_batch_job_polling:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Server misconfiguration: LETTA_ENABLE_BATCH_JOB_POLLING is set to False.",
-        )
+        logger.warning("Batch job polling is disabled. Enable batch processing by setting LETTA_ENABLE_BATCH_JOB_POLLING to True.")
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     batch_job = BatchJob(
