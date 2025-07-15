@@ -96,10 +96,12 @@ export function PHProvider({ children }: ProvidersProps) {
 
 interface IdentifyUserProps {
   userId: string;
+  name?: string;
+  email?: string;
 }
 
 export function IdentifyUserForPostHog(props: IdentifyUserProps) {
-  const { userId } = props;
+  const { userId, name, email } = props;
   const posthogClient = usePostHog();
 
   useEffect(() => {
@@ -111,7 +113,7 @@ export function IdentifyUserForPostHog(props: IdentifyUserProps) {
         return;
       }
 
-      posthogClient.identify(userId);
+      posthogClient.identify(userId, { name: name, email: email });
     } catch (error) {
       console.error('Error identifying user on PostHog', error);
     }
@@ -125,7 +127,10 @@ export function trackClientSideEvent<Event extends AnalyticsEvent>(
   properties: AnalyticsEventProperties[Event],
 ) {
   try {
-    posthog.capture(eventName, properties);
+    posthog.capture(eventName, {
+      distinct_id: 'userId' in properties ? properties.userId : '',
+      ...properties,
+    });
   } catch (error) {
     console.error('Error tracking PostHog event', error);
   }

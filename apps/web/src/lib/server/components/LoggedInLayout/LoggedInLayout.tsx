@@ -63,7 +63,11 @@ export async function LoggedInLayout(props: InAppProps) {
   return (
     <GlobalSessionSettingsProvider>
       <IdentifyUserForMixpanel userId={user.id} />
-      <IdentifyUserForPostHog userId={user.id} />
+      <IdentifyUserForPostHog
+        userId={user.id}
+        name={user.name}
+        email={user.email}
+      />
       <HydrationBoundary state={dehydrate(queryClient)}>
         <LoggedInClientSideProviders>
           <VerifyAccountLoginWrapper>

@@ -73,6 +73,7 @@ export async function trackServerSideEvent<Event extends AnalyticsEvent>(
 ) {
   try {
     const posthog = PostHogClient();
+    let captured = false;
 
     if (properties) {
       posthog?.capture({
@@ -82,11 +83,12 @@ export async function trackServerSideEvent<Event extends AnalyticsEvent>(
           ...properties,
         },
       });
-      await posthog?.shutdown();
-      return;
+      captured = true;
     }
 
-    posthog?.capture({ event: eventName, distinctId: '' });
+    if (!captured) {
+      posthog?.capture({ event: eventName, distinctId: '' });
+    }
     await posthog?.shutdown();
   } catch (error) {
     console.error('Failed to track event on PostHog', error);
