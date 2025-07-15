@@ -99,6 +99,8 @@ class DatabaseRegistry:
                 Base.metadata.create_all(bind=engine)
                 self._engines["default"] = engine
 
+            self._setup_pool_monitoring(engine, "default")
+
             # Create session factory
             self._session_factories["default"] = sessionmaker(autocommit=False, autoflush=False, bind=self._engines["default"])
             self._initialized["sync"] = True
@@ -130,6 +132,9 @@ class DatabaseRegistry:
 
             # Create async session factory
             self._async_engines["default"] = async_engine
+
+            self._setup_pool_monitoring(async_engine, "default_async")
+
             self._async_session_factories["default"] = async_sessionmaker(
                 expire_on_commit=True,
                 close_resets_only=False,
@@ -149,7 +154,10 @@ class DatabaseRegistry:
             pool_cls = NullPool
         else:
             logger.info("Enabling pooling on SqlAlchemy")
-            pool_cls = QueuePool if not is_async else None
+            # AsyncAdaptedQueuePool will be the default if none is provided for async but setting this explicitly.
+            from sqlalchemy import AsyncAdaptedQueuePool
+
+            pool_cls = QueuePool if not is_async else AsyncAdaptedQueuePool
 
         base_args = {
             "echo": settings.pg_echo,
@@ -206,6 +214,21 @@ class DatabaseRegistry:
                 return connection
 
         engine.connect = wrapped_connect
+
+    def _setup_pool_monitoring(self, engine: Engine | AsyncEngine, engine_name: str) -> None:
+        """Set up database pool monitoring for the given engine."""
+        if not settings.enable_db_pool_monitoring:
+            return
+
+        try:
+            from letta.otel.db_pool_monitoring import setup_pool_monitoring
+
+            setup_pool_monitoring(engine, engine_name)
+            self.logger.info(f"Database pool monitoring enabled for {engine_name}")
+        except ImportError:
+            self.logger.warning("Database pool monitoring not available - missing dependencies")
+        except Exception as e:
+            self.logger.warning(f"Failed to setup pool monitoring for {engine_name}: {e}")
 
     def get_engine(self, name: str = "default") -> Engine:
         """Get a database engine by name."""
@@ -284,6 +307,11 @@ class DatabaseRegistry:
 
 # Create a singleton instance
 db_registry = DatabaseRegistry()
+
+
+def get_db_registry() -> DatabaseRegistry:
+    """Get the global database registry instance."""
+    return db_registry
 
 
 def get_db():

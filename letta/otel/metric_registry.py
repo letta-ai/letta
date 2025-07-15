@@ -3,6 +3,7 @@ from functools import partial
 
 from opentelemetry import metrics
 from opentelemetry.metrics import Counter, Histogram
+from opentelemetry.metrics._internal import Gauge
 
 from letta.helpers.singleton import singleton
 from letta.otel.metrics import get_letta_meter
@@ -27,7 +28,7 @@ class MetricRegistry:
         agent_id -1:N -> tool_name
     """
 
-    Instrument = Counter | Histogram
+    Instrument = Counter | Histogram | Gauge
     _metrics: dict[str, Instrument] = field(default_factory=dict, init=False)
     _meter: metrics.Meter = field(init=False)
 
@@ -178,5 +179,97 @@ class MetricRegistry:
                 name="hist_file_process_bytes",
                 description="Histogram for file process in bytes",
                 unit="By",
+            ),
+        )
+
+    # Database connection pool metrics
+    # (includes engine_name)
+    @property
+    def db_pool_connections_total_gauge(self) -> Gauge:
+        return self._get_or_create_metric(
+            "gauge_db_pool_connections_total",
+            partial(
+                self._meter.create_gauge,
+                name="gauge_db_pool_connections_total",
+                description="Total number of connections in the database pool",
+                unit="1",
+            ),
+        )
+
+    # (includes engine_name)
+    @property
+    def db_pool_connections_checked_out_gauge(self) -> Gauge:
+        return self._get_or_create_metric(
+            "gauge_db_pool_connections_checked_out",
+            partial(
+                self._meter.create_gauge,
+                name="gauge_db_pool_connections_checked_out",
+                description="Number of connections currently checked out from the pool",
+                unit="1",
+            ),
+        )
+
+    # (includes engine_name)
+    @property
+    def db_pool_connections_available_gauge(self) -> Gauge:
+        return self._get_or_create_metric(
+            "gauge_db_pool_connections_available",
+            partial(
+                self._meter.create_gauge,
+                name="gauge_db_pool_connections_available",
+                description="Number of available connections in the pool",
+                unit="1",
+            ),
+        )
+
+    # (includes engine_name)
+    @property
+    def db_pool_connections_overflow_gauge(self) -> Gauge:
+        return self._get_or_create_metric(
+            "gauge_db_pool_connections_overflow",
+            partial(
+                self._meter.create_gauge,
+                name="gauge_db_pool_connections_overflow",
+                description="Number of overflow connections in the pool",
+                unit="1",
+            ),
+        )
+
+    # (includes engine_name)
+    @property
+    def db_pool_connection_duration_ms_histogram(self) -> Histogram:
+        return self._get_or_create_metric(
+            "hist_db_pool_connection_duration_ms",
+            partial(
+                self._meter.create_histogram,
+                name="hist_db_pool_connection_duration_ms",
+                description="Duration of database connection usage in milliseconds",
+                unit="ms",
+            ),
+        )
+
+    # (includes engine_name, event)
+    @property
+    def db_pool_connection_events_counter(self) -> Counter:
+        return self._get_or_create_metric(
+            "count_db_pool_connection_events",
+            partial(
+                self._meter.create_counter,
+                name="count_db_pool_connection_events",
+                description="Count of database connection pool events (connect, checkout, checkin, invalidate)",
+                unit="1",
+            ),
+        )
+
+    # (includes engine_name, exception_type)
+    @property
+    def db_pool_connection_errors_counter(self) -> Counter:
+        return self._get_or_create_metric(
+            "count_db_pool_connection_errors",
+            partial(
+                self._meter.create_counter,
+                name="count_db_pool_connection_errors",
+                description="Count of database connection pool errors",
+                unit="1",
             ),
         )

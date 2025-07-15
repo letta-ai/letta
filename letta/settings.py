@@ -244,6 +244,10 @@ class Settings(BaseSettings):
     use_experimental: bool = False
     use_vertex_structured_outputs_experimental: bool = False
 
+    # Database pool monitoring
+    enable_db_pool_monitoring: bool = True  # Enable connection pool monitoring
+    db_pool_monitoring_interval: int = 30  # Seconds between pool stats collection
+
     # cron job parameters
     enable_batch_job_polling: bool = False
     poll_running_llm_batches_interval_seconds: int = 5 * 60
