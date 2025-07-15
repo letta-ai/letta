@@ -6,6 +6,7 @@ import {
   Button,
   CommunicationsIcon,
   ComposioLogoMarkDynamic,
+  DeepseekLogoMarkDynamic,
   DesktopPageLayout,
   Dialog,
   GeminiLogoMarkDynamic,
@@ -16,8 +17,10 @@ import {
   OllamaLogoMarkDynamic,
   OpenaiLogoMarkDynamic,
   RawInput,
+  TogetherAiLogoMarkDynamic,
   Typography,
   VStack,
+  XaiLogoMarkDynamic,
 } from '@letta-cloud/ui-component-library';
 import type { FormEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -268,6 +271,42 @@ function SettingsEditor(props: SettingsEditorProps) {
           },
         ],
       },
+      {
+        icon: <XaiLogoMarkDynamic />,
+        name: 'xAI',
+        description: t('integrations.xai.description'),
+        docsLink: 'https://docs.letta.com/guides/server/providers/xai',
+        configSchema: [
+          {
+            key: 'XAI_API_KEY',
+            label: t('integrations.xai.keyLabel'),
+          },
+        ],
+      },
+      {
+        icon: <DeepseekLogoMarkDynamic />,
+        name: 'DeepSeek',
+        description: t('integrations.deepseek.description'),
+        docsLink: 'https://docs.letta.com/guides/server/providers/deepseek',
+        configSchema: [
+          {
+            key: 'DEEPSEEK_API_KEY',
+            label: t('integrations.deepseek.keyLabel'),
+          },
+        ],
+      },
+      {
+        icon: <TogetherAiLogoMarkDynamic />,
+        name: 'Together',
+        description: t('integrations.togetherai.description'),
+        docsLink: 'https://docs.letta.com/guides/server/providers/together',
+        configSchema: [
+          {
+            key: 'TOGETHER_API_KEY',
+            label: t('integrations.togetherai.keyLabel'),
+          },
+        ],
+      },
     ],
     [t],
   );
@@ -376,7 +415,7 @@ export function Integrations() {
       subtitle={t('subtitle')}
       title={t('title')}
     >
-      <VStack fullWidth fullHeight padding="small">
+      <VStack fullWidth fullHeight overflowY="auto" padding="small">
         {settings === null ? (
           <LoadingEmptyStatusComponent
             isLoading

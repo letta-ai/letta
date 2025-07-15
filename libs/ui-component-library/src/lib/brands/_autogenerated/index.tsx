@@ -3,6 +3,7 @@ export * from './azure';
 export * from './bedrock';
 export * from './claude';
 export * from './composio';
+export * from './deepseek';
 export * from './discord';
 export * from './gemini';
 export * from './github';
@@ -20,6 +21,7 @@ export * from './openai';
 export * from './qwen';
 export * from './snorkel-ai';
 export * from './together-ai';
+export * from './xai';
 export * from './zapier';
 export type BrandKeys =
   | 'anthropic'
@@ -27,6 +29,7 @@ export type BrandKeys =
   | 'bedrock'
   | 'claude'
   | 'composio'
+  | 'deepseek'
   | 'discord'
   | 'gemini'
   | 'github'
@@ -44,4 +47,5 @@ export type BrandKeys =
   | 'qwen'
   | 'snorkel-ai'
   | 'together-ai'
+  | 'xai'
   | 'zapier';

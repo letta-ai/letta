@@ -43,6 +43,18 @@
         "keyLabel": "Gemini API Key",
         "description": "Connect to the Gemini API to use Gemini models in the ADE"
       },
+      "togetherai": {
+        "keyLabel": "Together API Key",
+        "description": "Connect to the Together API to use Together models in the ADE"
+      },
+      "xai": {
+        "keyLabel": "xAI API Key",
+        "description": "Connect to the xAI API to use Grok models in the ADE"
+      },
+      "deepseek": {
+        "keyLabel": "DeepSeek API Key",
+        "description": "Connect to the DeepSeek API to use DeepSeek models in the ADE"
+      },
       "other": {
         "name": "Don't see an integration that's supported in the docs?",
         "description": "You can update the environment variables in `[your-root-directory]/.letta/env` to connect to any other API"
