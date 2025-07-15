@@ -1,13 +1,9 @@
 import React, { useMemo } from 'react';
-import {
-  LoadingEmptyStatusComponent,
-  VStack,
-} from '@letta-cloud/ui-component-library';
+import { VStack } from '../../../framing/VStack/VStack';
 import {
   useStepsServiceRetrieveStep,
   useTelemetryServiceRetrieveProviderTrace,
 } from '@letta-cloud/sdk-core';
-import { useCurrentAgentMetaData } from '../../../hooks';
 import { get } from 'lodash-es';
 import { RequestEvent } from './RequestEvent/RequestEvent';
 import { ResponseEvent } from './ResponseEvent/ResponseEvent';
@@ -20,7 +16,6 @@ interface TelemetryDetailsViewerProps {
 export function TelemetryDetailsViewer(props: TelemetryDetailsViewerProps) {
   const { stepId } = props;
 
-  const { isLocal } = useCurrentAgentMetaData();
   const { data } = useTelemetryServiceRetrieveProviderTrace({
     stepId,
   });
@@ -39,7 +34,7 @@ export function TelemetryDetailsViewer(props: TelemetryDetailsViewerProps) {
         traceId: stepDetails?.trace_id || '',
       },
     },
-    enabled: !!stepDetails?.trace_id && !isLocal,
+    enabled: !!stepDetails?.trace_id,
   });
 
   const inputTokens = useMemo(() => {
@@ -56,22 +51,18 @@ export function TelemetryDetailsViewer(props: TelemetryDetailsViewerProps) {
     return undefined;
   }, [data]);
 
-  if (!data) {
-    return <LoadingEmptyStatusComponent isLoading />;
-  }
-
   return (
     <VStack gap={false}>
       <RequestEvent
         stepId={stepId}
         inputTokens={inputTokens}
-        requestPayload={data.request_json}
-        responsePayload={data.response_json}
+        requestPayload={data?.request_json || {}}
+        responsePayload={data?.response_json || {}}
       />
       <ResponseEvent
         stepId={stepId}
         traces={traceData?.body || []}
-        responsePayload={data.response_json}
+        responsePayload={data?.response_json || {}}
       />
     </VStack>
   );
@@ -84,15 +75,5 @@ interface DetailedMessageViewProps {
 export function DetailedMessageView(props: DetailedMessageViewProps) {
   const { stepId } = props;
 
-  return (
-    <VStack
-      border
-      gap={false}
-      overflow="auto"
-      color="background"
-      className="rounded-t-md"
-    >
-      <TelemetryDetailsViewer stepId={stepId} />
-    </VStack>
-  );
+  return <TelemetryDetailsViewer stepId={stepId} />;
 }

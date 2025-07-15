@@ -6,6 +6,7 @@ import './EventItem.scss';
 
 interface MessageEventProps {
   name: React.ReactNode;
+  duration?: string;
   icon: React.ReactNode;
   rightContent?: React.ReactNode;
   children?: React.ReactNode;
@@ -27,11 +28,13 @@ export function EventItem(props: MessageEventProps) {
       </div>
       <VStack gap={false} fullWidth>
         <HStack className="h-8" align="center" justify="spaceBetween">
-          <Typography variant="body2" bold>
-            <HStack as="span" gap="small" align="center">
-              {name}
-            </HStack>
-          </Typography>
+          <HStack align="center" gap="small">
+            <Typography variant="body2" bold>
+              <HStack as="span" gap="small" align="center">
+                {name}
+              </HStack>
+            </Typography>
+          </HStack>
           <HStack align="center">{rightContent}</HStack>
         </HStack>
         <HStack className="message-replay-event-content" gap="small">

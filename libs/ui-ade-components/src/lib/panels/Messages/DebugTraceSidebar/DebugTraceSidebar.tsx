@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useStepsServiceRetrieveStep } from '@letta-cloud/sdk-core';
-import { Alert, SideOverlay, VStack } from '@letta-cloud/ui-component-library';
-import { TraceViewer } from './TraceViewer/TraceViewer';
+import { HStack, Tooltip, Typography } from '@letta-cloud/ui-component-library';
+import { useCurrentAgentMetaData, ViewMessageTrace } from '../../../../';
+import { useFormatters } from '@letta-cloud/utils-client';
+import { useTranslations } from '@letta-cloud/translations';
+import { useTotalTraceDuration } from '@letta-cloud/utils-client';
 
 interface DebugTraceSidebarProps {
   stepId: string;
@@ -11,16 +14,13 @@ interface DebugTraceSidebarProps {
 
 export function DebugTraceSidebar(props: DebugTraceSidebarProps) {
   const { stepId, trigger } = props;
-  const [open, setIsOpen] = useState(false);
+  const { agentId } = useCurrentAgentMetaData();
 
   const { data: stepDetails } = useStepsServiceRetrieveStep(
     {
       stepId,
     },
     undefined,
-    {
-      enabled: open,
-    },
   );
 
   const { data: traceData } = webApi.traces.getTrace.useQuery({
@@ -33,20 +33,35 @@ export function DebugTraceSidebar(props: DebugTraceSidebarProps) {
     enabled: !!stepDetails?.trace_id,
   });
 
+  const traces = useMemo(() => {
+    return traceData?.body || [];
+  }, [traceData?.body]);
+
+  const totalDuration = useTotalTraceDuration(traces);
+
+  const { formatSmallDuration } = useFormatters();
+
+  const t = useTranslations('components/DebugTraceSidebar');
+
+  if (!stepDetails?.trace_id) {
+    return null;
+  }
+
   return (
-    <SideOverlay
-      trigger={trigger}
-      isOpen={open}
-      onOpenChange={setIsOpen}
-      title="Debug"
-    >
-      <VStack padding overflowY="auto" fullWidth fullHeight>
-        <Alert
-          variant="warning"
-          title="This is an internal debug page, know what you're doing here!"
-        />
-        <TraceViewer traces={traceData?.body || []} />
-      </VStack>
-    </SideOverlay>
+    <HStack align="center">
+      {totalDuration && (
+        <Tooltip content={t('totalDurationTooltip')}>
+          <Typography variant="body4" color="muted">
+            {formatSmallDuration(totalDuration * 1000000)}
+          </Typography>
+        </Tooltip>
+      )}
+      <ViewMessageTrace
+        showAgentMetadata={false}
+        agentId={agentId}
+        trigger={trigger}
+        traceId={stepDetails?.trace_id}
+      />
+    </HStack>
   );
 }

@@ -742,6 +742,18 @@
       "archivalMemories": "Archival Memory"
     }
   },
+  "ViewMessageTrace": {
+    "raw": "Raw",
+    "description": "Below is the message history for this trace. You can see the input and output messages, as well as the tools used by the agent.",
+    "viewAgent": "View Agent",
+    "AgentMetadata": "Agent Metadata",
+    "AgentId": "Agent ID: {agentId}",
+    "title": "View message",
+    "loadingMessage": "Loading message details..."
+  },
+  "components/DebugTraceSidebar": {
+    "totalDurationTooltip": "Total duration of the response"
+  },
   "ADE/EditCoreMemoriesPanel": {
     "VisualMode": {
       "viewAside": "View elements side by side",
@@ -962,8 +974,9 @@
     "overrides": "Show overrides"
   },
   "components/Messages": {
+    "stepDurationTooltip": "The duration of this step",
     "reasoning": "Reasoning",
-    "traceViewer": "Trace debug",
+    "traceViewer": "Inspect response",
     "edit": {
       "start": "Edit message",
       "stop": "Stop editing"
@@ -1052,6 +1065,9 @@
       "raw": "Raw response",
       "outputTokens": "Output tokens",
       "cost": "Cost",
+      "toolDuration": "Tool duration",
+      "stepDuration": "Total step duration",
+      "llmDuration": "LLM duration",
       "timeToFirstSecond": "Time to first token"
     },
     "TransactionCost": {

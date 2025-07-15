@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
+import { Button } from '../../../Button/Button';
+import { CopyButton } from '../../../../reusable/CopyButton/CopyButton';
+import { HStack } from '../../../../framing/HStack/HStack';
+import { JSONViewer } from '../../../JSONViewer/JSONViewer';
 import {
-  Button,
-  CopyButton,
-  ExpandContentIcon,
-  HStack,
-  JSONViewer,
   SideOverlay,
   SideOverlayHeader,
-  Typography,
-  VStack,
-} from '@letta-cloud/ui-component-library';
+} from '../../../SideOverlay/SideOverlay';
+import { Typography } from '../../../Typography/Typography';
+import { VStack } from '../../../../framing/VStack/VStack';
 import { useTranslations } from '@letta-cloud/translations';
 import type { ProviderTrace } from '@letta-cloud/sdk-core';
+import { ExpandContentIcon } from '../../../../icons';
 
 interface RawDetailViewerProps {
   requestPayload: ProviderTrace['request_json'];

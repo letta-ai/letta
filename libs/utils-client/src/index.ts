@@ -13,3 +13,5 @@ export * from './usePythonValidator/types';
 export * from './useShouldUserSeeOnboarding/useShouldUserSeeOnboarding';
 export * from './LettaAgentsAPIWrapper/LettaAgentsAPIWrapper';
 export * from './useTikTokenEncoder/useTikTokenEncoder';
+export * from './useStepDuration/useStepDuration';
+export * from './useTotalTraceDuration/useTotalTraceDuration';

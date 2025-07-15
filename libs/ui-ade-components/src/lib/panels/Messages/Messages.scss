@@ -5,12 +5,12 @@
 }
 
 .messages-step-editor {
-  display: none;
+  visibility: hidden;
 }
 
 .messages-step:hover {
   .messages-step-editor {
-    display: block;
+    visibility: visible;
   }
 }
 

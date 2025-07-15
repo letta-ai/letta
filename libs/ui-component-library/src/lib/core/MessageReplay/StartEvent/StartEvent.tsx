@@ -6,13 +6,15 @@ import { LettaInvaderIcon } from '../../../icons';
 import { useMemo } from 'react';
 import type { MessageCreate } from '@letta-cloud/sdk-core';
 import { Code } from '../../Code/Code';
+import { EventDurationsBadge } from '../EventDurationsBadge/EventDurationsBadge';
 
 interface StartEventProps {
   trace: RootTraceType;
+  ttftDuration?: number;
 }
 
 export function StartEvent(props: StartEventProps) {
-  const { trace } = props;
+  const { trace, ttftDuration } = props;
 
   const t = useTranslations('components/StartEvent');
 
@@ -27,7 +29,11 @@ export function StartEvent(props: StartEventProps) {
   }, [trace]);
 
   return (
-    <EventItem icon={<LettaInvaderIcon size="small" />} name={t('title')}>
+    <EventItem
+      rightContent={<EventDurationsBadge ttftDuration={ttftDuration} />}
+      icon={<LettaInvaderIcon size="small" />}
+      name={t('title')}
+    >
       <div className="bg-background-grey flex flex-col gap-2 w-full p-2 line-clamp-2">
         <Typography variant="body2" bold>
           {trace.SpanName}

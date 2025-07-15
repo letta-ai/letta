@@ -2,20 +2,19 @@ import type { ProviderTrace } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   Badge,
+  EndIcon,
   EventDetailRow,
   EventItem,
   HStack,
   InfoTooltip,
   Typography,
   VStack,
-} from '@letta-cloud/ui-component-library';
-import { StopIcon } from 'next/dist/client/components/react-dev-overlay/ui/icons/stop-icon';
+} from '../../../../../';
 import { useFormatters } from '@letta-cloud/utils-client';
 import type { ModelTiersType, OtelTrace } from '@letta-cloud/types';
 import { creditsToDollars } from '@letta-cloud/utils-shared';
 import React, { useMemo } from 'react';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
-import { useCurrentAgentMetaData } from '../../../../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 
 interface RequestEventProps {
   responsePayload: ProviderTrace['response_json'];
@@ -99,7 +98,7 @@ function TransactionCost(props: TransactionCostProps) {
 }
 
 export function ResponseEvent(props: RequestEventProps) {
-  const { responsePayload, traces, stepId } = props;
+  const { responsePayload, stepId, traces } = props;
 
   const t = useTranslations(
     'ADE/AgentSimulator/DetailedMessageView/TelemetryDetailsViewer/ResponseEvent',
@@ -109,18 +108,8 @@ export function ResponseEvent(props: RequestEventProps) {
 
   const usage = getIfUsage(responsePayload?.usage);
 
-  const timeToFirstToken = useMemo(() => {
-    return traces.find((trace) =>
-      trace['Events.Name'].includes('time_to_first_token_ms'),
-    )?.Duration;
-  }, [traces]);
-
-  const { isLocal } = useCurrentAgentMetaData();
-
-  const { formatSmallDuration } = useFormatters();
-
   return (
-    <EventItem name={t('name')} icon={<StopIcon />}>
+    <EventItem name={t('name')} icon={<EndIcon />}>
       <VStack gap={false} fullWidth>
         {usage?.output_tokens && (
           <EventDetailRow
@@ -128,16 +117,10 @@ export function ResponseEvent(props: RequestEventProps) {
             value={formatNumber(usage.output_tokens)}
           />
         )}
-        {!isLocal && (
+        {!!traces && (
           <EventDetailRow
             label={t('attributes.cost')}
             value={<TransactionCost stepId={stepId} />}
-          />
-        )}
-        {!isLocal && timeToFirstToken && (
-          <EventDetailRow
-            label={t('attributes.timeToFirstSecond')}
-            value={formatSmallDuration(timeToFirstToken)}
           />
         )}
       </VStack>

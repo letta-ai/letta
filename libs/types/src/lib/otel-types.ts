@@ -64,13 +64,13 @@ export interface AgentStepTrace {
   ResourceAttributes: ResourceAttributes;
   ScopeName: string;
   ScopeVersion: string;
-  SpanAttributes: SpanAttributes;
+  SpanAttributes: AgentStepTraceSpanAttributes;
   Duration: string;
   StatusCode: string;
   StatusMessage: string;
   'Events.Timestamp': string[];
   'Events.Name': [
-    'provider_req_start_ns',
+    'request_start_to_provider_request_start_ns',
     'llm_request_ms',
     'tool_execution_started',
     'tool_execution_completed',
@@ -82,6 +82,9 @@ export interface AgentStepTrace {
       }
     | {
         provider_req_start_ms: string;
+      }
+    | {
+        request_start_to_provider_request_start_ns: string;
       }
     | {
         tool_type: ToolType;
@@ -123,6 +126,9 @@ export interface MappedEventAttributes {
   tool_execution_started: object;
   tool_execution_completed: ToolExecutionCompletedEvent;
   step_ms: StepMSEvent;
+  time_to_first_token_ms: {
+    ttft_ms: string;
+  };
 }
 
 export interface ResourceAttributes {
@@ -134,22 +140,22 @@ export interface ResourceAttributes {
   'telemetry.sdk.language': string;
 }
 
-export interface SpanAttributes {
+export interface AgentStepTraceSpanAttributes {
   step_id: string;
 }
 
-type ExecuteToolEventAttribute =
-  | {
-      agent_state: string;
-      func_return: string;
-      sandbox_config_fingerprint: string;
-      status: string;
-      stderr: string[];
-      stdout: string[];
-    }
-  | {
-      query: string;
-    };
+export interface ExecuteToolOutput {
+  agent_state: string;
+  func_return: string;
+  sandbox_config_fingerprint: string;
+  status: string;
+  stderr: string[];
+  stdout: string[];
+}
+
+export type ExecuteToolInput = Record<string, any>;
+
+type ExecuteToolEventAttribute = ExecuteToolInput | ExecuteToolOutput;
 
 interface ExecuteToolResourceAttributes {
   'device.id': string;

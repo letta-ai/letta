@@ -1,19 +1,29 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Button,
   ChevronDownIcon,
   ChevronUpIcon,
+  DetailedMessageView,
+  EventDurationsBadge,
   HStack,
+  Tooltip,
   Typography,
+  VStack,
 } from '@letta-cloud/ui-component-library';
 import { FeedbackButtons } from '../FeedbackButtons/FeedbackButtons';
-import { DetailedMessageView } from '../DetailedMessageView/DetailedMessageView';
-import { useTelemetryServiceRetrieveProviderTrace } from '@letta-cloud/sdk-core';
+import { useStepsServiceRetrieveStep } from '@letta-cloud/sdk-core';
 import { useFormatters } from '@letta-cloud/utils-client';
-import { getIfUsage } from '../DetailedMessageView/ResponseEvent/ResponseEvent';
 import { useTranslations } from '@letta-cloud/translations';
 import { cn } from '@letta-cloud/ui-styles';
 import type { AgentSimulatorMessageType } from '../../AgentSimulator/types';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { useCurrentAgentMetaData } from '../../../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useTraceStepDetails } from '../useTraceStepDetails/useTraceStepDetails';
+import { useStepDuration } from '@letta-cloud/utils-client';
+import {
+  getLLMDurationFromTrace,
+  getToolDurationFromTrace,
+} from '@letta-cloud/utils-shared';
 
 interface StepDetailBarProps {
   message: AgentSimulatorMessageType;
@@ -24,9 +34,11 @@ interface StepDetailBarProps {
 export function StepDetailBar(props: StepDetailBarProps) {
   const { message, setShowDetails, showDetails } = props;
   const t = useTranslations('components/Messages');
+  const { isLocal } = useCurrentAgentMetaData();
 
   const { stepId, timestamp } = message;
-  const { data: stepDetails } = useTelemetryServiceRetrieveProviderTrace(
+
+  const { data: stepDetails } = useStepsServiceRetrieveStep(
     {
       stepId: stepId || '',
     },
@@ -36,9 +48,29 @@ export function StepDetailBar(props: StepDetailBarProps) {
     },
   );
 
-  const { formatTime } = useFormatters();
+  const { data: traceData } = webApi.traces.getTrace.useQuery({
+    queryKey: webApiQueryKeys.traces.getTrace(stepDetails?.trace_id || ''),
+    queryData: {
+      params: {
+        traceId: stepDetails?.trace_id || '',
+      },
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    enabled: !!stepDetails?.trace_id && !isLocal,
+  });
 
-  const usage = getIfUsage(stepDetails?.response_json?.usage);
+  const traceDetails = useTraceStepDetails(stepId || '', traceData?.body || []);
+  const stepDuration = useStepDuration(traceDetails);
+
+  const { formatTime, formatSmallDuration } = useFormatters();
+
+  const llmDuration = useMemo(() => {
+    return getLLMDurationFromTrace(traceDetails);
+  }, [traceDetails]);
+
+  const toolDuration = useMemo(() => {
+    return getToolDurationFromTrace(traceDetails);
+  }, [traceDetails]);
 
   if (!message.stepId) {
     return null;
@@ -79,14 +111,13 @@ export function StepDetailBar(props: StepDetailBarProps) {
           {stepId && <FeedbackButtons stepId={stepId} />}
         </HStack>
         <HStack gap="small">
-          {usage?.output_tokens && (
+          {stepDuration && (
             <>
-              <Typography variant="body4" color="muted">
-                {usage?.output_tokens &&
-                  t('tokens', {
-                    count: usage.output_tokens,
-                  })}
-              </Typography>
+              <Tooltip content={t('stepDurationTooltip')}>
+                <Typography variant="body4" color="muted">
+                  {formatSmallDuration(stepDuration * 1000000)}
+                </Typography>
+              </Tooltip>
               <Typography variant="body4" color="muted">
                 •
               </Typography>
@@ -103,7 +134,22 @@ export function StepDetailBar(props: StepDetailBarProps) {
       </div>
       {showDetails && stepId && (
         <div className="py-1 pt-4">
-          <DetailedMessageView stepId={stepId} />
+          <VStack
+            border
+            gap={false}
+            overflow="auto"
+            color="background"
+            className="rounded-t-md"
+          >
+            <DetailedMessageView stepId={stepId} />
+            <HStack justify="end" borderTop color="background-grey2">
+              <EventDurationsBadge
+                stepDuration={stepDuration}
+                llmDuration={llmDuration}
+                toolDuration={toolDuration}
+              />
+            </HStack>
+          </VStack>
         </div>
       )}
     </>

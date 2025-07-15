@@ -39,7 +39,7 @@ export function EventDetailRow(props: KeyValueRenderProps) {
           </div>
         )}
         <HStack align="center">
-          <Typography variant="body2" bold>
+          <Typography overrideEl="span" variant="body2" bold>
             {label}
           </Typography>
           <Typography overrideEl="span" variant="body2">

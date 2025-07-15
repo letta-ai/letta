@@ -1,3 +1,4 @@
+'use client';
 import type { OtelTrace } from '@letta-cloud/types';
 import {
   ChevronDownIcon,

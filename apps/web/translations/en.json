@@ -1524,13 +1524,6 @@
       "tooltip": "The 99th percentile response time is the time it takes for 99% of agents to respond to a user message."
     }
   },
-  "pages/projects/observability/TraceDetails": {
-    "title": "Message history",
-    "description": "Below is the message history for this trace. You can see the input and output messages, as well as the tools used by the agent.",
-    "viewAgent": "View Agent",
-    "AgentMetadata": "Agent Metadata",
-    "AgentId": "Agent ID: {agentId}"
-  },
   "pages/projects/observability/ToolErrorsChart": {
     "title": "Tool errors",
     "info": "This chart shows the number of tool errors that occurred on a given day. A tool error is when an agent tries to use a tool but it fails to execute.",
@@ -1587,10 +1580,6 @@
     "p99ResponseTime": {
       "label": "99th percentile response time"
     }
-  },
-  "pages/projects/observability/ViewMessageTrace": {
-    "title": "View message",
-    "loadingMessage": "Loading message details..."
   },
   "pages/projects/observability/tool-errors": {
     "title": "Tool errors",

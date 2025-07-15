@@ -1,5 +1,4 @@
 'use client';
-import type { ExecuteToolTelemetrySpan } from '@letta-cloud/types';
 import { useTranslations } from '@letta-cloud/translations';
 import { useMemo } from 'react';
 import { get } from 'lodash-es';
@@ -7,75 +6,66 @@ import { FunctionCall } from '../../../reusable/FunctionCall/FunctionCall';
 import { VStack } from '../../../framing/VStack/VStack';
 import { EventItem } from '../../EventItem/EventItem';
 import { LettaInvaderOutlineIcon } from '../../../icons';
+import type { MessageEventType } from '../type';
+import { EventDurationsBadge } from '../EventDurationsBadge/EventDurationsBadge';
+import { DetailedMessageView } from '../../../../';
 
 interface SendMessageEventProps {
-  trace: ExecuteToolTelemetrySpan;
+  event: MessageEventType;
 }
 
 export function ExecuteToolEvent(props: SendMessageEventProps) {
-  const { trace } = props;
+  const { event } = props;
 
   const t = useTranslations('components/MessageReplay/ExecuteToolEvent');
 
   const status = useMemo(() => {
-    return get(trace['Events.Attributes'], '1.status') === 'error'
-      ? 'failed'
-      : 'success';
-  }, [trace]);
+    return event.output?.status === 'error' ? 'failed' : 'success';
+  }, [event]);
 
   const funcReturn = useMemo(() => {
-    return JSON.stringify(
-      get(trace['Events.Attributes'], '1.func_return', ''),
-      null,
-      2,
-    );
-  }, [trace]);
+    return JSON.stringify(get(event.output, 'func_return', ''), null, 2);
+  }, [event]);
 
   const stdErr = useMemo(() => {
-    return JSON.stringify(
-      get(trace['Events.Attributes'], '1.stderr', ''),
-      null,
-      2,
-    );
-  }, [trace]);
+    return JSON.stringify(get(event.output, 'stderr', ''), null, 2);
+  }, [event]);
 
   const stdOut = useMemo(() => {
-    return JSON.stringify(
-      get(trace['Events.Attributes'], '1.stdout', ''),
-      null,
-      2,
-    );
-  }, [trace]);
+    return JSON.stringify(get(event.output, 'stdout', ''), null, 2);
+  }, [event]);
 
   const toolName = useMemo(() => {
-    return trace.SpanAttributes['parameter.tool_name'] || 'Unknown';
-  }, [trace]);
+    return event.name || 'Unknown';
+  }, [event]);
 
   const inputs = useMemo(() => {
-    const res = get(trace['Events.Attributes'], '0', '');
+    const res = event.input;
 
     if (typeof res === 'string') {
       return res;
     }
 
     return JSON.stringify(res, null, 2);
-  }, [trace]);
+  }, [event]);
 
   return (
     <EventItem
       icon={<LettaInvaderOutlineIcon size="small" />}
       name={t('title')}
+      rightContent={<EventDurationsBadge {...event} />}
     >
       <VStack fullWidth>
         <FunctionCall
           name={toolName}
-          id={trace.SpanId}
+          variant="inspector"
+          id={event.stepId}
           response={{
-            date: new Date(trace.Timestamp).toLocaleString(),
+            date: new Date(event.timestamp).toLocaleString(),
             tool_return: funcReturn,
-            tool_call_id: trace.SpanId,
+            tool_call_id: event.stepId,
             status: status,
-            id: trace.SpanId,
+            id: event.stepId,
             stderr: [stdErr],
             stdout: [stdOut],
             message_type: 'tool_return_message',
@@ -83,6 +73,9 @@ export function ExecuteToolEvent(props: SendMessageEventProps) {
           inputs={inputs}
           status={status}
         />
+        <VStack border>
+          <DetailedMessageView stepId={event.stepId} />
+        </VStack>
       </VStack>
     </EventItem>
   );

@@ -28,7 +28,7 @@ import { GetTracesByProjectIdQuery } from '@letta-cloud/sdk-web';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useFormatters } from '@letta-cloud/utils-client';
-import { ViewMessageTrace } from '../observability/_components/ViewMessageTrace/ViewMessageTrace';
+import { ViewMessageTrace } from '@letta-cloud/ui-ade-components';
 import { useSearchParams, useParams } from 'next/navigation';
 import { useToolsServiceListTools } from '@letta-cloud/sdk-core';
 import { useQuery } from '@tanstack/react-query';

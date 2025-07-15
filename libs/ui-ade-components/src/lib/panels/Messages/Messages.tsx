@@ -297,10 +297,6 @@ function MessageGroup({ group }: MessageGroupType) {
 
   const t = useTranslations('components/Messages');
 
-  const { data: isAdvancedDebugView } = useFeatureFlag(
-    'ADVANCED_MESSAGE_DEBUG',
-  );
-
   const firstMessageWithStepId = useMemo(() => {
     return messages.find((message) => !!message.stepId);
   }, [messages]);
@@ -322,8 +318,8 @@ function MessageGroup({ group }: MessageGroupType) {
       data-testid="message-group"
       gap="medium"
     >
-      {isAdvancedDebugView && firstMessageWithStepId?.stepId && (
-        <div className="absolute right-[10px] top-[5px]">
+      {firstMessageWithStepId?.stepId && (
+        <div className="absolute right-[7px] top-[7px]">
           <DebugTraceSidebar
             stepId={firstMessageWithStepId.stepId}
             trigger={

@@ -9,6 +9,16 @@
     "explore": "Explore",
     "noData": "This chart has no data, this usually means that this date range has had no active agents or data has not been collected yet"
   },
+  "components/MessageReplay/EventDurationsBadge": {
+    "total": "Total",
+    "ttft": "TFTT",
+    "lettaDurationTooltip": "This is the time it took Letta to prepare the payload for the agent",
+    "llmDurationTooltip": "This is the time it took the LLM to process the request and return a response",
+    "toolDurationTooltip": "This is the time it took the tool to execute and return a response",
+    "ttftDurationTooltip": "This is the time it took for the time to first token",
+    "totalDurationTooltip": "This is the total time it took to execute everything in this response, including Letta, LLM and tool execution times and any delays",
+    "stepDurationTooltip": "This is the total time it took to execute this step, including Letta, LLM and tool execution times and any delays"
+  },
   "components/MessageReplay": {
     "events": {
       "sendMessage": {

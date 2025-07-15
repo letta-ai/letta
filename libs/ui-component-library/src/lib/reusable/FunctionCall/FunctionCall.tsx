@@ -23,6 +23,7 @@ import { VirtualizedCodeViewer } from '../../core/VirtualizedCodeViewer/Virtuali
 import { Button } from '../../core/Button/Button';
 import { useCopyToClipboard } from '../../hooks';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
+import { cn } from '@letta-cloud/ui-styles';
 
 interface FunctionCallDataViewerDialogProps {
   content: string;
@@ -55,8 +56,11 @@ function FunctionCallDataViewerDialog(
   );
 }
 
+type FunctionCallVariants = 'default' | 'inspector';
+
 interface FunctionCallProps {
   name: string;
+  variant?: FunctionCallVariants;
   inputs: string;
   response?: ToolReturnMessageSchemaType;
   status?: string;
@@ -68,7 +72,7 @@ type ResponseViews = 'response' | 'stderr' | 'stdout';
 const FUNCTION_CALL_LIMIT = 10_000;
 
 export function FunctionCall(props: FunctionCallProps) {
-  const { id, name, inputs, response, status } = props;
+  const { id, name, inputs, response, status, variant = 'default' } = props;
   const [openStates, setOpenStates] = useAtom(functionCallOpenStatusAtom);
 
   const open = useMemo(() => {
@@ -156,12 +160,28 @@ export function FunctionCall(props: FunctionCallProps) {
 
   return (
     <div className="w-full">
-      <HStack onClick={toggleOpen} gap={false}>
-        <HStack align="center" className="h-[24px]" gap="medium">
+      <HStack
+        fullWidth={variant === 'inspector'}
+        onClick={toggleOpen}
+        gap={false}
+      >
+        <HStack
+          fullWidth={variant === 'inspector'}
+          align="center"
+          className={cn(variant === 'default' ? 'h-[24px]' : '')}
+          gap="medium"
+        >
           <HStack
             gap="large"
             align="center"
-            className="px-2 pr-3 py-1 bg-background-grey3 text-background-grey3-content cursor-pointer"
+            className={cn(
+              variant === 'default'
+                ? 'px-2 pr-3 py-1 bg-background-grey3 text-background-grey3-content cursor-pointer'
+                : '',
+              variant === 'inspector'
+                ? 'px-2 pr-3 w-full py-2 border cursor-pointer'
+                : '',
+            )}
           >
             <HStack gap="small">
               {!open ? (

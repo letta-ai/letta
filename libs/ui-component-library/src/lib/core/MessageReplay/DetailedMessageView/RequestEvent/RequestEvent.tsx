@@ -10,7 +10,7 @@ import {
   StartIcon,
   Typography,
   VStack,
-} from '@letta-cloud/ui-component-library';
+} from '../../../../../';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { RawDetailViewer } from '../RawDetailViewer/RawDetailViewer';
 
