@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 import random
@@ -19,6 +20,8 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.orm.exc import StaleDataError
 
+# tests/test_file_content_flow.py
+from letta.agents.letta_agent import LettaAgent
 from letta.config import LettaConfig
 from letta.constants import (
     BASE_MEMORY_TOOLS,
@@ -79,7 +82,7 @@ from letta.schemas.source import Source as PydanticSource
 from letta.schemas.source import SourceUpdate
 from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool import ToolCreate, ToolUpdate
-from letta.schemas.tool_rule import InitToolRule
+from letta.schemas.tool_rule import ChildToolRule, InitToolRule
 from letta.schemas.user import User as PydanticUser
 from letta.schemas.user import UserUpdate
 from letta.server.db import db_registry
@@ -1029,6 +1032,108 @@ async def test_update_agent(
     comprehensive_agent_checks(updated_agent, update_agent_request, actor=default_user)
     assert updated_agent.message_ids == update_agent_request.message_ids
     assert updated_agent.updated_at > last_updated_timestamp
+
+
+@pytest.mark.asyncio
+async def test_predefined_args_zero_llm_usage(server, default_user, print_tool, other_tool):
+    """Test that predefined args result in zero LLM token usage"""
+
+    # Create agent with predefined args
+    agent_state = await server.agent_manager.create_agent_async(
+        CreateAgent(
+            name="test_zero_llm_usage",
+            tool_ids=[print_tool.id, other_tool.id],
+            tool_rules=[
+                InitToolRule(tool_name=print_tool.name, args={"message": "Test", "prefix": "ZERO_USAGE"}),
+                ChildToolRule(tool_name=print_tool.name, children=[other_tool.name], args={"message": "Test", "prefix": "ZERO_USAGE"}),
+            ],
+            include_base_tools=False,
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        ),
+        actor=default_user,
+    )
+
+    agent_loop = LettaAgent(
+        agent_id=agent_state.id,
+        message_manager=server.message_manager,
+        agent_manager=server.agent_manager,
+        block_manager=server.block_manager,
+        job_manager=server.job_manager,
+        passage_manager=server.passage_manager,
+        actor=default_user,
+    )
+
+    response = await agent_loop.step(
+        input_messages=[MessageCreate(role="user", content="Test message")],
+        max_steps=2,
+        use_assistant_message=False,
+    )
+
+    # Verify usage shows zero LLM tokens
+    assert response.usage.completion_tokens == 0
+    assert response.usage.prompt_tokens == 0
+    assert response.usage.total_tokens == 0
+    # Step count should still be tracked
+    assert response.usage.step_count >= 2
+
+
+@pytest.mark.asyncio
+async def test_predefined_args_zero_llm_usage_stream_no_tokens(server, default_user, print_tool, other_tool):
+    """Test that predefined args result in zero LLM token usage for step_stream_no_tokens"""
+
+    # Create agent with predefined args
+    agent_state = await server.agent_manager.create_agent_async(
+        CreateAgent(
+            name="test_zero_llm_usage_stream_no_tokens",
+            tool_ids=[print_tool.id, other_tool.id],
+            tool_rules=[
+                InitToolRule(tool_name=print_tool.name, args={"message": "Test", "prefix": "ZERO_USAGE"}),
+                ChildToolRule(tool_name=print_tool.name, children=[other_tool.name], args={"message": "Test", "prefix": "ZERO_USAGE"}),
+            ],
+            include_base_tools=False,
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        ),
+        actor=default_user,
+    )
+
+    agent_loop = LettaAgent(
+        agent_id=agent_state.id,
+        message_manager=server.message_manager,
+        agent_manager=server.agent_manager,
+        block_manager=server.block_manager,
+        job_manager=server.job_manager,
+        passage_manager=server.passage_manager,
+        actor=default_user,
+    )
+
+    # Collect all chunks to extract usage information
+    chunks = []
+    async for chunk in agent_loop.step_stream_no_tokens(
+        input_messages=[MessageCreate(role="user", content="Test message")],
+        max_steps=2,
+        use_assistant_message=False,
+    ):
+        try:
+            chunks.append(json.loads(chunk.replace("data: ", "").replace("\n\n", "")))
+        except json.JSONDecodeError:
+            # last chunk is'data: [DONE]\n\n'
+            continue
+
+    # Find the finish chunk with usage statistics
+    usage_chunks = [chunk for chunk in chunks if chunk.get("message_type") == "usage_statistics"]
+    assert len(usage_chunks) > 0, "No usage chunks found in response"
+
+    # Parse the last usage chunk to get final statistics
+    usage_data = usage_chunks[-1]
+
+    # Verify usage shows zero LLM tokens
+    assert usage_data["completion_tokens"] == 0
+    assert usage_data["prompt_tokens"] == 0
+    assert usage_data["total_tokens"] == 0
+    # Step count should still be tracked
+    assert usage_data["step_count"] >= 2
 
 
 # ======================================================================================================================
