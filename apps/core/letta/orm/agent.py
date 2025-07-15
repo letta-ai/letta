@@ -314,7 +314,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
         state["sources"] = [s.to_pydantic() for s in sources]
         state["memory"] = Memory(
             blocks=[m.to_pydantic() for m in memory],
-            file_blocks=[block for b in self.file_agents if (block := b.to_pydantic_block()) is not None],
+            file_blocks=[block for b in file_agents if (block := b.to_pydantic_block()) is not None],
             prompt_template=get_prompt_template_for_agent_type(self.agent_type),
         )
         state["identity_ids"] = [i.id for i in identities]
