@@ -32,3 +32,4 @@ sqlalchemy = {extras = ["asyncio"], version = "^2.0.41"}
 sqlalchemy-json = "^0.7.0"
 sqlalchemy-utils = "^0.41.2"
 marshmallow-sqlalchemy = "^1.4.1"
+aiosqlite = "^0.21.0"
