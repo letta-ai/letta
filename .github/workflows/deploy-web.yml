@@ -110,7 +110,9 @@ jobs:
           kubectl version --client
 
       - name: Install just
-        run: curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+      - uses: extractions/setup-just@v3
+        with:
+          just-version: '1.42.2'
 
       - name: Install Helm
         run: |

@@ -96,7 +96,9 @@ jobs:
           sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
 
       - name: Install just
-        run: curl -LSs https://just.systems/install.sh | sudo bash -s -- --to /usr/local/bin/
+      - uses: extractions/setup-just@v3
+        with:
+          just-version: '1.42.2'
 
       - name: Install Helm
         run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
