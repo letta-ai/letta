@@ -33,6 +33,7 @@ import async_lru # noqa
 import mcp  # noqa
 import e2b # noqa
 import asyncpg # noqa
+import aiosqlite # noqa
 import json
 
 
