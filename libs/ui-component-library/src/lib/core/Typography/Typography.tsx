@@ -37,6 +37,7 @@ const typographyVariants = cva('break-words', {
       destructive: 'text-destructive',
       lighter: 'text-text-lighter',
       violet: 'text-violet',
+      inherit: 'text-inherit',
     },
     light: {
       true: 'font-thin',

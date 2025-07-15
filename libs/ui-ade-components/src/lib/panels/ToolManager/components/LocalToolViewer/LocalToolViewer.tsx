@@ -1,14 +1,18 @@
 'use client';
 import {
+  isAPIError,
   type Tool,
   type ToolJSONSchema,
+  useToolsServiceGenerateJsonSchema,
   UseToolsServiceListToolsKeyFn,
   useToolsServiceModifyTool,
   UseToolsServiceRetrieveToolKeyFn,
 } from '@letta-cloud/sdk-core';
 import {
+  Accordion,
   Badge,
   Button,
+  Code,
   CodeIcon,
   CogIcon,
   DataObjectIcon,
@@ -52,14 +56,8 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { get, isEqual } from 'lodash-es';
-import {
-  ADD_DESCRIPTION_PLACEHOLDER,
-  generateJSONSchemaFromCode,
-  jsonSchemaTypeMap,
-  pythonCodeParser,
-} from '@letta-cloud/utils-shared';
+import { pythonCodeParser } from '@letta-cloud/utils-shared';
 import { atom, useAtom } from 'jotai';
-import { RESTRICTED_FN_PROPS } from '../../constants';
 import { ToolSettings } from '../ToolsSettings/ToolSettings';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
@@ -132,7 +130,6 @@ function CodeAndSimulator() {
 
   return (
     <PanelGroup
-      /* eslint-disable-next-line react/forbid-component-props */
       className="h-full w-full"
       direction={isMobile ? 'vertical' : 'horizontal'}
       autoSaveId="code-and-simulator"
@@ -141,7 +138,6 @@ function CodeAndSimulator() {
         <CodeEditor key={tool.id} tool={tool} />
       </Panel>
       <PanelResizeHandle
-        /* eslint-disable-next-line react/forbid-component-props */
         className={isMobile ? 'h-[1px] w-full bg-border' : 'w-[1px] h-full'}
       />
       <Panel defaultSize={30} defaultValue={30} className="h-full" minSize={20}>
@@ -162,7 +158,6 @@ function Dependencies() {
 
   return (
     <PanelGroup
-      /* eslint-disable-next-line react/forbid-component-props */
       className="h-full w-full"
       direction={isMobile ? 'vertical' : 'horizontal'}
       autoSaveId="code-and-simulator"
@@ -171,7 +166,6 @@ function Dependencies() {
         <CodeEditor key={tool.id} tool={tool} />
       </Panel>
       <PanelResizeHandle
-        /* eslint-disable-next-line react/forbid-component-props */
         className={isMobile ? 'h-[1px] w-full bg-border' : 'w-[1px] h-full'}
       />
       <Panel defaultSize={30} defaultValue={30} className="h-full" minSize={20}>
@@ -256,7 +250,6 @@ function CodeAndError() {
 
   return (
     <PanelGroup
-      /* eslint-disable-next-line react/forbid-component-props */
       className="h-full w-full"
       direction={isMobile ? 'vertical' : 'horizontal'}
       autoSaveId="code-and-error"
@@ -265,7 +258,6 @@ function CodeAndError() {
         <CodeEditor tool={tool} />
       </Panel>
       <PanelResizeHandle
-        /* eslint-disable-next-line react/forbid-component-props */
         className={isMobile ? 'h-[1px] w-full bg-border' : 'w-[1px] h-full'}
       />
       <Panel defaultSize={30} defaultValue={30} className="h-full" minSize={20}>
@@ -360,6 +352,111 @@ function CodeEditor(props: CodeEditorProps) {
   );
 }
 
+interface CompileErrorMessageProps {
+  error: unknown;
+}
+
+function CompileErrorMessage(props: CompileErrorMessageProps) {
+  const { error } = props;
+
+  const t = useTranslations('ToolsEditor/LocalToolsViewer');
+
+  const compileErrorMessage = useMemo(() => {
+    if (error) {
+      if (isAPIError(error)) {
+        if (error.body.detail?.includes('lacks a description')) {
+          const extractedParameters = /Parameter '(.+?)'/.exec(
+            error.body.detail,
+          );
+
+          if (!extractedParameters) {
+            return {
+              message: error.body.detail.replace(
+                '400: Failed to generate schema: ',
+                '',
+              ),
+              type: 'generic',
+            };
+          }
+
+          return {
+            message: t.rich('JSONSchemaViewer.errors.description', {
+              parameter: () => (
+                <Typography bold overrideEl="span">
+                  {extractedParameters[1]}
+                </Typography>
+              ),
+            }),
+            parameter: extractedParameters[1],
+            type: 'parameter',
+          };
+        }
+
+        if (error.body.detail) {
+          return {
+            message: error.body.detail.replace(
+              '400: Failed to generate schema: ',
+              '',
+            ),
+            type: 'generic',
+          };
+        }
+      }
+
+      return {
+        message: t('JSONSchemaViewer.errors.unknown'),
+        type: 'generic',
+      };
+    }
+
+    return null;
+  }, [error, t]);
+
+  if (!compileErrorMessage) {
+    return null;
+  }
+
+  return (
+    <VStack color="destructive" borderBottom padding="small">
+      <HStack>
+        <Badge
+          size="small"
+          variant="destructive"
+          preIcon={<WarningIcon />}
+          content={t('buildError')}
+        />
+      </HStack>
+      <Typography variant="body2">{compileErrorMessage.message}</Typography>
+      {compileErrorMessage.type === 'parameter' && (
+        <HStack>
+          <Accordion
+            theme="destructive"
+            id="example-code"
+            trigger={
+              <Typography variant="body3" color="inherit" bold>
+                {t('docstringExample.label')}
+              </Typography>
+            }
+          >
+            <Code
+              fontSize="small"
+              language="python"
+              code={`def example_function(parameter: str) -> None:
+    """
+    Example function that demonstrates how to use the parameter.
+
+    Args:
+        ${compileErrorMessage.parameter}: The definition of your parameter.
+    """
+            `}
+            />
+          </Accordion>
+        </HStack>
+      )}
+    </VStack>
+  );
+}
+
 const jsonSchemaAtom = atom<string>('');
 
 interface JSONSchemaViewerProps {
@@ -432,28 +529,29 @@ export function JSONSchemaViewer(props: JSONSchemaViewerProps) {
     }
   }, [setStagedTool, parsedJsonSchema]);
 
+  const { mutate, isPending, error, reset } =
+    useToolsServiceGenerateJsonSchema();
+
   const alignJSONSchemaWithTool = useCallback(() => {
-    setJsonSchemaString(
-      JSON.stringify(
-        generateJSONSchemaFromCode(
-          stagedTool.source_code || '',
-          stagedTool.json_schema as ToolJSONSchema,
-        ) || '',
-        null,
-        2,
-      ),
+    mutate(
+      {
+        requestBody: {
+          code: stagedTool.source_code || '',
+        },
+      },
+      {
+        onSuccess: (response) => {
+          setStagedTool((prev) => ({
+            ...prev,
+            json_schema: response,
+          }));
+
+          setJsonSchemaString(JSON.stringify(response, null, 2));
+          setParsingError(null);
+        },
+      },
     );
-  }, [setJsonSchemaString, stagedTool.source_code, stagedTool.json_schema]);
-
-  const hasDescriptionPlaceholder = useMemo(() => {
-    if (!parsedJsonSchema) {
-      return false;
-    }
-
-    return Object.values(
-      get(parsedJsonSchema, 'parameters.properties', {}),
-    ).some((arg) => arg.description === ADD_DESCRIPTION_PLACEHOLDER);
-  }, [parsedJsonSchema]);
+  }, [mutate, stagedTool.source_code, setStagedTool, setJsonSchemaString]);
 
   const errorMessage = useMemo(() => {
     if (parsingError) {
@@ -464,42 +562,49 @@ export function JSONSchemaViewer(props: JSONSchemaViewerProps) {
       return t('JSONSchemaViewer.different');
     }
 
-    if (hasDescriptionPlaceholder) {
-      return t('JSONSchemaViewer.descriptionPlaceholder');
-    }
-
     return null;
-  }, [parsingError, t, isDifferent, hasDescriptionPlaceholder]);
+  }, [parsingError, t, isDifferent]);
+
+  useEffect(() => {
+    if (!isDifferent) {
+      reset();
+    }
+  }, [isDifferent, reset]);
 
   return (
-    <VStack fullHeight fullWidth borderLeft>
-      {errorMessage && (
-        <HStack
-          justify="spaceBetween"
-          gap="medium"
-          borderTop
-          color="warning"
-          align="center"
-          fullWidth
-          padding="small"
-        >
-          <HStack align="start">
-            <div className="mt-[-1px]">
-              <WarningIcon />
-            </div>
-            <Typography variant="body3">{errorMessage}</Typography>
+    <VStack fullHeight gap={false} fullWidth borderLeft>
+      <VStack gap={false}>
+        {errorMessage && (
+          <HStack
+            justify="spaceBetween"
+            gap="medium"
+            borderTop
+            color="warning"
+            align="center"
+            fullWidth
+            padding="small"
+          >
+            <HStack align="start">
+              <div className="mt-[-1px]">
+                <WarningIcon />
+              </div>
+              <Typography variant="body3">{errorMessage}</Typography>
+            </HStack>
+            {(parsingError || isDifferent) && (
+              <Button
+                preIcon={<ToolsIcon />}
+                color="primary"
+                size="small"
+                busy={isPending}
+                label={t('JSONSchemaViewer.fix')}
+                onClick={alignJSONSchemaWithTool}
+              />
+            )}
           </HStack>
-          {(parsingError || isDifferent) && (
-            <Button
-              preIcon={<ToolsIcon />}
-              color="primary"
-              size="small"
-              label={t('JSONSchemaViewer.fix')}
-              onClick={alignJSONSchemaWithTool}
-            />
-          )}
-        </HStack>
-      )}
+        )}
+        <CompileErrorMessage error={error} />
+      </VStack>
+
       <RawCodeEditor
         fontSize="small"
         fullWidth
@@ -759,7 +864,6 @@ function ToolContent() {
     case 'code':
       return (
         <PanelGroup
-          /* eslint-disable-next-line react/forbid-component-props */
           className="h-full w-full"
           direction="horizontal"
           autoSaveId="code-editor"
@@ -808,63 +912,58 @@ function useIsCodeAndSchemaDifferent() {
   const tool = useCurrentTool();
   const { stagedTool } = useStagedCode(tool);
 
+  const [isDifferent, setIsDifferent] = useState(false);
+  const { mutate } = useToolsServiceGenerateJsonSchema();
+
   const codeSchema = useMemo(() => {
     return stagedTool.json_schema;
   }, [stagedTool.json_schema]);
 
-  const pythonMetadata = useMemo(() => {
-    return pythonCodeParser(stagedTool.source_code || '');
+  const stagedCode = useMemo(() => {
+    return stagedTool.source_code || '';
   }, [stagedTool.source_code]);
 
-  const lastFunction = useMemo(() => {
-    // the last function is the main function in our code
-    return pythonMetadata[pythonMetadata.length - 1];
-  }, [pythonMetadata]);
+  const [debouncedStagedCode] = useDebouncedValue(stagedCode, 250);
 
-  const isDifferent = useMemo(() => {
-    // the last function is the main function in our code
-
-    if (!lastFunction) {
-      return false;
+  const handleCheckSchema = useCallback(() => {
+    if (!tool || !codeSchema) {
+      return;
     }
 
-    const schemaFunctionName = get(codeSchema, 'name', '');
-    const schemaDescription = get(codeSchema, 'description', '');
-    const args = get(
-      codeSchema,
-      'parameters.properties',
-      {},
-    ) as ToolJSONSchema['parameters']['properties'];
-
-    const baseArgs = Object.entries(args)
-      .filter(([key]) => !RESTRICTED_FN_PROPS.includes(key))
-      .map(([key, value]) => [
-        key,
-        jsonSchemaTypeMap[value.type] || value.type,
-      ]);
-
-    const lastFunctionArgs = lastFunction.args
-      .filter((arg) => !RESTRICTED_FN_PROPS.includes(arg.name))
-      .map((arg) => [arg.name, jsonSchemaTypeMap[arg.type] || arg.type]);
-
-    console.log(baseArgs, lastFunctionArgs);
-    return (
-      lastFunction.name !== schemaFunctionName ||
-      lastFunction.description !== schemaDescription ||
-      !isEqual(baseArgs, lastFunctionArgs)
+    mutate(
+      {
+        requestBody: {
+          code: debouncedStagedCode,
+        },
+      },
+      {
+        onSuccess: (response) => {
+          setIsDifferent(!isEqual(response, codeSchema));
+        },
+        onError: () => {
+          setIsDifferent(true);
+        },
+      },
     );
-  }, [lastFunction, codeSchema]);
+  }, [tool, codeSchema, debouncedStagedCode, mutate]);
+
+  useEffect(() => {
+    if (!tool || !debouncedStagedCode) {
+      return;
+    }
+
+    handleCheckSchema();
+  }, [handleCheckSchema, tool, debouncedStagedCode]);
 
   return {
     isDifferent,
-    lastFunction,
   };
 }
 
 function SchemaChangeWarning() {
   const t = useTranslations('ToolsEditor/LocalToolsViewer');
 
-  const { isDifferent, lastFunction } = useIsCodeAndSchemaDifferent();
+  const { isDifferent } = useIsCodeAndSchemaDifferent();
 
   const hasNameChanged = useHasNameChanged();
   const { setMode } = useEditMode();
@@ -891,12 +990,7 @@ function SchemaChangeWarning() {
   }
 
   return (
-    <Tooltip
-      asChild
-      content={t('SchemaChangeWarning.title', {
-        functionName: lastFunction.name,
-      })}
-    >
+    <Tooltip asChild content={t('SchemaChangeWarning.title')}>
       <button onClick={navigateToJSONViewer}>
         <Badge
           size="large"

@@ -1572,12 +1572,20 @@
   },
   "ToolsEditor/LocalToolsViewer": {
     "SchemaChangeWarning": {
-      "title": "The primary function {functionName} does not match your json schema, your tool may not work as expected.",
+      "title": "The json schema defined does not match what our server expects, your tool may not work as expected.",
       "error": "Schema issues",
       "nameRestriction": "You cannot change the name of your function, please create a new function instead.",
       "nameRestrictionTitle": "Name error"
     },
+    "buildError": "Compile Error",
+    "docstringExample": {
+      "label": "Example docstring"
+    },
     "JSONSchemaViewer": {
+      "errors": {
+        "unknown": "There was an unknown error generating the JSON schema, please try again or contact support.",
+        "description": "JSON schema is generated from python docstrings, the parameter [<parameter></parameter>] is missing a description, please add a description to the docstring."
+      },
       "different": "Your JSON schema does not match your code, this may cause issues with your tool",
       "fix": "Build schema from code",
       "descriptionPlaceholder": "Please provide descriptions for your schema args, your tool may not work as expected without them"

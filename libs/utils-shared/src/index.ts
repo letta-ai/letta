@@ -7,7 +7,6 @@ export * from './lib/camelCaseKeys/camelCaseKeys';
 export * from './lib/getShareChatUrl/getShareChatUrl';
 export * from './lib/getLaunchLinkUrl/getLaunchLinkUrl';
 export * from './lib/pythonCodeParser/pythonCodeParser';
-export * from './lib/generateJSONSchemaFromCode/generateJSONSchemaFromCode';
 export * from './lib/getUsageLimits/getUsageLimits';
 export * from './lib/getObfuscatedMCPServerUrl/getObfuscatedMCPServerUrl';
 export * from './lib/getToolDurationFromTrace/getToolDurationFromTrace';
