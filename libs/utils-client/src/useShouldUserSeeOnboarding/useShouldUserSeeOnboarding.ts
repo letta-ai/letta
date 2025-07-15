@@ -27,10 +27,6 @@ export function useShouldUserSeeOnboarding(
     return false;
   }
 
-  if (!user.hasCloudAccess) {
-    return false;
-  }
-
   if (!computedWidth || computedWidth < 768) {
     return false;
   }

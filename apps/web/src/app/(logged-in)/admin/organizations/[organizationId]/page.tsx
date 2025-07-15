@@ -131,83 +131,6 @@ function SetAsStripeManagedBillingMethodButton() {
   );
 }
 
-function EnableCloudAccess() {
-  const organization = useCurrentAdminOrganization();
-
-  const { mutate, isPending, isError } =
-    webApi.admin.organizations.toggleCloudOrganization.useMutation();
-
-  const handleEnableCloudAccess = useCallback(() => {
-    mutate(
-      {
-        params: {
-          organizationId: organization?.id || '',
-        },
-        body: {
-          enabledCloud: true,
-        },
-      },
-      {
-        onSuccess: () => {
-          window.location.reload();
-        },
-      },
-    );
-  }, [organization, mutate]);
-
-  return (
-    <Dialog
-      title="Enable Cloud Access"
-      trigger={<Button label="Enable Cloud Access" size="small" />}
-      isConfirmBusy={isPending}
-      errorMessage={isError ? 'Failed to enable cloud access' : undefined}
-      onConfirm={handleEnableCloudAccess}
-    >
-      <p>Are you sure you want to enable cloud access for this organization?</p>
-    </Dialog>
-  );
-}
-
-function DisableCloudAccess() {
-  const organization = useCurrentAdminOrganization();
-
-  const { mutate, isPending, isError } =
-    webApi.admin.organizations.toggleCloudOrganization.useMutation();
-
-  const handleDisableCloudAccess = useCallback(() => {
-    mutate(
-      {
-        params: {
-          organizationId: organization?.id || '',
-        },
-        body: {
-          enabledCloud: false,
-        },
-      },
-      {
-        onSuccess: () => {
-          window.location.reload();
-        },
-      },
-    );
-  }, [organization, mutate]);
-
-  return (
-    <Dialog
-      title="Disable Cloud Access"
-      trigger={<Button size="small" label="Disable Cloud Access" />}
-      isConfirmBusy={isPending}
-      errorMessage={isError ? 'Failed to disable cloud access' : undefined}
-      onConfirm={handleDisableCloudAccess}
-    >
-      <p>
-        Are you sure you want to disable cloud access for this organization?
-        This wont delete any data.
-      </p>
-    </Dialog>
-  );
-}
-
 const OrganizationBillingSettingsSchema = z.object({
   pricingModel: PricingModelEnum,
   monthlyCreditAllocation: z.number(),
@@ -1021,19 +944,6 @@ function OrganizationProperties() {
     }
 
     return [
-      {
-        name: 'Cloud Access',
-        value: (
-          <HStack fullWidth justify="end" align="center">
-            {organization.enabledCloudAt ? 'Enabled' : 'Disabled'}
-            {organization.enabledCloudAt ? (
-              <DisableCloudAccess />
-            ) : (
-              <EnableCloudAccess />
-            )}
-          </HStack>
-        ),
-      },
       {
         name: 'Billing Plan',
         value: <BillingPlanConfiguration />,

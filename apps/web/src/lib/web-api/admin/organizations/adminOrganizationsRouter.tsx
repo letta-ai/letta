@@ -105,55 +105,6 @@ async function getOrganization(
   };
 }
 
-/* Toggle Cloud for Organization */
-type ToggleCloudOrganizationRequest = ServerInferRequest<
-  typeof contracts.admin.organizations.toggleCloudOrganization
->;
-
-type ToggleCloudOrganizationResponse = ServerInferResponses<
-  typeof contracts.admin.organizations.toggleCloudOrganization
->;
-
-async function toggleCloudOrganization(
-  req: ToggleCloudOrganizationRequest,
-): Promise<ToggleCloudOrganizationResponse> {
-  const { organizationId } = req.params;
-  const { enabledCloud } = req.body;
-
-  const organization = await db.query.organizations.findFirst({
-    where: eq(organizations.id, organizationId),
-  });
-
-  if (!organization) {
-    return {
-      status: 404,
-      body: {
-        message: 'Organization not found',
-      },
-    };
-  }
-
-  await db
-    .update(organizations)
-    .set({
-      enabledCloudAt: enabledCloud ? new Date() : null,
-    })
-    .where(eq(organizations.id, organizationId));
-
-  return {
-    status: 200,
-    body: {
-      id: organization.id,
-      name: organization.name,
-      bannedAt: organization.bannedAt?.toISOString() ?? null,
-      lettaAgentsId: organization.lettaAgentsId,
-      enabledCloudAt: enabledCloud ? new Date().toISOString() : null,
-      createdAt: organization.createdAt.toISOString(),
-      updatedAt: organization.updatedAt.toISOString(),
-    },
-  };
-}
-
 type AdminBanOrganizationRequest = ServerInferRequest<
   typeof contracts.admin.organizations.adminBanOrganization
 >;
@@ -1318,7 +1269,6 @@ export const adminOrganizationsRouter = {
   getOrganizations,
   getOrganization,
   refreshBillingData,
-  toggleCloudOrganization,
   adminBanOrganization,
   adminUnbanOrganization,
   adminAddUserToOrganization,

@@ -32,7 +32,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { type webApiContracts, webApiQueryKeys } from '$web/client';
 import { CLOUD_UPSELL_URL } from '$web/constants';
 import type { AgentState } from '@letta-cloud/sdk-core';
-import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
+import { useUserHasPermission } from '$web/client/hooks';
 import type { ServerInferResponses } from '@ts-rest/core';
 import { type contracts, useSetOnboardingStep } from '@letta-cloud/sdk-web';
 import { atom, useSetAtom } from 'jotai';
@@ -566,9 +566,8 @@ function CreateTemplateButton() {
 
 export function DeploymentButton() {
   const { isLocal, isTemplate, isFromTemplate } = useCurrentAgentMetaData();
-  const user = useCurrentUser();
 
-  if (isLocal || !user?.hasCloudAccess) {
+  if (isLocal) {
     return <CloudUpsellDeploy />;
   }
 

@@ -56,23 +56,6 @@ const getOrganizationContract = c.query({
   },
 });
 
-/* Toggle Cloud for Organization */
-export const ToggleCloudOrganizationPayloadSchema = z.object({
-  enabledCloud: z.boolean(),
-});
-
-const toggleCloudOrganizationContract = c.mutation({
-  method: 'PUT',
-  pathParams: z.object({
-    organizationId: z.string(),
-  }),
-  path: '/admin/organizations/:organizationId/cloud-access',
-  body: ToggleCloudOrganizationPayloadSchema,
-  responses: {
-    200: OrganizationSchema,
-  },
-});
-
 /* Ban Organization */
 const adminBanOrganizationContract = c.mutation({
   method: 'POST',
@@ -580,7 +563,6 @@ export const adminOrganizationsContracts = {
   getOrganization: getOrganizationContract,
   toggleBillingMethod: toggleBillingMethodContract,
   adminGetBillingMethod: adminGetBillingMethodContract,
-  toggleCloudOrganization: toggleCloudOrganizationContract,
   adminBanOrganization: adminBanOrganizationContract,
   adminUnbanOrganization: adminUnbanOrganizationContract,
   adminAddUserToOrganization: adminAddUserToOrganizationContract,

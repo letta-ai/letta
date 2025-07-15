@@ -1,7 +1,7 @@
 'use client';
 import { DashboardWithSidebarWrapper } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
+import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 
 interface SettingsLayoutProps {
@@ -12,8 +12,6 @@ function SettingsLayout(props: SettingsLayoutProps) {
   const { children } = props;
 
   const t = useTranslations('settings/layout');
-
-  const currentUser = useCurrentUser();
 
   const [canCRUDTheOrg] = useUserHasPermission(
     ApplicationServices.UPDATE_ORGANIZATION,
@@ -33,59 +31,40 @@ function SettingsLayout(props: SettingsLayoutProps) {
             },
           ],
         },
-        ...(currentUser?.hasCloudAccess
-          ? [
-              {
-                title: t('organization.root'),
-                items: [
-                  ...(canCRUDTheOrg
-                    ? [
-                        {
-                          id: 'organization',
-                          label: t('organization.general'),
-                          href: '/settings/organization/account',
-                        },
-                      ]
-                    : []),
+        {
+          title: t('organization.root'),
+          items: [
+            ...(canCRUDTheOrg
+              ? [
                   {
-                    id: 'members',
-                    label: t('organization.members'),
-                    href: '/settings/organization/members',
+                    id: 'organization',
+                    label: t('organization.general'),
+                    href: '/settings/organization/account',
                   },
-                  {
-                    id: 'billing',
-                    label: t('organization.billing'),
-                    href: '/settings/organization/billing',
-                  },
-                  {
-                    id: 'integrations',
-                    label: t('organization.integrations'),
-                    href: '/settings/organization/integrations',
-                  },
-                  {
-                    id: 'environment-variables',
-                    label: t('organization.environmentVariables'),
-                    href: '/settings/organization/environment-variables',
-                  },
-                ],
-              },
-              {
-                title: t('organization.productSettings'),
-                items: [
-                  {
-                    id: 'rate-limits',
-                    label: t('organization.rateLimits'),
-                    href: '/settings/organization/rate-limits',
-                  },
-                  {
-                    id: 'audit-log',
-                    label: t('organization.auditLog'),
-                    href: '/settings/organization/audit-log',
-                  },
-                ],
-              },
-            ]
-          : []),
+                ]
+              : []),
+            {
+              id: 'members',
+              label: t('organization.members'),
+              href: '/settings/organization/members',
+            },
+            {
+              id: 'billing',
+              label: t('organization.billing'),
+              href: '/settings/organization/billing',
+            },
+            {
+              id: 'integrations',
+              label: t('organization.integrations'),
+              href: '/settings/organization/integrations',
+            },
+            {
+              id: 'environment-variables',
+              label: t('organization.environmentVariables'),
+              href: '/settings/organization/environment-variables',
+            },
+          ],
+        },
       ]}
     >
       {children}

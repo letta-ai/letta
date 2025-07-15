@@ -9,7 +9,6 @@ import {
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import { useCurrentUser } from '$web/client/hooks';
 
 interface ProjectItemProps {
   name: string;
@@ -53,8 +52,6 @@ export function ProjectSelector(props: ProjectSelectorProps) {
   const [open, setOpen] = React.useState(false);
   const t = useTranslations('components/ProjectSelector');
 
-  const currentUser = useCurrentUser();
-
   const currentProject = useCurrentProject();
 
   const { data, isLoading } = webApi.projects.getProjects.useQuery({
@@ -66,7 +63,6 @@ export function ProjectSelector(props: ProjectSelectorProps) {
         limit: LIMIT,
       },
     },
-    enabled: currentUser?.hasCloudAccess,
   });
 
   const projectsList = useMemo(() => {

@@ -54,7 +54,6 @@ import { ThemeSelector } from '$web/client/components/ThemeSelector/ThemeSelecto
 import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentProject';
 import { LocaleSelector } from '$web/client/components/LocaleSelector/LocaleSelector';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
-import { CloudAccessCodeDialog } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/CloudAccessCodeDialog/CloudAccessCodeDialog';
 import './DashboardNavigation.scss';
 import { OrganizationUsageBlock } from '$web/client/components/OrganizationUsageBlock/OrganizationUsageBlock';
 import { useGlobalSystemWarning } from '$web/client/hooks/useGlobalSystemWarning/useGlobalSystemWarning';
@@ -170,12 +169,6 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
     'components/DashboardLikeLayout/DashboardNavigation',
   );
 
-  const currentUser = useCurrentUser();
-
-  const hasCloudAccess = useMemo(() => {
-    return currentUser?.hasCloudAccess;
-  }, [currentUser]);
-
   const pathname = usePathname();
 
   const { subnavigationData } = useDashboardNavigationItems();
@@ -238,14 +231,8 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         icon: <LaptopIcon />,
         doesNotNeedCloudAccess: true,
       },
-    ].filter((item) => {
-      if (item.doesNotNeedCloudAccess) {
-        return true;
-      }
-
-      return hasCloudAccess;
-    });
-  }, [t, areToolsOnDashboardEnabled, hasCloudAccess, canReadAPIKeys]);
+    ];
+  }, [t, areToolsOnDashboardEnabled, canReadAPIKeys]);
 
   const baseNavBottomItems = [
     {
@@ -267,14 +254,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
       id: 'usage',
       icon: <CogIcon />,
     },
-  ].filter((item) => {
-    if (item.doesNotNeedCloudAccess) {
-      return true;
-    }
-
-    return hasCloudAccess;
-  });
-
+  ];
   const isBaseNav = useMemo(() => {
     const isBase = baseNavItems.some((item) => item.href === pathname);
 
@@ -344,7 +324,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
           >
             <VStack gap={false}>
               {baseNavItems.map((item) => {
-                if (item.id === 'development-servers' && hasCloudAccess) {
+                if (item.id === 'development-servers') {
                   return (
                     <VStack
                       key={item.href}
@@ -398,7 +378,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         {!isBaseNav && (
           <VStack fullWidth>
             <VStack padding={isMobile ? undefined : 'small'} fullWidth>
-              {!isMobile && hasCloudAccess && (
+              {!isMobile && (
                 <HStack
                   align="start"
                   borderBottom
@@ -773,15 +753,11 @@ export function DashboardHeaderNavigation(
   const t = useTranslations(
     'components/DashboardLikeLayout/DashboardNavigation',
   );
-  const currentUser = useCurrentUser();
 
   return (
     <HiddenOnMobile>
       <HStack gap="small" align="center">
         {preItems}
-        {currentUser && !currentUser.hasCloudAccess && (
-          <CloudAccessCodeDialog />
-        )}
         <Popover
           triggerAsChild
           trigger={

@@ -14,11 +14,10 @@ interface CreateOrganizationArgs {
   name: string;
   email: string;
   isAdmin?: boolean;
-  enableCloud?: boolean;
 }
 
 export async function createOrganization(args: CreateOrganizationArgs) {
-  const { name, enableCloud } = args;
+  const { name } = args;
 
   const lettaAgentsOrganization = await AdminService.createOrganization({
     requestBody: {
@@ -70,7 +69,7 @@ export async function createOrganization(args: CreateOrganizationArgs) {
       name,
       lettaAgentsId: lettaAgentsOrganization.id,
       lettaServiceAccountId,
-      enabledCloudAt: enableCloud ? new Date() : null,
+      enabledCloudAt: new Date(),
     })
     .returning({ organizationId: organizations.id });
 

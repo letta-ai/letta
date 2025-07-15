@@ -11,23 +11,19 @@ async function HomePage() {
     return;
   }
 
-  if (user?.hasCloudAccess) {
-    const projectCount = await db
-      .select({ count: count() })
-      .from(projects)
-      .where(eq(projects.organizationId, user.activeOrganizationId));
+  const projectCount = await db
+    .select({ count: count() })
+    .from(projects)
+    .where(eq(projects.organizationId, user.activeOrganizationId));
 
-    if (projectCount?.[0]?.count === 1) {
-      redirect(`/projects/default-project`);
-      return;
-    }
-
-    redirect(`/projects`);
-
+  if (projectCount?.[0]?.count === 1) {
+    redirect(`/projects/default-project`);
     return;
   }
 
-  redirect(`/development-servers`);
+  redirect(`/projects`);
+
+  return;
 }
 
 export default HomePage;

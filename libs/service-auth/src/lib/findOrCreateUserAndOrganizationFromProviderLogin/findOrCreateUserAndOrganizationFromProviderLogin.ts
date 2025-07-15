@@ -21,7 +21,6 @@ import { eq } from 'drizzle-orm';
 import { generateServerSideAPIKey } from '../generateServerSideAPIKey/generateServerSideAPIKey';
 import { createOrganization } from '../createOrganization/createOrganization';
 import { getDefaultProject } from '@letta-cloud/utils-server';
-import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 import { getCustomerSubscription } from '@letta-cloud/service-payments';
 
 export const ERRORS = {
@@ -41,13 +40,8 @@ interface CreateUserAndOrganizationResponse {
   };
 }
 
-interface CreateUserAndOrganizationOptions {
-  enableCloud?: boolean;
-}
-
 async function createUserAndOrganization(
   userData: ProviderUserPayload,
-  options: CreateUserAndOrganizationOptions = {},
 ): Promise<CreateUserAndOrganizationResponse> {
   let organizationId = userData.organizationOverride || '';
   let lettaOrganizationId = '';
@@ -138,12 +132,9 @@ async function createUserAndOrganization(
     isNewOrganization = true;
     const organizationName = `${userData.name}'s organization`;
 
-    const shouldEnableCloud = await getSingleFlag('GENERAL_ACCESS', 'default');
-
     const createdOrg = await createOrganization({
       name: organizationName,
       email: userData.email,
-      enableCloud: options.enableCloud || shouldEnableCloud,
     });
 
     lettaOrganizationId = createdOrg.lettaOrganizationId;
@@ -374,13 +365,9 @@ export async function findOrCreateUserAndOrganizationFromProviderLogin(
   if (!user) {
     isNewUser = true;
 
-    const isCloudEnabled = await isUserInWhitelist(userData.email);
+    const res = await createUserAndOrganization(userData);
 
-    const res = await createUserAndOrganization(userData, {
-      enableCloud: isCloudEnabled,
-    });
-
-    if (res.newProjectPayload && isCloudEnabled) {
+    if (res.newProjectPayload) {
       newUserDetails = {
         firstProjectSlug: res.newProjectPayload.firstProjectSlug,
       };

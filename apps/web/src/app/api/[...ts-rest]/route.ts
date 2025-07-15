@@ -14,16 +14,6 @@ import {
 import { TsRestHttpError } from '@ts-rest/serverless/next';
 import * as Sentry from '@sentry/node';
 
-const nonCloudWhitelist = [
-  new RegExp('/api/organizations/self$'),
-  new RegExp('/api/user/self(.+)?'),
-  new RegExp('/api/development-servers(.+)?'),
-  new RegExp('/api/feature-flags(.+)?'),
-  new RegExp('/api/chat(.+)?'),
-  new RegExp('/api/cloud-access-code'),
-  new RegExp('/api/composio(.+)?'),
-];
-
 const publicApis = [
   new RegExp('/api/composio(.+)?'),
   new RegExp('/api/invites/(.+)?'),
@@ -62,21 +52,6 @@ const handler = createNextHandler(contracts, router, {
           },
           { status: 401 },
         );
-      }
-
-      if (!user?.hasCloudAccess) {
-        if (
-          !nonCloudWhitelist.some((path) =>
-            new URL(req.url).pathname.match(path),
-          )
-        ) {
-          return TsRestResponse.fromJson(
-            {
-              message: 'Unauthorized',
-            },
-            { status: 401 },
-          );
-        }
       }
 
       if (new URL(req.url).pathname.includes('admin')) {

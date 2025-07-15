@@ -1,6 +1,5 @@
 'use client';
 import {
-  AdBanner,
   Alert,
   Button,
   CTACard,
@@ -20,16 +19,12 @@ import {
 import { useTranslations } from '@letta-cloud/translations';
 import { ConnectToLocalServerCommand, Tutorials } from '$web/client/components';
 import React, { useEffect, useMemo, useState } from 'react';
-import bannerBlue from './banner_blue.png';
-import bannerOrange from './banner_orange.png';
-import { useCurrentUser } from '$web/client/hooks';
 import { useLocalStorageWithLoadingState } from '@letta-cloud/utils-client';
 import {
   CLOUD_UPSELL_URL,
   SUPPORTED_LETTA_AGENTS_VERSIONS,
 } from '$web/constants';
 import { useHealthServiceHealthCheck } from '@letta-cloud/sdk-core';
-import { cn } from '@letta-cloud/ui-styles';
 
 import AdBannerTwo from './ad_banner_two.webp';
 import Image from 'next/image';
@@ -102,44 +97,6 @@ function UserIsNotConnectedComponent() {
   );
 }
 
-interface UpgradeBannerProps {
-  isDismissed: boolean;
-  setIsDismissed: (value: boolean) => void;
-}
-
-function UpgradeBanner(props: UpgradeBannerProps) {
-  const { isDismissed, setIsDismissed } = props;
-
-  const t = useTranslations('development-servers/dashboard/page');
-
-  return (
-    <AdBanner
-      textContentClassName="largerThanMobile:w-[70%] largerThanMobile:w-[60%]"
-      title={t('UpgradeBanner.title')}
-      description={t('UpgradeBanner.description')}
-      action={
-        <HStack>
-          <Button
-            href={CLOUD_UPSELL_URL}
-            target="_blank"
-            color="primary"
-            label={t('UpgradeBanner.cta')}
-            size="large"
-          />
-        </HStack>
-      }
-      onClose={{
-        operation: () => {
-          setIsDismissed(!isDismissed);
-        },
-        text: t('UpgradeBanner.dismiss'),
-      }}
-      imageUrl={bannerBlue}
-      darkModeImage={bannerOrange}
-    />
-  );
-}
-
 function DevelopmentServersDashboardPage() {
   const t = useTranslations('development-servers/dashboard/page');
   const { data: isLocalServiceOnline } = useHealthServiceHealthCheck(
@@ -149,7 +106,6 @@ function DevelopmentServersDashboardPage() {
       refetchInterval: 3000,
     },
   );
-  const user = useCurrentUser();
 
   const showVersionCompatibilityBanner = useMemo(() => {
     if (!isLocalServiceOnline) {
@@ -199,25 +155,6 @@ function DevelopmentServersDashboardPage() {
           ></Alert>
         )}
       </VStack>
-      {!user?.hasCloudAccess && (
-        <VStack
-          paddingX="large"
-          /* eslint-disable-next-line react/forbid-component-props */
-          className={cn(
-            isDismissed || isLoadingDismissed ? 'h-0 pt-0' : 'h-[350px]',
-            'overflow-hidden transition-all duration-300',
-          )}
-          overflow="hidden"
-          paddingTop="medium"
-        >
-          <div className="h-full">
-            <UpgradeBanner
-              isDismissed={isDismissed}
-              setIsDismissed={setIsDismissed}
-            />
-          </div>
-        </VStack>
-      )}
 
       <DashboardPageSection
         title={t('gettingStarted.title')}
@@ -253,7 +190,7 @@ function DevelopmentServersDashboardPage() {
               title={t('gettingStarted.actions.viewAgents.title')}
               subtitle={t('gettingStarted.actions.viewAgents.description')}
             />
-            {isDismissed && !isLoadingDismissed && !user?.hasCloudAccess && (
+            {isDismissed && !isLoadingDismissed && (
               <VStack
                 justify="spaceBetween"
                 padding
