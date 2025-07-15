@@ -653,7 +653,7 @@ export function ToolRulesVisual(props: ToolRulesVisualProps) {
         fitView
         proOptions={proOptions}
       >
-        <Controls />
+        <Controls className="tool-rules-visual__controls" />
         <Background gap={20} size={1} color="hsl(var(--muted))" />
       </ReactFlow>
     </div>

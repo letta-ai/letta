@@ -53,9 +53,34 @@ $rule-icon-colors: (
   }
 }
 
-.react-flow__controls-button {
-  background-color: hsl(var(--background));
-  border-bottom-color: hsl(var(--border));
+// React Flow Controls styling - following repo's design system
+.tool-rules-visual__controls {
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+
+  .react-flow__controls-button {
+    background-color: hsl(var(--background));
+    border-bottom: 1px solid hsl(var(--border));
+    color: hsl(var(--text-default));
+    transition: all 0.2s ease;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    &:hover {
+      background-color: hsl(var(--secondary-hover));
+      color: hsl(var(--brand-hover-content));
+    }
+
+    &:active {
+      background-color: hsl(var(--secondary-active));
+    }
+  }
 }
 
 // Legend component
