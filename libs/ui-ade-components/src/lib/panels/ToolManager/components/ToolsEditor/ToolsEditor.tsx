@@ -34,7 +34,7 @@ function ToolButton(props: ToolButtonProps) {
   return (
     <HStack
       paddingY="xxsmall"
-      paddingX
+      paddingX="xxsmall"
       gap="small"
       align="center"
       fullWidth
@@ -43,7 +43,7 @@ function ToolButton(props: ToolButtonProps) {
       onClick={onClick}
       className={cn(selected ? 'bg-secondary-active' : '')}
     >
-      <HStack gap="small" align="center">
+      <HStack gap="small" align="center" overflow="hidden">
         <div className="min-w-[20px] h-[24px] items-center justify-center">
           <SpecificToolIcon toolType={tool.tool_type} />
         </div>
@@ -84,6 +84,7 @@ export function ToolSidebarNavigator(props: ToolSidebarNavigatorProps) {
       fullHeight
       borderRight
       fullWidth
+      color="background-grey"
       className={!isMobile ? 'max-w-[220px]' : 'w-full'}
     >
       <ToolSearchInput
@@ -93,7 +94,7 @@ export function ToolSidebarNavigator(props: ToolSidebarNavigatorProps) {
         onSearchChange={onSearchChange}
       />
       <VStack
-        padding="xxsmall"
+        padding="small"
         overflowY="auto"
         fullWidth
         collapseHeight

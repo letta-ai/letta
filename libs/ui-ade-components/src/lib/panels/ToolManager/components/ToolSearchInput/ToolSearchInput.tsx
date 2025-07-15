@@ -13,10 +13,13 @@ export function ToolSearchInput(props: ToolSearchInputProps) {
   const { search, onSearchChange, placeholder, isMobile, action } = props;
 
   return (
-    <HStack paddingX="small">
+    <HStack paddingX="medium">
       <HStack
-        align="center"
-        className="focus-within:border-b-brand pt-3  pb-1 cursor-pointer focus-within:ring-brand"
+        align="end"
+        paddingBottom="xxsmall"
+        height="header-sm"
+        minHeight="header-sm"
+        className="focus-within:border-b-brand cursor-pointer focus-within:ring-brand"
         borderBottom
         fullWidth
       >

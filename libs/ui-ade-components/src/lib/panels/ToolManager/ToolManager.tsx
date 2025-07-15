@@ -6,7 +6,6 @@ import {
   CaretLeftIcon,
   CaretRightIcon,
   ChevronLeftIcon,
-  ChevronRightIcon,
   Dialog,
   FormField,
   FormProvider,
@@ -201,16 +200,17 @@ interface SidebarButtonProps {
   hideLabel?: boolean;
   icon: React.ReactNode;
   hasSubmenu?: boolean;
+  isExpanded?: boolean;
 }
 
 function SidebarButton(props: SidebarButtonProps) {
   const { setPath, currentPath } = useToolManagerState();
-  const { path, hideLabel, label, icon, hasSubmenu } = props;
+  const { path, hideLabel, label, icon, isExpanded } = props;
 
   const isSelected = useMemo(() => {
     return path === currentPath;
   }, [path, currentPath]);
-  return (
+  const buttonContent = (
     <button
       color={isSelected ? 'brand' : 'tertiary'}
       onClick={() => {
@@ -227,14 +227,15 @@ function SidebarButton(props: SidebarButtonProps) {
         <div className="w-4 items-center flex justify-center">{icon}</div>
         <div className={cn('', hideLabel ? 'sr-only' : '')}>{label}</div>
       </div>
-      {hasSubmenu && !hideLabel ? (
-        <div>
-          <ChevronRightIcon />
-        </div>
-      ) : (
-        <div />
-      )}
     </button>
+  );
+
+  return isExpanded === false ? (
+    <Tooltip asChild content={label}>
+      {buttonContent}
+    </Tooltip>
+  ) : (
+    buttonContent
   );
 }
 
@@ -287,19 +288,17 @@ function ExpandComponent(props: ExpandComponentProps) {
   }, [isExpanded, t]);
 
   return (
-    <Tooltip placement="bottom" content={copy} asChild>
-      <button
-        className="text-text-lighter flex item-center justify-center p-0  h-[27px] top-[28px] w-[17px] bg-background-grey border absolute right-[-10px]"
-        onClick={() => {
-          setExpanded(!isExpanded);
-        }}
-      >
-        <div className="w-full">
-          {!isExpanded ? <CaretRightIcon /> : <CaretLeftIcon />}
-          <div className="sr-only">{copy}</div>
-        </div>
-      </button>
-    </Tooltip>
+    <button
+      className="text-text-lighter flex item-center justify-center p-0  h-[27px] top-[28px] w-[17px] bg-background-grey border absolute right-[-10px]"
+      onClick={() => {
+        setExpanded(!isExpanded);
+      }}
+    >
+      <div className="w-full">
+        {!isExpanded ? <CaretRightIcon /> : <CaretLeftIcon />}
+        <div className="sr-only">{copy}</div>
+      </div>
+    </button>
   );
 }
 
@@ -368,9 +367,17 @@ function ToolManagerNavigationSidebar() {
               <div className="bg-agent min-w-[24px] flex items-center justify-center h-[24px]">
                 <LettaInvaderIcon />
               </div>
-              <Typography fullWidth overflow="ellipsis" variant="body2" noWrap>
-                {name}
-              </Typography>
+              <Tooltip asChild content={name}>
+                <Typography
+                  fullWidth
+                  overflow="ellipsis"
+                  variant="body2"
+                  noWrap
+                  className="cursor-default"
+                >
+                  {name}
+                </Typography>
+              </Tooltip>
             </HStack>
           }
         >
@@ -380,18 +387,21 @@ function ToolManagerNavigationSidebar() {
             path="/current-agent-tools"
             hasSubmenu
             icon={details.current.icon}
+            isExpanded={isExpanded}
           />
           <SidebarButton
             hideLabel={!isExpanded}
             label={details.toolRules.title}
             path="/tool-rules"
             icon={details.toolRules.icon}
+            isExpanded={isExpanded}
           />
           <SidebarButton
             hideLabel={!isExpanded}
             label={details.toolVariables.title}
             path="/tool-variables"
             icon={details.toolVariables.icon}
+            isExpanded={isExpanded}
           />
           {!isLocal && (
             <SidebarButton
@@ -399,6 +409,7 @@ function ToolManagerNavigationSidebar() {
               label={details.dependencies.title}
               path="/dependencies"
               icon={details.dependencies.icon}
+              isExpanded={isExpanded}
             />
           )}
         </SidebarSection>
@@ -413,6 +424,7 @@ function ToolManagerNavigationSidebar() {
             path="/letta-tools"
             hasSubmenu
             icon={details.lettaTools.icon}
+            isExpanded={isExpanded}
           />
           <SidebarButton
             hideLabel={!isExpanded}
@@ -420,6 +432,7 @@ function ToolManagerNavigationSidebar() {
             path="/letta-multiagent-tools"
             hasSubmenu
             icon={details.multiAgentTools.icon}
+            isExpanded={isExpanded}
           />
           <SidebarButton
             hideLabel={!isExpanded}
@@ -427,6 +440,7 @@ function ToolManagerNavigationSidebar() {
             path="/letta-utility-tools"
             hasSubmenu
             icon={details.utilityTools.icon}
+            isExpanded={isExpanded}
           />
 
           <SidebarButton
@@ -435,6 +449,7 @@ function ToolManagerNavigationSidebar() {
             path="/my-tools"
             hasSubmenu
             icon={details.customTools.icon}
+            isExpanded={isExpanded}
           />
           <HStack>
             <CreateToolDialog
@@ -463,6 +478,7 @@ function ToolManagerNavigationSidebar() {
             label={details.mcpServers.title}
             path="/mcp-servers"
             icon={details.mcpServers.icon}
+            isExpanded={isExpanded}
           />
           <HStack>
             <Button
@@ -488,6 +504,7 @@ function ToolManagerNavigationSidebar() {
             label={details.composioTools.title}
             path="/composio"
             icon={details.composioTools.icon}
+            isExpanded={isExpanded}
           />
         </SidebarSection>
       </VStack>
