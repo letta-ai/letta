@@ -1677,16 +1677,23 @@
         "name": "Server Type",
         "description": "The type of server",
         "options": {
-          "stdio": "STDIO",
+          "stdio": "stdio",
           "sse": "SSE",
           "streamable_http": "Streamable HTTP"
         }
       },
       "args": {
-        "placeholder": "--port 5000,--host",
+        "placeholder": "--port 5000, --host, -e API_KEY",
         "label": "Arguments",
-        "name": "--port 5000,--host",
+        "name": "--port 5000, --host",
         "description": "Please provide arguments as a comma separated list"
+      },
+      "environment": {
+        "label": "Environment",
+        "keyPlaceholder": "key",
+        "valuePlaceholder": "value",
+        "addVariable": "Add Variable",
+        "removeVariable": "Remove variable"
       },
       "error": "There was an error adding this server, please try again or contact support.",
       "duplicateName": {

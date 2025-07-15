@@ -82,6 +82,7 @@ import {
   UpdateAssistantMessage,
   UpdateReasoningMessage,
   UpdateSSEMCPServer,
+  UpdateStdioMCPServer,
   UpdateStreamableHTTPMCPServer,
   UpdateSystemMessage,
   UpdateUserMessage,
@@ -4880,7 +4881,10 @@ export const useToolsServiceUpdateMcpServer = <
       TError,
       {
         mcpServerName: string;
-        requestBody: UpdateSSEMCPServer | UpdateStreamableHTTPMCPServer;
+        requestBody:
+          | UpdateStdioMCPServer
+          | UpdateSSEMCPServer
+          | UpdateStreamableHTTPMCPServer;
         userId?: string;
       },
       TContext
@@ -4893,7 +4897,10 @@ export const useToolsServiceUpdateMcpServer = <
     TError,
     {
       mcpServerName: string;
-      requestBody: UpdateSSEMCPServer | UpdateStreamableHTTPMCPServer;
+      requestBody:
+        | UpdateStdioMCPServer
+        | UpdateSSEMCPServer
+        | UpdateStreamableHTTPMCPServer;
       userId?: string;
     },
     TContext

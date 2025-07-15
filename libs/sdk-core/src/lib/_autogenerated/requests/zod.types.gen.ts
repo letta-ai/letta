@@ -5841,6 +5841,20 @@ export const UpdateSSEMCPServer = z.object({
     .optional(),
 });
 
+export type UpdateStdioMCPServer = z.infer<typeof UpdateStdioMCPServer>;
+export const UpdateStdioMCPServer = z.object({
+  server_name: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  stdio_config: z
+    .union([
+      StdioServerConfig,
+      z.null(),
+      z.array(z.union([StdioServerConfig, z.null()])),
+    ])
+    .optional(),
+});
+
 export type UpdateStreamableHTTPMCPServer = z.infer<
   typeof UpdateStreamableHTTPMCPServer
 >;
@@ -6298,9 +6312,16 @@ export const patch_Update_mcp_server = {
         .optional(),
     }),
     body: z.union([
+      UpdateStdioMCPServer,
       UpdateSSEMCPServer,
       UpdateStreamableHTTPMCPServer,
-      z.array(z.union([UpdateSSEMCPServer, UpdateStreamableHTTPMCPServer])),
+      z.array(
+        z.union([
+          UpdateStdioMCPServer,
+          UpdateSSEMCPServer,
+          UpdateStreamableHTTPMCPServer,
+        ]),
+      ),
     ]),
   }),
   response: z.union([

@@ -29,6 +29,12 @@ const customHeaderSchema = z.object({
   value: z.string(),
 });
 
+// Environment variable schema
+const environmentVariableSchema = z.object({
+  key: z.string(),
+  value: z.string(),
+});
+
 function validateAuthenticationInputs(data: {
   authMode: AuthModes;
   authToken?: string;
@@ -116,6 +122,10 @@ export function useStdioServerSchema() {
         name: createServerNameSchema(t('AddServerDialog.name.error')),
         command: z.string().min(1),
         args: z.string().min(1),
+        environment: z
+          .array(environmentVariableSchema)
+          .optional()
+          .default([{ key: '', value: '' }]),
       }),
     [t],
   );

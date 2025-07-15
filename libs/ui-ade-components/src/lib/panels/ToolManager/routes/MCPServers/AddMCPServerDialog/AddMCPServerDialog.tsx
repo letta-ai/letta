@@ -29,6 +29,7 @@ import {
   CommandField,
   ArgsField,
   AuthenticationSection,
+  EnvironmentField,
 } from '../FormFields';
 import { TestMCPConnectionButton } from '../TestMCPConnectionButton';
 import {
@@ -78,6 +79,7 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
       name: '',
       command: '',
       args: '',
+      environment: undefined,
     },
   });
 
@@ -109,12 +111,23 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
 
   const handleSubmit = useCallback(
     (values: AddStdioServerFormValues) => {
+      const env = values.environment
+        .filter((env) => env.key && env.value)
+        .reduce((acc: Record<string, string>, env) => {
+          acc[env.key] = env.value;
+          return acc;
+        }, {});
+
       mutate({
         requestBody: {
           server_name: values.name,
           type: MCPServerTypes.Stdio,
           command: values.command,
-          args: values.args.split(','),
+          args: values.args
+            .split(',')
+            .map((arg) => arg.trim())
+            .filter((arg) => arg !== ''),
+          env: Object.keys(env).length > 0 ? env : null, // Only include env if it's not empty
         },
       });
     },
@@ -128,6 +141,7 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
           <ServerNameField />
           <CommandField />
           <ArgsField />
+          <EnvironmentField />
           <MCPFormActions
             errorMessage={isError ? getErrorMessage(error) : undefined}
             onCancel={handleReset}

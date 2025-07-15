@@ -14,6 +14,7 @@ import {
   type ListMcpServersResponse,
   type SSEServerConfig,
   type StreamableHTTPServerConfig,
+  type StdioServerConfig,
   useToolsServiceUpdateMcpServer,
   UseToolsServiceListMcpServersKeyFn,
   UseToolsServiceListMcpToolsByServerKeyFn,
@@ -28,10 +29,14 @@ import {
   ServerUrlField,
   MCPFormActions,
   AuthenticationSection,
+  CommandField,
+  ArgsField,
+  EnvironmentField,
 } from '../FormFields';
 import {
   useSSEServerSchema,
   useStreamableHttpServerSchema,
+  useStdioServerSchema,
   useMCPErrorMessage,
 } from '../hooks';
 
@@ -47,6 +52,10 @@ interface UpdateSSEServerFormProps extends BaseUpdateServerFormProps {
 interface UpdateStreamableHttpServerFormProps
   extends BaseUpdateServerFormProps {
   server: StreamableHTTPServerConfig;
+}
+
+interface UpdateStdioServerFormProps extends BaseUpdateServerFormProps {
+  server: StdioServerConfig;
 }
 
 function UpdateSSEServerForm(props: UpdateSSEServerFormProps) {
@@ -235,9 +244,116 @@ function UpdateStreamableHttpServerForm(
   );
 }
 
+function UpdateStdioServerForm(props: UpdateStdioServerFormProps) {
+  const { server, onCancel, onSuccess } = props;
+
+  const UpdateStdioServerSchema = useStdioServerSchema();
+  const getErrorMessage = useMCPErrorMessage();
+
+  type UpdateStdioServerFormValues = z.infer<typeof UpdateStdioServerSchema>;
+
+  const env = server.env
+    ? Object.entries(server.env).map(([key, value]) => ({ key, value }))
+    : undefined;
+
+  const form = useForm<UpdateStdioServerFormValues>({
+    resolver: zodResolver(UpdateStdioServerSchema),
+    defaultValues: {
+      name: server.server_name,
+      command: server.command,
+      args: server.args.join(', '),
+      environment: env,
+    },
+  });
+
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending, isError, error, reset } =
+    useToolsServiceUpdateMcpServer({
+      onSuccess: (updatedServer) => {
+        // Update MCP servers list query with the updated server
+        queryClient.setQueriesData<ListMcpServersResponse | undefined>(
+          {
+            queryKey: UseToolsServiceListMcpServersKeyFn(),
+          },
+          (oldData) => {
+            if (!oldData) return oldData;
+
+            // Update the specific server in the cache
+            return {
+              ...oldData,
+              [updatedServer.server_name]: updatedServer,
+            };
+          },
+        );
+
+        // Invalidate tools for this specific server (since tools might have changed)
+        void queryClient.invalidateQueries({
+          queryKey: UseToolsServiceListMcpToolsByServerKeyFn({
+            mcpServerName: updatedServer.server_name,
+          }),
+        });
+
+        onSuccess();
+      },
+    });
+
+  const handleReset = useCallback(() => {
+    form.reset();
+    reset();
+    onCancel();
+  }, [form, reset, onCancel]);
+
+  const handleSubmit = useCallback(
+    (values: UpdateStdioServerFormValues) => {
+      const env = values.environment
+        .filter((env) => env.key && env.value)
+        .reduce((acc: Record<string, string>, env) => {
+          acc[env.key] = env.value;
+          return acc;
+        }, {});
+
+      mutate({
+        mcpServerName: server.server_name,
+        requestBody: {
+          stdio_config: {
+            server_name: values.name,
+            command: values.command,
+            args: values.args
+              .split(',')
+              .map((arg) => arg.trim())
+              .filter((arg) => arg !== ''),
+            env,
+          },
+        },
+      });
+    },
+    [mutate, server.server_name],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(handleSubmit)}>
+        <VStack gap="form" paddingBottom>
+          <ServerNameField disabled />
+          <CommandField />
+          <ArgsField />
+          <EnvironmentField />
+          <MCPFormActions
+            errorMessage={isError ? getErrorMessage(error, false) : undefined}
+            onCancel={handleReset}
+            isPending={isPending}
+            isUpdate
+          />
+        </VStack>
+      </Form>
+    </FormProvider>
+  );
+}
+
 interface UpdateMCPServerDialogProps {
   trigger: React.ReactNode;
-  server: SSEServerConfig | StreamableHTTPServerConfig;
+  server: SSEServerConfig | StdioServerConfig | StreamableHTTPServerConfig;
 }
 
 export function UpdateMCPServerDialog(props: UpdateMCPServerDialogProps) {
@@ -259,7 +375,17 @@ export function UpdateMCPServerDialog(props: UpdateMCPServerDialogProps) {
       <VStack gap="form">
         {server.type === MCPServerTypes.StreamableHttp ? (
           <UpdateStreamableHttpServerForm
-            server={server}
+            server={server as StreamableHTTPServerConfig}
+            onSuccess={() => {
+              setIsOpen(false);
+            }}
+            onCancel={() => {
+              setIsOpen(false);
+            }}
+          />
+        ) : server.type === MCPServerTypes.Stdio ? (
+          <UpdateStdioServerForm
+            server={server as StdioServerConfig}
             onSuccess={() => {
               setIsOpen(false);
             }}
@@ -269,7 +395,7 @@ export function UpdateMCPServerDialog(props: UpdateMCPServerDialogProps) {
           />
         ) : (
           <UpdateSSEServerForm
-            server={server}
+            server={server as SSEServerConfig}
             onSuccess={() => {
               setIsOpen(false);
             }}

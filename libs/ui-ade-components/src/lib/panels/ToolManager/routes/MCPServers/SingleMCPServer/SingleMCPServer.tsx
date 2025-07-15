@@ -220,18 +220,16 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
                 }}
                 label={t('refetch')}
               />
-              {getIsStreamableOrHttpServer(server) && (
-                <UpdateMCPServerDialog
-                  server={server}
-                  trigger={
-                    <DropdownMenuItem
-                      preIcon={<EditIcon />}
-                      doNotCloseOnSelect
-                      label={t('edit')}
-                    />
-                  }
-                />
-              )}
+              <UpdateMCPServerDialog
+                server={server}
+                trigger={
+                  <DropdownMenuItem
+                    preIcon={<EditIcon />}
+                    doNotCloseOnSelect
+                    label={t('edit')}
+                  />
+                }
+              />
               <RemoveMCPServerDialog
                 serverName={server.server_name}
                 trigger={

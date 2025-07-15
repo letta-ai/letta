@@ -6,6 +6,7 @@ import {
   FormActions,
   FormField,
   Input,
+  KeyValueEditor,
 } from '@letta-cloud/ui-component-library';
 
 export { AuthenticationSection, AuthModes } from './AuthenticationSection';
@@ -154,6 +155,34 @@ export function ArgsField() {
           language="bash"
           code={field.value}
           placeholder={t('AddServerDialog.args.placeholder')}
+        />
+      )}
+    />
+  );
+}
+
+export interface EnvironmentVariable {
+  key: string;
+  value: string;
+}
+
+export function EnvironmentField() {
+  const t = useTranslations('ToolsEditor/MCPServers');
+
+  return (
+    <FormField
+      name="environment"
+      render={({ field }) => (
+        <KeyValueEditor
+          value={field.value}
+          onValueChange={field.onChange}
+          label={t('AddServerDialog.environment.label')}
+          keyPlaceholder={t('AddServerDialog.environment.keyPlaceholder')}
+          valuePlaceholder={t('AddServerDialog.environment.valuePlaceholder')}
+          addVariableLabel={t('AddServerDialog.environment.addVariable')}
+          removeVariableLabel={t('AddServerDialog.environment.removeVariable')}
+          highlightDuplicateKeys
+          fullWidth
         />
       )}
     />

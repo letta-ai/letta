@@ -4377,6 +4377,20 @@ export type UpdateSSEMCPServer = {
 };
 
 /**
+ * Update a Stdio MCP server
+ */
+export type UpdateStdioMCPServer = {
+  /**
+   * The name of the server
+   */
+  server_name?: string | null;
+  /**
+   * The configuration for the server (MCP 'local' client will run this command)
+   */
+  stdio_config?: StdioServerConfig | null;
+};
+
+/**
  * Update a Streamable HTTP MCP server
  */
 export type UpdateStreamableHTTPMCPServer = {
@@ -4751,7 +4765,10 @@ export type AddMcpToolResponse = Tool;
 
 export type UpdateMcpServerData = {
   mcpServerName: string;
-  requestBody: UpdateSSEMCPServer | UpdateStreamableHTTPMCPServer;
+  requestBody:
+    | UpdateStdioMCPServer
+    | UpdateSSEMCPServer
+    | UpdateStreamableHTTPMCPServer;
   userId?: string | null;
 };
 

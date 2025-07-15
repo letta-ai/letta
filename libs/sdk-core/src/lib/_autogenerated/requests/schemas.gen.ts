@@ -11947,6 +11947,39 @@ export const $UpdateSSEMCPServer = {
   description: 'Update an SSE MCP server',
 } as const;
 
+export const $UpdateStdioMCPServer = {
+  properties: {
+    server_name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Server Name',
+      description: 'The name of the server',
+    },
+    stdio_config: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StdioServerConfig',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description:
+        "The configuration for the server (MCP 'local' client will run this command)",
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  title: 'UpdateStdioMCPServer',
+  description: 'Update a Stdio MCP server',
+} as const;
+
 export const $UpdateStreamableHTTPMCPServer = {
   properties: {
     server_name: {

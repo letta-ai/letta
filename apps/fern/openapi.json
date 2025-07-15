@@ -821,6 +821,9 @@
               "schema": {
                 "anyOf": [
                   {
+                    "$ref": "#/components/schemas/UpdateStdioMCPServer"
+                  },
+                  {
                     "$ref": "#/components/schemas/UpdateSSEMCPServer"
                   },
                   {
@@ -19902,6 +19905,37 @@
         "type": "object",
         "title": "UpdateSSEMCPServer",
         "description": "Update an SSE MCP server"
+      },
+      "UpdateStdioMCPServer": {
+        "properties": {
+          "server_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Name",
+            "description": "The name of the server"
+          },
+          "stdio_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StdioServerConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The configuration for the server (MCP 'local' client will run this command)"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateStdioMCPServer",
+        "description": "Update a Stdio MCP server"
       },
       "UpdateStreamableHTTPMCPServer": {
         "properties": {
