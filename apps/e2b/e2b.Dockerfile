@@ -7,7 +7,7 @@ RUN pip install 'letta-nightly[postgres,server,cloud-tool-sandbox,external-tools
 RUN pip install composio-core==0.7.7
 RUN pip install composio-langchain==0.7.2
 RUN pip install certifi==2024.7.4
-RUN pip install charset-normalizer==3.2.0
+RUN pip install charset-normalizer==3.4.0
 RUN pip install idna==3.4
 RUN pip install joblib==1.3.2
 RUN pip install kiwisolver==1.4.5
