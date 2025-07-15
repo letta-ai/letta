@@ -53,7 +53,7 @@ async function trackSubscriptionChange(organizationId: string) {
 
 export async function handleStripeCustomerChange(customerId: string) {
   const organizationId =
-    void getOrganizationIdFromPaymentCustomerId(customerId);
+    await getOrganizationIdFromPaymentCustomerId(customerId);
 
   if (!organizationId) {
     return;
