@@ -36,6 +36,7 @@ export default [
   {
     files: ['**/*.ts', '**/*.tsx'],
     rules: {
+      'no-void': ["error", { "allowAsStatement": true }],
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/explicit-function-return-type': 'error',
       '@typescript-eslint/class-literal-property-style': 'error',
