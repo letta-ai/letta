@@ -18,7 +18,7 @@ import { useCallback } from 'react';
 import { get, set } from 'lodash-es';
 import { Button } from '../Button/Button';
 import { useTranslations } from '@letta-cloud/translations';
-import { CloseIcon, PlusIcon, SearchIcon } from '../../icons';
+import { CloseIcon, PlusIcon, SearchIcon, TrashIcon } from '../../icons';
 
 const DISABLE_COMBINATOR = true;
 
@@ -328,7 +328,12 @@ function QueryCondition(props: QueryRowProps) {
           />
         );
       })}
-      {!isFirstCondition && <RemoveCondition path={path} />}
+      {!isFirstCondition && (
+        <HStack justify="spaceBetween" fullWidth>
+          <div></div>
+          <RemoveCondition path={path} />
+        </HStack>
+      )}
     </HStack>
   );
 }
@@ -408,6 +413,7 @@ function AddNewCondition(props: AddNewConditionProps) {
       type="button"
       color="tertiary"
       size="small"
+      bold
       preIcon={<PlusIcon />}
       onClick={handleAddCondition}
       label={t('addCondition')}
@@ -476,7 +482,7 @@ function QueryCombinator(props: QueryCombinatorProps) {
 
   return (
     <HStack>
-      <HStack paddingTop="xxsmall">
+      <HStack paddingTop="xsmall">
         <RawSelect
           __use_rarely_className="min-w-[65px]"
           label="Select Condition"
@@ -490,30 +496,35 @@ function QueryCombinator(props: QueryCombinatorProps) {
           }}
         />
       </HStack>
-      <VStack gap={false} collapseWidth flex>
-        <VStack color="background-grey" overflowX="auto" gap={false} fullWidth>
+      <VStack gap="small" collapseWidth flex>
+        <VStack color="background-grey2" overflowX="auto" gap={false} fullWidth>
           {items.map((item, index) => {
+            const isLast = index === items.length - 1;
+            let borderClass = 'border-x border-t border-solid border-border';
+            if (isLast) {
+              borderClass += ' border-b';
+            }
+
             if ('combinator' in item) {
               return (
-                <QueryCombinator
-                  path={`${path}.items.${index}`}
-                  key={index}
-                  {...item}
-                />
+                <VStack className={borderClass} key={index} padding="xxsmall">
+                  <QueryCombinator path={`${path}.items.${index}`} {...item} />
+                </VStack>
               );
             } else {
               return (
-                <QueryCondition
-                  key={index}
-                  isFirstCondition={index === 0 && path === 'root'}
-                  path={`${path}.items.${index}`}
-                  {...item}
-                />
+                <VStack className={borderClass} key={index} padding="xxsmall">
+                  <QueryCondition
+                    isFirstCondition={index === 0 && path === 'root'}
+                    path={`${path}.items.${index}`}
+                    {...item}
+                  />
+                </VStack>
               );
             }
           })}
         </VStack>
-        <HStack>
+        <HStack paddingTop="xxsmall">
           <AddNewCondition path={path} />
         </HStack>
         <HStack fullWidth justify="end">

@@ -561,6 +561,7 @@ export default function ResponsesPage() {
               <HStack
                 /* eslint-disable-next-line react/forbid-component-props */
                 className="mt-[-26px] pointer-events-none"
+                paddingTop="small"
                 fullWidth
                 align="center"
                 justify="end"

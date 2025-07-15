@@ -1091,9 +1091,18 @@ function DeployedAgentsPage() {
               setQuery(draftQuery);
             }}
           >
-            <VStack gap={false}>
+            <VStack paddingY="xxsmall">
+              <Typography bold variant="body2" color="lighter">
+                {t('search.label')}
+              </Typography>
+            </VStack>
+            <VStack
+              gap={false}
+              border
+              padding={'small'}
+              color={'background-grey'}
+            >
               <VStack>
-                <Typography bold>{t('search.label')}</Typography>
                 <QueryBuilder
                   key={queryBuilderKey}
                   query={draftQuery}
@@ -1105,7 +1114,7 @@ function DeployedAgentsPage() {
               </VStack>
               <HStack
                 /*eslint-disable-next-line react/forbid-component-props */
-                className="mt-[-26px] pointer-events-none"
+                className="mt-[-30px] pointer-events-none"
                 fullWidth
                 align="center"
                 justify="end"
