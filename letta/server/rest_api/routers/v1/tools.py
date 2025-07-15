@@ -20,7 +20,7 @@ from letta.helpers.composio_helpers import get_composio_api_key
 from letta.log import get_logger
 from letta.orm.errors import UniqueConstraintViolationError
 from letta.schemas.letta_message import ToolReturnMessage
-from letta.schemas.mcp import UpdateSSEMCPServer, UpdateStreamableHTTPMCPServer
+from letta.schemas.mcp import UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer
 from letta.schemas.tool import Tool, ToolCreate, ToolRunFromSource, ToolUpdate
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
@@ -550,7 +550,7 @@ async def add_mcp_server_to_config(
 )
 async def update_mcp_server(
     mcp_server_name: str,
-    request: Union[UpdateSSEMCPServer, UpdateStreamableHTTPMCPServer] = Body(...),
+    request: Union[UpdateStdioMCPServer, UpdateSSEMCPServer, UpdateStreamableHTTPMCPServer] = Body(...),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
