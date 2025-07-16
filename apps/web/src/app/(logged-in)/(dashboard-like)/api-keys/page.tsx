@@ -22,6 +22,7 @@ import {
   useForm,
   VStack,
   HStack,
+  EyeOpenIcon,
 } from '@letta-cloud/ui-component-library';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -234,6 +235,7 @@ function ViewAPIKeyDialog(props: ViewAPIKeyDialogProps) {
       trigger={
         <DropdownMenuLabel
           data-testid={`view-api-key-button:${name}`}
+          preIcon={<EyeOpenIcon />}
           text={t('viewApiKeyDialog.trigger')}
         />
       }
