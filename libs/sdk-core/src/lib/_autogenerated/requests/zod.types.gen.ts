@@ -998,7 +998,6 @@ export const Tool = z.object({
 
 export type Source = z.infer<typeof Source>;
 export const Source = z.object({
-  id: z.union([z.string(), z.undefined()]).optional(),
   name: z.string(),
   description: z
     .union([
@@ -1016,20 +1015,21 @@ export const Source = z.object({
       z.undefined(),
     ])
     .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.union([z.string(), z.undefined()]).optional(),
   embedding_config: EmbeddingConfig,
   organization_id: z
     .union([
       z.string(),
       z.null(),
       z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  metadata: z
-    .union([
-      z.unknown(),
-      z.null(),
-      z.array(z.union([z.unknown(), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -3567,15 +3567,6 @@ export const FileProcessingStatus = z.union([
 
 export type FileMetadata = z.infer<typeof FileMetadata>;
 export const FileMetadata = z.object({
-  id: z.union([z.string(), z.undefined()]).optional(),
-  organization_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
   source_id: z.string(),
   file_name: z
     .union([
@@ -3658,6 +3649,23 @@ export const FileMetadata = z.object({
       z.undefined(),
     ])
     .optional(),
+  content: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.union([z.string(), z.undefined()]).optional(),
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   created_at: z
     .union([
       z.string(),
@@ -3675,14 +3683,6 @@ export const FileMetadata = z.object({
     ])
     .optional(),
   is_deleted: z.union([z.boolean(), z.undefined()]).optional(),
-  content: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
 });
 
 export type FileStats = z.infer<typeof FileStats>;
@@ -5259,30 +5259,6 @@ export const SandboxEnvironmentVariableUpdate = z.object({
 export type SourceCreate = z.infer<typeof SourceCreate>;
 export const SourceCreate = z.object({
   name: z.string(),
-  embedding: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  embedding_chunk_size: z
-    .union([
-      z.number(),
-      z.null(),
-      z.array(z.union([z.number(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  embedding_config: z
-    .union([
-      EmbeddingConfig,
-      z.null(),
-      z.array(z.union([EmbeddingConfig, z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
   description: z
     .union([
       z.string(),
@@ -5304,6 +5280,30 @@ export const SourceCreate = z.object({
       z.unknown(),
       z.null(),
       z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding_chunk_size: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding_config: z
+    .union([
+      EmbeddingConfig,
+      z.null(),
+      z.array(z.union([EmbeddingConfig, z.null()])),
       z.undefined(),
     ])
     .optional(),

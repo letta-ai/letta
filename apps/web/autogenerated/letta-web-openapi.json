@@ -3043,14 +3043,6 @@
                             "items": {
                               "type": "object",
                               "properties": {
-                                "id": {
-                                  "oneOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {}
-                                  ]
-                                },
                                 "name": {
                                   "type": "string"
                                 },
@@ -3113,6 +3105,44 @@
                                     {}
                                   ],
                                   "nullable": true
+                                },
+                                "metadata": {
+                                  "oneOf": [
+                                    {
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "nullable": true
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    },
+                                    {}
+                                  ],
+                                  "nullable": true
+                                },
+                                "id": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {}
+                                  ]
                                 },
                                 "embedding_config": {
                                   "type": "object",
@@ -3358,36 +3388,6 @@
                                         "oneOf": [
                                           {
                                             "type": "string"
-                                          },
-                                          {
-                                            "type": "string",
-                                            "format": "null",
-                                            "nullable": true
-                                          }
-                                        ],
-                                        "nullable": true
-                                      }
-                                    },
-                                    {}
-                                  ],
-                                  "nullable": true
-                                },
-                                "metadata": {
-                                  "oneOf": [
-                                    {
-                                      "nullable": true
-                                    },
-                                    {
-                                      "type": "string",
-                                      "format": "null",
-                                      "nullable": true
-                                    },
-                                    {
-                                      "type": "array",
-                                      "items": {
-                                        "oneOf": [
-                                          {
-                                            "nullable": true
                                           },
                                           {
                                             "type": "string",
@@ -7968,14 +7968,6 @@
                             "items": {
                               "type": "object",
                               "properties": {
-                                "id": {
-                                  "oneOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {}
-                                  ]
-                                },
                                 "name": {
                                   "type": "string"
                                 },
@@ -8038,6 +8030,44 @@
                                     {}
                                   ],
                                   "nullable": true
+                                },
+                                "metadata": {
+                                  "oneOf": [
+                                    {
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "nullable": true
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    },
+                                    {}
+                                  ],
+                                  "nullable": true
+                                },
+                                "id": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {}
+                                  ]
                                 },
                                 "embedding_config": {
                                   "type": "object",
@@ -8283,36 +8313,6 @@
                                         "oneOf": [
                                           {
                                             "type": "string"
-                                          },
-                                          {
-                                            "type": "string",
-                                            "format": "null",
-                                            "nullable": true
-                                          }
-                                        ],
-                                        "nullable": true
-                                      }
-                                    },
-                                    {}
-                                  ],
-                                  "nullable": true
-                                },
-                                "metadata": {
-                                  "oneOf": [
-                                    {
-                                      "nullable": true
-                                    },
-                                    {
-                                      "type": "string",
-                                      "format": "null",
-                                      "nullable": true
-                                    },
-                                    {
-                                      "type": "array",
-                                      "items": {
-                                        "oneOf": [
-                                          {
-                                            "nullable": true
                                           },
                                           {
                                             "type": "string",

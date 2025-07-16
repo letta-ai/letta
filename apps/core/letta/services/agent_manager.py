@@ -423,7 +423,11 @@ class AgentManager:
 
     @trace_method
     async def create_agent_async(
-        self, agent_create: CreateAgent, actor: PydanticUser, _test_only_force_id: Optional[str] = None
+        self,
+        agent_create: CreateAgent,
+        actor: PydanticUser,
+        _test_only_force_id: Optional[str] = None,
+        _init_with_no_messages: bool = False,
     ) -> PydanticAgentState:
         # validate required configs
         if not agent_create.llm_config or not agent_create.embedding_config:
@@ -591,20 +595,26 @@ class AgentManager:
                     ]
                     await session.execute(insert(AgentEnvironmentVariable).values(env_rows))
 
-                # initial message sequence
-                agent_state = await new_agent.to_pydantic_async(include_relationships={"memory"})
-                init_messages = self._generate_initial_message_sequence(
-                    actor,
-                    agent_state=agent_state,
-                    supplied_initial_message_sequence=agent_create.initial_message_sequence,
-                )
-                new_agent.message_ids = [msg.id for msg in init_messages]
+                # initial message sequence (skip if _init_with_no_messages is True)
+                if not _init_with_no_messages:
+                    agent_state = await new_agent.to_pydantic_async(include_relationships={"memory"})
+                    init_messages = self._generate_initial_message_sequence(
+                        actor,
+                        agent_state=agent_state,
+                        supplied_initial_message_sequence=agent_create.initial_message_sequence,
+                    )
+                    new_agent.message_ids = [msg.id for msg in init_messages]
+                else:
+                    init_messages = []
+                    new_agent.message_ids = []
 
             await session.refresh(new_agent)
 
             result = await new_agent.to_pydantic_async()
 
-        await self.message_manager.create_many_messages_async(pydantic_msgs=init_messages, actor=actor)
+        # Only create messages if we initialized with messages
+        if not _init_with_no_messages:
+            await self.message_manager.create_many_messages_async(pydantic_msgs=init_messages, actor=actor)
         return result
 
     @enforce_types

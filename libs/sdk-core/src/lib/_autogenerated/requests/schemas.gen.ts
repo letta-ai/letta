@@ -4523,26 +4523,6 @@ export const $FileFile = {
 
 export const $FileMetadata = {
   properties: {
-    id: {
-      type: 'string',
-      pattern: '^file-[a-fA-F0-9]{8}',
-      title: 'Id',
-      description: 'The human-friendly ID of the File',
-      examples: ['file-123e4567-e89b-12d3-a456-426614174000'],
-    },
-    organization_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Organization Id',
-      description:
-        'The unique identifier of the organization associated with the document.',
-    },
     source_id: {
       type: 'string',
       title: 'Source Id',
@@ -4675,6 +4655,39 @@ export const $FileMetadata = {
       title: 'Chunks Embedded',
       description: 'Number of chunks that have been embedded.',
     },
+    content: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Content',
+      description:
+        'Optional full-text content of the file; only populated on demand due to its size.',
+    },
+    id: {
+      type: 'string',
+      pattern: '^file-[a-fA-F0-9]{8}',
+      title: 'Id',
+      description: 'The human-friendly ID of the File',
+      examples: ['file-123e4567-e89b-12d3-a456-426614174000'],
+    },
+    organization_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Organization Id',
+      description:
+        'The unique identifier of the organization associated with the document.',
+    },
     created_at: {
       anyOf: [
         {
@@ -4706,19 +4719,6 @@ export const $FileMetadata = {
       title: 'Is Deleted',
       description: 'Whether this file is deleted or not.',
       default: false,
-    },
-    content: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Content',
-      description:
-        'Optional full-text content of the file; only populated on demand due to its size.',
     },
   },
   additionalProperties: false,
@@ -7234,24 +7234,25 @@ export const $Message = {
   type: 'object',
   required: ['role'],
   title: 'Message',
-  description: `Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.
+  description: `    Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.
 
-Attributes:
-    id (str): The unique identifier of the message.
-    role (MessageRole): The role of the participant.
-    text (str): The text of the message.
-    user_id (str): The unique identifier of the user.
-    agent_id (str): The unique identifier of the agent.
-    model (str): The model used to make the function call.
-    name (str): The name of the participant.
-    created_at (datetime): The time the message was created.
-    tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.
-    tool_call_id (str): The id of the tool call.
-    step_id (str): The id of the step that this message was created in.
-    otid (str): The offline threading id associated with this message.
-    tool_returns (List[ToolReturn]): The list of tool returns requested.
-    group_id (str): The multi-agent group that the message was sent in.
-    sender_id (str): The id of the sender of the message, can be an identity id or agent id.`,
+    Attributes:
+        id (str): The unique identifier of the message.
+        role (MessageRole): The role of the participant.
+        text (str): The text of the message.
+        user_id (str): The unique identifier of the user.
+        agent_id (str): The unique identifier of the agent.
+        model (str): The model used to make the function call.
+        name (str): The name of the participant.
+        created_at (datetime): The time the message was created.
+        tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.
+        tool_call_id (str): The id of the tool call.
+        step_id (str): The id of the step that this message was created in.
+        otid (str): The offline threading id associated with this message.
+        tool_returns (List[ToolReturn]): The list of tool returns requested.
+        group_id (str): The multi-agent group that the message was sent in.
+        sender_id (str): The id of the sender of the message, can be an identity id or agent id.
+t`,
 } as const;
 
 export const $MessageCreate = {
@@ -9404,13 +9405,6 @@ export const $SleeptimeManagerUpdate = {
 
 export const $Source = {
   properties: {
-    id: {
-      type: 'string',
-      pattern: '^source-[a-fA-F0-9]{8}',
-      title: 'Id',
-      description: 'The human-friendly ID of the Source',
-      examples: ['source-123e4567-e89b-12d3-a456-426614174000'],
-    },
     name: {
       type: 'string',
       title: 'Name',
@@ -9440,6 +9434,26 @@ export const $Source = {
       title: 'Instructions',
       description: 'Instructions for how to use the source.',
     },
+    metadata: {
+      anyOf: [
+        {
+          additionalProperties: true,
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata',
+      description: 'Metadata associated with the source.',
+    },
+    id: {
+      type: 'string',
+      pattern: '^source-[a-fA-F0-9]{8}',
+      title: 'Id',
+      description: 'The human-friendly ID of the Source',
+      examples: ['source-123e4567-e89b-12d3-a456-426614174000'],
+    },
     embedding_config: {
       $ref: '#/components/schemas/EmbeddingConfig',
       description: 'The embedding configuration used by the source.',
@@ -9455,19 +9469,6 @@ export const $Source = {
       ],
       title: 'Organization Id',
       description: 'The ID of the organization that created the source.',
-    },
-    metadata: {
-      anyOf: [
-        {
-          additionalProperties: true,
-          type: 'object',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Metadata',
-      description: 'Metadata associated with the source.',
     },
     created_by_id: {
       anyOf: [
@@ -9542,41 +9543,6 @@ export const $SourceCreate = {
       title: 'Name',
       description: 'The name of the source.',
     },
-    embedding: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Embedding',
-      description: 'The hande for the embedding config used by the source.',
-    },
-    embedding_chunk_size: {
-      anyOf: [
-        {
-          type: 'integer',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Embedding Chunk Size',
-      description: 'The chunk size of the embedding.',
-    },
-    embedding_config: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/EmbeddingConfig',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: '(Legacy) The embedding configuration used by the source.',
-    },
     description: {
       anyOf: [
         {
@@ -9613,6 +9579,41 @@ export const $SourceCreate = {
       ],
       title: 'Metadata',
       description: 'Metadata associated with the source.',
+    },
+    embedding: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Embedding',
+      description: 'The handle for the embedding config used by the source.',
+    },
+    embedding_chunk_size: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Embedding Chunk Size',
+      description: 'The chunk size of the embedding.',
+    },
+    embedding_config: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/EmbeddingConfig',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: '(Legacy) The embedding configuration used by the source.',
     },
   },
   additionalProperties: false,

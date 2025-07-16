@@ -1505,14 +1505,6 @@ export type FileFile = {
  */
 export type FileMetadata = {
   /**
-   * The human-friendly ID of the File
-   */
-  id?: string;
-  /**
-   * The unique identifier of the organization associated with the document.
-   */
-  organization_id?: string | null;
-  /**
    * The unique identifier of the source associated with the document.
    */
   source_id: string;
@@ -1561,6 +1553,18 @@ export type FileMetadata = {
    */
   chunks_embedded?: number | null;
   /**
+   * Optional full-text content of the file; only populated on demand due to its size.
+   */
+  content?: string | null;
+  /**
+   * The human-friendly ID of the File
+   */
+  id?: string;
+  /**
+   * The unique identifier of the organization associated with the document.
+   */
+  organization_id?: string | null;
+  /**
    * The creation date of the file.
    */
   created_at?: string | null;
@@ -1572,10 +1576,6 @@ export type FileMetadata = {
    * Whether this file is deleted or not.
    */
   is_deleted?: boolean;
-  /**
-   * Optional full-text content of the file; only populated on demand due to its size.
-   */
-  content?: string | null;
 };
 
 export type FileProcessingStatus =
@@ -2500,7 +2500,7 @@ export type Memory = {
 };
 
 /**
- * Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.
+ *     Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.
  *
  * Attributes:
  * id (str): The unique identifier of the message.
@@ -2518,6 +2518,7 @@ export type Memory = {
  * tool_returns (List[ToolReturn]): The list of tool returns requested.
  * group_id (str): The multi-agent group that the message was sent in.
  * sender_id (str): The id of the sender of the message, can be an identity id or agent id.
+ * t
  */
 export type Message = {
   /**
@@ -3459,10 +3460,6 @@ export type SleeptimeManagerUpdate = {
  */
 export type Source = {
   /**
-   * The human-friendly ID of the Source
-   */
-  id?: string;
-  /**
    * The name of the source.
    */
   name: string;
@@ -3475,6 +3472,16 @@ export type Source = {
    */
   instructions?: string | null;
   /**
+   * Metadata associated with the source.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * The human-friendly ID of the Source
+   */
+  id?: string;
+  /**
    * The embedding configuration used by the source.
    */
   embedding_config: EmbeddingConfig;
@@ -3482,12 +3489,6 @@ export type Source = {
    * The ID of the organization that created the source.
    */
   organization_id?: string | null;
-  /**
-   * Metadata associated with the source.
-   */
-  metadata?: {
-    [key: string]: unknown;
-  } | null;
   /**
    * The id of the user that made this Tool.
    */
@@ -3515,18 +3516,6 @@ export type SourceCreate = {
    */
   name: string;
   /**
-   * The hande for the embedding config used by the source.
-   */
-  embedding?: string | null;
-  /**
-   * The chunk size of the embedding.
-   */
-  embedding_chunk_size?: number | null;
-  /**
-   * (Legacy) The embedding configuration used by the source.
-   */
-  embedding_config?: EmbeddingConfig | null;
-  /**
    * The description of the source.
    */
   description?: string | null;
@@ -3540,6 +3529,18 @@ export type SourceCreate = {
   metadata?: {
     [key: string]: unknown;
   } | null;
+  /**
+   * The handle for the embedding config used by the source.
+   */
+  embedding?: string | null;
+  /**
+   * The chunk size of the embedding.
+   */
+  embedding_chunk_size?: number | null;
+  /**
+   * (Legacy) The embedding configuration used by the source.
+   */
+  embedding_config?: EmbeddingConfig | null;
 };
 
 /**

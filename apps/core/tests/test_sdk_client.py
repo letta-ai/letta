@@ -969,70 +969,85 @@ def test_create_tool_from_function_with_docstring(e2b_sandbox_mode, client: Lett
     client.tools.delete(tool.id)
 
 
-def test_preview_payload(client: LettaSDKClient, agent):
-    payload = client.agents.messages.preview_raw_payload(
-        agent_id=agent.id,
-        request=LettaRequest(
-            messages=[
-                MessageCreate(
-                    role="user",
-                    content=[
-                        TextContent(
-                            text="text",
-                        )
-                    ],
-                )
-            ],
-        ),
+def test_preview_payload(client: LettaSDKClient):
+    temp_agent = client.agents.create(
+        memory_blocks=[
+            CreateBlock(
+                label="human",
+                value="username: sarah",
+            ),
+        ],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-3-small",
     )
 
-    assert isinstance(payload, dict)
-    assert "model" in payload
-    assert "messages" in payload
-    assert "tools" in payload
-    assert "frequency_penalty" in payload
-    assert "max_completion_tokens" in payload
-    assert "temperature" in payload
-    assert "user" in payload
-    assert "parallel_tool_calls" in payload
-    assert "tool_choice" in payload
+    try:
+        payload = client.agents.messages.preview_raw_payload(
+            agent_id=temp_agent.id,
+            request=LettaRequest(
+                messages=[
+                    MessageCreate(
+                        role="user",
+                        content=[
+                            TextContent(
+                                text="text",
+                            )
+                        ],
+                    )
+                ],
+            ),
+        )
 
-    assert payload["model"] == "gpt-4o-mini"
+        assert isinstance(payload, dict)
+        assert "model" in payload
+        assert "messages" in payload
+        assert "tools" in payload
+        assert "frequency_penalty" in payload
+        assert "max_completion_tokens" in payload
+        assert "temperature" in payload
+        assert "user" in payload
+        assert "parallel_tool_calls" in payload
+        assert "tool_choice" in payload
 
-    assert isinstance(payload["messages"], list)
-    assert len(payload["messages"]) >= 3
+        assert payload["model"] == "gpt-4o-mini"
 
-    system_message = payload["messages"][0]
-    assert system_message["role"] == "system"
-    assert "base_instructions" in system_message["content"]
-    assert "memory_blocks" in system_message["content"]
-    assert "tool_usage_rules" in system_message["content"]
-    assert "Letta" in system_message["content"]
+        assert isinstance(payload["messages"], list)
+        assert len(payload["messages"]) >= 3
 
-    assert isinstance(payload["tools"], list)
-    assert len(payload["tools"]) > 0
+        system_message = payload["messages"][0]
+        assert system_message["role"] == "system"
+        assert "base_instructions" in system_message["content"]
+        assert "memory_blocks" in system_message["content"]
+        assert "tool_usage_rules" in system_message["content"]
+        assert "Letta" in system_message["content"]
 
-    tool_names = [tool["function"]["name"] for tool in payload["tools"]]
-    expected_tools = ["send_message", "conversation_search", "core_memory_replace", "core_memory_append"]
-    for tool_name in expected_tools:
-        assert tool_name in tool_names, f"Expected tool {tool_name} not found in tools"
+        assert isinstance(payload["tools"], list)
+        assert len(payload["tools"]) > 0
 
-    for tool in payload["tools"]:
-        assert tool["type"] == "function"
-        assert "function" in tool
-        assert "name" in tool["function"]
-        assert "description" in tool["function"]
-        assert "parameters" in tool["function"]
-        assert tool["function"]["strict"] is True
+        tool_names = [tool["function"]["name"] for tool in payload["tools"]]
+        expected_tools = ["send_message", "conversation_search", "core_memory_replace", "core_memory_append"]
+        for tool_name in expected_tools:
+            assert tool_name in tool_names, f"Expected tool {tool_name} not found in tools"
 
-    assert payload["frequency_penalty"] == 1.0
-    assert payload["max_completion_tokens"] == 4096
-    assert payload["temperature"] == 0.7
-    assert payload["parallel_tool_calls"] is False
-    assert payload["tool_choice"] == "required"
-    assert payload["user"].startswith("user-")
+        for tool in payload["tools"]:
+            assert tool["type"] == "function"
+            assert "function" in tool
+            assert "name" in tool["function"]
+            assert "description" in tool["function"]
+            assert "parameters" in tool["function"]
+            assert tool["function"]["strict"] is True
 
-    print(payload)
+        assert payload["frequency_penalty"] == 1.0
+        assert payload["max_completion_tokens"] == 4096
+        assert payload["temperature"] == 0.7
+        assert payload["parallel_tool_calls"] is False
+        assert payload["tool_choice"] == "required"
+        assert payload["user"].startswith("user-")
+
+        print(payload)
+    finally:
+        # Clean up the agent
+        client.agents.delete(agent_id=temp_agent.id)
 
 
 def test_agent_tools_list(client: LettaSDKClient):

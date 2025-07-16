@@ -13042,13 +13042,6 @@
       },
       "FileMetadata": {
         "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^file-[a-fA-F0-9]{8}",
-            "title": "Id",
-            "description": "The human-friendly ID of the File",
-            "examples": ["file-123e4567-e89b-12d3-a456-426614174000"]
-          },
           "source_id": {
             "type": "string",
             "title": "Source Id",
@@ -13179,6 +13172,25 @@
             "title": "Chunks Embedded",
             "description": "Number of chunks that have been embedded."
           },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content",
+            "description": "Optional full-text content of the file; only populated on demand due to its size."
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^file-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the File",
+            "examples": ["file-123e4567-e89b-12d3-a456-426614174000"]
+          },
           "created_at": {
             "anyOf": [
               {
@@ -13210,18 +13222,6 @@
             "title": "Is Deleted",
             "description": "Whether this file is deleted or not.",
             "default": false
-          },
-          "content": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Content",
-            "description": "Optional full-text content of the file; only populated on demand due to its size."
           }
         },
         "additionalProperties": false,
@@ -15554,7 +15554,7 @@
         "type": "object",
         "required": ["role"],
         "title": "Message",
-        "description": "Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.\n\nAttributes:\n    id (str): The unique identifier of the message.\n    role (MessageRole): The role of the participant.\n    text (str): The text of the message.\n    user_id (str): The unique identifier of the user.\n    agent_id (str): The unique identifier of the agent.\n    model (str): The model used to make the function call.\n    name (str): The name of the participant.\n    created_at (datetime): The time the message was created.\n    tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.\n    tool_call_id (str): The id of the tool call.\n    step_id (str): The id of the step that this message was created in.\n    otid (str): The offline threading id associated with this message.\n    tool_returns (List[ToolReturn]): The list of tool returns requested.\n    group_id (str): The multi-agent group that the message was sent in.\n    sender_id (str): The id of the sender of the message, can be an identity id or agent id."
+        "description": "    Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.\n\n    Attributes:\n        id (str): The unique identifier of the message.\n        role (MessageRole): The role of the participant.\n        text (str): The text of the message.\n        user_id (str): The unique identifier of the user.\n        agent_id (str): The unique identifier of the agent.\n        model (str): The model used to make the function call.\n        name (str): The name of the participant.\n        created_at (datetime): The time the message was created.\n        tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.\n        tool_call_id (str): The id of the tool call.\n        step_id (str): The id of the step that this message was created in.\n        otid (str): The offline threading id associated with this message.\n        tool_returns (List[ToolReturn]): The list of tool returns requested.\n        group_id (str): The multi-agent group that the message was sent in.\n        sender_id (str): The id of the sender of the message, can be an identity id or agent id.\nt"
       },
       "MessageCreate": {
         "properties": {
@@ -17519,13 +17519,6 @@
       },
       "Source": {
         "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^source-[a-fA-F0-9]{8}",
-            "title": "Id",
-            "description": "The human-friendly ID of the Source",
-            "examples": ["source-123e4567-e89b-12d3-a456-426614174000"]
-          },
           "name": {
             "type": "string",
             "title": "Name",
@@ -17555,10 +17548,6 @@
             "title": "Instructions",
             "description": "Instructions for how to use the source."
           },
-          "embedding_config": {
-            "$ref": "#/components/schemas/EmbeddingConfig",
-            "description": "The embedding configuration used by the source."
-          },
           "metadata": {
             "anyOf": [
               {
@@ -17571,6 +17560,17 @@
             ],
             "title": "Metadata",
             "description": "Metadata associated with the source."
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^source-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Source",
+            "examples": ["source-123e4567-e89b-12d3-a456-426614174000"]
+          },
+          "embedding_config": {
+            "$ref": "#/components/schemas/EmbeddingConfig",
+            "description": "The embedding configuration used by the source."
           },
           "created_by_id": {
             "anyOf": [
@@ -17636,41 +17636,6 @@
             "title": "Name",
             "description": "The name of the source."
           },
-          "embedding": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Embedding",
-            "description": "The hande for the embedding config used by the source."
-          },
-          "embedding_chunk_size": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Embedding Chunk Size",
-            "description": "The chunk size of the embedding."
-          },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "(Legacy) The embedding configuration used by the source."
-          },
           "description": {
             "anyOf": [
               {
@@ -17707,6 +17672,41 @@
             ],
             "title": "Metadata",
             "description": "Metadata associated with the source."
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "The handle for the embedding config used by the source."
+          },
+          "embedding_chunk_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Chunk Size",
+            "description": "The chunk size of the embedding."
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "(Legacy) The embedding configuration used by the source."
           }
         },
         "additionalProperties": false,

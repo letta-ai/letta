@@ -7,7 +7,7 @@ export interface AgentSimulatorMessageType {
   stepId?: string | null;
   timestamp: string;
   raw?: string;
-  type: MessageType
+  type: MessageType;
   editId?: string | null;
 }
 
