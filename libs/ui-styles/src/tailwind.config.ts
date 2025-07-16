@@ -22,6 +22,7 @@ export function buildConfig(appDir: string): Config {
           sidebarNavOverlay: '5',
           sidebarNav: '6',
           header: '7',
+          miniappShadow: '8',
           miniapp: '9',
           dialog: '10',
           dropdown: '11',

@@ -19,6 +19,13 @@
     "totalDurationTooltip": "This is the total time it took to execute everything in this response, including Letta, LLM and tool execution times and any delays",
     "stepDurationTooltip": "This is the total time it took to execute this step, including Letta, LLM and tool execution times and any delays"
   },
+  "DynamicApp": {
+    "DynamicHeader": {
+      "close": "Close",
+      "windowed": "Windowed mode",
+      "fullscreen": "Fullscreen mode"
+    }
+  },
   "components/MessageReplay": {
     "events": {
       "sendMessage": {
