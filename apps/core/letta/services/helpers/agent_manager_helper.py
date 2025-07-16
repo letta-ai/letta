@@ -1070,3 +1070,25 @@ def calculate_multi_agent_tools() -> Set[str]:
         return set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
     else:
         return set(MULTI_AGENT_TOOLS)
+
+
+@trace_method
+async def validate_agent_exists_async(session, agent_id: str, actor: User) -> None:
+    """
+    Validate that an agent exists and user has access to it using raw SQL for efficiency.
+
+    Args:
+        session: Database session
+        agent_id: ID of the agent to validate
+        actor: User performing the action
+
+    Raises:
+        NoResultFound: If agent doesn't exist or user doesn't have access
+    """
+    agent_exists_query = select(
+        exists().where(and_(AgentModel.id == agent_id, AgentModel.organization_id == actor.organization_id, AgentModel.is_deleted == False))
+    )
+    result = await session.execute(agent_exists_query)
+
+    if not result.scalar():
+        raise NoResultFound(f"Agent with ID {agent_id} not found")
