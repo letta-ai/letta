@@ -50,5 +50,3 @@ class MCPServer(SqlalchemyBase, OrganizationMixin):
     metadata_: Mapped[Optional[dict]] = mapped_column(
         JSON, default=lambda: {}, doc="A dictionary of additional metadata for the MCP server."
     )
-    # relationships
-    # organization: Mapped["Organization"] = relationship("Organization", back_populates="mcp_server", lazy="selectin")

@@ -147,9 +147,6 @@ class ToolCreate(LettaBase):
     return_char_limit: int = Field(FUNCTION_RETURN_CHAR_LIMIT, description="The maximum number of characters in the response.")
     pip_requirements: Optional[List[PipRequirement]] = Field(None, description="Optional list of pip packages required by this tool.")
 
-    # TODO should we put the HTTP / API fetch inside from_mcp?
-    # async def from_mcp(cls, mcp_server: str, mcp_tool_name: str) -> "ToolCreate":
-
     @classmethod
     def from_mcp(cls, mcp_server_name: str, mcp_tool: MCPTool) -> "ToolCreate":
         from letta.functions.helpers import generate_mcp_tool_wrapper

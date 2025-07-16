@@ -219,3 +219,11 @@ class HandleNotFoundError(LettaError):
             message=f"Handle {handle} not found, must be one of {available_handles}",
             code=ErrorCode.NOT_FOUND,
         )
+
+
+class AgentFileExportError(Exception):
+    """Exception raised during agent file export operations"""
+
+
+class AgentFileImportError(Exception):
+    """Exception raised during agent file import operations"""
