@@ -24,6 +24,12 @@ export const SERVER_CONFIGS = {
     urlField: 'serverUrl',
     customNaming: false,
   },
+  exa: {
+    type: 'streamable_http',
+    auth: 'api_key',
+    urlField: 'serverUrl',
+    customNaming: false,
+  },
   deepwiki: {
     type: 'streamable_http',
     auth: 'none',

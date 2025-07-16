@@ -10,6 +10,7 @@ import {
   StripeIcon,
   DeepWikiIcon,
   ApifyIcon,
+  ExaIcon,
 } from '@letta-cloud/ui-component-library';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
@@ -30,7 +31,14 @@ export interface RecommendedServer {
   logo: React.ReactNode;
   baseUrl: string;
   name: string;
-  id: 'apify' | 'deepwiki' | 'github' | 'pipedream' | 'stripe' | 'zapier';
+  id:
+    | 'apify'
+    | 'deepwiki'
+    | 'exa'
+    | 'github'
+    | 'pipedream'
+    | 'stripe'
+    | 'zapier';
   description: string;
   setup: CustomUrlSetupType | DefinedUrlSetupType;
 }
@@ -168,6 +176,28 @@ export function useRecommendedMCPServers(): RecommendedServer[] {
         logo: <PipedreamIcon />,
         name: 'Pipedream',
         description: t('pipedream.description'),
+      },
+      {
+        id: 'exa',
+        baseUrl: 'https://mcp.exa.ai',
+        setup: {
+          type: 'custom-url',
+          baseUrl: 'https://mcp.exa.ai/mcp',
+          requiresApiKey: true,
+          instructions: t.rich('exa.instructions', {
+            link: (chunks) => (
+              <Link
+                target="_blank"
+                href="https://docs.exa.ai/integrations/mcp-server"
+              >
+                {chunks}
+              </Link>
+            ),
+          }),
+        },
+        logo: <ExaIcon />,
+        name: 'Exa',
+        description: t('exa.description'),
       },
     ];
 

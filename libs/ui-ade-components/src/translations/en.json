@@ -760,7 +760,7 @@
       "viewPage": "View elements as seperate tabs"
     },
     "QuickOnboarding": {
-      "title": "Inspect your agent’s memory",
+      "title": "Inspect your agent's memory",
       "description": "Your agent long-term memory is divided into blocks, which can be updated by you (the developer) and the agent itself.",
       "next": "Next"
     },
@@ -1466,6 +1466,10 @@
     "pipedream": {
       "description": "Pipedream provides 2,700+ APIs and 10,000+ tools in a single MCP server. Get your unique server URL from mcp.pipedream.com after connecting your accounts.",
       "instructions": "Visit <link>mcp.pipedream.com</link> to sign up, connect your accounts, and get your unique server URL. Then paste your server URL here to connect."
+    },
+    "exa": {
+      "description": "Exa MCP gives your AI assistant real-time web search, research, and company analysis using Exa's powerful API. Includes tools for web, academic, company, and GitHub search.",
+      "instructions": "To connect Exa to Letta, you need an Exa API key. Visit the <link>Exa MCP documentation</link> to get your API key and setup instructions, then paste your API key above."
     }
   },
   "ToolsEditor/MCPServerExplorer": {
