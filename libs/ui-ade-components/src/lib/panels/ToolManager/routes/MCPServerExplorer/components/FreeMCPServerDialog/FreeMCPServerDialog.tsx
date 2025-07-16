@@ -49,20 +49,29 @@ export function FreeMCPServerDialog(props: FreeMCPServerDialogProps) {
   const { mutate, isPending, isError, serverName, open, handleOpenChange } =
     useMCPServerDialog(props.server);
 
+  const handleAddServer = useCallback(
+    (formData: z.infer<typeof freeServerSchema>) => {
+      const requestBody = {
+        server_name: serverName,
+        type: 'streamable_http' as const,
+        server_url: formData.serverUrl,
+        auth_header:
+          formData.authMode === AuthModes.NONE ? null : formData.authMode,
+        auth_token: formData.authToken || null,
+        custom_headers:
+          formData.customHeaders.length > 0
+            ? Object.fromEntries(
+                formData.customHeaders.map((h) => [h.key, h.value]),
+              )
+            : null,
+      };
+
+      mutate({ requestBody });
+    },
+    [mutate, serverName],
+  );
+
   const serverUrl = props.server.setup?.baseUrl;
-  const handleAddServer = useCallback(() => {
-    const requestBody = {
-      server_name: serverName,
-      type: 'streamable_http' as const,
-      server_url: serverUrl,
-      auth_header: null,
-      auth_token: null,
-      custom_headers: null,
-    };
-
-    mutate({ requestBody });
-  }, [mutate, serverName, serverUrl]);
-
   if (!serverUrl) return null;
 
   return (
@@ -72,7 +81,7 @@ export function FreeMCPServerDialog(props: FreeMCPServerDialogProps) {
           isError ? t('OpenAccessMCPServer.errorMessage') : undefined
         }
         title={props.server.name}
-        onSubmit={handleAddServer}
+        onSubmit={form.handleSubmit(handleAddServer)}
         isConfirmBusy={isPending}
         isOpen={open}
         onOpenChange={handleOpenChange}
