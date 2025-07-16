@@ -1,5 +1,6 @@
 import asyncio
 import importlib
+import os
 import warnings
 from typing import List, Optional, Set, Union
 
@@ -14,6 +15,7 @@ from letta.constants import (
     FILES_TOOLS,
     LETTA_TOOL_MODULE_NAMES,
     LETTA_TOOL_SET,
+    LOCAL_ONLY_MULTI_AGENT_TOOLS,
     MCP_TOOL_TAG_NAME_PREFIX,
 )
 from letta.functions.functions import derive_openai_json_schema, load_function_set
@@ -250,7 +252,10 @@ class ToolManager:
         # TODO: This requires a deeper rethink about how we keep all our internal tools up-to-date
         if not after and upsert_base_tools:
             existing_tool_names = {tool.name for tool in tools}
-            missing_base_tools = LETTA_TOOL_SET - existing_tool_names
+            base_tool_names = (
+                LETTA_TOOL_SET - LOCAL_ONLY_MULTI_AGENT_TOOLS if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" else LETTA_TOOL_SET
+            )
+            missing_base_tools = base_tool_names - existing_tool_names
 
             # If any base tools are missing, upsert all base tools
             if missing_base_tools:
