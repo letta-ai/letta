@@ -49,14 +49,14 @@ export function parseAuthenticationData(
         result.authHeader = 'Authorization';
       }
     } else {
-      result.token = authToken;
+      result.token = authToken.trim();
     }
   } else if (authMode === AuthModes.CUSTOM_HEADERS && customHeaders) {
     // Convert array of headers to object
     result.authHeaders = customHeaders
       .filter((h: CustomHeader) => h.key && h.value)
       .reduce((acc: Record<string, string>, header: CustomHeader) => {
-        acc[header.key] = header.value;
+        acc[header.key.trim()] = header.value.trim();
         return acc;
       }, {});
   }
