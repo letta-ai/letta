@@ -142,7 +142,7 @@ jobs:
             venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
 
       - name: Install just
-      - uses: extractions/setup-just@v3
+        uses: extractions/setup-just@v3
         with:
           just-version: '1.42.2'
 

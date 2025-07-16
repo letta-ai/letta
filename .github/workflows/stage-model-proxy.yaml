@@ -86,7 +86,7 @@ jobs:
           kubectl version --client
 
       - name: Install just
-      - uses: extractions/setup-just@v3
+        uses: extractions/setup-just@v3
         with:
           just-version: '1.42.2'
 
