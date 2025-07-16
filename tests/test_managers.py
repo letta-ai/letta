@@ -85,7 +85,7 @@ from letta.schemas.user import UserUpdate
 from letta.server.db import db_registry
 from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import calculate_base_tools, calculate_multi_agent_tools
+from letta.services.helpers.agent_manager_helper import calculate_base_tools, calculate_multi_agent_tools, validate_agent_exists_async
 from letta.services.step_manager import FeedbackType
 from letta.settings import tool_settings
 from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
@@ -693,6 +693,22 @@ async def another_file(server, default_source, default_user, default_organizatio
 # ======================================================================================================================
 # AgentManager Tests - Basic
 # ======================================================================================================================
+@pytest.mark.asyncio
+async def test_validate_agent_exists_async(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+    """Test the validate_agent_exists_async helper function"""
+    created_agent, _ = comprehensive_test_agent_fixture
+
+    # test with valid agent
+    async with db_registry.async_session() as session:
+        # should not raise exception
+        await validate_agent_exists_async(session, created_agent.id, default_user)
+
+    # test with non-existent agent
+    async with db_registry.async_session() as session:
+        with pytest.raises(NoResultFound):
+            await validate_agent_exists_async(session, "non-existent-id", default_user)
+
+
 @pytest.mark.asyncio
 async def test_create_get_list_agent(server: SyncServer, comprehensive_test_agent_fixture, default_user, event_loop):
     # Test agent creation

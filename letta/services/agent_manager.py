@@ -84,6 +84,7 @@ from letta.services.helpers.agent_manager_helper import (
     derive_system_message,
     initialize_message_sequence,
     package_initial_message_sequence,
+    validate_agent_exists_async,
 )
 from letta.services.identity_manager import IdentityManager
 from letta.services.message_manager import MessageManager
@@ -106,32 +107,6 @@ class AgentManager:
         self.passage_manager = PassageManager()
         self.identity_manager = IdentityManager()
         self.file_agent_manager = FileAgentManager()
-
-    @trace_method
-    async def _validate_agent_exists_async(self, session, agent_id: str, actor: PydanticUser) -> None:
-        """
-        Validate that an agent exists and user has access to it using raw SQL for efficiency.
-
-        Args:
-            session: Database session
-            agent_id: ID of the agent to validate
-            actor: User performing the action
-
-        Raises:
-            NoResultFound: If agent doesn't exist or user doesn't have access
-        """
-        agent_check_query = sa.text(
-            """
-            SELECT 1 FROM agents
-            WHERE id = :agent_id
-            AND organization_id = :org_id
-            AND is_deleted = false
-        """
-        )
-        agent_exists = await session.execute(agent_check_query, {"agent_id": agent_id, "org_id": actor.organization_id})
-
-        if not agent_exists.fetchone():
-            raise NoResultFound(f"Agent with ID {agent_id} not found")
 
     @staticmethod
     def _resolve_tools(session, names: Set[str], ids: Set[str], org_id: str) -> Tuple[Dict[str, str], Dict[str, str]]:
@@ -1907,7 +1882,7 @@ class AgentManager:
         """
         async with db_registry.async_session() as session:
             # Validate agent exists and user has access
-            await self._validate_agent_exists_async(session, agent_id, actor)
+            await validate_agent_exists_async(session, agent_id, actor)
 
             # Use raw SQL to efficiently fetch sources - much faster than lazy loading
             # Fast query without relationship loading
@@ -1943,7 +1918,7 @@ class AgentManager:
         """
         async with db_registry.async_session() as session:
             # Validate agent exists and user has access
-            await self._validate_agent_exists_async(session, agent_id, actor)
+            await validate_agent_exists_async(session, agent_id, actor)
 
             # Check if the source is actually attached to this agent using junction table
             attachment_check_query = select(SourcesAgents).where(SourcesAgents.agent_id == agent_id, SourcesAgents.source_id == source_id)
@@ -2710,7 +2685,7 @@ class AgentManager:
         """
         async with db_registry.async_session() as session:
             # lightweight check for agent access
-            await self._validate_agent_exists_async(session, agent_id, actor)
+            await validate_agent_exists_async(session, agent_id, actor)
 
             # direct query for tools via join - much more performant
             query = (

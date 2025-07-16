@@ -17,6 +17,7 @@ from letta.schemas.message import MessageUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.file_manager import FileManager
+from letta.services.helpers.agent_manager_helper import validate_agent_exists_async
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -541,7 +542,7 @@ class MessageManager:
 
         async with db_registry.async_session() as session:
             # Permission check: raise if the agent doesn't exist or actor is not allowed.
-            await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            await validate_agent_exists_async(session, agent_id, actor)
 
             # Build a query that directly filters the Message table by agent_id.
             query = select(MessageModel).where(MessageModel.agent_id == agent_id)
@@ -611,7 +612,7 @@ class MessageManager:
         """
         async with db_registry.async_session() as session:
             # 1) verify the agent exists and the actor has access
-            await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            await validate_agent_exists_async(session, agent_id, actor)
 
             # 2) issue a CORE DELETE against the mapped class
             stmt = (
