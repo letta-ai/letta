@@ -7,7 +7,7 @@ import {
   projects,
 } from '@letta-cloud/service-database';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
-import { and, count, eq, ilike, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, ilike, isNull } from 'drizzle-orm';
 import type { contracts, projectsContract } from '$web/web-api/contracts';
 import { generateSlug } from '$web/server';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
@@ -52,6 +52,7 @@ export async function getProjects(
       updatedAt: true,
       slug: true,
     },
+    orderBy: [desc(projects.updatedAt)],
     offset,
     limit,
   });
