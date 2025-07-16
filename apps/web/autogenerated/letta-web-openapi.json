@@ -5049,6 +5049,43 @@
                     "type": "string",
                     "description": "The name of the agent, optional otherwise a random one will be assigned"
                   },
+                  "initial_message_sequence": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "enum": ["user", "system", "assistant"]
+                        },
+                        "content": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "otid": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "sender_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "batch_item_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "group_id": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": ["role", "content"]
+                    },
+                    "description": "Set an initial sequence of messages, if not provided, the agent will start with the default message sequence, if an empty array is provided, the agent will start with no messages"
+                  },
                   "memory_variables": {
                     "type": "object",
                     "additionalProperties": {

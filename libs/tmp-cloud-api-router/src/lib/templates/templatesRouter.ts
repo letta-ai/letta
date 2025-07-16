@@ -11,9 +11,7 @@ import type { SDKContext } from '../types';
 import { getDeployedTemplateByVersion } from '@letta-cloud/utils-server';
 import { copyAgentById } from '@letta-cloud/utils-server';
 import { getContextDataHack } from '../getContextDataHack/getContextDataHack';
-import { and, count, eq, ilike } from 'drizzle-orm';
-import { getCustomerSubscription } from '@letta-cloud/service-payments';
-import { getUsageLimits } from '@letta-cloud/utils-shared';
+import { and, eq, ilike } from 'drizzle-orm';
 
 type CreateAgentsFromTemplateRequest = ServerInferRequest<
   typeof cloudContracts.templates.createAgentsFromTemplate
@@ -31,8 +29,14 @@ async function createAgentsFromTemplate(
     context,
   );
   const { template_version } = req.params;
-  const { memory_variables, identity_ids, tool_variables, agent_name, tags } =
-    req.body;
+  const {
+    memory_variables,
+    initial_message_sequence,
+    identity_ids,
+    tool_variables,
+    agent_name,
+    tags,
+  } = req.body;
 
   // when template creation on agents is deprecated, we can remove this
   // const project = await db.query.projects.findFirst({
@@ -70,6 +74,7 @@ async function createAgentsFromTemplate(
       name: agent_name,
       tags,
       identityIds: identity_ids,
+      initialMessageSequence: initial_message_sequence,
       memoryVariables: memory_variables,
       toolVariables: tool_variables,
       projectId: deployedAgentTemplate.projectId,

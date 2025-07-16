@@ -28,6 +28,22 @@ const createAgentsFromTemplate = c.mutation({
       description:
         'The name of the agent, optional otherwise a random one will be assigned',
     }),
+    initial_message_sequence: z
+      .object({
+        role: z.enum(['user', 'system', 'assistant']),
+        content: z.string(),
+        name: z.string().nullable().optional(),
+        otid: z.string().nullable().optional(),
+        sender_id: z.string().nullable().optional(),
+        batch_item_id: z.string().nullable().optional(),
+        group_id: z.string().nullable().optional(),
+      })
+      .array()
+      .optional()
+      .openapi({
+        description:
+          'Set an initial sequence of messages, if not provided, the agent will start with the default message sequence, if an empty array is provided, the agent will start with no messages',
+      }),
     memory_variables: z
       .record(z.string())
       .optional()

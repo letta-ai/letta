@@ -1,3 +1,4 @@
+import type { CreateAgentRequest } from '@letta-cloud/sdk-core';
 import { AgentsService } from '@letta-cloud/sdk-core';
 import { omittedFieldsOnCopy } from '../updateAgentFromAgentId/updateAgentFromAgentId';
 import * as lodash from 'lodash';
@@ -15,6 +16,7 @@ interface CopyAgentByIdOptions {
   tags?: string[];
   templateVersionId?: string;
   identityIds?: string[];
+  initialMessageSequence?: CreateAgentRequest['initial_message_sequence'];
   baseTemplateId?: string;
   projectId?: string;
   name?: string;
@@ -29,6 +31,7 @@ export async function copyAgentById(
     memoryVariables,
     tags,
     name,
+    initialMessageSequence,
     toolVariables,
     projectId,
     templateVersionId,
@@ -66,6 +69,7 @@ export async function copyAgentById(
         base_template_id: baseTemplateId,
         include_base_tools: false,
         include_base_tool_rules: false,
+        initial_message_sequence: initialMessageSequence,
         include_multi_agent_tools: false,
         tool_rules: baseAgent.tool_rules,
         tool_ids: agentBody.tool_ids,
