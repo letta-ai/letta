@@ -111,6 +111,7 @@ function createContentFromChatInput(
 }
 
 interface ChatInputProps {
+  errorActionButton?: React.ReactNode;
   onSendMessage: (
     role: RoleOption,
     content: LettaUserMessageContentUnion[] | string,
@@ -228,6 +229,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
       onStopMessage,
       disabled,
       roles,
+      errorActionButton: errorButton,
       getSendSnippet,
       sendingMessageText,
       isSendingMessage,
@@ -481,7 +483,9 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
           onDrop={handleDrop}
         >
           {hasFailedToSendMessageText && (
-            <VStack
+            <HStack
+              align="center"
+              justify="spaceBetween"
               paddingX="small"
               paddingY="xsmall"
               className="z-[1]"
@@ -494,7 +498,8 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
               >
                 {hasFailedToSendMessageText}
               </Typography>
-            </VStack>
+              {errorButton}
+            </HStack>
           )}
           <HiddenOnMobile checkWithJs>
             <VStack padding="large">

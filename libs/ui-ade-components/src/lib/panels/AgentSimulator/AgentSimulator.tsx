@@ -58,8 +58,7 @@ import {
   AgentMessageSchema,
   UseAgentsServiceListMessagesKeyFn,
 } from '@letta-cloud/sdk-core';
-import { useCurrentAgent } from '../../hooks';
-import { EventSource } from 'extended-eventsource';
+import { OpenInNetworkInspectorButton, useCurrentAgent } from '../../hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { get } from 'lodash-es';
 import { z } from 'zod';
@@ -94,7 +93,6 @@ import { isSendingMessageAtom } from './atoms';
 import { useADETour } from '../../hooks/useADETour/useADETour';
 import type { InfiniteData } from '@tanstack/query-core';
 import { ErrorBoundary } from 'react-error-boundary';
-import type { RateLimitReason } from '@letta-cloud/types';
 import { useNetworkRequest } from '../../hooks/useNetworkRequest/useNetworkRequest';
 import { useQuickADETour } from '../../hooks/useQuickADETour/useQuickADETour';
 
@@ -110,15 +108,6 @@ export type SendMessageType = (payload: SendMessagePayload) => void;
 
 interface UseSendMessageOptions {
   onFailedToSendMessage?: (existingMessage: string) => void;
-}
-
-function errorHasResponseAndStatus(e: unknown): e is {
-  response: {
-    status: number;
-    json: () => Promise<{ reasons: RateLimitReason[] }>;
-  };
-} {
-  return Object.prototype.hasOwnProperty.call(e, 'response');
 }
 
 function extractMessageTextFromContent(
@@ -158,7 +147,7 @@ export function useSendMessage(
   }, []);
 
   const sendMessage: SendMessageType = useCallback(
-    (payload: SendMessagePayload) => {
+    async (payload: SendMessagePayload) => {
       const { content, role } = payload;
       const message = extractMessageTextFromContent(content);
       setIsPending(true);
@@ -290,44 +279,37 @@ export function useSendMessage(
         method: 'POST',
         status: 200,
         payload: requestBody,
-        response: {},
+        response: 'RESULTS WILL APPEAR AFTER THE REQUEST IS COMPLETED',
       });
 
-      const eventsource = new EventSource(
-        `${baseUrl}/v1/agents/${agentId}/messages/stream`,
-        {
-          withCredentials: true,
-          method: 'POST',
-          disableRetry: true,
-          keepalive: false,
-          headers: {
-            'X-SOURCE-CLIENT': window.location.pathname,
-            'Content-Type': 'application/json',
-            Accept: 'text/event-stream',
-            ...(password
-              ? {
-                  Authorization: `Bearer ${password}`,
-                  'X-BARE-PASSWORD': `password ${password}`,
-                }
-              : {}),
+      try {
+        const response = await fetch(
+          `${baseUrl}/v1/agents/${agentId}/messages/stream`,
+          {
+            method: 'POST',
+            headers: {
+              'X-SOURCE-CLIENT': window.location.pathname,
+              'Content-Type': 'application/json',
+              Accept: 'text/event-stream',
+              ...(password
+                ? {
+                    Authorization: `Bearer ${password}`,
+                    'X-BARE-PASSWORD': `password ${password}`,
+                  }
+                : {}),
+            },
+            body: JSON.stringify(requestBody),
+            signal: abortController.current.signal,
           },
-          body: JSON.stringify(requestBody),
-        },
-      );
+        );
 
-      eventsource.addEventListener('error', async (e) => {
-        //turn off core to test
-        e.stopPropagation();
-        e.preventDefault();
-        // tag user sent message as errored
-
-        if (errorHasResponseAndStatus(e)) {
-          const body = await e.response.json();
+        if (!response.ok) {
+          const body = await response.json();
 
           if (body.reasons?.includes('free-usage-exceeded')) {
             handleError(message, 'FREE_USAGE_EXCEEDED');
             updateNetworkRequest(requestId, {
-              status: e.response.status,
+              status: response.status,
               response: body,
             });
             return;
@@ -336,7 +318,7 @@ export function useSendMessage(
           if (body.reasons?.includes('agents-limit-exceeded')) {
             handleError(message, 'AGENT_LIMIT_EXCEEDED');
             updateNetworkRequest(requestId, {
-              status: e.response.status,
+              status: response.status,
               response: body,
             });
             return;
@@ -345,172 +327,207 @@ export function useSendMessage(
           if (body.reasons?.includes('premium-usage-exceeded')) {
             handleError(message, 'PREMIUM_USAGE_EXCEEDED');
             updateNetworkRequest(requestId, {
-              status: e.response.status,
+              status: response.status,
               response: body,
             });
             return;
           }
 
-          if (e.response.status === 429) {
+          if (response.status === 429) {
             handleError(message, 'RATE_LIMIT_EXCEEDED');
             updateNetworkRequest(requestId, {
-              status: e.response.status,
+              status: response.status,
               response: body,
             });
             return;
           }
 
-          if (e.response.status === 402) {
+          if (response.status === 402) {
             handleError(message, 'CREDIT_LIMIT_EXCEEDED');
             updateNetworkRequest(requestId, {
-              status: e.response.status,
+              status: response.status,
               response: body,
             });
             return;
           }
 
           updateNetworkRequest(requestId, {
-            status: e.response.status,
+            status: response.status,
             response: body,
           });
-        }
 
-        // temp disable, I dont think this is working properly
-        // setIsPending(false);
-        // setFailedToSendMessage(true);
-        // setErrorCode('INTERNAL_SERVER_ERROR');
-        // options?.onFailedToSendMessage?.(message);
-      });
-
-      eventsource.onmessage = (e: MessageEvent) => {
-        //stream
-        if (abortController.current?.signal.aborted) {
+          handleError(message, 'INTERNAL_SERVER_ERROR');
           return;
         }
 
-        if (e.data.trim() === '[DONE]') {
-          updateNetworkRequest(requestId, {
-            status: 200,
-            response: { status: 'stream_completed' },
-          });
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+
+        if (!reader) {
+          handleError(message, 'INTERNAL_SERVER_ERROR');
           return;
         }
 
-        try {
-          const errorMessage = ErrorMessageSchema.parse(JSON.parse(e.data));
-          handleError(message, errorMessage.code);
-          return;
-        } catch (_e) {
-          // ignore
-        }
+        let buffer = '';
+        let allText = '';
 
-        try {
-          // TODO (cliandy): handle {"message_type":"usage_statistics"} or don't pass through
-          const extracted = AgentMessageSchema.parse(JSON.parse(e.data));
+        while (true) {
+          const { done, value } = await reader.read();
 
-          queryClient.setQueriesData<InfiniteData<ListMessagesResponse>>(
-            {
+          if (done) {
+            setIsPending(false);
+            void queryClient.invalidateQueries({
               queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
-            },
-            (data) => {
-              if (!data) {
-                return data;
-              }
+            });
+            break;
+          }
 
-              const messages = data.pages[0] as LettaMessageUnion[];
+          if (abortController.current?.signal.aborted) {
+            await reader.cancel();
+            break;
+          }
 
-              let hasExistingMessage = false;
+          buffer += decoder.decode(value, { stream: true });
 
-              let transformedMessages = messages.map((message) => {
-                if (
-                  `${message.id}-${message.message_type}` ===
-                  `${extracted.id}-${extracted.message_type}`
-                ) {
-                  hasExistingMessage = true;
+          // Process complete SSE messages
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
 
-                  const newMessage: Record<string, any> = {
-                    ...message,
-                  };
+          for (const line of lines) {
+            if (line.trim() === '') continue;
 
-                  // explicit handlers for each message type
-                  switch (extracted.message_type) {
-                    case 'tool_call_message': {
-                      const maybeArguments = get(
-                        newMessage,
-                        'tool_call.arguments',
-                        '',
-                      );
+            // Parse SSE format: "data: {json}" or just "{json}"
+            let data = line;
+            allText += `${data}\n`;
+            if (line.startsWith('data: ')) {
+              data = line.substring(6);
+            }
 
-                      newMessage.tool_call = {
-                        tool_call_id:
-                          newMessage.tool_call.tool_call_id ||
-                          extracted.tool_call.tool_call_id,
-                        message_type:
-                          newMessage.tool_call.message_type ||
-                          extracted.tool_call.message_type,
-                        name:
-                          newMessage.tool_call.name || extracted.tool_call.name,
-                        arguments:
-                          maybeArguments + extracted.tool_call.arguments,
-                      };
-                      break;
-                    }
-                    case 'tool_return_message': {
-                      newMessage.tool_return = extracted.tool_return;
-                      break;
-                    }
-                    case 'reasoning_message': {
-                      newMessage.reasoning =
-                        (newMessage.reasoning || '') + extracted.reasoning;
-                      break;
-                    }
-                    default: {
-                      return newMessage;
-                    }
+            if (data.trim() === '[DONE]') {
+              updateNetworkRequest(requestId, {
+                status: 200,
+                response: allText,
+              });
+              continue;
+            }
+
+            try {
+              const errorMessage = ErrorMessageSchema.parse(JSON.parse(data));
+              handleError(message, errorMessage.code);
+              return;
+            } catch (_e) {
+              // ignore
+            }
+
+            try {
+              // TODO (cliandy): handle {"message_type":"usage_statistics"} or don't pass through
+              const extracted = AgentMessageSchema.parse(JSON.parse(data));
+
+              queryClient.setQueriesData<InfiniteData<ListMessagesResponse>>(
+                {
+                  queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
+                },
+                (data) => {
+                  if (!data) {
+                    return data;
                   }
 
-                  return newMessage;
-                }
+                  const messages = data.pages[0] as LettaMessageUnion[];
 
-                return message;
-              });
+                  let hasExistingMessage = false;
 
-              if (!hasExistingMessage) {
-                transformedMessages = [
-                  ...transformedMessages,
-                  {
-                    ...extracted,
-                    date: new Date().toISOString(),
-                  },
-                ];
-              }
+                  let transformedMessages = messages.map((message) => {
+                    if (
+                      `${message.id}-${message.message_type}` ===
+                      `${extracted.id}-${extracted.message_type}`
+                    ) {
+                      hasExistingMessage = true;
 
-              return {
-                ...data,
-                pages: [
-                  transformedMessages as LettaMessageUnion[],
-                  ...data.pages.slice(1),
-                ],
-              };
-            },
-          );
-        } catch (_e) {
-          // ignore
+                      const newMessage: Record<string, any> = {
+                        ...message,
+                      };
+
+                      // explicit handlers for each message type
+                      switch (extracted.message_type) {
+                        case 'tool_call_message': {
+                          const maybeArguments = get(
+                            newMessage,
+                            'tool_call.arguments',
+                            '',
+                          );
+
+                          newMessage.tool_call = {
+                            tool_call_id:
+                              newMessage.tool_call.tool_call_id ||
+                              extracted.tool_call.tool_call_id,
+                            message_type:
+                              newMessage.tool_call.message_type ||
+                              extracted.tool_call.message_type,
+                            name:
+                              newMessage.tool_call.name ||
+                              extracted.tool_call.name,
+                            arguments:
+                              maybeArguments + extracted.tool_call.arguments,
+                          };
+                          break;
+                        }
+                        case 'tool_return_message': {
+                          newMessage.tool_return = extracted.tool_return;
+                          break;
+                        }
+                        case 'reasoning_message': {
+                          newMessage.reasoning =
+                            (newMessage.reasoning || '') + extracted.reasoning;
+                          break;
+                        }
+                        default: {
+                          return newMessage;
+                        }
+                      }
+
+                      return newMessage;
+                    }
+
+                    return message;
+                  });
+
+                  if (!hasExistingMessage) {
+                    transformedMessages = [
+                      ...transformedMessages,
+                      {
+                        ...extracted,
+                        date: new Date().toISOString(),
+                      },
+                    ];
+                  }
+
+                  return {
+                    ...data,
+                    pages: [
+                      transformedMessages as LettaMessageUnion[],
+                      ...data.pages.slice(1),
+                    ],
+                  };
+                },
+              );
+            } catch (_e) {
+              // ignore
+            }
+          }
         }
-
-        if (e.eventPhase === eventsource.CLOSED) {
-          void queryClient.invalidateQueries({
-            queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
-          });
-
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          // Request was aborted, don't treat as error
           setIsPending(false);
           return;
         }
-      };
 
-      eventsource.onerror = () => {
+        // Handle other fetch errors
         setIsPending(false);
-      };
+        setFailedToSendMessage(true);
+        setErrorCode('INTERNAL_SERVER_ERROR');
+        options?.onFailedToSendMessage?.(message);
+      }
     },
     [
       agentId,
@@ -1244,6 +1261,7 @@ export function AgentSimulator() {
               </VStack>
               <QuickAgentSimulatorOnboarding>
                 <ChatInput
+                  errorActionButton={<OpenInNetworkInspectorButton />}
                   disabled={!agentIdToUse}
                   roles={[
                     ...(identities.length > 0

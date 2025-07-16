@@ -22,26 +22,56 @@ async function handleStream(req: NextRequest) {
     });
 
     if (!response.ok) {
-      // Handle error response
-      const errorData: {
-        reasons: string[];
-      } = { reasons: [] };
-
-      try {
-        errorData.reasons = (await response.json()).reasons;
-      } catch (e) {
-        console.error('Error parsing error response:', e);
+      // check if the response is json
+      if (!response.headers.get('content-type')?.includes('application/json')) {
+        return NextResponse.json(
+          {
+            error: 'Error from API',
+            details: 'Server error or unexpected response format',
+            reasons: [],
+          },
+          {
+            status: response.status,
+          },
+        );
       }
 
-      return NextResponse.json(
-        {
-          error: 'Error from API',
-          reasons: errorData.reasons,
-        },
-        {
-          status: response.status,
-        },
-      );
+      try {
+        const data = await response.json();
+
+        // Handle error response
+        const errorData: {
+          reasons: string[];
+        } = { reasons: [] };
+
+        try {
+          errorData.reasons = data.reasons;
+        } catch (e) {
+          console.error('Error parsing error response:', e);
+        }
+
+        return NextResponse.json(
+          {
+            error: 'Error from API',
+            details: data,
+            reasons: errorData.reasons,
+          },
+          {
+            status: response.status,
+          },
+        );
+      } catch (e) {
+        return NextResponse.json(
+          {
+            error: 'Unknown',
+            details: e,
+            reasons: [],
+          },
+          {
+            status: response.status,
+          },
+        );
+      }
     }
 
     const reader = response.body?.getReader();

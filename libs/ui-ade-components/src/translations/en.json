@@ -1570,6 +1570,9 @@
     "save": "Save",
     "error": "There was an error updating the tool settings, please try again or contact support."
   },
+  "NetworkInspector/OpenInNetworkInspectorButton": {
+    "label": "Open Inspector"
+  },
   "ToolsEditor/LocalToolsViewer": {
     "SchemaChangeWarning": {
       "title": "The json schema defined does not match what our server expects, your tool may not work as expected.",

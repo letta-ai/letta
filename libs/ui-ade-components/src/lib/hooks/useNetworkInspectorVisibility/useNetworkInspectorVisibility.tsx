@@ -5,6 +5,8 @@ import { OpenAPI } from '@letta-cloud/sdk-core';
 import type { AxiosResponse } from 'axios';
 import { useNetworkRequest } from '../useNetworkRequest/useNetworkRequest';
 import { expandedRequestIdAtom } from '../../NetworkInspector/NetworkInspector';
+import { Badge } from '@letta-cloud/ui-component-library';
+import { useTranslations } from '@letta-cloud/translations';
 
 interface NetworkInspectorState {
   isOpen: boolean;
@@ -28,6 +30,32 @@ export function useOpenNetworkInspectorWithRequest() {
       expandRequestId: requestId || null,
     });
   };
+}
+
+interface OpenInNetworkInspectorButtonProps {
+  requestId?: string;
+}
+
+export function OpenInNetworkInspectorButton(
+  props: OpenInNetworkInspectorButtonProps,
+) {
+  const { requestId } = props;
+  const t = useTranslations('NetworkInspector/OpenInNetworkInspectorButton');
+  const setNetworkInspectorState = useSetAtom(networkInspectorVisibilityAtom);
+
+  return (
+    <button
+      className="items-center flex"
+      onClick={() => {
+        setNetworkInspectorState({
+          isOpen: true,
+          expandRequestId: requestId || null,
+        });
+      }}
+    >
+      <Badge content={t('label')}></Badge>
+    </button>
+  );
 }
 
 export function useGlobalNetworkInterceptor() {
