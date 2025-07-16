@@ -36,10 +36,8 @@ jobs:
           git config user.name "Letta Sync Bot"
           git config user.email "bot@users.noreply.github.com"
 
-      - name: Install just
-      - uses: extractions/setup-just@v3
-        with:
-          just-version: '1.42.2'
+      - name: Install Just
+        uses: extractions/setup-just@v2
 
       - name: Determine sync direction
         id: determine
