@@ -14,6 +14,7 @@ import {
 import { useTranslations } from '@letta-cloud/translations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useManageDependencies } from '../DependencyViewer/useManageDependencies/useManageDependencies';
 
 const dependencySchema = z.object({
   name: z.string(),
@@ -22,12 +23,9 @@ const dependencySchema = z.object({
 
 type DependencyFormData = z.infer<typeof dependencySchema>;
 
-interface CustomDependencyFormProps {
-  onSubmit: (dependency: { name: string; version?: string }) => void;
-}
-
-export function CustomDependencyForm({ onSubmit }: CustomDependencyFormProps) {
+export function CustomDependencyForm() {
   const t = useTranslations('DependencyViewer');
+  const { addDependency } = useManageDependencies();
 
   const form = useForm<DependencyFormData>({
     resolver: zodResolver(dependencySchema),
@@ -44,7 +42,7 @@ export function CustomDependencyForm({ onSubmit }: CustomDependencyFormProps) {
       name: data.name,
       version: data.version?.trim() || undefined,
     };
-    onSubmit(dependency);
+    addDependency(dependency);
     form.reset();
   }
 
@@ -53,7 +51,6 @@ export function CustomDependencyForm({ onSubmit }: CustomDependencyFormProps) {
       <Typography variant="body2" bold>
         {t('customDependency.title')}
       </Typography>
-
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(handleSubmit)}>
           <HStack align="end" gap="medium" fullWidth>

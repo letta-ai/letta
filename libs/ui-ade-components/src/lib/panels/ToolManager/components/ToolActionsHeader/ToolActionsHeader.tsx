@@ -19,9 +19,7 @@ function ToolName(props: ToolNameProps) {
   return (
     <HStack align="center">
       <SpecificToolIcon toolType={type} />
-      <Typography bold variant="body3">
-        {name}
-      </Typography>
+      <Typography bold>{name}</Typography>
     </HStack>
   );
 }
@@ -40,15 +38,7 @@ export function ToolActionsHeader(props: ToolActionsHeaderProps) {
   const t = useTranslations('ToolActionsHeader');
 
   return (
-    <HStack
-      align="center"
-      paddingX="medium"
-      justify="spaceBetween"
-      height="header-sm"
-      minHeight="header-sm"
-      color="background-grey"
-      borderBottom
-    >
+    <HStack align="center" padding justify="spaceBetween" minHeight="header-sm">
       <div>
         <HiddenOnMobile>
           <ToolName type={type} name={name} />

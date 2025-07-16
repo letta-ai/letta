@@ -109,8 +109,7 @@ function AttachComposioTool(props: AttachComposioToolProps) {
 
   return (
     <Button
-      color="tertiary"
-      size="small"
+      color="secondary"
       preIcon={<AddLinkIcon />}
       label={t('AttachComposioTool.label')}
       busy={isPending}
@@ -181,8 +180,7 @@ function AttachMCPTool(props: AttachMCPToolProps) {
 
   return (
     <Button
-      color="tertiary"
-      size="small"
+      color="secondary"
       preIcon={<AddLinkIcon />}
       label={t('AttachMCPTool.label')}
       onClick={handleAttach}
@@ -234,8 +232,7 @@ function AttachLocalTool(props: AttachLocalToolProps) {
   return (
     <Button
       data-testid="attach-tool-to-agent"
-      color="tertiary"
-      size="small"
+      color="secondary"
       preIcon={<AddLinkIcon />}
       label={t('AttachLocalTool.label')}
       onClick={handleAttach}
@@ -319,8 +316,7 @@ function DetachToolDialog(props: DetachToolDialogProps) {
     <Dialog
       trigger={
         <Button
-          color="tertiary"
-          size="small"
+          color="secondary"
           preIcon={<LinkOffIcon />}
           label={t('DetachToolDialog.label')}
         />

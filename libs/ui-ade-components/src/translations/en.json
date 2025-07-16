@@ -1336,24 +1336,23 @@
     "loadingMessage": "Loading local tools...",
     "errorMessage": "There was an error loading local tools, please try again or contact support."
   },
-  "ToolManager/DependenciesPage": {
-    "title": "Dependencies",
-    "DependencyItem": {
-      "source": "Source"
-    },
-    "description": "View pre-installed dependencies for your agent tool execution environment.",
+  "DependencyViewer": {
     "UsageDialog": {
       "trigger": "How to use dependencies",
       "title": "How to use dependencies",
       "description": "Dependencies can be used as simply as importing them in your code, see the example below"
-    }
-  },
-  "DependencyViewer": {
+    },
+    "popular": "Popular",
+    "mine": {
+      "label": "Installed",
+      "tooltip": "These dependencies can be used in your agent code"
+    },
     "filter": {
       "all": "All",
       "added": "Added",
       "notAdded": "Not Added"
     },
+    "included": "This dependency is included in your agent's execution environment and cannot be removed",
     "search": {
       "placeholder": "Search packages",
       "label": "Search dependencies"
@@ -1374,6 +1373,7 @@
       "pipPackage": "Pip package required by this tool"
     },
     "button": {
+      "remove": "Remove",
       "add": "Add",
       "added": "Added",
       "adding": "Adding..."
@@ -1574,6 +1574,7 @@
     "label": "Open Inspector"
   },
   "ToolsEditor/LocalToolsViewer": {
+    "code": "Code",
     "SchemaChangeWarning": {
       "title": "The json schema defined does not match what our server expects, your tool may not work as expected.",
       "error": "Schema issues",
@@ -1611,16 +1612,18 @@
       "label": "Edit mode",
       "modes": {
         "details": "Details",
-        "json": "JSON Schema",
-        "errors": "Code and errors",
+        "json": "Schema",
+        "errors": "Errors",
         "code": "Code Only",
-        "codeAndSimulator": "Code and Simulator",
+        "simulator": "Simulator",
         "dependencies": "Dependencies",
         "settings": "Settings"
       }
     }
   },
   "ToolsEditor/LettaToolViewer": {
+    "description": "Description",
+    "type": "Type",
     "ViewToggle": {
       "label": "View mode",
       "options": {
@@ -1779,7 +1782,11 @@
     "modes": {
       "details": "Details",
       "settings": "Settings"
-    }
+    },
+    "description": "Description",
+    "serverName": "Server Name",
+    "serverUrl": "Server URL",
+    "openServer": "View server"
   },
   "ToolManager/ToolVariables": {
     "title": "Environment Variables",

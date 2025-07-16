@@ -7,7 +7,6 @@ import { ComposioSpecificAppTools } from './routes/ComposioSpecificAppTools/Comp
 import { MCPServers } from './routes/MCPServers/MCPServers';
 import { ToolRulesEditor } from '../ToolRules/ToolRules';
 import { ToolVariables } from './routes/ToolVariables/ToolVariables';
-import { DependenciesPage } from './routes/DependenciesPage/DependenciesPage';
 import { MCPServerExplorer } from './routes/MCPServerExplorer/MCPServerExplorer';
 import { ToolManagerPage } from './components/ToolManagerPage/ToolManagerPage';
 
@@ -85,11 +84,6 @@ export const toolManagerRoutes = [
     path: '/letta-multiagent-tools',
     key: 'multiAgentTools',
     component: <LettaTools types={['letta_multi_agent_core']} />,
-  },
-  {
-    path: '/dependencies',
-    key: 'dependencies',
-    component: <DependenciesPage />,
   },
 ] satisfies Routes[];
 

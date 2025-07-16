@@ -26,6 +26,7 @@ import { AddServerDialog } from './AddMCPServerDialog/AddMCPServerDialog';
 import { useToolManagerState } from '../../hooks/useToolManagerState/useToolManagerState';
 import { getObfuscatedMCPServerUrl } from '@letta-cloud/utils-shared';
 import { MCPServerLogo } from '../MCPServerExplorer/MCPServerLogo/MCPServerLogo';
+import { atom, useAtom } from 'jotai';
 
 interface MCPServerListProps {
   search: string;
@@ -137,15 +138,17 @@ function MCPServerList(props: MCPServerListProps) {
   );
 }
 
+export const selectedServerKeyAtom = atom<string | null>(null);
+
 export function MCPServers() {
   const t = useTranslations('ToolsEditor/MCPServers');
 
   const [search, setSearch] = React.useState('');
 
   const { data: servers, isLoading, isError } = useToolsServiceListMcpServers();
-  const [selectedServerKey, setSelectedServerKey] = React.useState<
-    string | null
-  >(null);
+  const [selectedServerKey, setSelectedServerKey] = useAtom(
+    selectedServerKeyAtom,
+  );
 
   const serversAsArray = useMemo(() => {
     return Object.entries(servers || {}).map(([key, server]) => ({
@@ -171,7 +174,7 @@ export function MCPServers() {
         }
       }
     }
-  }, [serversAsArray, servers, selectedServerKey]);
+  }, [serversAsArray, servers, selectedServerKey, setSelectedServerKey]);
 
   const selectedServer = useMemo(() => {
     return Object.values(servers || {})?.find(

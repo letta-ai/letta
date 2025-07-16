@@ -41,7 +41,7 @@ import { useLocalStorage } from '@mantine/hooks';
 import { useIsComposioConnected } from './hooks/useIsComposioConnected/useIsComposioConnected';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { LIST_TOOLS_PAYLOAD } from './routes/MyTools/MyTools';
-import { useCurrentAgent, useCurrentAgentMetaData } from '../../hooks';
+import { useCurrentAgent } from '../../hooks';
 
 interface CreateToolDialogProps {
   trigger: React.ReactNode;
@@ -310,7 +310,6 @@ function ToolManagerNavigationSidebar() {
     key: 'tool-manager-sidebar-expanded',
   });
 
-  const { isLocal } = useCurrentAgentMetaData();
   const { closeToolManager } = useToolManagerState();
 
   const { name } = useCurrentAgent();
@@ -403,15 +402,6 @@ function ToolManagerNavigationSidebar() {
             icon={details.toolVariables.icon}
             isExpanded={isExpanded}
           />
-          {!isLocal && (
-            <SidebarButton
-              hideLabel={!isExpanded}
-              label={details.dependencies.title}
-              path="/dependencies"
-              icon={details.dependencies.icon}
-              isExpanded={isExpanded}
-            />
-          )}
         </SidebarSection>
         <HR />
         <SidebarSection

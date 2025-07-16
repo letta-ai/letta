@@ -20,20 +20,18 @@ import {
   HistoryIcon,
   HStack,
   RawCodeEditor,
-  RawToggleGroup,
-  SaveIcon,
   SplitscreenRightIcon,
+  TabGroup,
   ToolboxIcon,
   ToolsIcon,
   Tooltip,
   Typography,
-  useIsMobile,
   VStack,
   WarningIcon,
   WrapNotificationDot,
 } from '@letta-cloud/ui-component-library';
 import { ToolActionsHeader } from '../ToolActionsHeader/ToolActionsHeader';
-import { useCurrentAgent } from '../../../../hooks';
+import { useCurrentAgent, useCurrentAgentMetaData } from '../../../../hooks';
 import React, {
   createContext,
   useCallback,
@@ -59,7 +57,6 @@ import { get, isEqual } from 'lodash-es';
 import { pythonCodeParser } from '@letta-cloud/utils-shared';
 import { atom, useAtom } from 'jotai';
 import { ToolSettings } from '../ToolsSettings/ToolSettings';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface CurrentToolContextState {
   tool: Tool;
@@ -79,7 +76,7 @@ interface CurrentToolProviderProps {
 function CurrentToolProvider(props: CurrentToolProviderProps) {
   const { tool, children } = props;
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<EditMode>('codeAndSimulator');
+  const [mode, setMode] = useState<EditMode>('simulator');
 
   return (
     <CurrentToolContext.Provider
@@ -119,62 +116,6 @@ export function useCurrentTool() {
   return response.tool;
 }
 
-function CodeAndSimulator() {
-  const tool = useCurrentTool();
-
-  const isMobile = useIsMobile();
-
-  if (!tool) {
-    return null;
-  }
-
-  return (
-    <PanelGroup
-      className="h-full w-full"
-      direction={isMobile ? 'vertical' : 'horizontal'}
-      autoSaveId="code-and-simulator"
-    >
-      <Panel defaultSize={70} defaultValue={70} className="h-full" minSize={20}>
-        <CodeEditor key={tool.id} tool={tool} />
-      </Panel>
-      <PanelResizeHandle
-        className={isMobile ? 'h-[1px] w-full bg-border' : 'w-[1px] h-full'}
-      />
-      <Panel defaultSize={30} defaultValue={30} className="h-full" minSize={20}>
-        <ToolSimulator key={tool.id} tool={tool} />
-      </Panel>
-    </PanelGroup>
-  );
-}
-
-function Dependencies() {
-  const tool = useCurrentTool();
-
-  const isMobile = useIsMobile();
-
-  if (!tool) {
-    return null;
-  }
-
-  return (
-    <PanelGroup
-      className="h-full w-full"
-      direction={isMobile ? 'vertical' : 'horizontal'}
-      autoSaveId="code-and-simulator"
-    >
-      <Panel defaultSize={70} defaultValue={70} className="h-full" minSize={20}>
-        <CodeEditor key={tool.id} tool={tool} />
-      </Panel>
-      <PanelResizeHandle
-        className={isMobile ? 'h-[1px] w-full bg-border' : 'w-[1px] h-full'}
-      />
-      <Panel defaultSize={30} defaultValue={30} className="h-full" minSize={20}>
-        <DependencyViewer tool={tool} />
-      </Panel>
-    </PanelGroup>
-  );
-}
-
 function ErrorViewer() {
   const { error } = useToolErrors();
   const t = useTranslations('ToolsEditor/LocalToolsViewer');
@@ -188,7 +129,7 @@ function ErrorViewer() {
   }, [error, t]);
 
   return (
-    <VStack fullHeight fullWidth borderLeft>
+    <VStack fullHeight fullWidth>
       <RawCodeEditor
         fontSize="small"
         fullHeight
@@ -237,33 +178,6 @@ function RestoreToolButton() {
       onClick={handleRestore}
       size="small"
     />
-  );
-}
-
-function CodeAndError() {
-  const tool = useCurrentTool();
-
-  const isMobile = useIsMobile();
-  if (!tool) {
-    return null;
-  }
-
-  return (
-    <PanelGroup
-      className="h-full w-full"
-      direction={isMobile ? 'vertical' : 'horizontal'}
-      autoSaveId="code-and-error"
-    >
-      <Panel defaultSize={70} defaultValue={70} className="h-full" minSize={20}>
-        <CodeEditor tool={tool} />
-      </Panel>
-      <PanelResizeHandle
-        className={isMobile ? 'h-[1px] w-full bg-border' : 'w-[1px] h-full'}
-      />
-      <Panel defaultSize={30} defaultValue={30} className="h-full" minSize={20}>
-        <ErrorViewer />
-      </Panel>
-    </PanelGroup>
   );
 }
 
@@ -624,79 +538,45 @@ export function JSONSchemaViewer(props: JSONSchemaViewerProps) {
   );
 }
 
-function JSONViewer() {
-  const tool = useCurrentTool();
-  const isMobile = useIsMobile();
-
-  if (!tool) {
-    return null;
-  }
-
-  return (
-    <PanelGroup
-      className="h-full w-full"
-      direction="horizontal"
-      autoSaveId="json-viewer"
-    >
-      <Panel defaultSize={50} defaultValue={50} className="h-full" minSize={20}>
-        <CodeEditor tool={tool} />
-      </Panel>
-      <PanelResizeHandle
-        className={isMobile ? 'h-[1px] w-full bg-border' : 'w-[1px] h-full'}
-      />
-      <Panel defaultSize={50} defaultValue={50} className="h-full" minSize={20}>
-        <JSONSchemaViewer key={tool.id} tool={tool} />
-      </Panel>
-    </PanelGroup>
-  );
-}
-
 type EditMode =
   | 'code'
-  | 'codeAndSimulator'
   | 'dependencies'
   | 'errors'
   | 'json'
-  | 'settings';
+  | 'settings'
+  | 'simulator';
 
 function EditModes() {
   const { mode, setMode } = useEditMode();
   const { error } = useToolErrors();
   const t = useTranslations('ToolsEditor/LocalToolsViewer');
   const { isDifferent } = useIsCodeAndSchemaDifferent();
-  const { data: isDependencyViewerEnabled } =
-    useFeatureFlag('DEPENDENCY_VIEWER');
+
+  const { isLocal } = useCurrentAgentMetaData();
 
   return (
-    <RawToggleGroup
-      vertical
-      label={t('EditModes.label')}
-      hideLabel
+    <TabGroup
+      variant="chips"
+      color="dark"
       value={mode}
       onValueChange={(value) => {
         if (!value) {
+          setMode('code');
+
           return;
         }
         setMode(value as EditMode);
       }}
-      size="small"
+      size="xsmall"
       items={[
         {
-          hideLabel: true,
-          icon: <CodeIcon />,
-          label: t('EditModes.modes.code'),
-          value: 'code',
-        },
-        {
-          hideLabel: true,
           icon: <SplitscreenRightIcon />,
-          label: t('EditModes.modes.codeAndSimulator'),
-          value: 'codeAndSimulator',
+          label: t('EditModes.modes.simulator'),
+          value: 'simulator',
         },
-        ...(isDependencyViewerEnabled
+        ...(!isLocal
           ? [
               {
-                hideLabel: true,
                 icon: <ToolboxIcon />,
                 label: t('EditModes.modes.dependencies'),
                 value: 'dependencies',
@@ -704,30 +584,27 @@ function EditModes() {
             ]
           : []),
         {
-          hideLabel: true,
-          icon: <CogIcon />,
-          label: t('EditModes.modes.settings'),
-          value: 'settings',
-        },
-        {
-          hideLabel: true,
           icon: (
             <WrapNotificationDot disabled={!isDifferent}>
-              <DataObjectIcon />
+              <DataObjectIcon className="mt-[-3px]" />
             </WrapNotificationDot>
           ),
           label: t('EditModes.modes.json'),
           value: 'json',
         },
         {
-          hideLabel: true,
           icon: (
             <WrapNotificationDot disabled={!error}>
-              <ErrorIcon />
+              <ErrorIcon className="mt-[-3px]" />
             </WrapNotificationDot>
           ),
           label: t('EditModes.modes.errors'),
           value: 'errors',
+        },
+        {
+          icon: <CogIcon />,
+          label: t('EditModes.modes.settings'),
+          value: 'settings',
         },
       ]}
     />
@@ -802,6 +679,7 @@ function SaveToolButton(props: SaveToolButtonProps) {
           description: get(stagedTool.json_schema, 'description', '') as string,
           json_schema: stagedTool.json_schema,
           source_code: stagedTool.source_code || '',
+          pip_requirements: stagedTool.pip_requirements || [],
           return_char_limit: stagedTool.return_char_limit,
         },
       });
@@ -815,8 +693,6 @@ function SaveToolButton(props: SaveToolButtonProps) {
       color="primary"
       busy={isPending}
       onClick={handleSubmit}
-      preIcon={<SaveIcon />}
-      size="small"
       disabled={!isDirty || hasNameChanged}
     />
   );
@@ -831,9 +707,6 @@ function ToolActions(props: ToolActionsProps) {
 
   return (
     <HStack gap="medium" align="center">
-      <RestoreToolButton />
-      <SchemaChangeWarning />
-
       <SaveToolButton tool={tool} />
     </HStack>
   );
@@ -861,31 +734,15 @@ function ToolContent() {
   }
 
   switch (mode) {
-    case 'code':
-      return (
-        <PanelGroup
-          className="h-full w-full"
-          direction="horizontal"
-          autoSaveId="code-editor"
-        >
-          <Panel
-            defaultSize={100}
-            defaultValue={100}
-            className="h-full"
-            minSize={100}
-          >
-            <CodeEditor tool={tool} />
-          </Panel>
-        </PanelGroup>
-      );
-    case 'codeAndSimulator':
-      return <CodeAndSimulator />;
+    case 'simulator':
+      return <ToolSimulator key={tool.id} tool={tool} />;
     case 'dependencies':
-      return <Dependencies />;
+      return <DependencyViewer tool={tool} />;
     case 'errors':
-      return <CodeAndError />;
+      return <ErrorViewer />;
     case 'json':
-      return <JSONViewer />;
+      return <JSONSchemaViewer key={tool.id} tool={tool} />;
+
     case 'settings':
       return <ToolSettings tool={tool} />;
     default:
@@ -929,7 +786,6 @@ function useIsCodeAndSchemaDifferent() {
     if (!tool || !codeSchema) {
       return;
     }
-
     mutate(
       {
         requestBody: {
@@ -1003,6 +859,66 @@ function SchemaChangeWarning() {
   );
 }
 
+function LocalToolPanels(props: LocalToolsViewerProps) {
+  const { tool } = props;
+
+  const { mode } = useEditMode();
+
+  return (
+    <VStack collapseWidth flex fullHeight>
+      <PanelGroup
+        className="h-full w-full"
+        direction="horizontal"
+        autoSaveId="code-editor"
+      >
+        <Panel
+          defaultSize={mode === 'code' ? 100 : 60}
+          defaultValue={mode === 'code' ? 100 : 60}
+          className="h-full"
+          minSize={mode === 'code' ? 100 : 30}
+        >
+          <CodeEditor tool={tool} />
+        </Panel>
+        {mode !== 'code' && (
+          <>
+            <PanelResizeHandle
+              className="w-[1px] h-full bg-border"
+              /* eslint-disable-next-line react/forbid-component-props */
+              style={{ cursor: 'col-resize' }}
+            />
+            <Panel
+              defaultSize={40}
+              defaultValue={40}
+              className="h-full"
+              minSize={20}
+            >
+              <ToolContent />
+            </Panel>
+          </>
+        )}
+      </PanelGroup>
+    </VStack>
+  );
+}
+
+function CodeButton() {
+  const { setMode, mode } = useEditMode();
+  const t = useTranslations('ToolsEditor/LocalToolsViewer');
+
+  return (
+    <Button
+      label={t('code')}
+      color="tertiary"
+      onClick={() => {
+        setMode('code');
+      }}
+      preIcon={<CodeIcon />}
+      active={mode === 'code'}
+      size="xsmall"
+    />
+  );
+}
+
 interface LocalToolsViewerProps {
   tool: Tool;
 }
@@ -1026,18 +942,28 @@ export function LocalToolViewer(props: LocalToolsViewerProps) {
           name={tool.name || ''}
           actions={<ToolActions tool={tool} />}
         />
-        <HStack collapseHeight fullWidth flex gap={false}>
-          <VStack collapseWidth flex fullHeight>
-            <ToolContent />
-          </VStack>
-          <VStack
-            borderLeft
-            fullHeight
-            padding="xxsmall"
-            color="background-grey"
-          >
+        <HStack
+          overflowY="auto"
+          fullWidth
+          align="center"
+          borderTop
+          justify="spaceBetween"
+          borderBottom
+          height="header-sm"
+          paddingX="medium"
+        >
+          <HStack align="center">
+            <CodeButton />
+          </HStack>
+
+          <HStack align="center">
+            <RestoreToolButton />
+            <SchemaChangeWarning />
             <EditModes />
-          </VStack>
+          </HStack>
+        </HStack>
+        <HStack collapseHeight fullWidth flex gap={false}>
+          <LocalToolPanels tool={tool} />
         </HStack>
       </VStack>
     </CurrentToolProvider>

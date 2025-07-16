@@ -1103,7 +1103,7 @@
         "json": "JSON架构",
         "errors": "代码和错误",
         "code": "仅代码",
-        "codeAndSimulator": "代码和模拟器",
+        "simulator": "代码和模拟器",
         "codeAndDependencies": "代码和依赖项",
         "settings": "设置"
       }

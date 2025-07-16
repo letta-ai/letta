@@ -2,10 +2,12 @@
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
+  Button,
   CogIcon,
+  ExternalLinkIcon,
   HStack,
-  McpIcon,
-  RawToggleGroup,
+  SegmentIcon,
+  TabGroup,
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
@@ -13,6 +15,9 @@ import { ToolActionsHeader } from '../ToolActionsHeader/ToolActionsHeader';
 import { useTranslations } from '@letta-cloud/translations';
 import { ToolSettings } from '../ToolsSettings/ToolSettings';
 import type { Tool } from '@letta-cloud/sdk-core';
+import { selectedServerKeyAtom } from '../../routes/MCPServers/MCPServers';
+import { useToolManagerState } from '../../hooks/useToolManagerState/useToolManagerState';
+import { useAtom } from 'jotai/index';
 
 interface MCPToolViewerProps {
   tags: string[];
@@ -29,34 +34,44 @@ interface MCPToolContentProps {
 }
 
 function MCPToolContent(props: MCPToolContentProps) {
-  const { serverName, description, name } = props;
+  const { serverName, description } = props;
+
+  const { setPath } = useToolManagerState();
 
   const t = useTranslations('ToolManager/MCPToolViewer');
+  const [_, setSelectedServerKey] = useAtom(selectedServerKeyAtom);
 
   if (!serverName) {
     return <Alert title={t('noServerFound')} />;
   }
 
   return (
-    <VStack fullWidth padding>
-      <HStack align="center" justify="spaceBetween">
-        <HStack gap="large" align="center">
-          <HStack
-            color="background-grey"
-            className="w-[64px] h-[64px]"
-            align="center"
-            justify="center"
-          >
-            <McpIcon />
-          </HStack>
-          <VStack gap={false}>
-            <Typography>{name}</Typography>
-            <Typography>{serverName}</Typography>
-          </VStack>
-        </HStack>
-      </HStack>
-      <VStack width="contained">
+    <VStack fullWidth gap="large" padding>
+      <VStack gap="small" width="contained">
+        <Typography variant="body3" bold>
+          {t('description')}
+        </Typography>
+
         <Typography>{description}</Typography>
+      </VStack>
+      <VStack gap="small" width="contained">
+        <Typography variant="body3" bold>
+          {t('serverName')}
+        </Typography>
+        <HStack align="center">
+          <Typography>{serverName}</Typography>
+          <Button
+            preIcon={<ExternalLinkIcon />}
+            hideLabel
+            color="tertiary"
+            size="xsmall"
+            label={t('openServer')}
+            onClick={() => {
+              setPath(`/mcp-servers`);
+              setSelectedServerKey(serverName);
+            }}
+          />
+        </HStack>
       </VStack>
     </VStack>
   );
@@ -74,10 +89,7 @@ function EditModes(props: EditModesProps) {
   const t = useTranslations('ToolsEditor/LocalToolsViewer');
 
   return (
-    <RawToggleGroup
-      vertical
-      label={t('EditModes.label')}
-      hideLabel
+    <TabGroup
       value={mode}
       onValueChange={(value) => {
         if (!value) {
@@ -85,16 +97,14 @@ function EditModes(props: EditModesProps) {
         }
         setMode(value as EditMode);
       }}
-      size="small"
+      color="transparent"
       items={[
         {
-          hideLabel: true,
-          icon: <McpIcon />,
+          icon: <SegmentIcon />,
           label: t('EditModes.modes.details'),
           value: 'details',
         },
         {
-          hideLabel: true,
           icon: <CogIcon />,
           label: t('EditModes.modes.settings'),
           value: 'settings',
@@ -114,14 +124,17 @@ export function MCPToolViewer(props: MCPToolViewerProps) {
   const [editMode, setEditMode] = useState<EditMode>('details');
 
   return (
-    <VStack fullWidth fullHeight gap={false}>
+    <VStack gap={false} fullWidth fullHeight>
       <ToolActionsHeader
         idToAttach={`${serverName}:${attachedId}`}
         attachedId={attachedId}
         type="external_mcp"
         name={name}
       />
-      <HStack fullWidth fullHeight>
+      <VStack fullWidth flex collapseHeight gap={false}>
+        <HStack paddingX="medium" borderBottom>
+          <EditModes setMode={setEditMode} mode={editMode} />
+        </HStack>
         {editMode === 'details' ? (
           <MCPToolContent
             serverName={serverName}
@@ -131,10 +144,7 @@ export function MCPToolViewer(props: MCPToolViewerProps) {
         ) : (
           <ToolSettings showDelete={false} showSave tool={tool} />
         )}
-        <VStack borderLeft fullHeight padding="xxsmall" color="background-grey">
-          <EditModes setMode={setEditMode} mode={editMode} />
-        </VStack>
-      </HStack>
+      </VStack>
     </VStack>
   );
 }

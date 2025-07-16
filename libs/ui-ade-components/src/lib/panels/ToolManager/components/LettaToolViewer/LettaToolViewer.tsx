@@ -4,13 +4,13 @@ import { useCurrentAgent } from '../../../../hooks';
 import React, { useMemo, useState } from 'react';
 import { ToolActionsHeader } from '../ToolActionsHeader/ToolActionsHeader';
 import {
+  Badge,
   CogIcon,
   DataObjectIcon,
   HStack,
-  LettaLogoIcon,
   RawCodeEditor,
-  RawToggleGroup,
   SegmentIcon,
+  TabGroup,
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
@@ -30,7 +30,7 @@ function ViewToggle(props: ViewToggleProps) {
   const t = useTranslations('ToolsEditor/LettaToolViewer');
 
   return (
-    <RawToggleGroup
+    <TabGroup
       onValueChange={(value) => {
         if (!value) {
           return;
@@ -38,22 +38,16 @@ function ViewToggle(props: ViewToggleProps) {
 
         setMode(value as ViewMode);
       }}
-      size="small"
-      vertical
+      color="transparent"
       value={mode}
-      hideLabel
-      fullHeight
-      label={t('ViewToggle.label')}
       items={[
         {
           icon: <SegmentIcon />,
-          hideLabel: true,
           label: t('ViewToggle.options.details'),
           value: 'details',
         },
         {
           icon: <DataObjectIcon />,
-          hideLabel: true,
           label: t('ViewToggle.options.json'),
           value: 'json',
         },
@@ -80,28 +74,25 @@ interface LettaToolContentProps {
 function LettaToolContent(props: LettaToolContentProps) {
   const { tool, mode } = props;
 
+  const t = useTranslations('ToolsEditor/LettaToolViewer');
+
   switch (mode) {
     case 'details':
       return (
-        <VStack fullWidth padding>
-          <HStack align="center" justify="spaceBetween">
-            <HStack gap="large" align="center">
-              <HStack
-                color="background-grey"
-                className="w-[64px] h-[64px]"
-                align="center"
-                justify="center"
-              >
-                <LettaLogoIcon />
-              </HStack>
-              <VStack gap={false}>
-                <Typography>{tool.name}</Typography>
-                <Typography>Letta</Typography>
-              </VStack>
-            </HStack>
-          </HStack>
-          <VStack width="contained">
+        <VStack gap="xlarge" fullWidth padding>
+          <VStack gap="small" width="contained">
+            <Typography variant="body3" bold>
+              {t('description')}
+            </Typography>
             <Typography>{tool.description}</Typography>
+          </VStack>
+          <VStack gap="small" width="contained">
+            <Typography variant="body3" bold>
+              {t('type')}
+            </Typography>
+            <HStack>
+              <Badge content={tool.tool_type} />
+            </HStack>
           </VStack>
         </VStack>
       );
@@ -149,12 +140,14 @@ export function LettaToolViewer(props: LettaToolViewerProps) {
         type={tool.tool_type || 'custom'}
         name={tool.name || ''}
       />
-      <HStack fullWidth fullHeight>
-        <LettaToolContent tool={tool} mode={mode} />
-        <VStack borderLeft fullHeight padding="xxsmall" color="background-grey">
+      <VStack fullWidth flex collapseHeight gap={false}>
+        <HStack paddingX="medium" borderBottom>
           <ViewToggle type={tool.tool_type} mode={mode} setMode={setMode} />
+        </HStack>
+        <VStack collapseHeight flex>
+          <LettaToolContent tool={tool} mode={mode} />
         </VStack>
-      </HStack>
+      </VStack>
     </VStack>
   );
 }

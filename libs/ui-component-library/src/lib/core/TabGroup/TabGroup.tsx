@@ -136,7 +136,7 @@ export function TabGroup(props: TabGroupProps) {
           >
             <Tabs.Trigger
               className={cn(
-                'px-4 h-[28px] flex items-center gap-2 flex-row ',
+                'px-4 h-[28px] flex items-center hover:bg-secondary-hover hover:!text-brand-hover-content gap-2 flex-row ',
                 listVariant({ variant, color, size, fullWidth }),
               )}
               onClick={(e) => {

@@ -712,7 +712,7 @@ export function ToolSimulator(props: ToolSimulatorProps) {
   );
 
   return (
-    <VStack color="background-grey" fullWidth borderLeft fullHeight>
+    <VStack color="background-grey" fullWidth fullHeight>
       <PanelGroup direction="vertical">
         <Panel defaultSize={50} minSize={20} maxSize={100}>
           <ToolInput
