@@ -21,12 +21,14 @@ export const Primary: Story = {
             minHeight: 400,
             minWidth: 600,
           }}
+          defaultView="windowed"
           name="Example App"
           trigger={<button>first</button>}
         >
           Zadu
         </DynamicApp>
         <DynamicApp
+          defaultView="windowed"
           windowConfiguration={{
             defaultHeight: 600,
             defaultWidth: 800,

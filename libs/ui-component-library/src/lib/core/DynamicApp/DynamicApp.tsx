@@ -1,8 +1,14 @@
 'use client';
 import * as React from 'react';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { atom } from 'jotai';
 import { cn } from '@letta-cloud/ui-styles';
 import { DialogContext } from '../Dialog/Dialog';
 import { DialogTitle } from '@radix-ui/react-dialog';
@@ -12,6 +18,10 @@ import { useTranslations } from '@letta-cloud/translations';
 import { CloseIcon, FullscreenIcon, WindowedIcon } from '../../icons';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { Slot } from '@radix-ui/react-slot';
+import './DynamicApp.scss';
+import { atom, useAtom } from 'jotai';
+import { useSessionStorage } from '@mantine/hooks';
+import { VStack } from '../../framing/VStack/VStack';
 
 type DynamicAppViewVariant = 'fullscreen' | 'windowed';
 
@@ -24,13 +34,26 @@ interface WindowConfiguration {
 
 interface UseDynamicAppWindowedConfigurationOptions {
   configuration: WindowConfiguration;
+  isWindowed: boolean;
+  isOpen: boolean;
 }
 
 function useDynamicAppWindowState(
   options: UseDynamicAppWindowedConfigurationOptions,
 ) {
-  const { configuration } = options;
+  const { configuration, isWindowed, isOpen } = options;
   const { minWidth, minHeight, defaultWidth, defaultHeight } = configuration;
+
+  useEffect(() => {
+    // center the window when it opens
+    if (isOpen && isWindowed) {
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+
+      setLeft((windowWidth - defaultWidth) / 2);
+      setTop((windowHeight - defaultHeight) / 2);
+    }
+  }, [defaultHeight, defaultWidth, isOpen, isWindowed]);
 
   const [top, setTop] = React.useState<number>(0);
   const [left, setLeft] = React.useState<number>(0);
@@ -40,7 +63,11 @@ function useDynamicAppWindowState(
 
   const attachMove = useCallback(
     (dragElement: HTMLElement, windowElement: HTMLElement) => {
-      if (!dragElement || !windowElement) return;
+      if (!dragElement || !windowElement) {
+        return () => {
+          return;
+        };
+      }
 
       // Remove any existing listeners to prevent duplicates
       dragElement.removeEventListener('mousedown', handleMouseDown);
@@ -76,8 +103,13 @@ function useDynamicAppWindowState(
             ),
           );
 
+          // For Y-axis: don't allow dragging higher than the drag element
+          // but still allow 90% to go off the bottom
+          const dragElementRect = dragElement.getBoundingClientRect();
+          const dragElementHeight = dragElementRect.height / 2;
+
           const newTop = Math.max(
-            -(windowHeight - minVisibleHeight), // Allow 90% to go off top edge
+            -dragElementHeight, // Don't allow drag element to go above viewport
             Math.min(
               window.innerHeight - minVisibleHeight, // Allow 90% to go off bottom edge
               initialTop + deltaY,
@@ -152,17 +184,59 @@ function useDynamicAppWindowState(
     [handleWidthResize, width],
   );
 
+  const attachCornerResize = useCallback(
+    (element: HTMLElement) => {
+      // attach a listener to a corner div that resizes both width and height
+      // check on mousedown and mouseup events and the x and y position of the mouse
+
+      function handleMouseDown(event: MouseEvent) {
+        const startX = event.clientX;
+        const startY = event.clientY;
+
+        function handleMouseMove(moveEvent: MouseEvent) {
+          const newWidth = width + (moveEvent.clientX - startX);
+          const newHeight = height + (moveEvent.clientY - startY);
+          handleWidthResize(newWidth);
+          handleHeightResize(newHeight);
+        }
+
+        function handleMouseUp() {
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+        }
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+      }
+
+      element.addEventListener('mousedown', handleMouseDown);
+
+      return () => {
+        element.removeEventListener('mousedown', handleMouseDown);
+      };
+    },
+    [handleWidthResize, width, handleHeightResize, height],
+  );
+
   const attachHeightResize = useCallback(
     (element: HTMLElement) => {
       // attach a listener to a div that resizes the height
       // check on mousedown and mouseup events and the y position of the mouse
 
       function handleMouseDown(event: MouseEvent) {
+        event.preventDefault();
+        event.stopPropagation();
+
         const startY = event.clientY;
 
         function handleMouseMove(moveEvent: MouseEvent) {
+          moveEvent.preventDefault();
+          moveEvent.stopPropagation();
+
           const newHeight = height + (moveEvent.clientY - startY);
           handleHeightResize(newHeight);
+
+          return false;
         }
 
         function handleMouseUp() {
@@ -189,6 +263,7 @@ function useDynamicAppWindowState(
     attachWidthResize,
     attachHeightResize,
     attachMove,
+    attachCornerResize,
     top,
     left,
   };
@@ -202,13 +277,18 @@ const DialogPortal = DialogPrimitive.Portal;
 
 const CloseApp = DialogPrimitive.Close;
 
+interface FullscreenConfiguration {
+  maxWidth?: number;
+}
+
 interface DynamicAppProps {
   name: string;
-  trigger: React.ReactNode;
-  isOpen?: boolean;
-  onOpenChange?: (value: boolean) => void;
+  trigger?: React.ReactNode;
   defaultView?: DynamicAppViewVariant;
   windowConfiguration: WindowConfiguration;
+  fullscreenConfiguration?: FullscreenConfiguration;
+  isOpen?: boolean;
+  onOpenChange?: (value: boolean) => void;
   children: React.ReactNode;
 }
 
@@ -233,8 +313,6 @@ function DynamicHeaderButton(props: DynamicHeaderButtonProps) {
   );
 }
 
-const dynamicAppViewRegistryAtom = atom();
-
 interface DynamicHeaderProps {
   title: string;
   view: DynamicAppViewVariant;
@@ -251,8 +329,9 @@ function DynamicHeader(props: DynamicHeaderProps) {
       ref={ref}
       fullWidth
       color="background-grey2"
-      className="min-h-[36px] h-[36px] px-4"
+      className="min-h-[36px] h-[36px] px-4 cursor-move"
       align="center"
+      borderBottom
       justify="spaceBetween"
     >
       <DialogTitle>
@@ -289,19 +368,44 @@ function DynamicHeader(props: DynamicHeaderProps) {
   );
 }
 
+const focusedDynamicApp = atom<string | null>(null);
+
 export function DynamicApp(props: DynamicAppProps) {
   const {
     windowConfiguration,
+    fullscreenConfiguration = {},
     children,
     name,
-    isOpen,
-    onOpenChange,
+    isOpen: parentIsOpen,
+    onOpenChange: parentOnOpenChange,
     defaultView,
     trigger,
   } = props;
-  const [view, setView] = React.useState<DynamicAppViewVariant>(
-    defaultView || 'fullscreen',
+  const id = useId();
+
+  const [localIsOpen, localOnOpenChange] = useState(false);
+
+  const isOpen = useMemo(() => {
+    if (parentIsOpen !== undefined) {
+      return parentIsOpen;
+    }
+    return localIsOpen;
+  }, [parentIsOpen, localIsOpen]);
+
+  const onOpenChange = useMemo(() => {
+    if (parentOnOpenChange) {
+      return parentOnOpenChange;
+    }
+    return localOnOpenChange;
+  }, [parentOnOpenChange, localOnOpenChange]);
+
+  const [view, setView] = useState<DynamicAppViewVariant>(
+    defaultView || 'windowed',
   );
+
+  const [focusedAppId, setFocusedApp] = useAtom(focusedDynamicApp);
+  const isWindowed = view === 'windowed';
+  const isFullscreen = view === 'fullscreen';
 
   const {
     top,
@@ -309,12 +413,14 @@ export function DynamicApp(props: DynamicAppProps) {
     attachMove,
     width,
     height,
+    attachCornerResize,
     attachWidthResize,
     attachHeightResize,
-  } = useDynamicAppWindowState({ configuration: windowConfiguration });
-
-  const isWindowed = view === 'windowed';
-  const isFullscreen = view === 'fullscreen';
+  } = useDynamicAppWindowState({
+    isOpen,
+    isWindowed,
+    configuration: windowConfiguration,
+  });
 
   const contentStyle = useMemo(() => {
     if (!isWindowed) {
@@ -322,6 +428,7 @@ export function DynamicApp(props: DynamicAppProps) {
     }
 
     return {
+      zIndex: focusedAppId === id ? 10 : 9,
       top: `${top}px`,
       left: `${left}px`,
       width: `${width}px`,
@@ -330,57 +437,118 @@ export function DynamicApp(props: DynamicAppProps) {
       minHeight: `${windowConfiguration.minHeight}px`,
     };
   }, [
+    focusedAppId,
     height,
     isWindowed,
     left,
+    id,
     top,
-
     width,
     windowConfiguration.minHeight,
     windowConfiguration.minWidth,
   ]);
 
-  const headerRef = useRef<HTMLDivElement>(null);
+  const { maxWidth } = fullscreenConfiguration;
 
+  const headerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const windowRef = useRef<HTMLDivElement>(null);
   const widthResizeRef = useRef<HTMLDivElement>(null);
   const heightResizeRef = useRef<HTMLDivElement>(null);
+  const bottomRightCornerResizeRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (isWindowed && windowRef.current) {
+  const initializeWindowedMode = useCallback(() => {
+    let detachOps: VoidFunction[] = [];
+
+    if (!isWindowed) {
+      return;
+    }
+
+    if (windowRef.current) {
       // Attach move handler to the header
       const headerElement = headerRef.current;
       if (headerElement) {
-        return attachMove(headerElement, windowRef.current);
+        detachOps.push(attachMove(headerElement, windowRef.current));
       }
     }
-  }, [attachMove, isWindowed]);
+
+    if (widthResizeRef.current) {
+      // Attach width resize handler
+      detachOps.push(attachWidthResize(widthResizeRef.current));
+    }
+
+    if (heightResizeRef.current) {
+      // Attach height resize handler
+      detachOps.push(attachHeightResize(heightResizeRef.current));
+    }
+
+    if (bottomRightCornerResizeRef.current) {
+      // Attach corner resize handler
+      detachOps.push(attachCornerResize(bottomRightCornerResizeRef.current));
+    }
+
+    if (windowRef.current) {
+      function setFocusedAppOnClick() {
+        // Set the focused app when the window is clicked
+        setFocusedApp(id);
+      }
+
+      // Attach refocus handler to the window
+      windowRef.current.addEventListener('click', setFocusedAppOnClick);
+
+      detachOps.push(() => {
+        windowRef.current?.removeEventListener('click', setFocusedAppOnClick);
+      });
+    }
+
+    // Cleanup function to remove all listeners
+    return () => {
+      detachOps.forEach((detach) => {
+        detach();
+      });
+      detachOps = [];
+    };
+  }, [
+    attachHeightResize,
+    attachMove,
+    attachWidthResize,
+    attachCornerResize,
+    id,
+    isWindowed,
+    setFocusedApp,
+  ]);
 
   useEffect(() => {
-    if (isWindowed && widthResizeRef.current) {
-      return attachWidthResize(widthResizeRef.current);
+    if (!isWindowed) {
+      // If not in windowed mode, we don't need to initialize anything
+      return;
     }
-  }, [attachWidthResize, isWindowed]);
 
-  useEffect(() => {
-    if (isWindowed && heightResizeRef.current) {
-      return attachHeightResize(heightResizeRef.current);
-    }
-  }, [attachHeightResize, isWindowed]);
+    const detachOps = initializeWindowedMode?.();
+    return () => {
+      detachOps?.();
+    };
+  }, [initializeWindowedMode, isWindowed]);
 
   return (
     <DialogRoot modal={false} open={isOpen} onOpenChange={onOpenChange}>
       <DialogContext.Provider value={{ isInDialog: true }}>
-        {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+        {trigger && (
+          <DialogTrigger ref={triggerRef} asChild>
+            {trigger}
+          </DialogTrigger>
+        )}
         <DialogPortal>
-          {isFullscreen && (
-            <div
-              className={cn(
-                'fixed inset-0 z-miniappShadow bg-black/30  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-              )}
-            />
-          )}
+          <div
+            className={cn(
+              !isFullscreen ? 'pointer-events-none opacity-0' : ' ',
+              'fixed inset-0 z-miniappShadow bg-black/30  transition-opacity data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+            )}
+          />
           <DialogPrimitive.Content
+            onOpenAutoFocus={() => {
+              initializeWindowedMode?.();
+            }}
             onInteractOutside={(e) => {
               if (isWindowed) {
                 e.preventDefault();
@@ -390,12 +558,12 @@ export function DynamicApp(props: DynamicAppProps) {
             <div id="dialog-dropdown-content" className="z-dropdown" />
             <div
               ref={windowRef}
-              style={contentStyle}
+              style={isFullscreen ? { maxWidth } : contentStyle}
               className={cn(
                 isFullscreen
-                  ? 'left-[50%] top-[50%] max-h-[90dvh] max-w-[95vw] translate-x-[-50%] translate-y-[-50%]'
+                  ? 'left-[50%] top-[50%] transition-width transition-height max-h-[90dvh] max-w-[95vw] translate-x-[-50%] translate-y-[-50%]'
                   : '',
-                'fixed border flex flex-col  transition-none w-full h-full text-base z-miniapp  gap-2  duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] bg-background',
+                'fixed border dynamic-app  flex flex-col  w-full h-full text-base z-miniapp  duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] bg-background',
               )}
             >
               <DynamicHeader
@@ -404,14 +572,20 @@ export function DynamicApp(props: DynamicAppProps) {
                 view={view}
                 title={name}
               />
-              {children}
+              <VStack collapseHeight flex>
+                {children}
+              </VStack>
               <div
                 ref={widthResizeRef}
-                className="w-2 h-full cursor-col-resize absolute right-0 top-0"
+                className="w-2 h-full cursor-col-resize z-10  absolute right-0 top-0"
               />
               <div
                 ref={heightResizeRef}
-                className="h-2 w-full cursor-row-resize absolute bottom-0 left-0"
+                className="h-2 w-full cursor-row-resize  z-10 absolute bottom-0 left-0"
+              />
+              <div
+                ref={bottomRightCornerResizeRef}
+                className="w-2 h-2 cursor-nwse-resize z-10  absolute right-0 bottom-0"
               />
             </div>
           </DialogPrimitive.Content>

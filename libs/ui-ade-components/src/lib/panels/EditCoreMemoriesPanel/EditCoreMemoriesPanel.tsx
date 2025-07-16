@@ -372,7 +372,7 @@ function QuickMemoryOnboarding(props: QuickMemoryOnboardingProps) {
 }
 
 function AdvancedEditorButton() {
-  const { open } = useAdvancedCoreMemoryEditor();
+  const { open, close, isOpen } = useAdvancedCoreMemoryEditor();
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
   const { memory } = useCurrentAgent();
 
@@ -398,6 +398,11 @@ function AdvancedEditorButton() {
         preIcon={<MemoryBlocksIcon />}
         label={t('advancedEditor')}
         onClick={() => {
+          if (isOpen) {
+            close();
+            return;
+          }
+
           open(firstLabel || undefined);
         }}
       />
@@ -410,6 +415,11 @@ function AdvancedEditorButton() {
         preIcon={<MemoryBlocksIcon />}
         label={t('advancedEditor')}
         onClick={() => {
+          if (isOpen) {
+            close();
+            return;
+          }
+
           open(firstLabel || undefined);
         }}
       />

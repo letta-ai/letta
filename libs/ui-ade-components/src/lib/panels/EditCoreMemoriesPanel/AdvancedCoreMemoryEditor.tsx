@@ -2,20 +2,19 @@ import {
   Alert,
   Button,
   Checkbox,
-  CloseIcon,
-  CloseMiniApp,
   Dialog,
-  FolderIcon,
+  DynamicApp,
   Form,
   FormActions,
   FormField,
   FormProvider,
   HStack,
   Input,
+  isMultiValue,
   LoadingEmptyStatusComponent,
-  MiniApp,
   PlusIcon,
   RawInput,
+  RawSelect,
   SearchIcon,
   TextArea,
   TrashIcon,
@@ -41,6 +40,7 @@ import { useSortedMemories } from '@letta-cloud/utils-client';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { CreateNewMemoryBlockDialog } from './CreateNewMemoryBlockDialog/CreateNewMemoryBlockDialog';
+import './AdvancedCoreMemoryEditor.scss';
 
 interface CurrentAdvancedCoreMemoryState {
   selectedMemoryBlockLabel?: string;
@@ -233,7 +233,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
   }, [form.formState.isDirty, onFormDirtyChange]);
 
   return (
-    <VStack fullHeight fullWidth padding gap="form">
+    <VStack fullHeight fullWidth padding="medium" gap="form">
       <FormProvider {...form}>
         <HStack align="end">
           <HStack fullWidth>
@@ -352,17 +352,19 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
           )}
 
           {canUpdateAgent && (
-            <FormActions
-              errorMessage={
-                isError ? t('AdvancedMemoryEditorForm.error') : undefined
-              }
-            >
-              <Button
-                label={t('AdvancedMemoryEditorForm.update')}
-                busy={isPending}
-                data-testid="advanced-memory-editor-update"
-              />
-            </FormActions>
+            <VStack paddingBottom>
+              <FormActions
+                errorMessage={
+                  isError ? t('AdvancedMemoryEditorForm.error') : undefined
+                }
+              >
+                <Button
+                  label={t('AdvancedMemoryEditorForm.update')}
+                  busy={isPending}
+                  data-testid="advanced-memory-editor-update"
+                />
+              </FormActions>
+            </VStack>
           )}
         </Form>
       </FormProvider>
@@ -466,8 +468,7 @@ function DeleteMemoryBlockDialog(props: DeleteMemoryBlockDialogProps) {
           hideLabel
           data-testid="delete-memory-block"
           preIcon={<TrashIcon />}
-          color="secondary"
-          size="small"
+          color="tertiary"
           label={t('DeleteMemoryBlockDialog.trigger')}
         />
       }
@@ -488,6 +489,82 @@ const currentAdvancedCoreMemoryAtom = atom<CurrentAdvancedCoreMemoryState>({
   selectedMemoryBlockLabel: '',
   isOpen: false,
 });
+
+function CoreMemoryMobileNav() {
+  const agent = useCurrentAgent();
+
+  const sortedMemories = useSortedMemories(agent);
+  const t = useTranslations('ADE/AdvancedCoreMemoryEditor');
+
+  const [{ selectedMemoryBlockLabel }, setIsAdvancedCoreMemoryEditorOpen] =
+    useAtom(currentAdvancedCoreMemoryAtom);
+
+  const options = useMemo(() => {
+    if (!sortedMemories) {
+      return [];
+    }
+
+    return sortedMemories.map((block) => ({
+      label: block.label || '',
+      value: block.label || '',
+      id: block.id,
+    }));
+  }, [sortedMemories]);
+
+  const handleBlockClick = useCallback(
+    (label: string) => {
+      setIsAdvancedCoreMemoryEditorOpen((prev) => ({
+        ...prev,
+        selectedMemoryBlockLabel: label,
+      }));
+    },
+    [setIsAdvancedCoreMemoryEditorOpen],
+  );
+
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
+
+  const selectedOption = useMemo(() => {
+    return options.find((option) => option.label === selectedMemoryBlockLabel);
+  }, [options, selectedMemoryBlockLabel]);
+
+  return (
+    <HStack
+      className="advanced-memory-container--mobilenav"
+      borderBottom
+      padding="small"
+    >
+      <RawSelect
+        fullWidth
+        hideLabel
+        label={t('CoreMemoryMobileNav.label')}
+        options={options}
+        value={selectedOption}
+        onSelect={(value) => {
+          if (!value) return;
+
+          if (isMultiValue(value)) {
+            return;
+          }
+
+          handleBlockClick(value.label || '');
+        }}
+      />
+      <CreateNewMemoryBlockDialog
+        trigger={
+          canUpdateAgent && (
+            <Button
+              hideLabel
+              preIcon={<PlusIcon />}
+              data-testid="create-new-memory-block-item"
+              color="tertiary"
+              label={t('CoreMemorySidebar.create')}
+            />
+          )
+        }
+      />
+    </HStack>
+  );
+}
 
 const hasUnsavedChangesAtom = atom<boolean>(false);
 
@@ -528,6 +605,7 @@ function CoreMemorySidebar() {
       overflow="hidden"
       fullHeight
       minWidth="sidebar"
+      className="advanced-memory-container--sidebar"
       gap={false}
       borderRight
       width="sidebar"
@@ -553,7 +631,6 @@ function CoreMemorySidebar() {
                 preIcon={<PlusIcon />}
                 data-testid="create-new-memory-block-item"
                 color="secondary"
-                size="small"
                 label={t('CoreMemorySidebar.create')}
               />
             )
@@ -588,7 +665,7 @@ function CoreMemorySidebar() {
                 align="start"
                 wrap={false}
                 paddingY="small"
-                color={isSelected ? 'background-grey' : 'background'}
+                color={isSelected ? 'background-grey3' : 'transparent'}
               >
                 <Typography>{block.label}</Typography>
                 <Typography
@@ -610,34 +687,12 @@ function CoreMemorySidebar() {
   );
 }
 
-function EditorHeader() {
-  const t = useTranslations('ADE/AdvancedCoreMemoryEditor');
-  return (
-    <HStack
-      height="header"
-      align="center"
-      justify="spaceBetween"
-      borderBottom
-      paddingX
-      fullWidth
-    >
-      <HStack>
-        <FolderIcon />
-        <Typography bold>{t('title')}</Typography>
-      </HStack>
-      <CloseMiniApp data-testid="close-advanced-core-memory-editor">
-        <HStack>
-          <CloseIcon />
-        </HStack>
-      </CloseMiniApp>
-    </HStack>
-  );
-}
-
 export function useAdvancedCoreMemoryEditor() {
   const setIsAdvancedCoreMemoryEditorOpen = useSetAtom(
     currentAdvancedCoreMemoryAtom,
   );
+
+  const [{ isOpen }] = useAtom(currentAdvancedCoreMemoryAtom);
 
   const open = useCallback(
     (selectedMemoryBlockLabel?: string) => {
@@ -659,6 +714,7 @@ export function useAdvancedCoreMemoryEditor() {
   return {
     open,
     close,
+    isOpen,
   };
 }
 
@@ -687,12 +743,14 @@ function EditorContent() {
   }
 
   return (
-    <AdvancedMemoryEditorForm
-      key={selectedMemoryBlock.id}
-      memory={selectedMemoryBlock}
-      onClose={close}
-      onFormDirtyChange={setHasUnsavedChanges}
-    />
+    <VStack fullWidth fullHeight overflowY="auto">
+      <AdvancedMemoryEditorForm
+        key={selectedMemoryBlock.id}
+        memory={selectedMemoryBlock}
+        onClose={close}
+        onFormDirtyChange={setHasUnsavedChanges}
+      />
+    </VStack>
   );
 }
 
@@ -725,7 +783,8 @@ export function AdvancedCoreMemoryEditor() {
       >
         {t('ConfirmLeave.description')}
       </Dialog>
-      <MiniApp
+      <DynamicApp
+        defaultView="fullscreen"
         isOpen={isAdvancedCoreMemoryEditorOpen}
         onOpenChange={(open) => {
           if (!open) {
@@ -746,16 +805,35 @@ export function AdvancedCoreMemoryEditor() {
           });
           setHasUnsavedChanges(false);
         }}
-        appName={t('title')}
+        windowConfiguration={{
+          minWidth: 480,
+          minHeight: 400,
+          defaultWidth: 600,
+          defaultHeight: 600,
+        }}
+        name={t('title')}
       >
-        <VStack fullWidth fullHeight gap={false}>
-          <EditorHeader />
-          <HStack flex collapseHeight overflow="hidden" fullWidth>
+        <VStack
+          color="background-grey"
+          className="advanced-memory-container"
+          fullWidth
+          fullHeight
+          gap={false}
+        >
+          <HStack
+            flex
+            gap={false}
+            className="advanced-memory-container--content"
+            collapseHeight
+            overflow="hidden"
+            fullWidth
+          >
+            <CoreMemoryMobileNav />
             <CoreMemorySidebar />
             <EditorContent />
           </HStack>
         </VStack>
-      </MiniApp>
+      </DynamicApp>
     </>
   );
 }

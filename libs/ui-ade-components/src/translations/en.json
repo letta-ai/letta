@@ -872,6 +872,9 @@
     "localAgents": "Local agents"
   },
   "ADE/AdvancedCoreMemoryEditor": {
+    "CoreMemoryMobileNav": {
+      "label": "Select memory"
+    },
     "ConfirmLeave": {
       "title": "Are you sure you want to leave?",
       "description": "You are about to leave the memory editor, any unsaved changes will be lost."
