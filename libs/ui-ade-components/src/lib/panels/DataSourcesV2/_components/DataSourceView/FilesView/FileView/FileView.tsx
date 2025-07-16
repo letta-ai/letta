@@ -14,7 +14,6 @@ import {
   HStack,
   InfoIcon,
   LoadingEmptyStatusComponent,
-  Markdown,
   Skeleton,
   Tooltip,
   TrashIcon,
@@ -28,6 +27,7 @@ import './FileView.scss';
 import { DeleteFileModal } from '../../../DeleteFileModal';
 import { useQueryClient } from '@tanstack/react-query';
 import { DEFAULT_FILE_LIMIT } from '../../../../constants';
+import { MarkdownViewer } from './MarkdownViewer';
 
 interface FileContentProps {
   file: FileMetadata;
@@ -49,46 +49,8 @@ function FileContent(props: FileContentProps) {
 
   const t = useTranslations('ADE/DataSources/ExpandedFileView');
 
-  // Simple cleanup of the markdown content
-  const cleanMarkdown = useMemo(() => {
-    if (!data?.content) return '';
-
-    let content = data.content;
-
-    // Convert literal \n strings to actual newlines
-    content = content.replace(/\\n/g, '\n');
-
-    // Process line by line to handle <br> tags in table cells
-    const lines = content.split('\n');
-    const processedLines = lines.map((line) => {
-      // If this line contains table cells (has | characters)
-      if (line.includes('|')) {
-        // Replace <br> tags with spaces within this line
-        return line.replace(/<br\s*\/?>/gi, ' ');
-      }
-      return line;
-    });
-
-    // Then replace remaining <br> tags with newlines (for non-table content)
-    content = processedLines.join('\n').replace(/<br\s*\/?>/gi, '\n');
-    content = content.replace(/&lt;br\s*\/?&gt;/gi, '\n');
-
-    // Add horizontal rules after # and ## headings
-    content = content.replace(/^(#{1,2})\s+(.+)$/gm, '$1 $2\n---');
-
-    return content;
-  }, [data?.content]);
-
   if (data) {
-    if (!data.content) {
-      return <Typography italic>{t('noFileGrep')}</Typography>;
-    }
-
-    return (
-      <div className="file-markdown-content">
-        <Markdown text={cleanMarkdown} />
-      </div>
-    );
+    return <MarkdownViewer content={data.content || ''} />;
   }
 
   return (
