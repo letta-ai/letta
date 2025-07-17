@@ -61,8 +61,6 @@ spec:
             - secretRef:
                 name: {{ include "letta-web.fullname" . }}-env
           env:
-            - name: NEXT_PUBLIC_CURRENT_HOST
-              value: {{ .Values.env.LETTA_API_ENDPOINT | quote }}
             {{- range $key, $value := .Values.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}
