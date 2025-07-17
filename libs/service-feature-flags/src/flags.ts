@@ -41,11 +41,6 @@ export const featureFlags = {
     expiryDate: '2024-07-01',
     flagValue: z.boolean(),
   },
-  PROJECT_OBSERVABILITY: {
-    description: 'Project observability',
-    expiryDate: '2024-08-01',
-    flagValue: z.boolean(),
-  },
   RECOMMENDED_MCP: {
     description: 'Recommended MCP',
     expiryDate: '2025-12-01',

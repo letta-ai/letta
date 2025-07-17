@@ -18,7 +18,6 @@ import React from 'react';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 type ProjectLayoutInnerProps = PropsWithChildren;
 
@@ -28,8 +27,6 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
   const [canCRDProjects] = useUserHasPermission(
     ApplicationServices.CREATE_UPDATE_DELETE_PROJECTS,
   );
-
-  const { data: enabled } = useFeatureFlag('PROJECT_OBSERVABILITY');
 
   return (
     <DashboardWithSidebarWrapper
@@ -80,27 +77,23 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
               },
             ]
           : []),
-        ...(enabled
-          ? [
-              {
-                title: t('nav.observability'),
-                items: [
-                  {
-                    icon: <MonitoringIcon />,
-                    id: 'observability',
-                    label: t('nav.monitoring'),
-                    href: `/projects/${projectSlug}/observability`,
-                  },
-                  {
-                    icon: <ListIcon />,
-                    id: 'steps',
-                    label: t('nav.responses'),
-                    href: `/projects/${projectSlug}/responses`,
-                  },
-                ],
-              },
-            ]
-          : []),
+        {
+          title: t('nav.observability'),
+          items: [
+            {
+              icon: <MonitoringIcon />,
+              id: 'observability',
+              label: t('nav.monitoring'),
+              href: `/projects/${projectSlug}/observability`,
+            },
+            {
+              icon: <ListIcon />,
+              id: 'steps',
+              label: t('nav.responses'),
+              href: `/projects/${projectSlug}/responses`,
+            },
+          ],
+        },
       ]}
     >
       {props.children}
