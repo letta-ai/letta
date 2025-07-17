@@ -1544,15 +1544,9 @@ class AgentManager:
 
         Updates to the memory header should *not* trigger a rebuild, since that will simply flood recall storage with excess messages
         """
-        num_messages_task = self.message_manager.size_async(actor=actor, agent_id=agent_id)
-        num_archival_memories_task = self.passage_manager.agent_passage_size_async(actor=actor, agent_id=agent_id)
-        agent_state_task = self.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory", "sources", "tools"], actor=actor)
-
-        num_messages, num_archival_memories, agent_state = await asyncio.gather(
-            num_messages_task,
-            num_archival_memories_task,
-            agent_state_task,
-        )
+        num_messages = await self.message_manager.size_async(actor=actor, agent_id=agent_id)
+        num_archival_memories = await self.passage_manager.agent_passage_size_async(actor=actor, agent_id=agent_id)
+        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory", "sources", "tools"], actor=actor)
 
         if not tool_rules_solver:
             tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
@@ -1769,9 +1763,10 @@ class AgentManager:
                     )
 
             # refresh memory from DB (using block ids)
-            blocks = await asyncio.gather(
-                *[self.block_manager.get_block_by_id_async(block.id, actor=actor) for block in agent_state.memory.get_blocks()]
+            blocks = await self.block_manager.get_all_blocks_by_ids_async(
+                block_ids=[b.id for b in agent_state.memory.get_blocks()], actor=actor
             )
+
             agent_state.memory = Memory(
                 blocks=blocks,
                 file_blocks=agent_state.memory.file_blocks,
