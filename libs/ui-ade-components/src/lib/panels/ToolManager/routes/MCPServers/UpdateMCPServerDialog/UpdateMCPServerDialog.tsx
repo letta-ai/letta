@@ -23,6 +23,9 @@ import { MCPServerTypes } from '../types';
 import {
   parseAuthenticationData,
   getAuthModeAndValuesFromServer,
+  parseArgsString,
+  parseEnvironmentArray,
+  environmentToArray,
 } from '../utils';
 import {
   ServerNameField,
@@ -252,9 +255,7 @@ function UpdateStdioServerForm(props: UpdateStdioServerFormProps) {
 
   type UpdateStdioServerFormValues = z.infer<typeof UpdateStdioServerSchema>;
 
-  const env = server.env
-    ? Object.entries(server.env).map(([key, value]) => ({ key, value }))
-    : undefined;
+  const env = environmentToArray(server.env);
 
   const form = useForm<UpdateStdioServerFormValues>({
     resolver: zodResolver(UpdateStdioServerSchema),
@@ -306,12 +307,7 @@ function UpdateStdioServerForm(props: UpdateStdioServerFormProps) {
 
   const handleSubmit = useCallback(
     (values: UpdateStdioServerFormValues) => {
-      const env = values.environment
-        .filter((env) => env.key && env.value)
-        .reduce((acc: Record<string, string>, env) => {
-          acc[env.key] = env.value;
-          return acc;
-        }, {});
+      const env = parseEnvironmentArray(values.environment);
 
       mutate({
         mcpServerName: server.server_name,
@@ -319,10 +315,7 @@ function UpdateStdioServerForm(props: UpdateStdioServerFormProps) {
           stdio_config: {
             server_name: values.name,
             command: values.command,
-            args: values.args
-              .split(',')
-              .map((arg) => arg.trim())
-              .filter((arg) => arg !== ''),
+            args: parseArgsString(values.args),
             env,
           },
         },

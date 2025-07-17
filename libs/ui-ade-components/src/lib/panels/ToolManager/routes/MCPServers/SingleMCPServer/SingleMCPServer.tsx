@@ -7,6 +7,7 @@ import {
 import type { MCPServerItemType } from '@letta-cloud/sdk-core';
 import { getIsStreamableOrHttpServer } from '../types';
 import {
+  Accordion,
   Badge,
   Button,
   Dialog,
@@ -18,6 +19,7 @@ import {
   LoadingEmptyStatusComponent,
   McpIcon,
   RefreshIcon,
+  ToolsIcon,
   TrashIcon,
   Typography,
   VStack,
@@ -36,6 +38,7 @@ import { getObfuscatedMCPServerUrl } from '@letta-cloud/utils-shared';
 import { MCPServerLogo } from '../../MCPServerExplorer/MCPServerLogo/MCPServerLogo';
 import { toMCPServerTypeLabel } from '../types';
 import { UpdateMCPServerDialog } from '../UpdateMCPServerDialog/UpdateMCPServerDialog';
+import { MCPToolParameters } from '../MCPToolParameters';
 
 interface RemoveMCPServerDialogProps {
   serverName: string;
@@ -148,12 +151,13 @@ function ServerToolsList(props: ServerToolsListProps) {
       {data.map((tool) => (
         <VStack
           padding="small"
-          gap="small"
+          gap={false}
           color="background-grey"
           key={tool.name}
           fullWidth
         >
-          <HStack justify="spaceBetween">
+          <HStack padding="xxsmall" justify="spaceBetween" align="center">
+            <ToolsIcon />
             <Typography fullWidth overflow="ellipsis" bold variant="body2">
               {tool.name}
             </Typography>
@@ -163,7 +167,22 @@ function ServerToolsList(props: ServerToolsListProps) {
               idToAttach={`${serverName}:${tool.name}`}
             />
           </HStack>
-          <Typography variant="body2">{tool.description}</Typography>
+          {tool.description && (
+            <Accordion
+              id={tool.name}
+              trigger={
+                <VStack paddingX="small">
+                  <Typography variant="body2">{tool.description}</Typography>
+                </VStack>
+              }
+            >
+              {tool.inputSchema && (
+                <VStack gap="text" paddingX="large" paddingY="small">
+                  <MCPToolParameters inputSchema={tool.inputSchema} />
+                </VStack>
+              )}
+            </Accordion>
+          )}
         </VStack>
       ))}
     </VStack>

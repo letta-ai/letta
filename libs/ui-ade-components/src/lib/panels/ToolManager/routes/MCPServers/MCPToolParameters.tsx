@@ -22,7 +22,7 @@ export function MCPToolParameters({ inputSchema }: MCPToolParametersProps) {
 
   return (
     <VStack gap="medium" padding="small">
-      <Typography variant="body2" bold>
+      <Typography variant="body2" underline bold>
         {t('TestMCPConnectionButton.parameters')}
       </Typography>
       <VStack gap="medium">
@@ -31,10 +31,10 @@ export function MCPToolParameters({ inputSchema }: MCPToolParametersProps) {
           return (
             <VStack key={key} gap="small" fullWidth>
               <HStack gap="medium" align="start">
-                <Typography variant="body3" bold>
+                <Typography variant="body2" bold>
                   {key}
                 </Typography>
-                <Typography variant="body3" font="mono" color="muted">
+                <Typography variant="body2" font="mono" color="muted">
                   {value.type || 'string'}
                 </Typography>
                 {isRequired && (
@@ -42,10 +42,10 @@ export function MCPToolParameters({ inputSchema }: MCPToolParametersProps) {
                 )}
               </HStack>
               {value.description && (
-                <Typography variant="body3">{value.description}</Typography>
+                <Typography variant="body2">{value.description}</Typography>
               )}
               {value.enum && (
-                <Typography variant="body3" font="mono" color="muted">
+                <Typography variant="body2" font="mono" color="muted">
                   {value.enum.join(', ')}
                 </Typography>
               )}

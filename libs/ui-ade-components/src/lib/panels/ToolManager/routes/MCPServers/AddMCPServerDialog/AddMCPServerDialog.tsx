@@ -20,7 +20,11 @@ import {
 } from '@letta-cloud/sdk-core';
 import { type MCPServerType, MCPServerTypes } from '../types';
 import { useCurrentAgentMetaData } from '../../../../../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
-import { parseAuthenticationData } from '../utils';
+import {
+  parseAuthenticationData,
+  parseArgsString,
+  parseEnvironmentArray,
+} from '../utils';
 import { AuthModes } from '../AuthenticationSection';
 import {
   ServerNameField,
@@ -111,22 +115,14 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
 
   const handleSubmit = useCallback(
     (values: AddStdioServerFormValues) => {
-      const env = values.environment
-        .filter((env) => env.key && env.value)
-        .reduce((acc: Record<string, string>, env) => {
-          acc[env.key] = env.value;
-          return acc;
-        }, {});
+      const env = parseEnvironmentArray(values.environment);
 
       mutate({
         requestBody: {
           server_name: values.name,
           type: MCPServerTypes.Stdio,
           command: values.command,
-          args: values.args
-            .split(',')
-            .map((arg) => arg.trim())
-            .filter((arg) => arg !== ''),
+          args: parseArgsString(values.args),
           env: Object.keys(env).length > 0 ? env : null, // Only include env if it's not empty
         },
       });
@@ -142,6 +138,7 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
           <CommandField />
           <ArgsField />
           <EnvironmentField />
+          <TestMCPConnectionButton serverType={MCPServerTypes.Stdio} />
           <MCPFormActions
             errorMessage={isError ? getErrorMessage(error) : undefined}
             onCancel={handleReset}

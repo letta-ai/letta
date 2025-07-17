@@ -45,16 +45,20 @@ export function MCPToolsList({ tools }: MCPToolsListProps) {
                   />
                 }
               >
-                <VStack fullWidth padding="medium">
-                  <VStack gap="medium" padding="small">
-                    <Typography variant="body2" bold>
-                      {t('TestMCPConnectionButton.description')}
-                    </Typography>
-                    <Typography variant="body2">{tool.description}</Typography>
+                <VStack fullWidth>
+                  <VStack gap="small" padding="small">
+                    <VStack padding="small">
+                      <Typography variant="body2" underline bold>
+                        {t('TestMCPConnectionButton.description')}
+                      </Typography>
+                      <Typography variant="body2">
+                        {tool.description}
+                      </Typography>
+                    </VStack>
+                    {tool.inputSchema && (
+                      <MCPToolParameters inputSchema={tool.inputSchema} />
+                    )}
                   </VStack>
-                  {tool.inputSchema && (
-                    <MCPToolParameters inputSchema={tool.inputSchema} />
-                  )}
                 </VStack>
               </Popover>
             ) : (

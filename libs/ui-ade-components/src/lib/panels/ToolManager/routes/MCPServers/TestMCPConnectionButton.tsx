@@ -13,7 +13,11 @@ import {
   type MCPServerType,
 } from '@letta-cloud/sdk-core';
 import { MCPServerTypes, type MCPTool } from './types';
-import { parseAuthenticationData } from './utils';
+import {
+  parseAuthenticationData,
+  parseArgsString,
+  parseEnvironmentArray,
+} from './utils';
 import { MCPToolsList } from './MCPToolsList';
 import { AuthModes } from './FormFields';
 
@@ -46,13 +50,21 @@ export function TestMCPConnectionButton({
     },
   });
 
-  const isDisabled = isPending || serverType === MCPServerTypes.Stdio;
-
   const testConnection = useCallback(() => {
     setTestingStatus('pending');
     setAvailableTools([]);
 
+    // Stdio has different request body
     if (serverType === MCPServerTypes.Stdio) {
+      const formValues = getValues();
+      const requestBody = {
+        server_name: 'test_server',
+        type: serverType as MCPServerType,
+        command: formValues.command,
+        args: parseArgsString(formValues.args),
+        env: parseEnvironmentArray(formValues.environment),
+      };
+      testServer({ requestBody });
       return;
     }
 
@@ -96,7 +108,7 @@ export function TestMCPConnectionButton({
         <Button
           type="button"
           color="secondary"
-          disabled={isDisabled}
+          disabled={isPending}
           label={t('TestMCPConnectionButton.label')}
           onClick={(event) => {
             event.preventDefault();

@@ -98,3 +98,29 @@ export function getAuthModeAndValuesFromServer(server: {
     };
   }
 }
+
+export function parseArgsString(argsString: string): string[] {
+  return argsString
+    .split(',')
+    .map((arg) => arg.trim())
+    .filter((arg) => arg !== '');
+}
+
+export function parseEnvironmentArray(
+  envArray: Array<{ key: string; value: string }>,
+): Record<string, string> {
+  if (!envArray) return {};
+  return envArray
+    .filter((env) => env.key && env.value)
+    .reduce((acc: Record<string, string>, env) => {
+      acc[env.key] = env.value;
+      return acc;
+    }, {});
+}
+
+export function environmentToArray(
+  envObject: Record<string, string> | null | undefined,
+): Array<{ key: string; value: string }> {
+  if (!envObject) return [{ key: '', value: '' }];
+  return Object.entries(envObject).map(([key, value]) => ({ key, value }));
+}
