@@ -36,11 +36,6 @@ export const featureFlags = {
     expiryDate: '2025-09-01',
     flagValue: z.boolean(),
   },
-  MIGRATIONS_VIEWER: {
-    description: 'Make managing agents more transparent',
-    expiryDate: '2024-07-01',
-    flagValue: z.boolean(),
-  },
   MORE_MEMORY_FIELDS: {
     description: 'More memory fields',
     expiryDate: '2024-07-01',

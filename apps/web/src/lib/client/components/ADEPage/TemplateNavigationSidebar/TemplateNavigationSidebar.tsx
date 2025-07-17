@@ -15,7 +15,7 @@ import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentPr
 import React, { useMemo } from 'react';
 import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
-import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { MigrationStatus } from '@letta-cloud/sdk-cloud-api';
 
 interface SidebarButtonProps {
@@ -81,7 +81,6 @@ function DistributionOnboardingStep(props: DistributionOnboardingStepProps) {
 function MigrationsButton() {
   const { templateName } = useCurrentAgentMetaData();
 
-  const { data: isEnabled } = useFeatureFlag('MIGRATIONS_VIEWER');
   const { slug } = useCurrentProject();
 
   const { data } = webApi.agentTemplates.listAgentMigrations.useQuery({
@@ -96,7 +95,7 @@ function MigrationsButton() {
       },
     },
     refetchInterval: 5000,
-    enabled: !!templateName && isEnabled,
+    enabled: !!templateName,
   });
 
   const t = useTranslations('components/TemplateNavigationSidebar');
@@ -104,11 +103,6 @@ function MigrationsButton() {
   const hasRunningMigrations = useMemo(() => {
     return data?.body.migrations[0]?.status === MigrationStatus.RUNNING;
   }, [data]);
-
-  if (!isEnabled) {
-    return null;
-  }
-
   return (
     <SidebarButton
       label={t('nav.migrations')}
