@@ -14,7 +14,6 @@ import {
   LoadingEmptyStatusComponent,
   NiceGridDisplay,
   PlusIcon,
-  Tooltip,
   Typography,
   useForm,
   VStack,
@@ -157,18 +156,16 @@ function ProjectCard(props: ProjectCardProps) {
           <VStack gap="medium" fullWidth>
             <Avatar size="medium" name={projectName} />
             <VStack gap="text">
-              <Tooltip asChild content={projectName}>
-                <Typography
-                  bold
-                  align="left"
-                  variant="body"
-                  noWrap
-                  fullWidth
-                  overflow="ellipsis"
-                >
-                  {projectName}
-                </Typography>
-              </Tooltip>
+              <Typography
+                bold
+                align="left"
+                variant="body"
+                noWrap
+                fullWidth
+                overflow="ellipsis"
+              >
+                {projectName}
+              </Typography>
               <HStack>
                 {
                   <Typography variant="body" color="muted">
