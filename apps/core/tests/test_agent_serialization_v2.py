@@ -525,6 +525,11 @@ class TestAgentFileExport:
         assert len(agent_file.tools) > 0  # Should include base tools + weather tool
         assert len(agent_file.blocks) > 0  # Should include memory blocks + test block
 
+        # Validate revision_id is automatically set in metadata
+        assert agent_file.metadata.get("revision_id") is not None
+        assert agent_file.metadata.get("revision_id") != "unknown"
+        assert len(agent_file.metadata.get("revision_id")) > 0
+
         # Validate ID formats
         assert validate_id_format(agent_file)
 
@@ -619,6 +624,26 @@ class TestAgentFileExport:
         """Test exporting non-existent agent raises error."""
         with pytest.raises(AgentFileExportError):  # Should raise AgentFileExportError for non-existent agent
             await agent_file_manager.export(["non-existent-id"], default_user)
+
+    async def test_revision_id_automatic_setting(self, agent_file_manager, test_agent, default_user):
+        """Test that revision_id is automatically set to the latest alembic revision."""
+        # Export the agent
+        agent_file = await agent_file_manager.export([test_agent.id], default_user)
+
+        # Get the expected revision ID from the function
+        from letta.utils import get_latest_alembic_revision
+
+        expected_revision = await get_latest_alembic_revision()
+
+        # Validate that the revision_id matches the latest alembic revision
+        assert agent_file.metadata.get("revision_id") == expected_revision
+
+        # Validate that it's not the fallback "unknown" value
+        assert agent_file.metadata.get("revision_id") != "unknown"
+
+        # Validate that it looks like a valid revision ID (12 hex characters)
+        assert len(agent_file.metadata.get("revision_id")) == 12
+        assert all(c in "0123456789abcdef" for c in agent_file.metadata.get("revision_id"))
 
 
 class TestAgentFileImport:
@@ -715,8 +740,14 @@ class TestAgentFileImport:
 
     async def test_import_validation_errors(self, agent_file_manager, other_user):
         """Test import validation catches errors."""
+        # Get current revision for test
+        from letta.utils import get_latest_alembic_revision
+
+        current_revision = await get_latest_alembic_revision()
+
         # Create invalid agent file with duplicate IDs
         invalid_agent_file = AgentFileSchema(
+            metadata={"revision_id": current_revision},
             agents=[
                 AgentSchema(id="agent-0", name="agent1"),
                 AgentSchema(id="agent-0", name="agent2"),  # Duplicate ID
@@ -855,8 +886,12 @@ class TestAgentFileValidation:
 
     def test_agent_file_schema_validation(self, test_agent):
         """Test AgentFileSchema validation."""
+        # Use a dummy revision for this test since we can't await in sync test
+        current_revision = "495f3f474131"  # Use a known valid revision format
+
         # Valid schema
         valid_schema = AgentFileSchema(
+            metadata={"revision_id": current_revision},
             agents=[AgentSchema(id="agent-0", name="test")],
             groups=[],
             blocks=[],
@@ -868,6 +903,7 @@ class TestAgentFileValidation:
 
         # Should not raise
         assert valid_schema.agents[0].id == "agent-0"
+        assert valid_schema.metadata.get("revision_id") == current_revision
 
     def test_message_schema_conversion(self, test_agent, server, default_user):
         """Test MessageSchema.from_message conversion."""
@@ -887,8 +923,12 @@ class TestAgentFileValidation:
 
     def test_id_format_validation(self):
         """Test ID format validation helper."""
+        # Use a dummy revision for this test since we can't await in sync test
+        current_revision = "495f3f474131"  # Use a known valid revision format
+
         # Valid schema
         valid_schema = AgentFileSchema(
+            metadata={"revision_id": current_revision},
             agents=[AgentSchema(id="agent-0", name="test")],
             groups=[],
             blocks=[BlockSchema(id="block-0", label="test", value="test")],
@@ -909,6 +949,7 @@ class TestAgentFileValidation:
 
         # Invalid schema
         invalid_schema = AgentFileSchema(
+            metadata={"revision_id": current_revision},
             agents=[AgentSchema(id="invalid-id-format", name="test")],
             groups=[],
             blocks=[],

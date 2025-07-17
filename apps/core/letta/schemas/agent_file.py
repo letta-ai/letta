@@ -217,3 +217,6 @@ class AgentFileSchema(BaseModel):
     sources: List[SourceSchema] = Field(..., description="List of sources in this agent file")
     tools: List[ToolSchema] = Field(..., description="List of tools in this agent file")
     # mcp_servers: List[MCPServerSchema] = Field(..., description="List of MCP servers in this agent file")
+    metadata: Dict[str, str] = Field(
+        default_factory=dict, description="Metadata for this agent file, including revision_id and other export information."
+    )

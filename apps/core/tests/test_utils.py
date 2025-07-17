@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from letta.constants import MAX_FILENAME_LENGTH
@@ -508,3 +510,49 @@ def test_line_chunker_only_start_parameter():
     # Test invalid start only
     with pytest.raises(ValueError, match="File test.py has only 3 lines, but requested offset 4 is out of range"):
         chunker.chunk_text(file, start=3, validate_range=True)
+
+
+# ---------------------- Alembic Revision TESTS ---------------------- #
+
+
+@pytest.fixture(scope="module")
+def event_loop():
+    """
+    Create an event loop for the entire test session.
+    Ensures all async tasks use the same loop, avoiding cross-loop errors.
+    """
+    loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()
+
+
+@pytest.mark.asyncio
+async def test_get_latest_alembic_revision(event_loop):
+    """Test that get_latest_alembic_revision returns a valid revision ID from the database."""
+    from letta.utils import get_latest_alembic_revision
+
+    # Get the revision ID
+    revision_id = await get_latest_alembic_revision()
+
+    # Validate that it's not the fallback "unknown" value
+    assert revision_id != "unknown"
+
+    # Validate that it looks like a valid revision ID (12 hex characters)
+    assert len(revision_id) == 12
+    assert all(c in "0123456789abcdef" for c in revision_id)
+
+    # Validate that it's a string
+    assert isinstance(revision_id, str)
+
+
+@pytest.mark.asyncio
+async def test_get_latest_alembic_revision_consistency(event_loop):
+    """Test that get_latest_alembic_revision returns the same value on multiple calls."""
+    from letta.utils import get_latest_alembic_revision
+
+    # Get the revision ID twice
+    revision_id1 = await get_latest_alembic_revision()
+    revision_id2 = await get_latest_alembic_revision()
+
+    # They should be identical
+    assert revision_id1 == revision_id2
