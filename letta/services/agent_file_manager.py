@@ -27,6 +27,7 @@ from letta.services.mcp_manager import MCPManager
 from letta.services.message_manager import MessageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
+from letta.utils import get_latest_alembic_revision
 
 logger = get_logger(__name__)
 
@@ -233,6 +234,7 @@ class AgentFileManager:
                 sources=[],  # TODO: Extract and convert sources
                 tools=tool_schemas,
                 # mcp_servers=[],  # TODO: Extract and convert MCP servers
+                metadata={"revision_id": await get_latest_alembic_revision()},
             )
 
         except Exception as e:
