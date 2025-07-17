@@ -22,6 +22,9 @@ env:
   PORT: "8080"
   REGION: us-central1
   GCP_SA_EMAIL: github-actions-service-account@memgpt-428419.iam.gserviceaccount.com
+  NEXT_PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}
+  NEXT_PUBLIC_POSTHOG_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}
+  POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
   TEMPORAL_LETTUCE_API_HOST: ${{ secrets.TEMPORAL_LETTUCE_API_HOST }}
   TEMPORAL_LETTUCE_CA_PEM: ${{ secrets.TEMPORAL_LETTUCE_CA_PEM }}
   TEMPORAL_LETTUCE_CA_KEY: ${{ secrets.TEMPORAL_LETTUCE_CA_KEY }}

@@ -27,6 +27,9 @@ env:
   REDIS_HOST: "10.167.199.148"
   REDIS_PORT: "6379"
   REGION: us-central1
+  NEXT_PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}
+  NEXT_PUBLIC_POSTHOG_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}
+  POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
   SLACK_WEBHOOK_URL: https://hooks.slack.com/services/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
   GCP_SA_EMAIL: github-actions-service-account@memgpt-428419.iam.gserviceaccount.com
 

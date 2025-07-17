@@ -102,6 +102,7 @@ configure-kubectl cluster-name="letta":
             --set env.NEXT_PUBLIC_MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
             --set env.NEXT_PUBLIC_POSTHOG_KEY="${NEXT_PUBLIC_POSTHOG_KEY}" \
             --set env.NEXT_PUBLIC_POSTHOG_HOST="${NEXT_PUBLIC_POSTHOG_HOST}" \
+            --set env.POSTHOG_KEY="${POSTHOG_KEY}" \
             --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
             --set env.WORKOS_CLIENT_ID="${WORKOS_CLIENT_ID}" \
             --set env.WORKOS_API_KEY="${WORKOS_API_KEY}" \
@@ -392,7 +393,7 @@ deploy-cloud-api: push-cloud-api
             --set env.MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
             --set env.NEXT_PUBLIC_POSTHOG_KEY="${NEXT_PUBLIC_POSTHOG_KEY}" \
             --set env.NEXT_PUBLIC_POSTHOG_HOST="${NEXT_PUBLIC_POSTHOG_HOST}" \
-
+            --set env.POSTHOG_KEY="${POSTHOG_KEY}" \
             --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}"
     else
         helm upgrade --install cloud-api {{HELM_CHARTS_DIR}}/cloud-api \
@@ -448,6 +449,9 @@ build-undertaker:
             --set env.REDIS_HOST="${REDIS_HOST}" \
             --set env.RESEND_API_KEY="${RESEND_API_KEY}" \
             --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
+            --set env.NEXT_PUBLIC_POSTHOG_KEY="${NEXT_PUBLIC_POSTHOG_KEY}" \
+            --set env.NEXT_PUBLIC_POSTHOG_HOST="${NEXT_PUBLIC_POSTHOG_HOST}" \
+            --set env.POSTHOG_KEY="${POSTHOG_KEY}" \
             --set env.DATABASE_URL="${DATABASE_URL}"
     else
         helm upgrade --install credit-undertaker {{HELM_CHARTS_DIR}}/credit-undertaker \
@@ -764,6 +768,9 @@ emails:
             --set env.TEMPORAL_LETTUCE_API_HOST="${TEMPORAL_LETTUCE_API_HOST}" \
             --set env.TEMPORAL_LETTUCE_CA_PEM="${TEMPORAL_LETTUCE_CA_PEM}" \
             --set env.TEMPORAL_LETTUCE_CA_KEY="${TEMPORAL_LETTUCE_CA_KEY}" \
+            --set env.NEXT_PUBLIC_POSTHOG_KEY="${NEXT_PUBLIC_POSTHOG_KEY}" \
+            --set env.NEXT_PUBLIC_POSTHOG_HOST="${NEXT_PUBLIC_POSTHOG_HOST}" \
+            --set env.POSTHOG_KEY="${POSTHOG_KEY}" \
             --set env.TEMPORAL_LETTUCE_NAMESPACE="${TEMPORAL_LETTUCE_NAMESPACE:-lettuce.tmhou}"
     else
         helm upgrade --install lettuce {{HELM_CHARTS_DIR}}/lettuce \
