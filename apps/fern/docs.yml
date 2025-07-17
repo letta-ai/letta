@@ -417,6 +417,8 @@ navigation:
             path: pages/cloud/versions.mdx
           - page: Memory Variables
             path: pages/cloud/variables.mdx
+          - page: Client-Side Access Tokens
+            path: pages/cloud/client-side-tokens.mdx
           # - page: Deploying via the SDK
             # path: pages/cloud/variables.mdx
           # - page: Deploying via the ADE
