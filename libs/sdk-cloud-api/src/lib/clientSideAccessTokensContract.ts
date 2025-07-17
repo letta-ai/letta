@@ -75,7 +75,37 @@ const deleteClientSideAccessTokenContract = c.mutation({
   },
 });
 
+const listClientSideAccessTokensContract = c.query({
+  path: '/v1/client-side-access-tokens',
+  method: 'GET',
+  summary: 'List tokens  (Cloud-only)',
+  description:
+    'List all client side access tokens for the current account. This is only available for cloud users.',
+  query: z.object({
+    agentId: z.string().optional().openapi({
+      description:
+        'The agent ID to filter tokens by. If provided, only tokens for this agent will be returned.',
+    }),
+    offset: z.number().default(0).openapi({
+      description: 'The offset for pagination. Defaults to 0.',
+    }),
+    limit: z.number().default(10).openapi({
+      description: 'The number of tokens to return per page. Defaults to 10.',
+    }),
+  }),
+  responses: {
+    200: z.object({
+      tokens: z.array(CreatedClientSideAccessToken),
+      hasNextPage: z.boolean(),
+    }),
+    400: z.object({
+      message: z.string(),
+    }),
+  },
+});
+
 export const clientSideAccessTokensContract = {
   createClientSideAccessToken: createClientSideAccessTokenContract,
   deleteClientSideAccessToken: deleteClientSideAccessTokenContract,
+  listClientSideAccessTokens: listClientSideAccessTokensContract,
 };

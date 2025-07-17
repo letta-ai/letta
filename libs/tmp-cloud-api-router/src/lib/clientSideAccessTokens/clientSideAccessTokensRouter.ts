@@ -7,6 +7,8 @@ import {
   deleteClientSideAPIKey,
   generateClientSideAPIKey,
 } from '@letta-cloud/service-auth';
+import { clientSideAccessTokens, db } from '@letta-cloud/service-database';
+import { and, eq, sql } from 'drizzle-orm';
 
 type CreateClientSideAccessTokenRequest = ServerInferRequest<
   typeof cloudContracts.clientSideAccessTokens.createClientSideAccessToken
@@ -88,7 +90,53 @@ export async function deleteClientSideAccessToken(
   };
 }
 
+type ListClientSideAccessTokensRequest = ServerInferRequest<
+  typeof cloudContracts.clientSideAccessTokens.listClientSideAccessTokens
+>;
+
+type ListClientSideAccessTokensResponse = ServerInferResponses<
+  typeof cloudContracts.clientSideAccessTokens.listClientSideAccessTokens
+>;
+
+export async function listClientSideAccessTokens(
+  req: ListClientSideAccessTokensRequest,
+  context: SDKContext,
+): Promise<ListClientSideAccessTokensResponse> {
+  const { organizationId } = getContextDataHack(req, context);
+
+  const { query } = req;
+
+  const { agentId, offset = 0, limit = 10 } = query;
+
+  const tokens = await db
+    .select()
+    .from(clientSideAccessTokens)
+    .where(
+      sql`${clientSideAccessTokens.organizationId} = ${organizationId} AND EXISTS (
+        SELECT 1 FROM JSON_EACH(${clientSideAccessTokens.policy}, '$.data')
+        WHERE JSON_EXTRACT(value, '$.type') = 'agent'
+        AND JSON_EXTRACT(value, '$.id') = ${agentId}
+      )`,
+    )
+    .offset(offset)
+    .limit(limit + 1);
+
+  return {
+    status: 200,
+    body: {
+      tokens: tokens.slice(0, limit).map((token) => ({
+        token: token.token,
+        hostname: token.hostname,
+        expiresAt: token.expiresAt.toISOString(),
+        policy: token.policy,
+      })),
+      hasNextPage: tokens.length > limit,
+    },
+  };
+}
+
 export const clientSideAccessTokensRouter = {
   createClientSideAccessToken,
   deleteClientSideAccessToken,
+  listClientSideAccessTokens,
 };
