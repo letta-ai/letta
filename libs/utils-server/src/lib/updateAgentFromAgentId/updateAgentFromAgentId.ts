@@ -28,6 +28,7 @@ export const omittedFieldsOnCopy: Array<Partial<keyof AgentState>> = [
   'metadata',
   'memory',
   'name',
+  'tags',
 ];
 
 export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
