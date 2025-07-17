@@ -25,6 +25,7 @@ from letta.schemas.tool import Tool, ToolCreate, ToolRunFromSource, ToolUpdate
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 from letta.services.mcp.sse_client import AsyncSSEMCPClient
+from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.mcp.streamable_http_client import AsyncStreamableHTTPMCPClient
 from letta.settings import tool_settings
 
@@ -612,12 +613,6 @@ async def test_mcp_server(
     """
     client = None
     try:
-        if isinstance(request, StdioServerConfig):
-            raise HTTPException(
-                status_code=400,
-                detail="stdio is not supported currently for testing connection",
-            )
-
         # create a temporary MCP client based on the server type
         if request.type == MCPServerType.SSE:
             if not isinstance(request, SSEServerConfig):
@@ -627,6 +622,10 @@ async def test_mcp_server(
             if not isinstance(request, StreamableHTTPServerConfig):
                 request = StreamableHTTPServerConfig(**request.model_dump())
             client = AsyncStreamableHTTPMCPClient(request)
+        elif request.type == MCPServerType.STDIO:
+            if not isinstance(request, StdioServerConfig):
+                request = StdioServerConfig(**request.model_dump())
+            client = AsyncStdioMCPClient(request)
         else:
             raise ValueError(f"Invalid MCP server type: {request.type}")
 
