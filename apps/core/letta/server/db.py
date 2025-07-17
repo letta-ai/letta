@@ -136,7 +136,7 @@ class DatabaseRegistry:
             self._setup_pool_monitoring(async_engine, "default_async")
 
             self._async_session_factories["default"] = async_sessionmaker(
-                expire_on_commit=True,
+                expire_on_commit=False,
                 close_resets_only=False,
                 autocommit=False,
                 autoflush=False,
