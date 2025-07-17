@@ -25,7 +25,7 @@ function ServerSetupDialog({ server }: { server: CustomUrlRecommendedServer }) {
   if (server.id === 'pipedream') {
     return <CustomSetupServer server={server} />;
   }
-  if (server.id === 'deepwiki') {
+  if (server.id === 'deepwiki' || server.id === 'huggingface') {
     return <FreeMCPServerDialog server={server} />;
   }
   if (server.id === 'github') {

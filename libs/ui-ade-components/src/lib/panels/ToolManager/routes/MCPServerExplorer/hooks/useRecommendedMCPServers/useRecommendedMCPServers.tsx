@@ -11,6 +11,7 @@ import {
   DeepWikiIcon,
   ApifyIcon,
   ExaIcon,
+  HuggingFaceIcon,
 } from '@letta-cloud/ui-component-library';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
@@ -36,6 +37,7 @@ export interface RecommendedServer {
     | 'deepwiki'
     | 'exa'
     | 'github'
+    | 'huggingface'
     | 'pipedream'
     | 'stripe'
     | 'zapier';
@@ -198,6 +200,25 @@ export function useRecommendedMCPServers(): RecommendedServer[] {
         logo: <ExaIcon />,
         name: 'Exa',
         description: t('exa.description'),
+      },
+      {
+        id: 'huggingface',
+        baseUrl: 'https://huggingface.co',
+        setup: {
+          type: 'custom-url',
+          baseUrl: 'https://huggingface.co/mcp',
+          requiresApiKey: false,
+          instructions: t.rich('huggingface.instructions', {
+            link: (chunks) => (
+              <Link target="_blank" href="https://huggingface.co/mcp">
+                {chunks}
+              </Link>
+            ),
+          }),
+        },
+        logo: <HuggingFaceIcon />,
+        name: 'Hugging Face',
+        description: t('huggingface.description'),
       },
     ];
 

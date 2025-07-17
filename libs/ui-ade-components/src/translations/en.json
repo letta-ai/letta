@@ -1470,6 +1470,10 @@
     "exa": {
       "description": "Exa MCP gives your AI assistant real-time web search, research, and company analysis using Exa's powerful API. Includes tools for web, academic, company, and GitHub search.",
       "instructions": "To connect Exa to Letta, you need an Exa API key. Visit the <link>Exa MCP documentation</link> to get your API key and setup instructions, then paste your API key above."
+    },
+    "huggingface": {
+      "description": "Hugging Face MCP gives your AI assistant access to thousands of open-source models, datasets, and tools from the Hugging Face ecosystem.",
+      "instructions": "Hugging Face MCP is a free service that provides access to models and datasets. No authentication required. Visit the <link>Hugging Face MCP website</link> to learn more."
     }
   },
   "ToolsEditor/MCPServerExplorer": {

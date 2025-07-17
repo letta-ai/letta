@@ -42,4 +42,10 @@ export const SERVER_CONFIGS = {
     urlField: 'input',
     customNaming: true,
   },
+  huggingface: {
+    type: 'streamable_http',
+    auth: 'none',
+    staticUrl: 'https://huggingface.co/mcp',
+    customNaming: false,
+  },
 } as const;

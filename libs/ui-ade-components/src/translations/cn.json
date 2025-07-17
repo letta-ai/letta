@@ -1172,6 +1172,40 @@
       "cancel": "取消"
     }
   },
+  "ToolManager/RecommendedMCPServers": {
+    "zapier": {
+      "description": "Zapier MCP让您的AI助手直接访问超过7,000个应用和30,000多个操作，无需复杂的API集成。",
+      "instructions": "要将Zapier连接到Letta，您需要设置您的Zapier账户以使用模型上下文协议（MCP）。访问<link>Zapier MCP网站</link>生成您的Zapier API密钥，然后粘贴到上方。"
+    },
+    "github": {
+      "description": "GitHub MCP让您的AI助手直接访问GitHub仓库、问题、拉取请求等，实现无缝的开发工作流程。",
+      "instructions": "要将GitHub连接到Letta，您需要创建GitHub个人访问令牌。访问<link>GitHub MCP服务器仓库</link>获取详细的设置说明，然后粘贴您的令牌到上方。"
+    },
+    "apify": {
+      "description": "Apify MCP让您的AI助手访问超过5,000个网络抓取和自动化Actor，用于数据提取和任务自动化。",
+      "instructions": "要将Apify连接到Letta，您需要提供您的Apify API令牌。访问<link>Apify MCP文档</link>获取设置说明，然后粘贴您的API令牌到上方。"
+    },
+    "deepwiki": {
+      "description": "DeepWiki提供您可以与之对话的最新文档，适用于世界上的每个仓库。想象一下GitHub的深度研究。",
+      "instructions": "DeepWiki是一个免费服务，提供对GitHub仓库文档和搜索功能的访问。无需身份验证。"
+    },
+    "stripe": {
+      "description": "Stripe MCP让您的AI助手直接访问Stripe的支付API、客户数据和财务操作，实现无缝的支付集成。",
+      "instructions": "要将Stripe连接到Letta，您需要提供您的Stripe API密钥。访问<link>Stripe MCP文档</link>获取设置说明，然后粘贴您的API密钥到上方。"
+    },
+    "pipedream": {
+      "description": "Pipedream在单个MCP服务器中提供2,700多个API和10,000多个工具。在mcp.pipedream.com连接您的账户后获取您的唯一服务器URL。",
+      "instructions": "访问<link>mcp.pipedream.com</link>注册，连接您的账户，并获取您的唯一服务器URL。然后在此处粘贴您的服务器URL进行连接。"
+    },
+    "exa": {
+      "description": "Exa MCP让您的AI助手使用Exa强大的API进行实时网络搜索、研究和公司分析。包括网络、学术、公司和GitHub搜索工具。",
+      "instructions": "要将Exa连接到Letta，您需要Exa API密钥。访问<link>Exa MCP文档</link>获取您的API密钥和设置说明，然后粘贴您的API密钥到上方。"
+    },
+    "huggingface": {
+      "description": "Hugging Face MCP让您的AI助手访问Hugging Face生态系统中的数千个开源模型、数据集和工具。",
+      "instructions": "Hugging Face MCP是一个免费服务，提供对模型和数据集的访问。无需身份验证。访问<link>Hugging Face MCP网站</link>了解更多信息。"
+    }
+  },
   "ToolsEditor/LettaTools": {
     "loading": "正在加载您的工具...",
     "error": "加载您的工具时出错，请重试或联系客服。"
