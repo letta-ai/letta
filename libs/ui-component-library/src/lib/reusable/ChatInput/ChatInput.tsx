@@ -22,6 +22,7 @@ import {
   ImagesModeIcon,
   SendIcon,
   ThinkingIcon,
+  WarningIcon,
 } from '../../icons';
 import { Popover } from '../../core/Popover/Popover';
 import { useTranslations } from '@letta-cloud/translations';
@@ -31,6 +32,8 @@ import { ImagePreview } from '../../core/ImagePreview/ImagePreview';
 import { VisibleOnMobile } from '../../framing/VisibleOnMobile/VisibleOnMobile';
 import type { LettaUserMessageContentUnion } from '@letta-cloud/sdk-core';
 import { useSearchParams } from 'next/navigation';
+import { Alert } from '../../core/Alert/Alert';
+import { modelSupportsImages as checkModelSupportsImages } from './modelCapabilities';
 
 export interface RoleOption {
   value: string;
@@ -126,6 +129,7 @@ interface ChatInputProps {
     content: LettaUserMessageContentUnion[] | string,
   ) => string | undefined;
   sendingMessageText?: string;
+  modelHandle?: string;
 }
 
 export interface ChatInputRef {
@@ -234,6 +238,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
       sendingMessageText,
       isSendingMessage,
       hasFailedToSendMessageText,
+      modelHandle,
     } = props;
     const searchParams = useSearchParams();
 
@@ -445,6 +450,14 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
       [t],
     );
 
+    const modelSupportsImages = useMemo(() => {
+      return checkModelSupportsImages(modelHandle);
+    }, [modelHandle]);
+
+    const showImageWarning = useMemo(() => {
+      return (images.length > 0 || isDraggedOver) && !modelSupportsImages;
+    }, [images.length, isDraggedOver, modelSupportsImages]);
+
     return (
       <Frame position="relative" paddingX="medium" paddingBottom>
         <HStack
@@ -503,6 +516,13 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
           )}
           <HiddenOnMobile checkWithJs>
             <VStack padding="large">
+              {showImageWarning && (
+                <Alert
+                  variant="warning"
+                  icon={<WarningIcon />}
+                  title={t('image.modelDoesNotSupportImages')}
+                />
+              )}
               <TextareaAutosize
                 data-testid="chat-simulator-input"
                 onChange={(e) => {
@@ -598,7 +618,14 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
             </VStack>
           </HiddenOnMobile>
           <VisibleOnMobile checkWithJs>
-            <HStack fullWidth padding>
+            <VStack fullWidth padding>
+              {showImageWarning && (
+                <Alert
+                  variant="warning"
+                  icon={<WarningIcon />}
+                  title={t('image.modelDoesNotSupportImages')}
+                />
+              )}
               <HStack justify="end" fullWidth align="center">
                 <TextareaAutosize
                   className="w-full bg-transparent text-base font-inherit resize-none	focus:outline-none"
@@ -643,7 +670,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                   label={t('send')}
                 />
               )}
-            </HStack>
+            </VStack>
           </VisibleOnMobile>
         </VStack>
         <input

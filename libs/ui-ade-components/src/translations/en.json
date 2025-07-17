@@ -838,7 +838,8 @@
       "dropImagesHere": "Drop images here to add to chat",
       "uploadImages": "Upload images max 5MB",
       "fileTooLarge": "File too large (max 5MB)",
-      "uploadFailed": "Upload failed"
+      "uploadFailed": "Upload failed",
+      "modelDoesNotSupportImages": "The model does not support image input, but you can still send this message."
     }
   },
   "ui-component-library/core/Code": {

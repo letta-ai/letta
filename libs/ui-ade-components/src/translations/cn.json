@@ -612,7 +612,8 @@
       "dropImagesHere": "拖拽图片到此处添加到聊天",
       "uploadImages": "上传图片（最大5MB",
       "fileTooLarge": "文件大小超过5MB限制",
-      "uploadFailed": "上传失败"
+      "uploadFailed": "上传失败",
+      "modelDoesNotSupportImages": "该模型不支持图像输入，但您仍可以发送此消息。"
     }
   },
   "ui-component-library/core/Code": {

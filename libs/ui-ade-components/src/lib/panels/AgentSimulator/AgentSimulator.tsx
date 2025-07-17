@@ -1290,6 +1290,7 @@ export function AgentSimulator() {
                   getSendSnippet={getSendSnippet}
                   hasFailedToSendMessageText={hasFailedToSendMessageText}
                   sendingMessageText={t('sendingMessage')}
+                  modelHandle={agentState.llm_config?.handle ?? undefined}
                   onSendMessage={(
                     role: RoleOption,
                     content: LettaUserMessageContentUnion[] | string,
