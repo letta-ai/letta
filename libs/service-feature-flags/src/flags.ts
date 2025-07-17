@@ -26,16 +26,6 @@ export const featureFlags = {
     expiryDate: '2024-01-31',
     flagValue: z.boolean(),
   },
-  USE_TEMPORAL_FOR_MIGRATIONS: {
-    description: 'Use Temporal for migrations',
-    expiryDate: '2024-04-01',
-    flagValue: z.boolean(),
-  },
-  PRO_PLAN: {
-    description: 'Pro plan',
-    expiryDate: '2024-04-01',
-    flagValue: z.boolean(),
-  },
   VOICE_SLEEPTIME_AGENT: {
     description: 'Voice sleep time agent starter kit',
     expiryDate: '2024-07-01',

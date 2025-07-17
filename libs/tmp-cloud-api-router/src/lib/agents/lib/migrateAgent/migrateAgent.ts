@@ -58,12 +58,7 @@ export async function migrateAgent(
     };
   }
 
-  const shouldUseTemporal = await getSingleFlag(
-    'USE_TEMPORAL_FOR_MIGRATIONS',
-    organizationId,
-  );
-
-  if (environment.TEMPORAL_LETTUCE_API_HOST && shouldUseTemporal) {
+  if (environment.TEMPORAL_LETTUCE_API_HOST) {
     await startMigrateAgents({
       agentIds: [agentIdToMigrate],
       template: to_template,
