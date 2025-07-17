@@ -23,7 +23,7 @@ The memory benchmarks test the ability of a model to understand a memory hierarc
 **Overall Score** refers to the average score from memory read, write, and update tasks. **Cost** refers to (approximate) cost in USD to run the benchmark. Open weights models prefixed with `together` were run on [Together's API](/guides/server/providers/together).
 
 [Benchmark breakdown →](#understanding-the-benchmark)<br />
-[Model recommendations →](#results-and-recommendations)
+[Model recommendations →](#main-results-and-recommendations)
 
 <div id="letta-leaderboard">
   <div id="lb-controls" style="display:flex;align-items:center;max-width:800px;margin:10px auto 12px;gap:10px">
@@ -56,7 +56,7 @@ We measure two foundational aspects of context management: **core memory** and *
 
 For all the tasks in the memory benchmarks, we generate a fictional question-answering dataset with supporting facts to minimize prior knowledge from LLM training. To evaluate, we use a prompted GPT 4.1 to grade the agent-generated answer and the ground-truth answer, following [SimpleQA](https://openai.com/index/introducing-simpleqa/). We add a penalty for extraneous memory operations to penalize models for inefficient or incorrect archival memory accesses.
 
-### Main Results and Recommendations
+## Main Results and Recommendations
 
 For the **closed** model providers (OpenAI, Anthropic, Google):
 * Anthropic Claude Sonnet 4 and OpenAI GPT 4.1 are recommended models for most tasks
