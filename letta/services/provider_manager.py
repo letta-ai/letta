@@ -213,7 +213,7 @@ class ProviderManager:
             provider_type=provider_check.provider_type,
             api_key=provider_check.api_key,
             provider_category=ProviderCategory.byok,
-            secret_key=provider_check.api_secret,
+            access_id_key=provider_check.access_id_key,  # This contains the access key ID for Bedrock
             region=provider_check.region,
         ).cast_to_subtype()
 
