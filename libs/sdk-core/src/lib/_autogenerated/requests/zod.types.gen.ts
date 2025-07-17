@@ -6497,6 +6497,9 @@ export const get_Get_sources_metadata = {
   path: z.literal('/v1/sources/metadata'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    query: z.object({
+      include_detailed_per_source_metadata: z.boolean().optional(),
+    }),
     header: z.object({
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])

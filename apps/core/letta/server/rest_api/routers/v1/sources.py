@@ -99,6 +99,7 @@ async def get_source_id_by_name(
 async def get_sources_metadata(
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
+    include_detailed_per_source_metadata: bool = False,
 ):
     """
     Get aggregated metadata for all sources in an organization.
@@ -107,10 +108,12 @@ async def get_sources_metadata(
     - Total number of sources
     - Total number of files across all sources
     - Total size of all files
-    - Per-source breakdown with file details (file_name, file_size per file)
+    - Per-source breakdown with file details (file_name, file_size per file) if include_detailed_per_source_metadata is True
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    return await server.file_manager.get_organization_sources_metadata(actor=actor)
+    return await server.file_manager.get_organization_sources_metadata(
+        actor=actor, include_detailed_per_source_metadata=include_detailed_per_source_metadata
+    )
 
 
 @router.get("/", response_model=List[Source], operation_id="list_sources")

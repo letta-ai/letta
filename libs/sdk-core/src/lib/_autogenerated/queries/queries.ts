@@ -414,8 +414,9 @@ export const useSourcesServiceGetSourceIdByName = <
  * - Total number of sources
  * - Total number of files across all sources
  * - Total size of all files
- * - Per-source breakdown with file details (file_name, file_size per file)
+ * - Per-source breakdown with file details (file_name, file_size per file) if include_detailed_per_source_metadata is True
  * @param data The data for the request.
+ * @param data.includeDetailedPerSourceMetadata
  * @param data.userId
  * @returns OrganizationSourcesStats Successful Response
  * @throws ApiError
@@ -426,8 +427,10 @@ export const useSourcesServiceGetSourcesMetadata = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    includeDetailedPerSourceMetadata,
     userId,
   }: {
+    includeDetailedPerSourceMetadata?: boolean;
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
@@ -435,10 +438,14 @@ export const useSourcesServiceGetSourcesMetadata = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceGetSourcesMetadataKeyFn(
-      { userId },
+      { includeDetailedPerSourceMetadata, userId },
       queryKey,
     ),
-    queryFn: () => SourcesService.getSourcesMetadata({ userId }) as TData,
+    queryFn: () =>
+      SourcesService.getSourcesMetadata({
+        includeDetailedPerSourceMetadata,
+        userId,
+      }) as TData,
     ...options,
   });
 /**

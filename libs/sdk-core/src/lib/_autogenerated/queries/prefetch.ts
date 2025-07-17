@@ -288,8 +288,9 @@ export const prefetchUseSourcesServiceGetSourceIdByName = (
  * - Total number of sources
  * - Total number of files across all sources
  * - Total size of all files
- * - Per-source breakdown with file details (file_name, file_size per file)
+ * - Per-source breakdown with file details (file_name, file_size per file) if include_detailed_per_source_metadata is True
  * @param data The data for the request.
+ * @param data.includeDetailedPerSourceMetadata
  * @param data.userId
  * @returns OrganizationSourcesStats Successful Response
  * @throws ApiError
@@ -297,14 +298,23 @@ export const prefetchUseSourcesServiceGetSourceIdByName = (
 export const prefetchUseSourcesServiceGetSourcesMetadata = (
   queryClient: QueryClient,
   {
+    includeDetailedPerSourceMetadata,
     userId,
   }: {
+    includeDetailedPerSourceMetadata?: boolean;
     userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseSourcesServiceGetSourcesMetadataKeyFn({ userId }),
-    queryFn: () => SourcesService.getSourcesMetadata({ userId }),
+    queryKey: Common.UseSourcesServiceGetSourcesMetadataKeyFn({
+      includeDetailedPerSourceMetadata,
+      userId,
+    }),
+    queryFn: () =>
+      SourcesService.getSourcesMetadata({
+        includeDetailedPerSourceMetadata,
+        userId,
+      }),
   });
 /**
  * List Sources

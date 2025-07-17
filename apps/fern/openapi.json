@@ -1183,9 +1183,20 @@
       "get": {
         "tags": ["sources"],
         "summary": "Get Sources Metadata",
-        "description": "Get aggregated metadata for all sources in an organization.\n\nReturns structured metadata including:\n- Total number of sources\n- Total number of files across all sources\n- Total size of all files\n- Per-source breakdown with file details (file_name, file_size per file)",
+        "description": "Get aggregated metadata for all sources in an organization.\n\nReturns structured metadata including:\n- Total number of sources\n- Total number of files across all sources\n- Total size of all files\n- Per-source breakdown with file details (file_name, file_size per file) if include_detailed_per_source_metadata is True",
         "operationId": "get_sources_metadata",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "include_detailed_per_source_metadata",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Detailed Per Source Metadata"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",

@@ -957,8 +957,9 @@ export class SourcesService {
    * - Total number of sources
    * - Total number of files across all sources
    * - Total size of all files
-   * - Per-source breakdown with file details (file_name, file_size per file)
+   * - Per-source breakdown with file details (file_name, file_size per file) if include_detailed_per_source_metadata is True
    * @param data The data for the request.
+   * @param data.includeDetailedPerSourceMetadata
    * @param data.userId
    * @returns OrganizationSourcesStats Successful Response
    * @throws ApiError
@@ -970,6 +971,10 @@ export class SourcesService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/sources/metadata',
+      query: {
+        include_detailed_per_source_metadata:
+          data.includeDetailedPerSourceMetadata,
+      },
       errors: {
         422: 'Validation Error',
       },

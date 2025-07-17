@@ -4838,6 +4838,7 @@ export type GetSourceIdByNameData = {
 export type GetSourceIdByNameResponse = string;
 
 export type GetSourcesMetadataData = {
+  includeDetailedPerSourceMetadata?: boolean;
   userId?: string | null;
 };
 

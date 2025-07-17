@@ -5492,17 +5492,32 @@ async def test_get_organization_sources_metadata(server, default_user):
     )
     file3 = await server.file_manager.create_file(file_metadata=file3_meta, actor=default_user)
 
-    # Get organization metadata
-    metadata = await server.file_manager.get_organization_sources_metadata(actor=default_user)
+    # Test 1: Get organization metadata without detailed per-source metadata (default behavior)
+    metadata_summary = await server.file_manager.get_organization_sources_metadata(
+        actor=default_user, include_detailed_per_source_metadata=False
+    )
 
-    # Verify top-level aggregations
-    assert metadata.total_sources >= 2  # May have other sources from other tests
-    assert metadata.total_files >= 3
-    assert metadata.total_size >= 3584
+    # Verify top-level aggregations are present
+    assert metadata_summary.total_sources >= 2  # May have other sources from other tests
+    assert metadata_summary.total_files >= 3
+    assert metadata_summary.total_size >= 3584
 
-    # Find our test sources in the results
-    source1_meta = next((s for s in metadata.sources if s.source_id == source1.id), None)
-    source2_meta = next((s for s in metadata.sources if s.source_id == source2.id), None)
+    # Verify sources list is empty when include_detailed_per_source_metadata=False
+    assert len(metadata_summary.sources) == 0
+
+    # Test 2: Get organization metadata with detailed per-source metadata
+    metadata_detailed = await server.file_manager.get_organization_sources_metadata(
+        actor=default_user, include_detailed_per_source_metadata=True
+    )
+
+    # Verify top-level aggregations are the same
+    assert metadata_detailed.total_sources == metadata_summary.total_sources
+    assert metadata_detailed.total_files == metadata_summary.total_files
+    assert metadata_detailed.total_size == metadata_summary.total_size
+
+    # Find our test sources in the detailed results
+    source1_meta = next((s for s in metadata_detailed.sources if s.source_id == source1.id), None)
+    source2_meta = next((s for s in metadata_detailed.sources if s.source_id == source2.id), None)
 
     assert source1_meta is not None
     assert source1_meta.source_name == "test_source_1"

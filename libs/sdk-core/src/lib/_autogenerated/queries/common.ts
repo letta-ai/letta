@@ -248,12 +248,17 @@ export const useSourcesServiceGetSourcesMetadataKey =
   'SourcesServiceGetSourcesMetadata';
 export const UseSourcesServiceGetSourcesMetadataKeyFn = (
   {
+    includeDetailedPerSourceMetadata,
     userId,
   }: {
+    includeDetailedPerSourceMetadata?: boolean;
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useSourcesServiceGetSourcesMetadataKey, ...(queryKey ?? [{ userId }])];
+) => [
+  useSourcesServiceGetSourcesMetadataKey,
+  ...(queryKey ?? [{ includeDetailedPerSourceMetadata, userId }]),
+];
 export type SourcesServiceListSourcesDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.listSources>
 >;
