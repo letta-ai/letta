@@ -294,7 +294,7 @@ def _compare_agents(orig: AgentSchema, imp: AgentSchema, index: int) -> List[str
     if orig.agent_type != imp.agent_type:
         errors.append(f"Agent {index}: agent_type mismatch: '{orig.agent_type}' vs '{imp.agent_type}'")
 
-    if orig.tags != imp.tags:
+    if sorted(orig.tags or []) != sorted(imp.tags or []):
         errors.append(f"Agent {index}: tags mismatch: {orig.tags} vs {imp.tags}")
 
     if orig.metadata != imp.metadata:
@@ -378,7 +378,7 @@ def _compare_tools(orig: ToolSchema, imp: ToolSchema, index: int) -> List[str]:
     if orig.json_schema != imp.json_schema:
         errors.append(f"Tool {index}: json_schema mismatch")
 
-    if orig.tags != imp.tags:
+    if sorted(orig.tags or []) != sorted(imp.tags or []):
         errors.append(f"Tool {index}: tags mismatch: {orig.tags} vs {imp.tags}")
 
     if orig.metadata_ != imp.metadata_:
