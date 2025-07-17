@@ -357,7 +357,9 @@ class FileManager:
 
     @enforce_types
     @trace_method
-    async def get_organization_sources_metadata(self, actor: PydanticUser) -> OrganizationSourcesStats:
+    async def get_organization_sources_metadata(
+        self, actor: PydanticUser, include_detailed_per_source_metadata: bool = False
+    ) -> OrganizationSourcesStats:
         """
         Get aggregated metadata for all sources in an organization with optimized queries.
 
@@ -365,7 +367,7 @@ class FileManager:
         - Total number of sources
         - Total number of files across all sources
         - Total size of all files
-        - Per-source breakdown with file details
+        - Per-source breakdown with file details (if include_detailed_per_source_metadata is True)
         """
         async with db_registry.async_session() as session:
             # Import here to avoid circular imports
@@ -395,31 +397,33 @@ class FileManager:
             for row in source_aggregations:
                 source_id, source_name, file_count, total_size = row
 
-                # Get individual file details for this source
-                files_query = (
-                    select(FileMetadataModel.id, FileMetadataModel.file_name, FileMetadataModel.file_size)
-                    .where(
-                        FileMetadataModel.source_id == source_id,
-                        FileMetadataModel.organization_id == actor.organization_id,
-                        FileMetadataModel.is_deleted == False,
+                if include_detailed_per_source_metadata:
+                    # Get individual file details for this source
+                    files_query = (
+                        select(FileMetadataModel.id, FileMetadataModel.file_name, FileMetadataModel.file_size)
+                        .where(
+                            FileMetadataModel.source_id == source_id,
+                            FileMetadataModel.organization_id == actor.organization_id,
+                            FileMetadataModel.is_deleted == False,
+                        )
+                        .order_by(FileMetadataModel.file_name)
                     )
-                    .order_by(FileMetadataModel.file_name)
-                )
 
-                files_result = await session.execute(files_query)
-                files_rows = files_result.fetchall()
+                    files_result = await session.execute(files_query)
+                    files_rows = files_result.fetchall()
 
-                # Build file stats
-                files = [FileStats(file_id=file_row[0], file_name=file_row[1], file_size=file_row[2]) for file_row in files_rows]
+                    # Build file stats
+                    files = [FileStats(file_id=file_row[0], file_name=file_row[1], file_size=file_row[2]) for file_row in files_rows]
 
-                # Build source metadata
-                source_metadata = SourceStats(
-                    source_id=source_id, source_name=source_name, file_count=file_count, total_size=total_size, files=files
-                )
+                    # Build source metadata
+                    source_metadata = SourceStats(
+                        source_id=source_id, source_name=source_name, file_count=file_count, total_size=total_size, files=files
+                    )
 
-                metadata.sources.append(source_metadata)
+                    metadata.sources.append(source_metadata)
+
                 metadata.total_files += file_count
                 metadata.total_size += total_size
 
-            metadata.total_sources = len(metadata.sources)
+            metadata.total_sources = len(source_aggregations)
             return metadata
