@@ -8636,6 +8636,137 @@
             }
           }
         }
+      },
+      "get": {
+        "description": "List all client side access tokens for the current account. This is only available for cloud users.",
+        "summary": "List tokens  (Cloud-only)",
+        "tags": ["clientSideAccessTokens"],
+        "parameters": [
+          {
+            "name": "agentId",
+            "in": "query",
+            "description": "The agent ID to filter tokens by. If provided, only tokens for this agent will be returned.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "The offset for pagination. Defaults to 0.",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "The number of tokens to return per page. Defaults to 10.",
+            "schema": {
+              "default": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "operationId": "clientSideAccessTokens.listClientSideAccessTokens",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tokens": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "policy": {
+                            "type": "object",
+                            "properties": {
+                              "version": {
+                                "type": "string",
+                                "enum": ["1"]
+                              },
+                              "data": {
+                                "type": "array",
+                                "items": {
+                                  "discriminator": {
+                                    "propertyName": "type"
+                                  },
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "enum": ["agent"]
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "access": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "enum": [
+                                              "read_messages",
+                                              "write_messages",
+                                              "read_agent",
+                                              "write_agent"
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      "required": ["type", "id", "access"]
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "required": ["version", "data"]
+                          },
+                          "token": {
+                            "type": "string"
+                          },
+                          "hostname": {
+                            "type": "string"
+                          },
+                          "expiresAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["policy", "token", "hostname", "expiresAt"]
+                      }
+                    },
+                    "hasNextPage": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["tokens", "hasNextPage"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/client-side-access-tokens/{token}": {

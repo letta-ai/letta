@@ -61,6 +61,7 @@ function TestConnectionButton() {
       try {
         setIsTesting(true);
         setTestingStatus(null);
+
         const res = await fetch(`/v1/providers/check`, {
           method: 'POST',
           headers: {
