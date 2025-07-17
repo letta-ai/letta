@@ -31,11 +31,6 @@ export const featureFlags = {
     expiryDate: '2025-09-01',
     flagValue: z.boolean(),
   },
-  MORE_MEMORY_FIELDS: {
-    description: 'More memory fields',
-    expiryDate: '2024-07-01',
-    flagValue: z.boolean(),
-  },
   EMAIL_SIGNUP: {
     description: 'Email signup',
     expiryDate: '2024-07-01',
