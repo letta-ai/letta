@@ -62,6 +62,8 @@ import type {
   CreateSourceResponse,
   UploadFileToSourceData,
   UploadFileToSourceResponse,
+  GetAgentsForSourceData,
+  GetAgentsForSourceResponse,
   ListSourcePassagesData,
   ListSourcePassagesResponse,
   ListSourceFilesData,
@@ -1055,6 +1057,32 @@ export class SourcesService {
       },
       formData: data.formData,
       mediaType: 'multipart/form-data',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Agents For Source
+   * Get all agent IDs that have the specified source attached.
+   * @param data The data for the request.
+   * @param data.sourceId
+   * @param data.userId
+   * @returns string Successful Response
+   * @throws ApiError
+   */
+  public static getAgentsForSource(
+    data: GetAgentsForSourceData,
+    headers?: { user_id: string },
+  ): CancelablePromise<GetAgentsForSourceResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/sources/{source_id}/agents',
+      path: {
+        source_id: data.sourceId,
+      },
       errors: {
         422: 'Validation Error',
       },

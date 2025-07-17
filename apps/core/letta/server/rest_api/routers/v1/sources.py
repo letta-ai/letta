@@ -324,6 +324,19 @@ async def upload_file_to_source(
     return file_metadata
 
 
+@router.get("/{source_id}/agents", response_model=List[str], operation_id="get_agents_for_source")
+async def get_agents_for_source(
+    source_id: str,
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Get all agent IDs that have the specified source attached.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.source_manager.get_agents_for_source_id(source_id=source_id, actor=actor)
+
+
 @router.get("/{source_id}/passages", response_model=List[Passage], operation_id="list_source_passages")
 async def list_source_passages(
     source_id: str,

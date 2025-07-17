@@ -6564,6 +6564,24 @@ export const post_Upload_file_to_source = {
   response: FileMetadata,
 };
 
+export type get_Get_agents_for_source = typeof get_Get_agents_for_source;
+export const get_Get_agents_for_source = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/sources/{source_id}/agents'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      source_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(z.string()),
+};
+
 export type get_List_source_passages = typeof get_List_source_passages;
 export const get_List_source_passages = {
   method: z.literal('GET'),
@@ -9265,6 +9283,7 @@ export const EndpointByMethod = {
     '/v1/sources/name/{source_name}': get_Get_source_id_by_name,
     '/v1/sources/metadata': get_Get_sources_metadata,
     '/v1/sources/': get_List_sources,
+    '/v1/sources/{source_id}/agents': get_Get_agents_for_source,
     '/v1/sources/{source_id}/passages': get_List_source_passages,
     '/v1/sources/{source_id}/files': get_List_source_files,
     '/v1/sources/{source_id}/files/{file_id}': get_Get_file_metadata,

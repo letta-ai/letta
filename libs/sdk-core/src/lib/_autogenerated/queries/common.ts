@@ -275,6 +275,28 @@ export const UseSourcesServiceListSourcesKeyFn = (
   } = {},
   queryKey?: Array<unknown>,
 ) => [useSourcesServiceListSourcesKey, ...(queryKey ?? [{ userId }])];
+export type SourcesServiceGetAgentsForSourceDefaultResponse = Awaited<
+  ReturnType<typeof SourcesService.getAgentsForSource>
+>;
+export type SourcesServiceGetAgentsForSourceQueryResult<
+  TData = SourcesServiceGetAgentsForSourceDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useSourcesServiceGetAgentsForSourceKey =
+  'SourcesServiceGetAgentsForSource';
+export const UseSourcesServiceGetAgentsForSourceKeyFn = (
+  {
+    sourceId,
+    userId,
+  }: {
+    sourceId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useSourcesServiceGetAgentsForSourceKey,
+  ...(queryKey ?? [{ sourceId, userId }]),
+];
 export type SourcesServiceListSourcePassagesDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.listSourcePassages>
 >;

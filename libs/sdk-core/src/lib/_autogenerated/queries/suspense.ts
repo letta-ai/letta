@@ -420,6 +420,39 @@ export const useSourcesServiceListSourcesSuspense = <
     ...options,
   });
 /**
+ * Get Agents For Source
+ * Get all agent IDs that have the specified source attached.
+ * @param data The data for the request.
+ * @param data.sourceId
+ * @param data.userId
+ * @returns string Successful Response
+ * @throws ApiError
+ */
+export const useSourcesServiceGetAgentsForSourceSuspense = <
+  TData = Common.SourcesServiceGetAgentsForSourceDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    sourceId,
+    userId,
+  }: {
+    sourceId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseSourcesServiceGetAgentsForSourceKeyFn(
+      { sourceId, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      SourcesService.getAgentsForSource({ sourceId, userId }) as TData,
+    ...options,
+  });
+/**
  * List Source Passages
  * List all passages associated with a data source.
  * @param data The data for the request.

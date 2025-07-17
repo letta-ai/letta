@@ -1357,6 +1357,51 @@
         }
       }
     },
+    "/v1/sources/{source_id}/agents": {
+      "get": {
+        "tags": ["sources"],
+        "summary": "Get Agents For Source",
+        "description": "Get all agent IDs that have the specified source attached.",
+        "operationId": "get_agents_for_source",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Response Get Agents For Source"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sources/{source_id}/passages": {
       "get": {
         "tags": ["sources"],

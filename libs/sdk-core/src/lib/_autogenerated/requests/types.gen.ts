@@ -4869,6 +4869,13 @@ export type UploadFileToSourceData = {
 
 export type UploadFileToSourceResponse = FileMetadata;
 
+export type GetAgentsForSourceData = {
+  sourceId: string;
+  userId?: string | null;
+};
+
+export type GetAgentsForSourceResponse = Array<string>;
+
 export type ListSourcePassagesData = {
   /**
    * Message after which to retrieve the returned messages.
@@ -6642,6 +6649,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: FileMetadata;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/sources/{source_id}/agents': {
+    get: {
+      req: GetAgentsForSourceData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<string>;
         /**
          * Validation Error
          */

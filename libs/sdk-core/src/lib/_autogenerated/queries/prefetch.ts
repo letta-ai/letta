@@ -337,6 +337,32 @@ export const prefetchUseSourcesServiceListSources = (
     queryFn: () => SourcesService.listSources({ userId }),
   });
 /**
+ * Get Agents For Source
+ * Get all agent IDs that have the specified source attached.
+ * @param data The data for the request.
+ * @param data.sourceId
+ * @param data.userId
+ * @returns string Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseSourcesServiceGetAgentsForSource = (
+  queryClient: QueryClient,
+  {
+    sourceId,
+    userId,
+  }: {
+    sourceId: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseSourcesServiceGetAgentsForSourceKeyFn({
+      sourceId,
+      userId,
+    }),
+    queryFn: () => SourcesService.getAgentsForSource({ sourceId, userId }),
+  });
+/**
  * List Source Passages
  * List all passages associated with a data source.
  * @param data The data for the request.
