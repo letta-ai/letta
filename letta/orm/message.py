@@ -78,7 +78,7 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
         if self.text and not model.content:
             model.content = [PydanticTextContent(text=self.text)]
         # If there are no tool calls, set tool_calls to None
-        if len(self.tool_calls) == 0:
+        if self.tool_calls is None or len(self.tool_calls) == 0:
             model.tool_calls = None
         return model
 
