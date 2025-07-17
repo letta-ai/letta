@@ -1304,12 +1304,11 @@ class Agent(BaseAgent):
     async def get_context_window_from_tiktoken_async(self) -> ContextWindowOverview:
         """Get the context window of the agent"""
         # Grab the in-context messages
-        # conversion of messages to OpenAI dict format, which is passed to the token counter
-        (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
-            self.message_manager.get_messages_by_ids_async(message_ids=self.agent_state.message_ids, actor=self.user),
-            self.passage_manager.agent_passage_size_async(actor=self.user, agent_id=self.agent_state.id),
-            self.message_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
+        in_context_messages = await self.message_manager.get_messages_by_ids_async(
+            message_ids=self.agent_state.message_ids, actor=self.user
         )
+
+        # conversion of messages to OpenAI dict format, which is passed to the token counter
         in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
 
         # Extract system, memory and external summary
@@ -1396,6 +1395,15 @@ class Agent(BaseAgent):
         )
         assert isinstance(num_tokens_used_total, int)
 
+        passage_manager_size = await self.passage_manager.agent_passage_size_async(
+            agent_id=self.agent_state.id,
+            actor=self.user,
+        )
+        message_manager_size = await self.message_manager.size_async(
+            agent_id=self.agent_state.id,
+            actor=self.user,
+        )
+
         return ContextWindowOverview(
             # context window breakdown (in messages)
             num_messages=len(in_context_messages),
@@ -1426,12 +1434,11 @@ class Agent(BaseAgent):
         model = self.agent_state.llm_config.model if self.agent_state.llm_config.model_endpoint_type == "anthropic" else None
 
         # Grab the in-context messages
-        # conversion of messages to anthropic dict format, which is passed to the token counter
-        (in_context_messages, passage_manager_size, message_manager_size) = await asyncio.gather(
-            self.message_manager.get_messages_by_ids_async(message_ids=self.agent_state.message_ids, actor=self.user),
-            self.passage_manager.agent_passage_size_async(actor=self.user, agent_id=self.agent_state.id),
-            self.message_manager.size_async(actor=self.user, agent_id=self.agent_state.id),
+        in_context_messages = await self.message_manager.get_messages_by_ids_async(
+            message_ids=self.agent_state.message_ids, actor=self.user
         )
+
+        # conversion of messages to anthropic dict format, which is passed to the token counter
         in_context_messages_anthropic = [m.to_anthropic_dict() for m in in_context_messages]
 
         # Extract system, memory and external summary
@@ -1545,6 +1552,15 @@ class Agent(BaseAgent):
             + num_tokens_messages  # tokens taken by messages
         )
         assert isinstance(num_tokens_used_total, int)
+
+        passage_manager_size = await self.passage_manager.agent_passage_size_async(
+            agent_id=self.agent_state.id,
+            actor=self.user,
+        )
+        message_manager_size = await self.message_manager.size_async(
+            agent_id=self.agent_state.id,
+            actor=self.user,
+        )
 
         return ContextWindowOverview(
             # context window breakdown (in messages)

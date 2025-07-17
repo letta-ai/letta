@@ -1,4 +1,3 @@
-import asyncio
 import json
 import uuid
 from collections.abc import AsyncGenerator
@@ -948,18 +947,17 @@ class LettaAgent(BaseAgent):
         agent_state: AgentState,
         tool_rules_solver: ToolRulesSolver,
     ) -> tuple[dict, list[str]]:
-        self.num_messages, self.num_archival_memories = await asyncio.gather(
-            (
-                self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id)
-                if self.num_messages is None
-                else asyncio.sleep(0, result=self.num_messages)
-            ),
-            (
-                self.passage_manager.agent_passage_size_async(actor=self.actor, agent_id=agent_state.id)
-                if self.num_archival_memories is None
-                else asyncio.sleep(0, result=self.num_archival_memories)
-            ),
-        )
+        if not self.num_messages:
+            self.num_messages = await self.message_manager.size_async(
+                agent_id=agent_state.id,
+                actor=self.actor,
+            )
+        if not self.num_archival_memories:
+            self.num_archival_memories = await self.passage_manager.agent_passage_size_async(
+                agent_id=agent_state.id,
+                actor=self.actor,
+            )
+
         in_context_messages = await self._rebuild_memory_async(
             in_context_messages,
             agent_state,
