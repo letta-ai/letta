@@ -47,6 +47,7 @@ env:
   POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
   TWILIO_SID: ${{ secrets.TWILIO_SID }}
   TWILIO_SECRET: ${{ secrets.TWILIO_SECRET }}
+  GIT_HASH: ${{ github.sha }}
   NEXT_PUBLIC_CURRENT_HOST: https://app.letta.com
   CLOUD_API_ENDPOINT: https://api.letta.com
   REDIS_HOST: "10.167.199.148"
