@@ -1487,6 +1487,8 @@
     "StreamableHttpSetupServer": {
       "serverUrlRequired": "Please enter a valid server URL.",
       "apiKeyRequired": "Please enter your API key.",
+      "apiKeyOptionalLabel": "API Key (Optional)",
+      "customUrlLabel": "Custom URL",
       "errorMessage": "There was an error connecting to the server, please check your URL and API key and try again or contact support.",
       "instructionsTitle": "Setup Instructions",
       "serverUrlPlaceholder": "https://mcp.zapier.com/api/mcp/mcp",

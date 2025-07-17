@@ -62,6 +62,7 @@ export function useRecommendedMCPServers(): RecommendedServer[] {
           type: 'custom-url',
           baseUrl: 'https://mcp.zapier.com/api/mcp/mcp',
           requiresApiKey: true,
+          requiresServerUrl: true, // Add this to enable custom URLs
           instructions: t.rich('zapier.instructions', {
             link: (chunks) => (
               <Link target="_blank" href="https://mcp.zapier.com/">

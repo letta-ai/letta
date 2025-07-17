@@ -30,17 +30,61 @@ export function StreamableHttpSetupServer(
 ) {
   const t = useTranslations('ToolsEditor/MCPServerExplorer');
 
-  const streamableHttpSchema = z.object({
-    serverUrl: z
-      .string()
-      .url()
-      .min(1, t('StreamableHttpSetupServer.serverUrlRequired')),
-    authMode: z.string().default(AuthModes.API_KEY),
-    authToken: z.string().min(1, t('StreamableHttpSetupServer.apiKeyRequired')),
-    customHeaders: z
-      .array(z.object({ key: z.string(), value: z.string() }))
-      .default([]),
-  });
+  // Create dynamic schema based on server configuration
+  function createSchema() {
+    const baseSchema = {
+      serverUrl: z
+        .string()
+        .url()
+        .min(1, t('StreamableHttpSetupServer.serverUrlRequired')),
+      authMode: z.string().default(AuthModes.API_KEY),
+      customHeaders: z
+        .array(z.object({ key: z.string(), value: z.string() }))
+        .default([]),
+    };
+
+    // If server requires custom URLs, make API token optional when URL differs from base
+    if (props.server.setup.requiresServerUrl) {
+      return z.object({
+        ...baseSchema,
+        authToken: z
+          .string()
+          .optional()
+          .refine(
+            (val) => {
+              // Get the current form values to access serverUrl
+              const formValues = form.getValues();
+              const serverUrl = formValues.serverUrl;
+              const baseUrl = props.server.setup.baseUrl;
+
+              // If using the default base URL, API token is required
+              if (serverUrl === baseUrl && props.server.setup.requiresApiKey) {
+                return (
+                  (val && val.length > 0) ||
+                  t('StreamableHttpSetupServer.apiKeyRequired')
+                );
+              }
+
+              // If using a custom URL, API token is optional
+              return true;
+            },
+            {
+              message: t('StreamableHttpSetupServer.apiKeyRequired'),
+            },
+          ),
+      });
+    }
+
+    // Default behavior: API token required if server requires it
+    return z.object({
+      ...baseSchema,
+      authToken: props.server.setup.requiresApiKey
+        ? z.string().min(1, t('StreamableHttpSetupServer.apiKeyRequired'))
+        : z.string().optional(),
+    });
+  }
+
+  const streamableHttpSchema = createSchema();
 
   const form = useForm({
     resolver: zodResolver(streamableHttpSchema),
@@ -65,7 +109,7 @@ export function StreamableHttpSetupServer(
     (data: StreamableHttpFormValues) => {
       const { authHeaders, authHeader, authToken } = parseAuthenticationData({
         authMode: data.authMode,
-        authToken: data.authToken,
+        authToken: data.authToken || '', // Handle optional auth token
         customHeaders: data.customHeaders,
         options: { formatToken: true, includeAuthHeader: true },
       });
@@ -86,6 +130,10 @@ export function StreamableHttpSetupServer(
     [serverName, mutate],
   );
 
+  // Determine if API token input should be shown based on current URL
+  const isApiTokenInputVisible =
+    watchedServerUrl === props.server.setup.baseUrl;
+
   return (
     <FormProvider {...form}>
       <Dialog
@@ -105,7 +153,11 @@ export function StreamableHttpSetupServer(
             actions={
               <Badge
                 variant="info"
-                content={t('ApiKeyRequiredMCPServer.apiKeyLabel')}
+                content={
+                  isApiTokenInputVisible
+                    ? t('ApiKeyRequiredMCPServer.apiKeyLabel')
+                    : t('StreamableHttpSetupServer.customUrlLabel')
+                }
                 size="small"
                 border
               />
@@ -124,18 +176,20 @@ export function StreamableHttpSetupServer(
             />
           )}
         />
-        <FormField
-          name="authToken"
-          render={({ field }) => (
-            <Input
-              fullWidth
-              type="password"
-              placeholder={t('StreamableHttpSetupServer.apiKeyPlaceholder')}
-              label={t('StreamableHttpSetupServer.apiKeyLabel')}
-              {...field}
-            />
-          )}
-        />
+        {isApiTokenInputVisible && (
+          <FormField
+            name="authToken"
+            render={({ field }) => (
+              <Input
+                fullWidth
+                type="password"
+                placeholder={t('StreamableHttpSetupServer.apiKeyPlaceholder')}
+                label={t('StreamableHttpSetupServer.apiKeyLabel')}
+                {...field}
+              />
+            )}
+          />
+        )}
         <TestMCPConnectionButton
           serverType={MCPServerTypes.StreamableHttp}
           data-testid={`test-connection-${watchedServerUrl}-${watchedAuthToken?.length}`}
