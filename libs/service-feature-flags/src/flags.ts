@@ -26,11 +26,6 @@ export const featureFlags = {
     expiryDate: '2024-01-31',
     flagValue: z.boolean(),
   },
-  VOICE_SLEEPTIME_AGENT: {
-    description: 'Voice sleep time agent starter kit',
-    expiryDate: '2024-07-01',
-    flagValue: z.boolean(),
-  },
   TOOLS_ON_DASHBOARD: {
     description: 'Tools on dashboard',
     expiryDate: '2025-09-01',

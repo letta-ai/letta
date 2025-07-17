@@ -16,7 +16,6 @@ import {
 } from '@letta-cloud/config-agent-starter-kits';
 import { useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface ArchitectureSelectorProps {
   architectures: StarterKitArchitecture[];
@@ -80,10 +79,6 @@ export function StarterKitSelector(props: StarterKitSelectorProps) {
   const [currentArchitecture, setCurrentArchitecture] =
     useState<StarterKitArchitecture>(architectures[0] || 'memgpt');
 
-  const { data: isVoiceSleeptimeAgentEnabled } = useFeatureFlag(
-    'VOICE_SLEEPTIME_AGENT',
-  );
-
   const entryMapToArchitecture = useMemo(() => {
     const map: Record<string, Array<[string, StarterKit]>> = {};
 
@@ -125,9 +120,6 @@ export function StarterKitSelector(props: StarterKitSelectorProps) {
       )}
       <NiceGridDisplay itemWidth="250px" itemHeight="260px">
         {currentStarterKits.map(([id, starterKit]) => {
-          if (id === 'voiceSleepTime' && !isVoiceSleeptimeAgentEnabled) {
-            return null;
-          }
           return (
             <StarterKitItems
               onSelectStarterKit={onSelectStarterKit}
