@@ -18,9 +18,9 @@ import './ToolRules.scss';
 // Import icon components from UI library
 import {
   StartIcon,
-  ChildNodesIcon,
-  RuleIcon as MaxCountIcon,
-  ArrowRightIcon,
+  ConstrainChildToolsIcon,
+  MaxCountPerStepIcon,
+  ContinueLoopIcon,
   EndIcon,
   LoadingEmptyStatusComponent,
   CaretDownIcon,
@@ -100,17 +100,17 @@ function getRuleTypeIcons(
     },
     {
       type: 'constrain_child_tools',
-      icon: <ChildNodesIcon />,
+      icon: <ConstrainChildToolsIcon />,
       color: COLORS.RULE_ICONS.CONSTRAIN,
     },
     {
       type: 'max_count_per_step',
-      icon: <MaxCountIcon />,
+      icon: <MaxCountPerStepIcon />,
       color: COLORS.RULE_ICONS.MAX_COUNT,
     },
     {
       type: 'continue_loop',
-      icon: <ArrowRightIcon />,
+      icon: <ContinueLoopIcon />,
       color: COLORS.RULE_ICONS.CONTINUE,
     },
     {
@@ -534,19 +534,19 @@ function Legend({
             </div>
             <div className="tool-rules-legend__item">
               <div style={{ color: COLORS.RULE_ICONS.CONSTRAIN }}>
-                <ChildNodesIcon />
+                <ConstrainChildToolsIcon />
               </div>
               <span>{t('constrain')}</span>
             </div>
             <div className="tool-rules-legend__item">
               <div style={{ color: COLORS.RULE_ICONS.MAX_COUNT }}>
-                <MaxCountIcon />
+                <MaxCountPerStepIcon />
               </div>
               <span>{t('maxCount')}</span>
             </div>
             <div className="tool-rules-legend__item">
               <div style={{ color: COLORS.RULE_ICONS.CONTINUE }}>
-                <ArrowRightIcon />
+                <ContinueLoopIcon />
               </div>
               <span>{t('continueLoop')}</span>
             </div>

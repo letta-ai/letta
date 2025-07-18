@@ -76,7 +76,7 @@
   },
   "ADE/ToolRules": {
     "appName": "Tool Rules",
-    "title": "Tool Rule Editor",
+    "title": "Tool Rules Editor",
     "trigger": "Edit tool rules",
     "confirmLeave": {
       "title": "Are you sure you want to leave?",
@@ -85,7 +85,8 @@
     "ToolRuleList": {
       "search": "Search rules by tool name",
       "newRule": "New rule",
-      "error": "There was an error saving your rules, please try again or contact support, resetting to last saved state."
+      "error": "There was an error saving your rules, please try again or contact support, resetting to last saved state.",
+      "save": "Save"
     },
     "ToolRuleItemWrapper": {
       "invalid": "Invalid rule",
@@ -99,24 +100,28 @@
     "ExitLoopToolEditor": {
       "sentence": "<tool></tool> will stop the agent's execution loop after being called.",
       "toolName": "Tool name",
-      "save": "Save"
+      "save": "Save",
+      "description": "Tool will stop the agent's execution loop after being called."
     },
     "ContinueToolRule": {
       "sentence": "Agent loop will not stop at <tool></tool>",
       "toolName": "Tool name",
-      "save": "Save"
+      "save": "Save",
+      "description": "Agent loop will not stop at this tool."
     },
     "RequiredBeforeExitToolEditor": {
       "sentence": "<tool></tool> must be called before the agent exits the loop",
       "toolName": "Tool name",
-      "save": "Save"
+      "save": "Save",
+      "description": "Tool must be called before the agent exits the loop"
     },
     "ChildToolRuleEditor": {
       "sentence": "<tool></tool> must be followed by calling the tool:",
       "toolName": "Tool name",
       "parentToolName": "Parent tool name",
       "children": "Child tools",
-      "save": "Save"
+      "save": "Save",
+      "description": "Tool must be followed by calling the tool"
     },
     "ConditionalToolEditor": {
       "sentence1": "If <tool></tool> returns the following data:",
@@ -131,25 +136,32 @@
     "StartConstraintToolEditor": {
       "sentence": "<tool></tool> will be called before the agent does anything else when the agent is invoked",
       "toolName": "Tool name",
-      "save": "Save"
+      "save": "Save",
+      "description": "Tool will be called before the agent does anything else when the agent is invoked."
     },
     "MaxCountPerStepToolRuleEditor": {
       "sentence": "<tool></tool> can be called a maximum of <count></count> times in a loop",
       "toolName": "Tool name",
       "count": "Max count",
-      "save": "Save"
+      "save": "Save",
+      "description": "Tool can be called a maximum of",
+      "timesInLoop": "times in a loop"
     },
     "toolTypes": {
+      "allRules": {
+        "title": "All Rules",
+        "description": "All rules "
+      },
       "runFirst": {
-        "title": "Start constraint",
+        "title": "Start Constraint",
         "description": "Specify the first tool called on each agent invocation"
       },
       "exitLoop": {
-        "title": "Exit loop",
+        "title": "Exit Loop",
         "description": "Force the agent to stop executing"
       },
       "constrainChildTools": {
-        "title": "Constrain child tools",
+        "title": "Constrain Child Tools",
         "description": "Require one tool to follow another tool"
       },
       "conditional": {
@@ -157,18 +169,23 @@
         "description": "Run a tool based on a condition from another tool"
       },
       "continueLoop": {
-        "title": "Continue loop",
+        "title": "Continue Loop",
         "description": "Prevent a tool from being the start or end of a loop"
       },
       "requiredBeforeExit": {
-        "title": "Required before exit",
+        "title": "Required Before Exit",
         "description": "Require a tool to be called before the agent exits the loop"
       },
       "maxCountPerStep": {
-        "title": "Max count per step",
+        "title": "Max Count Per Step",
         "description": "Limit the number of times a tool can be called in a loop"
       }
-    }
+    },
+    "viewMode": {
+      "byRules": "By Rules",
+      "byTools": "By Tools"
+    },
+    "searchTools": "Search tools..."
   },
   "ADE/ToolRulesVisual": {
     "ruleTypes": "Rule Types",

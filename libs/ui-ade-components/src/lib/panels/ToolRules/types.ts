@@ -7,6 +7,7 @@ import type {
   MaxCountPerStepToolRule,
   TerminalToolRule,
   RequiredBeforeExitToolRule,
+  ParentToolRule,
 } from '@letta-cloud/sdk-core';
 import type { Node } from '@xyflow/react';
 
@@ -17,6 +18,7 @@ export type SupportedToolRuleTypes =
   | ContinueToolRule
   | InitToolRule
   | MaxCountPerStepToolRule
+  | ParentToolRule
   | RequiredBeforeExitToolRule
   | TerminalToolRule;
 
@@ -28,6 +30,7 @@ export type {
   MaxCountPerStepToolRule,
   TerminalToolRule,
   RequiredBeforeExitToolRule,
+  ParentToolRule,
 };
 
 export type SupportedToolRuleNameTypes =
@@ -92,7 +95,7 @@ export interface OpacityCalculationParams {
 
 // Base interface for tool rule editor props
 export interface ToolEditorDefaultProps {
-  onSubmit: (data: SupportedToolRuleTypes) => void;
+  onSubmit: (data: SupportedToolRuleTypes | SupportedToolRuleTypes[]) => void;
   onRemove: () => void;
 }
 
