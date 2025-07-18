@@ -4,6 +4,7 @@ import threading
 import time
 import uuid
 from typing import List
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import requests
@@ -11,8 +12,11 @@ from dotenv import load_dotenv
 from letta_client import Letta, MessageCreate
 from letta_client.types import ToolReturnMessage
 
+from letta.constants import WEB_SEARCH_MODEL_ENV_VAR_NAME
+from letta.functions.types import SearchTask
 from letta.schemas.agent import AgentState
 from letta.schemas.llm_config import LLMConfig
+from letta.services.tool_executor.builtin_tool_executor import LettaBuiltinToolExecutor
 from letta.settings import tool_settings
 
 # ------------------------------
@@ -105,6 +109,28 @@ def agent_state_with_firecrawl_key(client: Letta) -> AgentState:
         embedding="letta/letta-free",
         tags=["test_builtin_tools_agent"],
         tool_exec_environment_variables={"FIRECRAWL_API_KEY": tool_settings.firecrawl_api_key},
+    )
+    yield agent_state_instance
+
+
+@pytest.fixture(scope="module")
+def agent_state_with_web_search_env_var(client: Letta) -> AgentState:
+    """
+    Creates and returns an agent state for testing with a pre-configured agent.
+    """
+    client.tools.upsert_base_tools()
+
+    send_message_tool = client.tools.list(name="send_message")[0]
+    run_code_tool = client.tools.list(name="run_code")[0]
+    web_search_tool = client.tools.list(name="web_search")[0]
+    agent_state_instance = client.agents.create(
+        name="test_builtin_tools_agent",
+        include_base_tools=False,
+        tool_ids=[send_message_tool.id, run_code_tool.id, web_search_tool.id],
+        model="openai/gpt-4o",
+        embedding="letta/letta-free",
+        tags=["test_builtin_tools_agent"],
+        tool_exec_environment_variables={WEB_SEARCH_MODEL_ENV_VAR_NAME: "gpt-4o"},
     )
     yield agent_state_instance
 
@@ -271,6 +297,65 @@ def test_web_search(
         "agent_environment",
         "system_settings",
     ], f"Invalid api_key_source: {response_json['api_key_source']}"
+
+
+@pytest.mark.asyncio
+async def test_web_search_uses_agent_env_var_model(agent_state_with_web_search_env_var):
+    """Test that web search uses the model specified in agent tool exec env vars."""
+
+    # mock firecrawl response
+    mock_search_result = {
+        "data": [
+            {
+                "url": "https://example.com",
+                "title": "Example Title",
+                "description": "Example description",
+                "markdown": "Line 1: Test content\nLine 2: More content",
+            }
+        ]
+    }
+
+    # mock openai response
+    mock_openai_response = MagicMock()
+    mock_openai_response.usage = MagicMock()
+    mock_openai_response.usage.total_tokens = 100
+    mock_openai_response.usage.prompt_tokens = 80
+    mock_openai_response.usage.completion_tokens = 20
+    mock_openai_response.choices = [MagicMock()]
+    mock_openai_response.choices[0].message.parsed = MagicMock()
+    mock_openai_response.choices[0].message.parsed.citations = []
+
+    with (
+        patch("openai.AsyncOpenAI") as mock_openai_class,
+        patch("letta.services.tool_executor.builtin_tool_executor.model_settings") as mock_model_settings,
+        patch.dict(os.environ, {WEB_SEARCH_MODEL_ENV_VAR_NAME: "gpt-4o"}),
+    ):
+
+        # setup mocks
+        mock_model_settings.openai_api_key = "test-key"
+
+        mock_openai_client = AsyncMock()
+        mock_openai_class.return_value = mock_openai_client
+        mock_openai_client.beta.chat.completions.parse.return_value = mock_openai_response
+
+        # create executor with mock dependencies
+        executor = LettaBuiltinToolExecutor(
+            message_manager=MagicMock(),
+            agent_manager=MagicMock(),
+            block_manager=MagicMock(),
+            job_manager=MagicMock(),
+            passage_manager=MagicMock(),
+            actor=MagicMock(),
+        )
+
+        task = SearchTask(query="test query", question="test question")
+
+        await executor.web_search(agent_state=agent_state_with_web_search_env_var, tasks=[task], limit=1)
+
+        # verify correct model was used
+        mock_openai_client.beta.chat.completions.parse.assert_called_once()
+        call_args = mock_openai_client.beta.chat.completions.parse.call_args
+        assert call_args[1]["model"] == "gpt-4o"
 
 
 @pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS, ids=[c.model for c in TESTED_LLM_CONFIGS])
