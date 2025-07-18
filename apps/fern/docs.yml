@@ -409,6 +409,8 @@ navigation:
             # path: pages/cloud/models.mdx
           - page: Custom API Keys
             path: pages/cloud/api_keys.mdx
+          - page: Role-Based Access Control
+            path: pages/cloud/rbac.mdx
       - section: Deploying Agents
         contents:
           - page: Agent Templates Overview
