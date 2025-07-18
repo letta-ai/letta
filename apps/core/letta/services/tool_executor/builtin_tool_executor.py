@@ -1,10 +1,12 @@
 import asyncio
 import json
+import os
 import time
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel
 
+from letta.constants import WEB_SEARCH_MODEL_ENV_VAR_DEFAULT_VALUE, WEB_SEARCH_MODEL_ENV_VAR_NAME
 from letta.functions.prompts import FIRECRAWL_SEARCH_SYSTEM_PROMPT, get_firecrawl_search_user_prompt
 from letta.functions.types import SearchTask
 from letta.log import get_logger
@@ -322,8 +324,10 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         # Time the OpenAI request
         start_time = time.time()
 
+        model = os.getenv(WEB_SEARCH_MODEL_ENV_VAR_NAME, WEB_SEARCH_MODEL_ENV_VAR_DEFAULT_VALUE)
+        logger.info(f"Using model {model} for web search result parsing")
         response = await client.beta.chat.completions.parse(
-            model="gpt-4.1-mini-2025-04-14",
+            model=model,
             messages=[{"role": "system", "content": FIRECRAWL_SEARCH_SYSTEM_PROMPT}, {"role": "user", "content": user_prompt}],
             response_format=DocumentAnalysis,
             temperature=0.1,
