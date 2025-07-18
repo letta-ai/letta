@@ -1,14 +1,15 @@
+from datetime import datetime
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
 from letta.schemas.agent import AgentState, CreateAgent
-from letta.schemas.block import CreateBlock
+from letta.schemas.block import Block, CreateBlock
 from letta.schemas.enums import MessageRole
-from letta.schemas.file import FileMetadataCreate
+from letta.schemas.file import FileAgent, FileAgentBase, FileMetadata, FileMetadataBase
 from letta.schemas.group import GroupCreate
 from letta.schemas.message import Message, MessageCreate
-from letta.schemas.source import SourceCreate
+from letta.schemas.source import Source, SourceCreate
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
 from letta.services.message_manager import MessageManager
@@ -63,6 +64,30 @@ class MessageSchema(MessageCreate):
         )
 
 
+class FileAgentSchema(FileAgentBase):
+    """File-Agent relationship with human-readable ID for agent file"""
+
+    __id_prefix__ = "file_agent"
+    id: str = Field(..., description="Human-readable identifier for this file-agent relationship in the file")
+
+    @classmethod
+    def from_file_agent(cls, file_agent: FileAgent) -> "FileAgentSchema":
+        """Convert FileAgent to FileAgentSchema"""
+
+        create_file_agent = FileAgentBase(
+            agent_id=file_agent.agent_id,
+            file_id=file_agent.file_id,
+            source_id=file_agent.source_id,
+            file_name=file_agent.file_name,
+            is_open=file_agent.is_open,
+            visible_content=file_agent.visible_content,
+            last_accessed_at=file_agent.last_accessed_at,
+        )
+
+        # Create FileAgentSchema with the file_agent's ID (will be remapped later)
+        return cls(id=file_agent.id, **create_file_agent.model_dump())
+
+
 class AgentSchema(CreateAgent):
     """Agent with human-readable ID for agent file"""
 
@@ -72,9 +97,12 @@ class AgentSchema(CreateAgent):
         default_factory=list, description="List of message IDs that are currently in the agent's context"
     )
     messages: List[MessageSchema] = Field(default_factory=list, description="List of messages in the agent's conversation history")
+    files_agents: List[FileAgentSchema] = Field(default_factory=list, description="List of file-agent relationships for this agent")
 
     @classmethod
-    async def from_agent_state(cls, agent_state: AgentState, message_manager: MessageManager, actor: User) -> "AgentSchema":
+    async def from_agent_state(
+        cls, agent_state: AgentState, message_manager: MessageManager, files_agents: List[FileAgent], actor: User
+    ) -> "AgentSchema":
         """Convert AgentState to AgentSchema"""
 
         create_agent = CreateAgent(
@@ -131,6 +159,7 @@ class AgentSchema(CreateAgent):
             id=agent_state.id,
             in_context_message_ids=agent_state.message_ids or [],
             messages=message_schemas,  # Messages will be populated separately by the manager
+            files_agents=[FileAgentSchema.from_file_agent(f) for f in files_agents],
             **create_agent.model_dump(),
         )
 
@@ -149,7 +178,7 @@ class BlockSchema(CreateBlock):
     id: str = Field(..., description="Human-readable identifier for this block in the file")
 
     @classmethod
-    def from_block(cls, block) -> "BlockSchema":
+    def from_block(cls, block: Block) -> "BlockSchema":
         """Convert Block to BlockSchema"""
 
         create_block = CreateBlock(
@@ -168,11 +197,34 @@ class BlockSchema(CreateBlock):
         return cls(id=block.id, **create_block.model_dump())
 
 
-class FileSchema(FileMetadataCreate):
+class FileSchema(FileMetadataBase):
     """File with human-readable ID for agent file"""
 
     __id_prefix__ = "file"
     id: str = Field(..., description="Human-readable identifier for this file in the file")
+
+    @classmethod
+    def from_file_metadata(cls, file_metadata: FileMetadata) -> "FileSchema":
+        """Convert FileMetadata to FileSchema"""
+
+        create_file = FileMetadataBase(
+            source_id=file_metadata.source_id,
+            file_name=file_metadata.file_name,
+            original_file_name=file_metadata.original_file_name,
+            file_path=file_metadata.file_path,
+            file_type=file_metadata.file_type,
+            file_size=file_metadata.file_size,
+            file_creation_date=file_metadata.file_creation_date,
+            file_last_modified_date=file_metadata.file_last_modified_date,
+            processing_status=file_metadata.processing_status,
+            error_message=file_metadata.error_message,
+            total_chunks=file_metadata.total_chunks,
+            chunks_embedded=file_metadata.chunks_embedded,
+            content=file_metadata.content,
+        )
+
+        # Create FileSchema with the file's ID (will be remapped later)
+        return cls(id=file_metadata.id, **create_file.model_dump())
 
 
 class SourceSchema(SourceCreate):
@@ -180,6 +232,21 @@ class SourceSchema(SourceCreate):
 
     __id_prefix__ = "source"
     id: str = Field(..., description="Human-readable identifier for this source in the file")
+
+    @classmethod
+    def from_source(cls, source: Source) -> "SourceSchema":
+        """Convert Block to BlockSchema"""
+
+        create_block = SourceCreate(
+            name=source.name,
+            description=source.description,
+            instructions=source.instructions,
+            metadata=source.metadata,
+            embedding_config=source.embedding_config,
+        )
+
+        # Create SourceSchema with the block's ID (will be remapped later)
+        return cls(id=source.id, **create_block.model_dump())
 
 
 # TODO: This one is quite thin, just a wrapper over Tool
@@ -200,13 +267,6 @@ class ToolSchema(Tool):
 #     id: str = Field(..., description="Human-readable identifier for this MCP server in the file")
 
 
-# class FileAgentStateSchema(FileAgentCreate):
-#     """File-Agent relationship with human-readable ID for agent file"""
-#
-#     __id_prefix__ = "file_agent"
-#     id: str = Field(..., description="Human-readable identifier for this file-agent relationship in the file")
-
-
 class AgentFileSchema(BaseModel):
     """Schema for serialized agent file that can be exported to JSON and imported into agent server."""
 
@@ -220,3 +280,4 @@ class AgentFileSchema(BaseModel):
     metadata: Dict[str, str] = Field(
         default_factory=dict, description="Metadata for this agent file, including revision_id and other export information."
     )
+    created_at: Optional[datetime] = Field(default=None, description="The timestamp when the object was created.")

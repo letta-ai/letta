@@ -74,6 +74,10 @@ class FileAgentBase(LettaBase):
         None,
         description="Portion of the file the agent is focused on (may be large).",
     )
+    last_accessed_at: Optional[datetime] = Field(
+        default_factory=datetime.utcnow,
+        description="UTC timestamp of the agent’s most recent access to this file.",
+    )
 
 
 class FileAgent(FileAgentBase):
@@ -94,10 +98,6 @@ class FileAgent(FileAgentBase):
         None,
         description="Org ID this association belongs to (inherited from both agent and file).",
     )
-    last_accessed_at: Optional[datetime] = Field(
-        default_factory=datetime.utcnow,
-        description="UTC timestamp of the agent’s most recent access to this file.",
-    )
 
     created_at: Optional[datetime] = Field(
         default_factory=datetime.utcnow,
@@ -108,11 +108,3 @@ class FileAgent(FileAgentBase):
         description="Row last-update timestamp (UTC).",
     )
     is_deleted: bool = Field(False, description="Soft-delete flag.")
-
-
-class FileMetadataCreate(FileMetadataBase):
-    """Schema for creating a new FileMetadata"""
-
-
-class FileAgentCreate(FileAgentBase):
-    """Schema for creating a new FileAgent association"""

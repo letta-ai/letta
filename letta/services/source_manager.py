@@ -201,3 +201,63 @@ class SourceManager:
                 return None
             else:
                 return sources[0].to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def get_sources_by_ids_async(self, source_ids: List[str], actor: PydanticUser) -> List[PydanticSource]:
+        """
+        Get multiple sources by their IDs in a single query.
+
+        Args:
+            source_ids: List of source IDs to retrieve
+            actor: User performing the action
+
+        Returns:
+            List[PydanticSource]: List of sources (may be fewer than requested if some don't exist)
+        """
+        if not source_ids:
+            return []
+
+        async with db_registry.async_session() as session:
+            query = select(SourceModel).where(
+                SourceModel.id.in_(source_ids), SourceModel.organization_id == actor.organization_id, SourceModel.is_deleted == False
+            )
+
+            result = await session.execute(query)
+            sources_orm = result.scalars().all()
+
+            return [source.to_pydantic() for source in sources_orm]
+
+    @enforce_types
+    @trace_method
+    async def get_sources_for_agents_async(self, agent_ids: List[str], actor: PydanticUser) -> List[PydanticSource]:
+        """
+        Get all sources associated with the given agents via sources-agents relationships.
+
+        Args:
+            agent_ids: List of agent IDs to find sources for
+            actor: User performing the action
+
+        Returns:
+            List[PydanticSource]: List of unique sources associated with these agents
+        """
+        if not agent_ids:
+            return []
+
+        async with db_registry.async_session() as session:
+            # Join through sources-agents junction table
+            query = (
+                select(SourceModel)
+                .join(SourcesAgents, SourceModel.id == SourcesAgents.source_id)
+                .where(
+                    SourcesAgents.agent_id.in_(agent_ids),
+                    SourceModel.organization_id == actor.organization_id,
+                    SourceModel.is_deleted == False,
+                )
+                .distinct()  # Ensure we don't get duplicate sources
+            )
+
+            result = await session.execute(query)
+            sources_orm = result.scalars().all()
+
+            return [source.to_pydantic() for source in sources_orm]

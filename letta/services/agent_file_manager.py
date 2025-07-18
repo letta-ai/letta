@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Dict, List
 
 from letta.errors import AgentFileExportError, AgentFileImportError
@@ -7,6 +8,7 @@ from letta.schemas.agent_file import (
     AgentFileSchema,
     AgentSchema,
     BlockSchema,
+    FileAgentSchema,
     FileSchema,
     GroupSchema,
     ImportResult,
@@ -15,12 +17,17 @@ from letta.schemas.agent_file import (
     ToolSchema,
 )
 from letta.schemas.block import Block
+from letta.schemas.file import FileMetadata
 from letta.schemas.message import Message
+from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.file_manager import FileManager
+from letta.services.file_processor.embedder.base_embedder import BaseEmbedder
+from letta.services.file_processor.file_processor import FileProcessor
+from letta.services.file_processor.parser.mistral_parser import MistralFileParser
 from letta.services.files_agents_manager import FileAgentManager
 from letta.services.group_manager import GroupManager
 from letta.services.mcp_manager import MCPManager
@@ -54,6 +61,9 @@ class AgentFileManager:
         file_manager: FileManager,
         file_agent_manager: FileAgentManager,
         message_manager: MessageManager,
+        embedder: BaseEmbedder,
+        file_parser: MistralFileParser,
+        using_pinecone: bool = False,
     ):
         self.agent_manager = agent_manager
         self.tool_manager = tool_manager
@@ -64,6 +74,9 @@ class AgentFileManager:
         self.file_manager = file_manager
         self.file_agent_manager = file_agent_manager
         self.message_manager = message_manager
+        self.embedder = embedder
+        self.file_parser = file_parser
+        self.using_pinecone = using_pinecone
 
         # ID mapping state for export
         self._db_to_file_ids: Dict[str, str] = {}
@@ -77,6 +90,7 @@ class AgentFileManager:
             SourceSchema.__id_prefix__: 0,
             ToolSchema.__id_prefix__: 0,
             MessageSchema.__id_prefix__: 0,
+            FileAgentSchema.__id_prefix__: 0,
             # MCPServerSchema.__id_prefix__: 0,
         }
 
@@ -134,45 +148,66 @@ class AgentFileManager:
 
         return sorted(unique_blocks.values(), key=lambda x: x.label)
 
+    async def _extract_unique_sources_and_files_from_agents(
+        self, agent_states: List[AgentState], actor: User
+    ) -> tuple[List[Source], List[FileMetadata]]:
+        """Extract unique sources and files from agent states using bulk operations"""
+
+        all_source_ids = set()
+        all_file_ids = set()
+
+        for agent_state in agent_states:
+            files_agents = await self.file_agent_manager.list_files_for_agent(
+                agent_id=agent_state.id, actor=actor, is_open_only=False, return_as_blocks=False
+            )
+            for file_agent in files_agents:
+                all_source_ids.add(file_agent.source_id)
+                all_file_ids.add(file_agent.file_id)
+        sources = await self.source_manager.get_sources_by_ids_async(list(all_source_ids), actor)
+        files = await self.file_manager.get_files_by_ids_async(list(all_file_ids), actor, include_content=True)
+
+        return sources, files
+
     async def _convert_agent_state_to_schema(self, agent_state: AgentState, actor: User) -> AgentSchema:
         """Convert AgentState to AgentSchema with ID remapping"""
 
         agent_file_id = self._map_db_to_file_id(agent_state.id, AgentSchema.__id_prefix__)
-        agent_schema = await AgentSchema.from_agent_state(agent_state, message_manager=self.message_manager, actor=actor)
+        files_agents = await self.file_agent_manager.list_files_for_agent(
+            agent_id=agent_state.id, actor=actor, is_open_only=False, return_as_blocks=False
+        )
+        agent_schema = await AgentSchema.from_agent_state(
+            agent_state, message_manager=self.message_manager, files_agents=files_agents, actor=actor
+        )
         agent_schema.id = agent_file_id
 
-        # Remap message IDs and populate ID map
         if agent_schema.messages:
             for message in agent_schema.messages:
-                # This call will populate the _db_to_file_ids mapping for this message
                 message_file_id = self._map_db_to_file_id(message.id, MessageSchema.__id_prefix__)
-                # Update the message's ID to the file ID
                 message.id = message_file_id
-                # Update the message's agent_id to the file ID
                 message.agent_id = agent_file_id
 
-        # Now remap in_context_message_ids using the populated map
         if agent_schema.in_context_message_ids:
             agent_schema.in_context_message_ids = [
                 self._map_db_to_file_id(message_id, MessageSchema.__id_prefix__, allow_new=False)
                 for message_id in agent_schema.in_context_message_ids
             ]
 
-        # Remap related entity IDs to file IDs using their schema prefixes
         if agent_schema.tool_ids:
             agent_schema.tool_ids = [self._map_db_to_file_id(tool_id, ToolSchema.__id_prefix__) for tool_id in agent_schema.tool_ids]
 
-        # TODO: Support sources
-        # if agent_schema.source_ids:
-        #     agent_schema.source_ids = [
-        #         self._map_db_to_file_id(source_id, SourceSchema.__id_prefix__) for source_id in agent_schema.source_ids
-        #     ]
-        #
+        if agent_schema.source_ids:
+            agent_schema.source_ids = [
+                self._map_db_to_file_id(source_id, SourceSchema.__id_prefix__) for source_id in agent_schema.source_ids
+            ]
+
         if agent_schema.block_ids:
             agent_schema.block_ids = [self._map_db_to_file_id(block_id, BlockSchema.__id_prefix__) for block_id in agent_schema.block_ids]
 
-        # TODO: Add other relationship ID mappings as needed
-        # (group_ids, etc.)
+        if agent_schema.files_agents:
+            for file_agent in agent_schema.files_agents:
+                file_agent.file_id = self._map_db_to_file_id(file_agent.file_id, FileSchema.__id_prefix__)
+                file_agent.source_id = self._map_db_to_file_id(file_agent.source_id, SourceSchema.__id_prefix__)
+                file_agent.agent_id = agent_file_id
 
         return agent_schema
 
@@ -189,6 +224,21 @@ class AgentFileManager:
         block_schema = BlockSchema.from_block(block)
         block_schema.id = block_file_id
         return block_schema
+
+    def _convert_source_to_schema(self, source) -> SourceSchema:
+        """Convert Source to SourceSchema with ID remapping"""
+        source_file_id = self._map_db_to_file_id(source.id, SourceSchema.__id_prefix__, allow_new=False)
+        source_schema = SourceSchema.from_source(source)
+        source_schema.id = source_file_id
+        return source_schema
+
+    def _convert_file_to_schema(self, file_metadata) -> FileSchema:
+        """Convert FileMetadata to FileSchema with ID remapping"""
+        file_file_id = self._map_db_to_file_id(file_metadata.id, FileSchema.__id_prefix__, allow_new=False)
+        file_schema = FileSchema.from_file_metadata(file_metadata)
+        file_schema.id = file_file_id
+        file_schema.source_id = self._map_db_to_file_id(file_metadata.source_id, SourceSchema.__id_prefix__, allow_new=False)
+        return file_schema
 
     async def export(self, agent_ids: List[str], actor: User) -> AgentFileSchema:
         """
@@ -218,10 +268,15 @@ class AgentFileManager:
             tool_set = self._extract_unique_tools(agent_states)
             block_set = self._extract_unique_blocks(agent_states)
 
+            # Extract sources and files from agent states BEFORE conversion
+            source_set, file_set = await self._extract_unique_sources_and_files_from_agents(agent_states, actor)
+
             # Convert to schemas with ID remapping
             agent_schemas = [await self._convert_agent_state_to_schema(agent_state, actor=actor) for agent_state in agent_states]
             tool_schemas = [self._convert_tool_to_schema(tool) for tool in tool_set]
             block_schemas = [self._convert_block_to_schema(block) for block in block_set]
+            source_schemas = [self._convert_source_to_schema(source) for source in source_set]
+            file_schemas = [self._convert_file_to_schema(file_metadata) for file_metadata in file_set]
 
             logger.info(f"Exporting {len(agent_ids)} agents to agent file format")
 
@@ -230,11 +285,12 @@ class AgentFileManager:
                 agents=agent_schemas,
                 groups=[],  # TODO: Extract and convert groups
                 blocks=block_schemas,
-                files=[],  # TODO: Extract and convert files
-                sources=[],  # TODO: Extract and convert sources
+                files=file_schemas,
+                sources=source_schemas,
                 tools=tool_schemas,
                 # mcp_servers=[],  # TODO: Extract and convert MCP servers
                 metadata={"revision_id": await get_latest_alembic_revision()},
+                created_at=datetime.now(timezone.utc),
             )
 
         except Exception as e:
@@ -294,7 +350,50 @@ class AgentFileManager:
                 file_to_db_ids[block_schema.id] = created_block.id
                 imported_count += 1
 
-            # 3. Create agents with empty message history
+            # 3. Create sources (no dependencies)
+            for source_schema in schema.sources:
+                # Convert SourceSchema back to Source
+                source_data = source_schema.model_dump(exclude={"id", "embedding", "embedding_chunk_size"})
+                source = Source(**source_data)
+                created_source = await self.source_manager.create_source(source, actor)
+                file_to_db_ids[source_schema.id] = created_source.id
+                imported_count += 1
+
+            # 4. Create files (depends on sources)
+            for file_schema in schema.files:
+                # Convert FileSchema back to FileMetadata
+                file_data = file_schema.model_dump(exclude={"id", "content"})
+                # Remap source_id from file ID to database ID
+                file_data["source_id"] = file_to_db_ids[file_schema.source_id]
+                file_metadata = FileMetadata(**file_data)
+                created_file = await self.file_manager.create_file(file_metadata, actor, text=file_schema.content)
+                file_to_db_ids[file_schema.id] = created_file.id
+                imported_count += 1
+
+            # 5. Process files for chunking/embedding (depends on files and sources)
+            file_processor = FileProcessor(
+                file_parser=self.file_parser,
+                embedder=self.embedder,
+                actor=actor,
+                using_pinecone=self.using_pinecone,
+            )
+
+            for file_schema in schema.files:
+                if file_schema.content:  # Only process files with content
+                    file_db_id = file_to_db_ids[file_schema.id]
+                    source_db_id = file_to_db_ids[file_schema.source_id]
+
+                    # Get the created file metadata
+                    file_metadata = await self.file_manager.get_file_by_id(file_db_id, actor)
+
+                    # Save the db call of fetching content again
+                    file_metadata.content = file_schema.content
+
+                    # Process the file for chunking/embedding
+                    passages = await file_processor.process_imported_file(file_metadata=file_metadata, source_id=source_db_id)
+                    imported_count += len(passages)
+
+            # 6. Create agents with empty message history
             for agent_schema in schema.agents:
                 # Convert AgentSchema back to CreateAgent, remapping tool/block IDs
                 agent_data = agent_schema.model_dump(exclude={"id", "in_context_message_ids", "messages"})
@@ -312,7 +411,7 @@ class AgentFileManager:
                 file_to_db_ids[agent_schema.id] = created_agent.id
                 imported_count += 1
 
-            # 4. Create messages and update agent message_ids
+            # 7. Create messages and update agent message_ids
             for agent_schema in schema.agents:
                 agent_db_id = file_to_db_ids[agent_schema.id]
                 message_file_to_db_ids = {}
@@ -337,6 +436,29 @@ class AgentFileManager:
                 # Update agent with the correct message_ids
                 await self.agent_manager.set_in_context_messages_async(agent_id=agent_db_id, message_ids=in_context_db_ids, actor=actor)
 
+            # 8. Create file-agent relationships (depends on agents and files)
+            for agent_schema in schema.agents:
+                if agent_schema.files_agents:
+                    agent_db_id = file_to_db_ids[agent_schema.id]
+
+                    # Prepare files for bulk attachment
+                    files_for_agent = []
+                    visible_content_map = {}
+
+                    for file_agent_schema in agent_schema.files_agents:
+                        file_db_id = file_to_db_ids[file_agent_schema.file_id]
+                        file_metadata = await self.file_manager.get_file_by_id(file_db_id, actor)
+                        files_for_agent.append(file_metadata)
+
+                        if file_agent_schema.visible_content:
+                            visible_content_map[file_db_id] = file_agent_schema.visible_content
+
+                    # Bulk attach files to agent
+                    await self.file_agent_manager.attach_files_bulk(
+                        agent_id=agent_db_id, files_metadata=files_for_agent, visible_content_map=visible_content_map, actor=actor
+                    )
+                    imported_count += len(files_for_agent)
+
             return ImportResult(
                 success=True,
                 message=f"Import completed successfully. Imported {imported_count} entities.",
@@ -345,7 +467,7 @@ class AgentFileManager:
             )
 
         except Exception as e:
-            logger.error(f"Failed to import agent file: {e}")
+            logger.exception(f"Failed to import agent file: {e}")
             raise AgentFileImportError(f"Import failed: {e}") from e
 
     def _validate_id_format(self, schema: AgentFileSchema) -> List[str]:
@@ -435,6 +557,35 @@ class AgentFileManager:
 
         return errors
 
+    def _validate_file_source_references(self, schema: AgentFileSchema) -> List[str]:
+        """Validate that all file source_id references exist"""
+        errors = []
+        source_ids = {source.id for source in schema.sources}
+
+        for file in schema.files:
+            if file.source_id not in source_ids:
+                errors.append(f"File {file.id} references non-existent source {file.source_id}")
+
+        return errors
+
+    def _validate_file_agent_references(self, schema: AgentFileSchema) -> List[str]:
+        """Validate that all file-agent relationships reference existing entities"""
+        errors = []
+        file_ids = {file.id for file in schema.files}
+        source_ids = {source.id for source in schema.sources}
+        {agent.id for agent in schema.agents}
+
+        for agent in schema.agents:
+            for file_agent in agent.files_agents:
+                if file_agent.file_id not in file_ids:
+                    errors.append(f"File-agent relationship references non-existent file {file_agent.file_id}")
+                if file_agent.source_id not in source_ids:
+                    errors.append(f"File-agent relationship references non-existent source {file_agent.source_id}")
+                if file_agent.agent_id != agent.id:
+                    errors.append(f"File-agent relationship has mismatched agent_id {file_agent.agent_id} vs {agent.id}")
+
+        return errors
+
     def _validate_schema(self, schema: AgentFileSchema):
         """
         Validate the agent file schema for consistency and referential integrity.
@@ -452,6 +603,12 @@ class AgentFileManager:
 
         # 2. Duplicate ID Detection
         errors.extend(self._validate_duplicate_ids(schema))
+
+        # 3. File Source Reference Validation
+        errors.extend(self._validate_file_source_references(schema))
+
+        # 4. File-Agent Reference Validation
+        errors.extend(self._validate_file_agent_references(schema))
 
         if errors:
             raise AgentFileImportError(f"Schema validation failed: {'; '.join(errors)}")

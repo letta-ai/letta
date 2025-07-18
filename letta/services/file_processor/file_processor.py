@@ -1,5 +1,7 @@
 from typing import List
 
+from mistralai import OCRPageObject, OCRResponse, OCRUsageInfo
+
 from letta.log import get_logger
 from letta.otel.context import get_ctx_attributes
 from letta.otel.tracing import log_event, trace_method
@@ -208,6 +210,97 @@ class FileProcessor:
             logger.error("File processing failed for %s: %s", filename, e)
             log_event(
                 "file_processor.processing_failed",
+                {
+                    "filename": filename,
+                    "file_id": str(file_metadata.id),
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "status": FileProcessingStatus.ERROR.value,
+                },
+            )
+            await self.file_manager.update_file_status(
+                file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.ERROR, error_message=str(e)
+            )
+
+            return []
+
+    def _create_ocr_response_from_content(self, content: str):
+        """Create minimal OCR response from existing content"""
+        return OCRResponse(
+            model="import-skip-ocr",
+            pages=[
+                OCRPageObject(
+                    index=0,
+                    markdown=content,
+                    images=[],
+                    dimensions=None,
+                )
+            ],
+            usage_info=OCRUsageInfo(pages_processed=1),
+            document_annotation=None,
+        )
+
+    @trace_method
+    async def process_imported_file(self, file_metadata: FileMetadata, source_id: str) -> List[Passage]:
+        """Process an imported file that already has content - skip OCR, do chunking/embedding"""
+        filename = file_metadata.file_name
+
+        if not file_metadata.content:
+            logger.warning(f"No content found for imported file {filename}")
+            return []
+
+        content = file_metadata.content
+        try:
+            # Create OCR response from existing content
+            ocr_response = self._create_ocr_response_from_content(content)
+
+            # Update file status to embedding
+            file_metadata = await self.file_manager.update_file_status(
+                file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.EMBEDDING
+            )
+
+            logger.info(f"Chunking imported file content for {filename}")
+            log_event("file_processor.import_chunking_started", {"filename": filename, "content_length": len(content)})
+
+            # Chunk and embed using existing logic
+            all_passages = await self._chunk_and_embed_with_fallback(
+                file_metadata=file_metadata, ocr_response=ocr_response, source_id=source_id
+            )
+
+            # Create passages in database (unless using Pinecone)
+            if not self.using_pinecone:
+                all_passages = await self.passage_manager.create_many_source_passages_async(
+                    passages=all_passages, file_metadata=file_metadata, actor=self.actor
+                )
+                log_event("file_processor.import_passages_created", {"filename": filename, "total_passages": len(all_passages)})
+
+            # Update file status to completed
+            if not self.using_pinecone:
+                await self.file_manager.update_file_status(
+                    file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.COMPLETED
+                )
+            else:
+                await self.file_manager.update_file_status(
+                    file_id=file_metadata.id, actor=self.actor, total_chunks=len(all_passages), chunks_embedded=0
+                )
+
+            logger.info(f"Successfully processed imported file {filename}: {len(all_passages)} passages")
+            log_event(
+                "file_processor.import_processing_completed",
+                {
+                    "filename": filename,
+                    "file_id": str(file_metadata.id),
+                    "total_passages": len(all_passages),
+                    "status": FileProcessingStatus.COMPLETED.value,
+                },
+            )
+
+            return all_passages
+
+        except Exception as e:
+            logger.exception("Import file processing failed for %s: %s", filename, e)
+            log_event(
+                "file_processor.import_processing_failed",
                 {
                     "filename": filename,
                     "file_id": str(file_metadata.id),
