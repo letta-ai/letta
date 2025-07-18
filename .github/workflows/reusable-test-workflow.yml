@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       test-type:
-        description: 'Type of tests to run (unit, integration, docker, send-message)'
+        description: 'Type of tests to run (unit, integration, docker, send-message, sqlite)'
         required: true
         type: string
       poetry-core-directory:
@@ -243,7 +243,7 @@ jobs:
           poetry run pip install -e ../fern/.preview/fern-python-sdk/.
 
       - name: Migrate database
-        if: inputs.use-docker != true
+        if: inputs.use-docker != true && inputs.test-type != 'sqlite'
         working-directory: ${{ inputs.poetry-core-directory }}
         env:
           LETTA_PG_PORT: 5432
@@ -366,9 +366,22 @@ jobs:
             poetry run pytest -s -vv tests/integration_test_send_message.py --maxfail=1 --durations=10
           elif [[ "${{ inputs.test-type }}" == "docker" ]]; then
             poetry run pytest -s tests/test_client.py
+          elif [[ "${{ inputs.test-type }}" == "sqlite" ]]; then
+            # force sqlite
+            unset LETTA_PG_USER
+            unset LETTA_PG_PASSWORD
+            unset LETTA_PG_DB
+            unset LETTA_PG_HOST
+            poetry run pip show letta-client
+            poetry run alembic upgrade head
+            poetry run pytest -svv ${{ inputs.test-path-prefix }}${{ matrix.test_suite }}
           else
             ${{ inputs.test-command }}
           fi
+
+      - name: Remove sqlite db
+        if: ${{ always() && inputs.test-type == 'sqlite' }}
+        run: sudo rm -rf ~/.letta || true
 
       - name: Print docker logs if tests fail
         if: ${{ (failure() || cancelled()) && inputs.use-docker }}

@@ -353,10 +353,12 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
             if before_obj and after_obj:
                 # Window-based query - get records between before and after
-                conditions = [
-                    or_(cls.created_at < before_obj.created_at, and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id)),
-                    or_(cls.created_at > after_obj.created_at, and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id)),
-                ]
+                conditions.append(
+                    or_(cls.created_at < before_obj.created_at, and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id))
+                )
+                conditions.append(
+                    or_(cls.created_at > after_obj.created_at, and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id))
+                )
             else:
                 # Pure pagination query
                 if before_obj:

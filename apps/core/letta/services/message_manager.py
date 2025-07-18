@@ -18,6 +18,7 @@ from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.file_manager import FileManager
 from letta.services.helpers.agent_manager_helper import validate_agent_exists_async
+from letta.settings import settings
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -454,17 +455,23 @@ class MessageManager:
             if group_id:
                 query = query.filter(MessageModel.group_id == group_id)
 
-            # If query_text is provided, filter messages using subquery + json_array_elements.
+            # If query_text is provided, filter messages using database-specific JSON search.
             if query_text:
-                content_element = func.json_array_elements(MessageModel.content).alias("content_element")
-                query = query.filter(
-                    exists(
-                        select(1)
-                        .select_from(content_element)
-                        .where(text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text"))
-                        .params(query_text=f"%{query_text}%")
+                if settings.letta_pg_uri_no_default:
+                    # PostgreSQL: Use json_array_elements and ILIKE
+                    content_element = func.json_array_elements(MessageModel.content).alias("content_element")
+                    query = query.filter(
+                        exists(
+                            select(1)
+                            .select_from(content_element)
+                            .where(text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text"))
+                            .params(query_text=f"%{query_text}%")
+                        )
                     )
-                )
+                else:
+                    # SQLite: Use JSON_EXTRACT with individual array indices for case-insensitive search
+                    # Since SQLite doesn't support $[*] syntax, we'll use a different approach
+                    query = query.filter(text("JSON_EXTRACT(content, '$') LIKE :query_text")).params(query_text=f"%{query_text}%")
 
             # If role(s) are provided, filter messages by those roles.
             if roles:
@@ -551,17 +558,23 @@ class MessageManager:
             if group_id:
                 query = query.where(MessageModel.group_id == group_id)
 
-            # If query_text is provided, filter messages using subquery + json_array_elements.
+            # If query_text is provided, filter messages using database-specific JSON search.
             if query_text:
-                content_element = func.json_array_elements(MessageModel.content).alias("content_element")
-                query = query.where(
-                    exists(
-                        select(1)
-                        .select_from(content_element)
-                        .where(text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text"))
-                        .params(query_text=f"%{query_text}%")
+                if settings.letta_pg_uri_no_default:
+                    # PostgreSQL: Use json_array_elements and ILIKE
+                    content_element = func.json_array_elements(MessageModel.content).alias("content_element")
+                    query = query.where(
+                        exists(
+                            select(1)
+                            .select_from(content_element)
+                            .where(text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text"))
+                            .params(query_text=f"%{query_text}%")
+                        )
                     )
-                )
+                else:
+                    # SQLite: Use JSON_EXTRACT with individual array indices for case-insensitive search
+                    # Since SQLite doesn't support $[*] syntax, we'll use a different approach
+                    query = query.where(text("JSON_EXTRACT(content, '$') LIKE :query_text")).params(query_text=f"%{query_text}%")
 
             # If role(s) are provided, filter messages by those roles.
             if roles:

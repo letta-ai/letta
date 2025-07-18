@@ -551,6 +551,9 @@ async def _apply_pagination_async(
         result = (await session.execute(select(sort_column, AgentModel.id).where(AgentModel.id == after))).first()
         if result:
             after_sort_value, after_id = result
+            # SQLite does not support as granular timestamping, so we need to round the timestamp
+            if not settings.letta_pg_uri_no_default and isinstance(after_sort_value, datetime):
+                after_sort_value = after_sort_value.strftime("%Y-%m-%d %H:%M:%S")
             query = query.where(
                 _cursor_filter(sort_column, AgentModel.id, after_sort_value, after_id, forward=ascending, nulls_last=sort_nulls_last)
             )
@@ -559,6 +562,9 @@ async def _apply_pagination_async(
         result = (await session.execute(select(sort_column, AgentModel.id).where(AgentModel.id == before))).first()
         if result:
             before_sort_value, before_id = result
+            # SQLite does not support as granular timestamping, so we need to round the timestamp
+            if not settings.letta_pg_uri_no_default and isinstance(before_sort_value, datetime):
+                before_sort_value = before_sort_value.strftime("%Y-%m-%d %H:%M:%S")
             query = query.where(
                 _cursor_filter(sort_column, AgentModel.id, before_sort_value, before_id, forward=not ascending, nulls_last=sort_nulls_last)
             )
@@ -649,7 +655,12 @@ def _apply_filters(
         query = query.where(AgentModel.name == name)
     # Apply a case-insensitive partial match for the agent's name.
     if query_text:
-        query = query.where(AgentModel.name.ilike(f"%{query_text}%"))
+        if settings.letta_pg_uri_no_default:
+            # PostgreSQL: Use ILIKE for case-insensitive search
+            query = query.where(AgentModel.name.ilike(f"%{query_text}%"))
+        else:
+            # SQLite: Use LIKE with LOWER for case-insensitive search
+            query = query.where(func.lower(AgentModel.name).like(func.lower(f"%{query_text}%")))
     # Filter agents by project ID.
     if project_id:
         query = query.where(AgentModel.project_id == project_id)

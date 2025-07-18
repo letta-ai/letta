@@ -11,6 +11,7 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 
 from alembic import op
+from letta.settings import settings
 
 # revision identifiers, used by Alembic.
 revision: str = "8d70372ad130"
@@ -20,6 +21,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # Skip this migration for SQLite
+    if not settings.letta_pg_uri_no_default:
+        return
+
     op.create_table(
         "job_messages",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -42,6 +47,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # Skip this migration for SQLite
+    if not settings.letta_pg_uri_no_default:
+        return
+
     op.drop_index("ix_job_messages_created_at", "job_messages")
     op.drop_index("ix_job_messages_job_id", "job_messages")
     op.drop_table("job_messages")

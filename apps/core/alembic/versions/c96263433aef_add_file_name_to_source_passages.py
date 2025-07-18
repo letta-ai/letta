@@ -10,6 +10,7 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 
 from alembic import op
+from letta.settings import settings
 
 # revision identifiers, used by Alembic.
 revision: str = "c96263433aef"
@@ -19,6 +20,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # Skip this migration for SQLite
+    if not settings.letta_pg_uri_no_default:
+        return
+
     # Add the new column
     op.add_column("source_passages", sa.Column("file_name", sa.String(), nullable=True))
 
@@ -37,4 +42,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # Skip this migration for SQLite
+    if not settings.letta_pg_uri_no_default:
+        return
+
     op.drop_column("source_passages", "file_name")

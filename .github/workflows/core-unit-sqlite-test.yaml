@@ -1,0 +1,57 @@
+name: 🐍👨‍🔬 [Core] Unit Tests (SQLite)
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  unit-tests:
+    uses: ./.github/workflows/reusable-test-workflow.yml
+    with:
+      test-type: 'sqlite'
+      use-redis: true
+      changed-files-pattern: |
+        apps/core/**
+        .github/workflows/reusable-test-workflow.yml
+        .github/workflows/core-unit-sqlite-test.yml
+      install-args: '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google'
+      timeout-minutes: 15
+      ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      matrix-strategy: |
+        {
+          "fail-fast": false,
+          "matrix": {
+            "include": [
+              {"test_suite": "test_vector_embeddings.py"},
+              {"test_suite": "test_client.py"},
+              {"test_suite": "test_sdk_client.py"},
+              {"test_suite": "test_client_legacy.py"},
+              {"test_suite": "test_server.py"},
+              {"test_suite": "test_multi_agent.py"},
+              {"test_suite": "test_base_functions.py"},
+              {"test_suite": "test_tool_schema_parsing.py"},
+              {"test_suite": "test_tool_rule_solver.py"},
+              {"test_suite": "test_memory.py"},
+              {"test_suite": "test_utils.py"},
+              {"test_suite": "test_stream_buffer_readers.py"},
+              {"test_suite": "test_agent_serialization.py"},
+              {"test_suite": "test_optimistic_json_parser.py"},
+              {"test_suite": "test_llm_clients.py"},
+              {"test_suite": "test_letta_agent_batch.py"},
+              {"test_suite": "test_providers.py"},
+              {"test_suite": "test_sources.py"},
+              {"test_suite": "test_managers.py"},
+              {"test_suite": "sdk/"},
+              {"test_suite": "mcp/", "use_experimental": true},
+              {"test_suite": "test_timezone_formatting.py"},
+              {"test_suite": "test_plugins.py"},
+            ]
+          }
+        }
+    secrets: inherit

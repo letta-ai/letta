@@ -125,6 +125,10 @@ pytest-mock = "^3.14.0"
 [tool.poetry.group."dev,tests".dependencies]
 pytest-json-report = "^1.5.0"
 
+
+[tool.poetry.group.sqlite.dependencies]
+aiosqlite = "^0.21.0"
+
 [tool.black]
 line-length = 140
 target-version = ['py310', 'py311', 'py312', 'py313']
