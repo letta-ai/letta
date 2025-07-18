@@ -383,8 +383,8 @@ def start_server(
 
     # Experimental UV Loop Support
     try:
-        if importlib.util.find_spec("uvloop") is not None and settings.use_uvloop:
-            print("Running server on uvloop...")
+        if settings.use_uvloop:
+            print("Running server asyncio loop on uvloop...")
             import asyncio
 
             import uvloop
