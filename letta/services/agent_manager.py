@@ -91,6 +91,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
+from letta.settings import settings
 from letta.utils import enforce_types, united_diff
 
 logger = get_logger(__name__)
@@ -1021,7 +1022,6 @@ class AgentManager:
 
             if limit:
                 query = query.limit(limit)
-
             result = await session.execute(query)
             agents = result.scalars().all()
             return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
@@ -2732,7 +2732,12 @@ class AgentManager:
             )
 
             if query_text:
-                query = query.filter(AgentsTags.tag.ilike(f"%{query_text}%"))
+                if settings.letta_pg_uri_no_default:
+                    # PostgreSQL: Use ILIKE for case-insensitive search
+                    query = query.filter(AgentsTags.tag.ilike(f"%{query_text}%"))
+                else:
+                    # SQLite: Use LIKE with LOWER for case-insensitive search
+                    query = query.filter(func.lower(AgentsTags.tag).like(func.lower(f"%{query_text}%")))
 
             if after:
                 query = query.filter(AgentsTags.tag > after)
@@ -2768,7 +2773,12 @@ class AgentManager:
             )
 
             if query_text:
-                query = query.where(AgentsTags.tag.ilike(f"%{query_text}%"))
+                if settings.letta_pg_uri_no_default:
+                    # PostgreSQL: Use ILIKE for case-insensitive search
+                    query = query.where(AgentsTags.tag.ilike(f"%{query_text}%"))
+                else:
+                    # SQLite: Use LIKE with LOWER for case-insensitive search
+                    query = query.where(func.lower(AgentsTags.tag).like(func.lower(f"%{query_text}%")))
 
             if after:
                 query = query.where(AgentsTags.tag > after)

@@ -1,3 +1,4 @@
+from datetime import datetime
 from functools import partial, reduce
 from operator import add
 from typing import List, Literal, Optional, Union
@@ -27,6 +28,7 @@ from letta.schemas.step import Step as PydanticStep
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.settings import settings
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -292,24 +294,90 @@ class JobManager:
         source_id: Optional[str] = None,
     ) -> List[PydanticJob]:
         """List all jobs with optional pagination and status filter."""
+        from sqlalchemy import and_, or_, select
+
         async with db_registry.async_session() as session:
-            filter_kwargs = {"user_id": actor.id, "job_type": job_type}
+            # build base query
+            query = select(JobModel).where(JobModel.user_id == actor.id).where(JobModel.job_type == job_type)
 
-            # Add status filter if provided
+            # add status filter if provided
             if statuses:
-                filter_kwargs["status"] = statuses
+                query = query.where(JobModel.status.in_(statuses))
 
+            # add source_id filter if provided
             if source_id:
-                filter_kwargs["metadata_.source_id"] = source_id
+                column = getattr(JobModel, "metadata_")
+                column = column.op("->>")("source_id")
+                query = query.where(column == source_id)
 
-            jobs = await JobModel.list_async(
-                db_session=session,
-                before=before,
-                after=after,
-                limit=limit,
-                ascending=ascending,
-                **filter_kwargs,
-            )
+            # handle cursor-based pagination
+            if before or after:
+                # get cursor objects
+                before_obj = None
+                after_obj = None
+
+                if before:
+                    before_obj = await session.get(JobModel, before)
+                    if not before_obj:
+                        raise ValueError(f"Job with id {before} not found")
+
+                if after:
+                    after_obj = await session.get(JobModel, after)
+                    if not after_obj:
+                        raise ValueError(f"Job with id {after} not found")
+
+                # validate cursors
+                if before_obj and after_obj:
+                    if before_obj.created_at < after_obj.created_at:
+                        raise ValueError("'before' reference must be later than 'after' reference")
+                    elif before_obj.created_at == after_obj.created_at and before_obj.id < after_obj.id:
+                        raise ValueError("'before' reference must be later than 'after' reference")
+
+                # build cursor conditions
+                conditions = []
+                if before_obj:
+                    # records before this cursor (older)
+
+                    before_timestamp = before_obj.created_at
+                    # SQLite does not support as granular timestamping, so we need to round the timestamp
+                    if not settings.letta_pg_uri_no_default and isinstance(before_timestamp, datetime):
+                        before_timestamp = before_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
+                    conditions.append(
+                        or_(
+                            JobModel.created_at < before_timestamp,
+                            and_(JobModel.created_at == before_timestamp, JobModel.id < before_obj.id),
+                        )
+                    )
+
+                if after_obj:
+                    # records after this cursor (newer)
+                    after_timestamp = after_obj.created_at
+                    # SQLite does not support as granular timestamping, so we need to round the timestamp
+                    if not settings.letta_pg_uri_no_default and isinstance(after_timestamp, datetime):
+                        after_timestamp = after_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
+                    conditions.append(
+                        or_(JobModel.created_at > after_timestamp, and_(JobModel.created_at == after_timestamp, JobModel.id > after_obj.id))
+                    )
+
+                if conditions:
+                    query = query.where(and_(*conditions))
+
+            # apply ordering
+            if ascending:
+                query = query.order_by(JobModel.created_at.asc(), JobModel.id.asc())
+            else:
+                query = query.order_by(JobModel.created_at.desc(), JobModel.id.desc())
+
+            # apply limit
+            if limit:
+                query = query.limit(limit)
+
+            # execute query
+            result = await session.execute(query)
+            jobs = result.scalars().all()
+
             return [job.to_pydantic() for job in jobs]
 
     @enforce_types

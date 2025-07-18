@@ -6,12 +6,14 @@ from sqlalchemy.exc import NoResultFound
 
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.block import Block as BlockModel
+from letta.orm.errors import UniqueConstraintViolationError
 from letta.orm.identity import Identity as IdentityModel
 from letta.otel.tracing import trace_method
 from letta.schemas.identity import Identity as PydanticIdentity
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate, IdentityUpsert
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.settings import settings
 from letta.utils import enforce_types
 
 
@@ -64,6 +66,26 @@ class IdentityManager:
     async def _create_identity_async(self, db_session, identity: IdentityCreate, actor: PydanticUser) -> PydanticIdentity:
         new_identity = IdentityModel(**identity.model_dump(exclude={"agent_ids", "block_ids"}, exclude_unset=True))
         new_identity.organization_id = actor.organization_id
+
+        # For SQLite compatibility: check for unique constraint violation manually
+        # since SQLite doesn't support postgresql_nulls_not_distinct=True
+        if not settings.letta_pg_uri_no_default:  # Using SQLite
+            # Check if an identity with the same identifier_key, project_id, and organization_id exists
+            query = select(IdentityModel).where(
+                IdentityModel.identifier_key == new_identity.identifier_key,
+                IdentityModel.project_id == new_identity.project_id,
+                IdentityModel.organization_id == new_identity.organization_id,
+            )
+            result = await db_session.execute(query)
+            existing_identity = result.scalar_one_or_none()
+            if existing_identity is not None:
+                raise UniqueConstraintViolationError(
+                    f"A unique constraint was violated for Identity. "
+                    f"An identity with identifier_key='{new_identity.identifier_key}', "
+                    f"project_id='{new_identity.project_id}', and "
+                    f"organization_id='{new_identity.organization_id}' already exists."
+                )
+
         await self._process_relationship_async(
             db_session=db_session,
             identity=new_identity,

@@ -7,7 +7,7 @@ from typing import Any, AsyncGenerator, Generator
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
-from sqlalchemy import Engine, NullPool, QueuePool, create_engine
+from sqlalchemy import Engine, NullPool, QueuePool, create_engine, event
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -36,6 +36,15 @@ def print_sqlite_schema_error():
     console.print(Panel(error_text, border_style="red"))
 
 
+@event.listens_for(Engine, "connect")
+def enable_sqlite_foreign_keys(dbapi_connection, connection_record):
+    """Enable foreign key constraints for SQLite connections."""
+    if "sqlite" in str(dbapi_connection):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+
 @contextmanager
 def db_error_handler():
     """Context manager for handling database errors"""
@@ -43,6 +52,14 @@ def db_error_handler():
         yield
     except Exception as e:
         # Handle other SQLAlchemy errors
+        error_str = str(e)
+
+        # Don't exit for expected constraint violations that should be handled by the application
+        if "UNIQUE constraint failed" in error_str or "FOREIGN KEY constraint failed" in error_str:
+            # These are application-level errors that should be handled by the ORM
+            raise
+
+        # For other database errors, print error and exit
         print(e)
         print_sqlite_schema_error()
         # raise ValueError(f"SQLite DB error: {str(e)}")
@@ -129,6 +146,13 @@ class DatabaseRegistry:
                 engine_path = "sqlite+aiosqlite:///" + os.path.join(self.config.recall_storage_path, "sqlite.db")
                 self.logger.info("Creating sqlite engine " + engine_path)
                 async_engine = create_async_engine(engine_path, **self._build_sqlalchemy_engine_args(is_async=True))
+
+                # Enable foreign keys for SQLite async connections
+                @event.listens_for(async_engine.sync_engine, "connect")
+                def enable_sqlite_foreign_keys_async(dbapi_connection, connection_record):
+                    cursor = dbapi_connection.cursor()
+                    cursor.execute("PRAGMA foreign_keys=ON")
+                    cursor.close()
 
             # Create async session factory
             self._async_engines["default"] = async_engine

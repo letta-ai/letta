@@ -11,6 +11,7 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 
 from alembic import op
+from letta.settings import settings
 
 # revision identifiers, used by Alembic.
 revision: str = "220856bbf43b"
@@ -20,6 +21,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # Skip this migration for SQLite
+    if not settings.letta_pg_uri_no_default:
+        return
+
     # add default value of `False`
     op.add_column("block", sa.Column("read_only", sa.Boolean(), nullable=True))
     op.execute(
@@ -32,4 +37,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # Skip this migration for SQLite
+    if not settings.letta_pg_uri_no_default:
+        return
+
     op.drop_column("block", "read_only")
