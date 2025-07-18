@@ -129,8 +129,7 @@ configure-kubectl cluster-name="letta":
             --set env.CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT} \
             --set env.CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
             --set env.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
-            --set env.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} \
-            --set env.GIT_HASH=${GIT_HASH}
+            --set env.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
     else
         helm upgrade --install {{WEB_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{WEB_HELM_CHART_NAME}} \
             --set image.tag={{TAG}} \

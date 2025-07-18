@@ -23,17 +23,11 @@ let nextConfig = {
     // swcPlugins: [['@swc-jotai/react-refresh', {}]],
   },
   // Use the Redis cache handler
-  cacheHandler: require.resolve('./cache-handler.mjs'),
+  cacheHandler: require.resolve('./redis-cache-handler.js'),
   cacheMaxMemorySize: 0,
   sentry: {
     deleteSourcemapsAfterUpload: true,
   },
-  generateBuildId:
-    typeof process.env.GIT_HASH === 'string'
-      ? () => {
-          return process.env.GIT_HASH || '';
-        }
-      : undefined,
   output: 'standalone',
   async rewrites() {
     return [

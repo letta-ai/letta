@@ -5,13 +5,6 @@ export async function register() {
     const handleMigrations = await import('./migrations/migrations');
 
     await handleMigrations.handleMigrations();
-
-    const { registerInitialCache } = await import(
-      '@fortedigital/nextjs-cache-handler/instrumentation'
-    );
-
-    const CacheHandler = (await import('../cache-handler.mjs')).default;
-    await registerInitialCache(CacheHandler);
   }
 
   if (process.env.NEXT_RUNTIME === 'edge') {
@@ -33,6 +26,7 @@ export async function onRequestError(...rest: any) {
 
     // @ts-expect-error - daf
     res.captureRequestError(...rest);
+    return;
   }
 
   return;
