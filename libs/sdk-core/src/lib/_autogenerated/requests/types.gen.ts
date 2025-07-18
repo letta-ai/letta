@@ -636,7 +636,7 @@ export type ChatCompletionAssistantMessageParam = {
 };
 
 export type ChatCompletionAudioParam = {
-  format: 'wav' | 'aac' | 'mp3' | 'flac' | 'opus' | 'pcm16';
+  format: 'wav' | 'mp3' | 'flac' | 'opus' | 'pcm16';
   voice:
     | string
     | 'alloy'
@@ -652,7 +652,7 @@ export type ChatCompletionAudioParam = {
     | 'verse';
 };
 
-export type format = 'wav' | 'aac' | 'mp3' | 'flac' | 'opus' | 'pcm16';
+export type format = 'wav' | 'mp3' | 'flac' | 'opus' | 'pcm16';
 
 export type ChatCompletionContentPartImageParam = {
   image_url: ImageURL;
@@ -790,16 +790,6 @@ export type CompletionCreateParamsNonStreaming = {
   >;
   model:
     | string
-    | 'gpt-4.1'
-    | 'gpt-4.1-mini'
-    | 'gpt-4.1-nano'
-    | 'gpt-4.1-2025-04-14'
-    | 'gpt-4.1-mini-2025-04-14'
-    | 'gpt-4.1-nano-2025-04-14'
-    | 'o4-mini'
-    | 'o4-mini-2025-04-16'
-    | 'o3'
-    | 'o3-2025-04-16'
     | 'o3-mini'
     | 'o3-mini-2025-01-31'
     | 'o1'
@@ -815,7 +805,6 @@ export type CompletionCreateParamsNonStreaming = {
     | 'gpt-4o-audio-preview'
     | 'gpt-4o-audio-preview-2024-10-01'
     | 'gpt-4o-audio-preview-2024-12-17'
-    | 'gpt-4o-audio-preview-2025-06-03'
     | 'gpt-4o-mini-audio-preview'
     | 'gpt-4o-mini-audio-preview-2024-12-17'
     | 'gpt-4o-search-preview'
@@ -823,7 +812,6 @@ export type CompletionCreateParamsNonStreaming = {
     | 'gpt-4o-search-preview-2025-03-11'
     | 'gpt-4o-mini-search-preview-2025-03-11'
     | 'chatgpt-4o-latest'
-    | 'codex-mini-latest'
     | 'gpt-4o-mini'
     | 'gpt-4o-mini-2024-07-18'
     | 'gpt-4-turbo'
@@ -869,7 +857,7 @@ export type CompletionCreateParamsNonStreaming = {
     | ResponseFormatJSONSchema
     | ResponseFormatJSONObject;
   seed?: number | null;
-  service_tier?: 'auto' | 'default' | 'flex' | 'scale' | 'priority' | null;
+  service_tier?: 'auto' | 'default' | null;
   stop?: string | Array<string> | null;
   store?: boolean | null;
   stream_options?: ChatCompletionStreamOptionsParam | null;
@@ -898,16 +886,6 @@ export type CompletionCreateParamsStreaming = {
   >;
   model:
     | string
-    | 'gpt-4.1'
-    | 'gpt-4.1-mini'
-    | 'gpt-4.1-nano'
-    | 'gpt-4.1-2025-04-14'
-    | 'gpt-4.1-mini-2025-04-14'
-    | 'gpt-4.1-nano-2025-04-14'
-    | 'o4-mini'
-    | 'o4-mini-2025-04-16'
-    | 'o3'
-    | 'o3-2025-04-16'
     | 'o3-mini'
     | 'o3-mini-2025-01-31'
     | 'o1'
@@ -923,7 +901,6 @@ export type CompletionCreateParamsStreaming = {
     | 'gpt-4o-audio-preview'
     | 'gpt-4o-audio-preview-2024-10-01'
     | 'gpt-4o-audio-preview-2024-12-17'
-    | 'gpt-4o-audio-preview-2025-06-03'
     | 'gpt-4o-mini-audio-preview'
     | 'gpt-4o-mini-audio-preview-2024-12-17'
     | 'gpt-4o-search-preview'
@@ -931,7 +908,6 @@ export type CompletionCreateParamsStreaming = {
     | 'gpt-4o-search-preview-2025-03-11'
     | 'gpt-4o-mini-search-preview-2025-03-11'
     | 'chatgpt-4o-latest'
-    | 'codex-mini-latest'
     | 'gpt-4o-mini'
     | 'gpt-4o-mini-2024-07-18'
     | 'gpt-4-turbo'
@@ -977,7 +953,7 @@ export type CompletionCreateParamsStreaming = {
     | ResponseFormatJSONSchema
     | ResponseFormatJSONObject;
   seed?: number | null;
-  service_tier?: 'auto' | 'default' | 'flex' | 'scale' | 'priority' | null;
+  service_tier?: 'auto' | 'default' | null;
   stop?: string | Array<string> | null;
   store?: boolean | null;
   stream_options?: ChatCompletionStreamOptionsParam | null;
@@ -2466,18 +2442,11 @@ export type MCPServerType = 'sse' | 'stdio' | 'streamable_http';
  */
 export type MCPTool = {
   name: string;
-  title?: string | null;
   description?: string | null;
   inputSchema: {
     [key: string]: unknown;
   };
-  outputSchema?: {
-    [key: string]: unknown;
-  } | null;
   annotations?: ToolAnnotations | null;
-  _meta?: {
-    [key: string]: unknown;
-  } | null;
   [key: string]: unknown | string;
 };
 

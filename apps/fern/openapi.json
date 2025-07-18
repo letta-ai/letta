@@ -11674,7 +11674,6 @@
                   "gpt-4o-search-preview-2025-03-11",
                   "gpt-4o-mini-search-preview-2025-03-11",
                   "chatgpt-4o-latest",
-                  "codex-mini-latest",
                   "gpt-4o-mini",
                   "gpt-4o-mini-2024-07-18",
                   "gpt-4-turbo",
@@ -11894,7 +11893,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["auto", "default", "flex", "scale", "priority"]
+                "enum": ["auto", "default"]
               },
               {
                 "type": "null"
@@ -15439,17 +15438,6 @@
             "type": "string",
             "title": "Name"
           },
-          "title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Title"
-          },
           "description": {
             "anyOf": [
               {
@@ -15466,18 +15454,6 @@
             "type": "object",
             "title": "Inputschema"
           },
-          "outputSchema": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Outputschema"
-          },
           "annotations": {
             "anyOf": [
               {
@@ -15487,18 +15463,6 @@
                 "type": "null"
               }
             ]
-          },
-          "_meta": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta"
           }
         },
         "additionalProperties": true,
