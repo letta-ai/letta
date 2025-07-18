@@ -143,7 +143,43 @@ def setup_tracing(
     if settings.sqlalchemy_tracing:
         from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
-        SQLAlchemyInstrumentor().instrument()
+        from letta.server.db import db_registry
+
+        # For OpenTelemetry SQLAlchemy instrumentation, we need to use the sync_engine
+        async_engine = db_registry.get_async_engine()
+        if async_engine:
+            # Access the sync_engine attribute safely
+            try:
+                SQLAlchemyInstrumentor().instrument(
+                    engine=async_engine.sync_engine,
+                    enable_commenter=True,
+                    commenter_options={},
+                    enable_attribute_commenter=True,
+                )
+            except Exception:
+                # Fall back to instrumenting without specifying an engine
+                # This will still capture some SQL operations
+                SQLAlchemyInstrumentor().instrument(
+                    enable_commenter=True,
+                    commenter_options={},
+                    enable_attribute_commenter=True,
+                )
+        else:
+            # If no async engine is available, instrument without an engine
+            SQLAlchemyInstrumentor().instrument(
+                enable_commenter=True,
+                commenter_options={},
+                enable_attribute_commenter=True,
+            )
+
+        # Additionally set up our custom instrumentation
+        try:
+            from letta.otel.sqlalchemy_instrumentation_integration import setup_letta_db_instrumentation
+
+            setup_letta_db_instrumentation(enable_joined_monitoring=True)
+        except Exception as e:
+            # Log but continue if our custom instrumentation fails
+            logger.warning(f"Failed to setup Letta DB instrumentation: {e}")
 
     if app:
         # Add middleware first
