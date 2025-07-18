@@ -636,6 +636,9 @@ async def list_messages(
     use_assistant_message: bool = Query(True, description="Whether to use assistant messages"),
     assistant_message_tool_name: str = Query(DEFAULT_MESSAGE_TOOL, description="The name of the designated message tool."),
     assistant_message_tool_kwarg: str = Query(DEFAULT_MESSAGE_TOOL_KWARG, description="The name of the message argument."),
+    include_err: bool | None = Query(
+        None, description="Whether to include error messages and error statuses. For debugging purposes only."
+    ),
     actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
@@ -654,6 +657,7 @@ async def list_messages(
         use_assistant_message=use_assistant_message,
         assistant_message_tool_name=assistant_message_tool_name,
         assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+        include_err=include_err,
         actor=actor,
     )
 
@@ -1156,7 +1160,7 @@ async def list_agent_groups(
 ):
     """Lists the groups for an agent"""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    print("in list agents with manager_type", manager_type)
+    logger.info("in list agents with manager_type", manager_type)
     return server.agent_manager.list_groups(agent_id=agent_id, manager_type=manager_type, actor=actor)
 
 

@@ -520,6 +520,7 @@ class MessageManager:
         limit: Optional[int] = 50,
         ascending: bool = True,
         group_id: Optional[str] = None,
+        include_err: Optional[bool] = None,
     ) -> List[PydanticMessage]:
         """
         Most performant query to list messages for an agent by directly querying the Message table.
@@ -539,6 +540,7 @@ class MessageManager:
             limit: Maximum number of messages to return.
             ascending: If True, sort by sequence_id ascending; if False, sort descending.
             group_id: Optional group ID to filter messages by group_id.
+            include_err: Optional boolean to include errors and error statuses. Used for debugging only.
 
         Returns:
             List[PydanticMessage]: A list of messages (converted via .to_pydantic()).
@@ -557,6 +559,9 @@ class MessageManager:
             # If group_id is provided, filter messages by group_id.
             if group_id:
                 query = query.where(MessageModel.group_id == group_id)
+
+            if not include_err:
+                query = query.where((MessageModel.is_err == False) | (MessageModel.is_err.is_(None)))
 
             # If query_text is provided, filter messages using database-specific JSON search.
             if query_text:

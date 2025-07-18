@@ -2,8 +2,10 @@ import importlib.util
 import json
 import logging
 import os
+import platform
 import sys
 from contextlib import asynccontextmanager
+from functools import partial
 from pathlib import Path
 from typing import Optional
 
@@ -34,30 +36,23 @@ from letta.server.db import db_registry
 from letta.server.rest_api.auth.index import setup_auth_router  # TODO: probably remove right?
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.routers.openai.chat_completions.chat_completions import router as openai_chat_completions_router
-
-# from letta.orm.utilities import get_db_session  # TODO(ethan) reenable once we merge ORM
 from letta.server.rest_api.routers.v1 import ROUTERS as v1_routes
 from letta.server.rest_api.routers.v1.organizations import router as organizations_router
 from letta.server.rest_api.routers.v1.users import router as users_router  # TODO: decide on admin
 from letta.server.rest_api.static_files import mount_static_files
+from letta.server.rest_api.utils import SENTRY_ENABLED
 from letta.server.server import SyncServer
 from letta.settings import settings
 
-# TODO(ethan)
+if SENTRY_ENABLED:
+    import sentry_sdk
+
+IS_WINDOWS = platform.system() == "Windows"
+
 # NOTE(charles): @ethan I had to add this to get the global as the bottom to work
-interface: StreamingServerInterface = StreamingServerInterface
+interface: type = StreamingServerInterface
 server = SyncServer(default_interface_factory=lambda: interface())
 logger = get_logger(__name__)
-
-
-import logging
-import platform
-
-from fastapi import FastAPI
-
-is_windows = platform.system() == "Windows"
-
-log = logging.getLogger("uvicorn")
 
 
 def generate_openapi_schema(app: FastAPI):
@@ -177,9 +172,7 @@ def create_application() -> "FastAPI":
     # server = SyncServer(default_interface_factory=lambda: interface())
     print(f"\n[[ Letta server // v{letta_version} ]]")
 
-    if (os.getenv("SENTRY_DSN") is not None) and (os.getenv("SENTRY_DSN") != ""):
-        import sentry_sdk
-
+    if SENTRY_ENABLED:
         sentry_sdk.init(
             dsn=os.getenv("SENTRY_DSN"),
             traces_sample_rate=1.0,
@@ -187,6 +180,7 @@ def create_application() -> "FastAPI":
                 "continuous_profiling_auto_start": True,
             },
         )
+        logger.info("Sentry enabled.")
 
     debug_mode = "--debug" in sys.argv
     app = FastAPI(
@@ -199,31 +193,13 @@ def create_application() -> "FastAPI":
         lifespan=lifespan,
     )
 
-    @app.exception_handler(IncompatibleAgentType)
-    async def handle_incompatible_agent_type(request: Request, exc: IncompatibleAgentType):
-        return JSONResponse(
-            status_code=400,
-            content={
-                "detail": str(exc),
-                "expected_type": exc.expected_type,
-                "actual_type": exc.actual_type,
-            },
-        )
+    # === Exception Handlers ===
+    # TODO (cliandy): move to separate file
 
     @app.exception_handler(Exception)
     async def generic_error_handler(request: Request, exc: Exception):
-        # Log the actual error for debugging
-        log.error(f"Unhandled error: {str(exc)}", exc_info=True)
-        print(f"Unhandled error: {str(exc)}")
-
-        import traceback
-
-        # Print the stack trace
-        print(f"Stack trace: {traceback.format_exc()}")
-
-        if (os.getenv("SENTRY_DSN") is not None) and (os.getenv("SENTRY_DSN") != ""):
-            import sentry_sdk
-
+        logger.error(f"Unhandled error: {str(exc)}", exc_info=True)
+        if SENTRY_ENABLED:
             sentry_sdk.capture_exception(exc)
 
         return JSONResponse(
@@ -235,62 +211,70 @@ def create_application() -> "FastAPI":
             },
         )
 
-    @app.exception_handler(NoResultFound)
-    async def no_result_found_handler(request: Request, exc: NoResultFound):
-        logger.error(f"NoResultFound: {exc}")
+    async def error_handler_with_code(request: Request, exc: Exception, code: int, detail: str | None = None):
+        logger.error(f"{type(exc).__name__}", exc_info=exc)
+        if SENTRY_ENABLED:
+            sentry_sdk.capture_exception(exc)
 
+        if not detail:
+            detail = str(exc)
         return JSONResponse(
-            status_code=404,
-            content={"detail": str(exc)},
+            status_code=code,
+            content={"detail": detail},
         )
 
-    @app.exception_handler(ForeignKeyConstraintViolationError)
-    async def foreign_key_constraint_handler(request: Request, exc: ForeignKeyConstraintViolationError):
-        logger.error(f"ForeignKeyConstraintViolationError: {exc}")
+    _error_handler_400 = partial(error_handler_with_code, code=400)
+    _error_handler_404 = partial(error_handler_with_code, code=404)
+    _error_handler_404_agent = partial(_error_handler_404, detail="Agent not found")
+    _error_handler_404_user = partial(_error_handler_404, detail="User not found")
+    _error_handler_409 = partial(error_handler_with_code, code=409)
+
+    app.add_exception_handler(ValueError, _error_handler_400)
+    app.add_exception_handler(NoResultFound, _error_handler_404)
+    app.add_exception_handler(LettaAgentNotFoundError, _error_handler_404_agent)
+    app.add_exception_handler(LettaUserNotFoundError, _error_handler_404_user)
+    app.add_exception_handler(ForeignKeyConstraintViolationError, _error_handler_409)
+    app.add_exception_handler(UniqueConstraintViolationError, _error_handler_409)
+
+    @app.exception_handler(IncompatibleAgentType)
+    async def handle_incompatible_agent_type(request: Request, exc: IncompatibleAgentType):
+        logger.error("Incompatible agent types. Expected: %s, Actual: %s", exc.expected_type, exc.actual_type)
+        if SENTRY_ENABLED:
+            sentry_sdk.capture_exception(exc)
 
         return JSONResponse(
-            status_code=409,
-            content={"detail": str(exc)},
-        )
-
-    @app.exception_handler(UniqueConstraintViolationError)
-    async def unique_key_constraint_handler(request: Request, exc: UniqueConstraintViolationError):
-        logger.error(f"UniqueConstraintViolationError: {exc}")
-
-        return JSONResponse(
-            status_code=409,
-            content={"detail": str(exc)},
+            status_code=400,
+            content={
+                "detail": str(exc),
+                "expected_type": exc.expected_type,
+                "actual_type": exc.actual_type,
+            },
         )
 
     @app.exception_handler(DatabaseTimeoutError)
     async def database_timeout_error_handler(request: Request, exc: DatabaseTimeoutError):
         logger.error(f"Timeout occurred: {exc}. Original exception: {exc.original_exception}")
+        if SENTRY_ENABLED:
+            sentry_sdk.capture_exception(exc)
+
         return JSONResponse(
             status_code=503,
             content={"detail": "The database is temporarily unavailable. Please try again later."},
         )
 
-    @app.exception_handler(ValueError)
-    async def value_error_handler(request: Request, exc: ValueError):
-        return JSONResponse(status_code=400, content={"detail": str(exc)})
-
-    @app.exception_handler(LettaAgentNotFoundError)
-    async def agent_not_found_handler(request: Request, exc: LettaAgentNotFoundError):
-        return JSONResponse(status_code=404, content={"detail": "Agent not found"})
-
-    @app.exception_handler(LettaUserNotFoundError)
-    async def user_not_found_handler(request: Request, exc: LettaUserNotFoundError):
-        return JSONResponse(status_code=404, content={"detail": "User not found"})
-
     @app.exception_handler(BedrockPermissionError)
     async def bedrock_permission_error_handler(request, exc: BedrockPermissionError):
+        logger.error(f"Bedrock permission denied.")
+        if SENTRY_ENABLED:
+            sentry_sdk.capture_exception(exc)
+
         return JSONResponse(
             status_code=403,
             content={
                 "error": {
                     "type": "bedrock_permission_denied",
                     "message": "Unable to access the required AI model. Please check your Bedrock permissions or contact support.",
-                    "details": {"model_arn": exc.model_arn, "reason": str(exc)},
+                    "detail": {str(exc)},
                 }
             },
         )
@@ -300,6 +284,9 @@ def create_application() -> "FastAPI":
     if (os.getenv("LETTA_SERVER_SECURE") == "true") or "--secure" in sys.argv:
         print(f"▶ Using secure mode with password: {random_password}")
         app.add_middleware(CheckPasswordMiddleware)
+
+    # Add reverse proxy middleware to handle X-Forwarded-* headers
+    # app.add_middleware(ReverseProxyMiddleware, base_path=settings.server_base_path)
 
     app.add_middleware(
         CORSMiddleware,
@@ -442,7 +429,7 @@ def start_server(
             )
 
     else:
-        if is_windows:
+        if IS_WINDOWS:
             # Windows doesn't those the fancy unicode characters
             print(f"Server running at: http://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
             print(f"View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")

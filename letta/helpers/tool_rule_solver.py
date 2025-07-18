@@ -1,4 +1,4 @@
-from typing import List, Optional, Set, Union
+from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -107,25 +107,20 @@ class ToolRulesSolver(BaseModel):
         self.tool_call_history.clear()
 
     def get_allowed_tool_names(
-        self, available_tools: Set[str], error_on_empty: bool = False, last_function_response: Optional[str] = None
+        self, available_tools: set[str], error_on_empty: bool = True, last_function_response: str | None = None
     ) -> List[str]:
-        """Get a list of tool names allowed based on the last tool called."""
+        """Get a list of tool names allowed based on the last tool called.
+
+        The logic is as follows:
+            1. if there are no previous tool calls and we have InitToolRules, those are the only options for the first tool call
+            2. else we take the intersection of the Parent/Child/Conditional/MaxSteps as the options
+            3. Continue/Terminal/RequiredBeforeExit rules are applied in the agent loop flow, not to restrict tools
+        """
         # TODO: This piece of code here is quite ugly and deserves a refactor
-        # TODO: There's some weird logic encoded here:
-        # TODO: -> This only takes into consideration Init, and a set of Child/Conditional/MaxSteps tool rules
-        # TODO: -> Init tool rules outputs are treated additively, Child/Conditional/MaxSteps are intersection based
         # TODO: -> Tool rules should probably be refactored to take in a set of tool names?
-        # If no tool has been called yet, return InitToolRules additively
-        if not self.tool_call_history:
-            if self.init_tool_rules:
-                # If there are init tool rules, only return those defined in the init tool rules
-                return [rule.tool_name for rule in self.init_tool_rules]
-            else:
-                # Otherwise, return all tools besides those constrained by parent tool rules
-                available_tools = available_tools - set.union(set(), *(set(rule.children) for rule in self.parent_tool_rules))
-                return list(available_tools)
+        if not self.tool_call_history and self.init_tool_rules:
+            return [rule.tool_name for rule in self.init_tool_rules]
         else:
-            # Collect valid tools from all child-based rules
             valid_tool_sets = []
             for rule in self.child_based_tool_rules + self.parent_tool_rules:
                 tools = rule.get_valid_tools(self.tool_call_history, available_tools, last_function_response)
@@ -151,11 +146,11 @@ class ToolRulesSolver(BaseModel):
         """Check if the tool is defined as a continue tool in the tool rules."""
         return any(rule.tool_name == tool_name for rule in self.continue_tool_rules)
 
-    def has_required_tools_been_called(self, available_tools: Set[str]) -> bool:
+    def has_required_tools_been_called(self, available_tools: set[str]) -> bool:
         """Check if all required-before-exit tools have been called."""
         return len(self.get_uncalled_required_tools(available_tools=available_tools)) == 0
 
-    def get_uncalled_required_tools(self, available_tools: Set[str]) -> List[str]:
+    def get_uncalled_required_tools(self, available_tools: set[str]) -> List[str]:
         """Get the list of required-before-exit tools that have not been called yet."""
         if not self.required_before_exit_tool_rules:
             return []  # No required tools means no uncalled tools

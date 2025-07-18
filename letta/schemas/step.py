@@ -1,8 +1,10 @@
+from enum import Enum, auto
 from typing import Dict, List, Literal, Optional
 
 from pydantic import Field
 
 from letta.schemas.letta_base import LettaBase
+from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.message import Message
 
 
@@ -28,6 +30,7 @@ class Step(StepBase):
     prompt_tokens: Optional[int] = Field(None, description="The number of tokens in the prompt during this step.")
     total_tokens: Optional[int] = Field(None, description="The total number of tokens processed by the agent during this step.")
     completion_tokens_details: Optional[Dict] = Field(None, description="Metadata for the agent.")
+    stop_reason: Optional[StopReasonType] = Field(None, description="The stop reason associated with the step.")
     tags: List[str] = Field([], description="Metadata tags.")
     tid: Optional[str] = Field(None, description="The unique identifier of the transaction that processed this step.")
     trace_id: Optional[str] = Field(None, description="The trace id of the agent step.")
@@ -36,3 +39,12 @@ class Step(StepBase):
         None, description="The feedback for this step. Must be either 'positive' or 'negative'."
     )
     project_id: Optional[str] = Field(None, description="The project that the agent that executed this step belongs to (cloud only).")
+
+
+class StepProgression(int, Enum):
+    START = auto()
+    STREAM_RECEIVED = auto()
+    RESPONSE_RECEIVED = auto()
+    STEP_LOGGED = auto()
+    LOGGED_TRACE = auto()
+    FINISHED = auto()

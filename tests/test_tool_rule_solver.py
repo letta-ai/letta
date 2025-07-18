@@ -138,7 +138,9 @@ def test_max_count_per_step_tool_rule():
     assert solver.get_allowed_tool_names({START_TOOL}) == [START_TOOL], "After first use, should still allow 'start_tool'"
 
     solver.register_tool_call(START_TOOL)
-    assert solver.get_allowed_tool_names({START_TOOL}) == [], "After reaching max count, 'start_tool' should no longer be allowed"
+    assert (
+        solver.get_allowed_tool_names({START_TOOL}, error_on_empty=False) == []
+    ), "After reaching max count, 'start_tool' should no longer be allowed"
 
 
 def test_max_count_per_step_tool_rule_allows_usage_up_to_limit():
@@ -155,7 +157,7 @@ def test_max_count_per_step_tool_rule_allows_usage_up_to_limit():
     assert solver.get_allowed_tool_names({START_TOOL}) == [START_TOOL], "Should still allow 'start_tool' after 2 uses"
 
     solver.register_tool_call(START_TOOL)
-    assert solver.get_allowed_tool_names({START_TOOL}) == [], "Should no longer allow 'start_tool' after 3 uses"
+    assert solver.get_allowed_tool_names({START_TOOL}, error_on_empty=False) == [], "Should no longer allow 'start_tool' after 3 uses"
 
 
 def test_max_count_per_step_tool_rule_does_not_affect_other_tools():
@@ -180,7 +182,7 @@ def test_max_count_per_step_tool_rule_resets_on_clear():
     solver.register_tool_call(START_TOOL)
     solver.register_tool_call(START_TOOL)
 
-    assert solver.get_allowed_tool_names({START_TOOL}) == [], "Should not allow 'start_tool' after reaching limit"
+    assert solver.get_allowed_tool_names({START_TOOL}, error_on_empty=False) == [], "Should not allow 'start_tool' after reaching limit"
 
     solver.clear_tool_history()
 

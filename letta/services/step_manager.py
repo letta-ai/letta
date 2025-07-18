@@ -12,6 +12,7 @@ from letta.orm.job import Job as JobModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step as StepModel
 from letta.otel.tracing import get_trace_id, trace_method
+from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.step import Step as PydanticStep
 from letta.schemas.user import User as PydanticUser
@@ -131,6 +132,7 @@ class StepManager:
         job_id: Optional[str] = None,
         step_id: Optional[str] = None,
         project_id: Optional[str] = None,
+        stop_reason: Optional[LettaStopReason] = None,
     ) -> PydanticStep:
         step_data = {
             "origin": None,
@@ -153,6 +155,8 @@ class StepManager:
         }
         if step_id:
             step_data["id"] = step_id
+        if stop_reason:
+            step_data["stop_reason"] = stop_reason.stop_reason
         async with db_registry.async_session() as session:
             if job_id:
                 await self._verify_job_access_async(session, job_id, actor, access=["write"])
@@ -206,6 +210,33 @@ class StepManager:
             step.tid = transaction_id
             await session.commit()
             return step.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def update_step_stop_reason(self, actor: PydanticUser, step_id: str, stop_reason: StopReasonType) -> PydanticStep:
+        """Update the stop reason for a step.
+
+        Args:
+            actor: The user making the request
+            step_id: The ID of the step to update
+            stop_reason: The stop reason to set
+
+        Returns:
+            The updated step
+
+        Raises:
+            NoResultFound: If the step does not exist
+        """
+        async with db_registry.async_session() as session:
+            step = await session.get(StepModel, step_id)
+            if not step:
+                raise NoResultFound(f"Step with id {step_id} does not exist")
+            if step.organization_id != actor.organization_id:
+                raise Exception("Unauthorized")
+
+            step.stop_reason = stop_reason
+            await session.commit()
+            return step
 
     def _verify_job_access(
         self,
@@ -309,5 +340,6 @@ class NoopStepManager(StepManager):
         job_id: Optional[str] = None,
         step_id: Optional[str] = None,
         project_id: Optional[str] = None,
+        stop_reason: Optional[LettaStopReason] = None,
     ) -> PydanticStep:
         return

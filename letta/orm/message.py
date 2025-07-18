@@ -49,6 +49,9 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
         nullable=True,
         doc="The id of the LLMBatchItem that this message is associated with",
     )
+    is_err: Mapped[Optional[bool]] = mapped_column(
+        nullable=True, doc="Whether this message is part of an error step. Used only for debugging purposes."
+    )
 
     # Monotonically increasing sequence for efficient/correct listing
     sequence_id: Mapped[int] = mapped_column(
