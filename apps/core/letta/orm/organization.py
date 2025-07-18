@@ -6,18 +6,17 @@ from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.organization import Organization as PydanticOrganization
 
 if TYPE_CHECKING:
+    from letta.orm import Source
     from letta.orm.agent import Agent
-    from letta.orm.agent_passage import AgentPassage
     from letta.orm.block import Block
     from letta.orm.group import Group
     from letta.orm.identity import Identity
-    from letta.orm.llm_batch_item import LLMBatchItem
+    from letta.orm.llm_batch_items import LLMBatchItem
     from letta.orm.llm_batch_job import LLMBatchJob
     from letta.orm.message import Message
+    from letta.orm.passage import AgentPassage, SourcePassage
     from letta.orm.provider import Provider
-    from letta.orm.sandbox_config import AgentEnvironmentVariable, SandboxConfig
-    from letta.orm.sandbox_environment_variable import SandboxEnvironmentVariable
-    from letta.orm.source_passage import SourcePassage
+    from letta.orm.sandbox_config import AgentEnvironmentVariable, SandboxConfig, SandboxEnvironmentVariable
     from letta.orm.tool import Tool
     from letta.orm.user import User
 
@@ -48,6 +47,7 @@ class Organization(SqlalchemyBase):
 
     # relationships
     agents: Mapped[List["Agent"]] = relationship("Agent", back_populates="organization", cascade="all, delete-orphan")
+    sources: Mapped[List["Source"]] = relationship("Source", cascade="all, delete-orphan")
     messages: Mapped[List["Message"]] = relationship("Message", back_populates="organization", cascade="all, delete-orphan")
     source_passages: Mapped[List["SourcePassage"]] = relationship(
         "SourcePassage", back_populates="organization", cascade="all, delete-orphan"

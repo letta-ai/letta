@@ -1,3 +1,4 @@
+import asyncio
 import os
 from datetime import datetime
 from typing import List, Optional
@@ -427,3 +428,83 @@ class FileManager:
 
             metadata.total_sources = len(source_aggregations)
             return metadata
+
+    @enforce_types
+    @trace_method
+    async def get_files_by_ids_async(
+        self, file_ids: List[str], actor: PydanticUser, *, include_content: bool = False
+    ) -> List[PydanticFileMetadata]:
+        """
+        Get multiple files by their IDs in a single query.
+
+        Args:
+            file_ids: List of file IDs to retrieve
+            actor: User performing the action
+            include_content: Whether to include file content in the response
+
+        Returns:
+            List[PydanticFileMetadata]: List of files (may be fewer than requested if some don't exist)
+        """
+        if not file_ids:
+            return []
+
+        async with db_registry.async_session() as session:
+            query = select(FileMetadataModel).where(
+                FileMetadataModel.id.in_(file_ids),
+                FileMetadataModel.organization_id == actor.organization_id,
+                FileMetadataModel.is_deleted == False,
+            )
+
+            # Eagerly load content if requested
+            if include_content:
+                query = query.options(selectinload(FileMetadataModel.content))
+
+            result = await session.execute(query)
+            files_orm = result.scalars().all()
+
+            return await asyncio.gather(*[file.to_pydantic_async(include_content=include_content) for file in files_orm])
+
+    @enforce_types
+    @trace_method
+    async def get_files_for_agents_async(
+        self, agent_ids: List[str], actor: PydanticUser, *, include_content: bool = False
+    ) -> List[PydanticFileMetadata]:
+        """
+        Get all files associated with the given agents via file-agent relationships.
+
+        Args:
+            agent_ids: List of agent IDs to find files for
+            actor: User performing the action
+            include_content: Whether to include file content in the response
+
+        Returns:
+            List[PydanticFileMetadata]: List of unique files associated with these agents
+        """
+        if not agent_ids:
+            return []
+
+        async with db_registry.async_session() as session:
+            # We need to import FileAgent here to avoid circular imports
+            from letta.orm.file_agent import FileAgent as FileAgentModel
+
+            # Join through file-agent relationships
+            query = (
+                select(FileMetadataModel)
+                .join(FileAgentModel, FileMetadataModel.id == FileAgentModel.file_id)
+                .where(
+                    FileAgentModel.agent_id.in_(agent_ids),
+                    FileMetadataModel.organization_id == actor.organization_id,
+                    FileMetadataModel.is_deleted == False,
+                    FileAgentModel.is_deleted == False,
+                )
+                .distinct()  # Ensure we don't get duplicate files
+            )
+
+            # Eagerly load content if requested
+            if include_content:
+                query = query.options(selectinload(FileMetadataModel.content))
+
+            result = await session.execute(query)
+            files_orm = result.scalars().all()
+
+            return await asyncio.gather(*[file.to_pydantic_async(include_content=include_content) for file in files_orm])

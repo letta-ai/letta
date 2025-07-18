@@ -1,5 +1,5 @@
 import asyncio
-from typing import List
+from typing import List, Optional
 
 import pytest
 
@@ -23,9 +23,12 @@ from letta.schemas.enums import MessageRole
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
 from letta.schemas.organization import Organization
+from letta.schemas.source import Source
 from letta.schemas.user import User
 from letta.server.server import SyncServer
 from letta.services.agent_file_manager import AgentFileManager
+from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
+from letta.services.file_processor.parser.mistral_parser import MistralFileParser
 from tests.utils import create_tool_from_func
 
 # ------------------------------
@@ -154,7 +157,7 @@ def test_block(server: SyncServer, default_user):
 
 @pytest.fixture
 def agent_file_manager(server, default_user):
-    """Fixture to create AgentFileManager with all required services."""
+    """Fixture to create AgentFileManager with all required services including file processing."""
     manager = AgentFileManager(
         agent_manager=server.agent_manager,
         tool_manager=server.tool_manager,
@@ -165,6 +168,9 @@ def agent_file_manager(server, default_user):
         file_manager=server.file_manager,
         file_agent_manager=server.file_agent_manager,
         message_manager=server.message_manager,
+        embedder=OpenAIEmbedder(),
+        file_parser=MistralFileParser(),
+        using_pinecone=False,
     )
     yield manager
 
@@ -202,21 +208,147 @@ def test_agent(server: SyncServer, default_user, default_organization, test_bloc
         actor=default_user,
     )
 
-    # Add more messages to create a richer conversation history
     server.send_messages(
         actor=default_user,
         agent_id=agent_state.id,
         input_messages=[MessageCreate(role=MessageRole.user, content="What's the weather like?")],
     )
 
-    # Get updated agent state with messages
     agent_state = server.agent_manager.get_agent_by_id(agent_id=agent_state.id, actor=default_user)
     yield agent_state
+
+
+@pytest.fixture
+async def test_source(server: SyncServer, default_user):
+    """Fixture to create and return a test source."""
+    source_data = Source(
+        name="test_source",
+        description="Test source for file export tests",
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+    )
+    source = await server.source_manager.create_source(source_data, default_user)
+    yield source
+
+
+@pytest.fixture
+async def test_file(server: SyncServer, default_user, test_source):
+    """Fixture to create and return a test file attached to test_source."""
+    from letta.schemas.file import FileMetadata
+
+    file_data = FileMetadata(
+        source_id=test_source.id,
+        file_name="test.txt",
+        original_file_name="test.txt",
+        file_type="text/plain",
+        file_size=46,
+    )
+    file_metadata = await server.file_manager.create_file(file_data, default_user, text="This is a test file for export testing.")
+    yield file_metadata
+
+
+@pytest.fixture
+async def agent_with_files(server: SyncServer, default_user, test_block, weather_tool, test_source, test_file):
+    """Fixture to create and return an agent with attached files."""
+    memory_blocks = [
+        CreateBlock(label="human", value="User is a test user"),
+        CreateBlock(label="persona", value="I am a helpful test assistant"),
+    ]
+
+    create_agent_request = CreateAgent(
+        name="test_agent_v2",
+        system="You are a helpful assistant for testing agent file export/import.",
+        memory_blocks=memory_blocks,
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[test_block.id],
+        tool_ids=[weather_tool.id],
+        tags=["test", "v2", "export"],
+        description="Test agent for agent file v2 testing",
+        metadata={"test_key": "test_value", "version": "v2"},
+        initial_message_sequence=[
+            MessageCreate(role=MessageRole.system, content="You are a helpful assistant."),
+            MessageCreate(role=MessageRole.user, content="Hello!"),
+            MessageCreate(role=MessageRole.assistant, content="Hello! How can I help you today?"),
+        ],
+        tool_exec_environment_variables={"TEST_VAR": "test_value"},
+        message_buffer_autoclear=False,
+        source_ids=[test_source.id],
+    )
+
+    agent_state = await server.agent_manager.create_agent_async(
+        agent_create=create_agent_request,
+        actor=default_user,
+    )
+
+    await server.insert_files_into_context_window(agent_state=agent_state, file_metadata_with_content=[test_file], actor=default_user)
+
+    return (agent_state.id, test_source.id, test_file.id)
 
 
 # ------------------------------
 # Helper Functions
 # ------------------------------
+
+
+async def create_test_source(server: SyncServer, name: str, user: User):
+    """Helper function to create a test source using server."""
+    source_data = Source(
+        name=name,
+        description=f"Test source {name}",
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+    )
+    return await server.source_manager.create_source(source_data, user)
+
+
+async def create_test_file(server: SyncServer, filename: str, source_id: str, user: User, content: Optional[str] = None):
+    """Helper function to create a test file using server."""
+    from letta.schemas.file import FileMetadata
+
+    content = content or f"Content of {filename}"
+    file_data = FileMetadata(
+        source_id=source_id,
+        file_name=filename,
+        original_file_name=filename,
+        file_type="text/plain",
+        file_size=len(content),
+    )
+    return await server.file_manager.create_file(file_data, user, text=content)
+
+
+async def create_test_agent_with_files(server: SyncServer, name: str, user: User, file_relationships: List[tuple]):
+    """Helper function to create agent with attached files using server.
+
+    Args:
+        server: SyncServer instance
+        name: Agent name
+        user: User creating the agent
+        file_relationships: List of (source_id, file_id) tuples
+    """
+    memory_blocks = [
+        CreateBlock(label="human", value="User is a test user"),
+        CreateBlock(label="persona", value="I am a helpful test assistant"),
+    ]
+
+    create_agent_request = CreateAgent(
+        name=name,
+        system="You are a helpful assistant for testing file export.",
+        memory_blocks=memory_blocks,
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        tags=["test", "files"],
+        description="Test agent with files",
+    )
+
+    agent_state = await server.agent_manager.create_agent_async(
+        agent_create=create_agent_request,
+        actor=user,
+    )
+
+    for source_id, file_id in file_relationships:
+        file_metadata = await server.file_manager.get_file_by_id(file_id, user)
+        await server.insert_files_into_context_window(agent_state=agent_state, file_metadata_with_content=[file_metadata], actor=user)
+
+    return agent_state
 
 
 def compare_agent_files(original: AgentFileSchema, imported: AgentFileSchema) -> bool:
@@ -440,17 +572,24 @@ def _compare_files(orig: FileSchema, imp: FileSchema, index: int) -> List[str]:
     if orig.file_name != imp.file_name:
         errors.append(f"File {index}: file_name mismatch: '{orig.file_name}' vs '{imp.file_name}'")
 
+    if orig.original_file_name != imp.original_file_name:
+        errors.append(f"File {index}: original_file_name mismatch: '{orig.original_file_name}' vs '{imp.original_file_name}'")
+
     if orig.file_size != imp.file_size:
         errors.append(f"File {index}: file_size mismatch: {orig.file_size} vs {imp.file_size}")
 
     if orig.file_type != imp.file_type:
         errors.append(f"File {index}: file_type mismatch: '{orig.file_type}' vs '{imp.file_type}'")
 
-    if orig.description != imp.description:
-        errors.append(f"File {index}: description mismatch")
+    if orig.processing_status != imp.processing_status:
+        errors.append(f"File {index}: processing_status mismatch: '{orig.processing_status}' vs '{imp.processing_status}'")
 
     if orig.metadata != imp.metadata:
         errors.append(f"File {index}: metadata mismatch")
+
+    # Check source_id reference format (should be remapped)
+    if not imp.source_id.startswith("source-"):
+        errors.append(f"File {index}: source_id not properly remapped: {imp.source_id}")
 
     return errors
 
@@ -465,42 +604,61 @@ def _compare_sources(orig: SourceSchema, imp: SourceSchema, index: int) -> List[
     if orig.description != imp.description:
         errors.append(f"Source {index}: description mismatch")
 
+    if orig.instructions != imp.instructions:
+        errors.append(f"Source {index}: instructions mismatch")
+
     if orig.metadata != imp.metadata:
         errors.append(f"Source {index}: metadata mismatch")
+
+    if orig.embedding_config != imp.embedding_config:
+        errors.append(f"Source {index}: embedding_config mismatch")
 
     return errors
 
 
+def _validate_entity_id(entity_id: str, expected_prefix: str) -> bool:
+    """Helper function to validate that an ID follows the expected format (prefix-N)."""
+    if not entity_id.startswith(f"{expected_prefix}-"):
+        print(f"Invalid {expected_prefix} ID format: {entity_id} should start with '{expected_prefix}-'")
+        return False
+
+    try:
+        suffix = entity_id[len(expected_prefix) + 1 :]
+        int(suffix)
+        return True
+    except ValueError:
+        print(f"Invalid {expected_prefix} ID format: {entity_id} should have integer suffix")
+        return False
+
+
 def validate_id_format(schema: AgentFileSchema) -> bool:
     """Validate that all IDs follow the expected format (entity-N)."""
-    # Check agent IDs
     for agent in schema.agents:
-        if not agent.id.startswith("agent-"):
-            print(f"Invalid agent ID format: {agent.id}")
+        if not _validate_entity_id(agent.id, "agent"):
             return False
 
-        # Check message IDs within agents
         for message in agent.messages:
-            if not message.id.startswith("message-"):
-                print(f"Invalid message ID format: {message.id}")
+            if not _validate_entity_id(message.id, "message"):
                 return False
 
-        # Check in-context message ID references
         for msg_id in agent.in_context_message_ids:
-            if not msg_id.startswith("message-"):
-                print(f"Invalid in-context message ID format: {msg_id}")
+            if not _validate_entity_id(msg_id, "message"):
                 return False
 
-    # Check tool IDs
     for tool in schema.tools:
-        if not tool.id.startswith("tool-"):
-            print(f"Invalid tool ID format: {tool.id}")
+        if not _validate_entity_id(tool.id, "tool"):
             return False
 
-    # Check block IDs
     for block in schema.blocks:
-        if not block.id.startswith("block-"):
-            print(f"Invalid block ID format: {block.id}")
+        if not _validate_entity_id(block.id, "block"):
+            return False
+
+    for file in schema.files:
+        if not _validate_entity_id(file.id, "file"):
+            return False
+
+    for source in schema.sources:
+        if not _validate_entity_id(source.id, "source"):
             return False
 
     return True
@@ -511,29 +669,181 @@ def validate_id_format(schema: AgentFileSchema) -> bool:
 # ------------------------------
 
 
+class TestFileExport:
+    """Test file export functionality with comprehensive validation"""
+
+    async def test_basic_file_export(self, default_user, agent_file_manager, agent_with_files):
+        """Test basic file export functionality"""
+        agent_id, source_id, file_id = agent_with_files
+
+        exported = await agent_file_manager.export([agent_id], actor=default_user)
+
+        assert len(exported.agents) == 1
+        assert len(exported.sources) == 1
+        assert len(exported.files) == 1
+
+        agent = exported.agents[0]
+        assert len(agent.files_agents) == 1
+
+        assert _validate_entity_id(agent.id, "agent")
+        assert _validate_entity_id(exported.sources[0].id, "source")
+        assert _validate_entity_id(exported.files[0].id, "file")
+
+        file_agent = agent.files_agents[0]
+        assert file_agent.agent_id == agent.id
+        assert file_agent.file_id == exported.files[0].id
+        assert file_agent.source_id == exported.sources[0].id
+
+    async def test_multiple_files_per_source(self, server, default_user, agent_file_manager):
+        """Test export with multiple files from the same source"""
+        source = await create_test_source(server, "multi-file-source", default_user)
+        file1 = await create_test_file(server, "file1.txt", source.id, default_user)
+        file2 = await create_test_file(server, "file2.txt", source.id, default_user)
+
+        agent = await create_test_agent_with_files(server, "multi-file-agent", default_user, [(source.id, file1.id), (source.id, file2.id)])
+
+        exported = await agent_file_manager.export([agent.id], actor=default_user)
+
+        assert len(exported.agents) == 1
+        assert len(exported.sources) == 1
+        assert len(exported.files) == 2
+
+        agent = exported.agents[0]
+        assert len(agent.files_agents) == 2
+
+        source_id = exported.sources[0].id
+        for file_schema in exported.files:
+            assert file_schema.source_id == source_id
+
+        file_ids = {f.id for f in exported.files}
+        for file_agent in agent.files_agents:
+            assert file_agent.file_id in file_ids
+            assert file_agent.source_id == source_id
+
+    async def test_multiple_sources_export(self, server, default_user, agent_file_manager):
+        """Test export with files from multiple sources"""
+        source1 = await create_test_source(server, "source-1", default_user)
+        source2 = await create_test_source(server, "source-2", default_user)
+        file1 = await create_test_file(server, "file1.txt", source1.id, default_user)
+        file2 = await create_test_file(server, "file2.txt", source2.id, default_user)
+
+        agent = await create_test_agent_with_files(
+            server, "multi-source-agent", default_user, [(source1.id, file1.id), (source2.id, file2.id)]
+        )
+
+        exported = await agent_file_manager.export([agent.id], actor=default_user)
+
+        assert len(exported.agents) == 1
+        assert len(exported.sources) == 2
+        assert len(exported.files) == 2
+
+        source_ids = {s.id for s in exported.sources}
+        for file_schema in exported.files:
+            assert file_schema.source_id in source_ids
+
+    async def test_cross_agent_file_deduplication(self, server, default_user, agent_file_manager):
+        """Test that files shared across agents are deduplicated in export"""
+        source = await create_test_source(server, "shared-source", default_user)
+        shared_file = await create_test_file(server, "shared.txt", source.id, default_user)
+
+        agent1 = await create_test_agent_with_files(server, "agent-1", default_user, [(source.id, shared_file.id)])
+        agent2 = await create_test_agent_with_files(server, "agent-2", default_user, [(source.id, shared_file.id)])
+
+        exported = await agent_file_manager.export([agent1.id, agent2.id], actor=default_user)
+
+        assert len(exported.agents) == 2
+        assert len(exported.sources) == 1
+        assert len(exported.files) == 1
+
+        file_id = exported.files[0].id
+        source_id = exported.sources[0].id
+
+        for agent in exported.agents:
+            assert len(agent.files_agents) == 1
+            file_agent = agent.files_agents[0]
+            assert file_agent.file_id == file_id
+            assert file_agent.source_id == source_id
+
+    async def test_file_agent_relationship_preservation(self, server, default_user, agent_file_manager):
+        """Test that file-agent relationship details are preserved"""
+        source = await create_test_source(server, "test-source", default_user)
+        file = await create_test_file(server, "test.txt", source.id, default_user)
+
+        agent = await create_test_agent_with_files(server, "test-agent", default_user, [(source.id, file.id)])
+
+        exported = await agent_file_manager.export([agent.id], actor=default_user)
+
+        agent = exported.agents[0]
+        file_agent = agent.files_agents[0]
+
+        assert file_agent.file_name == file.file_name
+        assert file_agent.is_open is True
+        assert hasattr(file_agent, "last_accessed_at")
+
+    async def test_id_remapping_consistency(self, server, default_user, agent_file_manager):
+        """Test that ID remapping is consistent across all references"""
+        source = await create_test_source(server, "consistency-source", default_user)
+        file = await create_test_file(server, "consistency.txt", source.id, default_user)
+        agent = await create_test_agent_with_files(server, "consistency-agent", default_user, [(source.id, file.id)])
+
+        exported = await agent_file_manager.export([agent.id], actor=default_user)
+
+        agent_schema = exported.agents[0]
+        source_schema = exported.sources[0]
+        file_schema = exported.files[0]
+        file_agent = agent_schema.files_agents[0]
+
+        assert file_schema.source_id == source_schema.id
+        assert file_agent.agent_id == agent_schema.id
+        assert file_agent.file_id == file_schema.id
+        assert file_agent.source_id == source_schema.id
+
+    async def test_empty_file_relationships(self, server, default_user, agent_file_manager):
+        """Test export of agent with no file relationships"""
+        agent_create = CreateAgent(
+            name="no-files-agent",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        )
+        agent = await server.agent_manager.create_agent_async(agent_create, actor=default_user)
+
+        exported = await agent_file_manager.export([agent.id], actor=default_user)
+
+        assert len(exported.agents) == 1
+        assert len(exported.sources) == 0
+        assert len(exported.files) == 0
+
+        agent_schema = exported.agents[0]
+        assert len(agent_schema.files_agents) == 0
+
+    async def test_file_content_inclusion_in_export(self, default_user, agent_file_manager, agent_with_files):
+        """Test that file content is included in export"""
+        agent_id, source_id, file_id = agent_with_files
+
+        exported = await agent_file_manager.export([agent_id], actor=default_user)
+
+        file_schema = exported.files[0]
+        assert hasattr(file_schema, "content") or file_schema.content is not None
+
+
 class TestAgentFileExport:
     """Tests for agent file export functionality."""
 
     async def test_basic_export(self, agent_file_manager, test_agent, default_user):
         """Test basic agent export functionality."""
-        # Export the agent
         agent_file = await agent_file_manager.export([test_agent.id], default_user)
 
-        # Validate the structure
         assert isinstance(agent_file, AgentFileSchema)
         assert len(agent_file.agents) == 1
         assert len(agent_file.tools) > 0  # Should include base tools + weather tool
         assert len(agent_file.blocks) > 0  # Should include memory blocks + test block
 
-        # Validate revision_id is automatically set in metadata
         assert agent_file.metadata.get("revision_id") is not None
         assert agent_file.metadata.get("revision_id") != "unknown"
         assert len(agent_file.metadata.get("revision_id")) > 0
 
-        # Validate ID formats
         assert validate_id_format(agent_file)
 
-        # Check agent data
         exported_agent = agent_file.agents[0]
         assert exported_agent.name == test_agent.name
         assert exported_agent.system == test_agent.system
@@ -542,7 +852,6 @@ class TestAgentFileExport:
 
     async def test_export_multiple_agents(self, server, agent_file_manager, test_agent, default_user, weather_tool):
         """Test exporting multiple agents."""
-        # Create a second agent
         create_agent_request = CreateAgent(
             name="second_test_agent",
             system="Second test agent",
@@ -559,29 +868,23 @@ class TestAgentFileExport:
             actor=default_user,
         )
 
-        # Export both agents
         agent_file = await agent_file_manager.export([test_agent.id, second_agent.id], default_user)
 
-        # Validate
         assert len(agent_file.agents) == 2
         assert validate_id_format(agent_file)
 
-        # Check that agents have different IDs but tools are deduplicated
         agent_ids = {agent.id for agent in agent_file.agents}
         assert len(agent_ids) == 2
 
     async def test_export_id_remapping(self, agent_file_manager, test_agent, default_user):
         """Test that IDs are properly remapped during export."""
-        # Export the agent
         agent_file = await agent_file_manager.export([test_agent.id], default_user)
 
         exported_agent = agent_file.agents[0]
 
-        # Verify agent ID is remapped
         assert exported_agent.id == "agent-0"
         assert exported_agent.id != test_agent.id
 
-        # Verify tool/block IDs are remapped
         if exported_agent.tool_ids:
             for tool_id in exported_agent.tool_ids:
                 assert tool_id.startswith("tool-")
@@ -590,25 +893,21 @@ class TestAgentFileExport:
             for block_id in exported_agent.block_ids:
                 assert block_id.startswith("block-")
 
-        # Verify message IDs are remapped and in-context references are consistent
         message_ids = {msg.id for msg in exported_agent.messages}
         for in_context_id in exported_agent.in_context_message_ids:
             assert in_context_id in message_ids, f"In-context message ID {in_context_id} not found in messages"
 
     async def test_message_agent_id_remapping(self, agent_file_manager, test_agent, default_user):
         """Test that message.agent_id is properly remapped during export."""
-        # Export the agent
         agent_file = await agent_file_manager.export([test_agent.id], default_user)
 
         exported_agent = agent_file.agents[0]
 
-        # Verify all messages have the remapped agent_id matching the exported agent
         for message in exported_agent.messages:
             assert (
                 message.agent_id == exported_agent.id
             ), f"Message {message.id} has agent_id {message.agent_id}, expected {exported_agent.id}"
 
-        # Verify agent_id is the remapped file ID format
         assert exported_agent.id == "agent-0"
         assert exported_agent.id != test_agent.id
 
@@ -627,21 +926,16 @@ class TestAgentFileExport:
 
     async def test_revision_id_automatic_setting(self, agent_file_manager, test_agent, default_user):
         """Test that revision_id is automatically set to the latest alembic revision."""
-        # Export the agent
         agent_file = await agent_file_manager.export([test_agent.id], default_user)
 
-        # Get the expected revision ID from the function
         from letta.utils import get_latest_alembic_revision
 
         expected_revision = await get_latest_alembic_revision()
 
-        # Validate that the revision_id matches the latest alembic revision
         assert agent_file.metadata.get("revision_id") == expected_revision
 
-        # Validate that it's not the fallback "unknown" value
         assert agent_file.metadata.get("revision_id") != "unknown"
 
-        # Validate that it looks like a valid revision ID (12 hex characters)
         assert len(agent_file.metadata.get("revision_id")) == 12
         assert all(c in "0123456789abcdef" for c in agent_file.metadata.get("revision_id"))
 
@@ -651,52 +945,41 @@ class TestAgentFileImport:
 
     async def test_basic_import(self, agent_file_manager, test_agent, default_user, other_user):
         """Test basic agent import functionality."""
-        # Export the agent
         agent_file = await agent_file_manager.export([test_agent.id], default_user)
 
-        # Import the agent
         result = await agent_file_manager.import_file(agent_file, other_user)
 
-        # Validate import result
         assert result.success
         assert result.imported_count > 0
         assert len(result.id_mappings) > 0
 
-        # Verify new entities were created (not existing ones reused)
         for file_id, db_id in result.id_mappings.items():
             if file_id.startswith("agent-"):
                 assert db_id != test_agent.id  # New agent should have different ID
 
     async def test_import_preserves_data(self, server, agent_file_manager, test_agent, default_user, other_user):
         """Test that import preserves all important data."""
-        # Export the agent
         agent_file = await agent_file_manager.export([test_agent.id], default_user)
 
-        # Import the agent
         result = await agent_file_manager.import_file(agent_file, other_user)
 
-        # Get the imported agent
         imported_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
         imported_agent = server.agent_manager.get_agent_by_id(imported_agent_id, other_user)
 
-        # Compare key fields
         assert imported_agent.name == test_agent.name
         assert imported_agent.system == test_agent.system
         assert imported_agent.description == test_agent.description
         assert imported_agent.metadata == test_agent.metadata
         assert imported_agent.tags == test_agent.tags
 
-        # Check that tools and blocks were imported
         assert len(imported_agent.tools) == len(test_agent.tools)
         assert len(imported_agent.memory.blocks) == len(test_agent.memory.blocks)
 
-        # Check that messages were imported
         original_messages = server.message_manager.list_messages_for_agent(test_agent.id, default_user)
         imported_messages = server.message_manager.list_messages_for_agent(imported_agent_id, other_user)
 
         assert len(imported_messages) == len(original_messages)
 
-        # Verify message content is preserved
         for orig_msg, imp_msg in zip(original_messages, imported_messages):
             assert orig_msg.role == imp_msg.role
             assert orig_msg.content == imp_msg.content
@@ -704,20 +987,15 @@ class TestAgentFileImport:
 
     async def test_import_message_context_preservation(self, server, agent_file_manager, test_agent, default_user, other_user):
         """Test that in-context message references are preserved during import."""
-        # Export the agent
         agent_file = await agent_file_manager.export([test_agent.id], default_user)
 
-        # Import the agent
         result = await agent_file_manager.import_file(agent_file, other_user)
 
-        # Get the imported agent
         imported_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
         imported_agent = server.agent_manager.get_agent_by_id(imported_agent_id, other_user)
 
-        # Check that in-context message count is preserved
         assert len(imported_agent.message_ids) == len(test_agent.message_ids)
 
-        # Verify all in-context messages exist
         imported_messages = server.message_manager.list_messages_for_agent(imported_agent_id, other_user)
         imported_message_ids = {msg.id for msg in imported_messages}
 
@@ -726,13 +1004,10 @@ class TestAgentFileImport:
 
     async def test_dry_run_import(self, agent_file_manager, test_agent, default_user, other_user):
         """Test dry run import validation."""
-        # Export the agent
         agent_file = await agent_file_manager.export([test_agent.id], default_user)
 
-        # Dry run import
         result = await agent_file_manager.import_file(agent_file, other_user, dry_run=True)
 
-        # Validate dry run result
         assert result.success
         assert result.imported_count == 0  # No actual imports in dry run
         assert len(result.id_mappings) == 0
@@ -740,12 +1015,10 @@ class TestAgentFileImport:
 
     async def test_import_validation_errors(self, agent_file_manager, other_user):
         """Test import validation catches errors."""
-        # Get current revision for test
         from letta.utils import get_latest_alembic_revision
 
         current_revision = await get_latest_alembic_revision()
 
-        # Create invalid agent file with duplicate IDs
         invalid_agent_file = AgentFileSchema(
             metadata={"revision_id": current_revision},
             agents=[
@@ -759,9 +1032,90 @@ class TestAgentFileImport:
             tools=[],
         )
 
-        # Import should fail validation
         with pytest.raises(AgentFileImportError):
             await agent_file_manager.import_file(invalid_agent_file, other_user)
+
+
+class TestAgentFileImportWithProcessing:
+    """Tests for agent file import with file processing (chunking/embedding)."""
+
+    async def test_import_with_file_processing(self, server, agent_file_manager, default_user, other_user):
+        """Test that import processes files for chunking and embedding."""
+        source = await create_test_source(server, "processing-source", default_user)
+        file_content = "This is test content for processing. It should be chunked and embedded during import."
+        file_metadata = await create_test_file(server, "process.txt", source.id, default_user, content=file_content)
+
+        agent = await create_test_agent_with_files(server, "processing-agent", default_user, [(source.id, file_metadata.id)])
+
+        exported = await agent_file_manager.export([agent.id], default_user)
+
+        result = await agent_file_manager.import_file(exported, other_user)
+
+        assert result.success
+        assert result.imported_count > 0
+
+        imported_file_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id.startswith("file-"))
+
+        imported_file = await server.file_manager.get_file_by_id(imported_file_id, other_user)
+        assert imported_file.processing_status.value == "completed"
+
+    async def test_import_passage_creation(self, server, agent_file_manager, default_user, other_user):
+        """Test that import creates passages for file content."""
+        source = await create_test_source(server, "passage-source", default_user)
+        file_content = "This content should create passages. Each sentence should be chunked separately."
+        file_metadata = await create_test_file(server, "passages.txt", source.id, default_user, content=file_content)
+
+        agent = await create_test_agent_with_files(server, "passage-agent", default_user, [(source.id, file_metadata.id)])
+
+        exported = await agent_file_manager.export([agent.id], default_user)
+
+        result = await agent_file_manager.import_file(exported, other_user)
+
+        imported_file_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id.startswith("file-"))
+
+        passages = await server.passage_manager.list_passages_by_file_id_async(imported_file_id, other_user)
+        assert len(passages) > 0
+
+        for passage in passages:
+            assert passage.embedding is not None
+            assert len(passage.embedding) > 0
+
+    async def test_import_file_status_updates(self, server, agent_file_manager, default_user, other_user):
+        """Test that file processing status is updated correctly during import."""
+        source = await create_test_source(server, "status-source", default_user)
+        file_metadata = await create_test_file(server, "status.txt", source.id, default_user)
+
+        agent = await create_test_agent_with_files(server, "status-agent", default_user, [(source.id, file_metadata.id)])
+
+        exported = await agent_file_manager.export([agent.id], default_user)
+
+        result = await agent_file_manager.import_file(exported, other_user)
+
+        imported_file_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id.startswith("file-"))
+        imported_file = await server.file_manager.get_file_by_id(imported_file_id, other_user)
+
+        assert imported_file.processing_status.value == "completed"
+        assert imported_file.total_chunks is None
+        assert imported_file.chunks_embedded is None
+
+    async def test_import_multiple_files_processing(self, server, agent_file_manager, default_user, other_user):
+        """Test import processes multiple files efficiently."""
+        source = await create_test_source(server, "multi-source", default_user)
+        file1 = await create_test_file(server, "file1.txt", source.id, default_user)
+        file2 = await create_test_file(server, "file2.txt", source.id, default_user)
+
+        agent = await create_test_agent_with_files(server, "multi-agent", default_user, [(source.id, file1.id), (source.id, file2.id)])
+
+        exported = await agent_file_manager.export([agent.id], default_user)
+
+        result = await agent_file_manager.import_file(exported, other_user)
+
+        imported_file_ids = [db_id for file_id, db_id in result.id_mappings.items() if file_id.startswith("file-")]
+        assert len(imported_file_ids) == 2
+
+        for file_id in imported_file_ids:
+            imported_file = await server.file_manager.get_file_by_id(file_id, other_user)
+            assert imported_file.processing_status.value == "completed"
 
 
 class TestAgentFileRoundTrip:
@@ -769,19 +1123,10 @@ class TestAgentFileRoundTrip:
 
     async def test_roundtrip_consistency(self, server, agent_file_manager, test_agent, default_user, other_user):
         """Test that export -> import -> export produces consistent results."""
-        # First export
         original_export = await agent_file_manager.export([test_agent.id], default_user)
-
-        # Import
         result = await agent_file_manager.import_file(original_export, other_user)
-
-        # Get imported agent ID
         imported_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
-
-        # Second export
         second_export = await agent_file_manager.export([imported_agent_id], other_user)
-
-        # Compare exports (should be logically equivalent)
         assert compare_agent_files(original_export, second_export)
 
     async def test_multiple_roundtrips(self, server, agent_file_manager, test_agent, default_user, other_user):
@@ -790,18 +1135,14 @@ class TestAgentFileRoundTrip:
         current_user = default_user
 
         for i in range(3):
-            # Export
             agent_file = await agent_file_manager.export([current_agent_id], current_user)
 
-            # Import to other user
             target_user = other_user if current_user == default_user else default_user
             result = await agent_file_manager.import_file(agent_file, target_user)
 
-            # Update for next iteration
             current_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
             current_user = target_user
 
-            # Verify the agent still works
             imported_agent = server.agent_manager.get_agent_by_id(current_agent_id, current_user)
             assert imported_agent.name == test_agent.name
 
