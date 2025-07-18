@@ -230,13 +230,13 @@ class Settings(BaseSettings):
     track_errored_messages: bool = Field(default=True, description="Enable tracking for errored messages")
     track_stop_reason: bool = Field(default=True, description="Enable tracking stop reason on steps.")
 
-    # uvicorn settings
+    # FastAPI Application Settings
     uvicorn_workers: int = 1
     uvicorn_reload: bool = False
     uvicorn_timeout_keep_alive: int = 5
 
-    use_uvloop: bool = False
-    use_granian: bool = False
+    use_uvloop: bool = Field(default=True, description="Enable uvloop as asyncio event loop.")
+    use_granian: bool = Field(default=False, description="Use Granian for workers")
     sqlalchemy_tracing: bool = False
 
     # event loop parallelism
@@ -278,7 +278,7 @@ class Settings(BaseSettings):
         elif self.pg_db and self.pg_user and self.pg_password and self.pg_host and self.pg_port:
             return f"postgresql+pg8000://{self.pg_user}:{self.pg_password}@{self.pg_host}:{self.pg_port}/{self.pg_db}"
         else:
-            return f"postgresql+pg8000://letta:letta@localhost:5432/letta"
+            return "postgresql+pg8000://letta:letta@localhost:5432/letta"
 
     # add this property to avoid being returned the default
     # reference: https://github.com/letta-ai/letta/issues/1362
