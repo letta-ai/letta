@@ -1,10 +1,10 @@
 name: Model Sweep
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 0 * * 0"
   push:
     branches:
-      - kian/rebase-model-sweep
+      - kian/fix_model_swep
   workflow_dispatch:
     inputs:
       branch-name:

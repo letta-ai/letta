@@ -42,13 +42,6 @@ logger = get_logger(__name__)
 # ------------------------------
 
 
-def get_llm_config(filename: str, llm_config_dir: str = "tests/configs/llm_model_configs") -> LLMConfig:
-    filename = os.path.join(llm_config_dir, filename)
-    config_data = json.load(open(filename, "r"))
-    llm_config = LLMConfig(**config_data)
-    return llm_config
-
-
 def roll_dice(num_sides: int) -> int:
     """
     Returns a random number between 1 and num_sides.
@@ -100,27 +93,6 @@ USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
-all_configs = [
-    "openai-gpt-4o-mini.json",
-    "openai-o1.json",
-    "openai-o1-mini.json",
-    "openai-o3.json",
-    "openai-o4-mini.json",
-    "azure-gpt-4o-mini.json",
-    "claude-4-sonnet.json",
-    "claude-3-5-sonnet.json",
-    "claude-3-7-sonnet.json",
-    "claude-3-7-sonnet-extended.json",
-    "bedrock-claude-4-sonnet.json",
-    "gemini-1.5-pro.json",
-    "gemini-2.5-flash-vertex.json",
-    "gemini-2.5-pro-vertex.json",
-    "together-qwen-2.5-72b-instruct.json",
-    "ollama.json",
-]
-requested = os.getenv("LLM_CONFIG_FILE")
-filenames = [requested] if requested else all_configs
-TESTED_LLM_CONFIGS: List[LLMConfig] = [get_llm_config(fn) for fn in filenames]
 
 def assert_greeting_with_assistant_message_response(
     messages: List[Any],
