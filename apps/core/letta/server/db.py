@@ -259,6 +259,11 @@ class DatabaseRegistry:
         self.initialize_sync()
         return self._engines.get(name)
 
+    def get_async_engine(self, name: str = "default") -> Engine:
+        """Get a database engine by name."""
+        self.initialize_async()
+        return self._async_engines.get(name)
+
     def get_session_factory(self, name: str = "default") -> sessionmaker:
         """Get a session factory by name."""
         self.initialize_sync()

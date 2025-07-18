@@ -157,6 +157,17 @@ async def lifespan(app_: FastAPI):
         logger.info(f"[Worker {worker_id}] Scheduler shutdown completed")
     except Exception as e:
         logger.error(f"[Worker {worker_id}] Scheduler shutdown failed: {e}", exc_info=True)
+
+    # Cleanup SQLAlchemy instrumentation
+    if not settings.disable_tracing and settings.sqlalchemy_tracing:
+        try:
+            from letta.otel.sqlalchemy_instrumentation_integration import teardown_letta_db_instrumentation
+
+            teardown_letta_db_instrumentation()
+            logger.info(f"[Worker {worker_id}] SQLAlchemy instrumentation shutdown completed")
+        except Exception as e:
+            logger.warning(f"[Worker {worker_id}] SQLAlchemy instrumentation shutdown failed: {e}")
+
     logger.info(f"[Worker {worker_id}] Lifespan shutdown completed")
 
 
@@ -313,6 +324,20 @@ def create_application() -> "FastAPI":
             service_name=service_name,
         )
         setup_metrics(endpoint=otlp_endpoint, app=app, service_name=service_name)
+
+        # Set up SQLAlchemy synchronous operation instrumentation
+        if settings.sqlalchemy_tracing:
+            from letta.otel.sqlalchemy_instrumentation_integration import setup_letta_db_instrumentation
+
+            try:
+                setup_letta_db_instrumentation(
+                    enable_joined_monitoring=True,  # Monitor joined loading operations
+                    sql_truncate_length=1500,  # Longer SQL statements for debugging
+                )
+                print("▶ SQLAlchemy synchronous operation instrumentation enabled")
+            except Exception as e:
+                logger.warning(f"Failed to setup SQLAlchemy instrumentation: {e}")
+                # Don't fail startup if instrumentation fails
 
     for route in v1_routes:
         app.include_router(route, prefix=API_PREFIX)
