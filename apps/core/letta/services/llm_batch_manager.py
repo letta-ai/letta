@@ -403,7 +403,7 @@ class LLMBatchManager:
                 missing = requested - found
                 if missing:
                     raise ValueError(
-                        f"Cannot bulk-update batch items: no records for the following " f"(llm_batch_id, agent_id) pairs: {missing}"
+                        f"Cannot bulk-update batch items: no records for the following (llm_batch_id, agent_id) pairs: {missing}"
                     )
 
             # Build mappings, skipping any missing when strict=False

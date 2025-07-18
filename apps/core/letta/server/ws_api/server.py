@@ -21,7 +21,7 @@ class WebSocketServer:
     def shutdown_server(self):
         try:
             self.interface.close()
-            print(f"Closed the WS interface")
+            print("Closed the WS interface")
         except Exception as e:
             print(f"Closing the WS interface failed with: {e}")
 
@@ -100,7 +100,7 @@ class WebSocketServer:
                     await websocket.send(protocol.server_error(f"unrecognized client package data type: {data}"))
 
         except websockets.exceptions.ConnectionClosed:
-            print(f"[server] connection with client was closed")
+            print("[server] connection with client was closed")
         finally:
             self.interface.unregister_client(websocket)
 

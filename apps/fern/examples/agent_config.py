@@ -7,8 +7,6 @@ models = client.models.list_llms()
 for model in models:
     print(f"Provider {model.model_endpoint_type} model {model.model}: {model.handle}")
 
-print()
-print()
 # list available embedding models
 embedding_models = client.models.list_embedding_models()
 for model in embedding_models:

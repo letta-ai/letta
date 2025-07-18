@@ -76,7 +76,7 @@ def num_tokens_from_functions(functions: List[dict], model: str = "gpt-4"):
     except KeyError:
         from letta.utils import printd
 
-        printd(f"Warning: model not found. Using cl100k_base encoding.")
+        printd("Warning: model not found. Using cl100k_base encoding.")
         encoding = tiktoken.get_encoding("cl100k_base")
 
     num_tokens = 0
@@ -238,7 +238,6 @@ def num_tokens_from_messages(messages: List[dict], model: str = "gpt-4") -> int:
         num_tokens += tokens_per_message
         for key, value in message.items():
             try:
-
                 if isinstance(value, list) and key == "tool_calls":
                     num_tokens += num_tokens_from_tool_calls(tool_calls=value, model=model)
                     # special case for tool calling (list)

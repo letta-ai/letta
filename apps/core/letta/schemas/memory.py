@@ -174,7 +174,7 @@ class Memory(BaseModel, validate_assignment=True):
     def update_block_value(self, label: str, value: str):
         """Update the value of a block"""
         if not isinstance(value, str):
-            raise ValueError(f"Provided value must be a string")
+            raise ValueError("Provided value must be a string")
 
         for block in self.blocks:
             if block.label == label:

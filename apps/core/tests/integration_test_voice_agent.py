@@ -492,7 +492,6 @@ async def test_voice_sleeptime_agent(disable_e2b_api_key, voice_agent):
 
 @pytest.mark.asyncio(loop_scope="module")
 async def test_init_voice_convo_agent(voice_agent, server, actor):
-
     assert voice_agent.enable_sleeptime == True
     main_agent_tools = [tool.name for tool in voice_agent.tools]
     assert len(main_agent_tools) == 4

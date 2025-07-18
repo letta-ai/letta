@@ -16,7 +16,7 @@ config = context.config
 
 if settings.letta_pg_uri_no_default:
     config.set_main_option("sqlalchemy.url", settings.letta_pg_uri)
-    print(f"Using database: ", settings.letta_pg_uri)
+    print("Using database: ", settings.letta_pg_uri)
 else:
     config.set_main_option("sqlalchemy.url", "sqlite:///" + os.path.join(letta_config.recall_storage_path, "sqlite.db"))
 

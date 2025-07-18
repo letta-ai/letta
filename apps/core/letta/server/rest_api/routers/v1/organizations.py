@@ -52,7 +52,7 @@ async def delete_org(
     try:
         org = await server.organization_manager.get_organization_by_id_async(org_id=org_id)
         if org is None:
-            raise HTTPException(status_code=404, detail=f"Organization does not exist")
+            raise HTTPException(status_code=404, detail="Organization does not exist")
         await server.organization_manager.delete_organization_by_id_async(org_id=org_id)
     except HTTPException:
         raise
@@ -70,7 +70,7 @@ async def update_org(
     try:
         org = await server.organization_manager.get_organization_by_id_async(org_id=org_id)
         if org is None:
-            raise HTTPException(status_code=404, detail=f"Organization does not exist")
+            raise HTTPException(status_code=404, detail="Organization does not exist")
         org = await server.organization_manager.update_organization_async(org_id=org_id, name=request.name)
     except HTTPException:
         raise

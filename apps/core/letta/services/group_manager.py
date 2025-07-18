@@ -18,7 +18,6 @@ from letta.utils import enforce_types
 
 
 class GroupManager:
-
     @enforce_types
     @trace_method
     def list_groups(
@@ -164,7 +163,7 @@ class GroupManager:
             manager_agent_id = None
             if group_update.manager_config:
                 if group_update.manager_config.manager_type != group.manager_type:
-                    raise ValueError(f"Cannot change group pattern after creation")
+                    raise ValueError("Cannot change group pattern after creation")
                 match group_update.manager_config.manager_type:
                     case ManagerType.round_robin:
                         max_turns = group_update.manager_config.max_turns
@@ -473,7 +472,7 @@ class GroupManager:
         # 1) require both-or-none
         if (max_value is None) != (min_value is None):
             raise ValueError(
-                f"Both '{max_name}' and '{min_name}' must be provided together " f"(got {max_name}={max_value}, {min_name}={min_value})"
+                f"Both '{max_name}' and '{min_name}' must be provided together (got {max_name}={max_value}, {min_name}={min_value})"
             )
 
         # no further checks if neither is provided
@@ -488,9 +487,9 @@ class GroupManager:
             )
         if max_value <= 4 or min_value <= 4:
             raise ValueError(
-                f"Both '{max_name}' and '{min_name}' must be greater than 4 " f"(got {max_name}={max_value}, {min_name}={min_value})"
+                f"Both '{max_name}' and '{min_name}' must be greater than 4 (got {max_name}={max_value}, {min_name}={min_value})"
             )
 
         # 3) ordering
         if max_value <= min_value:
-            raise ValueError(f"'{max_name}' must be greater than '{min_name}' " f"(got {max_name}={max_value} <= {min_name}={min_value})")
+            raise ValueError(f"'{max_name}' must be greater than '{min_name}' (got {max_name}={max_value} <= {min_name}={min_value})")

@@ -190,7 +190,6 @@ class GoogleEmbeddings:
 
 
 class GoogleVertexEmbeddings:
-
     def __init__(self, model: str, project_id: str, region: str):
         from google import genai
 
@@ -203,7 +202,6 @@ class GoogleVertexEmbeddings:
 
 
 class OpenAIEmbeddings:
-
     def __init__(self, api_key: str, model: str, base_url: str):
         if base_url:
             self.client = OpenAI(api_key=api_key, base_url=base_url)

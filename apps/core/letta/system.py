@@ -66,7 +66,7 @@ def get_initial_boot_messages(version, timezone):
                         "type": "function",
                         "function": {
                             "name": "send_message",
-                            "arguments": '{\n  "message": "' + f"Hi, is anyone there?" + '"\n}',
+                            "arguments": '{\n  "message": "' + "Hi, is anyone there?" + '"\n}',
                         },
                     }
                 ],

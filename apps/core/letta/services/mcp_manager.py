@@ -274,7 +274,6 @@ class MCPManager:
         mcp_config_path = os.path.join(constants.LETTA_DIR, constants.MCP_CONFIG_NAME)
         if os.path.exists(mcp_config_path):
             with open(mcp_config_path, "r") as f:
-
                 try:
                     mcp_config = json.load(f)
                 except Exception as e:

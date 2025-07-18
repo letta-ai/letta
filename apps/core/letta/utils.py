@@ -583,7 +583,7 @@ def annotate_message_json_list_with_tool_calls(messages: list[dict], allow_tool_
         # If we find a function call w/o a tool call ID annotation, annotate it
         if message["role"] == "assistant" and "function_call" in message:
             if "tool_call_id" in message and message["tool_call_id"] is not None:
-                printd(f"Message already has tool_call_id")
+                printd("Message already has tool_call_id")
                 tool_call_id = message["tool_call_id"]
             else:
                 tool_call_id = str(uuid.uuid4())
@@ -625,7 +625,7 @@ def annotate_message_json_list_with_tool_calls(messages: list[dict], allow_tool_
 
             assistant_tool_call = message["tool_calls"][0]
             if "id" in assistant_tool_call and assistant_tool_call["id"] is not None:
-                printd(f"Message already has id (tool_call_id)")
+                printd("Message already has id (tool_call_id)")
                 tool_call_id = assistant_tool_call["id"]
             else:
                 tool_call_id = str(uuid.uuid4())

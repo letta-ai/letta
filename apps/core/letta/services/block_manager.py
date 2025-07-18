@@ -531,7 +531,7 @@ class BlockManager:
             for block in blocks:
                 new_val = updates[block.id]
                 if len(new_val) > block.limit:
-                    logger.warning(f"Value length ({len(new_val)}) exceeds limit " f"({block.limit}) for block {block.id!r}, truncating...")
+                    logger.warning(f"Value length ({len(new_val)}) exceeds limit ({block.limit}) for block {block.id!r}, truncating...")
                     new_val = new_val[: block.limit]
                 block.value = new_val
 

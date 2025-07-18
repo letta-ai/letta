@@ -20,7 +20,7 @@ class Source(SqlalchemyBase, OrganizationMixin):
     __pydantic_model__ = PydanticSource
 
     __table_args__ = (
-        Index(f"source_created_at_id_idx", "created_at", "id"),
+        Index("source_created_at_id_idx", "created_at", "id"),
         UniqueConstraint("name", "organization_id", name="uq_source_name_organization"),
         {"extend_existing": True},
     )

@@ -408,7 +408,7 @@ def start_server(
 
     if (os.getenv("LOCAL_HTTPS") == "true") or "--localhttps" in sys.argv:
         print(f"▶ Server running at: https://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
-        print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
+        print("▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
         if importlib.util.find_spec("granian") is not None and settings.use_granian:
             from granian import Granian
 

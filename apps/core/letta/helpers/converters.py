@@ -245,7 +245,7 @@ def deserialize_message_content(data: Optional[List[Dict]]) -> List[MessageConte
         if content_type == MessageContentType.text:
             content = TextContent(**item)
         elif content_type == MessageContentType.image:
-            assert item["source"]["type"] == ImageSourceType.letta, f'Invalid image source type: {item["source"]["type"]}'
+            assert item["source"]["type"] == ImageSourceType.letta, f"Invalid image source type: {item['source']['type']}"
             content = ImageContent(**item)
         elif content_type == MessageContentType.tool_call:
             content = ToolCallContent(**item)

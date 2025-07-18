@@ -228,7 +228,7 @@ def test_auto_summarize(server, default_user):
         actor=default_user,
     )
 
-    def summarize_message_exists(messages: List[Message]) -> bool:
+    def summarize_message_exists(messages: list[Message]) -> bool:
         for message in messages:
             if message.content[0].text and "The following is a summary of the previous" in message.content[0].text:
                 return True

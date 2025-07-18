@@ -309,7 +309,6 @@ class AgentStepResponse(BaseModel):
 
 
 def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
-
     # Workflow agents and ReAct agents don't use memory blocks
     # However, they still allow files to be injected into the context
     if agent_type == AgentType.react_agent or agent_type == AgentType.workflow_agent:

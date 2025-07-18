@@ -697,7 +697,7 @@ def generate_markdown_documentation(
             # Indenting the fields section
             documentation += f"  {fields_prefix}:\n"
         else:
-            documentation += f"  attributes:\n"
+            documentation += "  attributes:\n"
         if isclass(model) and issubclass(model, BaseModel):
             for name, field_type in model.__annotations__.items():
                 # if name == "markdown_code_block":

@@ -96,7 +96,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         try:
             page = int(page)
         except:
-            raise ValueError(f"'page' argument must be an integer")
+            raise ValueError("'page' argument must be an integer")
 
         count = RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
         messages = await MessageManager().list_user_messages_for_agent_async(
@@ -110,7 +110,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         num_pages = math.ceil(total / count) - 1  # 0 index
 
         if len(messages) == 0:
-            results_str = f"No results found."
+            results_str = "No results found."
         else:
             results_pref = f"Showing {len(messages)} of {total} results (page {page}/{num_pages}):"
             results_formatted = [message.content[0].text for message in messages]
@@ -137,7 +137,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         try:
             page = int(page)
         except:
-            raise ValueError(f"'page' argument must be an integer")
+            raise ValueError("'page' argument must be an integer")
 
         count = RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
 
