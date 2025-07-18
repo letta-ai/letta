@@ -1999,6 +1999,7 @@ export class AgentsService {
    * @param data.useAssistantMessage Whether to use assistant messages
    * @param data.assistantMessageToolName The name of the designated message tool.
    * @param data.assistantMessageToolKwarg The name of the message argument.
+   * @param data.includeErr Whether to include error messages and error statuses. For debugging purposes only.
    * @param data.userId
    * @returns LettaMessageUnion Successful Response
    * @throws ApiError
@@ -2021,6 +2022,7 @@ export class AgentsService {
         use_assistant_message: data.useAssistantMessage,
         assistant_message_tool_name: data.assistantMessageToolName,
         assistant_message_tool_kwarg: data.assistantMessageToolKwarg,
+        include_err: data.includeErr,
       },
       errors: {
         422: 'Validation Error',

@@ -1137,6 +1137,7 @@ export const useAgentsServiceListPassages = <
  * @param data.useAssistantMessage Whether to use assistant messages
  * @param data.assistantMessageToolName The name of the designated message tool.
  * @param data.assistantMessageToolKwarg The name of the message argument.
+ * @param data.includeErr Whether to include error messages and error statuses. For debugging purposes only.
  * @param data.userId
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
@@ -1153,6 +1154,7 @@ export const useAgentsServiceListMessages = <
     assistantMessageToolName,
     before,
     groupId,
+    includeErr,
     limit,
     useAssistantMessage,
     userId,
@@ -1163,6 +1165,7 @@ export const useAgentsServiceListMessages = <
     assistantMessageToolName?: string;
     before?: string;
     groupId?: string;
+    includeErr?: boolean;
     limit?: number;
     useAssistantMessage?: boolean;
     userId?: string;
@@ -1179,6 +1182,7 @@ export const useAgentsServiceListMessages = <
         assistantMessageToolName,
         before,
         groupId,
+        includeErr,
         limit,
         useAssistantMessage,
         userId,
@@ -1193,6 +1197,7 @@ export const useAgentsServiceListMessages = <
         assistantMessageToolName,
         before,
         groupId,
+        includeErr,
         limit,
         useAssistantMessage,
         userId,

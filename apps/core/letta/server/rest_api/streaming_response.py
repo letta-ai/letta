@@ -12,6 +12,7 @@ from starlette.types import Send
 from letta.log import get_logger
 from letta.schemas.enums import JobStatus
 from letta.schemas.user import User
+from letta.server.rest_api.utils import capture_sentry_exception
 from letta.services.job_manager import JobManager
 
 logger = get_logger(__name__)
@@ -92,6 +93,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
         more_body = True
         try:
             first_chunk = await self.body_iterator.__anext__()
+            logger.debug("stream_response first chunk:", first_chunk)
             if isinstance(first_chunk, tuple):
                 first_chunk_content, self.status_code = first_chunk
             else:
@@ -130,7 +132,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                                 "more_body": more_body,
                             }
                         )
-                        return
+                        raise Exception(f"An exception occurred mid-stream with status code {status_code}", detail={"content": content})
                 else:
                     content = chunk
 
@@ -146,8 +148,8 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                 )
 
         # This should be handled properly upstream?
-        except asyncio.CancelledError:
-            logger.info("Stream was cancelled by client or job cancellation")
+        except asyncio.CancelledError as exc:
+            logger.warning("Stream was cancelled by client or job cancellation")
             # Handle cancellation gracefully
             more_body = False
             cancellation_resp = {"error": {"message": "Stream cancelled"}}
@@ -160,6 +162,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                         "headers": self.raw_headers,
                     }
                 )
+                raise
             await send(
                 {
                     "type": "http.response.body",
@@ -167,13 +170,15 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                     "more_body": more_body,
                 }
             )
+            capture_sentry_exception(exc)
             return
 
-        except Exception:
-            logger.exception("unhandled_streaming_error")
+        except Exception as exc:
+            logger.exception("Unhandled Streaming Error")
             more_body = False
             error_resp = {"error": {"message": "Internal Server Error"}}
             error_event = f"event: error\ndata: {json.dumps(error_resp)}\n\n".encode(self.charset)
+            logger.debug("response_started:", self.response_started)
             if not self.response_started:
                 await send(
                     {
@@ -182,6 +187,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                         "headers": self.raw_headers,
                     }
                 )
+                raise
             await send(
                 {
                     "type": "http.response.body",
@@ -189,5 +195,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                     "more_body": more_body,
                 }
             )
+            capture_sentry_exception(exc)
+            return
         if more_body:
             await send({"type": "http.response.body", "body": b"", "more_body": False})

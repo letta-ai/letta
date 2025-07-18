@@ -692,6 +692,7 @@ export const UseAgentsServiceListMessagesKeyFn = (
     assistantMessageToolName,
     before,
     groupId,
+    includeErr,
     limit,
     useAssistantMessage,
     userId,
@@ -702,6 +703,7 @@ export const UseAgentsServiceListMessagesKeyFn = (
     assistantMessageToolName?: string;
     before?: string;
     groupId?: string;
+    includeErr?: boolean;
     limit?: number;
     useAssistantMessage?: boolean;
     userId?: string;
@@ -717,6 +719,7 @@ export const UseAgentsServiceListMessagesKeyFn = (
       assistantMessageToolName,
       before,
       groupId,
+      includeErr,
       limit,
       useAssistantMessage,
       userId,

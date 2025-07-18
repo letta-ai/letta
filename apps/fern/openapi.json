@@ -3470,6 +3470,24 @@
               "title": "Assistant Message Tool Kwarg"
             },
             "description": "The name of the message argument."
+          },
+          {
+            "name": "include_err",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Whether to include error messages and error statuses. For debugging purposes only.",
+              "title": "Include Err"
+            },
+            "description": "Whether to include error messages and error statuses. For debugging purposes only."
           }
         ],
         "responses": {
@@ -10076,6 +10094,17 @@
             ],
             "title": "Step Id"
           },
+          "is_err": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Err"
+          },
           "content": {
             "anyOf": [
               {
@@ -11645,6 +11674,7 @@
                   "gpt-4o-search-preview-2025-03-11",
                   "gpt-4o-mini-search-preview-2025-03-11",
                   "chatgpt-4o-latest",
+                  "codex-mini-latest",
                   "gpt-4o-mini",
                   "gpt-4o-mini-2024-07-18",
                   "gpt-4-turbo",
@@ -11864,7 +11894,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["auto", "default"]
+                "enum": ["auto", "default", "flex", "scale", "priority"]
               },
               {
                 "type": "null"
@@ -13989,6 +14019,17 @@
             ],
             "title": "Step Id"
           },
+          "is_err": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Err"
+          },
           "state": {
             "type": "string",
             "enum": ["redacted", "omitted"],
@@ -15398,6 +15439,17 @@
             "type": "string",
             "title": "Name"
           },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
           "description": {
             "anyOf": [
               {
@@ -15414,6 +15466,18 @@
             "type": "object",
             "title": "Inputschema"
           },
+          "outputSchema": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outputschema"
+          },
           "annotations": {
             "anyOf": [
               {
@@ -15423,6 +15487,18 @@
                 "type": "null"
               }
             ]
+          },
+          "_meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
           }
         },
         "additionalProperties": true,
@@ -15772,6 +15848,18 @@
             ],
             "title": "Batch Item Id",
             "description": "The id of the LLMBatchItem that this message is associated with"
+          },
+          "is_err": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Err",
+            "description": "Whether this message is part of an error step. Used only for debugging purposes."
           }
         },
         "additionalProperties": false,
@@ -16999,6 +17087,17 @@
               }
             ],
             "title": "Step Id"
+          },
+          "is_err": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Err"
           },
           "source": {
             "type": "string",
@@ -18254,6 +18353,17 @@
             "title": "Completion Tokens Details",
             "description": "Metadata for the agent."
           },
+          "stop_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StopReasonType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The stop reason associated with the step."
+          },
           "tags": {
             "items": {
               "type": "string"
@@ -18507,6 +18617,17 @@
               }
             ],
             "title": "Step Id"
+          },
+          "is_err": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Err"
           },
           "content": {
             "type": "string",
@@ -18970,6 +19091,17 @@
             ],
             "title": "Step Id"
           },
+          "is_err": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Err"
+          },
           "tool_call": {
             "anyOf": [
               {
@@ -19284,6 +19416,17 @@
               }
             ],
             "title": "Step Id"
+          },
+          "is_err": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Err"
           },
           "tool_return": {
             "type": "string",
@@ -20487,6 +20630,17 @@
               }
             ],
             "title": "Step Id"
+          },
+          "is_err": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Err"
           },
           "content": {
             "anyOf": [

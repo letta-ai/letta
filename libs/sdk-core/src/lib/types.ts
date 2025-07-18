@@ -49,6 +49,7 @@ export const UserMessageSchema = z.object({
   name: z.string().nullish(),
   date: z.string(),
   id: z.string(),
+  is_err: z.boolean().nullish(),
 });
 
 export const ReasoningMessageSchema = z.object({

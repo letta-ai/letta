@@ -105,6 +105,7 @@ from letta.services.tool_executor.tool_execution_manager import ToolExecutionMan
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings, settings, tool_settings
+from letta.streaming_interface import AgentChunkStreamingInterface
 from letta.utils import get_friendly_error_msg, get_persona_text, make_key
 
 config = LettaConfig.load()
@@ -176,7 +177,7 @@ class SyncServer(Server):
         self,
         chaining: bool = True,
         max_chaining_steps: Optional[int] = 100,
-        default_interface_factory: Callable[[], AgentInterface] = lambda: CLIInterface(),
+        default_interface_factory: Callable[[], AgentChunkStreamingInterface] = lambda: CLIInterface(),
         init_with_default_org_and_user: bool = True,
         # default_interface: AgentInterface = CLIInterface(),
         # default_persistence_manager_cls: PersistenceManager = LocalStateManager,
@@ -1244,6 +1245,7 @@ class SyncServer(Server):
         use_assistant_message: bool = True,
         assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
         assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
+        include_err: Optional[bool] = None,
     ) -> Union[List[Message], List[LettaMessage]]:
         records = await self.message_manager.list_messages_for_agent_async(
             agent_id=agent_id,
@@ -1253,6 +1255,7 @@ class SyncServer(Server):
             limit=limit,
             ascending=not reverse,
             group_id=group_id,
+            include_err=include_err,
         )
 
         if not return_message_object:
@@ -1262,6 +1265,7 @@ class SyncServer(Server):
                 assistant_message_tool_name=assistant_message_tool_name,
                 assistant_message_tool_kwarg=assistant_message_tool_kwarg,
                 reverse=reverse,
+                include_err=include_err,
             )
 
         if reverse:
