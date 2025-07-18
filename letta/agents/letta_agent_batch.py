@@ -100,7 +100,6 @@ async def execute_tool_wrapper(params: ToolExecutionParams) -> tuple[str, ToolEx
 # TODO: Limitations ->
 # TODO: Only works with anthropic for now
 class LettaAgentBatch(BaseAgent):
-
     def __init__(
         self,
         message_manager: MessageManager,

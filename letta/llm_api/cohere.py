@@ -307,7 +307,7 @@ def cohere_chat_completions_request(
     data = chat_completion_request.model_dump(exclude_none=True)
 
     if "functions" in data:
-        raise ValueError(f"'functions' unexpected in Anthropic API payload")
+        raise ValueError("'functions' unexpected in Anthropic API payload")
 
     # If tools == None, strip from the payload
     if "tools" in data and data["tools"] is None:

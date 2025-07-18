@@ -65,7 +65,7 @@ async def delete_user(
     try:
         user = await server.user_manager.get_actor_by_id_async(actor_id=user_id)
         if user is None:
-            raise HTTPException(status_code=404, detail=f"User does not exist")
+            raise HTTPException(status_code=404, detail="User does not exist")
         await server.user_manager.delete_actor_by_id_async(user_id=user_id)
     except HTTPException:
         raise

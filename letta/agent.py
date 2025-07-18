@@ -1641,7 +1641,7 @@ class Agent(BaseAgent):
                 # Get the MCPClient from the server's handle
                 # TODO these don't get raised properly
                 if not self.mcp_clients:
-                    raise ValueError(f"No MCP client available to use")
+                    raise ValueError("No MCP client available to use")
                 if server_name not in self.mcp_clients:
                     raise ValueError(f"Unknown MCP server name: {server_name}")
                 mcp_client = self.mcp_clients[server_name]

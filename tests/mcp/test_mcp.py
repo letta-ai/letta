@@ -192,7 +192,7 @@ def test_stdio_mcp_server(client, agent_state):
         messages=[
             MessageCreate(
                 role="user",
-                content=[TextContent(text=(f"Use the `{letta_tool.name}` tool with these arguments: " f"{{'state': 'CA'}}."))],
+                content=[TextContent(text=(f"Use the `{letta_tool.name}` tool with these arguments: {{'state': 'CA'}}."))],
             )
         ],
     )

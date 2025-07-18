@@ -476,7 +476,6 @@ class PassageManager:
         try:
             # breakup string into passages
             for text in parse_and_chunk_text(text, embedding_chunk_size):
-
                 if agent_state.embedding_config.embedding_endpoint_type != "openai":
                     embedding = embed_model.get_text_embedding(text)
                 else:

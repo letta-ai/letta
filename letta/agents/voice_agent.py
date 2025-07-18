@@ -377,19 +377,19 @@ class VoiceAgent(BaseAgent):
                                     "type": ["array", "null"],
                                     "items": {"type": "string"},
                                     "description": (
-                                        "Extra keywords (e.g., order ID, place name). " "Use *null* when the utterance is already specific."
+                                        "Extra keywords (e.g., order ID, place name). Use *null* when the utterance is already specific."
                                     ),
                                 },
                                 "start_minutes_ago": {
                                     "type": ["integer", "null"],
                                     "description": (
-                                        "Newer bound of the time window, in minutes ago. " "Use *null* if no lower bound is needed."
+                                        "Newer bound of the time window, in minutes ago. Use *null* if no lower bound is needed."
                                     ),
                                 },
                                 "end_minutes_ago": {
                                     "type": ["integer", "null"],
                                     "description": (
-                                        "Older bound of the time window, in minutes ago. " "Use *null* if no upper bound is needed."
+                                        "Older bound of the time window, in minutes ago. Use *null* if no upper bound is needed."
                                     ),
                                 },
                             },

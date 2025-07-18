@@ -122,7 +122,7 @@ async def create_tool(
     except UniqueConstraintViolationError as e:
         # Log or print the full exception here for debugging
         print(f"Error occurred: {e}")
-        clean_error_message = f"Tool with this name already exists."
+        clean_error_message = "Tool with this name already exists."
         raise HTTPException(status_code=409, detail=clean_error_message)
     except LettaToolCreateError as e:
         # HTTP 400 == Bad Request
@@ -248,7 +248,7 @@ def list_composio_apps(server: SyncServer = Depends(get_letta_server), user_id: 
     if not composio_api_key:
         raise HTTPException(
             status_code=400,  # Bad Request
-            detail=f"No API keys found for Composio. Please add your Composio API Key as an environment variable for your sandbox configuration, or set it as environment variable COMPOSIO_API_KEY.",
+            detail="No API keys found for Composio. Please add your Composio API Key as an environment variable for your sandbox configuration, or set it as environment variable COMPOSIO_API_KEY.",
         )
     return server.get_composio_apps(api_key=composio_api_key)
 
@@ -267,7 +267,7 @@ def list_composio_actions_by_app(
     if not composio_api_key:
         raise HTTPException(
             status_code=400,  # Bad Request
-            detail=f"No API keys found for Composio. Please add your Composio API Key as an environment variable for your sandbox configuration, or set it as environment variable COMPOSIO_API_KEY.",
+            detail="No API keys found for Composio. Please add your Composio API Key as an environment variable for your sandbox configuration, or set it as environment variable COMPOSIO_API_KEY.",
         )
     return server.get_composio_actions_from_app_name(composio_app_name=composio_app_name, api_key=composio_api_key)
 
@@ -430,7 +430,6 @@ async def add_mcp_tool(
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     if tool_settings.mcp_read_from_config:
-
         try:
             available_tools = await server.get_tools_from_mcp_server(mcp_server_name=mcp_server_name)
         except ValueError as e:

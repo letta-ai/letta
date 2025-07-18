@@ -23,7 +23,6 @@ from letta.settings import settings
 
 # TODO needed?
 def generate_mcp_tool_wrapper(mcp_tool_name: str) -> tuple[str, str]:
-
     wrapper_function_str = f"""\
 def {mcp_tool_name}(**kwargs):
     raise RuntimeError("Something went wrong - we should never be using the persisted source code for MCP. Please reach out to Letta team")
@@ -46,7 +45,7 @@ def generate_langchain_tool_wrapper(
     _assert_all_classes_are_imported(tool, additional_imports_module_attr_map)
 
     tool_instantiation = f"tool = {generate_imported_tool_instantiation_call_str(tool)}"
-    run_call = f"return tool._run(**kwargs)"
+    run_call = "return tool._run(**kwargs)"
     func_name = humps.decamelize(tool_name)
 
     # Combine all parts into the wrapper function
@@ -240,7 +239,7 @@ async def async_execute_send_message_to_agent(
     try:
         server.agent_manager.get_agent_by_id(agent_id=other_agent_id, actor=sender_agent.user)
     except NoResultFound:
-        raise ValueError(f"Target agent {other_agent_id} either does not exist or is not in org " f"({sender_agent.user.organization_id}).")
+        raise ValueError(f"Target agent {other_agent_id} either does not exist or is not in org ({sender_agent.user.organization_id}).")
 
     # 2. Use your async retry logic
     return await _async_send_message_with_retries(

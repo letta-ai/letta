@@ -130,7 +130,7 @@ async def sse_async_generator(
             except Exception as e:
                 log_error_to_sentry(e)
                 logger.error(f"Caught unexpected Exception: {e}")
-                yield sse_formatter({"error": f"Stream failed (internal error occurred)"})
+                yield sse_formatter({"error": "Stream failed (internal error occurred)"})
 
     except Exception as e:
         log_error_to_sentry(e)

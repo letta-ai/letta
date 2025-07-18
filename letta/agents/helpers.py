@@ -235,5 +235,5 @@ def _pop_heartbeat(tool_args: dict) -> bool:
 def _build_rule_violation_result(tool_name: str, valid: list[str], solver: ToolRulesSolver) -> ToolExecutionResult:
     hint_lines = solver.guess_rule_violation(tool_name)
     hint_txt = ("\n** Hint: Possible rules that were violated:\n" + "\n".join(f"\t- {h}" for h in hint_lines)) if hint_lines else ""
-    msg = f"[ToolConstraintError] Cannot call {tool_name}, " f"valid tools include: {valid}.{hint_txt}"
+    msg = f"[ToolConstraintError] Cannot call {tool_name}, valid tools include: {valid}.{hint_txt}"
     return ToolExecutionResult(status="error", func_return=msg)

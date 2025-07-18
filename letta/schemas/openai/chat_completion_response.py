@@ -106,7 +106,6 @@ class UsageStatistics(BaseModel):
     completion_tokens_details: Optional[UsageStatisticsCompletionTokenDetails] = None
 
     def __add__(self, other: "UsageStatistics") -> "UsageStatistics":
-
         if self.prompt_tokens_details is None and other.prompt_tokens_details is None:
             total_prompt_tokens_details = None
         elif self.prompt_tokens_details is None:

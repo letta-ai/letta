@@ -359,13 +359,12 @@ def test_basic_sanitization_no_suffix():
 
 
 def test_formatter():
-
     # Example system prompt that has no vars
     NO_VARS = """
     THIS IS A SYSTEM PROMPT WITH NO VARS
     """
 
-    assert NO_VARS == safe_format(NO_VARS, VARS_DICT)
+    assert safe_format(NO_VARS, VARS_DICT) == NO_VARS
 
     # Example system prompt that has {CORE_MEMORY}
     CORE_MEMORY_VAR = """
@@ -378,7 +377,7 @@ def test_formatter():
     My core memory is that I like to eat bananas
     """
 
-    assert CORE_MEMORY_VAR_SOL == safe_format(CORE_MEMORY_VAR, VARS_DICT)
+    assert safe_format(CORE_MEMORY_VAR, VARS_DICT) == CORE_MEMORY_VAR_SOL
 
     # Example system prompt that has {CORE_MEMORY} and {USER_MEMORY} (latter doesn't exist)
     UNUSED_VAR = """
@@ -393,7 +392,7 @@ def test_formatter():
     My core memory is that I like to eat bananas
     """
 
-    assert UNUSED_VAR_SOL == safe_format(UNUSED_VAR, VARS_DICT)
+    assert safe_format(UNUSED_VAR, VARS_DICT) == UNUSED_VAR_SOL
 
     # Example system prompt that has {CORE_MEMORY} and {USER_MEMORY} (latter doesn't exist), AND an empty {}
     UNUSED_AND_EMPRY_VAR = """
@@ -410,7 +409,7 @@ def test_formatter():
     My core memory is that I like to eat bananas
     """
 
-    assert UNUSED_AND_EMPRY_VAR_SOL == safe_format(UNUSED_AND_EMPRY_VAR, VARS_DICT)
+    assert safe_format(UNUSED_AND_EMPRY_VAR, VARS_DICT) == UNUSED_AND_EMPRY_VAR_SOL
 
 
 # ---------------------- LineChunker TESTS ---------------------- #

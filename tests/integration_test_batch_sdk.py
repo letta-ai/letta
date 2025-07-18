@@ -70,7 +70,6 @@ def client(server_url):
 
 @pytest.mark.asyncio
 async def test_create_batch(client: Letta, server: SyncServer):
-
     # create agents
     agent1 = client.agents.create(
         name="agent1_batch",
