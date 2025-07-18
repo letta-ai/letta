@@ -5,7 +5,7 @@ const redis = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
   port: process.env.REDIS_PORT || 6379,
   password: process.env.REDIS_PASSWORD,
-  keyPrefix: 'next-cache:',
+  keyPrefix: `next-cache:${process.env.GIT_HASH}:`,
   retryStrategy(times) {
     const delay = Math.min(times * 50, 2000);
     return delay;
@@ -48,7 +48,7 @@ module.exports = class RedisCache {
       if (this.options?.ttl) {
         await this.redis.set(key, value, 'EX', this.options.ttl);
       } else {
-        await this.redis.set(key, value);
+        await this.redis.set(key, value, 'EX', 60 * 60); // Default TTL of 1 hour
       }
 
       // Store a reference to this key for each tag for faster revalidation
