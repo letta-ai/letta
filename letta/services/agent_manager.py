@@ -91,7 +91,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
-from letta.settings import settings
+from letta.settings import DatabaseChoice, settings
 from letta.utils import enforce_types, united_diff
 
 logger = get_logger(__name__)
@@ -2732,7 +2732,7 @@ class AgentManager:
             )
 
             if query_text:
-                if settings.letta_pg_uri_no_default:
+                if settings.database_engine is DatabaseChoice.POSTGRES:
                     # PostgreSQL: Use ILIKE for case-insensitive search
                     query = query.filter(AgentsTags.tag.ilike(f"%{query_text}%"))
                 else:
@@ -2773,7 +2773,7 @@ class AgentManager:
             )
 
             if query_text:
-                if settings.letta_pg_uri_no_default:
+                if settings.database_engine is DatabaseChoice.POSTGRES:
                     # PostgreSQL: Use ILIKE for case-insensitive search
                     query = query.where(AgentsTags.tag.ilike(f"%{query_text}%"))
                 else:

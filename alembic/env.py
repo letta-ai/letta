@@ -6,7 +6,7 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 from letta.config import LettaConfig
 from letta.orm import Base
-from letta.settings import settings
+from letta.settings import DatabaseChoice, settings
 
 letta_config = LettaConfig.load()
 
@@ -14,7 +14,7 @@ letta_config = LettaConfig.load()
 # access to the values within the .ini file in use.
 config = context.config
 
-if settings.letta_pg_uri_no_default:
+if settings.database_engine is DatabaseChoice.POSTGRES:
     config.set_main_option("sqlalchemy.url", settings.letta_pg_uri)
     print("Using database: ", settings.letta_pg_uri)
 else:

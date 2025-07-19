@@ -1,4 +1,5 @@
 import os
+from enum import Enum
 from pathlib import Path
 from typing import Optional
 
@@ -182,6 +183,11 @@ if "--use-file-pg-uri" in sys.argv:
         pass
 
 
+class DatabaseChoice(str, Enum):
+    POSTGRES = "postgres"
+    SQLITE = "sqlite"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="letta_", extra="ignore")
 
@@ -290,6 +296,10 @@ class Settings(BaseSettings):
             return f"postgresql+pg8000://{self.pg_user}:{self.pg_password}@{self.pg_host}:{self.pg_port}/{self.pg_db}"
         else:
             return None
+
+    @property
+    def database_engine(self) -> DatabaseChoice:
+        return DatabaseChoice.POSTGRES if self.letta_pg_uri_no_default else DatabaseChoice.SQLITE
 
     @property
     def plugin_register_dict(self) -> dict:

@@ -13,7 +13,7 @@ from letta.schemas.identity import Identity as PydanticIdentity
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate, IdentityUpsert
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.settings import settings
+from letta.settings import DatabaseChoice, settings
 from letta.utils import enforce_types
 
 
@@ -69,7 +69,7 @@ class IdentityManager:
 
         # For SQLite compatibility: check for unique constraint violation manually
         # since SQLite doesn't support postgresql_nulls_not_distinct=True
-        if not settings.letta_pg_uri_no_default:  # Using SQLite
+        if settings.database_engine is DatabaseChoice.SQLITE:
             # Check if an identity with the same identifier_key, project_id, and organization_id exists
             query = select(IdentityModel).where(
                 IdentityModel.identifier_key == new_identity.identifier_key,

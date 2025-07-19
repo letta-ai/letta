@@ -18,7 +18,7 @@ from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.file_manager import FileManager
 from letta.services.helpers.agent_manager_helper import validate_agent_exists_async
-from letta.settings import settings
+from letta.settings import DatabaseChoice, settings
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -457,7 +457,7 @@ class MessageManager:
 
             # If query_text is provided, filter messages using database-specific JSON search.
             if query_text:
-                if settings.letta_pg_uri_no_default:
+                if settings.database_engine is DatabaseChoice.POSTGRES:
                     # PostgreSQL: Use json_array_elements and ILIKE
                     content_element = func.json_array_elements(MessageModel.content).alias("content_element")
                     query = query.filter(
@@ -565,7 +565,7 @@ class MessageManager:
 
             # If query_text is provided, filter messages using database-specific JSON search.
             if query_text:
-                if settings.letta_pg_uri_no_default:
+                if settings.database_engine is DatabaseChoice.POSTGRES:
                     # PostgreSQL: Use json_array_elements and ILIKE
                     content_element = func.json_array_elements(MessageModel.content).alias("content_element")
                     query = query.where(
