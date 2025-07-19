@@ -378,7 +378,6 @@ def hello_world_message_fixture(server: SyncServer, default_user, sarah_agent):
     """Fixture to create a tool with default settings and clean up after the test."""
     # Set up message
     message = PydanticMessage(
-        organization_id=default_user.organization_id,
         agent_id=sarah_agent.id,
         role="user",
         content=[TextContent(text="Hello, world!")],
@@ -1815,7 +1814,6 @@ async def test_reset_messages_with_existing_messages(server: SyncServer, sarah_a
     msg1 = server.message_manager.create_message(
         PydanticMessage(
             agent_id=sarah_agent.id,
-            organization_id=default_user.organization_id,
             role="user",
             content=[TextContent(text="Hello, Sarah!")],
         ),
@@ -1824,7 +1822,6 @@ async def test_reset_messages_with_existing_messages(server: SyncServer, sarah_a
     msg2 = server.message_manager.create_message(
         PydanticMessage(
             agent_id=sarah_agent.id,
-            organization_id=default_user.organization_id,
             role="assistant",
             content=[TextContent(text="Hello, user!")],
         ),
@@ -1859,7 +1856,6 @@ async def test_reset_messages_idempotency(server: SyncServer, sarah_agent, defau
     server.message_manager.create_message(
         PydanticMessage(
             agent_id=sarah_agent.id,
-            organization_id=default_user.organization_id,
             role="user",
             content=[TextContent(text="Hello, Sarah!")],
         ),
@@ -1889,7 +1885,6 @@ async def test_reset_messages_preserves_system_message_id(server: SyncServer, sa
     server.message_manager.create_message(
         PydanticMessage(
             agent_id=sarah_agent.id,
-            organization_id=default_user.organization_id,
             role="user",
             content=[TextContent(text="Hello!")],
         ),
@@ -1923,7 +1918,6 @@ async def test_reset_messages_preserves_system_message_content(server: SyncServe
     server.message_manager.create_message(
         PydanticMessage(
             agent_id=sarah_agent.id,
-            organization_id=default_user.organization_id,
             role="user",
             content=[TextContent(text="Hello!")],
         ),
@@ -3526,7 +3520,6 @@ def test_message_size(server: SyncServer, hello_world_message_fixture, default_u
     # Create additional test messages
     messages = [
         PydanticMessage(
-            organization_id=default_user.organization_id,
             agent_id=base_message.agent_id,
             role=base_message.role,
             content=[TextContent(text=f"Test message {i}")],
@@ -3557,7 +3550,6 @@ def create_test_messages(server: SyncServer, base_message: PydanticMessage, defa
     """Helper function to create test messages for all tests"""
     messages = [
         PydanticMessage(
-            organization_id=default_user.organization_id,
             agent_id=base_message.agent_id,
             role=base_message.role,
             content=[TextContent(text=f"Test message {i}")],
@@ -6105,7 +6097,6 @@ def test_job_messages_pagination(server: SyncServer, default_run, default_user, 
     message_ids = []
     for i in range(5):
         message = PydanticMessage(
-            organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             role=MessageRole.user,
             content=[TextContent(text=f"Test message {i}")],
@@ -6222,7 +6213,6 @@ def test_job_messages_ordering(server: SyncServer, default_run, default_user, sa
         message = PydanticMessage(
             role=MessageRole.user,
             content=[TextContent(text="Test message")],
-            organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             created_at=created_at,
         )
@@ -6291,19 +6281,16 @@ def test_job_messages_filter(server: SyncServer, default_run, default_user, sara
         PydanticMessage(
             role=MessageRole.user,
             content=[TextContent(text="Hello")],
-            organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
         ),
         PydanticMessage(
             role=MessageRole.assistant,
             content=[TextContent(text="Hi there!")],
-            organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
         ),
         PydanticMessage(
             role=MessageRole.assistant,
             content=[TextContent(text="Let me help you with that")],
-            organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             tool_calls=[
                 OpenAIToolCall(
@@ -6354,7 +6341,6 @@ def test_get_run_messages(server: SyncServer, default_user: PydanticUser, sarah_
     # Add some messages
     messages = [
         PydanticMessage(
-            organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             role=MessageRole.tool if i % 2 == 0 else MessageRole.assistant,
             content=[TextContent(text=f"Test message {i}" if i % 2 == 1 else '{"status": "OK"}')],
@@ -6405,7 +6391,6 @@ def test_get_run_messages_with_assistant_message(server: SyncServer, default_use
     # Add some messages
     messages = [
         PydanticMessage(
-            organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             role=MessageRole.tool if i % 2 == 0 else MessageRole.assistant,
             content=[TextContent(text=f"Test message {i}" if i % 2 == 1 else '{"status": "OK"}')],

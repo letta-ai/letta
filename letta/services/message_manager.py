@@ -88,8 +88,8 @@ class MessageManager:
         """Create a new message."""
         with db_registry.session() as session:
             # Set the organization id of the Pydantic message
-            pydantic_msg.organization_id = actor.organization_id
             msg_data = pydantic_msg.model_dump(to_orm=True)
+            msg_data["organization_id"] = actor.organization_id
             msg = MessageModel(**msg_data)
             msg.create(session, actor=actor)  # Persist to database
             return msg.to_pydantic()
@@ -99,8 +99,8 @@ class MessageManager:
         orm_messages = []
         for pydantic_msg in pydantic_msgs:
             # Set the organization id of the Pydantic message
-            pydantic_msg.organization_id = actor.organization_id
             msg_data = pydantic_msg.model_dump(to_orm=True)
+            msg_data["organization_id"] = actor.organization_id
             orm_messages.append(MessageModel(**msg_data))
         return orm_messages
 
