@@ -300,20 +300,12 @@ def test_web_search(
 
 
 @pytest.mark.asyncio
-async def test_web_search_uses_agent_env_var_model(agent_state_with_web_search_env_var):
+async def test_web_search_uses_agent_env_var_model():
     """Test that web search uses the model specified in agent tool exec env vars."""
 
-    # mock firecrawl response
-    mock_search_result = {
-        "data": [
-            {
-                "url": "https://example.com",
-                "title": "Example Title",
-                "description": "Example description",
-                "markdown": "Line 1: Test content\nLine 2: More content",
-            }
-        ]
-    }
+    # create mock agent state with web search model env var
+    mock_agent_state = MagicMock()
+    mock_agent_state.get_agent_env_vars_as_dict.return_value = {WEB_SEARCH_MODEL_ENV_VAR_NAME: "gpt-4o"}
 
     # mock openai response
     mock_openai_response = MagicMock()
@@ -350,7 +342,7 @@ async def test_web_search_uses_agent_env_var_model(agent_state_with_web_search_e
 
         task = SearchTask(query="test query", question="test question")
 
-        await executor.web_search(agent_state=agent_state_with_web_search_env_var, tasks=[task], limit=1)
+        await executor.web_search(agent_state=mock_agent_state, tasks=[task], limit=1)
 
         # verify correct model was used
         mock_openai_client.beta.chat.completions.parse.assert_called_once()
