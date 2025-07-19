@@ -174,8 +174,6 @@ def create_input_messages(input_messages: List[MessageCreate], agent_id: str, ti
     """
 
     messages = convert_message_creates_to_messages(input_messages, agent_id, timezone, wrap_user_message=False, wrap_system_message=False)
-    for message in messages:
-        message.organization_id = actor.organization_id
     return messages
 
 
@@ -214,7 +212,6 @@ def create_letta_messages_from_llm_response(
     assistant_message = Message(
         role=MessageRole.assistant,
         content=reasoning_content if reasoning_content else [],
-        organization_id=actor.organization_id,
         agent_id=agent_id,
         model=model,
         tool_calls=[tool_call],
@@ -231,7 +228,6 @@ def create_letta_messages_from_llm_response(
     tool_message = Message(
         role=MessageRole.tool,
         content=[TextContent(text=package_function_response(function_call_success, function_response, timezone))],
-        organization_id=actor.organization_id,
         agent_id=agent_id,
         model=model,
         tool_calls=[],
@@ -284,7 +280,6 @@ def create_heartbeat_system_message(
     heartbeat_system_message = Message(
         role=MessageRole.user,
         content=[TextContent(text=get_heartbeat(timezone, text_content))],
-        organization_id=actor.organization_id,
         agent_id=agent_id,
         model=model,
         tool_calls=[],
@@ -360,7 +355,6 @@ def convert_in_context_letta_messages_to_openai(in_context_messages: List[Messag
                     id=msg.id,
                     role=msg.role,
                     content=[TextContent(text=extracted_text)],
-                    organization_id=msg.organization_id,
                     agent_id=msg.agent_id,
                     model=msg.model,
                     name=msg.name,
@@ -389,7 +383,6 @@ def convert_in_context_letta_messages_to_openai(in_context_messages: List[Messag
                             id=msg.id,
                             role=msg.role,
                             content=[TextContent(text=actual_user_text)],
-                            organization_id=msg.organization_id,
                             agent_id=msg.agent_id,
                             model=msg.model,
                             name=msg.name,

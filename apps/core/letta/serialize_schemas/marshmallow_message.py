@@ -23,7 +23,6 @@ class SerializedMessageSchema(BaseSchema):
         # agent dump will then get rid of message ids
         del data["_created_by_id"]
         del data["_last_updated_by_id"]
-        del data["organization"]
 
         return data
 
@@ -33,10 +32,9 @@ class SerializedMessageSchema(BaseSchema):
             # Skip regenerating ID, as agent dump will do it
             data["_created_by_id"] = self.actor.id
             data["_last_updated_by_id"] = self.actor.id
-            data["organization"] = self.actor.organization_id
 
         return data
 
     class Meta(BaseSchema.Meta):
         model = Message
-        exclude = BaseSchema.Meta.exclude + ("step", "job_message", "otid", "is_deleted")
+        exclude = BaseSchema.Meta.exclude + ("step", "job_message", "otid", "is_deleted", "organization")

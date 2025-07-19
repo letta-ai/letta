@@ -3006,14 +3006,6 @@ export const Message = z.object({
     ])
     .optional(),
   id: z.union([z.string(), z.undefined()]).optional(),
-  organization_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
   agent_id: z
     .union([
       z.string(),

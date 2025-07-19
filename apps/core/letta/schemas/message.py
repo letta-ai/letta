@@ -150,7 +150,6 @@ class Message(BaseMessage):
     """
 
     id: str = BaseMessage.generate_id_field()
-    organization_id: Optional[str] = Field(default=None, description="The unique identifier of the organization.")
     agent_id: Optional[str] = Field(default=None, description="The unique identifier of the agent.")
     model: Optional[str] = Field(default=None, description="The model used to make the function call.")
     # Basic OpenAI-style fields

@@ -2544,10 +2544,6 @@ export type Message = {
    */
   id?: string;
   /**
-   * The unique identifier of the organization.
-   */
-  organization_id?: string | null;
-  /**
    * The unique identifier of the agent.
    */
   agent_id?: string | null;

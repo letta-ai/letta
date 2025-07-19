@@ -382,7 +382,6 @@ def package_initial_message_sequence(
                     role=message_create.role,
                     content=[TextContent(text=packed_message)],
                     name=message_create.name,
-                    organization_id=actor.organization_id,
                     agent_id=agent_id,
                     model=model,
                 )
@@ -397,7 +396,6 @@ def package_initial_message_sequence(
                     role=message_create.role,
                     content=[TextContent(text=packed_message)],
                     name=message_create.name,
-                    organization_id=actor.organization_id,
                     agent_id=agent_id,
                     model=model,
                 )
@@ -418,7 +416,6 @@ def package_initial_message_sequence(
                     role=MessageRole.assistant,
                     content=None,
                     name=message_create.name,
-                    organization_id=actor.organization_id,
                     agent_id=agent_id,
                     model=model,
                     tool_calls=[
@@ -438,7 +435,6 @@ def package_initial_message_sequence(
                     role=MessageRole.tool,
                     content=[TextContent(text=function_response)],
                     name=message_create.name,
-                    organization_id=actor.organization_id,
                     agent_id=agent_id,
                     model=model,
                     tool_call_id=tool_call_id,
