@@ -77,11 +77,6 @@ export const featureFlags = {
     expiryDate: '9999-99-99',
     flagValue: z.boolean(),
   },
-  TOOL_RULE_VIEWER: {
-    description: 'Enable the Tool Rules Visual viewer panel',
-    expiryDate: '9999-99-99',
-    flagValue: z.boolean(),
-  },
   DEPENDENCY_VIEWER: {
     description: 'Enable dependency viewer in tool manager',
     expiryDate: '9999-99-99',
