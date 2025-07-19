@@ -220,6 +220,7 @@ async def run_tool_from_source(
             tool_name=request.name,
             tool_args_json_schema=request.args_json_schema,
             tool_json_schema=request.json_schema,
+            pip_requirements=request.pip_requirements,
             actor=actor,
         )
     except LettaToolCreateError as e:

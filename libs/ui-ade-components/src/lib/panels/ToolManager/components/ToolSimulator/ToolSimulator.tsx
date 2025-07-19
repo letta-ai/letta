@@ -684,6 +684,10 @@ export function ToolSimulator(props: ToolSimulatorProps) {
     );
   }, [jsonSchema]);
 
+  const pipRequirements = useMemo(() => {
+    return stagedTool?.pip_requirements || [];
+  }, [stagedTool?.pip_requirements]);
+
   const { mutate, error, reset, data, isPending } =
     useToolsServiceRunToolFromSource();
 
@@ -705,10 +709,11 @@ export function ToolSimulator(props: ToolSimulatorProps) {
           env_vars: env,
           json_schema: jsonSchema,
           source_code: code,
+          pip_requirements: pipRequirements,
         },
       });
     },
-    [code, extractedFunctionName, jsonSchema, mutate, reset],
+    [code, extractedFunctionName, jsonSchema, mutate, reset, pipRequirements],
   );
 
   return (

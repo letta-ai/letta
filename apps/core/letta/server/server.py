@@ -53,6 +53,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
 from letta.schemas.passage import Passage, PassageUpdate
+from letta.schemas.pip_requirement import PipRequirement
 from letta.schemas.providers import (
     AnthropicProvider,
     AzureProvider,
@@ -2005,6 +2006,7 @@ class SyncServer(Server):
         tool_name: Optional[str] = None,
         tool_args_json_schema: Optional[Dict[str, Any]] = None,
         tool_json_schema: Optional[Dict[str, Any]] = None,
+        pip_requirements: Optional[List[PipRequirement]] = None,
     ) -> ToolReturnMessage:
         """Run a tool from source code"""
         if tool_source_type is not None and tool_source_type != "python":
@@ -2012,13 +2014,14 @@ class SyncServer(Server):
 
         # If tools_json_schema is explicitly passed in, override it on the created Tool object
         if tool_json_schema:
-            tool = Tool(name=tool_name, source_code=tool_source, json_schema=tool_json_schema)
+            tool = Tool(name=tool_name, source_code=tool_source, json_schema=tool_json_schema, pip_requirements=pip_requirements)
         else:
             # NOTE: we're creating a floating Tool object and NOT persisting to DB
             tool = Tool(
                 name=tool_name,
                 source_code=tool_source,
                 args_json_schema=tool_args_json_schema,
+                pip_requirements=pip_requirements,
             )
 
         assert tool.name is not None, "Failed to create tool object"
