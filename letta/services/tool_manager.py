@@ -253,7 +253,7 @@ class ToolManager:
         if not after and upsert_base_tools:
             existing_tool_names = {tool.name for tool in tools}
             base_tool_names = (
-                LETTA_TOOL_SET - LOCAL_ONLY_MULTI_AGENT_TOOLS if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" else LETTA_TOOL_SET
+                LETTA_TOOL_SET - set(LOCAL_ONLY_MULTI_AGENT_TOOLS) if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" else LETTA_TOOL_SET
             )
             missing_base_tools = base_tool_names - existing_tool_names
 
