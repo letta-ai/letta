@@ -104,7 +104,7 @@ from letta.services.telemetry_manager import TelemetryManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
-from letta.settings import model_settings, settings, tool_settings
+from letta.settings import DatabaseChoice, model_settings, settings, tool_settings
 from letta.streaming_interface import AgentChunkStreamingInterface
 from letta.utils import get_friendly_error_msg, get_persona_text, make_key
 
@@ -196,7 +196,7 @@ class SyncServer(Server):
 
         # Initialize the metadata store
         config = LettaConfig.load()
-        if settings.letta_pg_uri_no_default:
+        if settings.database_engine is DatabaseChoice.POSTGRES:
             config.recall_storage_type = "postgres"
             config.recall_storage_uri = settings.letta_pg_uri_no_default
             config.archival_storage_type = "postgres"

@@ -10772,7 +10772,7 @@
         "properties": {
           "format": {
             "type": "string",
-            "enum": ["wav", "mp3", "flac", "opus", "pcm16"],
+            "enum": ["wav", "aac", "mp3", "flac", "opus", "pcm16"],
             "title": "Format"
           },
           "voice": {
@@ -11494,7 +11494,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["auto", "default"]
+                "enum": ["auto", "default", "flex", "scale", "priority"]
               },
               {
                 "type": "null"

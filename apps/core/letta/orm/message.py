@@ -11,7 +11,7 @@ from letta.schemas.letta_message_content import MessageContent
 from letta.schemas.letta_message_content import TextContent as PydanticTextContent
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import ToolReturn
-from letta.settings import settings
+from letta.settings import DatabaseChoice, settings
 
 
 class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
@@ -92,7 +92,7 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
 @event.listens_for(Session, "before_flush")
 def set_sequence_id_for_sqlite_bulk(session, flush_context, instances):
     # Handle bulk inserts for SQLite
-    if not settings.letta_pg_uri_no_default:
+    if settings.database_engine is DatabaseChoice.SQLITE:
         # Find all new Message objects that need sequence IDs
         new_messages = [obj for obj in session.new if isinstance(obj, Message) and obj.sequence_id is None]
 
@@ -165,8 +165,7 @@ def set_sequence_id_for_sqlite_bulk(session, flush_context, instances):
 
 @event.listens_for(Message, "before_insert")
 def set_sequence_id_for_sqlite(mapper, connection, target):
-    # TODO: Kind of hacky, used to detect if we are using sqlite or not
-    if not settings.letta_pg_uri_no_default:
+    if settings.database_engine is DatabaseChoice.SQLITE:
         # For SQLite, we need to generate sequence_id manually
         # Use a database-level atomic operation to avoid race conditions
 

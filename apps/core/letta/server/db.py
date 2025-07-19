@@ -14,7 +14,7 @@ from sqlalchemy.orm import sessionmaker
 from letta.config import LettaConfig
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
-from letta.settings import settings
+from letta.settings import DatabaseChoice, settings
 
 logger = get_logger(__name__)
 
@@ -90,7 +90,7 @@ class DatabaseRegistry:
                 return
 
             # Postgres engine
-            if settings.letta_pg_uri_no_default:
+            if settings.database_engine is DatabaseChoice.POSTGRES:
                 self.logger.info("Creating postgres engine")
                 self.config.recall_storage_type = "postgres"
                 self.config.recall_storage_uri = settings.letta_pg_uri_no_default
@@ -128,7 +128,7 @@ class DatabaseRegistry:
             if self._initialized.get("async") and not force:
                 return
 
-            if settings.letta_pg_uri_no_default:
+            if settings.database_engine is DatabaseChoice.POSTGRES:
                 self.logger.info("Creating async postgres engine")
 
                 # Create async engine - convert URI to async format

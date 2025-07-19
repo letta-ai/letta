@@ -15,6 +15,7 @@ from letta.log import get_logger
 from letta.orm.base import Base, CommonSqlalchemyMetaMixins
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.orm.sqlite_functions import adapt_array
+from letta.settings import DatabaseChoice
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
@@ -395,7 +396,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
             from letta.settings import settings
 
-            if settings.letta_pg_uri_no_default:
+            if settings.database_engine is DatabaseChoice.POSTGRES:
                 # PostgreSQL with pgvector
                 query = query.order_by(cls.embedding.cosine_distance(query_embedding).asc())
             else:

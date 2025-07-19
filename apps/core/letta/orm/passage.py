@@ -9,7 +9,7 @@ from letta.orm.custom_columns import CommonVector, EmbeddingConfigColumn
 from letta.orm.mixins import AgentMixin, FileMixin, OrganizationMixin, SourceMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.passage import Passage as PydanticPassage
-from letta.settings import settings
+from letta.settings import DatabaseChoice, settings
 
 config = LettaConfig()
 
@@ -29,7 +29,7 @@ class BasePassage(SqlalchemyBase, OrganizationMixin):
     metadata_: Mapped[dict] = mapped_column(JSON, doc="Additional metadata")
 
     # Vector embedding field based on database type
-    if settings.letta_pg_uri_no_default:
+    if settings.database_engine is DatabaseChoice.POSTGRES:
         from pgvector.sqlalchemy import Vector
 
         embedding = mapped_column(Vector(MAX_EMBEDDING_DIM))
@@ -56,7 +56,7 @@ class SourcePassage(BasePassage, FileMixin, SourceMixin):
     @declared_attr
     def __table_args__(cls):
         # TODO (cliandy): investigate if this is necessary, may be for SQLite compatability or do we need to add as well?
-        if settings.letta_pg_uri_no_default:
+        if settings.database_engine is DatabaseChoice.POSTGRES:
             return (
                 Index("source_passages_org_idx", "organization_id"),
                 Index("source_passages_created_at_id_idx", "created_at", "id"),
@@ -81,7 +81,7 @@ class AgentPassage(BasePassage, AgentMixin):
 
     @declared_attr
     def __table_args__(cls):
-        if settings.letta_pg_uri_no_default:
+        if settings.database_engine is DatabaseChoice.POSTGRES:
             return (
                 Index("agent_passages_org_idx", "organization_id"),
                 Index("ix_agent_passages_org_agent", "organization_id", "agent_id"),
