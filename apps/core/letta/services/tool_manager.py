@@ -1,4 +1,3 @@
-import asyncio
 import importlib
 import os
 import warnings
@@ -32,6 +31,7 @@ from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.helpers.agent_manager_helper import calculate_multi_agent_tools
 from letta.services.mcp.types import SSEServerConfig, StdioServerConfig
+from letta.settings import settings
 from letta.utils import enforce_types, printd
 
 logger = get_logger(__name__)
@@ -467,7 +467,10 @@ class ToolManager:
         actor: PydanticUser,
         allowed_types: Optional[Set[ToolType]] = None,
     ) -> List[PydanticTool]:
-        """Add default tools defined in the various function_sets modules, optionally filtered by ToolType."""
+        """Add default tools defined in the various function_sets modules, optionally filtered by ToolType.
+
+        Optimized bulk implementation using single database session and batch operations.
+        """
 
         functions_to_schema = {}
         for module_name in LETTA_TOOL_MODULE_NAMES:
@@ -479,7 +482,8 @@ class ToolManager:
             except Exception as e:
                 raise e
 
-        tools = []
+        # prepare tool data for bulk operations
+        tool_data_list = []
         for name, schema in functions_to_schema.items():
             if name not in LETTA_TOOL_SET:
                 continue
@@ -505,17 +509,82 @@ class ToolManager:
             if allowed_types is not None and tool_type not in allowed_types:
                 continue
 
-            tools.append(
-                self.create_or_update_tool_async(
-                    PydanticTool(
-                        name=name,
-                        tags=[tool_type.value],
-                        source_type="python",
-                        tool_type=tool_type,
-                        return_char_limit=BASE_FUNCTION_RETURN_CHAR_LIMIT,
-                    ),
-                    actor=actor,
-                )
+            # create pydantic tool for validation and conversion
+            pydantic_tool = PydanticTool(
+                name=name,
+                tags=[tool_type.value],
+                source_type="python",
+                tool_type=tool_type,
+                return_char_limit=BASE_FUNCTION_RETURN_CHAR_LIMIT,
+                organization_id=actor.organization_id,
             )
 
-        return await asyncio.gather(*tools)
+            # auto-generate description if not provided
+            if pydantic_tool.description is None:
+                pydantic_tool.description = pydantic_tool.json_schema.get("description", None)
+
+            tool_data_list.append(pydantic_tool)
+
+        if not tool_data_list:
+            return []
+
+        if settings.letta_pg_uri_no_default:
+            async with db_registry.async_session() as session:
+                return await self._bulk_upsert_postgresql(session, tool_data_list, actor)
+        else:
+            return await self._upsert_tools_individually(tool_data_list, actor)
+
+    @trace_method
+    async def _bulk_upsert_postgresql(self, session, tool_data_list: List[PydanticTool], actor: PydanticUser) -> List[PydanticTool]:
+        """hyper-optimized postgresql bulk upsert using on_conflict_do_update."""
+        from sqlalchemy import func, select
+        from sqlalchemy.dialects.postgresql import insert
+
+        # prepare data for bulk insert
+        table = ToolModel.__table__
+        valid_columns = {col.name for col in table.columns}
+
+        insert_data = []
+        for tool in tool_data_list:
+            tool_dict = tool.model_dump(to_orm=True)
+            # set created/updated by fields
+            if actor:
+                tool_dict["_created_by_id"] = actor.id
+                tool_dict["_last_updated_by_id"] = actor.id
+
+            # filter to only include columns that exist in the table
+            filtered_dict = {k: v for k, v in tool_dict.items() if k in valid_columns}
+            insert_data.append(filtered_dict)
+
+        # use postgresql's native bulk upsert
+        stmt = insert(table).values(insert_data)
+
+        # on conflict, update all columns except id, created_at, and _created_by_id
+        excluded = stmt.excluded
+        update_dict = {}
+        for col in table.columns:
+            if col.name not in ("id", "created_at", "_created_by_id"):
+                if col.name == "updated_at":
+                    update_dict[col.name] = func.now()
+                else:
+                    update_dict[col.name] = excluded[col.name]
+
+        upsert_stmt = stmt.on_conflict_do_update(index_elements=["name", "organization_id"], set_=update_dict)
+
+        await session.execute(upsert_stmt)
+        await session.commit()
+
+        # fetch results
+        tool_names = [tool.name for tool in tool_data_list]
+        result_query = select(ToolModel).where(ToolModel.name.in_(tool_names), ToolModel.organization_id == actor.organization_id)
+        result = await session.execute(result_query)
+        return [tool.to_pydantic() for tool in result.scalars()]
+
+    @trace_method
+    async def _upsert_tools_individually(self, tool_data_list: List[PydanticTool], actor: PydanticUser) -> List[PydanticTool]:
+        """fallback to individual upserts for sqlite (original approach)."""
+        tools = []
+        for tool in tool_data_list:
+            upserted_tool = await self.create_or_update_tool_async(tool, actor)
+            tools.append(upserted_tool)
+        return tools
