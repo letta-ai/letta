@@ -1631,19 +1631,6 @@ export const $Block = {
       description: 'The human-friendly ID of the Block',
       examples: ['block-123e4567-e89b-12d3-a456-426614174000'],
     },
-    organization_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Organization Id',
-      description:
-        'The unique identifier of the organization associated with the block.',
-    },
     created_by_id: {
       anyOf: [
         {

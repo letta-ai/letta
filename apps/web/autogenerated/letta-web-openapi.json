@@ -2181,36 +2181,6 @@
                                         {}
                                       ]
                                     },
-                                    "organization_id": {
-                                      "oneOf": [
-                                        {
-                                          "type": "string"
-                                        },
-                                        {
-                                          "type": "string",
-                                          "format": "null",
-                                          "nullable": true
-                                        },
-                                        {
-                                          "type": "array",
-                                          "items": {
-                                            "oneOf": [
-                                              {
-                                                "type": "string"
-                                              },
-                                              {
-                                                "type": "string",
-                                                "format": "null",
-                                                "nullable": true
-                                              }
-                                            ],
-                                            "nullable": true
-                                          }
-                                        },
-                                        {}
-                                      ],
-                                      "nullable": true
-                                    },
                                     "created_by_id": {
                                       "oneOf": [
                                         {
@@ -2466,36 +2436,6 @@
                                             },
                                             {}
                                           ]
-                                        },
-                                        "organization_id": {
-                                          "oneOf": [
-                                            {
-                                              "type": "string"
-                                            },
-                                            {
-                                              "type": "string",
-                                              "format": "null",
-                                              "nullable": true
-                                            },
-                                            {
-                                              "type": "array",
-                                              "items": {
-                                                "oneOf": [
-                                                  {
-                                                    "type": "string"
-                                                  },
-                                                  {
-                                                    "type": "string",
-                                                    "format": "null",
-                                                    "nullable": true
-                                                  }
-                                                ],
-                                                "nullable": true
-                                              }
-                                            },
-                                            {}
-                                          ],
-                                          "nullable": true
                                         },
                                         "created_by_id": {
                                           "oneOf": [
@@ -7113,36 +7053,6 @@
                                         {}
                                       ]
                                     },
-                                    "organization_id": {
-                                      "oneOf": [
-                                        {
-                                          "type": "string"
-                                        },
-                                        {
-                                          "type": "string",
-                                          "format": "null",
-                                          "nullable": true
-                                        },
-                                        {
-                                          "type": "array",
-                                          "items": {
-                                            "oneOf": [
-                                              {
-                                                "type": "string"
-                                              },
-                                              {
-                                                "type": "string",
-                                                "format": "null",
-                                                "nullable": true
-                                              }
-                                            ],
-                                            "nullable": true
-                                          }
-                                        },
-                                        {}
-                                      ],
-                                      "nullable": true
-                                    },
                                     "created_by_id": {
                                       "oneOf": [
                                         {
@@ -7398,36 +7308,6 @@
                                             },
                                             {}
                                           ]
-                                        },
-                                        "organization_id": {
-                                          "oneOf": [
-                                            {
-                                              "type": "string"
-                                            },
-                                            {
-                                              "type": "string",
-                                              "format": "null",
-                                              "nullable": true
-                                            },
-                                            {
-                                              "type": "array",
-                                              "items": {
-                                                "oneOf": [
-                                                  {
-                                                    "type": "string"
-                                                  },
-                                                  {
-                                                    "type": "string",
-                                                    "format": "null",
-                                                    "nullable": true
-                                                  }
-                                                ],
-                                                "nullable": true
-                                              }
-                                            },
-                                            {}
-                                          ],
-                                          "nullable": true
                                         },
                                         "created_by_id": {
                                           "oneOf": [

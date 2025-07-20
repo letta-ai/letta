@@ -1320,6 +1320,8 @@ class AgentManager:
             agent = schema.load(serialized_agent_dict, session=session)
 
             agent.organization_id = actor.organization_id
+            for block in agent.core_memory:
+                block.organization_id = actor.organization_id
             if append_copy_suffix:
                 agent.name += "_copy"
             if project_id:

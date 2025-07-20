@@ -550,10 +550,6 @@ export type Block = {
    */
   id?: string;
   /**
-   * The unique identifier of the organization associated with the block.
-   */
-  organization_id?: string | null;
-  /**
    * The id of the user that made this Block.
    */
   created_by_id?: string | null;
