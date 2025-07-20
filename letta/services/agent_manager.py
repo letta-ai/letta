@@ -1319,6 +1319,7 @@ class AgentManager:
             schema = MarshmallowAgentSchema(session=session, actor=actor)
             agent = schema.load(serialized_agent_dict, session=session)
 
+            agent.organization_id = actor.organization_id
             if append_copy_suffix:
                 agent.name += "_copy"
             if project_id:
@@ -1698,7 +1699,7 @@ class AgentManager:
                 logger.error(
                     f"Agent {agent_id} has no message_ids. Agent details: "
                     f"name={agent.name}, created_at={agent.created_at}, "
-                    f"message_ids={agent.message_ids}, organization_id={agent.organization_id}"
+                    f"message_ids={agent.message_ids}, organization_id={actor.organization_id}"
                 )
                 raise ValueError(f"Agent {agent_id} has no message_ids - cannot preserve system message")
 

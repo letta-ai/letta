@@ -86,7 +86,9 @@ class MarshmallowAgentSchema(BaseSchema):
         - Marks messages as in-context, preserving the order of the original `message_ids`
         - Removes individual message `id` fields
         """
-        data = super().sanitize_ids(data, **kwargs)
+        del data["id"]
+        del data["_created_by_id"]
+        del data["_last_updated_by_id"]
         data[self.FIELD_VERSION] = letta.__version__
 
         original_message_ids = data.pop(self.FIELD_MESSAGE_IDS, [])
@@ -104,6 +106,15 @@ class MarshmallowAgentSchema(BaseSchema):
 
         data[self.FIELD_IN_CONTEXT_INDICES] = in_context_indices
         data[self.FIELD_MESSAGES] = messages
+
+        return data
+
+    @pre_load
+    def regenerate_ids(self, data: Dict, **kwargs) -> Dict:
+        if self.Meta.model:
+            data["id"] = self.generate_id()
+            data["_created_by_id"] = self.actor.id
+            data["_last_updated_by_id"] = self.actor.id
 
         return data
 
@@ -136,4 +147,5 @@ class MarshmallowAgentSchema(BaseSchema):
             "is_deleted",
             "groups",
             "batch_items",
+            "organization",
         )
