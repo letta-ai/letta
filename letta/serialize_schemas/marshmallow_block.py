@@ -12,4 +12,4 @@ class SerializedBlockSchema(BaseSchema):
 
     class Meta(BaseSchema.Meta):
         model = Block
-        exclude = BaseSchema.Meta.exclude + ("agents", "identities", "is_deleted")
+        exclude = BaseSchema.Meta.exclude + ("agents", "identities", "is_deleted", "groups")
