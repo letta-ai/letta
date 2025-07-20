@@ -55,7 +55,7 @@ class Block(OrganizationMixin, SqlalchemyBase):
     __mapper_args__ = {"version_id_col": version}
 
     # relationships
-    organization: Mapped[Optional["Organization"]] = relationship("Organization")
+    organization: Mapped[Optional["Organization"]] = relationship("Organization", lazy="raise")
     agents: Mapped[List["Agent"]] = relationship(
         "Agent",
         secondary="blocks_agents",

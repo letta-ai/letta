@@ -74,9 +74,6 @@ class Block(BaseBlock):
 
     id: str = BaseBlock.generate_id_field()
 
-    # associated user/agent
-    organization_id: Optional[str] = Field(None, description="The unique identifier of the organization associated with the block.")
-
     # default orm fields
     created_by_id: Optional[str] = Field(None, description="The id of the user that made this Block.")
     last_updated_by_id: Optional[str] = Field(None, description="The id of the user that last updated this Block.")

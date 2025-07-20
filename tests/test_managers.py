@@ -3668,7 +3668,6 @@ def test_create_block(server: SyncServer, default_user):
     assert block.description == block_create.description
     assert block.limit == block_create.limit
     assert block.metadata == block_create.metadata
-    assert block.organization_id == default_user.organization_id
 
 
 @pytest.mark.asyncio
@@ -3878,7 +3877,6 @@ async def test_batch_create_multiple_blocks(server: SyncServer, default_user, ev
         assert label in created_by_label, f"Missing label: {label}"
         blk = created_by_label[label]
         assert blk.value == value
-        assert blk.organization_id == default_user.organization_id
         assert blk.id is not None
 
     # Confirm all created blocks exist in the full list from get_blocks
