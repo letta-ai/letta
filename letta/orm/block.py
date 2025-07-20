@@ -59,7 +59,7 @@ class Block(OrganizationMixin, SqlalchemyBase):
     agents: Mapped[List["Agent"]] = relationship(
         "Agent",
         secondary="blocks_agents",
-        lazy="selectin",
+        lazy="raise",
         passive_deletes=True,  # Ensures SQLAlchemy doesn't fetch blocks_agents rows before deleting
         back_populates="core_memory",
         doc="Agents associated with this block.",

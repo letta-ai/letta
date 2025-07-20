@@ -72,14 +72,14 @@ async def modify_block(
     return await server.block_manager.update_block_async(block_id=block_id, block_update=block_update, actor=actor)
 
 
-@router.delete("/{block_id}", response_model=Block, operation_id="delete_block")
+@router.delete("/{block_id}", operation_id="delete_block")
 async def delete_block(
     block_id: str,
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    return await server.block_manager.delete_block_async(block_id=block_id, actor=actor)
+    await server.block_manager.delete_block_async(block_id=block_id, actor=actor)
 
 
 @router.get("/{block_id}", response_model=Block, operation_id="retrieve_block")
