@@ -174,11 +174,12 @@ class JobManager:
                 job.completed_at = get_utc_time().replace(tzinfo=None)
 
             # Save the updated job to the database first
-            job = await job.update_async(db_session=session, actor=actor)
+            job = await job.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
 
             # Get the updated metadata for callback
             final_metadata = job.metadata_
             result = job.to_pydantic()
+            await session.commit()
 
         # Dispatch callback outside of database session if needed
         if needs_callback:
@@ -197,8 +198,9 @@ class JobManager:
                 job.callback_sent_at = callback_result["callback_sent_at"]
                 job.callback_status_code = callback_result.get("callback_status_code")
                 job.callback_error = callback_result.get("callback_error")
-                await job.update_async(db_session=session, actor=actor)
+                await job.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
                 result = job.to_pydantic()
+                await session.commit()
 
         return result
 
