@@ -3857,10 +3857,6 @@ export type Tool = {
    */
   source_type?: string | null;
   /**
-   * The unique identifier of the organization associated with the tool.
-   */
-  organization_id?: string | null;
-  /**
    * The name of the function.
    */
   name?: string | null;

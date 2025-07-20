@@ -50,7 +50,6 @@ class Tool(BaseTool):
     tool_type: ToolType = Field(ToolType.CUSTOM, description="The type of the tool.")
     description: Optional[str] = Field(None, description="The description of the tool.")
     source_type: Optional[str] = Field(None, description="The type of the source code.")
-    organization_id: Optional[str] = Field(None, description="The unique identifier of the organization associated with the tool.")
     name: Optional[str] = Field(None, description="The name of the function.")
     tags: List[str] = Field([], description="Metadata tags.")
 

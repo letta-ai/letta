@@ -2597,35 +2597,6 @@
                                   ],
                                   "nullable": true
                                 },
-                                "organization_id": {
-                                  "oneOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {
-                                      "type": "string",
-                                      "format": "null",
-                                      "nullable": true
-                                    },
-                                    {
-                                      "type": "array",
-                                      "items": {
-                                        "oneOf": [
-                                          {
-                                            "type": "string"
-                                          },
-                                          {
-                                            "type": "string",
-                                            "format": "null",
-                                            "nullable": true
-                                          }
-                                        ],
-                                        "nullable": true
-                                      }
-                                    }
-                                  ],
-                                  "nullable": true
-                                },
                                 "name": {
                                   "oneOf": [
                                     {
@@ -7441,35 +7412,6 @@
                                   "nullable": true
                                 },
                                 "source_type": {
-                                  "oneOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {
-                                      "type": "string",
-                                      "format": "null",
-                                      "nullable": true
-                                    },
-                                    {
-                                      "type": "array",
-                                      "items": {
-                                        "oneOf": [
-                                          {
-                                            "type": "string"
-                                          },
-                                          {
-                                            "type": "string",
-                                            "format": "null",
-                                            "nullable": true
-                                          }
-                                        ],
-                                        "nullable": true
-                                      }
-                                    }
-                                  ],
-                                  "nullable": true
-                                },
-                                "organization_id": {
                                   "oneOf": [
                                     {
                                       "type": "string"

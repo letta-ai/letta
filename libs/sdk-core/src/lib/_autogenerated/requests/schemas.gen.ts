@@ -10403,19 +10403,6 @@ export const $Tool = {
       title: 'Source Type',
       description: 'The type of the source code.',
     },
-    organization_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Organization Id',
-      description:
-        'The unique identifier of the organization associated with the tool.',
-    },
     name: {
       anyOf: [
         {
