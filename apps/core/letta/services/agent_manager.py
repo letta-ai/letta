@@ -28,7 +28,7 @@ from letta.orm import AgentPassage, AgentsTags
 from letta.orm import Block as BlockModel
 from letta.orm import BlocksAgents
 from letta.orm import Group as GroupModel
-from letta.orm import IdentitiesAgents
+from letta.orm import GroupsAgents, IdentitiesAgents
 from letta.orm import Source as SourceModel
 from letta.orm import SourcePassage, SourcesAgents
 from letta.orm import Tool as ToolModel
@@ -1423,10 +1423,17 @@ class AgentManager:
     @trace_method
     def list_groups(self, agent_id: str, actor: PydanticUser, manager_type: Optional[str] = None) -> List[PydanticGroup]:
         with db_registry.session() as session:
-            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+            query = (
+                select(GroupModel)
+                .join(GroupsAgents, GroupModel.id == GroupsAgents.group_id)
+                .where(GroupsAgents.agent_id == agent_id, GroupModel.organization_id == actor.organization_id)
+            )
+
             if manager_type:
-                return [group.to_pydantic() for group in agent.groups if group.manager_type == manager_type]
-            return [group.to_pydantic() for group in agent.groups]
+                query = query.where(GroupModel.manager_type == manager_type)
+
+            result = session.execute(query)
+            return [group.to_pydantic() for group in result.scalars()]
 
     # ======================================================================================================================
     # In Context Messages Management
