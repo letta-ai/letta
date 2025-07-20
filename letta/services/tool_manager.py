@@ -76,6 +76,7 @@ class ToolManager:
         if tool_id:
             # Put to dict and remove fields that should not be reset
             update_data = pydantic_tool.model_dump(exclude_unset=True, exclude_none=True)
+            update_data["organization_id"] = actor.organization_id
 
             # If there's anything to update
             if update_data:
@@ -148,12 +149,12 @@ class ToolManager:
     def create_tool(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:
         """Create a new tool based on the ToolCreate schema."""
         with db_registry.session() as session:
-            # Set the organization id at the ORM layer
-            pydantic_tool.organization_id = actor.organization_id
             # Auto-generate description if not provided
             if pydantic_tool.description is None:
                 pydantic_tool.description = pydantic_tool.json_schema.get("description", None)
             tool_data = pydantic_tool.model_dump(to_orm=True)
+            # Set the organization id at the ORM layer
+            tool_data["organization_id"] = actor.organization_id
 
             tool = ToolModel(**tool_data)
             tool.create(session, actor=actor)  # Re-raise other database-related errors
@@ -164,12 +165,12 @@ class ToolManager:
     async def create_tool_async(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:
         """Create a new tool based on the ToolCreate schema."""
         async with db_registry.async_session() as session:
-            # Set the organization id at the ORM layer
-            pydantic_tool.organization_id = actor.organization_id
             # Auto-generate description if not provided
             if pydantic_tool.description is None:
                 pydantic_tool.description = pydantic_tool.json_schema.get("description", None)
             tool_data = pydantic_tool.model_dump(to_orm=True)
+            # Set the organization id at the ORM layer
+            tool_data["organization_id"] = actor.organization_id
 
             tool = ToolModel(**tool_data)
             await tool.create_async(session, actor=actor)  # Re-raise other database-related errors
@@ -516,7 +517,6 @@ class ToolManager:
                 source_type="python",
                 tool_type=tool_type,
                 return_char_limit=BASE_FUNCTION_RETURN_CHAR_LIMIT,
-                organization_id=actor.organization_id,
             )
 
             # auto-generate description if not provided
@@ -551,6 +551,7 @@ class ToolManager:
             if actor:
                 tool_dict["_created_by_id"] = actor.id
                 tool_dict["_last_updated_by_id"] = actor.id
+                tool_dict["organization_id"] = actor.organization_id
 
             # filter to only include columns that exist in the table
             filtered_dict = {k: v for k, v in tool_dict.items() if k in valid_columns}

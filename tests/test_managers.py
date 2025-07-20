@@ -3025,21 +3025,18 @@ async def test_user_caching(server: SyncServer, event_loop, default_user, perfor
 def test_create_tool(server: SyncServer, print_tool, default_user, default_organization):
     # Assertions to ensure the created tool matches the expected values
     assert print_tool.created_by_id == default_user.id
-    assert print_tool.organization_id == default_organization.id
     assert print_tool.tool_type == ToolType.CUSTOM
 
 
 def test_create_composio_tool(server: SyncServer, composio_github_star_tool, default_user, default_organization):
     # Assertions to ensure the created tool matches the expected values
     assert composio_github_star_tool.created_by_id == default_user.id
-    assert composio_github_star_tool.organization_id == default_organization.id
     assert composio_github_star_tool.tool_type == ToolType.EXTERNAL_COMPOSIO
 
 
 def test_create_mcp_tool(server: SyncServer, mcp_tool, default_user, default_organization):
     # Assertions to ensure the created tool matches the expected values
     assert mcp_tool.created_by_id == default_user.id
-    assert mcp_tool.organization_id == default_organization.id
     assert mcp_tool.tool_type == ToolType.EXTERNAL_MCP
     assert mcp_tool.metadata_[MCP_TOOL_TAG_NAME_PREFIX]["server_name"] == "test"
 
