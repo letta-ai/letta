@@ -46,7 +46,7 @@ from letta.jobs.types import ItemUpdateInfo, RequestStatusUpdateInfo, StepStatus
 from letta.orm import Base, Block
 from letta.orm.block_history import BlockHistory
 from letta.orm.enums import ToolType
-from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
+from letta.orm.errors import ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.orm.file import FileContent as FileContentModel
 from letta.orm.file import FileMetadata as FileMetadataModel
 from letta.schemas.agent import CreateAgent, UpdateAgent
@@ -6565,7 +6565,7 @@ async def test_job_usage_stats_add_nonexistent_job(server: SyncServer, sarah_age
     """Test adding usage statistics for a nonexistent job."""
     step_manager = server.step_manager
 
-    with pytest.raises(NoResultFound):
+    with pytest.raises(ForeignKeyConstraintViolationError):
         await step_manager.log_step_async(
             agent_id=sarah_agent.id,
             provider_name="openai",
