@@ -158,8 +158,6 @@ class StepManager:
         if stop_reason:
             step_data["stop_reason"] = stop_reason.stop_reason
         async with db_registry.async_session() as session:
-            if job_id:
-                await self._verify_job_access_async(session, job_id, actor, access=["write"])
             new_step = StepModel(**step_data)
             await new_step.create_async(session, no_commit=True, no_refresh=True)
             pydantic_step = new_step.to_pydantic()
