@@ -138,7 +138,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
         viewonly=True,
         back_populates="manager_agent",
     )
-    batch_items: Mapped[List["LLMBatchItem"]] = relationship("LLMBatchItem", back_populates="agent", lazy="selectin")
+    batch_items: Mapped[List["LLMBatchItem"]] = relationship("LLMBatchItem", back_populates="agent", lazy="raise")
     file_agents: Mapped[List["FileAgent"]] = relationship(
         "FileAgent",
         back_populates="agent",

@@ -135,4 +135,5 @@ class MarshmallowAgentSchema(BaseSchema):
             "identities",
             "is_deleted",
             "groups",
+            "batch_items",
         )
