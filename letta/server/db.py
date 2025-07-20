@@ -1,9 +1,11 @@
 import os
 import threading
+import time
 import uuid
 from contextlib import asynccontextmanager, contextmanager
 from typing import Any, AsyncGenerator, Generator
 
+from opentelemetry import trace
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
@@ -43,6 +45,37 @@ def enable_sqlite_foreign_keys(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
+
+
+def on_connect(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("SELECT pg_backend_pid()")
+    pid = cursor.fetchone()[0]
+    connection_record.info["pid"] = pid
+    connection_record.info["connect_spawn_time_ms"] = time.perf_counter() * 1000
+    cursor.close()
+
+
+def on_close(dbapi_connection, connection_record):
+    connection_record.info.get("pid")
+    (time.perf_counter() * 1000) - connection_record.info.get("connect_spawn_time_ms")
+    # print(f"Connection closed: {pid}, duration: {duration:.6f}s")
+
+
+def on_checkout(dbapi_connection, connection_record, connection_proxy):
+    connection_record.info.get("pid")
+    connection_record.info["connect_checkout_time_ms"] = time.perf_counter() * 1000
+
+
+def on_checkin(dbapi_connection, connection_record):
+    pid = connection_record.info.get("pid")
+    duration = (time.perf_counter() * 1000) - connection_record.info.get("connect_checkout_time_ms")
+
+    tracer = trace.get_tracer("letta.db.connection")
+    with tracer.start_as_current_span("connect_release") as span:
+        span.set_attribute("db.connection.pid", pid)
+        span.set_attribute("db.connection.duration_ms", duration)
+        span.set_attribute("db.connection.operation", "checkin")
 
 
 @contextmanager
@@ -116,6 +149,13 @@ class DatabaseRegistry:
                 Base.metadata.create_all(bind=engine)
                 self._engines["default"] = engine
 
+            # Set up connection monitoring
+            if settings.sqlalchemy_tracing and settings.database_engine is DatabaseChoice.POSTGRES:
+                event.listen(engine, "connect", on_connect)
+                event.listen(engine, "close", on_close)
+                event.listen(engine, "checkout", on_checkout)
+                event.listen(engine, "checkin", on_checkin)
+
             self._setup_pool_monitoring(engine, "default")
 
             # Create session factory
@@ -156,6 +196,13 @@ class DatabaseRegistry:
 
             # Create async session factory
             self._async_engines["default"] = async_engine
+
+            # Set up connection monitoring for async engine
+            if settings.sqlalchemy_tracing and settings.database_engine is DatabaseChoice.POSTGRES:
+                event.listen(async_engine.sync_engine, "connect", on_connect)
+                event.listen(async_engine.sync_engine, "close", on_close)
+                event.listen(async_engine.sync_engine, "checkout", on_checkout)
+                event.listen(async_engine.sync_engine, "checkin", on_checkin)
 
             self._setup_pool_monitoring(async_engine, "default_async")
 
