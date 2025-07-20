@@ -5661,7 +5661,7 @@ export type DeleteBlockData = {
   userId?: string | null;
 };
 
-export type DeleteBlockResponse = Block;
+export type DeleteBlockResponse = unknown;
 
 export type RetrieveBlockData = {
   blockId: string;
@@ -7648,7 +7648,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Block;
+        200: unknown;
         /**
          * Validation Error
          */

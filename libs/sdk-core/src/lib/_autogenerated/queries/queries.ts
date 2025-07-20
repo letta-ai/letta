@@ -6588,7 +6588,7 @@ export const useIdentitiesServiceDeleteIdentity = <
  * @param data The data for the request.
  * @param data.blockId
  * @param data.userId
- * @returns Block Successful Response
+ * @returns unknown Successful Response
  * @throws ApiError
  */
 export const useBlocksServiceDeleteBlock = <

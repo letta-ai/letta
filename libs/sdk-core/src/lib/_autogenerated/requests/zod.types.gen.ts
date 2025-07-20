@@ -8140,7 +8140,7 @@ export const delete_Delete_block = {
         .optional(),
     }),
   }),
-  response: Block,
+  response: z.unknown(),
 };
 
 export type get_Retrieve_block = typeof get_Retrieve_block;
