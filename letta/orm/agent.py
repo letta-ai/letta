@@ -128,7 +128,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
     groups: Mapped[List["Group"]] = relationship(
         "Group",
         secondary="groups_agents",
-        lazy="selectin",
+        lazy="raise",
         back_populates="agents",
         passive_deletes=True,
     )
