@@ -74,7 +74,7 @@ class Block(OrganizationMixin, SqlalchemyBase):
     groups: Mapped[List["Group"]] = relationship(
         "Group",
         secondary="groups_blocks",
-        lazy="selectin",
+        lazy="raise",
         back_populates="shared_blocks",
         passive_deletes=True,
     )
