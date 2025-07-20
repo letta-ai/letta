@@ -67,7 +67,7 @@ class Block(OrganizationMixin, SqlalchemyBase):
     identities: Mapped[List["Identity"]] = relationship(
         "Identity",
         secondary="identities_blocks",
-        lazy="selectin",
+        lazy="raise",
         back_populates="blocks",
         passive_deletes=True,
     )
