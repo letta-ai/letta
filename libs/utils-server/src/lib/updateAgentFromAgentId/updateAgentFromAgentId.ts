@@ -23,7 +23,6 @@ export const omittedFieldsOnCopy: Array<Partial<keyof AgentState>> = [
   'updated_at',
   'created_by_id',
   'description',
-  'organization_id',
   'last_updated_by_id',
   'metadata',
   'memory',

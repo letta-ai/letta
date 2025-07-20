@@ -1250,14 +1250,6 @@ export const AgentState = z.object({
       z.undefined(),
     ])
     .optional(),
-  organization_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
   description: z
     .union([
       z.string(),

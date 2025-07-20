@@ -197,10 +197,6 @@ export type AgentState = {
     | JsonObjectResponseFormat
     | null;
   /**
-   * The unique identifier of the organization associated with the agent.
-   */
-  organization_id?: string | null;
-  /**
    * The description of the agent.
    */
   description?: string | null;

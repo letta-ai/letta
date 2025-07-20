@@ -78,8 +78,6 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
 
     # This is an object representing the in-process state of a running `Agent`
     # Field in this object can be theoretically edited by tools, and will be persisted by the ORM
-    organization_id: Optional[str] = Field(None, description="The unique identifier of the organization associated with the agent.")
-
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
 

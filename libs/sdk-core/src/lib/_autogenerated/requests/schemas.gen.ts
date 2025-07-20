@@ -623,19 +623,6 @@ export const $AgentState = {
       description:
         'The response format used by the agent when returning from `send_message`.',
     },
-    organization_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Organization Id',
-      description:
-        'The unique identifier of the organization associated with the agent.',
-    },
     description: {
       anyOf: [
         {

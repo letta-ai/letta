@@ -93,7 +93,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
     timezone: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The timezone of the agent (for the context window).")
 
     # relationships
-    organization: Mapped["Organization"] = relationship("Organization", back_populates="agents")
+    organization: Mapped["Organization"] = relationship("Organization", back_populates="agents", lazy="raise")
     tool_exec_environment_variables: Mapped[List["AgentEnvironmentVariable"]] = relationship(
         "AgentEnvironmentVariable",
         back_populates="agent",
