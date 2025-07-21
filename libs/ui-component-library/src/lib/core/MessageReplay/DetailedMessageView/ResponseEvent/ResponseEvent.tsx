@@ -15,11 +15,13 @@ import type { ModelTiersType, OtelTrace } from '@letta-cloud/types';
 import { creditsToDollars } from '@letta-cloud/utils-shared';
 import React, { useMemo } from 'react';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { StopReason } from '../../StopReason/StopReason';
 
 interface RequestEventProps {
   responsePayload: ProviderTrace['response_json'];
   traces: OtelTrace[];
   stepId: string;
+  stopReason: string;
 }
 
 interface Usage {
@@ -97,8 +99,9 @@ function TransactionCost(props: TransactionCostProps) {
   return <Typography>{formatCurrency(0)}</Typography>;
 }
 
+
 export function ResponseEvent(props: RequestEventProps) {
-  const { responsePayload, stepId, traces } = props;
+  const { responsePayload, stepId, traces, stopReason } = props;
 
   const t = useTranslations(
     'ADE/AgentSimulator/DetailedMessageView/TelemetryDetailsViewer/ResponseEvent',
@@ -121,6 +124,12 @@ export function ResponseEvent(props: RequestEventProps) {
           <EventDetailRow
             label={t('attributes.cost')}
             value={<TransactionCost stepId={stepId} />}
+          />
+        )}
+        {!!stopReason && (
+          <EventDetailRow
+            label={t('attributes.stopReason')}
+            value={<StopReason stopReason={stopReason} />}
           />
         )}
       </VStack>

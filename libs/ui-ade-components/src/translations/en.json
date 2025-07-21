@@ -1070,7 +1070,7 @@
       "messages": {
         "label": "Messages",
         "value": "{count} messages",
-        "tooltip": "The messages that were sent to the LLM for this step"
+        "tooltip": "The number of messages that were sent to the LLM for this step"
       },
       "tools": {
         "label": "Tools",
@@ -1089,7 +1089,8 @@
       "toolDuration": "Tool duration",
       "stepDuration": "Total step duration",
       "llmDuration": "LLM duration",
-      "timeToFirstSecond": "Time to first token"
+      "timeToFirstSecond": "Time to first token",
+      "stopReason": "Stop reason"
     },
     "TransactionCost": {
       "standard": {

@@ -9,6 +9,7 @@ export interface AgentSimulatorMessageType {
   raw?: string;
   type: MessageType;
   editId?: string | null;
+  isError?: boolean;
 }
 
 export interface AgentSimulatorMessageGroupType {

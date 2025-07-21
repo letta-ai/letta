@@ -62,6 +62,8 @@ export const ReasoningMessageSchema = z.object({
   name: z.string().nullish(),
   date: z.string(),
   id: z.string(),
+  is_err: z.boolean().nullish(),
+
 });
 
 export const HiddenReasoningMessageSchema = z.object({
@@ -73,6 +75,8 @@ export const HiddenReasoningMessageSchema = z.object({
   step_id: z.string().nullish(),
   date: z.string(),
   id: z.string(),
+  is_err: z.boolean().nullish(),
+
 });
 
 export const SendMessageFunctionCallSchema = z.object({
@@ -94,6 +98,7 @@ export const ToolCallMessageSchema = z.object({
   date: z.string(),
   step_id: z.string().nullish(),
   id: z.string(),
+  is_err: z.boolean().nullish(),
 });
 
 export const ToolReturnMessageSchema = z.object({
@@ -108,6 +113,7 @@ export const ToolReturnMessageSchema = z.object({
   date: z.string(),
   step_id: z.string().nullish(),
   id: z.string(),
+  is_err: z.boolean().nullish(),
 });
 
 export type ToolReturnMessageSchemaType = z.infer<

@@ -63,6 +63,7 @@ export function TelemetryDetailsViewer(props: TelemetryDetailsViewerProps) {
         stepId={stepId}
         traces={traceData?.body || []}
         responsePayload={data?.response_json || {}}
+        stopReason={stepDetails?.stop_reason || ''}
       />
     </VStack>
   );

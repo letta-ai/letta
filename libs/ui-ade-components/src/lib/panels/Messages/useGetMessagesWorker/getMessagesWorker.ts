@@ -2,7 +2,7 @@ import registerPromiseWorker from 'promise-worker/register';
 import type { GetMessagesWorkerPayload } from '../types';
 
 registerPromiseWorker(async (message: GetMessagesWorkerPayload) => {
-  const { cursor, agentId, limit, headers, url = '' } = message;
+  const { cursor, agentId, limit, headers, url = '', includeErr } = message;
 
   const queryparams = new URLSearchParams();
 
@@ -13,6 +13,10 @@ registerPromiseWorker(async (message: GetMessagesWorkerPayload) => {
   queryparams.append('limit', limit.toString());
 
   queryparams.append('use_assistant_message', 'false');
+
+  if (includeErr) {
+    queryparams.append('include_err', 'true');
+  }
 
   const selfUrl = self.location.href.replace('blob:', ''); // remove `blob:` from the URL
 

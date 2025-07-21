@@ -4,4 +4,5 @@ export interface GetMessagesWorkerPayload {
   agentId: string;
   url?: string;
   headers?: Record<string, string>;
+  includeErr?: boolean;
 }

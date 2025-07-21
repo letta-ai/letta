@@ -215,7 +215,13 @@ function Message({ message }: MessageProps) {
           />
         ) : (
           <HStack justify="spaceBetween" align="start">
+
+            <span style={{
+              textDecoration: message.isError ? 'underline wavy hsl(var(--destructive))' : 'none',
+              textUnderlineOffset: '2px'
+            }}>
             {message.content}
+            </span>
 
             {message.editId && enabledEditing && (
               <Button
@@ -429,6 +435,7 @@ export function Messages(props: MessagesProps) {
   }, [isSendingMessage, lastMessageReceived]);
 
   const queryClient = useQueryClient();
+  const { data: includeErr = false } = useFeatureFlag('SHOW_ERRORED_MESSAGES');
 
   const { data, hasNextPage, fetchNextPage, isFetching } = useInfiniteQuery<
     AgentMessage[],
@@ -453,6 +460,7 @@ export function Messages(props: MessagesProps) {
         },
         agentId,
         limit: MESSAGE_LIMIT,
+        includeErr: includeErr,
         ...(query.pageParam.before ? { cursor: query.pageParam.before } : {}),
       })) as unknown as AgentMessage[];
 
@@ -539,6 +547,7 @@ export function Messages(props: MessagesProps) {
       mode: MessagesDisplayMode,
       allMessages: AgentMessage[],
     ): AgentSimulatorMessageType | null | undefined {
+      const isErroredMessage = 'is_err' in agentMessage && agentMessage.is_err === true;
       if (mode === 'debug') {
         return {
           type: agentMessage.message_type,
@@ -562,6 +571,7 @@ export function Messages(props: MessagesProps) {
           ),
           timestamp: new Date(agentMessage.date).toISOString(),
           name: agentMessage.message_type === 'user_message' ? 'User' : 'Agent',
+          isError: isErroredMessage,
         };
       }
 
@@ -587,6 +597,7 @@ export function Messages(props: MessagesProps) {
                 message={agentMessage.content}
               />
             ),
+            isError: isErroredMessage,
           };
 
         case 'tool_return_message':
@@ -641,6 +652,7 @@ export function Messages(props: MessagesProps) {
             type: agentMessage.message_type,
             timestamp: new Date(agentMessage.date).toISOString(),
             name: 'Agent',
+            isError: isErroredMessage,
           };
         case 'tool_call_message': {
           const parsedFunctionCallArguments = tryFallbackParseJson(
@@ -678,6 +690,7 @@ export function Messages(props: MessagesProps) {
                   name: 'Agent',
                   editId: agentMessage.tool_call.tool_call_id || null,
                   timestamp: new Date(agentMessage.date).toISOString(),
+                  isError: isErroredMessage,
                 };
               } catch (_e) {
                 return {
@@ -687,6 +700,7 @@ export function Messages(props: MessagesProps) {
                   type: agentMessage.message_type,
                   timestamp: new Date(agentMessage.date).toISOString(),
                   name: 'Agent',
+                  isError: isErroredMessage,
                 };
               }
             }
@@ -714,6 +728,7 @@ export function Messages(props: MessagesProps) {
                 ),
                 timestamp: new Date(agentMessage.date).toISOString(),
                 name: 'Agent',
+                isError: isErroredMessage,
               };
             }
 
@@ -752,6 +767,7 @@ export function Messages(props: MessagesProps) {
             ),
             timestamp: new Date(agentMessage.date).toISOString(),
             name: 'Agent',
+            isError: isErroredMessage,
           };
         }
         case 'reasoning_message':
@@ -795,6 +811,7 @@ export function Messages(props: MessagesProps) {
               ),
               timestamp: new Date(agentMessage.date).toISOString(),
               name: 'Agent',
+              isError: isErroredMessage,
             };
           }
 
@@ -815,6 +832,7 @@ export function Messages(props: MessagesProps) {
             ),
             timestamp: new Date(agentMessage.date).toISOString(),
             name: 'Agent',
+            isError: isErroredMessage,
           };
         case 'hidden_reasoning_message':
           if (mode === 'simple') {
@@ -849,6 +867,7 @@ export function Messages(props: MessagesProps) {
               ),
               timestamp: new Date(agentMessage.date).toISOString(),
               name: 'Agent',
+              isError: isErroredMessage,
             };
           }
 
@@ -873,6 +892,7 @@ export function Messages(props: MessagesProps) {
             ),
             timestamp: new Date(agentMessage.date).toISOString(),
             name: 'Agent',
+            isError: isErroredMessage,
           };
         case 'user_message': {
           const content = agentMessage.content as
@@ -887,6 +907,7 @@ export function Messages(props: MessagesProps) {
                 content: <ContentPartsRenderer contentParts={content} />,
                 timestamp: new Date(agentMessage.date).toISOString(),
                 name: 'User',
+                isError: isErroredMessage,
               };
             }
           } else {
@@ -916,6 +937,7 @@ export function Messages(props: MessagesProps) {
                 timestamp: new Date(agentMessage.date).toISOString(),
                 name: 'User',
                 editId: agentMessage.id,
+                isError: isErroredMessage,
               };
             }
 
@@ -946,6 +968,7 @@ export function Messages(props: MessagesProps) {
                   timestamp: new Date(agentMessage.date).toISOString(),
                   name: 'User',
                   editId: agentMessage.id,
+                  isError: isErroredMessage,
                 };
               }
 
@@ -958,6 +981,7 @@ export function Messages(props: MessagesProps) {
                 timestamp: new Date(agentMessage.date).toISOString(),
                 name: 'User',
                 editId: agentMessage.id,
+                isError: isErroredMessage,
               };
             }
 
@@ -969,6 +993,7 @@ export function Messages(props: MessagesProps) {
               raw: content,
               timestamp: new Date(agentMessage.date).toISOString(),
               name: 'User',
+              isError: isErroredMessage,
             };
           }
         }
@@ -1024,6 +1049,7 @@ export function Messages(props: MessagesProps) {
         raw: message.raw || '',
         type: message.type || 'user_message',
         editId: message.editId || null,
+        isError: message.isError || false,
       };
 
       if (index !== 0 && lastGroup.name === message.name) {

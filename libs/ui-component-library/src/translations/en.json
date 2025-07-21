@@ -78,6 +78,19 @@
       "title": "Response"
     }
   },
+  "components/MessageReplay/StopReason": {
+    "title": "Stop reason",
+    "stopReasonToolTip": {
+      "end_turn": "The agent completed its turn",
+      "tool_rule": "The agent stopped due to a tool rule constraint",
+      "error": "The agent encountered an error and stopped processing",
+      "invalid_tool_call": "The agent made an invalid tool call and stopped processing",
+      "no_tool_call": "The agent was expected to make a tool call but did not",
+      "max_steps": "The agent reached the maximum number of steps allowed",
+      "cancelled": "The agent processing was cancelled by the user",
+      "default": "The reason the agent stopped processing"
+    }
+  },
   "components/CoreMemoryEditor": {
     "CoreMemoryEditorContent": {
       "placeholder": "Enter your memories",
