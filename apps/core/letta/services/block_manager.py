@@ -52,8 +52,10 @@ class BlockManager:
             async with db_registry.async_session() as session:
                 data = block.model_dump(to_orm=True, exclude_none=True)
                 block = BlockModel(**data, organization_id=actor.organization_id)
-                await block.create_async(session, actor=actor)
-                return block.to_pydantic()
+                await block.create_async(session, actor=actor, no_commit=True, no_refresh=True)
+                pydantic_block = block.to_pydantic()
+                await session.commit()
+                return pydantic_block
 
     @enforce_types
     @trace_method
@@ -97,11 +99,12 @@ class BlockManager:
             block_models = [
                 BlockModel(**block.model_dump(to_orm=True, exclude_none=True), organization_id=actor.organization_id) for block in blocks
             ]
-
-            created_models = await BlockModel.batch_create_async(items=block_models, db_session=session, actor=actor)
-
-            # Convert back to Pydantic
-            return [m.to_pydantic() for m in created_models]
+            created_models = await BlockModel.batch_create_async(
+                items=block_models, db_session=session, actor=actor, no_commit=True, no_refresh=True
+            )
+            result = [m.to_pydantic() for m in created_models]
+            await session.commit()
+            return result
 
     @enforce_types
     @trace_method
@@ -132,8 +135,10 @@ class BlockManager:
             for key, value in update_data.items():
                 setattr(block, key, value)
 
-            await block.update_async(db_session=session, actor=actor)
-            return block.to_pydantic()
+            await block.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
+            pydantic_block = block.to_pydantic()
+            await session.commit()
+            return pydantic_block
 
     @enforce_types
     @trace_method
