@@ -321,6 +321,7 @@ async def test_web_search_uses_agent_env_var_model():
         patch("openai.AsyncOpenAI") as mock_openai_class,
         patch("letta.services.tool_executor.builtin_tool_executor.model_settings") as mock_model_settings,
         patch.dict(os.environ, {WEB_SEARCH_MODEL_ENV_VAR_NAME: "gpt-4o"}),
+        patch("firecrawl.AsyncFirecrawlApp") as mock_firecrawl_class,
     ):
 
         # setup mocks
@@ -329,6 +330,23 @@ async def test_web_search_uses_agent_env_var_model():
         mock_openai_client = AsyncMock()
         mock_openai_class.return_value = mock_openai_client
         mock_openai_client.beta.chat.completions.parse.return_value = mock_openai_response
+
+        # Mock Firecrawl
+        mock_firecrawl_app = AsyncMock()
+        mock_firecrawl_class.return_value = mock_firecrawl_app
+
+        # Mock search results with markdown content
+        mock_search_result = {
+            "data": [
+                {
+                    "url": "https://example.com/test",
+                    "title": "Test Result",
+                    "description": "Test description",
+                    "markdown": "This is test markdown content for the search result.",
+                }
+            ]
+        }
+        mock_firecrawl_app.search.return_value = mock_search_result
 
         # create executor with mock dependencies
         executor = LettaBuiltinToolExecutor(
