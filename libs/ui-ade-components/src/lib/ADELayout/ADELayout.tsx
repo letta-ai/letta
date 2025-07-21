@@ -27,10 +27,7 @@ import {
   VStack,
   WarningIcon,
 } from '@letta-cloud/ui-component-library';
-import {
-  AgentSettingsOnboarding,
-  AgentSettingsPanel,
-} from '../panels/AgentSettingsPanel/AgentSettingsPanel';
+import { AgentSettingsPanel } from '../panels/AgentSettingsPanel/AgentSettingsPanel';
 import { ADEGroup } from '../shared/ADEGroup/ADEGroup';
 import { useTranslations } from '@letta-cloud/translations';
 import { useAgentBaseTypeName, useCurrentAgentMetaData } from '../hooks';
@@ -104,6 +101,7 @@ import {
 import { DataSourcesPanel } from '../panels/DataSourcesV2/DataSourcesPanel';
 import { useQuickADETour } from '../hooks/useQuickADETour/useQuickADETour';
 import { useRouter } from 'next/navigation';
+import { ADEAccordionGroup } from '../shared/ADEAccordionGroup/ADEAccordionGroup';
 
 function DesktopLayout() {
   const t = useTranslations('ADELayout');
@@ -148,35 +146,27 @@ function DesktopLayout() {
           minSize={20}
         >
           <VStack gap={false} fullWidth fullHeight>
-            <div className="h-[380px]">
-              <AgentSettingsOnboarding>
-                <ADEGroup
-                  items={[
-                    {
-                      title: t('settings', { baseName }),
-                      id: 'settings',
-                      content: <AgentSettingsPanel />,
-                    },
-                    {
-                      title: t('advancedSettings'),
-                      id: 'advanced-settings',
-                      content: <AdvancedSettingsPanel />,
-                    },
-                  ]}
-                />
-              </AgentSettingsOnboarding>
-            </div>
-            <div className="h-[1px] w-full bg-border" />
-            <ADEGroup
-              items={[
+            <ADEAccordionGroup
+              panels={[
                 {
-                  title: toolsTitle,
-                  id: 'tools',
-                  content: <ToolsPanel />,
+                  id: 'settings',
+                  label: t('settings', { baseName }),
+                  content: <AgentSettingsPanel />,
                 },
                 {
-                  title: datasourcesTitle,
+                  id: 'advanced-settings',
+                  label: t('advancedSettings'),
+                  content: <AdvancedSettingsPanel />,
+                },
+                {
+                  id: 'tools',
+                  label: toolsTitle,
+                  content: <ToolsPanel />,
+                  minHeight: 300,
+                },
+                {
                   id: 'datasources',
+                  label: datasourcesTitle,
                   content: isDatasourcesV2Enabled ? (
                     <DataSourcesPanel />
                   ) : (
@@ -233,20 +223,22 @@ function DesktopLayout() {
             <HStack className="max-h-[100px]">
               <ContextWindowPanel />
             </HStack>
-            <div className="h-[1px] w-full bg-border" />
-            <ADEGroup
-              items={[
+            <ADEAccordionGroup
+              panels={[
                 {
-                  title: editCoreMemoriesTitle,
                   id: 'core-memories',
+                  label: editCoreMemoriesTitle,
                   content: <EditMemory />,
+                  minHeight: 300,
                 },
                 {
-                  title: archivalMemoriesTitle,
                   id: 'archival-memories',
+                  label: archivalMemoriesTitle,
                   content: <ArchivalMemoriesPanel />,
+                  minHeight: 300,
                 },
               ]}
+              topOffset={100} // height of context window panel
             />
           </VStack>
         </Panel>
