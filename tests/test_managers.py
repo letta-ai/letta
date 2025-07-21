@@ -5554,6 +5554,95 @@ async def test_get_organization_sources_metadata(server, default_user):
     assert file3_stats.file_size == 512
 
 
+@pytest.mark.asyncio
+async def test_get_organization_sources_metadata(server, default_user):
+    """Test getting organization sources metadata with aggregated file information."""
+    # Create test sources
+    source1 = await server.source_manager.create_source(
+        source=PydanticSource(
+            name="test_source_1",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        actor=default_user,
+    )
+
+    source2 = await server.source_manager.create_source(
+        source=PydanticSource(
+            name="test_source_2",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        actor=default_user,
+    )
+
+    # Create test files for source1
+    file1_meta = PydanticFileMetadata(
+        source_id=source1.id,
+        file_name="file1.txt",
+        file_type="text/plain",
+        file_size=1024,
+    )
+    file1 = await server.file_manager.create_file(file_metadata=file1_meta, actor=default_user)
+
+    file2_meta = PydanticFileMetadata(
+        source_id=source1.id,
+        file_name="file2.txt",
+        file_type="text/plain",
+        file_size=2048,
+    )
+    file2 = await server.file_manager.create_file(file_metadata=file2_meta, actor=default_user)
+
+    # Create test file for source2
+    file3_meta = PydanticFileMetadata(
+        source_id=source2.id,
+        file_name="file3.txt",
+        file_type="text/plain",
+        file_size=512,
+    )
+    file3 = await server.file_manager.create_file(file_metadata=file3_meta, actor=default_user)
+
+    # Get organization metadata
+    metadata = await server.file_manager.get_organization_sources_metadata(actor=default_user)
+
+    # Verify top-level aggregations
+    assert metadata.total_sources >= 2  # May have other sources from other tests
+    assert metadata.total_files >= 3
+    assert metadata.total_size >= 3584
+
+    # Find our test sources in the results
+    source1_meta = next((s for s in metadata.sources if s.source_id == source1.id), None)
+    source2_meta = next((s for s in metadata.sources if s.source_id == source2.id), None)
+
+    assert source1_meta is not None
+    assert source1_meta.source_name == "test_source_1"
+    assert source1_meta.file_count == 2
+    assert source1_meta.total_size == 3072  # 1024 + 2048
+    assert len(source1_meta.files) == 2
+
+    # Verify file details in source1
+    file1_stats = next((f for f in source1_meta.files if f.file_id == file1.id), None)
+    file2_stats = next((f for f in source1_meta.files if f.file_id == file2.id), None)
+
+    assert file1_stats is not None
+    assert file1_stats.file_name == "file1.txt"
+    assert file1_stats.file_size == 1024
+
+    assert file2_stats is not None
+    assert file2_stats.file_name == "file2.txt"
+    assert file2_stats.file_size == 2048
+
+    assert source2_meta is not None
+    assert source2_meta.source_name == "test_source_2"
+    assert source2_meta.file_count == 1
+    assert source2_meta.total_size == 512
+    assert len(source2_meta.files) == 1
+
+    # Verify file details in source2
+    file3_stats = source2_meta.files[0]
+    assert file3_stats.file_id == file3.id
+    assert file3_stats.file_name == "file3.txt"
+    assert file3_stats.file_size == 512
+
+
 # ======================================================================================================================
 # SandboxConfigManager Tests - Sandbox Configs
 # ======================================================================================================================
