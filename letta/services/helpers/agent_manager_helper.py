@@ -207,16 +207,21 @@ def compile_memory_metadata_block(
     timestamp_str = format_datetime(memory_edit_timestamp, timezone)
 
     # Create a metadata block of info so the agent knows about the metadata of out-of-context memories
-    memory_metadata_block = "\n".join(
-        [
-            "<memory_metadata>",
-            f"- The current time is: {get_local_time_fast(timezone)}",
-            f"- Memory blocks were last modified: {timestamp_str}",
-            f"- {previous_message_count} previous messages between you and the user are stored in recall memory (use tools to access them)",
-            f"- {archival_memory_size} total memories you created are stored in archival memory (use tools to access them)",
-            "</memory_metadata>",
-        ]
-    )
+    metadata_lines = [
+        "<memory_metadata>",
+        f"- The current time is: {get_local_time_fast(timezone)}",
+        f"- Memory blocks were last modified: {timestamp_str}",
+        f"- {previous_message_count} previous messages between you and the user are stored in recall memory (use tools to access them)",
+    ]
+
+    # Only include archival memory line if there are archival memories
+    if archival_memory_size > 0:
+        metadata_lines.append(
+            f"- {archival_memory_size} total memories you created are stored in archival memory (use tools to access them)"
+        )
+
+    metadata_lines.append("</memory_metadata>")
+    memory_metadata_block = "\n".join(metadata_lines)
     return memory_metadata_block
 
 
