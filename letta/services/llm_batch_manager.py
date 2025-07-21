@@ -45,8 +45,10 @@ class LLMBatchManager:
                 organization_id=actor.organization_id,
                 letta_batch_job_id=letta_batch_job_id,
             )
-            await batch.create_async(session, actor=actor)
-            return batch.to_pydantic()
+            await batch.create_async(session, actor=actor, no_commit=True, no_refresh=True)
+            pydantic_batch = batch.to_pydantic()
+            await session.commit()
+            return pydantic_batch
 
     @enforce_types
     @trace_method
