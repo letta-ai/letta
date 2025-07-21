@@ -1,3 +1,4 @@
+import asyncio
 import os
 import threading
 import time
@@ -115,6 +116,13 @@ class DatabaseRegistry:
         self._lock = threading.Lock()
         self.config = LettaConfig.load()
         self.logger = get_logger(__name__)
+
+        if settings.db_max_concurrent_sessions:
+            self._db_semaphore = asyncio.Semaphore(settings.db_max_concurrent_sessions)
+            self.logger.info(f"Initialized database throttling with max {settings.db_max_concurrent_sessions} concurrent sessions")
+        else:
+            self.logger.info("Database throttling is disabled")
+            self._db_semaphore = None
 
     def initialize_sync(self, force: bool = False) -> None:
         """Initialize the synchronous database engine if not already initialized."""
@@ -364,16 +372,33 @@ class DatabaseRegistry:
     @trace_method
     @asynccontextmanager
     async def async_session(self, name: str = "default") -> AsyncGenerator[AsyncSession, None]:
-        """Async context manager for database sessions."""
-        session_factory = self.get_async_session_factory(name)
-        if not session_factory:
-            raise ValueError(f"No async session factory found for '{name}' or async database is not configured")
+        """Async context manager for database sessions with throttling."""
+        if self._db_semaphore:
+            async with self._db_semaphore:
+                session_factory = self.get_async_session_factory(name)
+                if not session_factory:
+                    raise ValueError(f"No async session factory found for '{name}' or async database is not configured")
 
-        session = session_factory()
-        try:
-            yield session
-        finally:
-            await session.close()
+                session = session_factory()
+                try:
+                    yield session
+                finally:
+                    await session.close()
+        else:
+            session_factory = self.get_async_session_factory(name)
+            if not session_factory:
+                raise ValueError(f"No async session factory found for '{name}' or async database is not configured")
+
+            session = session_factory()
+            try:
+                yield session
+            finally:
+                await session.close()
+
+    @trace_method
+    def session_caller_trace(self, caller_info: str):
+        """Trace sync db caller information for debugging purposes."""
+        pass  # wrapper used for otel tracing only
 
     @trace_method
     def session_caller_trace(self, caller_info: str):

@@ -3291,6 +3291,190 @@ async def test_upsert_base_tools_with_empty_type_filter(server: SyncServer, defa
 
 
 @pytest.mark.asyncio
+async def test_bulk_upsert_tools_async(server: SyncServer, default_user):
+    """Test bulk upserting multiple tools at once"""
+    # create multiple test tools
+    tools_data = []
+    for i in range(5):
+        tool = PydanticTool(
+            name=f"bulk_test_tool_{i}",
+            description=f"Test tool {i} for bulk operations",
+            tags=["bulk", "test"],
+            source_code=f"def bulk_test_tool_{i}():\n    '''Test tool {i} function'''\n    return 'result_{i}'",
+            source_type="python",
+        )
+        tools_data.append(tool)
+
+    # initial bulk upsert - should create all tools
+    created_tools = await server.tool_manager.bulk_upsert_tools_async(tools_data, default_user)
+    assert len(created_tools) == 5
+    assert all(t.name.startswith("bulk_test_tool_") for t in created_tools)
+    assert all(t.description for t in created_tools)
+
+    # verify all tools were created
+    for i in range(5):
+        tool = await server.tool_manager.get_tool_by_name_async(f"bulk_test_tool_{i}", default_user)
+        assert tool is not None
+        assert tool.description == f"Test tool {i} for bulk operations"
+
+    # modify some tools and upsert again - should update existing tools
+    tools_data[0].description = "Updated description for tool 0"
+    tools_data[2].tags = ["bulk", "test", "updated"]
+
+    updated_tools = await server.tool_manager.bulk_upsert_tools_async(tools_data, default_user)
+    assert len(updated_tools) == 5
+
+    # verify updates were applied
+    tool_0 = await server.tool_manager.get_tool_by_name_async("bulk_test_tool_0", default_user)
+    assert tool_0.description == "Updated description for tool 0"
+
+    tool_2 = await server.tool_manager.get_tool_by_name_async("bulk_test_tool_2", default_user)
+    assert "updated" in tool_2.tags
+
+    # test with empty list
+    empty_result = await server.tool_manager.bulk_upsert_tools_async([], default_user)
+    assert empty_result == []
+
+    # test with tools missing descriptions (should auto-generate from json schema)
+    no_desc_tool = PydanticTool(
+        name="no_description_tool",
+        tags=["test"],
+        source_code="def no_description_tool():\n    '''This is a docstring description'''\n    return 'result'",
+        source_type="python",
+    )
+    result = await server.tool_manager.bulk_upsert_tools_async([no_desc_tool], default_user)
+    assert len(result) == 1
+    assert result[0].description is not None  # should be auto-generated from docstring
+
+
+@pytest.mark.asyncio
+async def test_bulk_upsert_tools_name_conflict(server: SyncServer, default_user):
+    """Test bulk upserting tools handles name+org_id unique constraint correctly"""
+
+    # create a tool with a specific name
+    original_tool = PydanticTool(
+        name="unique_name_tool",
+        description="Original description",
+        tags=["original"],
+        source_code="def unique_name_tool():\n    '''Original function'''\n    return 'original'",
+        source_type="python",
+    )
+
+    # create it
+    created = await server.tool_manager.create_tool_async(original_tool, default_user)
+    original_id = created.id
+
+    # now try to bulk upsert with same name but different id
+    conflicting_tool = PydanticTool(
+        name="unique_name_tool",  # same name
+        description="Updated via bulk upsert",
+        tags=["updated", "bulk"],
+        source_code="def unique_name_tool():\n    '''Updated function'''\n    return 'updated'",
+        source_type="python",
+    )
+
+    # bulk upsert should update the existing tool based on name conflict
+    result = await server.tool_manager.bulk_upsert_tools_async([conflicting_tool], default_user)
+    assert len(result) == 1
+    assert result[0].name == "unique_name_tool"
+    assert result[0].description == "Updated via bulk upsert"
+    assert "updated" in result[0].tags
+    assert "bulk" in result[0].tags
+
+    # verify only one tool exists with this name
+    all_tools = await server.tool_manager.list_tools_async(actor=default_user)
+    tools_with_name = [t for t in all_tools if t.name == "unique_name_tool"]
+    assert len(tools_with_name) == 1
+
+    # the id should remain the same as the original
+    assert tools_with_name[0].id == original_id
+
+
+@pytest.mark.asyncio
+async def test_bulk_upsert_tools_mixed_create_update(server: SyncServer, default_user):
+    """Test bulk upserting with mix of new tools and updates to existing ones"""
+
+    # create some existing tools
+    existing_tools = []
+    for i in range(3):
+        tool = PydanticTool(
+            name=f"existing_tool_{i}",
+            description=f"Existing tool {i}",
+            tags=["existing"],
+            source_code=f"def existing_tool_{i}():\n    '''Existing {i}'''\n    return 'existing_{i}'",
+            source_type="python",
+        )
+        created = await server.tool_manager.create_tool_async(tool, default_user)
+        existing_tools.append(created)
+
+    # prepare bulk upsert with mix of updates and new tools
+    bulk_tools = []
+
+    # update existing tool 0 by name
+    bulk_tools.append(
+        PydanticTool(
+            name="existing_tool_0",  # matches by name
+            description="Updated existing tool 0",
+            tags=["existing", "updated"],
+            source_code="def existing_tool_0():\n    '''Updated 0'''\n    return 'updated_0'",
+            source_type="python",
+        )
+    )
+
+    # update existing tool 1 by name (since bulk upsert matches by name, not id)
+    bulk_tools.append(
+        PydanticTool(
+            name="existing_tool_1",  # matches by name
+            description="Updated existing tool 1",
+            tags=["existing", "updated"],
+            source_code="def existing_tool_1():\n    '''Updated 1'''\n    return 'updated_1'",
+            source_type="python",
+        )
+    )
+
+    # add completely new tools
+    for i in range(3, 6):
+        bulk_tools.append(
+            PydanticTool(
+                name=f"new_tool_{i}",
+                description=f"New tool {i}",
+                tags=["new"],
+                source_code=f"def new_tool_{i}():\n    '''New {i}'''\n    return 'new_{i}'",
+                source_type="python",
+            )
+        )
+
+    # perform bulk upsert
+    result = await server.tool_manager.bulk_upsert_tools_async(bulk_tools, default_user)
+    assert len(result) == 5  # 2 updates + 3 new
+
+    # verify updates
+    tool_0 = await server.tool_manager.get_tool_by_name_async("existing_tool_0", default_user)
+    assert tool_0.description == "Updated existing tool 0"
+    assert "updated" in tool_0.tags
+    assert tool_0.id == existing_tools[0].id  # id should remain same
+
+    # verify tool 1 was updated
+    tool_1 = await server.tool_manager.get_tool_by_id_async(existing_tools[1].id, default_user)
+    assert tool_1.name == "existing_tool_1"  # name stays same
+    assert tool_1.description == "Updated existing tool 1"
+    assert "updated" in tool_1.tags
+
+    # verify new tools were created
+    for i in range(3, 6):
+        new_tool = await server.tool_manager.get_tool_by_name_async(f"new_tool_{i}", default_user)
+        assert new_tool is not None
+        assert new_tool.description == f"New tool {i}"
+        assert "new" in new_tool.tags
+
+    # verify existing_tool_2 was not affected
+    tool_2 = await server.tool_manager.get_tool_by_id_async(existing_tools[2].id, default_user)
+    assert tool_2.name == "existing_tool_2"
+    assert tool_2.description == "Existing tool 2"
+    assert tool_2.tags == ["existing"]
+
+
+@pytest.mark.asyncio
 async def test_create_tool_with_pip_requirements(server: SyncServer, default_user, default_organization):
     def test_tool_with_deps():
         """
@@ -3665,6 +3849,71 @@ def test_create_block(server: SyncServer, default_user):
     assert block.description == block_create.description
     assert block.limit == block_create.limit
     assert block.metadata == block_create.metadata
+
+
+@pytest.mark.asyncio
+async def test_batch_create_blocks_async(server: SyncServer, default_user):
+    """Test batch creating multiple blocks at once"""
+    block_manager = BlockManager()
+
+    # create multiple test blocks
+    blocks_data = []
+    for i in range(5):
+        block = PydanticBlock(
+            label=f"test_block_{i}",
+            is_template=False,
+            value=f"Content for block {i}",
+            description=f"Test block {i} for batch operations",
+            limit=1000 + i * 100,  # varying limits
+            metadata={"index": i, "batch": "test"},
+        )
+        blocks_data.append(block)
+
+    # batch create all blocks at once
+    created_blocks = await block_manager.batch_create_blocks_async(blocks_data, default_user)
+
+    # verify all blocks were created
+    assert len(created_blocks) == 5
+    assert all(b.label.startswith("test_block_") for b in created_blocks)
+
+    # verify block properties were preserved
+    for i, block in enumerate(created_blocks):
+        assert block.label == f"test_block_{i}"
+        assert block.value == f"Content for block {i}"
+        assert block.description == f"Test block {i} for batch operations"
+        assert block.limit == 1000 + i * 100
+        assert block.metadata["index"] == i
+        assert block.metadata["batch"] == "test"
+        assert block.id is not None  # should have generated ids
+        # blocks have organization_id at the orm level, not in the pydantic model
+
+    # verify blocks can be retrieved individually
+    for created_block in created_blocks:
+        retrieved = await block_manager.get_block_by_id_async(created_block.id, default_user)
+        assert retrieved.id == created_block.id
+        assert retrieved.label == created_block.label
+        assert retrieved.value == created_block.value
+
+    # test with empty list
+    empty_result = await block_manager.batch_create_blocks_async([], default_user)
+    assert empty_result == []
+
+    # test creating blocks with same labels (should create separate blocks since no unique constraint)
+    duplicate_blocks = [
+        PydanticBlock(label="duplicate_label", value="Block 1"),
+        PydanticBlock(label="duplicate_label", value="Block 2"),
+        PydanticBlock(label="duplicate_label", value="Block 3"),
+    ]
+
+    created_duplicates = await block_manager.batch_create_blocks_async(duplicate_blocks, default_user)
+    assert len(created_duplicates) == 3
+    assert all(b.label == "duplicate_label" for b in created_duplicates)
+    # all should have different ids
+    ids = [b.id for b in created_duplicates]
+    assert len(set(ids)) == 3  # all unique ids
+    # but different values
+    values = [b.value for b in created_duplicates]
+    assert set(values) == {"Block 1", "Block 2", "Block 3"}
 
 
 @pytest.mark.asyncio
@@ -5013,6 +5262,164 @@ async def test_update_source_no_changes(server: SyncServer, default_user):
     assert updated_source.description == source.description
 
 
+@pytest.mark.asyncio
+async def test_bulk_upsert_sources_async(server: SyncServer, default_user):
+    """Test bulk upserting sources."""
+    sources_data = [
+        PydanticSource(
+            name="Bulk Source 1",
+            description="First bulk source",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        PydanticSource(
+            name="Bulk Source 2",
+            description="Second bulk source",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        PydanticSource(
+            name="Bulk Source 3",
+            description="Third bulk source",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+    ]
+
+    # Bulk upsert sources
+    created_sources = await server.source_manager.bulk_upsert_sources_async(sources_data, default_user)
+
+    # Verify all sources were created
+    assert len(created_sources) == 3
+
+    # Verify source details
+    created_names = {source.name for source in created_sources}
+    expected_names = {"Bulk Source 1", "Bulk Source 2", "Bulk Source 3"}
+    assert created_names == expected_names
+
+    # Verify organization assignment
+    for source in created_sources:
+        assert source.organization_id == default_user.organization_id
+
+
+@pytest.mark.asyncio
+async def test_bulk_upsert_sources_name_conflict(server: SyncServer, default_user):
+    """Test bulk upserting sources with name conflicts."""
+    # Create an existing source
+    existing_source = await server.source_manager.create_source(
+        PydanticSource(
+            name="Existing Source",
+            description="Already exists",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        default_user,
+    )
+
+    # Try to bulk upsert with the same name
+    sources_data = [
+        PydanticSource(
+            name="Existing Source",  # Same name as existing
+            description="Updated description",
+            metadata={"updated": True},
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        PydanticSource(
+            name="New Bulk Source",
+            description="Completely new",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+    ]
+
+    # Bulk upsert should update existing and create new
+    result_sources = await server.source_manager.bulk_upsert_sources_async(sources_data, default_user)
+
+    # Should return 2 sources
+    assert len(result_sources) == 2
+
+    # Find the updated source
+    updated_source = next(s for s in result_sources if s.name == "Existing Source")
+
+    # Verify the existing source was updated, not replaced
+    assert updated_source.id == existing_source.id  # ID should be preserved
+    assert updated_source.description == "Updated description"
+    assert updated_source.metadata == {"updated": True}
+
+    # Verify new source was created
+    new_source = next(s for s in result_sources if s.name == "New Bulk Source")
+    assert new_source.description == "Completely new"
+
+
+@pytest.mark.asyncio
+async def test_bulk_upsert_sources_mixed_create_update(server: SyncServer, default_user):
+    """Test bulk upserting with a mix of creates and updates."""
+    # Create some existing sources
+    existing1 = await server.source_manager.create_source(
+        PydanticSource(
+            name="Mixed Source 1",
+            description="Original 1",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        default_user,
+    )
+    existing2 = await server.source_manager.create_source(
+        PydanticSource(
+            name="Mixed Source 2",
+            description="Original 2",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        default_user,
+    )
+
+    # Bulk upsert with updates and new sources
+    sources_data = [
+        PydanticSource(
+            name="Mixed Source 1",  # Update existing
+            description="Updated 1",
+            instructions="New instructions 1",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        PydanticSource(
+            name="Mixed Source 3",  # Create new
+            description="New 3",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        PydanticSource(
+            name="Mixed Source 2",  # Update existing
+            description="Updated 2",
+            metadata={"version": 2},
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        PydanticSource(
+            name="Mixed Source 4",  # Create new
+            description="New 4",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+    ]
+
+    # Perform bulk upsert
+    result_sources = await server.source_manager.bulk_upsert_sources_async(sources_data, default_user)
+
+    # Should return 4 sources
+    assert len(result_sources) == 4
+
+    # Verify updates preserved IDs
+    source1 = next(s for s in result_sources if s.name == "Mixed Source 1")
+    assert source1.id == existing1.id
+    assert source1.description == "Updated 1"
+    assert source1.instructions == "New instructions 1"
+
+    source2 = next(s for s in result_sources if s.name == "Mixed Source 2")
+    assert source2.id == existing2.id
+    assert source2.description == "Updated 2"
+    assert source2.metadata == {"version": 2}
+
+    # Verify new sources were created
+    source3 = next(s for s in result_sources if s.name == "Mixed Source 3")
+    assert source3.description == "New 3"
+    assert source3.id != existing1.id and source3.id != existing2.id
+
+    source4 = next(s for s in result_sources if s.name == "Mixed Source 4")
+    assert source4.description == "New 4"
+    assert source4.id != existing1.id and source4.id != existing2.id
+
+
 # ======================================================================================================================
 # Source Manager Tests - Files
 # ======================================================================================================================
@@ -5522,95 +5929,6 @@ async def test_get_organization_sources_metadata(server, default_user):
     # Find our test sources in the detailed results
     source1_meta = next((s for s in metadata_detailed.sources if s.source_id == source1.id), None)
     source2_meta = next((s for s in metadata_detailed.sources if s.source_id == source2.id), None)
-
-    assert source1_meta is not None
-    assert source1_meta.source_name == "test_source_1"
-    assert source1_meta.file_count == 2
-    assert source1_meta.total_size == 3072  # 1024 + 2048
-    assert len(source1_meta.files) == 2
-
-    # Verify file details in source1
-    file1_stats = next((f for f in source1_meta.files if f.file_id == file1.id), None)
-    file2_stats = next((f for f in source1_meta.files if f.file_id == file2.id), None)
-
-    assert file1_stats is not None
-    assert file1_stats.file_name == "file1.txt"
-    assert file1_stats.file_size == 1024
-
-    assert file2_stats is not None
-    assert file2_stats.file_name == "file2.txt"
-    assert file2_stats.file_size == 2048
-
-    assert source2_meta is not None
-    assert source2_meta.source_name == "test_source_2"
-    assert source2_meta.file_count == 1
-    assert source2_meta.total_size == 512
-    assert len(source2_meta.files) == 1
-
-    # Verify file details in source2
-    file3_stats = source2_meta.files[0]
-    assert file3_stats.file_id == file3.id
-    assert file3_stats.file_name == "file3.txt"
-    assert file3_stats.file_size == 512
-
-
-@pytest.mark.asyncio
-async def test_get_organization_sources_metadata(server, default_user):
-    """Test getting organization sources metadata with aggregated file information."""
-    # Create test sources
-    source1 = await server.source_manager.create_source(
-        source=PydanticSource(
-            name="test_source_1",
-            embedding_config=DEFAULT_EMBEDDING_CONFIG,
-        ),
-        actor=default_user,
-    )
-
-    source2 = await server.source_manager.create_source(
-        source=PydanticSource(
-            name="test_source_2",
-            embedding_config=DEFAULT_EMBEDDING_CONFIG,
-        ),
-        actor=default_user,
-    )
-
-    # Create test files for source1
-    file1_meta = PydanticFileMetadata(
-        source_id=source1.id,
-        file_name="file1.txt",
-        file_type="text/plain",
-        file_size=1024,
-    )
-    file1 = await server.file_manager.create_file(file_metadata=file1_meta, actor=default_user)
-
-    file2_meta = PydanticFileMetadata(
-        source_id=source1.id,
-        file_name="file2.txt",
-        file_type="text/plain",
-        file_size=2048,
-    )
-    file2 = await server.file_manager.create_file(file_metadata=file2_meta, actor=default_user)
-
-    # Create test file for source2
-    file3_meta = PydanticFileMetadata(
-        source_id=source2.id,
-        file_name="file3.txt",
-        file_type="text/plain",
-        file_size=512,
-    )
-    file3 = await server.file_manager.create_file(file_metadata=file3_meta, actor=default_user)
-
-    # Get organization metadata
-    metadata = await server.file_manager.get_organization_sources_metadata(actor=default_user)
-
-    # Verify top-level aggregations
-    assert metadata.total_sources >= 2  # May have other sources from other tests
-    assert metadata.total_files >= 3
-    assert metadata.total_size >= 3584
-
-    # Find our test sources in the results
-    source1_meta = next((s for s in metadata.sources if s.source_id == source1.id), None)
-    source2_meta = next((s for s in metadata.sources if s.source_id == source2.id), None)
 
     assert source1_meta is not None
     assert source1_meta.source_name == "test_source_1"

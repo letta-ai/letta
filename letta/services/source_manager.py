@@ -60,6 +60,123 @@ class SourceManager:
 
     @enforce_types
     @trace_method
+    async def bulk_upsert_sources_async(self, pydantic_sources: List[PydanticSource], actor: PydanticUser) -> List[PydanticSource]:
+        """
+        Bulk create or update multiple sources in a single database transaction.
+
+        Uses optimized PostgreSQL bulk upsert when available, falls back to individual
+        upserts for SQLite. This is much more efficient than calling create_source
+        in a loop.
+
+        IMPORTANT BEHAVIOR NOTES:
+        - Sources are matched by (name, organization_id) unique constraint, NOT by ID
+        - If a source with the same name already exists for the organization, it will be updated
+          regardless of any ID provided in the input source
+        - The existing source's ID is preserved during updates
+        - If you provide a source with an explicit ID but a name that matches an existing source,
+          the existing source will be updated and the provided ID will be ignored
+        - This matches the behavior of create_source which also checks by ID first
+
+        PostgreSQL optimization:
+        - Uses native ON CONFLICT (name, organization_id) DO UPDATE for atomic upserts
+        - All sources are processed in a single SQL statement for maximum efficiency
+
+        SQLite fallback:
+        - Falls back to individual create_source calls
+        - Still benefits from batched transaction handling
+
+        Args:
+            pydantic_sources: List of sources to create or update
+            actor: User performing the action
+
+        Returns:
+            List of created/updated sources
+        """
+        if not pydantic_sources:
+            return []
+
+        from letta.settings import settings
+
+        if settings.letta_pg_uri_no_default:
+            # use optimized postgresql bulk upsert
+            async with db_registry.async_session() as session:
+                return await self._bulk_upsert_postgresql(session, pydantic_sources, actor)
+        else:
+            # fallback to individual upserts for sqlite
+            return await self._upsert_sources_individually(pydantic_sources, actor)
+
+    @trace_method
+    async def _bulk_upsert_postgresql(self, session, source_data_list: List[PydanticSource], actor: PydanticUser) -> List[PydanticSource]:
+        """Hyper-optimized PostgreSQL bulk upsert using ON CONFLICT DO UPDATE."""
+        from sqlalchemy import func, select
+        from sqlalchemy.dialects.postgresql import insert
+
+        # prepare data for bulk insert
+        table = SourceModel.__table__
+        valid_columns = {col.name for col in table.columns}
+
+        insert_data = []
+        for source in source_data_list:
+            source_dict = source.model_dump(to_orm=True)
+            # set created/updated by fields
+
+            if actor:
+                source_dict["_created_by_id"] = actor.id
+                source_dict["_last_updated_by_id"] = actor.id
+                source_dict["organization_id"] = actor.organization_id
+
+            # filter to only include columns that exist in the table
+            filtered_dict = {k: v for k, v in source_dict.items() if k in valid_columns}
+            insert_data.append(filtered_dict)
+
+        # use postgresql's native bulk upsert
+        stmt = insert(table).values(insert_data)
+
+        # on conflict, update all columns except id, created_at, and _created_by_id
+        excluded = stmt.excluded
+        update_dict = {}
+        for col in table.columns:
+            if col.name not in ("id", "created_at", "_created_by_id"):
+                if col.name == "updated_at":
+                    update_dict[col.name] = func.now()
+                else:
+                    update_dict[col.name] = excluded[col.name]
+
+        upsert_stmt = stmt.on_conflict_do_update(index_elements=["name", "organization_id"], set_=update_dict)
+
+        await session.execute(upsert_stmt)
+        await session.commit()
+
+        # fetch results
+        source_names = [source.name for source in source_data_list]
+        result_query = select(SourceModel).where(
+            SourceModel.name.in_(source_names), SourceModel.organization_id == actor.organization_id, SourceModel.is_deleted == False
+        )
+        result = await session.execute(result_query)
+        return [source.to_pydantic() for source in result.scalars()]
+
+    @trace_method
+    async def _upsert_sources_individually(self, source_data_list: List[PydanticSource], actor: PydanticUser) -> List[PydanticSource]:
+        """Fallback to individual upserts for SQLite."""
+        sources = []
+        for source in source_data_list:
+            # try to get existing source by name
+            existing_source = await self.get_source_by_name(source.name, actor)
+            if existing_source:
+                # update existing source
+                from letta.schemas.source import SourceUpdate
+
+                update_data = source.model_dump(exclude={"id"}, exclude_none=True)
+                updated_source = await self.update_source(existing_source.id, SourceUpdate(**update_data), actor)
+                sources.append(updated_source)
+            else:
+                # create new source
+                created_source = await self.create_source(source, actor)
+                sources.append(created_source)
+        return sources
+
+    @enforce_types
+    @trace_method
     async def update_source(self, source_id: str, source_update: SourceUpdate, actor: PydanticUser) -> PydanticSource:
         """Update a source by its ID with the given SourceUpdate object."""
         async with db_registry.async_session() as session:

@@ -176,7 +176,9 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         app = AsyncFirecrawlApp(api_key=firecrawl_api_key)
 
         # Process all search tasks in parallel
-        search_task_coroutines = [self._process_single_search_task(app, task, limit, return_raw, api_key_source) for task in search_tasks]
+        search_task_coroutines = [
+            self._process_single_search_task(app, task, limit, return_raw, api_key_source, agent_state) for task in search_tasks
+        ]
 
         # Execute all searches concurrently
         search_results = await asyncio.gather(*search_task_coroutines, return_exceptions=True)
@@ -205,7 +207,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
 
     @trace_method
     async def _process_single_search_task(
-        self, app: "AsyncFirecrawlApp", task: SearchTask, limit: int, return_raw: bool, api_key_source: str
+        self, app: "AsyncFirecrawlApp", task: SearchTask, limit: int, return_raw: bool, api_key_source: str, agent_state: "AgentState"
     ) -> Dict[str, Any]:
         """Process a single search task."""
         from firecrawl import ScrapeOptions
@@ -246,7 +248,9 @@ class LettaBuiltinToolExecutor(ToolExecutor):
                 for result in search_result.get("data"):
                     if result.get("markdown"):
                         # Create async task for OpenAI analysis
-                        analysis_task = self._analyze_document_with_openai(client, result["markdown"], task.query, task.question)
+                        analysis_task = self._analyze_document_with_openai(
+                            client, result["markdown"], task.query, task.question, agent_state
+                        )
                         analysis_tasks.append(analysis_task)
                         results_with_markdown.append(result)
                     else:
@@ -300,7 +304,9 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         return {"query": task.query, "question": task.question, "raw_results": search_result}
 
     @trace_method
-    async def _analyze_document_with_openai(self, client, markdown_content: str, query: str, question: str) -> Optional[DocumentAnalysis]:
+    async def _analyze_document_with_openai(
+        self, client, markdown_content: str, query: str, question: str, agent_state: "AgentState"
+    ) -> Optional[DocumentAnalysis]:
         """Use OpenAI to analyze a document and extract relevant passages using line numbers."""
         original_length = len(markdown_content)
 
@@ -324,7 +330,9 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         # Time the OpenAI request
         start_time = time.time()
 
-        model = os.getenv(WEB_SEARCH_MODEL_ENV_VAR_NAME, WEB_SEARCH_MODEL_ENV_VAR_DEFAULT_VALUE)
+        # Check agent state env vars first, then fall back to os.getenv
+        agent_state_tool_env_vars = agent_state.get_agent_env_vars_as_dict()
+        model = agent_state_tool_env_vars.get(WEB_SEARCH_MODEL_ENV_VAR_NAME) or WEB_SEARCH_MODEL_ENV_VAR_DEFAULT_VALUE
         logger.info(f"Using model {model} for web search result parsing")
         response = await client.beta.chat.completions.parse(
             model=model,

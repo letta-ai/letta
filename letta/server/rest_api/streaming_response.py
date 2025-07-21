@@ -125,14 +125,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                         if not isinstance(content, bytes):
                             content = content.encode(self.charset)
                         more_body = False
-                        await send(
-                            {
-                                "type": "http.response.body",
-                                "body": content,
-                                "more_body": more_body,
-                            }
-                        )
-                        raise Exception(f"An exception occurred mid-stream with status code {status_code}", detail={"content": content})
+                        raise Exception(f"An exception occurred mid-stream with status code {status_code} with content {content}")
                 else:
                     content = chunk
 

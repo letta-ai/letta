@@ -63,13 +63,13 @@ class LettaMessage(BaseModel):
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.isoformat(timespec="seconds")
 
-    @field_serializer("is_err", when_used="unless-none")
-    def serialize_is_err(self, value: bool | None, _info):
+    @field_serializer("is_err", mode="wrap")
+    def serialize_is_err(self, value: bool | None, handler, _info):
         """
         Only serialize is_err field when it's True (for debugging purposes).
         When is_err is None or False, this field will be excluded from the JSON output.
         """
-        return value if value is True else None
+        return handler(value) if value is True else None
 
 
 class SystemMessage(LettaMessage):
