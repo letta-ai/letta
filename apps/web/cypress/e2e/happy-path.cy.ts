@@ -117,17 +117,19 @@ describe('letta', () => {
       timeout: 50000,
     }).contains('Shubham', { timeout: 50000 });
 
+    cy.findByTestId('tab:datasources').click();
+
     cy.findByTestId('create-data-source-dialog-trigger').click();
     cy.findByTestId('create-new-data-source').click();
     cy.findByTestId('create-data-source-dialog-name').type('test');
 
     cy.findByTestId('complete-create-data-source').click();
 
-    cy.findByTestId('datasources').contains('Sources (1)');
+    cy.findByTestId('tab:datasources').contains('Sources (1)');
     cy.findByTestId('filetree-actions:1-0').click();
     cy.findByTestId('filetree-action-detach').click();
     cy.findByTestId('detach-data-source-dialog-confirm-button').click();
-    cy.findByTestId('datasources', {
+    cy.findByTestId('tab:datasources', {
       timeout: 50000,
     }).contains('Sources (0)');
 
@@ -147,6 +149,7 @@ describe('letta', () => {
     cy.get('body').click({ force: true });
 
     cy.clearPointerEventLock();
+    cy.findByTestId('tab:tools').click({ force: true });
 
     /* tools */
     cy.findByTestId('open-tool-explorer').click();
