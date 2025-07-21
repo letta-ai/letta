@@ -4,6 +4,7 @@ from typing import List, Literal, Optional, Set
 
 import numpy as np
 from sqlalchemy import Select, and_, asc, desc, func, literal, nulls_last, or_, select, union_all
+from sqlalchemy.orm import noload
 from sqlalchemy.sql.expression import exists
 
 from letta import system
@@ -666,6 +667,24 @@ def _apply_filters(
     # Filter agents by base template ID.
     if base_template_id:
         query = query.where(AgentModel.base_template_id == base_template_id)
+    return query
+
+
+def _apply_relationship_filters(query, include_relationships: Optional[List[str]] = None):
+    if include_relationships is None:
+        return query
+
+    if "memory" not in include_relationships:
+        query = query.options(noload(AgentModel.core_memory), noload(AgentModel.file_agents))
+    if "identity_ids" not in include_relationships:
+        query = query.options(noload(AgentModel.identities))
+
+    relationships = ["tool_exec_environment_variables", "tools", "sources", "tags", "multi_agent_group"]
+
+    for rel in relationships:
+        if rel not in include_relationships:
+            query = query.options(noload(getattr(AgentModel, rel)))
+
     return query
 
 
