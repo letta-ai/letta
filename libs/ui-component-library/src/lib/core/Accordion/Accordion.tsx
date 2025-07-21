@@ -7,15 +7,16 @@ import { cn } from '@letta-cloud/ui-styles';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 
-type Themes = 'agentfile' | 'default' | 'destructive';
+type Themes = 'ade' | 'agentfile' | 'default' | 'destructive';
 
 const accordionTriggerVariants = cva(
   'flex flex-1 px-4 w-full items-center justify-between py-2 font-medium transition-all  [&[data-state=open]>svg]:rotate-180',
   {
     variants: {
       theme: {
-        destructive: 'border bg-destructive text-destructive-content',
+        ade: 'px-3',
         agentfile: 'text-sm font-bold p-3 bg-background-grey',
+        destructive: 'border bg-destructive text-destructive-content',
         default: 'text-sm font-semibold',
       },
     },
@@ -80,6 +81,7 @@ const accordionContentVariants = cva(
   {
     variants: {
       theme: {
+        ade: '',
         agentfile: 'p-3 text-sm',
         default: 'pb-4 pt-0',
         destructive: ' text-background-destructive-content',
