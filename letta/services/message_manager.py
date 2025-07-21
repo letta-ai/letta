@@ -284,8 +284,10 @@ class MessageManager:
             )
 
             message = self._update_message_by_id_impl(message_id, message_update, actor, message)
-            await message.update_async(db_session=session, actor=actor)
-            return message.to_pydantic()
+            await message.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
+            pydantic_message = message.to_pydantic()
+            await session.commit()
+            return pydantic_message
 
     def _update_message_by_id_impl(
         self, message_id: str, message_update: MessageUpdate, actor: PydanticUser, message: MessageModel
