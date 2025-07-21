@@ -235,6 +235,7 @@ class Settings(BaseSettings):
     track_last_agent_run: bool = Field(default=False, description="Update last agent run metrics")
     track_errored_messages: bool = Field(default=True, description="Enable tracking for errored messages")
     track_stop_reason: bool = Field(default=True, description="Enable tracking stop reason on steps.")
+    track_agent_run: bool = Field(default=True, description="Enable tracking agent run with cancellation support")
 
     # FastAPI Application Settings
     uvicorn_workers: int = 1
