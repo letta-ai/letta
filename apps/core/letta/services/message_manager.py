@@ -167,8 +167,10 @@ class MessageManager:
                         )
         orm_messages = self._create_many_preprocess(pydantic_msgs, actor)
         async with db_registry.async_session() as session:
-            created_messages = await MessageModel.batch_create_async(orm_messages, session, actor=actor)
-            return [msg.to_pydantic() for msg in created_messages]
+            created_messages = await MessageModel.batch_create_async(orm_messages, session, actor=actor, no_commit=True, no_refresh=True)
+            result = [msg.to_pydantic() for msg in created_messages]
+            await session.commit()
+            return result
 
     @enforce_types
     @trace_method
