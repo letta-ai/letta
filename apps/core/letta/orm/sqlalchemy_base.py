@@ -5,7 +5,7 @@ from functools import wraps
 from pprint import pformat
 from typing import TYPE_CHECKING, List, Literal, Optional, Tuple, Union
 
-from sqlalchemy import Sequence, String, and_, delete, func, or_, select, text
+from sqlalchemy import Sequence, String, and_, delete, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError, TimeoutError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, Session, mapped_column
@@ -512,14 +512,9 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, check_is_deleted, **kwargs)
         if query is None:
             raise NoResultFound(f"{cls.__name__} not found with identifier {identifier}")
-        if is_postgresql_session(db_session):
-            await db_session.execute(text("SET LOCAL enable_seqscan = OFF"))
-        try:
-            result = await db_session.execute(query)
-            item = result.scalar_one_or_none()
-        finally:
-            if is_postgresql_session(db_session):
-                await db_session.execute(text("SET LOCAL enable_seqscan = ON"))
+
+        result = await db_session.execute(query)
+        item = result.scalar_one_or_none()
 
         if item is None:
             raise NoResultFound(f"{cls.__name__} not found with {', '.join(query_conditions if query_conditions else ['no conditions'])}")
