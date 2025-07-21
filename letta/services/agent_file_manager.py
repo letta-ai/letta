@@ -572,9 +572,16 @@ class AgentFileManager:
             entity_ids = [entity.id for entity in entities]
 
             # Check for duplicates within this entity type
-            if len(entity_ids) != len(set(entity_ids)):
-                duplicates = [id for id in entity_ids if entity_ids.count(id) > 1]
-                errors.append(f"Duplicate {entity_type} IDs found: {set(duplicates)}")
+            seen = set()
+            duplicates = set()
+            for entity_id in entity_ids:
+                if entity_id in seen:
+                    duplicates.add(entity_id)
+                else:
+                    seen.add(entity_id)
+
+            if duplicates:
+                errors.append(f"Duplicate {entity_type} IDs found: {duplicates}")
 
             # Check for duplicates across all entity types
             for entity_id in entity_ids:
@@ -587,9 +594,16 @@ class AgentFileManager:
             message_ids = [msg.id for msg in agent.messages]
 
             # Check for duplicates within agent messages
-            if len(message_ids) != len(set(message_ids)):
-                duplicates = [id for id in message_ids if message_ids.count(id) > 1]
-                errors.append(f"Duplicate message IDs in agent {agent.id}: {set(duplicates)}")
+            seen = set()
+            duplicates = set()
+            for message_id in message_ids:
+                if message_id in seen:
+                    duplicates.add(message_id)
+                else:
+                    seen.add(message_id)
+
+            if duplicates:
+                errors.append(f"Duplicate message IDs in agent {agent.id}: {duplicates}")
 
             # Check for duplicates across all entity types
             for message_id in message_ids:
