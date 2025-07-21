@@ -1,6 +1,7 @@
 from typing import Optional, Tuple
 
 from letta.constants import DEFAULT_MESSAGE_TOOL_KWARG
+from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 
 
 class JSONInnerThoughtsExtractor:
@@ -34,7 +35,7 @@ class JSONInnerThoughtsExtractor:
 
     """
 
-    def __init__(self, inner_thoughts_key="inner_thoughts", wait_for_first_key=False):
+    def __init__(self, inner_thoughts_key=INNER_THOUGHTS_KWARG, wait_for_first_key=False):
         self.inner_thoughts_key = inner_thoughts_key
         self.wait_for_first_key = wait_for_first_key
         self.main_buffer = ""
