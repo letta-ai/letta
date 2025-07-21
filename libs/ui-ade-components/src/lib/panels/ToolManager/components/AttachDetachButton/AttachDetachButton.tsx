@@ -2,13 +2,13 @@
 import { useTranslations } from '@letta-cloud/translations';
 import { useIsComposioConnected } from '../../hooks/useIsComposioConnected/useIsComposioConnected';
 import {
-  type AgentState,
   type ToolType,
+  type AgentState,
   useAgentsServiceAttachTool,
   useAgentsServiceDetachTool,
-  UseAgentsServiceRetrieveAgentKeyFn,
   useToolsServiceAddComposioTool,
   useToolsServiceAddMcpTool,
+  UseAgentsServiceRetrieveAgentKeyFn,
 } from '@letta-cloud/sdk-core';
 import {
   AddLinkIcon,
@@ -21,8 +21,9 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useCurrentAgent, useCurrentAgentMetaData } from '../../../../hooks';
 import { useCallback, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { get } from 'lodash-es';
+import { useOptimisticAgentTools } from '../../hooks/useOptimisticAgentTools/useOptimisticAgentTools';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AttachComposioToolProps {
   idToAttach: string;
@@ -33,52 +34,48 @@ function AttachComposioTool(props: AttachComposioToolProps) {
   const t = useTranslations('ToolActionsHeader');
   const { isConnected: isComposioConnected } = useIsComposioConnected();
   const { mutateAsync: addComposioTool } = useToolsServiceAddComposioTool();
-  const { mutateAsync: attachToolToAgent } = useAgentsServiceAttachTool({
-    onError: () => {
-      toast.error(t('AttachComposioTool.GenericSDKError'));
-    },
-  });
-
   const { id: agentId } = useCurrentAgent();
+  const { addOptimisticTool, updateAgentTools, removeOptimisticTool } =
+    useOptimisticAgentTools(agentId);
+  const { mutateAsync: attachToolToAgent } = useAgentsServiceAttachTool();
 
   const [isPending, setIsPending] = useState(false);
-  const queryClient = useQueryClient();
 
   const handleAddTool = useCallback(async () => {
+    let toolToRollback: {
+      id: string;
+      name: string;
+      tool_type: ToolType;
+    } | null = null;
+
     try {
       setIsPending(true);
 
-      let toolIdToAdd = '';
-
-      const addComposioId = await addComposioTool({
+      const composioTool = await addComposioTool({
         composioActionName: idToAttach,
       });
 
-      toolIdToAdd = addComposioId.id || '';
+      const toolIdToAdd = composioTool.id || '';
+
+      if (toolIdToAdd && composioTool.name && composioTool.tool_type) {
+        toolToRollback = {
+          id: toolIdToAdd,
+          name: composioTool.name,
+          tool_type: composioTool.tool_type,
+        };
+        addOptimisticTool(toolToRollback);
+      }
 
       const response = await attachToolToAgent({
         agentId,
         toolId: toolIdToAdd,
       });
-      toast.success(t('AttachComposioTool.success'));
-      queryClient.setQueriesData<AgentState | undefined>(
-        {
-          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-            agentId: agentId,
-          }),
-        },
-        (oldData) => {
-          if (!oldData) {
-            return oldData;
-          }
-
-          return {
-            ...oldData,
-            tools: response.tools,
-          };
-        },
-      );
+      updateAgentTools(response);
     } catch (e) {
+      if (toolToRollback) {
+        removeOptimisticTool(toolToRollback.id);
+      }
+
       let errorMessage = t('AttachComposioTool.GenericSDKError');
       const errorCode = get(e, 'body.detail.code') || '';
 
@@ -105,7 +102,16 @@ function AttachComposioTool(props: AttachComposioToolProps) {
     } finally {
       setIsPending(false);
     }
-  }, [addComposioTool, agentId, attachToolToAgent, queryClient, t, idToAttach]);
+  }, [
+    addComposioTool,
+    agentId,
+    attachToolToAgent,
+    updateAgentTools,
+    addOptimisticTool,
+    removeOptimisticTool,
+    t,
+    idToAttach,
+  ]);
 
   return (
     <Button
@@ -128,54 +134,58 @@ function AttachMCPTool(props: AttachMCPToolProps) {
   const [mcpServerName, mcpToolName] = idToAttach.split(':');
   const t = useTranslations('ToolActionsHeader');
   const { mutateAsync: addMCPTool } = useToolsServiceAddMcpTool();
-  const { mutateAsync: attachToolToAgent } = useAgentsServiceAttachTool({
-    onError: () => {
-      toast.error(t('AttachMCPTool.error'));
-    },
-    onSuccess: () => {
-      toast.success(t('AttachMCPTool.success'));
-    },
-  });
-
   const { id: agentId } = useCurrentAgent();
-
-  const queryClient = useQueryClient();
+  const { addOptimisticTool, updateAgentTools, removeOptimisticTool } =
+    useOptimisticAgentTools(agentId);
+  const { mutateAsync: attachToolToAgent } = useAgentsServiceAttachTool();
 
   const handleAttach = useCallback(async () => {
-    const toolIdToAdd = await addMCPTool({
-      mcpServerName,
-      mcpToolName,
-    });
+    let toolToRollback: {
+      id: string;
+      name: string;
+      tool_type: ToolType;
+    } | null = null;
 
-    const response = await attachToolToAgent({
-      agentId,
-      toolId: toolIdToAdd.id || '',
-    });
+    try {
+      const mcpTool = await addMCPTool({
+        mcpServerName,
+        mcpToolName,
+      });
 
-    queryClient.setQueriesData<AgentState | undefined>(
-      {
-        queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-          agentId: agentId,
-        }),
-      },
-      (oldData) => {
-        if (!oldData) {
-          return oldData;
-        }
+      const toolIdToAdd = mcpTool.id || '';
 
-        return {
-          ...oldData,
-          tools: response.tools,
+      if (toolIdToAdd && mcpTool.name && mcpTool.tool_type) {
+        toolToRollback = {
+          id: toolIdToAdd,
+          name: mcpTool.name,
+          tool_type: mcpTool.tool_type,
         };
-      },
-    );
+        addOptimisticTool(toolToRollback);
+      }
+
+      const response = await attachToolToAgent({
+        agentId,
+        toolId: toolIdToAdd,
+      });
+
+      updateAgentTools(response);
+    } catch (_e) {
+      if (toolToRollback) {
+        removeOptimisticTool(toolToRollback.id);
+      }
+
+      toast.error(t('AttachMCPTool.error'));
+    }
   }, [
     addMCPTool,
     agentId,
     attachToolToAgent,
-    queryClient,
+    updateAgentTools,
+    addOptimisticTool,
+    removeOptimisticTool,
     mcpServerName,
     mcpToolName,
+    t,
   ]);
 
   return (
@@ -190,37 +200,42 @@ function AttachMCPTool(props: AttachMCPToolProps) {
 
 interface AttachLocalToolProps {
   idToAttach: string;
+  toolName?: string;
 }
 
 function AttachLocalTool(props: AttachLocalToolProps) {
-  const { idToAttach } = props;
+  const { idToAttach, toolName } = props;
   const t = useTranslations('ToolActionsHeader');
-  const queryClient = useQueryClient();
+  const { id: agentId } = useCurrentAgent();
+  const { addOptimisticTool, updateAgentTools, removeOptimisticTool } =
+    useOptimisticAgentTools(agentId);
 
   const { mutate } = useAgentsServiceAttachTool({
-    onError: () => {
+    onMutate: () => {
+      addOptimisticTool({
+        id: idToAttach,
+        name: toolName || idToAttach,
+        tool_type: 'custom',
+      });
+
+      return {
+        toolToRestore: {
+          id: idToAttach,
+          name: toolName || idToAttach,
+          tool_type: 'custom' as ToolType,
+        },
+      };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.toolToRestore) {
+        removeOptimisticTool(context.toolToRestore.id);
+      }
       toast.error(t('AttachLocalTool.error'));
     },
     onSuccess: (payload) => {
-      toast.success(t('AttachLocalTool.success'));
-      queryClient.setQueriesData<AgentState | undefined>(
-        {
-          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-            agentId: payload.id,
-          }),
-        },
-        (oldData) => {
-          if (!oldData) {
-            return oldData;
-          }
-
-          return payload;
-        },
-      );
+      updateAgentTools(payload);
     },
   });
-
-  const { id: agentId } = useCurrentAgent();
 
   const handleAttach = useCallback(async () => {
     mutate({
@@ -243,10 +258,11 @@ function AttachLocalTool(props: AttachLocalToolProps) {
 interface AttachToolToAgentButtonProps {
   idToAttach: string;
   toolType: ToolType;
+  toolName?: string;
 }
 
 function AttachToolToAgentButton(props: AttachToolToAgentButtonProps) {
-  const { idToAttach, toolType } = props;
+  const { idToAttach, toolType, toolName } = props;
 
   switch (toolType) {
     case 'external_composio':
@@ -257,7 +273,7 @@ function AttachToolToAgentButton(props: AttachToolToAgentButtonProps) {
     case 'letta_memory_core':
     case 'letta_builtin':
     case 'letta_sleeptime_core':
-      return <AttachLocalTool idToAttach={idToAttach} />;
+      return <AttachLocalTool idToAttach={idToAttach} toolName={toolName} />;
 
     case 'external_mcp':
       return <AttachMCPTool idToAttach={idToAttach} />;
@@ -274,33 +290,48 @@ interface DetachToolDialogProps {
 function DetachToolDialog(props: DetachToolDialogProps) {
   const { idToDetach } = props;
   const { id: agentId } = useCurrentAgent();
+  const { removeOptimisticTool, updateAgentTools, addOptimisticTool } =
+    useOptimisticAgentTools(agentId);
+  const queryClient = useQueryClient();
 
   const t = useTranslations('ToolActionsHeader');
-
-  const queryClient = useQueryClient();
 
   const [open, setOpen] = useState(false);
 
   const { mutate, isPending } = useAgentsServiceDetachTool({
-    onError: () => {
+    onError: (_error, _variables, context) => {
+      if (context?.toolToRestore) {
+        addOptimisticTool(context.toolToRestore);
+      }
       toast.error(t('DetachToolDialog.error'));
     },
-    onSuccess: (payload) => {
-      queryClient.setQueriesData<AgentState | undefined>(
-        {
-          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-            agentId: agentId,
-          }),
-        },
-        (oldData) => {
-          if (!oldData) {
-            return oldData;
-          }
-
-          return payload;
-        },
+    onMutate: () => {
+      const currentAgentState = queryClient.getQueryData<AgentState>(
+        UseAgentsServiceRetrieveAgentKeyFn({
+          agentId,
+        }),
       );
 
+      const toolToRestore = currentAgentState?.tools?.find(
+        (tool) => tool.id === idToDetach,
+      );
+
+      removeOptimisticTool(idToDetach);
+
+      if (toolToRestore?.id && toolToRestore.name && toolToRestore.tool_type) {
+        return {
+          toolToRestore: {
+            id: toolToRestore.id,
+            name: toolToRestore.name,
+            tool_type: toolToRestore.tool_type,
+          },
+        };
+      }
+
+      return {};
+    },
+    onSuccess: (payload) => {
+      updateAgentTools(payload);
       setOpen(false);
     },
   });
@@ -337,10 +368,11 @@ interface AttachDetachButtonProps {
   idToAttach: string;
   attachedId?: string;
   toolType: ToolType;
+  toolName?: string;
 }
 
 export function AttachDetachButton(props: AttachDetachButtonProps) {
-  const { idToAttach, toolType, attachedId } = props;
+  const { idToAttach, toolType, attachedId, toolName } = props;
 
   const { agentId } = useCurrentAgentMetaData();
 
@@ -353,7 +385,11 @@ export function AttachDetachButton(props: AttachDetachButtonProps) {
       {attachedId ? (
         <DetachToolDialog idToDetach={attachedId} />
       ) : (
-        <AttachToolToAgentButton toolType={toolType} idToAttach={idToAttach} />
+        <AttachToolToAgentButton
+          toolType={toolType}
+          idToAttach={idToAttach}
+          toolName={toolName}
+        />
       )}
     </HStack>
   );

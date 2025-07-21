@@ -54,6 +54,7 @@ export function ToolActionsHeader(props: ToolActionsHeaderProps) {
           toolType={type}
           idToAttach={idToAttach}
           attachedId={attachedId}
+          toolName={name}
         />
         {actions}
       </HStack>

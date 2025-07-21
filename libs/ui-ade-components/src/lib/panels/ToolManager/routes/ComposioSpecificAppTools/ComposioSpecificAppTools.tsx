@@ -93,6 +93,7 @@ function ActionsList(props: ActionsListProps) {
                 idToAttach={tool.name}
                 attachedId={getAttachedTool(tool.name)?.id}
                 toolType="external_composio"
+                toolName={tool.name}
               />
             </HStack>
             <Typography fullWidth>{tool.description}</Typography>

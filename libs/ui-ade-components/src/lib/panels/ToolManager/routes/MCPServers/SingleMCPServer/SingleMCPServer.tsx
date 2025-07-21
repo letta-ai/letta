@@ -165,6 +165,7 @@ function ServerToolsList(props: ServerToolsListProps) {
               attachedId={getAttachedId(tool.name) || undefined}
               toolType="external_mcp"
               idToAttach={`${serverName}:${tool.name}`}
+              toolName={tool.name}
             />
           </HStack>
           {tool.description && (
