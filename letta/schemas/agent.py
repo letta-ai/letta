@@ -78,8 +78,6 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
 
     # This is an object representing the in-process state of a running `Agent`
     # Field in this object can be theoretically edited by tools, and will be persisted by the ORM
-    organization_id: Optional[str] = Field(None, description="The unique identifier of the organization associated with the agent.")
-
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
 
@@ -309,7 +307,6 @@ class AgentStepResponse(BaseModel):
 
 
 def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
-
     # Workflow agents and ReAct agents don't use memory blocks
     # However, they still allow files to be injected into the context
     if agent_type == AgentType.react_agent or agent_type == AgentType.workflow_agent:

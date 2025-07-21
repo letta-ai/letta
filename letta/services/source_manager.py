@@ -1,7 +1,7 @@
 import asyncio
 from typing import List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import and_, exists, select
 
 from letta.orm import Agent as AgentModel
 from letta.orm.errors import NoResultFound
@@ -18,6 +18,30 @@ from letta.utils import enforce_types, printd
 
 class SourceManager:
     """Manager class to handle business logic related to Sources."""
+
+    @trace_method
+    async def _validate_source_exists_async(self, session, source_id: str, actor: PydanticUser) -> None:
+        """
+        Validate that a source exists and user has access to it using raw SQL for efficiency.
+
+        Args:
+            session: Database session
+            source_id: ID of the source to validate
+            actor: User performing the action
+
+        Raises:
+            NoResultFound: If source doesn't exist or user doesn't have access
+        """
+        source_exists_query = select(
+            exists().where(
+                and_(SourceModel.id == source_id, SourceModel.organization_id == actor.organization_id, SourceModel.is_deleted == False)
+            )
+        )
+
+        result = await session.execute(source_exists_query)
+
+        if not result.scalar():
+            raise NoResultFound(f"Source with ID {source_id} not found")
 
     @enforce_types
     @trace_method
@@ -93,20 +117,20 @@ class SourceManager:
 
     @enforce_types
     @trace_method
-    async def list_attached_agents(self, source_id: str, actor: Optional[PydanticUser] = None) -> List[PydanticAgentState]:
+    async def list_attached_agents(self, source_id: str, actor: PydanticUser) -> List[PydanticAgentState]:
         """
         Lists all agents that have the specified source attached.
 
         Args:
             source_id: ID of the source to find attached agents for
-            actor: User performing the action (optional for now, following existing pattern)
+            actor: User performing the action
 
         Returns:
             List[PydanticAgentState]: List of agents that have this source attached
         """
         async with db_registry.async_session() as session:
             # Verify source exists and user has permission to access it
-            source = await SourceModel.read_async(db_session=session, identifier=source_id, actor=actor)
+            await self._validate_source_exists_async(session, source_id, actor)
 
             # Use junction table query instead of relationship to avoid performance issues
             query = (
@@ -114,7 +138,7 @@ class SourceManager:
                 .join(SourcesAgents, AgentModel.id == SourcesAgents.agent_id)
                 .where(
                     SourcesAgents.source_id == source_id,
-                    AgentModel.organization_id == actor.organization_id if actor else True,
+                    AgentModel.organization_id == actor.organization_id,
                     AgentModel.is_deleted == False,
                 )
                 .order_by(AgentModel.created_at.desc(), AgentModel.id)
@@ -124,6 +148,31 @@ class SourceManager:
             agents_orm = result.scalars().all()
 
             return await asyncio.gather(*[agent.to_pydantic_async() for agent in agents_orm])
+
+    @enforce_types
+    @trace_method
+    async def get_agents_for_source_id(self, source_id: str, actor: PydanticUser) -> List[str]:
+        """
+        Get all agent IDs associated with a given source ID.
+
+        Args:
+            source_id: ID of the source to find agents for
+            actor: User performing the action
+
+        Returns:
+            List[str]: List of agent IDs that have this source attached
+        """
+        async with db_registry.async_session() as session:
+            # Verify source exists and user has permission to access it
+            await self._validate_source_exists_async(session, source_id, actor)
+
+            # Query the junction table directly for performance
+            query = select(SourcesAgents.agent_id).where(SourcesAgents.source_id == source_id)
+
+            result = await session.execute(query)
+            agent_ids = result.scalars().all()
+
+            return list(agent_ids)
 
     # TODO: We make actor optional for now, but should most likely be enforced due to security reasons
     @enforce_types
@@ -152,3 +201,63 @@ class SourceManager:
                 return None
             else:
                 return sources[0].to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def get_sources_by_ids_async(self, source_ids: List[str], actor: PydanticUser) -> List[PydanticSource]:
+        """
+        Get multiple sources by their IDs in a single query.
+
+        Args:
+            source_ids: List of source IDs to retrieve
+            actor: User performing the action
+
+        Returns:
+            List[PydanticSource]: List of sources (may be fewer than requested if some don't exist)
+        """
+        if not source_ids:
+            return []
+
+        async with db_registry.async_session() as session:
+            query = select(SourceModel).where(
+                SourceModel.id.in_(source_ids), SourceModel.organization_id == actor.organization_id, SourceModel.is_deleted == False
+            )
+
+            result = await session.execute(query)
+            sources_orm = result.scalars().all()
+
+            return [source.to_pydantic() for source in sources_orm]
+
+    @enforce_types
+    @trace_method
+    async def get_sources_for_agents_async(self, agent_ids: List[str], actor: PydanticUser) -> List[PydanticSource]:
+        """
+        Get all sources associated with the given agents via sources-agents relationships.
+
+        Args:
+            agent_ids: List of agent IDs to find sources for
+            actor: User performing the action
+
+        Returns:
+            List[PydanticSource]: List of unique sources associated with these agents
+        """
+        if not agent_ids:
+            return []
+
+        async with db_registry.async_session() as session:
+            # Join through sources-agents junction table
+            query = (
+                select(SourceModel)
+                .join(SourcesAgents, SourceModel.id == SourcesAgents.source_id)
+                .where(
+                    SourcesAgents.agent_id.in_(agent_ids),
+                    SourceModel.organization_id == actor.organization_id,
+                    SourceModel.is_deleted == False,
+                )
+                .distinct()  # Ensure we don't get duplicate sources
+            )
+
+            result = await session.execute(query)
+            sources_orm = result.scalars().all()
+
+            return [source.to_pydantic() for source in sources_orm]

@@ -1,4 +1,5 @@
 import os
+from enum import Enum
 from pathlib import Path
 from typing import Optional
 
@@ -182,6 +183,11 @@ if "--use-file-pg-uri" in sys.argv:
         pass
 
 
+class DatabaseChoice(str, Enum):
+    POSTGRES = "postgres"
+    SQLITE = "sqlite"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="letta_", extra="ignore")
 
@@ -220,21 +226,24 @@ class Settings(BaseSettings):
     multi_agent_concurrent_sends: int = 50
 
     # telemetry logging
-    otel_exporter_otlp_endpoint: Optional[str] = None  # otel default: "http://localhost:4317"
-    otel_preferred_temporality: Optional[int] = Field(
+    otel_exporter_otlp_endpoint: str | None = None  # otel default: "http://localhost:4317"
+    otel_preferred_temporality: int | None = Field(
         default=1, ge=0, le=2, description="Exported metric temporality. {0: UNSPECIFIED, 1: DELTA, 2: CUMULATIVE}"
     )
     disable_tracing: bool = Field(default=False, description="Disable OTEL Tracing")
     llm_api_logging: bool = Field(default=True, description="Enable LLM API logging at each step")
     track_last_agent_run: bool = Field(default=False, description="Update last agent run metrics")
+    track_errored_messages: bool = Field(default=True, description="Enable tracking for errored messages")
+    track_stop_reason: bool = Field(default=True, description="Enable tracking stop reason on steps.")
+    track_agent_run: bool = Field(default=True, description="Enable tracking agent run with cancellation support")
 
-    # uvicorn settings
+    # FastAPI Application Settings
     uvicorn_workers: int = 1
     uvicorn_reload: bool = False
     uvicorn_timeout_keep_alive: int = 5
 
-    use_uvloop: bool = False
-    use_granian: bool = False
+    use_uvloop: bool = Field(default=True, description="Enable uvloop as asyncio event loop.")
+    use_granian: bool = Field(default=False, description="Use Granian for workers")
     sqlalchemy_tracing: bool = False
 
     # event loop parallelism
@@ -243,6 +252,10 @@ class Settings(BaseSettings):
     # experimental toggle
     use_experimental: bool = False
     use_vertex_structured_outputs_experimental: bool = False
+
+    # Database pool monitoring
+    enable_db_pool_monitoring: bool = True  # Enable connection pool monitoring
+    db_pool_monitoring_interval: int = 30  # Seconds between pool stats collection
 
     # cron job parameters
     enable_batch_job_polling: bool = False
@@ -272,7 +285,7 @@ class Settings(BaseSettings):
         elif self.pg_db and self.pg_user and self.pg_password and self.pg_host and self.pg_port:
             return f"postgresql+pg8000://{self.pg_user}:{self.pg_password}@{self.pg_host}:{self.pg_port}/{self.pg_db}"
         else:
-            return f"postgresql+pg8000://letta:letta@localhost:5432/letta"
+            return "postgresql+pg8000://letta:letta@localhost:5432/letta"
 
     # add this property to avoid being returned the default
     # reference: https://github.com/letta-ai/letta/issues/1362
@@ -284,6 +297,10 @@ class Settings(BaseSettings):
             return f"postgresql+pg8000://{self.pg_user}:{self.pg_password}@{self.pg_host}:{self.pg_port}/{self.pg_db}"
         else:
             return None
+
+    @property
+    def database_engine(self) -> DatabaseChoice:
+        return DatabaseChoice.POSTGRES if self.letta_pg_uri_no_default else DatabaseChoice.SQLITE
 
     @property
     def plugin_register_dict(self) -> dict:

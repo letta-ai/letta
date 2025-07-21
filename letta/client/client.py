@@ -568,8 +568,8 @@ class RESTClient(AbstractClient):
             tool_names += BASE_MEMORY_TOOLS
         tool_ids += [self.get_tool_id(tool_name=name) for name in tool_names]
 
-        assert embedding_config or self._default_embedding_config, f"Embedding config must be provided"
-        assert llm_config or self._default_llm_config, f"LLM config must be provided"
+        assert embedding_config or self._default_embedding_config, "Embedding config must be provided"
+        assert llm_config or self._default_llm_config, "LLM config must be provided"
 
         # TODO: This should not happen here, we need to have clear separation between create/add blocks
         # TODO: This is insanely hacky and a result of allowing free-floating blocks
@@ -1392,7 +1392,7 @@ class RESTClient(AbstractClient):
         Returns:
             source (Source): Created source
         """
-        assert embedding_config or self._default_embedding_config, f"Must specify embedding_config for source"
+        assert embedding_config or self._default_embedding_config, "Must specify embedding_config for source"
         source_create = SourceCreate(name=name, embedding_config=embedding_config or self._default_embedding_config)
         payload = source_create.model_dump()
         response = requests.post(f"{self.base_url}/{self.api_prefix}/sources", json=payload, headers=self.headers)

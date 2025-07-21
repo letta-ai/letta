@@ -55,11 +55,11 @@ class Block(OrganizationMixin, SqlalchemyBase):
     __mapper_args__ = {"version_id_col": version}
 
     # relationships
-    organization: Mapped[Optional["Organization"]] = relationship("Organization")
+    organization: Mapped[Optional["Organization"]] = relationship("Organization", lazy="raise")
     agents: Mapped[List["Agent"]] = relationship(
         "Agent",
         secondary="blocks_agents",
-        lazy="selectin",
+        lazy="raise",
         passive_deletes=True,  # Ensures SQLAlchemy doesn't fetch blocks_agents rows before deleting
         back_populates="core_memory",
         doc="Agents associated with this block.",
@@ -67,14 +67,14 @@ class Block(OrganizationMixin, SqlalchemyBase):
     identities: Mapped[List["Identity"]] = relationship(
         "Identity",
         secondary="identities_blocks",
-        lazy="selectin",
+        lazy="raise",
         back_populates="blocks",
         passive_deletes=True,
     )
     groups: Mapped[List["Group"]] = relationship(
         "Group",
         secondary="groups_blocks",
-        lazy="selectin",
+        lazy="raise",
         back_populates="shared_blocks",
         passive_deletes=True,
     )

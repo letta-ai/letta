@@ -20,7 +20,6 @@ from letta.services.message_manager import MessageManager
 
 
 class SleeptimeMultiAgent(Agent):
-
     def __init__(
         self,
         interface: AgentInterface,

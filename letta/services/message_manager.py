@@ -17,6 +17,8 @@ from letta.schemas.message import MessageUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.file_manager import FileManager
+from letta.services.helpers.agent_manager_helper import validate_agent_exists_async
+from letta.settings import DatabaseChoice, settings
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -86,8 +88,8 @@ class MessageManager:
         """Create a new message."""
         with db_registry.session() as session:
             # Set the organization id of the Pydantic message
-            pydantic_msg.organization_id = actor.organization_id
             msg_data = pydantic_msg.model_dump(to_orm=True)
+            msg_data["organization_id"] = actor.organization_id
             msg = MessageModel(**msg_data)
             msg.create(session, actor=actor)  # Persist to database
             return msg.to_pydantic()
@@ -97,8 +99,8 @@ class MessageManager:
         orm_messages = []
         for pydantic_msg in pydantic_msgs:
             # Set the organization id of the Pydantic message
-            pydantic_msg.organization_id = actor.organization_id
             msg_data = pydantic_msg.model_dump(to_orm=True)
+            msg_data["organization_id"] = actor.organization_id
             orm_messages.append(MessageModel(**msg_data))
         return orm_messages
 
@@ -165,8 +167,10 @@ class MessageManager:
                         )
         orm_messages = self._create_many_preprocess(pydantic_msgs, actor)
         async with db_registry.async_session() as session:
-            created_messages = await MessageModel.batch_create_async(orm_messages, session, actor=actor)
-            return [msg.to_pydantic() for msg in created_messages]
+            created_messages = await MessageModel.batch_create_async(orm_messages, session, actor=actor, no_commit=True, no_refresh=True)
+            result = [msg.to_pydantic() for msg in created_messages]
+            await session.commit()
+            return result
 
     @enforce_types
     @trace_method
@@ -280,8 +284,10 @@ class MessageManager:
             )
 
             message = self._update_message_by_id_impl(message_id, message_update, actor, message)
-            await message.update_async(db_session=session, actor=actor)
-            return message.to_pydantic()
+            await message.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
+            pydantic_message = message.to_pydantic()
+            await session.commit()
+            return pydantic_message
 
     def _update_message_by_id_impl(
         self, message_id: str, message_update: MessageUpdate, actor: PydanticUser, message: MessageModel
@@ -453,17 +459,23 @@ class MessageManager:
             if group_id:
                 query = query.filter(MessageModel.group_id == group_id)
 
-            # If query_text is provided, filter messages using subquery + json_array_elements.
+            # If query_text is provided, filter messages using database-specific JSON search.
             if query_text:
-                content_element = func.json_array_elements(MessageModel.content).alias("content_element")
-                query = query.filter(
-                    exists(
-                        select(1)
-                        .select_from(content_element)
-                        .where(text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text"))
-                        .params(query_text=f"%{query_text}%")
+                if settings.database_engine is DatabaseChoice.POSTGRES:
+                    # PostgreSQL: Use json_array_elements and ILIKE
+                    content_element = func.json_array_elements(MessageModel.content).alias("content_element")
+                    query = query.filter(
+                        exists(
+                            select(1)
+                            .select_from(content_element)
+                            .where(text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text"))
+                            .params(query_text=f"%{query_text}%")
+                        )
                     )
-                )
+                else:
+                    # SQLite: Use JSON_EXTRACT with individual array indices for case-insensitive search
+                    # Since SQLite doesn't support $[*] syntax, we'll use a different approach
+                    query = query.filter(text("JSON_EXTRACT(content, '$') LIKE :query_text")).params(query_text=f"%{query_text}%")
 
             # If role(s) are provided, filter messages by those roles.
             if roles:
@@ -512,6 +524,7 @@ class MessageManager:
         limit: Optional[int] = 50,
         ascending: bool = True,
         group_id: Optional[str] = None,
+        include_err: Optional[bool] = None,
     ) -> List[PydanticMessage]:
         """
         Most performant query to list messages for an agent by directly querying the Message table.
@@ -531,6 +544,7 @@ class MessageManager:
             limit: Maximum number of messages to return.
             ascending: If True, sort by sequence_id ascending; if False, sort descending.
             group_id: Optional group ID to filter messages by group_id.
+            include_err: Optional boolean to include errors and error statuses. Used for debugging only.
 
         Returns:
             List[PydanticMessage]: A list of messages (converted via .to_pydantic()).
@@ -541,7 +555,7 @@ class MessageManager:
 
         async with db_registry.async_session() as session:
             # Permission check: raise if the agent doesn't exist or actor is not allowed.
-            await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            await validate_agent_exists_async(session, agent_id, actor)
 
             # Build a query that directly filters the Message table by agent_id.
             query = select(MessageModel).where(MessageModel.agent_id == agent_id)
@@ -550,17 +564,26 @@ class MessageManager:
             if group_id:
                 query = query.where(MessageModel.group_id == group_id)
 
-            # If query_text is provided, filter messages using subquery + json_array_elements.
+            if not include_err:
+                query = query.where((MessageModel.is_err == False) | (MessageModel.is_err.is_(None)))
+
+            # If query_text is provided, filter messages using database-specific JSON search.
             if query_text:
-                content_element = func.json_array_elements(MessageModel.content).alias("content_element")
-                query = query.where(
-                    exists(
-                        select(1)
-                        .select_from(content_element)
-                        .where(text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text"))
-                        .params(query_text=f"%{query_text}%")
+                if settings.database_engine is DatabaseChoice.POSTGRES:
+                    # PostgreSQL: Use json_array_elements and ILIKE
+                    content_element = func.json_array_elements(MessageModel.content).alias("content_element")
+                    query = query.where(
+                        exists(
+                            select(1)
+                            .select_from(content_element)
+                            .where(text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text"))
+                            .params(query_text=f"%{query_text}%")
+                        )
                     )
-                )
+                else:
+                    # SQLite: Use JSON_EXTRACT with individual array indices for case-insensitive search
+                    # Since SQLite doesn't support $[*] syntax, we'll use a different approach
+                    query = query.where(text("JSON_EXTRACT(content, '$') LIKE :query_text")).params(query_text=f"%{query_text}%")
 
             # If role(s) are provided, filter messages by those roles.
             if roles:
@@ -611,7 +634,7 @@ class MessageManager:
         """
         async with db_registry.async_session() as session:
             # 1) verify the agent exists and the actor has access
-            await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            await validate_agent_exists_async(session, agent_id, actor)
 
             # 2) issue a CORE DELETE against the mapped class
             stmt = (

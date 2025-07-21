@@ -20,11 +20,12 @@ from letta.helpers.composio_helpers import get_composio_api_key
 from letta.log import get_logger
 from letta.orm.errors import UniqueConstraintViolationError
 from letta.schemas.letta_message import ToolReturnMessage
-from letta.schemas.mcp import UpdateSSEMCPServer, UpdateStreamableHTTPMCPServer
+from letta.schemas.mcp import UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer
 from letta.schemas.tool import Tool, ToolCreate, ToolRunFromSource, ToolUpdate
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 from letta.services.mcp.sse_client import AsyncSSEMCPClient
+from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.mcp.streamable_http_client import AsyncStreamableHTTPMCPClient
 from letta.settings import tool_settings
 
@@ -136,7 +137,7 @@ async def create_tool(
     except UniqueConstraintViolationError as e:
         # Log or print the full exception here for debugging
         print(f"Error occurred: {e}")
-        clean_error_message = f"Tool with this name already exists."
+        clean_error_message = "Tool with this name already exists."
         raise HTTPException(status_code=409, detail=clean_error_message)
     except LettaToolCreateError as e:
         # HTTP 400 == Bad Request
@@ -234,6 +235,7 @@ async def run_tool_from_source(
             tool_name=request.name,
             tool_args_json_schema=request.args_json_schema,
             tool_json_schema=request.json_schema,
+            pip_requirements=request.pip_requirements,
             actor=actor,
         )
     except LettaToolCreateError as e:
@@ -262,7 +264,7 @@ def list_composio_apps(server: SyncServer = Depends(get_letta_server), user_id: 
     if not composio_api_key:
         raise HTTPException(
             status_code=400,  # Bad Request
-            detail=f"No API keys found for Composio. Please add your Composio API Key as an environment variable for your sandbox configuration, or set it as environment variable COMPOSIO_API_KEY.",
+            detail="No API keys found for Composio. Please add your Composio API Key as an environment variable for your sandbox configuration, or set it as environment variable COMPOSIO_API_KEY.",
         )
     return server.get_composio_apps(api_key=composio_api_key)
 
@@ -281,7 +283,7 @@ def list_composio_actions_by_app(
     if not composio_api_key:
         raise HTTPException(
             status_code=400,  # Bad Request
-            detail=f"No API keys found for Composio. Please add your Composio API Key as an environment variable for your sandbox configuration, or set it as environment variable COMPOSIO_API_KEY.",
+            detail="No API keys found for Composio. Please add your Composio API Key as an environment variable for your sandbox configuration, or set it as environment variable COMPOSIO_API_KEY.",
         )
     return server.get_composio_actions_from_app_name(composio_app_name=composio_app_name, api_key=composio_api_key)
 
@@ -444,7 +446,6 @@ async def add_mcp_tool(
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     if tool_settings.mcp_read_from_config:
-
         try:
             available_tools = await server.get_tools_from_mcp_server(mcp_server_name=mcp_server_name)
         except ValueError as e:
@@ -565,7 +566,7 @@ async def add_mcp_server_to_config(
 )
 async def update_mcp_server(
     mcp_server_name: str,
-    request: Union[UpdateSSEMCPServer, UpdateStreamableHTTPMCPServer] = Body(...),
+    request: Union[UpdateStdioMCPServer, UpdateSSEMCPServer, UpdateStreamableHTTPMCPServer] = Body(...),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
@@ -627,12 +628,6 @@ async def test_mcp_server(
     """
     client = None
     try:
-        if isinstance(request, StdioServerConfig):
-            raise HTTPException(
-                status_code=400,
-                detail="stdio is not supported currently for testing connection",
-            )
-
         # create a temporary MCP client based on the server type
         if request.type == MCPServerType.SSE:
             if not isinstance(request, SSEServerConfig):
@@ -642,6 +637,10 @@ async def test_mcp_server(
             if not isinstance(request, StreamableHTTPServerConfig):
                 request = StreamableHTTPServerConfig(**request.model_dump())
             client = AsyncStreamableHTTPMCPClient(request)
+        elif request.type == MCPServerType.STDIO:
+            if not isinstance(request, StdioServerConfig):
+                request = StdioServerConfig(**request.model_dump())
+            client = AsyncStdioMCPClient(request)
         else:
             raise ValueError(f"Invalid MCP server type: {request.type}")
 

@@ -1536,6 +1536,26 @@ class BedrockProvider(Provider):
     provider_category: ProviderCategory = Field(ProviderCategory.base, description="The category of the provider (base or byok)")
     region: str = Field(..., description="AWS region for Bedrock")
 
+    def check_api_key(self):
+        """Check if the Bedrock credentials are valid"""
+        from letta.errors import LLMAuthenticationError
+        from letta.llm_api.aws_bedrock import bedrock_get_model_list
+
+        try:
+            # For BYOK providers, use the custom credentials
+            if self.provider_category == ProviderCategory.byok:
+                # If we can list models, the credentials are valid
+                bedrock_get_model_list(
+                    region_name=self.region,
+                    access_key_id=self.access_key,
+                    secret_access_key=self.api_key,  # api_key stores the secret access key
+                )
+            else:
+                # For base providers, use default credentials
+                bedrock_get_model_list(region_name=self.region)
+        except Exception as e:
+            raise LLMAuthenticationError(message=f"Failed to authenticate with Bedrock: {e}")
+
     def list_llm_models(self):
         from letta.llm_api.aws_bedrock import bedrock_get_model_list
 

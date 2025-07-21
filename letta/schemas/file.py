@@ -22,12 +22,7 @@ class FileMetadataBase(LettaBase):
 
     __id_prefix__ = "file"
 
-
-class FileMetadata(FileMetadataBase):
-    """Representation of a single FileMetadata"""
-
-    id: str = FileMetadataBase.generate_id_field()
-    organization_id: Optional[str] = Field(None, description="The unique identifier of the organization associated with the document.")
+    # Core file metadata fields
     source_id: str = Field(..., description="The unique identifier of the source associated with the document.")
     file_name: Optional[str] = Field(None, description="The name of the file.")
     original_file_name: Optional[str] = Field(None, description="The original name of the file as uploaded.")
@@ -43,13 +38,6 @@ class FileMetadata(FileMetadataBase):
     error_message: Optional[str] = Field(default=None, description="Optional error message if the file failed processing.")
     total_chunks: Optional[int] = Field(default=None, description="Total number of chunks for the file.")
     chunks_embedded: Optional[int] = Field(default=None, description="Number of chunks that have been embedded.")
-
-    # orm metadata, optional fields
-    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow, description="The creation date of the file.")
-    updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow, description="The update date of the file.")
-    is_deleted: bool = Field(False, description="Whether this file is deleted or not.")
-
-    # This is optional, and only occasionally pulled in since it can be very large
     content: Optional[str] = Field(
         default=None, description="Optional full-text content of the file; only populated on demand due to its size."
     )
@@ -59,10 +47,37 @@ class FileMetadata(FileMetadataBase):
         return self.processing_status in (FileProcessingStatus.COMPLETED, FileProcessingStatus.ERROR)
 
 
+class FileMetadata(FileMetadataBase):
+    """Representation of a single FileMetadata"""
+
+    id: str = FileMetadataBase.generate_id_field()
+    organization_id: Optional[str] = Field(None, description="The unique identifier of the organization associated with the document.")
+
+    # orm metadata, optional fields
+    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow, description="The creation date of the file.")
+    updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow, description="The update date of the file.")
+    is_deleted: bool = Field(False, description="Whether this file is deleted or not.")
+
+
 class FileAgentBase(LettaBase):
     """Base class for the FileMetadata-⇄-Agent association schemas"""
 
     __id_prefix__ = "file_agent"
+
+    # Core file-agent association fields
+    agent_id: str = Field(..., description="Unique identifier of the agent.")
+    file_id: str = Field(..., description="Unique identifier of the file.")
+    source_id: str = Field(..., description="Unique identifier of the source (denormalized from files.source_id).")
+    file_name: str = Field(..., description="Name of the file.")
+    is_open: bool = Field(True, description="True if the agent currently has the file open.")
+    visible_content: Optional[str] = Field(
+        None,
+        description="Portion of the file the agent is focused on (may be large).",
+    )
+    last_accessed_at: Optional[datetime] = Field(
+        default_factory=datetime.utcnow,
+        description="UTC timestamp of the agent’s most recent access to this file.",
+    )
 
 
 class FileAgent(FileAgentBase):
@@ -82,19 +97,6 @@ class FileAgent(FileAgentBase):
     organization_id: Optional[str] = Field(
         None,
         description="Org ID this association belongs to (inherited from both agent and file).",
-    )
-    agent_id: str = Field(..., description="Unique identifier of the agent.")
-    file_id: str = Field(..., description="Unique identifier of the file.")
-    source_id: str = Field(..., description="Unique identifier of the source (denormalized from files.source_id).")
-    file_name: str = Field(..., description="Name of the file.")
-    is_open: bool = Field(True, description="True if the agent currently has the file open.")
-    visible_content: Optional[str] = Field(
-        None,
-        description="Portion of the file the agent is focused on (may be large).",
-    )
-    last_accessed_at: Optional[datetime] = Field(
-        default_factory=datetime.utcnow,
-        description="UTC timestamp of the agent’s most recent access to this file.",
     )
 
     created_at: Optional[datetime] = Field(

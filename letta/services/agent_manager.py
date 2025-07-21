@@ -28,7 +28,7 @@ from letta.orm import AgentPassage, AgentsTags
 from letta.orm import Block as BlockModel
 from letta.orm import BlocksAgents
 from letta.orm import Group as GroupModel
-from letta.orm import IdentitiesAgents
+from letta.orm import GroupsAgents, IdentitiesAgents
 from letta.orm import Source as SourceModel
 from letta.orm import SourcePassage, SourcesAgents
 from letta.orm import Tool as ToolModel
@@ -71,6 +71,7 @@ from letta.services.helpers.agent_manager_helper import (
     _apply_identity_filters,
     _apply_pagination,
     _apply_pagination_async,
+    _apply_relationship_filters,
     _apply_tag_filter,
     _process_relationship,
     _process_relationship_async,
@@ -84,12 +85,14 @@ from letta.services.helpers.agent_manager_helper import (
     derive_system_message,
     initialize_message_sequence,
     package_initial_message_sequence,
+    validate_agent_exists_async,
 )
 from letta.services.identity_manager import IdentityManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
+from letta.settings import DatabaseChoice, settings
 from letta.utils import enforce_types, united_diff
 
 logger = get_logger(__name__)
@@ -448,7 +451,11 @@ class AgentManager:
 
     @trace_method
     async def create_agent_async(
-        self, agent_create: CreateAgent, actor: PydanticUser, _test_only_force_id: Optional[str] = None
+        self,
+        agent_create: CreateAgent,
+        actor: PydanticUser,
+        _test_only_force_id: Optional[str] = None,
+        _init_with_no_messages: bool = False,
     ) -> PydanticAgentState:
         # validate required configs
         if not agent_create.llm_config or not agent_create.embedding_config:
@@ -616,20 +623,36 @@ class AgentManager:
                     ]
                     await session.execute(insert(AgentEnvironmentVariable).values(env_rows))
 
-                # initial message sequence
-                agent_state = await new_agent.to_pydantic_async(include_relationships={"memory"})
-                init_messages = self._generate_initial_message_sequence(
-                    actor,
-                    agent_state=agent_state,
-                    supplied_initial_message_sequence=agent_create.initial_message_sequence,
-                )
-                new_agent.message_ids = [msg.id for msg in init_messages]
+                include_relationships = []
+                if tool_ids:
+                    include_relationships.append("tools")
+                if source_ids:
+                    include_relationships.append("sources")
+                if block_ids:
+                    include_relationships.append("memory")
+                if identity_ids:
+                    include_relationships.append("identity_ids")
+                if tag_values:
+                    include_relationships.append("tags")
 
-            await session.refresh(new_agent)
+                result = await new_agent.to_pydantic_async(include_relationships=include_relationships)
 
-            result = await new_agent.to_pydantic_async()
+                # initial message sequence (skip if _init_with_no_messages is True)
+                if not _init_with_no_messages:
+                    init_messages = self._generate_initial_message_sequence(
+                        actor,
+                        agent_state=result,
+                        supplied_initial_message_sequence=agent_create.initial_message_sequence,
+                    )
+                    result.message_ids = [msg.id for msg in init_messages]
+                    new_agent.message_ids = [msg.id for msg in init_messages]
+                    await new_agent.update_async(session, no_refresh=True)
+                else:
+                    init_messages = []
 
-        await self.message_manager.create_many_messages_async(pydantic_msgs=init_messages, actor=actor)
+        # Only create messages if we initialized with messages
+        if not _init_with_no_messages:
+            await self.message_manager.create_many_messages_async(pydantic_msgs=init_messages, actor=actor)
         return result
 
     @enforce_types
@@ -920,6 +943,30 @@ class AgentManager:
 
             return await agent.to_pydantic_async()
 
+    @enforce_types
+    @trace_method
+    async def update_message_ids_async(
+        self,
+        agent_id: str,
+        message_ids: List[str],
+        actor: PydanticUser,
+    ) -> None:
+        async with db_registry.async_session() as session:
+            query = select(AgentModel)
+            query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
+            query = query.where(AgentModel.id == agent_id)
+            query = _apply_relationship_filters(query, include_relationships=[])
+
+            result = await session.execute(query)
+            agent = result.scalar_one_or_none()
+
+            agent.updated_at = datetime.now(timezone.utc)
+            agent.last_updated_by_id = actor.id
+            agent.message_ids = message_ids
+
+            await agent.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
+            await session.commit()
+
     # TODO: Make this general and think about how to roll this into sqlalchemybase
     @trace_method
     def list_agents(
@@ -1019,7 +1066,8 @@ class AgentManager:
             identity_id (Optional[str]): Filter by identifier ID.
             identifier_keys (Optional[List[str]]): Search agents by identifier keys.
             include_relationships (Optional[List[str]]): List of fields to load for performance optimization.
-            ascending
+            ascending (bool): Sort agents in ascending order.
+            sort_by (Optional[str]): Sort agents by this field.
 
         Returns:
             List[PydanticAgentState]: The filtered list of matching agents.
@@ -1032,11 +1080,11 @@ class AgentManager:
             query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id)
             query = _apply_identity_filters(query, identity_id, identifier_keys)
             query = _apply_tag_filter(query, tags, match_all_tags)
+            query = _apply_relationship_filters(query, include_relationships)
             query = await _apply_pagination_async(query, before, after, session, ascending=ascending, sort_by=sort_by)
 
             if limit:
                 query = query.limit(limit)
-
             result = await session.execute(query)
             agents = result.scalars().all()
             return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
@@ -1168,10 +1216,23 @@ class AgentManager:
         include_relationships: Optional[List[str]] = None,
     ) -> PydanticAgentState:
         """Fetch an agent by its ID."""
-
         async with db_registry.async_session() as session:
-            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
-            return await agent.to_pydantic_async(include_relationships=include_relationships)
+            try:
+                query = select(AgentModel)
+                query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
+                query = query.where(AgentModel.id == agent_id)
+                query = _apply_relationship_filters(query, include_relationships)
+
+                result = await session.execute(query)
+                agent = result.scalar_one_or_none()
+
+                if agent is None:
+                    raise NoResultFound(f"Agent with ID {agent_id} not found")
+
+                return await agent.to_pydantic_async(include_relationships=include_relationships)
+            except Exception as e:
+                logger.error(f"Error fetching agent {agent_id}: {str(e)}")
+                raise
 
     @enforce_types
     @trace_method
@@ -1183,12 +1244,23 @@ class AgentManager:
     ) -> list[PydanticAgentState]:
         """Fetch a list of agents by their IDs."""
         async with db_registry.async_session() as session:
-            agents = await AgentModel.read_multiple_async(
-                db_session=session,
-                identifiers=agent_ids,
-                actor=actor,
-            )
-            return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
+            try:
+                query = select(AgentModel)
+                query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
+                query = query.where(AgentModel.id.in_(agent_ids))
+                query = _apply_relationship_filters(query, include_relationships)
+
+                result = await session.execute(query)
+                agents = result.scalars().all()
+
+                if not agents:
+                    logger.warning(f"No agents found with IDs: {agent_ids}")
+                    return []
+
+                return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
+            except Exception as e:
+                logger.error(f"Error fetching agents with IDs {agent_ids}: {str(e)}")
+                raise
 
     @enforce_types
     @trace_method
@@ -1334,6 +1406,9 @@ class AgentManager:
             schema = MarshmallowAgentSchema(session=session, actor=actor)
             agent = schema.load(serialized_agent_dict, session=session)
 
+            agent.organization_id = actor.organization_id
+            for block in agent.core_memory:
+                block.organization_id = actor.organization_id
             if append_copy_suffix:
                 agent.name += "_copy"
             if project_id:
@@ -1435,10 +1510,17 @@ class AgentManager:
     @trace_method
     def list_groups(self, agent_id: str, actor: PydanticUser, manager_type: Optional[str] = None) -> List[PydanticGroup]:
         with db_registry.session() as session:
-            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+            query = (
+                select(GroupModel)
+                .join(GroupsAgents, GroupModel.id == GroupsAgents.group_id)
+                .where(GroupsAgents.agent_id == agent_id, GroupModel.organization_id == actor.organization_id)
+            )
+
             if manager_type:
-                return [group.to_pydantic() for group in agent.groups if group.manager_type == manager_type]
-            return [group.to_pydantic() for group in agent.groups]
+                query = query.where(GroupModel.manager_type == manager_type)
+
+            result = session.execute(query)
+            return [group.to_pydantic() for group in result.scalars()]
 
     # ======================================================================================================================
     # In Context Messages Management
@@ -1559,15 +1641,9 @@ class AgentManager:
 
         Updates to the memory header should *not* trigger a rebuild, since that will simply flood recall storage with excess messages
         """
-        num_messages_task = self.message_manager.size_async(actor=actor, agent_id=agent_id)
-        num_archival_memories_task = self.passage_manager.agent_passage_size_async(actor=actor, agent_id=agent_id)
-        agent_state_task = self.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory", "sources", "tools"], actor=actor)
-
-        num_messages, num_archival_memories, agent_state = await asyncio.gather(
-            num_messages_task,
-            num_archival_memories_task,
-            agent_state_task,
-        )
+        num_messages = await self.message_manager.size_async(actor=actor, agent_id=agent_id)
+        num_archival_memories = await self.passage_manager.agent_passage_size_async(actor=actor, agent_id=agent_id)
+        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory", "sources", "tools"], actor=actor)
 
         if not tool_rules_solver:
             tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
@@ -1719,7 +1795,7 @@ class AgentManager:
                 logger.error(
                     f"Agent {agent_id} has no message_ids. Agent details: "
                     f"name={agent.name}, created_at={agent.created_at}, "
-                    f"message_ids={agent.message_ids}, organization_id={agent.organization_id}"
+                    f"message_ids={agent.message_ids}, organization_id={actor.organization_id}"
                 )
                 raise ValueError(f"Agent {agent_id} has no message_ids - cannot preserve system message")
 
@@ -1784,9 +1860,10 @@ class AgentManager:
                     )
 
             # refresh memory from DB (using block ids)
-            blocks = await asyncio.gather(
-                *[self.block_manager.get_block_by_id_async(block.id, actor=actor) for block in agent_state.memory.get_blocks()]
+            blocks = await self.block_manager.get_all_blocks_by_ids_async(
+                block_ids=[b.id for b in agent_state.memory.get_blocks()], actor=actor
             )
+
             agent_state.memory = Memory(
                 blocks=blocks,
                 file_blocks=agent_state.memory.file_blocks,
@@ -1907,7 +1984,7 @@ class AgentManager:
         """
         async with db_registry.async_session() as session:
             # Validate agent exists and user has access
-            await self._validate_agent_exists_async(session, agent_id, actor)
+            await validate_agent_exists_async(session, agent_id, actor)
 
             # Use raw SQL to efficiently fetch sources - much faster than lazy loading
             # Fast query without relationship loading
@@ -1943,7 +2020,7 @@ class AgentManager:
         """
         async with db_registry.async_session() as session:
             # Validate agent exists and user has access
-            await self._validate_agent_exists_async(session, agent_id, actor)
+            await validate_agent_exists_async(session, agent_id, actor)
 
             # Check if the source is actually attached to this agent using junction table
             attachment_check_query = select(SourcesAgents).where(SourcesAgents.agent_id == agent_id, SourcesAgents.source_id == source_id)
@@ -2710,7 +2787,7 @@ class AgentManager:
         """
         async with db_registry.async_session() as session:
             # lightweight check for agent access
-            await self._validate_agent_exists_async(session, agent_id, actor)
+            await validate_agent_exists_async(session, agent_id, actor)
 
             # direct query for tools via join - much more performant
             query = (
@@ -2752,7 +2829,12 @@ class AgentManager:
             )
 
             if query_text:
-                query = query.filter(AgentsTags.tag.ilike(f"%{query_text}%"))
+                if settings.database_engine is DatabaseChoice.POSTGRES:
+                    # PostgreSQL: Use ILIKE for case-insensitive search
+                    query = query.filter(AgentsTags.tag.ilike(f"%{query_text}%"))
+                else:
+                    # SQLite: Use LIKE with LOWER for case-insensitive search
+                    query = query.filter(func.lower(AgentsTags.tag).like(func.lower(f"%{query_text}%")))
 
             if after:
                 query = query.filter(AgentsTags.tag > after)
@@ -2788,7 +2870,12 @@ class AgentManager:
             )
 
             if query_text:
-                query = query.where(AgentsTags.tag.ilike(f"%{query_text}%"))
+                if settings.database_engine is DatabaseChoice.POSTGRES:
+                    # PostgreSQL: Use ILIKE for case-insensitive search
+                    query = query.where(AgentsTags.tag.ilike(f"%{query_text}%"))
+                else:
+                    # SQLite: Use LIKE with LOWER for case-insensitive search
+                    query = query.where(func.lower(AgentsTags.tag).like(func.lower(f"%{query_text}%")))
 
             if after:
                 query = query.where(AgentsTags.tag > after)

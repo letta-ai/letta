@@ -9,6 +9,7 @@ Create Date: 2025-01-16 16:48:21.000000
 from typing import Sequence, Union
 
 from alembic import op
+from letta.settings import settings
 
 # revision identifiers, used by Alembic.
 revision: str = "25fc99e97839"
@@ -18,6 +19,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # Skip this migration for SQLite
+    if not settings.letta_pg_uri_no_default:
+        return
+
     # Remove indices from job_messages
     op.drop_index("ix_job_messages_created_at", table_name="job_messages")
     op.drop_index("ix_job_messages_job_id", table_name="job_messages")
@@ -31,6 +36,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # Skip this migration for SQLite
+    if not settings.letta_pg_uri_no_default:
+        return
+
     # Remove the foreign key constraint
     op.drop_constraint("fk_job_messages_message_id", "job_messages", type_="foreignkey")
 

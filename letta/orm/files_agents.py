@@ -96,7 +96,6 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
             visible_content += truncated_warning
 
         return PydanticBlock(
-            organization_id=self.organization_id,
             value=visible_content,
             label=self.file_name,  # use denormalized file_name instead of self.file.file_name
             read_only=True,

@@ -45,8 +45,10 @@ class LLMBatchManager:
                 organization_id=actor.organization_id,
                 letta_batch_job_id=letta_batch_job_id,
             )
-            await batch.create_async(session, actor=actor)
-            return batch.to_pydantic()
+            await batch.create_async(session, actor=actor, no_commit=True, no_refresh=True)
+            pydantic_batch = batch.to_pydantic()
+            await session.commit()
+            return pydantic_batch
 
     @enforce_types
     @trace_method
@@ -282,10 +284,11 @@ class LLMBatchManager:
                 )
                 orm_items.append(orm_item)
 
-            created_items = await LLMBatchItem.batch_create_async(orm_items, session, actor=actor)
+            created_items = await LLMBatchItem.batch_create_async(orm_items, session, actor=actor, no_commit=True, no_refresh=True)
 
-            # Convert back to Pydantic models
-            return [item.to_pydantic() for item in created_items]
+            pydantic_items = [item.to_pydantic() for item in created_items]
+            await session.commit()
+            return pydantic_items
 
     @enforce_types
     @trace_method
@@ -403,7 +406,7 @@ class LLMBatchManager:
                 missing = requested - found
                 if missing:
                     raise ValueError(
-                        f"Cannot bulk-update batch items: no records for the following " f"(llm_batch_id, agent_id) pairs: {missing}"
+                        f"Cannot bulk-update batch items: no records for the following (llm_batch_id, agent_id) pairs: {missing}"
                     )
 
             # Build mappings, skipping any missing when strict=False

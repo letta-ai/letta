@@ -11,6 +11,7 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 
 from alembic import op
+from letta.settings import settings
 
 # revision identifiers, used by Alembic.
 revision: str = "a113caac453e"
@@ -20,6 +21,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # Skip this migration for SQLite
+    if not settings.letta_pg_uri_no_default:
+        return
+
     # Create identities table
     op.create_table(
         "identities",
@@ -58,6 +63,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # Skip this migration for SQLite
+    if not settings.letta_pg_uri_no_default:
+        return
+
     # First remove the foreign key constraint and column from agents
     op.drop_constraint("fk_agents_identity_id", "agents", type_="foreignkey")
     op.drop_column("agents", "identity_id")

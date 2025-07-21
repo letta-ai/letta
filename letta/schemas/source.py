@@ -9,10 +9,16 @@ from letta.schemas.letta_base import LettaBase
 
 class BaseSource(LettaBase):
     """
-    Shared attributes accourss all source schemas.
+    Shared attributes across all source schemas.
     """
 
     __id_prefix__ = "source"
+
+    # Core source fields
+    name: str = Field(..., description="The name of the source.")
+    description: Optional[str] = Field(None, description="The description of the source.")
+    instructions: Optional[str] = Field(None, description="Instructions for how to use the source.")
+    metadata: Optional[dict] = Field(None, description="Metadata associated with the source.")
 
 
 class Source(BaseSource):
@@ -29,9 +35,6 @@ class Source(BaseSource):
     """
 
     id: str = BaseSource.generate_id_field()
-    name: str = Field(..., description="The name of the source.")
-    description: Optional[str] = Field(None, description="The description of the source.")
-    instructions: Optional[str] = Field(None, description="Instructions for how to use the source.")
     embedding_config: EmbeddingConfig = Field(..., description="The embedding configuration used by the source.")
     organization_id: Optional[str] = Field(None, description="The ID of the organization that created the source.")
     metadata: Optional[dict] = Field(None, validation_alias="metadata_", description="Metadata associated with the source.")
@@ -48,20 +51,12 @@ class SourceCreate(BaseSource):
     Schema for creating a new Source.
     """
 
-    # required
-    name: str = Field(..., description="The name of the source.")
     # TODO: @matt, make this required after shub makes the FE changes
-
-    embedding: Optional[str] = Field(None, description="The hande for the embedding config used by the source.")
+    embedding: Optional[str] = Field(None, description="The handle for the embedding config used by the source.")
     embedding_chunk_size: Optional[int] = Field(None, description="The chunk size of the embedding.")
 
     # TODO: remove (legacy config)
     embedding_config: Optional[EmbeddingConfig] = Field(None, description="(Legacy) The embedding configuration used by the source.")
-
-    # optional
-    description: Optional[str] = Field(None, description="The description of the source.")
-    instructions: Optional[str] = Field(None, description="Instructions for how to use the source.")
-    metadata: Optional[dict] = Field(None, description="Metadata associated with the source.")
 
 
 class SourceUpdate(BaseSource):
@@ -69,8 +64,11 @@ class SourceUpdate(BaseSource):
     Schema for updating an existing Source.
     """
 
+    # Override base fields to make them optional for updates
     name: Optional[str] = Field(None, description="The name of the source.")
     description: Optional[str] = Field(None, description="The description of the source.")
     instructions: Optional[str] = Field(None, description="Instructions for how to use the source.")
     metadata: Optional[dict] = Field(None, description="Metadata associated with the source.")
+
+    # Additional update-specific fields
     embedding_config: Optional[EmbeddingConfig] = Field(None, description="The embedding configuration used by the source.")

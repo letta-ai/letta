@@ -636,6 +636,9 @@ async def list_messages(
     use_assistant_message: bool = Query(True, description="Whether to use assistant messages"),
     assistant_message_tool_name: str = Query(DEFAULT_MESSAGE_TOOL, description="The name of the designated message tool."),
     assistant_message_tool_kwarg: str = Query(DEFAULT_MESSAGE_TOOL_KWARG, description="The name of the message argument."),
+    include_err: bool | None = Query(
+        None, description="Whether to include error messages and error statuses. For debugging purposes only."
+    ),
     actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
@@ -654,6 +657,7 @@ async def list_messages(
         use_assistant_message=use_assistant_message,
         assistant_message_tool_name=assistant_message_tool_name,
         assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+        include_err=include_err,
         actor=actor,
     )
 
@@ -701,28 +705,32 @@ async def send_message(
     model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex", "bedrock"]
 
     # Create a new run for execution tracking
-    job_status = JobStatus.created
-    run = await server.job_manager.create_job_async(
-        pydantic_job=Run(
-            user_id=actor.id,
-            status=job_status,
-            metadata={
-                "job_type": "send_message",
-                "agent_id": agent_id,
-            },
-            request_config=LettaRequestConfig(
-                use_assistant_message=request.use_assistant_message,
-                assistant_message_tool_name=request.assistant_message_tool_name,
-                assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-                include_return_message_types=request.include_return_message_types,
+    if settings.track_agent_run:
+        job_status = JobStatus.created
+        run = await server.job_manager.create_job_async(
+            pydantic_job=Run(
+                user_id=actor.id,
+                status=job_status,
+                metadata={
+                    "job_type": "send_message",
+                    "agent_id": agent_id,
+                },
+                request_config=LettaRequestConfig(
+                    use_assistant_message=request.use_assistant_message,
+                    assistant_message_tool_name=request.assistant_message_tool_name,
+                    assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+                    include_return_message_types=request.include_return_message_types,
+                ),
             ),
-        ),
-        actor=actor,
-    )
+            actor=actor,
+        )
+    else:
+        run = None
+
     job_update_metadata = None
     # TODO (cliandy): clean this up
     redis_client = await get_redis_client()
-    await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id)
+    await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
 
     try:
         if agent_eligible and model_compatible:
@@ -737,7 +745,7 @@ async def send_message(
                     job_manager=server.job_manager,
                     actor=actor,
                     group=agent.multi_agent_group,
-                    current_run_id=run.id,
+                    current_run_id=run.id if run else None,
                 )
             else:
                 agent_loop = LettaAgent(
@@ -750,7 +758,7 @@ async def send_message(
                     actor=actor,
                     step_manager=server.step_manager,
                     telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-                    current_run_id=run.id,
+                    current_run_id=run.id if run else None,
                     # summarizer settings to be added here
                     summarizer_mode=(
                         SummarizationMode.STATIC_MESSAGE_BUFFER
@@ -786,12 +794,13 @@ async def send_message(
         job_status = JobStatus.failed
         raise
     finally:
-        await server.job_manager.safe_update_job_status_async(
-            job_id=run.id,
-            new_status=job_status,
-            actor=actor,
-            metadata=job_update_metadata,
-        )
+        if settings.track_agent_run:
+            await server.job_manager.safe_update_job_status_async(
+                job_id=run.id,
+                new_status=job_status,
+                actor=actor,
+                metadata=job_update_metadata,
+            )
 
 
 # noinspection PyInconsistentReturns
@@ -832,29 +841,32 @@ async def send_message_streaming(
     not_letta_endpoint = agent.llm_config.model_endpoint != LETTA_MODEL_ENDPOINT
 
     # Create a new job for execution tracking
-    job_status = JobStatus.created
-    run = await server.job_manager.create_job_async(
-        pydantic_job=Run(
-            user_id=actor.id,
-            status=job_status,
-            metadata={
-                "job_type": "send_message_streaming",
-                "agent_id": agent_id,
-            },
-            request_config=LettaRequestConfig(
-                use_assistant_message=request.use_assistant_message,
-                assistant_message_tool_name=request.assistant_message_tool_name,
-                assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-                include_return_message_types=request.include_return_message_types,
+    if settings.track_agent_run:
+        job_status = JobStatus.created
+        run = await server.job_manager.create_job_async(
+            pydantic_job=Run(
+                user_id=actor.id,
+                status=job_status,
+                metadata={
+                    "job_type": "send_message_streaming",
+                    "agent_id": agent_id,
+                },
+                request_config=LettaRequestConfig(
+                    use_assistant_message=request.use_assistant_message,
+                    assistant_message_tool_name=request.assistant_message_tool_name,
+                    assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+                    include_return_message_types=request.include_return_message_types,
+                ),
             ),
-        ),
-        actor=actor,
-    )
+            actor=actor,
+        )
+    else:
+        run = None
 
     job_update_metadata = None
     # TODO (cliandy): clean this up
     redis_client = await get_redis_client()
-    await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id)
+    await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
 
     try:
         if agent_eligible and model_compatible:
@@ -871,7 +883,7 @@ async def send_message_streaming(
                     step_manager=server.step_manager,
                     telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
                     group=agent.multi_agent_group,
-                    current_run_id=run.id,
+                    current_run_id=run.id if run else None,
                 )
             else:
                 agent_loop = LettaAgent(
@@ -884,7 +896,7 @@ async def send_message_streaming(
                     actor=actor,
                     step_manager=server.step_manager,
                     telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-                    current_run_id=run.id,
+                    current_run_id=run.id if run else None,
                     # summarizer settings to be added here
                     summarizer_mode=(
                         SummarizationMode.STATIC_MESSAGE_BUFFER
@@ -937,12 +949,13 @@ async def send_message_streaming(
         job_status = JobStatus.failed
         raise
     finally:
-        await server.job_manager.safe_update_job_status_async(
-            job_id=run.id,
-            new_status=job_status,
-            actor=actor,
-            metadata=job_update_metadata,
-        )
+        if settings.track_agent_run:
+            await server.job_manager.safe_update_job_status_async(
+                job_id=run.id,
+                new_status=job_status,
+                actor=actor,
+                metadata=job_update_metadata,
+            )
 
 
 @router.post("/{agent_id}/messages/cancel", operation_id="cancel_agent_run")
@@ -959,6 +972,8 @@ async def cancel_agent_run(
     """
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    if not settings.track_agent_run:
+        raise HTTPException(status_code=400, detail="Agent run tracking is disabled")
     if not run_ids:
         redis_client = await get_redis_client()
         run_id = await redis_client.get(f"{REDIS_RUN_ID_PREFIX}:{agent_id}")
@@ -1156,7 +1171,7 @@ async def list_agent_groups(
 ):
     """Lists the groups for an agent"""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    print("in list agents with manager_type", manager_type)
+    logger.info("in list agents with manager_type", manager_type)
     return server.agent_manager.list_groups(agent_id=agent_id, manager_type=manager_type, actor=actor)
 
 

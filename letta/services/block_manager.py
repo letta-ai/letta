@@ -1,12 +1,14 @@
 import asyncio
 from typing import Dict, List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from letta.log import get_logger
+from letta.orm.agent import Agent as AgentModel
 from letta.orm.block import Block as BlockModel
 from letta.orm.block_history import BlockHistory
+from letta.orm.blocks_agents import BlocksAgents
 from letta.orm.errors import NoResultFound
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState as PydanticAgentState
@@ -50,8 +52,10 @@ class BlockManager:
             async with db_registry.async_session() as session:
                 data = block.model_dump(to_orm=True, exclude_none=True)
                 block = BlockModel(**data, organization_id=actor.organization_id)
-                await block.create_async(session, actor=actor)
-                return block.to_pydantic()
+                await block.create_async(session, actor=actor, no_commit=True, no_refresh=True)
+                pydantic_block = block.to_pydantic()
+                await session.commit()
+                return pydantic_block
 
     @enforce_types
     @trace_method
@@ -95,11 +99,12 @@ class BlockManager:
             block_models = [
                 BlockModel(**block.model_dump(to_orm=True, exclude_none=True), organization_id=actor.organization_id) for block in blocks
             ]
-
-            created_models = await BlockModel.batch_create_async(items=block_models, db_session=session, actor=actor)
-
-            # Convert back to Pydantic
-            return [m.to_pydantic() for m in created_models]
+            created_models = await BlockModel.batch_create_async(
+                items=block_models, db_session=session, actor=actor, no_commit=True, no_refresh=True
+            )
+            result = [m.to_pydantic() for m in created_models]
+            await session.commit()
+            return result
 
     @enforce_types
     @trace_method
@@ -130,26 +135,36 @@ class BlockManager:
             for key, value in update_data.items():
                 setattr(block, key, value)
 
-            await block.update_async(db_session=session, actor=actor)
-            return block.to_pydantic()
+            await block.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
+            pydantic_block = block.to_pydantic()
+            await session.commit()
+            return pydantic_block
 
     @enforce_types
     @trace_method
-    def delete_block(self, block_id: str, actor: PydanticUser) -> PydanticBlock:
+    def delete_block(self, block_id: str, actor: PydanticUser) -> None:
         """Delete a block by its ID."""
         with db_registry.session() as session:
+            # First, delete all references in blocks_agents table
+            session.execute(delete(BlocksAgents).where(BlocksAgents.block_id == block_id))
+            session.flush()
+
+            # Then delete the block itself
             block = BlockModel.read(db_session=session, identifier=block_id)
             block.hard_delete(db_session=session, actor=actor)
-            return block.to_pydantic()
 
     @enforce_types
     @trace_method
-    async def delete_block_async(self, block_id: str, actor: PydanticUser) -> PydanticBlock:
+    async def delete_block_async(self, block_id: str, actor: PydanticUser) -> None:
         """Delete a block by its ID."""
         async with db_registry.async_session() as session:
+            # First, delete all references in blocks_agents table
+            await session.execute(delete(BlocksAgents).where(BlocksAgents.block_id == block_id))
+            await session.flush()
+
+            # Then delete the block itself
             block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
             await block.hard_delete_async(db_session=session, actor=actor)
-            return block.to_pydantic()
 
     @enforce_types
     @trace_method
@@ -296,8 +311,14 @@ class BlockManager:
         Retrieve all agents associated with a given block.
         """
         async with db_registry.async_session() as session:
-            block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
-            agents_orm = block.agents
+            query = (
+                select(AgentModel)
+                .where(AgentModel.id.in_(select(BlocksAgents.agent_id).where(BlocksAgents.block_id == block_id)))
+                .where(AgentModel.organization_id == actor.organization_id)
+            )
+
+            result = await session.execute(query)
+            agents_orm = result.scalars().all()
             agents = await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents_orm])
             return agents
 
@@ -531,7 +552,7 @@ class BlockManager:
             for block in blocks:
                 new_val = updates[block.id]
                 if len(new_val) > block.limit:
-                    logger.warning(f"Value length ({len(new_val)}) exceeds limit " f"({block.limit}) for block {block.id!r}, truncating...")
+                    logger.warning(f"Value length ({len(new_val)}) exceeds limit ({block.limit}) for block {block.id!r}, truncating...")
                     new_val = new_val[: block.limit]
                 block.value = new_val
 

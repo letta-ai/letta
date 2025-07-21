@@ -1,3 +1,4 @@
+import asyncio
 import os
 from datetime import datetime
 from typing import List, Optional
@@ -357,7 +358,9 @@ class FileManager:
 
     @enforce_types
     @trace_method
-    async def get_organization_sources_metadata(self, actor: PydanticUser) -> OrganizationSourcesStats:
+    async def get_organization_sources_metadata(
+        self, actor: PydanticUser, include_detailed_per_source_metadata: bool = False
+    ) -> OrganizationSourcesStats:
         """
         Get aggregated metadata for all sources in an organization with optimized queries.
 
@@ -365,7 +368,7 @@ class FileManager:
         - Total number of sources
         - Total number of files across all sources
         - Total size of all files
-        - Per-source breakdown with file details
+        - Per-source breakdown with file details (if include_detailed_per_source_metadata is True)
         """
         async with db_registry.async_session() as session:
             # Import here to avoid circular imports
@@ -395,31 +398,113 @@ class FileManager:
             for row in source_aggregations:
                 source_id, source_name, file_count, total_size = row
 
-                # Get individual file details for this source
-                files_query = (
-                    select(FileMetadataModel.id, FileMetadataModel.file_name, FileMetadataModel.file_size)
-                    .where(
-                        FileMetadataModel.source_id == source_id,
-                        FileMetadataModel.organization_id == actor.organization_id,
-                        FileMetadataModel.is_deleted == False,
+                if include_detailed_per_source_metadata:
+                    # Get individual file details for this source
+                    files_query = (
+                        select(FileMetadataModel.id, FileMetadataModel.file_name, FileMetadataModel.file_size)
+                        .where(
+                            FileMetadataModel.source_id == source_id,
+                            FileMetadataModel.organization_id == actor.organization_id,
+                            FileMetadataModel.is_deleted == False,
+                        )
+                        .order_by(FileMetadataModel.file_name)
                     )
-                    .order_by(FileMetadataModel.file_name)
-                )
 
-                files_result = await session.execute(files_query)
-                files_rows = files_result.fetchall()
+                    files_result = await session.execute(files_query)
+                    files_rows = files_result.fetchall()
 
-                # Build file stats
-                files = [FileStats(file_id=file_row[0], file_name=file_row[1], file_size=file_row[2]) for file_row in files_rows]
+                    # Build file stats
+                    files = [FileStats(file_id=file_row[0], file_name=file_row[1], file_size=file_row[2]) for file_row in files_rows]
 
-                # Build source metadata
-                source_metadata = SourceStats(
-                    source_id=source_id, source_name=source_name, file_count=file_count, total_size=total_size, files=files
-                )
+                    # Build source metadata
+                    source_metadata = SourceStats(
+                        source_id=source_id, source_name=source_name, file_count=file_count, total_size=total_size, files=files
+                    )
 
-                metadata.sources.append(source_metadata)
+                    metadata.sources.append(source_metadata)
+
                 metadata.total_files += file_count
                 metadata.total_size += total_size
 
-            metadata.total_sources = len(metadata.sources)
+            metadata.total_sources = len(source_aggregations)
             return metadata
+
+    @enforce_types
+    @trace_method
+    async def get_files_by_ids_async(
+        self, file_ids: List[str], actor: PydanticUser, *, include_content: bool = False
+    ) -> List[PydanticFileMetadata]:
+        """
+        Get multiple files by their IDs in a single query.
+
+        Args:
+            file_ids: List of file IDs to retrieve
+            actor: User performing the action
+            include_content: Whether to include file content in the response
+
+        Returns:
+            List[PydanticFileMetadata]: List of files (may be fewer than requested if some don't exist)
+        """
+        if not file_ids:
+            return []
+
+        async with db_registry.async_session() as session:
+            query = select(FileMetadataModel).where(
+                FileMetadataModel.id.in_(file_ids),
+                FileMetadataModel.organization_id == actor.organization_id,
+                FileMetadataModel.is_deleted == False,
+            )
+
+            # Eagerly load content if requested
+            if include_content:
+                query = query.options(selectinload(FileMetadataModel.content))
+
+            result = await session.execute(query)
+            files_orm = result.scalars().all()
+
+            return await asyncio.gather(*[file.to_pydantic_async(include_content=include_content) for file in files_orm])
+
+    @enforce_types
+    @trace_method
+    async def get_files_for_agents_async(
+        self, agent_ids: List[str], actor: PydanticUser, *, include_content: bool = False
+    ) -> List[PydanticFileMetadata]:
+        """
+        Get all files associated with the given agents via file-agent relationships.
+
+        Args:
+            agent_ids: List of agent IDs to find files for
+            actor: User performing the action
+            include_content: Whether to include file content in the response
+
+        Returns:
+            List[PydanticFileMetadata]: List of unique files associated with these agents
+        """
+        if not agent_ids:
+            return []
+
+        async with db_registry.async_session() as session:
+            # We need to import FileAgent here to avoid circular imports
+            from letta.orm.file_agent import FileAgent as FileAgentModel
+
+            # Join through file-agent relationships
+            query = (
+                select(FileMetadataModel)
+                .join(FileAgentModel, FileMetadataModel.id == FileAgentModel.file_id)
+                .where(
+                    FileAgentModel.agent_id.in_(agent_ids),
+                    FileMetadataModel.organization_id == actor.organization_id,
+                    FileMetadataModel.is_deleted == False,
+                    FileAgentModel.is_deleted == False,
+                )
+                .distinct()  # Ensure we don't get duplicate files
+            )
+
+            # Eagerly load content if requested
+            if include_content:
+                query = query.options(selectinload(FileMetadataModel.content))
+
+            result = await session.execute(query)
+            files_orm = result.scalars().all()
+
+            return await asyncio.gather(*[file.to_pydantic_async(include_content=include_content) for file in files_orm])

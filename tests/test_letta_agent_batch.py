@@ -350,7 +350,7 @@ async def test_rethink_tool_modify_agent_state(disable_e2b_api_key, server, defa
     actor = server.user_manager.get_user_or_default()
     agent = await server.create_agent_async(
         request=CreateAgent(
-            name=f"test_agent_rethink",
+            name="test_agent_rethink",
             include_base_tools=True,
             model=MODELS["sonnet"],
             tags=["test_agents"],

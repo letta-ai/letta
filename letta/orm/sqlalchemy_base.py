@@ -5,7 +5,7 @@ from functools import wraps
 from pprint import pformat
 from typing import TYPE_CHECKING, List, Literal, Optional, Tuple, Union
 
-from sqlalchemy import Sequence, String, and_, delete, func, or_, select, text
+from sqlalchemy import Sequence, String, and_, delete, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError, TimeoutError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, Session, mapped_column
@@ -15,6 +15,7 @@ from letta.log import get_logger
 from letta.orm.base import Base, CommonSqlalchemyMetaMixins
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.orm.sqlite_functions import adapt_array
+from letta.settings import DatabaseChoice
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
@@ -353,10 +354,12 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
             if before_obj and after_obj:
                 # Window-based query - get records between before and after
-                conditions = [
-                    or_(cls.created_at < before_obj.created_at, and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id)),
-                    or_(cls.created_at > after_obj.created_at, and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id)),
-                ]
+                conditions.append(
+                    or_(cls.created_at < before_obj.created_at, and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id))
+                )
+                conditions.append(
+                    or_(cls.created_at > after_obj.created_at, and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id))
+                )
             else:
                 # Pure pagination query
                 if before_obj:
@@ -393,7 +396,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
             from letta.settings import settings
 
-            if settings.letta_pg_uri_no_default:
+            if settings.database_engine is DatabaseChoice.POSTGRES:
                 # PostgreSQL with pgvector
                 query = query.order_by(cls.embedding.cosine_distance(query_embedding).asc())
             else:
@@ -509,14 +512,9 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         query, query_conditions = cls._read_multiple_preprocess(identifiers, actor, access, access_type, check_is_deleted, **kwargs)
         if query is None:
             raise NoResultFound(f"{cls.__name__} not found with identifier {identifier}")
-        if is_postgresql_session(db_session):
-            await db_session.execute(text("SET LOCAL enable_seqscan = OFF"))
-        try:
-            result = await db_session.execute(query)
-            item = result.scalar_one_or_none()
-        finally:
-            if is_postgresql_session(db_session):
-                await db_session.execute(text("SET LOCAL enable_seqscan = ON"))
+
+        result = await db_session.execute(query)
+        item = result.scalar_one_or_none()
 
         if item is None:
             raise NoResultFound(f"{cls.__name__} not found with {', '.join(query_conditions if query_conditions else ['no conditions'])}")
@@ -656,7 +654,13 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             self._handle_dbapi_error(e)
 
     @handle_db_timeout
-    async def create_async(self, db_session: "AsyncSession", actor: Optional["User"] = None, no_commit: bool = False) -> "SqlalchemyBase":
+    async def create_async(
+        self,
+        db_session: "AsyncSession",
+        actor: Optional["User"] = None,
+        no_commit: bool = False,
+        no_refresh: bool = False,
+    ) -> "SqlalchemyBase":
         """Async version of create function"""
         logger.debug(f"Creating {self.__class__.__name__} with ID: {self.id} with actor={actor}")
 
@@ -668,7 +672,9 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 await db_session.flush()  # no commit, just flush to get PK
             else:
                 await db_session.commit()
-            await db_session.refresh(self)
+
+            if not no_refresh:
+                await db_session.refresh(self)
             return self
         except (DBAPIError, IntegrityError) as e:
             self._handle_dbapi_error(e)
@@ -717,7 +723,12 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
     @classmethod
     @handle_db_timeout
     async def batch_create_async(
-        cls, items: List["SqlalchemyBase"], db_session: "AsyncSession", actor: Optional["User"] = None
+        cls,
+        items: List["SqlalchemyBase"],
+        db_session: "AsyncSession",
+        actor: Optional["User"] = None,
+        no_commit: bool = False,
+        no_refresh: bool = False,
     ) -> List["SqlalchemyBase"]:
         """
         Async version of batch_create method.
@@ -726,10 +737,13 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             items: List of model instances to create
             db_session: AsyncSession session
             actor: Optional user performing the action
+            no_commit: Whether to commit the transaction
+            no_refresh: Whether to refresh the created objects
         Returns:
             List of created model instances
         """
         logger.debug(f"Async batch creating {len(items)} {cls.__name__} items with actor={actor}")
+
         if not items:
             return []
 
@@ -740,21 +754,22 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
         try:
             db_session.add_all(items)
-            await db_session.flush()  # Flush to generate IDs but don't commit yet
+            if no_commit:
+                await db_session.flush()
+            else:
+                await db_session.commit()
 
-            # Collect IDs to fetch the complete objects after commit
-            item_ids = [item.id for item in items]
+            if no_refresh:
+                return items
+            else:
+                # Re-query the objects to get them with relationships loaded
+                item_ids = [item.id for item in items]
+                query = select(cls).where(cls.id.in_(item_ids))
+                if hasattr(cls, "created_at"):
+                    query = query.order_by(cls.created_at)
 
-            await db_session.commit()
-
-            # Re-query the objects to get them with relationships loaded
-            query = select(cls).where(cls.id.in_(item_ids))
-            if hasattr(cls, "created_at"):
-                query = query.order_by(cls.created_at)
-
-            result = await db_session.execute(query)
-            return list(result.scalars())
-
+                result = await db_session.execute(query)
+                return list(result.scalars())
         except (DBAPIError, IntegrityError) as e:
             cls._handle_dbapi_error(e)
 
@@ -854,20 +869,27 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         return self
 
     @handle_db_timeout
-    async def update_async(self, db_session: AsyncSession, actor: "User | None" = None, no_commit: bool = False) -> "SqlalchemyBase":
+    async def update_async(
+        self, db_session: "AsyncSession", actor: Optional["User"] = None, no_commit: bool = False, no_refresh: bool = False
+    ) -> "SqlalchemyBase":
         """Async version of update function"""
-        logger.debug(...)
+        logger.debug(f"Updating {self.__class__.__name__} with ID: {self.id} with actor={actor}")
+
         if actor:
             self._set_created_and_updated_by_fields(actor.id)
         self.set_updated_at()
+        try:
+            db_session.add(self)
+            if no_commit:
+                await db_session.flush()
+            else:
+                await db_session.commit()
 
-        db_session.add(self)
-        if no_commit:
-            await db_session.flush()
-        else:
-            await db_session.commit()
-        await db_session.refresh(self)
-        return self
+            if not no_refresh:
+                await db_session.refresh(self)
+            return self
+        except (DBAPIError, IntegrityError) as e:
+            self._handle_dbapi_error(e)
 
     @classmethod
     def _size_preprocess(

@@ -4,6 +4,7 @@ from typing import List, Literal, Optional, Set
 
 import numpy as np
 from sqlalchemy import Select, and_, asc, desc, func, literal, nulls_last, or_, select, union_all
+from sqlalchemy.orm import noload
 from sqlalchemy.sql.expression import exists
 
 from letta import system
@@ -37,7 +38,7 @@ from letta.schemas.memory import Memory
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.tool_rule import ToolRule
 from letta.schemas.user import User
-from letta.settings import settings
+from letta.settings import DatabaseChoice, settings
 from letta.system import get_initial_boot_messages, get_login_event, package_function_response
 
 
@@ -382,7 +383,6 @@ def package_initial_message_sequence(
                     role=message_create.role,
                     content=[TextContent(text=packed_message)],
                     name=message_create.name,
-                    organization_id=actor.organization_id,
                     agent_id=agent_id,
                     model=model,
                 )
@@ -397,7 +397,6 @@ def package_initial_message_sequence(
                     role=message_create.role,
                     content=[TextContent(text=packed_message)],
                     name=message_create.name,
-                    organization_id=actor.organization_id,
                     agent_id=agent_id,
                     model=model,
                 )
@@ -418,7 +417,6 @@ def package_initial_message_sequence(
                     role=MessageRole.assistant,
                     content=None,
                     name=message_create.name,
-                    organization_id=actor.organization_id,
                     agent_id=agent_id,
                     model=model,
                     tool_calls=[
@@ -438,7 +436,6 @@ def package_initial_message_sequence(
                     role=MessageRole.tool,
                     content=[TextContent(text=function_response)],
                     name=message_create.name,
-                    organization_id=actor.organization_id,
                     agent_id=agent_id,
                     model=model,
                     tool_call_id=tool_call_id,
@@ -551,6 +548,9 @@ async def _apply_pagination_async(
         result = (await session.execute(select(sort_column, AgentModel.id).where(AgentModel.id == after))).first()
         if result:
             after_sort_value, after_id = result
+            # SQLite does not support as granular timestamping, so we need to round the timestamp
+            if settings.database_engine is DatabaseChoice.SQLITE and isinstance(after_sort_value, datetime):
+                after_sort_value = after_sort_value.strftime("%Y-%m-%d %H:%M:%S")
             query = query.where(
                 _cursor_filter(sort_column, AgentModel.id, after_sort_value, after_id, forward=ascending, nulls_last=sort_nulls_last)
             )
@@ -559,6 +559,9 @@ async def _apply_pagination_async(
         result = (await session.execute(select(sort_column, AgentModel.id).where(AgentModel.id == before))).first()
         if result:
             before_sort_value, before_id = result
+            # SQLite does not support as granular timestamping, so we need to round the timestamp
+            if settings.database_engine is DatabaseChoice.SQLITE and isinstance(before_sort_value, datetime):
+                before_sort_value = before_sort_value.strftime("%Y-%m-%d %H:%M:%S")
             query = query.where(
                 _cursor_filter(sort_column, AgentModel.id, before_sort_value, before_id, forward=not ascending, nulls_last=sort_nulls_last)
             )
@@ -649,7 +652,12 @@ def _apply_filters(
         query = query.where(AgentModel.name == name)
     # Apply a case-insensitive partial match for the agent's name.
     if query_text:
-        query = query.where(AgentModel.name.ilike(f"%{query_text}%"))
+        if settings.database_engine is DatabaseChoice.POSTGRES:
+            # PostgreSQL: Use ILIKE for case-insensitive search
+            query = query.where(AgentModel.name.ilike(f"%{query_text}%"))
+        else:
+            # SQLite: Use LIKE with LOWER for case-insensitive search
+            query = query.where(func.lower(AgentModel.name).like(func.lower(f"%{query_text}%")))
     # Filter agents by project ID.
     if project_id:
         query = query.where(AgentModel.project_id == project_id)
@@ -659,6 +667,24 @@ def _apply_filters(
     # Filter agents by base template ID.
     if base_template_id:
         query = query.where(AgentModel.base_template_id == base_template_id)
+    return query
+
+
+def _apply_relationship_filters(query, include_relationships: Optional[List[str]] = None):
+    if include_relationships is None:
+        return query
+
+    if "memory" not in include_relationships:
+        query = query.options(noload(AgentModel.core_memory), noload(AgentModel.file_agents))
+    if "identity_ids" not in include_relationships:
+        query = query.options(noload(AgentModel.identities))
+
+    relationships = ["tool_exec_environment_variables", "tools", "sources", "tags", "multi_agent_group"]
+
+    for rel in relationships:
+        if rel not in include_relationships:
+            query = query.options(noload(getattr(AgentModel, rel)))
+
     return query
 
 
@@ -790,7 +816,7 @@ def build_passage_query(
 
     # Vector search
     if embedded_text:
-        if settings.letta_pg_uri_no_default:
+        if settings.database_engine is DatabaseChoice.POSTGRES:
             # PostgreSQL with pgvector
             main_query = main_query.order_by(combined_query.c.embedding.cosine_distance(embedded_text).asc())
         else:
@@ -917,7 +943,7 @@ def build_source_passage_query(
 
     # Handle text search or vector search
     if embedded_text:
-        if settings.letta_pg_uri_no_default:
+        if settings.database_engine is DatabaseChoice.POSTGRES:
             # PostgreSQL with pgvector
             query = query.order_by(SourcePassage.embedding.cosine_distance(embedded_text).asc())
         else:
@@ -1004,7 +1030,7 @@ def build_agent_passage_query(
 
     # Handle text search or vector search
     if embedded_text:
-        if settings.letta_pg_uri_no_default:
+        if settings.database_engine is DatabaseChoice.POSTGRES:
             # PostgreSQL with pgvector
             query = query.order_by(AgentPassage.embedding.cosine_distance(embedded_text).asc())
         else:
@@ -1070,3 +1096,25 @@ def calculate_multi_agent_tools() -> Set[str]:
         return set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
     else:
         return set(MULTI_AGENT_TOOLS)
+
+
+@trace_method
+async def validate_agent_exists_async(session, agent_id: str, actor: User) -> None:
+    """
+    Validate that an agent exists and user has access to it using raw SQL for efficiency.
+
+    Args:
+        session: Database session
+        agent_id: ID of the agent to validate
+        actor: User performing the action
+
+    Raises:
+        NoResultFound: If agent doesn't exist or user doesn't have access
+    """
+    agent_exists_query = select(
+        exists().where(and_(AgentModel.id == agent_id, AgentModel.organization_id == actor.organization_id, AgentModel.is_deleted == False))
+    )
+    result = await session.execute(agent_exists_query)
+
+    if not result.scalar():
+        raise NoResultFound(f"Agent with ID {agent_id} not found")

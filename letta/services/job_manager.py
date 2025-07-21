@@ -1,3 +1,4 @@
+from datetime import datetime
 from functools import partial, reduce
 from operator import add
 from typing import List, Literal, Optional, Union
@@ -27,6 +28,7 @@ from letta.schemas.step import Step as PydanticStep
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.settings import DatabaseChoice, settings
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -60,15 +62,29 @@ class JobManager:
             pydantic_job.user_id = actor.id
             job_data = pydantic_job.model_dump(to_orm=True)
             job = JobModel(**job_data)
-            await job.create_async(session, actor=actor)  # Save job in the database
-            return job.to_pydantic()
+            job = await job.create_async(session, actor=actor, no_commit=True, no_refresh=True)  # Save job in the database
+            result = job.to_pydantic()
+            await session.commit()
+            return result
 
     @enforce_types
     @trace_method
     def update_job_by_id(self, job_id: str, job_update: JobUpdate, actor: PydanticUser) -> PydanticJob:
         """Update a job by its ID with the given JobUpdate object."""
+        # First check if we need to dispatch a callback
+        needs_callback = False
+        callback_url = None
         with db_registry.session() as session:
-            # Fetch the job by ID
+            job = self._verify_job_access(session=session, job_id=job_id, actor=actor, access=["write"])
+            not_completed_before = not bool(job.completed_at)
+
+            # Check if we'll need to dispatch callback
+            if job_update.status in {JobStatus.completed, JobStatus.failed} and not_completed_before and job.callback_url:
+                needs_callback = True
+                callback_url = job.callback_url
+
+        # Update the job first to get the final metadata
+        with db_registry.session() as session:
             job = self._verify_job_access(session=session, job_id=job_id, actor=actor, access=["write"])
             not_completed_before = not bool(job.completed_at)
 
@@ -84,23 +100,65 @@ class JobManager:
 
             if job_update.status in {JobStatus.completed, JobStatus.failed} and not_completed_before:
                 job.completed_at = get_utc_time().replace(tzinfo=None)
-                if job.callback_url:
-                    self._dispatch_callback(job)
 
-            # Save the updated job to the database
-            job.update(db_session=session, actor=actor)
+            # Save the updated job to the database first
+            job = job.update(db_session=session, actor=actor)
 
-            return job.to_pydantic()
+            # Get the updated metadata for callback
+            final_metadata = job.metadata_
+            result = job.to_pydantic()
+
+        # Dispatch callback outside of database session if needed
+        if needs_callback:
+            callback_info = {
+                "job_id": job_id,
+                "callback_url": callback_url,
+                "status": job_update.status,
+                "completed_at": get_utc_time().replace(tzinfo=None),
+                "metadata": final_metadata,
+            }
+            callback_result = self._dispatch_callback_sync(callback_info)
+
+            # Update callback status in a separate transaction
+            with db_registry.session() as session:
+                job = self._verify_job_access(session=session, job_id=job_id, actor=actor, access=["write"])
+                job.callback_sent_at = callback_result["callback_sent_at"]
+                job.callback_status_code = callback_result.get("callback_status_code")
+                job.callback_error = callback_result.get("callback_error")
+                job.update(db_session=session, actor=actor)
+                result = job.to_pydantic()
+
+        return result
 
     @enforce_types
     @trace_method
-    async def update_job_by_id_async(self, job_id: str, job_update: JobUpdate, actor: PydanticUser) -> PydanticJob:
+    async def update_job_by_id_async(
+        self, job_id: str, job_update: JobUpdate, actor: PydanticUser, safe_update: bool = False
+    ) -> PydanticJob:
         """Update a job by its ID with the given JobUpdate object asynchronously."""
-        callback_func = None
-
+        # First check if we need to dispatch a callback
+        needs_callback = False
+        callback_url = None
         async with db_registry.async_session() as session:
-            # Fetch the job by ID
             job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor, access=["write"])
+
+            # Safely update job status with state transition guards: Created -> Pending -> Running --> <Terminal>
+            if safe_update:
+                current_status = JobStatus(job.status)
+                if not any(
+                    (
+                        job_update.status.is_terminal and not current_status.is_terminal,
+                        current_status == JobStatus.created and job_update.status != JobStatus.created,
+                        current_status == JobStatus.pending and job_update.status == JobStatus.running,
+                    )
+                ):
+                    logger.error(f"Invalid job status transition from {current_status} to {job_update.status} for job {job_id}")
+                    raise ValueError(f"Invalid job status transition from {current_status} to {job_update.status}")
+
+            # Check if we'll need to dispatch callback
+            if job_update.status in {JobStatus.completed, JobStatus.failed} and job.callback_url:
+                needs_callback = True
+                callback_url = job.callback_url
 
             # Update job attributes with only the fields that were explicitly set
             update_data = job_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
@@ -116,25 +174,37 @@ class JobManager:
             if job_update.status in {JobStatus.completed, JobStatus.failed}:
                 logger.info(f"Current job completed at: {job.completed_at}")
                 job.completed_at = get_utc_time().replace(tzinfo=None)
-                if job.callback_url:
-                    callback_func = self._dispatch_callback_async(
-                        callback_url=job.callback_url,
-                        payload={
-                            "job_id": job.id,
-                            "status": job.status,
-                            "completed_at": job.completed_at.isoformat() if job.completed_at else None,
-                            "metadata": job.metadata_,
-                        },
-                        actor=actor,
-                    )
 
-            # Save the updated job to the database
-            await job.update_async(db_session=session, actor=actor)
+            # Save the updated job to the database first
+            job = await job.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
 
-            if callback_func:
-                return await callback_func
+            # Get the updated metadata for callback
+            final_metadata = job.metadata_
+            result = job.to_pydantic()
+            await session.commit()
 
-            return job.to_pydantic()
+        # Dispatch callback outside of database session if needed
+        if needs_callback:
+            callback_info = {
+                "job_id": job_id,
+                "callback_url": callback_url,
+                "status": job_update.status,
+                "completed_at": get_utc_time().replace(tzinfo=None),
+                "metadata": final_metadata,
+            }
+            callback_result = await self._dispatch_callback_async(callback_info)
+
+            # Update callback status in a separate transaction
+            async with db_registry.async_session() as session:
+                job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor, access=["write"])
+                job.callback_sent_at = callback_result["callback_sent_at"]
+                job.callback_status_code = callback_result.get("callback_status_code")
+                job.callback_error = callback_result.get("callback_error")
+                await job.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
+                result = job.to_pydantic()
+                await session.commit()
+
+        return result
 
     @enforce_types
     @trace_method
@@ -149,20 +219,6 @@ class JobManager:
             True if update was successful, False if update was skipped due to invalid transition
         """
         try:
-            # Get current job state
-            current_job = await self.get_job_by_id_async(job_id=job_id, actor=actor)
-
-            current_status = current_job.status
-            if not any(
-                (
-                    new_status.is_terminal and not current_status.is_terminal,
-                    current_status == JobStatus.created and new_status != JobStatus.created,
-                    current_status == JobStatus.pending and new_status == JobStatus.running,
-                )
-            ):
-                logger.warning(f"Invalid job status transition from {current_job.status} to {new_status} for job {job_id}")
-                return False
-
             job_update_builder = partial(JobUpdate, status=new_status)
             if metadata:
                 job_update_builder = partial(job_update_builder, metadata=metadata)
@@ -238,24 +294,90 @@ class JobManager:
         source_id: Optional[str] = None,
     ) -> List[PydanticJob]:
         """List all jobs with optional pagination and status filter."""
+        from sqlalchemy import and_, or_, select
+
         async with db_registry.async_session() as session:
-            filter_kwargs = {"user_id": actor.id, "job_type": job_type}
+            # build base query
+            query = select(JobModel).where(JobModel.user_id == actor.id).where(JobModel.job_type == job_type)
 
-            # Add status filter if provided
+            # add status filter if provided
             if statuses:
-                filter_kwargs["status"] = statuses
+                query = query.where(JobModel.status.in_(statuses))
 
+            # add source_id filter if provided
             if source_id:
-                filter_kwargs["metadata_.source_id"] = source_id
+                column = getattr(JobModel, "metadata_")
+                column = column.op("->>")("source_id")
+                query = query.where(column == source_id)
 
-            jobs = await JobModel.list_async(
-                db_session=session,
-                before=before,
-                after=after,
-                limit=limit,
-                ascending=ascending,
-                **filter_kwargs,
-            )
+            # handle cursor-based pagination
+            if before or after:
+                # get cursor objects
+                before_obj = None
+                after_obj = None
+
+                if before:
+                    before_obj = await session.get(JobModel, before)
+                    if not before_obj:
+                        raise ValueError(f"Job with id {before} not found")
+
+                if after:
+                    after_obj = await session.get(JobModel, after)
+                    if not after_obj:
+                        raise ValueError(f"Job with id {after} not found")
+
+                # validate cursors
+                if before_obj and after_obj:
+                    if before_obj.created_at < after_obj.created_at:
+                        raise ValueError("'before' reference must be later than 'after' reference")
+                    elif before_obj.created_at == after_obj.created_at and before_obj.id < after_obj.id:
+                        raise ValueError("'before' reference must be later than 'after' reference")
+
+                # build cursor conditions
+                conditions = []
+                if before_obj:
+                    # records before this cursor (older)
+
+                    before_timestamp = before_obj.created_at
+                    # SQLite does not support as granular timestamping, so we need to round the timestamp
+                    if settings.database_engine is DatabaseChoice.SQLITE and isinstance(before_timestamp, datetime):
+                        before_timestamp = before_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
+                    conditions.append(
+                        or_(
+                            JobModel.created_at < before_timestamp,
+                            and_(JobModel.created_at == before_timestamp, JobModel.id < before_obj.id),
+                        )
+                    )
+
+                if after_obj:
+                    # records after this cursor (newer)
+                    after_timestamp = after_obj.created_at
+                    # SQLite does not support as granular timestamping, so we need to round the timestamp
+                    if settings.database_engine is DatabaseChoice.SQLITE and isinstance(after_timestamp, datetime):
+                        after_timestamp = after_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
+                    conditions.append(
+                        or_(JobModel.created_at > after_timestamp, and_(JobModel.created_at == after_timestamp, JobModel.id > after_obj.id))
+                    )
+
+                if conditions:
+                    query = query.where(and_(*conditions))
+
+            # apply ordering
+            if ascending:
+                query = query.order_by(JobModel.created_at.asc(), JobModel.id.asc())
+            else:
+                query = query.order_by(JobModel.created_at.desc(), JobModel.id.desc())
+
+            # apply limit
+            if limit:
+                query = query.limit(limit)
+
+            # execute query
+            result = await session.execute(query)
+            jobs = result.scalars().all()
+
             return [job.to_pydantic() for job in jobs]
 
     @enforce_types
@@ -617,7 +739,7 @@ class JobManager:
         session: Session,
         job_id: str,
         actor: PydanticUser,
-        access: List[Literal["read", "write", "delete"]] = ["read"],
+        access: List[Literal["read", "write", "admin"]] = ["read"],
     ) -> JobModel:
         """
         Verify that a job exists and the user has the required access.
@@ -685,61 +807,58 @@ class JobManager:
         return request_config
 
     @trace_method
-    def _dispatch_callback(self, job: JobModel) -> None:
+    def _dispatch_callback_sync(self, callback_info: dict) -> dict:
         """
-        POST a standard JSON payload to job.callback_url
-        and record timestamp + HTTP status.
+        POST a standard JSON payload to callback_url and return callback status.
         """
-
         payload = {
-            "job_id": job.id,
-            "status": job.status,
-            "completed_at": job.completed_at.isoformat() if job.completed_at else None,
-            "metadata": job.metadata_,
+            "job_id": callback_info["job_id"],
+            "status": callback_info["status"],
+            "completed_at": callback_info["completed_at"].isoformat() if callback_info["completed_at"] else None,
+            "metadata": callback_info["metadata"],
         }
+
+        callback_sent_at = get_utc_time().replace(tzinfo=None)
+        result = {"callback_sent_at": callback_sent_at}
+
         try:
             log_event("POST callback dispatched", payload)
-            resp = post(job.callback_url, json=payload, timeout=5.0)
+            resp = post(callback_info["callback_url"], json=payload, timeout=5.0)
             log_event("POST callback finished")
-            job.callback_sent_at = get_utc_time().replace(tzinfo=None)
-            job.callback_status_code = resp.status_code
-
+            result["callback_status_code"] = resp.status_code
         except Exception as e:
-            error_message = f"Failed to dispatch callback for job {job.id} to {job.callback_url}: {e!s}"
+            error_message = f"Failed to dispatch callback for job {callback_info['job_id']} to {callback_info['callback_url']}: {e!s}"
             logger.error(error_message)
-            # Record the failed attempt
-            job.callback_sent_at = get_utc_time().replace(tzinfo=None)
-            job.callback_error = error_message
+            result["callback_error"] = error_message
             # Continue silently - callback failures should not affect job completion
 
+        return result
+
     @trace_method
-    async def _dispatch_callback_async(self, callback_url: str, payload: dict, actor: PydanticUser) -> PydanticJob:
+    async def _dispatch_callback_async(self, callback_info: dict) -> dict:
         """
-        POST a standard JSON payload to job.callback_url and record timestamp + HTTP status asynchronously.
+        POST a standard JSON payload to callback_url and return callback status asynchronously.
         """
-        job_id = payload["job_id"]
-        callback_sent_at, callback_status_code, callback_error = None, None, None
+        payload = {
+            "job_id": callback_info["job_id"],
+            "status": callback_info["status"],
+            "completed_at": callback_info["completed_at"].isoformat() if callback_info["completed_at"] else None,
+            "metadata": callback_info["metadata"],
+        }
+
+        callback_sent_at = get_utc_time().replace(tzinfo=None)
+        result = {"callback_sent_at": callback_sent_at}
 
         try:
             async with AsyncClient() as client:
                 log_event("POST callback dispatched", payload)
-                resp = await client.post(callback_url, json=payload, timeout=5.0)
+                resp = await client.post(callback_info["callback_url"], json=payload, timeout=5.0)
                 log_event("POST callback finished")
-                # Ensure timestamp is timezone-naive for DB compatibility
-                callback_sent_at = get_utc_time().replace(tzinfo=None)
-                callback_status_code = resp.status_code
+                result["callback_status_code"] = resp.status_code
         except Exception as e:
-            error_message = f"Failed to dispatch callback for job {job_id} to {callback_url}: {e!s}"
+            error_message = f"Failed to dispatch callback for job {callback_info['job_id']} to {callback_info['callback_url']}: {e!s}"
             logger.error(error_message)
-            # Record the failed attempt
-            callback_sent_at = get_utc_time().replace(tzinfo=None)
-            callback_error = error_message
+            result["callback_error"] = error_message
             # Continue silently - callback failures should not affect job completion
 
-        async with db_registry.async_session() as session:
-            job = await JobModel.read_async(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.USER)
-            job.callback_sent_at = callback_sent_at
-            job.callback_status_code = callback_status_code
-            job.callback_error = callback_error
-            await job.update_async(db_session=session, actor=actor)
-            return job.to_pydantic()
+        return result

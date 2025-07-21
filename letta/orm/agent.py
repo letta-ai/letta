@@ -93,7 +93,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
     timezone: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The timezone of the agent (for the context window).")
 
     # relationships
-    organization: Mapped["Organization"] = relationship("Organization", back_populates="agents")
+    organization: Mapped["Organization"] = relationship("Organization", back_populates="agents", lazy="raise")
     tool_exec_environment_variables: Mapped[List["AgentEnvironmentVariable"]] = relationship(
         "AgentEnvironmentVariable",
         back_populates="agent",
@@ -128,7 +128,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
     groups: Mapped[List["Group"]] = relationship(
         "Group",
         secondary="groups_agents",
-        lazy="selectin",
+        lazy="raise",
         back_populates="agents",
         passive_deletes=True,
     )
@@ -138,7 +138,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
         viewonly=True,
         back_populates="manager_agent",
     )
-    batch_items: Mapped[List["LLMBatchItem"]] = relationship("LLMBatchItem", back_populates="agent", lazy="selectin")
+    batch_items: Mapped[List["LLMBatchItem"]] = relationship("LLMBatchItem", back_populates="agent", lazy="raise")
     file_agents: Mapped[List["FileAgent"]] = relationship(
         "FileAgent",
         back_populates="agent",

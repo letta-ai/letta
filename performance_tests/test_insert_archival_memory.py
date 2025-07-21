@@ -97,7 +97,7 @@ async def test_insert_archival_memories_concurrent(client):
     durs = np.array([t[2] for t in timeline])
     start_offset = starts - starts.min()
 
-    print(f"Latency stats (s): min={durs.min():.3f}, mean={durs.mean():.3f}, " f"max={durs.max():.3f}, std={durs.std():.3f}")
+    print(f"Latency stats (s): min={durs.min():.3f}, mean={durs.mean():.3f}, max={durs.max():.3f}, std={durs.std():.3f}")
 
     # 4) Generate improved plots
     # Helper: concurrency over time
@@ -182,4 +182,4 @@ async def test_insert_large_archival_memory(client):
     await client.agents.passages.create(agent_id=agent.id, text=text)
     t1 = time.perf_counter()
 
-    print(f"Total time: {t1-t0}")
+    print(f"Total time: {t1 - t0}")

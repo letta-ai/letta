@@ -41,22 +41,36 @@ def get_bedrock_client(
     return bedrock
 
 
-def bedrock_get_model_list(region_name: str) -> List[dict]:
+def bedrock_get_model_list(
+    region_name: str,
+    access_key_id: Optional[str] = None,
+    secret_access_key: Optional[str] = None,
+) -> List[dict]:
     """
     Get list of available models from Bedrock.
 
     Args:
         region_name: AWS region name
+        access_key_id: Optional AWS access key ID
+        secret_access_key: Optional AWS secret access key
+
+        TODO: Implement model_provider and output_modality filtering
         model_provider: Optional provider name to filter models. If None, returns all models.
         output_modality: Output modality to filter models. Defaults to "text".
 
     Returns:
         List of model summaries
+
     """
     import boto3
 
     try:
-        bedrock = boto3.client("bedrock", region_name=region_name)
+        bedrock = boto3.client(
+            "bedrock",
+            region_name=region_name,
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=secret_access_key,
+        )
         response = bedrock.list_inference_profiles()
         return response["inferenceProfileSummaries"]
     except Exception as e:

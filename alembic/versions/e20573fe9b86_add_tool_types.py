@@ -14,6 +14,7 @@ from sqlalchemy.dialects import postgresql
 from alembic import op
 from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS
 from letta.orm.enums import ToolType
+from letta.settings import settings
 
 # revision identifiers, used by Alembic.
 revision: str = "e20573fe9b86"
@@ -23,6 +24,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # Skip this migration for SQLite
+    if not settings.letta_pg_uri_no_default:
+        return
+
     # Step 1: Add the column as nullable with no default
     op.add_column("tools", sa.Column("tool_type", sa.String(), nullable=True))
 
@@ -64,6 +69,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # Skip this migration for SQLite
+    if not settings.letta_pg_uri_no_default:
+        return
+
     # Revert the changes made during the upgrade
     op.alter_column("tools", "json_schema", existing_type=postgresql.JSON(astext_type=sa.Text()), nullable=False)
     op.drop_column("tools", "tool_type")

@@ -23,6 +23,7 @@ from urllib.parse import urljoin, urlparse
 import demjson3 as demjson
 import tiktoken
 from pathvalidate import sanitize_filename as pathvalidate_sanitize_filename
+from sqlalchemy import text
 
 import letta
 from letta.constants import (
@@ -35,7 +36,11 @@ from letta.constants import (
     TOOL_CALL_ID_MAX_LEN,
 )
 from letta.helpers.json_helpers import json_dumps, json_loads
+from letta.log import get_logger
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
+
+logger = get_logger(__name__)
+
 
 DEBUG = False
 if "LOG_LEVEL" in os.environ:
@@ -578,7 +583,7 @@ def annotate_message_json_list_with_tool_calls(messages: list[dict], allow_tool_
         # If we find a function call w/o a tool call ID annotation, annotate it
         if message["role"] == "assistant" and "function_call" in message:
             if "tool_call_id" in message and message["tool_call_id"] is not None:
-                printd(f"Message already has tool_call_id")
+                printd("Message already has tool_call_id")
                 tool_call_id = message["tool_call_id"]
             else:
                 tool_call_id = str(uuid.uuid4())
@@ -620,7 +625,7 @@ def annotate_message_json_list_with_tool_calls(messages: list[dict], allow_tool_
 
             assistant_tool_call = message["tool_calls"][0]
             if "id" in assistant_tool_call and assistant_tool_call["id"] is not None:
-                printd(f"Message already has id (tool_call_id)")
+                printd("Message already has id (tool_call_id)")
                 tool_call_id = assistant_tool_call["id"]
             else:
                 tool_call_id = str(uuid.uuid4())
@@ -1182,3 +1187,22 @@ class NullCancellationSignal(CancellationSignal):
 
     async def check_and_raise_if_cancelled(self):
         pass
+
+
+async def get_latest_alembic_revision() -> str:
+    """Get the current alembic revision ID from the alembic_version table."""
+    from letta.server.db import db_registry
+
+    try:
+        async with db_registry.async_session() as session:
+            result = await session.execute(text("SELECT version_num FROM alembic_version"))
+            row = result.fetchone()
+
+            if row:
+                return row[0]
+            else:
+                return "unknown"
+
+    except Exception as e:
+        logger.error(f"Error getting latest alembic revision: {e}")
+        return "unknown"

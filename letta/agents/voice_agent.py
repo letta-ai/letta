@@ -1,4 +1,3 @@
-import asyncio
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -299,7 +298,7 @@ class VoiceAgent(BaseAgent):
             in_context_messages=in_context_messages, new_letta_messages=new_letta_messages
         )
 
-        await self.agent_manager.set_in_context_messages_async(
+        await self.agent_manager.update_message_ids_async(
             agent_id=self.agent_id, message_ids=[m.id for m in new_in_context_messages], actor=self.actor
         )
 
@@ -308,18 +307,17 @@ class VoiceAgent(BaseAgent):
         in_context_messages: List[Message],
         agent_state: AgentState,
     ) -> List[Message]:
-        self.num_messages, self.num_archival_memories = await asyncio.gather(
-            (
-                self.message_manager.size_async(actor=self.actor, agent_id=agent_state.id)
-                if self.num_messages is None
-                else asyncio.sleep(0, result=self.num_messages)
-            ),
-            (
-                self.passage_manager.agent_passage_size_async(actor=self.actor, agent_id=agent_state.id)
-                if self.num_archival_memories is None
-                else asyncio.sleep(0, result=self.num_archival_memories)
-            ),
-        )
+        if not self.num_messages:
+            self.num_messages = await self.message_manager.size_async(
+                agent_id=agent_state.id,
+                actor=self.actor,
+            )
+        if not self.num_archival_memories:
+            self.num_archival_memories = await self.passage_manager.agent_passage_size_async(
+                agent_id=agent_state.id,
+                actor=self.actor,
+            )
+
         return await super()._rebuild_memory_async(
             in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
         )
@@ -379,19 +377,19 @@ class VoiceAgent(BaseAgent):
                                     "type": ["array", "null"],
                                     "items": {"type": "string"},
                                     "description": (
-                                        "Extra keywords (e.g., order ID, place name). " "Use *null* when the utterance is already specific."
+                                        "Extra keywords (e.g., order ID, place name). Use *null* when the utterance is already specific."
                                     ),
                                 },
                                 "start_minutes_ago": {
                                     "type": ["integer", "null"],
                                     "description": (
-                                        "Newer bound of the time window, in minutes ago. " "Use *null* if no lower bound is needed."
+                                        "Newer bound of the time window, in minutes ago. Use *null* if no lower bound is needed."
                                     ),
                                 },
                                 "end_minutes_ago": {
                                     "type": ["integer", "null"],
                                     "description": (
-                                        "Older bound of the time window, in minutes ago. " "Use *null* if no upper bound is needed."
+                                        "Older bound of the time window, in minutes ago. Use *null* if no upper bound is needed."
                                     ),
                                 },
                             },

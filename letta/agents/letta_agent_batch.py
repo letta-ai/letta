@@ -100,7 +100,6 @@ async def execute_tool_wrapper(params: ToolExecutionParams) -> tuple[str, ToolEx
 # TODO: Limitations ->
 # TODO: Only works with anthropic for now
 class LettaAgentBatch(BaseAgent):
-
     def __init__(
         self,
         message_manager: MessageManager,
@@ -516,7 +515,7 @@ class LettaAgentBatch(BaseAgent):
         for agent_id, new_msgs in msg_map.items():
             ast = ctx.agent_state_map[agent_id]
             if not ast.message_buffer_autoclear:
-                await self.agent_manager.set_in_context_messages_async(
+                await self.agent_manager.update_message_ids_async(
                     agent_id=agent_id,
                     message_ids=ast.message_ids + [m.id for m in new_msgs],
                     actor=self.actor,

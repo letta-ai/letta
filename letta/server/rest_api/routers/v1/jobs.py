@@ -7,6 +7,7 @@ from letta.schemas.enums import JobStatus
 from letta.schemas.job import Job
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
+from letta.settings import settings
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -93,6 +94,8 @@ async def cancel_job(
     agent execution to terminate as soon as possible.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    if not settings.track_agent_run:
+        raise HTTPException(status_code=400, detail="Agent run tracking is disabled")
 
     try:
         # First check if the job exists and is in a cancellable state

@@ -40,15 +40,18 @@ class LettaMessage(BaseModel):
         message_type (MessageType): The type of the message
         otid (Optional[str]): The offline threading id associated with this message
         sender_id (Optional[str]): The id of the sender of the message, can be an identity id or agent id
+        step_id (Optional[str]): The step id associated with the message
+        is_err (Optional[bool]): Whether the message is an errored message or not. Used for debugging purposes only.
     """
 
     id: str
     date: datetime
-    name: Optional[str] = None
+    name: str | None = None
     message_type: MessageType = Field(..., description="The type of the message.")
-    otid: Optional[str] = None
-    sender_id: Optional[str] = None
-    step_id: Optional[str] = None
+    otid: str | None = None
+    sender_id: str | None = None
+    step_id: str | None = None
+    is_err: bool | None = None
 
     @field_serializer("date")
     def serialize_datetime(self, dt: datetime, _info):
@@ -59,6 +62,14 @@ class LettaMessage(BaseModel):
         if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.isoformat(timespec="seconds")
+
+    @field_serializer("is_err", when_used="unless-none")
+    def serialize_is_err(self, value: bool | None, _info):
+        """
+        Only serialize is_err field when it's True (for debugging purposes).
+        When is_err is None or False, this field will be excluded from the JSON output.
+        """
+        return value if value is True else None
 
 
 class SystemMessage(LettaMessage):

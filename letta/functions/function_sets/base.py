@@ -42,7 +42,7 @@ def conversation_search(self: "Agent", query: str, page: Optional[int] = 0) -> O
     try:
         page = int(page)
     except:
-        raise ValueError(f"'page' argument must be an integer")
+        raise ValueError("'page' argument must be an integer")
     count = RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
     # TODO: add paging by page number. currently cursor only works with strings.
     # original: start=page * count
@@ -55,7 +55,7 @@ def conversation_search(self: "Agent", query: str, page: Optional[int] = 0) -> O
     total = len(messages)
     num_pages = math.ceil(total / count) - 1  # 0 index
     if len(messages) == 0:
-        results_str = f"No results found."
+        results_str = "No results found."
     else:
         results_pref = f"Showing {len(messages)} of {total} results (page {page}/{num_pages}):"
         results_formatted = [message.content[0].text for message in messages]
@@ -103,7 +103,7 @@ def archival_memory_search(self: "Agent", query: str, page: Optional[int] = 0, s
     try:
         page = int(page)
     except:
-        raise ValueError(f"'page' argument must be an integer")
+        raise ValueError("'page' argument must be an integer")
     count = RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
 
     try:

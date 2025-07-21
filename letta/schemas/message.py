@@ -128,29 +128,28 @@ class MessageUpdate(BaseModel):
 
 class Message(BaseMessage):
     """
-    Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.
+        Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.
 
-    Attributes:
-        id (str): The unique identifier of the message.
-        role (MessageRole): The role of the participant.
-        text (str): The text of the message.
-        user_id (str): The unique identifier of the user.
-        agent_id (str): The unique identifier of the agent.
-        model (str): The model used to make the function call.
-        name (str): The name of the participant.
-        created_at (datetime): The time the message was created.
-        tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.
-        tool_call_id (str): The id of the tool call.
-        step_id (str): The id of the step that this message was created in.
-        otid (str): The offline threading id associated with this message.
-        tool_returns (List[ToolReturn]): The list of tool returns requested.
-        group_id (str): The multi-agent group that the message was sent in.
-        sender_id (str): The id of the sender of the message, can be an identity id or agent id.
-
+        Attributes:
+            id (str): The unique identifier of the message.
+            role (MessageRole): The role of the participant.
+            text (str): The text of the message.
+            user_id (str): The unique identifier of the user.
+            agent_id (str): The unique identifier of the agent.
+            model (str): The model used to make the function call.
+            name (str): The name of the participant.
+            created_at (datetime): The time the message was created.
+            tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.
+            tool_call_id (str): The id of the tool call.
+            step_id (str): The id of the step that this message was created in.
+            otid (str): The offline threading id associated with this message.
+            tool_returns (List[ToolReturn]): The list of tool returns requested.
+            group_id (str): The multi-agent group that the message was sent in.
+            sender_id (str): The id of the sender of the message, can be an identity id or agent id.
+    t
     """
 
     id: str = BaseMessage.generate_id_field()
-    organization_id: Optional[str] = Field(default=None, description="The unique identifier of the organization.")
     agent_id: Optional[str] = Field(default=None, description="The unique identifier of the agent.")
     model: Optional[str] = Field(default=None, description="The model used to make the function call.")
     # Basic OpenAI-style fields
@@ -172,6 +171,9 @@ class Message(BaseMessage):
     group_id: Optional[str] = Field(default=None, description="The multi-agent group that the message was sent in")
     sender_id: Optional[str] = Field(default=None, description="The id of the sender of the message, can be an identity id or agent id")
     batch_item_id: Optional[str] = Field(default=None, description="The id of the LLMBatchItem that this message is associated with")
+    is_err: Optional[bool] = Field(
+        default=None, description="Whether this message is part of an error step. Used only for debugging purposes."
+    )
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
 
@@ -191,6 +193,7 @@ class Message(BaseMessage):
         if not is_utc_datetime(self.created_at):
             self.created_at = self.created_at.replace(tzinfo=timezone.utc)
         json_message["created_at"] = self.created_at.isoformat()
+        json_message.pop("is_err", None)  # make sure we don't include this debugging information
         return json_message
 
     @staticmethod
@@ -204,6 +207,7 @@ class Message(BaseMessage):
         assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
         assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
         reverse: bool = True,
+        include_err: Optional[bool] = None,
     ) -> List[LettaMessage]:
         if use_assistant_message:
             message_ids_to_remove = []
@@ -234,6 +238,7 @@ class Message(BaseMessage):
                 assistant_message_tool_name=assistant_message_tool_name,
                 assistant_message_tool_kwarg=assistant_message_tool_kwarg,
                 reverse=reverse,
+                include_err=include_err,
             )
         ]
 
@@ -243,6 +248,7 @@ class Message(BaseMessage):
         assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
         assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
         reverse: bool = True,
+        include_err: Optional[bool] = None,
     ) -> List[LettaMessage]:
         """Convert message object (in DB format) to the style used by the original Letta API"""
         messages = []
@@ -682,14 +688,13 @@ class Message(BaseMessage):
         # since the only "parts" we have are for supporting various COT
 
         if self.role == "system":
-            assert all([v is not None for v in [self.role]]), vars(self)
             openai_message = {
                 "content": text_content,
                 "role": "developer" if use_developer_message else self.role,
             }
 
         elif self.role == "user":
-            assert all([v is not None for v in [text_content, self.role]]), vars(self)
+            assert text_content is not None, vars(self)
             openai_message = {
                 "content": text_content,
                 "role": self.role,
@@ -720,7 +725,7 @@ class Message(BaseMessage):
                         tool_call_dict["id"] = tool_call_dict["id"][:max_tool_id_length]
 
         elif self.role == "tool":
-            assert all([v is not None for v in [self.role, self.tool_call_id]]), vars(self)
+            assert self.tool_call_id is not None, vars(self)
             openai_message = {
                 "content": text_content,
                 "role": self.role,
@@ -776,7 +781,7 @@ class Message(BaseMessage):
         if self.role == "system":
             # NOTE: this is not for system instructions, but instead system "events"
 
-            assert all([v is not None for v in [text_content, self.role]]), vars(self)
+            assert text_content is not None, vars(self)
             # Two options here, we would use system.package_system_message,
             # or use a more Anthropic-specific packaging ie xml tags
             user_system_event = add_xml_tag(string=f"SYSTEM ALERT: {text_content}", xml_tag="event")
@@ -875,7 +880,7 @@ class Message(BaseMessage):
 
         elif self.role == "tool":
             # NOTE: Anthropic uses role "user" for "tool" responses
-            assert all([v is not None for v in [self.role, self.tool_call_id]]), vars(self)
+            assert self.tool_call_id is not None, vars(self)
             anthropic_message = {
                 "role": "user",  # NOTE: diff
                 "content": [
@@ -988,7 +993,7 @@ class Message(BaseMessage):
 
         elif self.role == "tool":
             # NOTE: Significantly different tool calling format, more similar to function calling format
-            assert all([v is not None for v in [self.role, self.tool_call_id]]), vars(self)
+            assert self.tool_call_id is not None, vars(self)
 
             if self.name is None:
                 warnings.warn(f"Couldn't find function name on tool call, defaulting to tool ID instead.")

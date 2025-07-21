@@ -2,7 +2,6 @@ import asyncio
 import json
 import os
 import uuid
-import warnings
 from enum import Enum
 from typing import TYPE_CHECKING, AsyncGenerator, Dict, Iterable, List, Optional, Union, cast
 
@@ -34,12 +33,15 @@ from letta.schemas.message import Message, MessageCreate, ToolReturn
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
-from letta.server.rest_api.interface import StreamingServerInterface
 from letta.system import get_heartbeat, package_function_response
 
 if TYPE_CHECKING:
     from letta.server.server import SyncServer
 
+SENTRY_ENABLED = bool(os.getenv("SENTRY_DSN"))
+
+if SENTRY_ENABLED:
+    import sentry_sdk
 
 SSE_PREFIX = "data: "
 SSE_SUFFIX = "\n\n"
@@ -130,7 +132,7 @@ async def sse_async_generator(
             except Exception as e:
                 log_error_to_sentry(e)
                 logger.error(f"Caught unexpected Exception: {e}")
-                yield sse_formatter({"error": f"Stream failed (internal error occurred)"})
+                yield sse_formatter({"error": "Stream failed (internal error occurred)"})
 
     except Exception as e:
         log_error_to_sentry(e)
@@ -157,21 +159,9 @@ def get_user_id(user_id: Optional[str] = Header(None, alias="user_id")) -> Optio
     return user_id
 
 
-def get_current_interface() -> StreamingServerInterface:
-    return StreamingServerInterface
-
-
-def log_error_to_sentry(e):
-    import traceback
-
-    traceback.print_exc()
-    warnings.warn(f"SSE stream generator failed: {e}")
-
-    # Log the error, since the exception handler upstack (in FastAPI) won't catch it, because this may be a 200 response
-    # Print the stack trace
-    if (os.getenv("SENTRY_DSN") is not None) and (os.getenv("SENTRY_DSN") != ""):
-        import sentry_sdk
-
+def capture_sentry_exception(e: BaseException):
+    """This will capture the exception in sentry, since the exception handler upstack (in FastAPI) won't catch it, because this may be a 200 response"""
+    if SENTRY_ENABLED:
         sentry_sdk.capture_exception(e)
 
 
@@ -184,8 +174,6 @@ def create_input_messages(input_messages: List[MessageCreate], agent_id: str, ti
     """
 
     messages = convert_message_creates_to_messages(input_messages, agent_id, timezone, wrap_user_message=False, wrap_system_message=False)
-    for message in messages:
-        message.organization_id = actor.organization_id
     return messages
 
 
@@ -224,7 +212,6 @@ def create_letta_messages_from_llm_response(
     assistant_message = Message(
         role=MessageRole.assistant,
         content=reasoning_content if reasoning_content else [],
-        organization_id=actor.organization_id,
         agent_id=agent_id,
         model=model,
         tool_calls=[tool_call],
@@ -241,7 +228,6 @@ def create_letta_messages_from_llm_response(
     tool_message = Message(
         role=MessageRole.tool,
         content=[TextContent(text=package_function_response(function_call_success, function_response, timezone))],
-        organization_id=actor.organization_id,
         agent_id=agent_id,
         model=model,
         tool_calls=[],
@@ -294,7 +280,6 @@ def create_heartbeat_system_message(
     heartbeat_system_message = Message(
         role=MessageRole.user,
         content=[TextContent(text=get_heartbeat(timezone, text_content))],
-        organization_id=actor.organization_id,
         agent_id=agent_id,
         model=model,
         tool_calls=[],
@@ -370,7 +355,6 @@ def convert_in_context_letta_messages_to_openai(in_context_messages: List[Messag
                     id=msg.id,
                     role=msg.role,
                     content=[TextContent(text=extracted_text)],
-                    organization_id=msg.organization_id,
                     agent_id=msg.agent_id,
                     model=msg.model,
                     name=msg.name,
@@ -399,7 +383,6 @@ def convert_in_context_letta_messages_to_openai(in_context_messages: List[Messag
                             id=msg.id,
                             role=msg.role,
                             content=[TextContent(text=actual_user_text)],
-                            organization_id=msg.organization_id,
                             agent_id=msg.agent_id,
                             model=msg.model,
                             name=msg.name,

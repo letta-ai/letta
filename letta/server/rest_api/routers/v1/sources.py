@@ -99,6 +99,7 @@ async def get_source_id_by_name(
 async def get_sources_metadata(
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
+    include_detailed_per_source_metadata: bool = False,
 ):
     """
     Get aggregated metadata for all sources in an organization.
@@ -107,10 +108,12 @@ async def get_sources_metadata(
     - Total number of sources
     - Total number of files across all sources
     - Total size of all files
-    - Per-source breakdown with file details (file_name, file_size per file)
+    - Per-source breakdown with file details (file_name, file_size per file) if include_detailed_per_source_metadata is True
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    return await server.file_manager.get_organization_sources_metadata(actor=actor)
+    return await server.file_manager.get_organization_sources_metadata(
+        actor=actor, include_detailed_per_source_metadata=include_detailed_per_source_metadata
+    )
 
 
 @router.get("/", response_model=List[Source], operation_id="list_sources")
@@ -319,6 +322,19 @@ async def upload_file_to_source(
     safe_create_task(sleeptime_document_ingest_async(server, source_id, actor), logger=logger, label="sleeptime_document_ingest_async")
 
     return file_metadata
+
+
+@router.get("/{source_id}/agents", response_model=List[str], operation_id="get_agents_for_source")
+async def get_agents_for_source(
+    source_id: str,
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Get all agent IDs that have the specified source attached.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.source_manager.get_agents_for_source_id(source_id=source_id, actor=actor)
 
 
 @router.get("/{source_id}/passages", response_model=List[Passage], operation_id="list_source_passages")
