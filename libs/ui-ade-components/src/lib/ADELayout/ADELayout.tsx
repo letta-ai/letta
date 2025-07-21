@@ -169,7 +169,7 @@ function DesktopLayout() {
                   id: 'tools',
                   label: toolsTitle,
                   content: <ToolsPanel />,
-                  minHeight: 300,
+                  minHeight: 200,
                 },
                 {
                   id: 'datasources',

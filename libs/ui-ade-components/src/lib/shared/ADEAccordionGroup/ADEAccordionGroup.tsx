@@ -50,7 +50,7 @@ function ADEAccordionItem(props: ADEAccordionItemProps) {
         onClick={() => {
           onOpenChange(!open);
         }}
-        className="w-full h-[32px] flex items-center justify-between px-2 cursor-pointer"
+        className="w-full h-[32px] flex justify-between px-2 cursor-pointer py-2"
       >
         <Typography
           uppercase
@@ -233,7 +233,9 @@ export function ADEAccordionGroup(props: ADEAccordionGroupProps) {
             panelLength={panels.length}
             panelRefs={panelRefs}
           />
-          <div className="h-[1px] min-h-[1px] bg-border w-full" />
+          {idx < panels.length - 1 && (
+            <div className="h-[1px] min-h-[1px] bg-border w-full" />
+          )}
         </Fragment>
       ))}
       {bottomStickyPanels.length > 0 && (
