@@ -298,7 +298,7 @@ class VoiceAgent(BaseAgent):
             in_context_messages=in_context_messages, new_letta_messages=new_letta_messages
         )
 
-        await self.agent_manager.set_in_context_messages_async(
+        await self.agent_manager.update_message_ids_async(
             agent_id=self.agent_id, message_ids=[m.id for m in new_in_context_messages], actor=self.actor
         )
 
