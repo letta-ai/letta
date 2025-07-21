@@ -110,6 +110,32 @@ class AgentManager:
         self.identity_manager = IdentityManager()
         self.file_agent_manager = FileAgentManager()
 
+    @trace_method
+    async def _validate_agent_exists_async(self, session, agent_id: str, actor: PydanticUser) -> None:
+        """
+        Validate that an agent exists and user has access to it using raw SQL for efficiency.
+
+        Args:
+            session: Database session
+            agent_id: ID of the agent to validate
+            actor: User performing the action
+
+        Raises:
+            NoResultFound: If agent doesn't exist or user doesn't have access
+        """
+        agent_check_query = sa.text(
+            """
+            SELECT 1 FROM agents
+            WHERE id = :agent_id
+            AND organization_id = :org_id
+            AND is_deleted = false
+        """
+        )
+        agent_exists = await session.execute(agent_check_query, {"agent_id": agent_id, "org_id": actor.organization_id})
+
+        if not agent_exists.fetchone():
+            raise NoResultFound(f"Agent with ID {agent_id} not found")
+
     @staticmethod
     def _resolve_tools(session, names: Set[str], ids: Set[str], org_id: str) -> Tuple[Dict[str, str], Dict[str, str]]:
         """
@@ -2869,7 +2895,7 @@ class AgentManager:
         )
         calculator = ContextWindowCalculator()
 
-        if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" or agent_state.llm_config.model_endpoint_type == "anthropic":
+        if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" and agent_state.llm_config.model_endpoint_type == "anthropic":
             anthropic_client = LLMClient.create(provider_type=ProviderType.anthropic, actor=actor)
             model = agent_state.llm_config.model if agent_state.llm_config.model_endpoint_type == "anthropic" else None
 

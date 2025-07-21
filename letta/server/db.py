@@ -400,6 +400,11 @@ class DatabaseRegistry:
         """Trace sync db caller information for debugging purposes."""
         pass  # wrapper used for otel tracing only
 
+    @trace_method
+    def session_caller_trace(self, caller_info: str):
+        """Trace sync db caller information for debugging purposes."""
+        pass  # wrapper used for otel tracing only
+
 
 # Create a singleton instance
 db_registry = DatabaseRegistry()
