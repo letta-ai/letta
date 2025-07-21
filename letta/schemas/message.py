@@ -269,6 +269,7 @@ class Message(BaseMessage):
                             otid=otid,
                             sender_id=self.sender_id,
                             step_id=self.step_id,
+                            is_err=self.is_err,
                         )
                     )
                 # Otherwise, we may have a list of multiple types
@@ -287,6 +288,7 @@ class Message(BaseMessage):
                                     otid=otid,
                                     sender_id=self.sender_id,
                                     step_id=self.step_id,
+                                    is_err=self.is_err,
                                 )
                             )
                         elif isinstance(content_part, ReasoningContent):
@@ -301,6 +303,7 @@ class Message(BaseMessage):
                                     name=self.name,
                                     otid=otid,
                                     step_id=self.step_id,
+                                    is_err=self.is_err,
                                 )
                             )
                         elif isinstance(content_part, RedactedReasoningContent):
@@ -315,6 +318,7 @@ class Message(BaseMessage):
                                     otid=otid,
                                     sender_id=self.sender_id,
                                     step_id=self.step_id,
+                                    is_err=self.is_err,
                                 )
                             )
                         elif isinstance(content_part, OmittedReasoningContent):
@@ -328,6 +332,7 @@ class Message(BaseMessage):
                                     name=self.name,
                                     otid=otid,
                                     step_id=self.step_id,
+                                    is_err=self.is_err,
                                 )
                             )
                         else:
@@ -355,6 +360,7 @@ class Message(BaseMessage):
                                 otid=otid,
                                 sender_id=self.sender_id,
                                 step_id=self.step_id,
+                                is_err=self.is_err,
                             )
                         )
                     else:
@@ -371,6 +377,7 @@ class Message(BaseMessage):
                                 otid=otid,
                                 sender_id=self.sender_id,
                                 step_id=self.step_id,
+                                is_err=self.is_err,
                             )
                         )
         elif self.role == MessageRole.tool:
@@ -416,6 +423,7 @@ class Message(BaseMessage):
                     otid=Message.generate_otid_from_id(self.id, len(messages)),
                     sender_id=self.sender_id,
                     step_id=self.step_id,
+                    is_err=self.is_err,
                 )
             )
         elif self.role == MessageRole.user:
@@ -437,6 +445,7 @@ class Message(BaseMessage):
                     otid=self.otid,
                     sender_id=self.sender_id,
                     step_id=self.step_id,
+                    is_err=self.is_err,
                 )
             )
         elif self.role == MessageRole.system:
