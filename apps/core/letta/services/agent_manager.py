@@ -597,22 +597,32 @@ class AgentManager:
                     ]
                     await session.execute(insert(AgentEnvironmentVariable).values(env_rows))
 
+                include_relationships = []
+                if tool_ids:
+                    include_relationships.append("tools")
+                if source_ids:
+                    include_relationships.append("sources")
+                if block_ids:
+                    include_relationships.append("memory")
+                if identity_ids:
+                    include_relationships.append("identity_ids")
+                if tag_values:
+                    include_relationships.append("tags")
+
+                result = await new_agent.to_pydantic_async(include_relationships=include_relationships)
+
                 # initial message sequence (skip if _init_with_no_messages is True)
                 if not _init_with_no_messages:
-                    agent_state = await new_agent.to_pydantic_async(include_relationships={"memory"})
                     init_messages = self._generate_initial_message_sequence(
                         actor,
-                        agent_state=agent_state,
+                        agent_state=result,
                         supplied_initial_message_sequence=agent_create.initial_message_sequence,
                     )
+                    result.message_ids = [msg.id for msg in init_messages]
                     new_agent.message_ids = [msg.id for msg in init_messages]
+                    await new_agent.update_async(session, no_refresh=True)
                 else:
                     init_messages = []
-                    new_agent.message_ids = []
-
-            await session.refresh(new_agent)
-
-            result = await new_agent.to_pydantic_async()
 
         # Only create messages if we initialized with messages
         if not _init_with_no_messages:
