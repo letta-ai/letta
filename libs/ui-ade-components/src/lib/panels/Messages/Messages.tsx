@@ -215,12 +215,15 @@ function Message({ message }: MessageProps) {
           />
         ) : (
           <HStack justify="spaceBetween" align="start">
-
-            <span style={{
-              textDecoration: message.isError ? 'underline wavy hsl(var(--destructive))' : 'none',
-              textUnderlineOffset: '2px'
-            }}>
-            {message.content}
+            <span
+              style={{
+                textDecoration: message.isError
+                  ? 'underline wavy hsl(var(--destructive))'
+                  : 'none',
+                textUnderlineOffset: '2px',
+              }}
+            >
+              {message.content}
             </span>
 
             {message.editId && enabledEditing && (
@@ -547,7 +550,8 @@ export function Messages(props: MessagesProps) {
       mode: MessagesDisplayMode,
       allMessages: AgentMessage[],
     ): AgentSimulatorMessageType | null | undefined {
-      const isErroredMessage = 'is_err' in agentMessage && agentMessage.is_err === true;
+      const isErroredMessage =
+        'is_err' in agentMessage && agentMessage.is_err === true;
       if (mode === 'debug') {
         return {
           type: agentMessage.message_type,

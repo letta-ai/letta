@@ -96,7 +96,7 @@ export const featureFlags = {
     description: 'Show errored messages in the messages panel',
     expiryDate: '2025-08-15',
     flagValue: z.boolean(),
-  }
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;

@@ -16,7 +16,15 @@ export function NoDatasourceView() {
 
   return (
     <PanelMainContent>
-      <VStack fullWidth fullHeight paddingBottom="xlarge" border="dashed">
+      <VStack
+        className="min-h-[300px]"
+        align="center"
+        justify="center"
+        fullWidth
+        fullHeight
+        paddingBottom="xlarge"
+        border="dashed"
+      >
         <LoadingEmptyStatusComponent
           noMinHeight
           iconOverride={<DatabaseIcon size="xxlarge" />}

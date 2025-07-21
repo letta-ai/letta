@@ -99,7 +99,6 @@ function TransactionCost(props: TransactionCostProps) {
   return <Typography>{formatCurrency(0)}</Typography>;
 }
 
-
 export function ResponseEvent(props: RequestEventProps) {
   const { responsePayload, stepId, traces, stopReason } = props;
 

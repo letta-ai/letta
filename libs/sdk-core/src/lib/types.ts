@@ -63,7 +63,6 @@ export const ReasoningMessageSchema = z.object({
   date: z.string(),
   id: z.string(),
   is_err: z.boolean().nullish(),
-
 });
 
 export const HiddenReasoningMessageSchema = z.object({
@@ -76,7 +75,6 @@ export const HiddenReasoningMessageSchema = z.object({
   date: z.string(),
   id: z.string(),
   is_err: z.boolean().nullish(),
-
 });
 
 export const SendMessageFunctionCallSchema = z.object({

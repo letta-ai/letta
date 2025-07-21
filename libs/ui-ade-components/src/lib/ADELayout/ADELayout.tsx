@@ -12,6 +12,7 @@ import {
   EditIcon,
   Frame,
   HiddenOnMobile,
+  HR,
   HStack,
   LettaInvaderIcon,
   Logo,
@@ -104,6 +105,7 @@ import {
 import { DataSourcesPanel } from '../panels/DataSourcesV2/DataSourcesPanel';
 import { useQuickADETour } from '../hooks/useQuickADETour/useQuickADETour';
 import { useRouter } from 'next/navigation';
+import { ADEAccordionGroup } from '../shared/ADEAccordionGroup/ADEAccordionGroup';
 
 function DesktopLayout() {
   const t = useTranslations('ADELayout');
@@ -115,7 +117,6 @@ function DesktopLayout() {
     archivalMemoriesTitle,
   } = useADETitleTranslations();
 
-  const { data: isDatasourcesV2Enabled } = useFeatureFlag('DATASOURCES_V2');
   const { isTemplate, isLocal } = useCurrentAgentMetaData();
 
   const [networkInspectorOpen, setNetworkInspectorOpen] =
@@ -131,6 +132,8 @@ function DesktopLayout() {
       },
     ],
   ]);
+
+  const { data: enabledDv2 } = useFeatureFlag('DATASOURCES_V2');
 
   return (
     <HStack
@@ -148,36 +151,31 @@ function DesktopLayout() {
           minSize={20}
         >
           <VStack gap={false} fullWidth fullHeight>
-            <div className="h-[380px]">
-              <AgentSettingsOnboarding>
-                <ADEGroup
-                  items={[
-                    {
-                      title: t('settings', { baseName }),
-                      id: 'settings',
-                      content: <AgentSettingsPanel />,
-                    },
-                    {
-                      title: t('advancedSettings'),
-                      id: 'advanced-settings',
-                      content: <AdvancedSettingsPanel />,
-                    },
-                  ]}
-                />
-              </AgentSettingsOnboarding>
-            </div>
-            <div className="h-[1px] w-full bg-border" />
-            <ADEGroup
-              items={[
+            <ADEAccordionGroup
+              panels={[
                 {
-                  title: toolsTitle,
-                  id: 'tools',
-                  content: <ToolsPanel />,
+                  WrapperComponent: AgentSettingsOnboarding,
+                  id: 'settings',
+                  label: t('settings', { baseName }),
+                  content: <AgentSettingsPanel />,
+                  minHeight: 150,
                 },
                 {
-                  title: datasourcesTitle,
+                  id: 'advanced-settings',
+                  label: t('advancedSettings'),
+                  content: <AdvancedSettingsPanel />,
+                },
+                {
+                  id: 'tools',
+                  label: toolsTitle,
+                  content: <ToolsPanel />,
+                  minHeight: 300,
+                },
+                {
                   id: 'datasources',
-                  content: isDatasourcesV2Enabled ? (
+                  label: datasourcesTitle,
+                  minHeight: 150,
+                  content: enabledDv2 ? (
                     <DataSourcesPanel />
                   ) : (
                     <EditDataSourcesPanel />
@@ -233,20 +231,24 @@ function DesktopLayout() {
             <HStack className="max-h-[100px]">
               <ContextWindowPanel />
             </HStack>
-            <div className="h-[1px] w-full bg-border" />
-            <ADEGroup
-              items={[
+            <HR />
+            <ADEAccordionGroup
+              panels={[
                 {
-                  title: editCoreMemoriesTitle,
                   id: 'core-memories',
+                  label: editCoreMemoriesTitle,
                   content: <EditMemory />,
+                  minHeight: 300,
                 },
                 {
-                  title: archivalMemoriesTitle,
                   id: 'archival-memories',
+                  label: archivalMemoriesTitle,
                   content: <ArchivalMemoriesPanel />,
+                  minHeight: 300,
+                  defaultOpen: false,
                 },
               ]}
+              topOffset={100} // height of context window panel
             />
           </VStack>
         </Panel>

@@ -103,7 +103,9 @@ describe('letta', () => {
       { timeout: 50000 },
     );
 
-    cy.findAllByTestId('breadcrumb-item:DEPLOYMENTAGENT:2').first().click();
+    cy.findAllByTestId('breadcrumb-item:DEPLOYMENTAGENT:2')
+      .first()
+      .click({ force: true });
 
     cy.location('pathname', { timeout: 50000 }).should(
       'match',

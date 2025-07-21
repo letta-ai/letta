@@ -112,14 +112,20 @@ export function StepDetailBar(props: StepDetailBarProps) {
           {stepId && <FeedbackButtons stepId={stepId} />}
         </HStack>
         <HStack gap="small">
-          {stepDetails?.stop_reason && ["error", "invalid_tool_call", "no_tool_call", "cancelled"].includes(stepDetails?.stop_reason) && (
-            <>
-              <StopReason stopReason={stepDetails?.stop_reason} />
-              <Typography variant="body4" color="muted">
-                •
-              </Typography>
-            </>
-          )}
+          {stepDetails?.stop_reason &&
+            [
+              'error',
+              'invalid_tool_call',
+              'no_tool_call',
+              'cancelled',
+            ].includes(stepDetails?.stop_reason) && (
+              <>
+                <StopReason stopReason={stepDetails?.stop_reason} />
+                <Typography variant="body4" color="muted">
+                  •
+                </Typography>
+              </>
+            )}
           {stepDuration && (
             <>
               <Tooltip content={t('stepDurationTooltip')}>

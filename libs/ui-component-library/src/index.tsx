@@ -267,4 +267,6 @@ export * from './lib/core/JSONDiff/JSONDiff';
 
 export * from './lib/core/DynamicApp/DynamicApp';
 
+export * from './lib/ade/StickyPanels/StickyPanels';
+
 export * from './lib/core/MessageReplay/StopReason/StopReason';
