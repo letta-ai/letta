@@ -434,7 +434,7 @@ class AgentFileManager:
                 in_context_db_ids = [message_file_to_db_ids[message_schema_id] for message_schema_id in agent_schema.in_context_message_ids]
 
                 # Update agent with the correct message_ids
-                await self.agent_manager.set_in_context_messages_async(agent_id=agent_db_id, message_ids=in_context_db_ids, actor=actor)
+                await self.agent_manager.update_message_ids_async(agent_id=agent_db_id, message_ids=in_context_db_ids, actor=actor)
 
             # 8. Create file-agent relationships (depends on agents and files)
             for agent_schema in schema.agents:

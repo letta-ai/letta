@@ -907,6 +907,30 @@ class AgentManager:
 
             return await agent.to_pydantic_async()
 
+    @enforce_types
+    @trace_method
+    async def update_message_ids_async(
+        self,
+        agent_id: str,
+        message_ids: List[str],
+        actor: PydanticUser,
+    ) -> None:
+        async with db_registry.async_session() as session:
+            query = select(AgentModel)
+            query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
+            query = query.where(AgentModel.id == agent_id)
+            query = _apply_relationship_filters(query, include_relationships=[])
+
+            result = await session.execute(query)
+            agent = result.scalar_one_or_none()
+
+            agent.updated_at = datetime.now(timezone.utc)
+            agent.last_updated_by_id = actor.id
+            agent.message_ids = message_ids
+
+            await agent.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
+            await session.commit()
+
     # TODO: Make this general and think about how to roll this into sqlalchemybase
     @trace_method
     def list_agents(
