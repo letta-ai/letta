@@ -265,8 +265,4 @@ export * from './lib/core/ToolLanguageIcon/ToolLanguageIcon';
 
 export * from './lib/core/JSONDiff/JSONDiff';
 
-export * from './lib/ade/ADEAccordion/ADEAccordion';
-
 export * from './lib/core/DynamicApp/DynamicApp';
-
-export * from './lib/ade/StickyPanels/StickyPanels';
