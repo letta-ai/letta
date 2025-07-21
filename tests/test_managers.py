@@ -5262,6 +5262,164 @@ async def test_update_source_no_changes(server: SyncServer, default_user):
     assert updated_source.description == source.description
 
 
+@pytest.mark.asyncio
+async def test_bulk_upsert_sources_async(server: SyncServer, default_user):
+    """Test bulk upserting sources."""
+    sources_data = [
+        PydanticSource(
+            name="Bulk Source 1",
+            description="First bulk source",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        PydanticSource(
+            name="Bulk Source 2",
+            description="Second bulk source",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        PydanticSource(
+            name="Bulk Source 3",
+            description="Third bulk source",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+    ]
+
+    # Bulk upsert sources
+    created_sources = await server.source_manager.bulk_upsert_sources_async(sources_data, default_user)
+
+    # Verify all sources were created
+    assert len(created_sources) == 3
+
+    # Verify source details
+    created_names = {source.name for source in created_sources}
+    expected_names = {"Bulk Source 1", "Bulk Source 2", "Bulk Source 3"}
+    assert created_names == expected_names
+
+    # Verify organization assignment
+    for source in created_sources:
+        assert source.organization_id == default_user.organization_id
+
+
+@pytest.mark.asyncio
+async def test_bulk_upsert_sources_name_conflict(server: SyncServer, default_user):
+    """Test bulk upserting sources with name conflicts."""
+    # Create an existing source
+    existing_source = await server.source_manager.create_source(
+        PydanticSource(
+            name="Existing Source",
+            description="Already exists",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        default_user,
+    )
+
+    # Try to bulk upsert with the same name
+    sources_data = [
+        PydanticSource(
+            name="Existing Source",  # Same name as existing
+            description="Updated description",
+            metadata={"updated": True},
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        PydanticSource(
+            name="New Bulk Source",
+            description="Completely new",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+    ]
+
+    # Bulk upsert should update existing and create new
+    result_sources = await server.source_manager.bulk_upsert_sources_async(sources_data, default_user)
+
+    # Should return 2 sources
+    assert len(result_sources) == 2
+
+    # Find the updated source
+    updated_source = next(s for s in result_sources if s.name == "Existing Source")
+
+    # Verify the existing source was updated, not replaced
+    assert updated_source.id == existing_source.id  # ID should be preserved
+    assert updated_source.description == "Updated description"
+    assert updated_source.metadata == {"updated": True}
+
+    # Verify new source was created
+    new_source = next(s for s in result_sources if s.name == "New Bulk Source")
+    assert new_source.description == "Completely new"
+
+
+@pytest.mark.asyncio
+async def test_bulk_upsert_sources_mixed_create_update(server: SyncServer, default_user):
+    """Test bulk upserting with a mix of creates and updates."""
+    # Create some existing sources
+    existing1 = await server.source_manager.create_source(
+        PydanticSource(
+            name="Mixed Source 1",
+            description="Original 1",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        default_user,
+    )
+    existing2 = await server.source_manager.create_source(
+        PydanticSource(
+            name="Mixed Source 2",
+            description="Original 2",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        default_user,
+    )
+
+    # Bulk upsert with updates and new sources
+    sources_data = [
+        PydanticSource(
+            name="Mixed Source 1",  # Update existing
+            description="Updated 1",
+            instructions="New instructions 1",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        PydanticSource(
+            name="Mixed Source 3",  # Create new
+            description="New 3",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        PydanticSource(
+            name="Mixed Source 2",  # Update existing
+            description="Updated 2",
+            metadata={"version": 2},
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        PydanticSource(
+            name="Mixed Source 4",  # Create new
+            description="New 4",
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+    ]
+
+    # Perform bulk upsert
+    result_sources = await server.source_manager.bulk_upsert_sources_async(sources_data, default_user)
+
+    # Should return 4 sources
+    assert len(result_sources) == 4
+
+    # Verify updates preserved IDs
+    source1 = next(s for s in result_sources if s.name == "Mixed Source 1")
+    assert source1.id == existing1.id
+    assert source1.description == "Updated 1"
+    assert source1.instructions == "New instructions 1"
+
+    source2 = next(s for s in result_sources if s.name == "Mixed Source 2")
+    assert source2.id == existing2.id
+    assert source2.description == "Updated 2"
+    assert source2.metadata == {"version": 2}
+
+    # Verify new sources were created
+    source3 = next(s for s in result_sources if s.name == "Mixed Source 3")
+    assert source3.description == "New 3"
+    assert source3.id != existing1.id and source3.id != existing2.id
+
+    source4 = next(s for s in result_sources if s.name == "Mixed Source 4")
+    assert source4.description == "New 4"
+    assert source4.id != existing1.id and source4.id != existing2.id
+
+
 # ======================================================================================================================
 # Source Manager Tests - Files
 # ======================================================================================================================

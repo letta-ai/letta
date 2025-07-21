@@ -386,14 +386,27 @@ class AgentFileManager:
                     file_to_db_ids[block_schema.id] = created_block.id
                     imported_count += 1
 
-            # 3. Create sources (no dependencies)
-            for source_schema in schema.sources:
-                # Convert SourceSchema back to Source
-                source_data = source_schema.model_dump(exclude={"id", "embedding", "embedding_chunk_size"})
-                source = Source(**source_data)
-                created_source = await self.source_manager.create_source(source, actor)
-                file_to_db_ids[source_schema.id] = created_source.id
-                imported_count += 1
+            # 3. Create sources (no dependencies) - using bulk upsert for efficiency
+            if schema.sources:
+                # convert source schemas to pydantic sources
+                pydantic_sources = []
+                for source_schema in schema.sources:
+                    source_data = source_schema.model_dump(exclude={"id", "embedding", "embedding_chunk_size"})
+                    pydantic_sources.append(Source(**source_data))
+
+                # bulk upsert all sources at once
+                created_sources = await self.source_manager.bulk_upsert_sources_async(pydantic_sources, actor)
+
+                # map file ids to database ids
+                # note: sources are matched by name during upsert, so we need to match by name here too
+                created_sources_by_name = {source.name: source for source in created_sources}
+                for source_schema in schema.sources:
+                    created_source = created_sources_by_name.get(source_schema.name)
+                    if created_source:
+                        file_to_db_ids[source_schema.id] = created_source.id
+                        imported_count += 1
+                    else:
+                        logger.warning(f"Source {source_schema.name} was not created during bulk upsert")
 
             # 4. Create files (depends on sources)
             for file_schema in schema.files:
