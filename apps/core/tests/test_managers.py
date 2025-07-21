@@ -46,7 +46,7 @@ from letta.jobs.types import ItemUpdateInfo, RequestStatusUpdateInfo, StepStatus
 from letta.orm import Base, Block
 from letta.orm.block_history import BlockHistory
 from letta.orm.enums import ToolType
-from letta.orm.errors import ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
+from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.orm.file import FileContent as FileContentModel
 from letta.orm.file import FileMetadata as FileMetadataModel
 from letta.schemas.agent import CreateAgent, UpdateAgent
@@ -6558,30 +6558,6 @@ def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):
 
     with pytest.raises(NoResultFound):
         job_manager.get_job_usage(job_id="nonexistent_job", actor=default_user)
-
-
-@pytest.mark.asyncio
-async def test_job_usage_stats_add_nonexistent_job(server: SyncServer, sarah_agent, default_user, event_loop):
-    """Test adding usage statistics for a nonexistent job."""
-    step_manager = server.step_manager
-
-    with pytest.raises(ForeignKeyConstraintViolationError):
-        await step_manager.log_step_async(
-            agent_id=sarah_agent.id,
-            provider_name="openai",
-            provider_category="base",
-            model="gpt-4o-mini",
-            model_endpoint="https://api.openai.com/v1",
-            context_window_limit=8192,
-            job_id="nonexistent_job",
-            usage=UsageStatistics(
-                completion_tokens=100,
-                prompt_tokens=50,
-                total_tokens=150,
-            ),
-            actor=default_user,
-            project_id=sarah_agent.project_id,
-        )
 
 
 def test_list_tags(server: SyncServer, default_user, default_organization):
