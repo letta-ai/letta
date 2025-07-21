@@ -178,6 +178,56 @@ class ToolManager:
 
     @enforce_types
     @trace_method
+    async def bulk_upsert_tools_async(self, pydantic_tools: List[PydanticTool], actor: PydanticUser) -> List[PydanticTool]:
+        """
+        Bulk create or update multiple tools in a single database transaction.
+
+        Uses optimized PostgreSQL bulk upsert when available, falls back to individual
+        upserts for SQLite. This is much more efficient than calling create_or_update_tool_async
+        in a loop.
+
+        IMPORTANT BEHAVIOR NOTES:
+        - Tools are matched by (name, organization_id) unique constraint, NOT by ID
+        - If a tool with the same name already exists for the organization, it will be updated
+          regardless of any ID provided in the input tool
+        - The existing tool's ID is preserved during updates
+        - If you provide a tool with an explicit ID but a name that matches an existing tool,
+          the existing tool will be updated and the provided ID will be ignored
+        - This matches the behavior of create_or_update_tool_async which also matches by name
+
+        PostgreSQL optimization:
+        - Uses native ON CONFLICT (name, organization_id) DO UPDATE for atomic upserts
+        - All tools are processed in a single SQL statement for maximum efficiency
+
+        SQLite fallback:
+        - Falls back to individual create_or_update_tool_async calls
+        - Still benefits from batched transaction handling
+
+        Args:
+            pydantic_tools: List of tools to create or update
+            actor: User performing the action
+
+        Returns:
+            List of created/updated tools
+        """
+        if not pydantic_tools:
+            return []
+
+        # auto-generate descriptions if not provided
+        for tool in pydantic_tools:
+            if tool.description is None:
+                tool.description = tool.json_schema.get("description", None)
+
+        if settings.letta_pg_uri_no_default:
+            # use optimized postgresql bulk upsert
+            async with db_registry.async_session() as session:
+                return await self._bulk_upsert_postgresql(session, pydantic_tools, actor)
+        else:
+            # fallback to individual upserts for sqlite
+            return await self._upsert_tools_individually(pydantic_tools, actor)
+
+    @enforce_types
+    @trace_method
     def get_tool_by_id(self, tool_id: str, actor: PydanticUser) -> PydanticTool:
         """Fetch a tool by its ID."""
         with db_registry.session() as session:

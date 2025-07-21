@@ -149,7 +149,7 @@ class AgentFileManager:
         return sorted(unique_blocks.values(), key=lambda x: x.label)
 
     async def _extract_unique_sources_and_files_from_agents(
-        self, agent_states: List[AgentState], actor: User
+        self, agent_states: List[AgentState], actor: User, files_agents_cache: dict = None
     ) -> tuple[List[Source], List[FileMetadata]]:
         """Extract unique sources and files from agent states using bulk operations"""
 
@@ -160,6 +160,10 @@ class AgentFileManager:
             files_agents = await self.file_agent_manager.list_files_for_agent(
                 agent_id=agent_state.id, actor=actor, is_open_only=False, return_as_blocks=False
             )
+            # cache the results for reuse during conversion
+            if files_agents_cache is not None:
+                files_agents_cache[agent_state.id] = files_agents
+
             for file_agent in files_agents:
                 all_source_ids.add(file_agent.source_id)
                 all_file_ids.add(file_agent.file_id)
@@ -168,13 +172,18 @@ class AgentFileManager:
 
         return sources, files
 
-    async def _convert_agent_state_to_schema(self, agent_state: AgentState, actor: User) -> AgentSchema:
+    async def _convert_agent_state_to_schema(self, agent_state: AgentState, actor: User, files_agents_cache: dict = None) -> AgentSchema:
         """Convert AgentState to AgentSchema with ID remapping"""
 
         agent_file_id = self._map_db_to_file_id(agent_state.id, AgentSchema.__id_prefix__)
-        files_agents = await self.file_agent_manager.list_files_for_agent(
-            agent_id=agent_state.id, actor=actor, is_open_only=False, return_as_blocks=False
-        )
+
+        # use cached file-agent data if available, otherwise fetch
+        if files_agents_cache is not None and agent_state.id in files_agents_cache:
+            files_agents = files_agents_cache[agent_state.id]
+        else:
+            files_agents = await self.file_agent_manager.list_files_for_agent(
+                agent_id=agent_state.id, actor=actor, is_open_only=False, return_as_blocks=False
+            )
         agent_schema = await AgentSchema.from_agent_state(
             agent_state, message_manager=self.message_manager, files_agents=files_agents, actor=actor
         )
@@ -264,15 +273,21 @@ class AgentFileManager:
                 missing_ids = [agent_id for agent_id in agent_ids if agent_id not in found_ids]
                 raise AgentFileExportError(f"The following agent IDs were not found: {missing_ids}")
 
+            # cache for file-agent relationships to avoid duplicate queries
+            files_agents_cache = {}  # Maps agent_id to list of file_agent relationships
+
             # Extract unique entities across all agents
             tool_set = self._extract_unique_tools(agent_states)
             block_set = self._extract_unique_blocks(agent_states)
 
-            # Extract sources and files from agent states BEFORE conversion
-            source_set, file_set = await self._extract_unique_sources_and_files_from_agents(agent_states, actor)
+            # Extract sources and files from agent states BEFORE conversion (with caching)
+            source_set, file_set = await self._extract_unique_sources_and_files_from_agents(agent_states, actor, files_agents_cache)
 
-            # Convert to schemas with ID remapping
-            agent_schemas = [await self._convert_agent_state_to_schema(agent_state, actor=actor) for agent_state in agent_states]
+            # Convert to schemas with ID remapping (reusing cached file-agent data)
+            agent_schemas = [
+                await self._convert_agent_state_to_schema(agent_state, actor=actor, files_agents_cache=files_agents_cache)
+                for agent_state in agent_states
+            ]
             tool_schemas = [self._convert_tool_to_schema(tool) for tool in tool_set]
             block_schemas = [self._convert_block_to_schema(block) for block in block_set]
             source_schemas = [self._convert_source_to_schema(source) for source in source_set]
@@ -332,23 +347,44 @@ class AgentFileManager:
             # Import in dependency order
             imported_count = 0
             file_to_db_ids = {}  # Maps file IDs to new database IDs
+            # in-memory cache for file metadata to avoid repeated db calls
+            file_metadata_cache = {}  # Maps database file ID to FileMetadata
 
-            # 1. Create tools first (no dependencies)
-            for tool_schema in schema.tools:
-                # Convert ToolSchema back to ToolCreate
-                created_tool = await self.tool_manager.create_or_update_tool_async(
-                    pydantic_tool=Tool(**tool_schema.model_dump(exclude={"id"})), actor=actor
-                )
-                file_to_db_ids[tool_schema.id] = created_tool.id
-                imported_count += 1
+            # 1. Create tools first (no dependencies) - using bulk upsert for efficiency
+            if schema.tools:
+                # convert tool schemas to pydantic tools
+                pydantic_tools = []
+                for tool_schema in schema.tools:
+                    pydantic_tools.append(Tool(**tool_schema.model_dump(exclude={"id"})))
 
-            # 2. Create blocks (no dependencies)
-            for block_schema in schema.blocks:
-                # Convert BlockSchema back to CreateBlock
-                block = Block(**block_schema.model_dump(exclude={"id"}))
-                created_block = await self.block_manager.create_or_update_block_async(block, actor)
-                file_to_db_ids[block_schema.id] = created_block.id
-                imported_count += 1
+                # bulk upsert all tools at once
+                created_tools = await self.tool_manager.bulk_upsert_tools_async(pydantic_tools, actor)
+
+                # map file ids to database ids
+                # note: tools are matched by name during upsert, so we need to match by name here too
+                created_tools_by_name = {tool.name: tool for tool in created_tools}
+                for tool_schema in schema.tools:
+                    created_tool = created_tools_by_name.get(tool_schema.name)
+                    if created_tool:
+                        file_to_db_ids[tool_schema.id] = created_tool.id
+                        imported_count += 1
+                    else:
+                        logger.warning(f"Tool {tool_schema.name} was not created during bulk upsert")
+
+            # 2. Create blocks (no dependencies) - using batch create for efficiency
+            if schema.blocks:
+                # convert block schemas to pydantic blocks (excluding IDs to create new blocks)
+                pydantic_blocks = []
+                for block_schema in schema.blocks:
+                    pydantic_blocks.append(Block(**block_schema.model_dump(exclude={"id"})))
+
+                # batch create all blocks at once
+                created_blocks = await self.block_manager.batch_create_blocks_async(pydantic_blocks, actor)
+
+                # map file ids to database ids
+                for block_schema, created_block in zip(schema.blocks, created_blocks):
+                    file_to_db_ids[block_schema.id] = created_block.id
+                    imported_count += 1
 
             # 3. Create sources (no dependencies)
             for source_schema in schema.sources:
@@ -383,8 +419,10 @@ class AgentFileManager:
                     file_db_id = file_to_db_ids[file_schema.id]
                     source_db_id = file_to_db_ids[file_schema.source_id]
 
-                    # Get the created file metadata
-                    file_metadata = await self.file_manager.get_file_by_id(file_db_id, actor)
+                    # Get the created file metadata (with caching)
+                    if file_db_id not in file_metadata_cache:
+                        file_metadata_cache[file_db_id] = await self.file_manager.get_file_by_id(file_db_id, actor)
+                    file_metadata = file_metadata_cache[file_db_id]
 
                     # Save the db call of fetching content again
                     file_metadata.content = file_schema.content
@@ -447,7 +485,11 @@ class AgentFileManager:
 
                     for file_agent_schema in agent_schema.files_agents:
                         file_db_id = file_to_db_ids[file_agent_schema.file_id]
-                        file_metadata = await self.file_manager.get_file_by_id(file_db_id, actor)
+
+                        # Use cached file metadata if available
+                        if file_db_id not in file_metadata_cache:
+                            file_metadata_cache[file_db_id] = await self.file_manager.get_file_by_id(file_db_id, actor)
+                        file_metadata = file_metadata_cache[file_db_id]
                         files_for_agent.append(file_metadata)
 
                         if file_agent_schema.visible_content:

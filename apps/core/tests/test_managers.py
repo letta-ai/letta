@@ -3291,6 +3291,190 @@ async def test_upsert_base_tools_with_empty_type_filter(server: SyncServer, defa
 
 
 @pytest.mark.asyncio
+async def test_bulk_upsert_tools_async(server: SyncServer, default_user):
+    """Test bulk upserting multiple tools at once"""
+    # create multiple test tools
+    tools_data = []
+    for i in range(5):
+        tool = PydanticTool(
+            name=f"bulk_test_tool_{i}",
+            description=f"Test tool {i} for bulk operations",
+            tags=["bulk", "test"],
+            source_code=f"def bulk_test_tool_{i}():\n    '''Test tool {i} function'''\n    return 'result_{i}'",
+            source_type="python",
+        )
+        tools_data.append(tool)
+
+    # initial bulk upsert - should create all tools
+    created_tools = await server.tool_manager.bulk_upsert_tools_async(tools_data, default_user)
+    assert len(created_tools) == 5
+    assert all(t.name.startswith("bulk_test_tool_") for t in created_tools)
+    assert all(t.description for t in created_tools)
+
+    # verify all tools were created
+    for i in range(5):
+        tool = await server.tool_manager.get_tool_by_name_async(f"bulk_test_tool_{i}", default_user)
+        assert tool is not None
+        assert tool.description == f"Test tool {i} for bulk operations"
+
+    # modify some tools and upsert again - should update existing tools
+    tools_data[0].description = "Updated description for tool 0"
+    tools_data[2].tags = ["bulk", "test", "updated"]
+
+    updated_tools = await server.tool_manager.bulk_upsert_tools_async(tools_data, default_user)
+    assert len(updated_tools) == 5
+
+    # verify updates were applied
+    tool_0 = await server.tool_manager.get_tool_by_name_async("bulk_test_tool_0", default_user)
+    assert tool_0.description == "Updated description for tool 0"
+
+    tool_2 = await server.tool_manager.get_tool_by_name_async("bulk_test_tool_2", default_user)
+    assert "updated" in tool_2.tags
+
+    # test with empty list
+    empty_result = await server.tool_manager.bulk_upsert_tools_async([], default_user)
+    assert empty_result == []
+
+    # test with tools missing descriptions (should auto-generate from json schema)
+    no_desc_tool = PydanticTool(
+        name="no_description_tool",
+        tags=["test"],
+        source_code="def no_description_tool():\n    '''This is a docstring description'''\n    return 'result'",
+        source_type="python",
+    )
+    result = await server.tool_manager.bulk_upsert_tools_async([no_desc_tool], default_user)
+    assert len(result) == 1
+    assert result[0].description is not None  # should be auto-generated from docstring
+
+
+@pytest.mark.asyncio
+async def test_bulk_upsert_tools_name_conflict(server: SyncServer, default_user):
+    """Test bulk upserting tools handles name+org_id unique constraint correctly"""
+
+    # create a tool with a specific name
+    original_tool = PydanticTool(
+        name="unique_name_tool",
+        description="Original description",
+        tags=["original"],
+        source_code="def unique_name_tool():\n    '''Original function'''\n    return 'original'",
+        source_type="python",
+    )
+
+    # create it
+    created = await server.tool_manager.create_tool_async(original_tool, default_user)
+    original_id = created.id
+
+    # now try to bulk upsert with same name but different id
+    conflicting_tool = PydanticTool(
+        name="unique_name_tool",  # same name
+        description="Updated via bulk upsert",
+        tags=["updated", "bulk"],
+        source_code="def unique_name_tool():\n    '''Updated function'''\n    return 'updated'",
+        source_type="python",
+    )
+
+    # bulk upsert should update the existing tool based on name conflict
+    result = await server.tool_manager.bulk_upsert_tools_async([conflicting_tool], default_user)
+    assert len(result) == 1
+    assert result[0].name == "unique_name_tool"
+    assert result[0].description == "Updated via bulk upsert"
+    assert "updated" in result[0].tags
+    assert "bulk" in result[0].tags
+
+    # verify only one tool exists with this name
+    all_tools = await server.tool_manager.list_tools_async(actor=default_user)
+    tools_with_name = [t for t in all_tools if t.name == "unique_name_tool"]
+    assert len(tools_with_name) == 1
+
+    # the id should remain the same as the original
+    assert tools_with_name[0].id == original_id
+
+
+@pytest.mark.asyncio
+async def test_bulk_upsert_tools_mixed_create_update(server: SyncServer, default_user):
+    """Test bulk upserting with mix of new tools and updates to existing ones"""
+
+    # create some existing tools
+    existing_tools = []
+    for i in range(3):
+        tool = PydanticTool(
+            name=f"existing_tool_{i}",
+            description=f"Existing tool {i}",
+            tags=["existing"],
+            source_code=f"def existing_tool_{i}():\n    '''Existing {i}'''\n    return 'existing_{i}'",
+            source_type="python",
+        )
+        created = await server.tool_manager.create_tool_async(tool, default_user)
+        existing_tools.append(created)
+
+    # prepare bulk upsert with mix of updates and new tools
+    bulk_tools = []
+
+    # update existing tool 0 by name
+    bulk_tools.append(
+        PydanticTool(
+            name="existing_tool_0",  # matches by name
+            description="Updated existing tool 0",
+            tags=["existing", "updated"],
+            source_code="def existing_tool_0():\n    '''Updated 0'''\n    return 'updated_0'",
+            source_type="python",
+        )
+    )
+
+    # update existing tool 1 by name (since bulk upsert matches by name, not id)
+    bulk_tools.append(
+        PydanticTool(
+            name="existing_tool_1",  # matches by name
+            description="Updated existing tool 1",
+            tags=["existing", "updated"],
+            source_code="def existing_tool_1():\n    '''Updated 1'''\n    return 'updated_1'",
+            source_type="python",
+        )
+    )
+
+    # add completely new tools
+    for i in range(3, 6):
+        bulk_tools.append(
+            PydanticTool(
+                name=f"new_tool_{i}",
+                description=f"New tool {i}",
+                tags=["new"],
+                source_code=f"def new_tool_{i}():\n    '''New {i}'''\n    return 'new_{i}'",
+                source_type="python",
+            )
+        )
+
+    # perform bulk upsert
+    result = await server.tool_manager.bulk_upsert_tools_async(bulk_tools, default_user)
+    assert len(result) == 5  # 2 updates + 3 new
+
+    # verify updates
+    tool_0 = await server.tool_manager.get_tool_by_name_async("existing_tool_0", default_user)
+    assert tool_0.description == "Updated existing tool 0"
+    assert "updated" in tool_0.tags
+    assert tool_0.id == existing_tools[0].id  # id should remain same
+
+    # verify tool 1 was updated
+    tool_1 = await server.tool_manager.get_tool_by_id_async(existing_tools[1].id, default_user)
+    assert tool_1.name == "existing_tool_1"  # name stays same
+    assert tool_1.description == "Updated existing tool 1"
+    assert "updated" in tool_1.tags
+
+    # verify new tools were created
+    for i in range(3, 6):
+        new_tool = await server.tool_manager.get_tool_by_name_async(f"new_tool_{i}", default_user)
+        assert new_tool is not None
+        assert new_tool.description == f"New tool {i}"
+        assert "new" in new_tool.tags
+
+    # verify existing_tool_2 was not affected
+    tool_2 = await server.tool_manager.get_tool_by_id_async(existing_tools[2].id, default_user)
+    assert tool_2.name == "existing_tool_2"
+    assert tool_2.description == "Existing tool 2"
+    assert tool_2.tags == ["existing"]
+
+
+@pytest.mark.asyncio
 async def test_create_tool_with_pip_requirements(server: SyncServer, default_user, default_organization):
     def test_tool_with_deps():
         """
@@ -3665,6 +3849,71 @@ def test_create_block(server: SyncServer, default_user):
     assert block.description == block_create.description
     assert block.limit == block_create.limit
     assert block.metadata == block_create.metadata
+
+
+@pytest.mark.asyncio
+async def test_batch_create_blocks_async(server: SyncServer, default_user):
+    """Test batch creating multiple blocks at once"""
+    block_manager = BlockManager()
+
+    # create multiple test blocks
+    blocks_data = []
+    for i in range(5):
+        block = PydanticBlock(
+            label=f"test_block_{i}",
+            is_template=False,
+            value=f"Content for block {i}",
+            description=f"Test block {i} for batch operations",
+            limit=1000 + i * 100,  # varying limits
+            metadata={"index": i, "batch": "test"},
+        )
+        blocks_data.append(block)
+
+    # batch create all blocks at once
+    created_blocks = await block_manager.batch_create_blocks_async(blocks_data, default_user)
+
+    # verify all blocks were created
+    assert len(created_blocks) == 5
+    assert all(b.label.startswith("test_block_") for b in created_blocks)
+
+    # verify block properties were preserved
+    for i, block in enumerate(created_blocks):
+        assert block.label == f"test_block_{i}"
+        assert block.value == f"Content for block {i}"
+        assert block.description == f"Test block {i} for batch operations"
+        assert block.limit == 1000 + i * 100
+        assert block.metadata["index"] == i
+        assert block.metadata["batch"] == "test"
+        assert block.id is not None  # should have generated ids
+        # blocks have organization_id at the orm level, not in the pydantic model
+
+    # verify blocks can be retrieved individually
+    for created_block in created_blocks:
+        retrieved = await block_manager.get_block_by_id_async(created_block.id, default_user)
+        assert retrieved.id == created_block.id
+        assert retrieved.label == created_block.label
+        assert retrieved.value == created_block.value
+
+    # test with empty list
+    empty_result = await block_manager.batch_create_blocks_async([], default_user)
+    assert empty_result == []
+
+    # test creating blocks with same labels (should create separate blocks since no unique constraint)
+    duplicate_blocks = [
+        PydanticBlock(label="duplicate_label", value="Block 1"),
+        PydanticBlock(label="duplicate_label", value="Block 2"),
+        PydanticBlock(label="duplicate_label", value="Block 3"),
+    ]
+
+    created_duplicates = await block_manager.batch_create_blocks_async(duplicate_blocks, default_user)
+    assert len(created_duplicates) == 3
+    assert all(b.label == "duplicate_label" for b in created_duplicates)
+    # all should have different ids
+    ids = [b.id for b in created_duplicates]
+    assert len(set(ids)) == 3  # all unique ids
+    # but different values
+    values = [b.value for b in created_duplicates]
+    assert set(values) == {"Block 1", "Block 2", "Block 3"}
 
 
 @pytest.mark.asyncio
