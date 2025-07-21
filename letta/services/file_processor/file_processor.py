@@ -50,7 +50,7 @@ class FileProcessor:
         filename = file_metadata.file_name
 
         # Create file-type-specific chunker
-        text_chunker = LlamaIndexChunker(file_type=file_metadata.file_type)
+        text_chunker = LlamaIndexChunker(file_type=file_metadata.file_type, chunk_size=self.embedder.embedding_config.embedding_chunk_size)
 
         # First attempt with file-specific chunker
         try:
