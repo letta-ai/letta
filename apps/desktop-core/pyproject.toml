@@ -33,3 +33,4 @@ sqlalchemy-json = "^0.7.0"
 sqlalchemy-utils = "^0.41.2"
 marshmallow-sqlalchemy = "^1.4.1"
 aiosqlite = "^0.21.0"
+markitdown = {extras = ["docx", "pdf", "pptx"], version = "^0.1.2"}
