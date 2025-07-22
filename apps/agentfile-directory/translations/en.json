@@ -28,6 +28,15 @@
     "go": "Search",
     "all": "All"
   },
+  "agentfile-directory/search": {
+    "label": "Search",
+    "placeholder": "Search agentfiles",
+    "results": "{count} results found",
+    "back": "Back to homepage",
+    "next": "Next",
+    "searching": "Searching for agentfiles...",
+    "previous": "Previous"
+  },
   "components/Section": {
     "seeAll": "See all"
   },

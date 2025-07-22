@@ -186,7 +186,7 @@ export default [
         'error',
         {
           enforceBuildableLibDependency: true,
-          allow: ['$web/**'],
+          allow: ['$web/**', '$afd/**'],
           depConstraints: [
             {
               sourceTag: '*',

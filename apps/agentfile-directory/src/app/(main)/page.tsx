@@ -11,12 +11,13 @@ import {
 } from '@letta-cloud/ui-component-library';
 // import BannerLight from './banner_light.png';
 // import BannerDark from './banner_dark.png';
-import { Header } from '../lib/client/components/Header/Header';
 import { useTranslations } from '@letta-cloud/translations';
-import { Section } from '../lib/client/components/Section/Section';
-import { useAgentsList } from './hooks/useAgentsList/useAgentsList';
-import { useMemo, useState } from 'react';
-import { AgentFileCard } from '../lib/client/components/AgentFileCard/AgentFileCard';
+import { Section } from '$afd/client/components/Section/Section';
+import { useAgentsList } from '../hooks/useAgentsList/useAgentsList';
+import { Fragment, useCallback, useMemo, useState } from 'react';
+import { AgentFileCard } from '$afd/client/components/AgentFileCard/AgentFileCard';
+import { MainCenterView } from '../_components/MainCenterView/MainCenterView';
+import { useRouter } from 'next/navigation';
 
 function AllAgentsSection() {
   const t = useTranslations('agentfile-directory/index');
@@ -60,8 +61,23 @@ function Search() {
   const [search, setSearch] = useState('');
   const t = useTranslations('agentfile-directory/index');
 
+  const { push } = useRouter();
+
+  const onSubmit = useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const formData = new FormData(e.currentTarget);
+      const query = formData.get('query') as string;
+
+      if (query.trim().length > 0) {
+        push(`/search?query=${encodeURIComponent(query.trim())}`);
+      }
+    },
+    [push],
+  );
+
   return (
-    <form method="GET" action="/search">
+    <form onSubmit={onSubmit} method="GET" action="/search">
       <HStack
         fullWidth
         align="center"
@@ -104,31 +120,27 @@ export default function Index() {
   const t = useTranslations('agentfile-directory/index');
 
   return (
-    <VStack>
-      <Header />
-      <div className="h-[334px] absolute w-full z-[0] bg-background-grey2 agentheader-background"></div>
-      <div className="largerThanMobile:px-[72px] px-4 w-full">
-        <div className=" border max-w-[1296px] z-[1] w-full mt-[104px] mx-auto  relative bg-background">
-          <VStack
-            /* eslint-disable-next-line react/forbid-component-props */
-            className="max-w-[600px] p-6  largerThanMobile:p-[56px]"
-            fullWidth
-            gap="xlarge"
-          >
-            <LettaInvaderOutlineIcon size="xxlarge" />
-            <Typography variant="heading1">{t('title')}</Typography>
-            <HStack align="center">
-              <Typography variant="large">{t('start')} </Typography>↓
-            </HStack>
-          </VStack>
-          <Search />
-        </div>
-        <div className="max-w-[1296px] z-[1] w-full mt-[48px] mx-auto  relative bg-background">
-          <VStack paddingBottom>
-            <AllAgentsSection />
-          </VStack>
-        </div>
+    <Fragment>
+      <MainCenterView>
+        <VStack
+          /* eslint-disable-next-line react/forbid-component-props */
+          className="max-w-[600px] p-6  largerThanMobile:p-[56px]"
+          fullWidth
+          gap="xlarge"
+        >
+          <LettaInvaderOutlineIcon size="xxlarge" />
+          <Typography variant="heading1">{t('title')}</Typography>
+          <HStack align="center">
+            <Typography variant="large">{t('start')} </Typography>↓
+          </HStack>
+        </VStack>
+        <Search />
+      </MainCenterView>
+      <div className="max-w-[1296px] z-[1] w-full mt-[48px] mx-auto  relative bg-background">
+        <VStack paddingBottom>
+          <AllAgentsSection />
+        </VStack>
       </div>
-    </VStack>
+    </Fragment>
   );
 }
