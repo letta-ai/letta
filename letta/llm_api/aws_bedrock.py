@@ -1,17 +1,30 @@
+"""
+Note that this formally only supports Anthropic Bedrock.
+TODO (cliandy): determine what other providers are supported and what is needed to add support.
+"""
+
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from anthropic import AnthropicBedrock
 
+from letta.log import get_logger
 from letta.settings import model_settings
+
+logger = get_logger(__name__)
 
 
 def has_valid_aws_credentials() -> bool:
     """
     Check if AWS credentials are properly configured.
     """
-    valid_aws_credentials = os.getenv("AWS_ACCESS_KEY_ID") and os.getenv("AWS_SECRET_ACCESS_KEY") and os.getenv("AWS_DEFAULT_REGION")
-    return valid_aws_credentials
+    return all(
+        (
+            os.getenv("AWS_ACCESS_KEY_ID"),
+            os.getenv("AWS_SECRET_ACCESS_KEY"),
+            os.getenv("AWS_DEFAULT_REGION"),
+        )
+    )
 
 
 def get_bedrock_client(
@@ -41,48 +54,11 @@ def get_bedrock_client(
     return bedrock
 
 
-def bedrock_get_model_list(
-    region_name: str,
-    access_key_id: Optional[str] = None,
-    secret_access_key: Optional[str] = None,
-) -> List[dict]:
-    """
-    Get list of available models from Bedrock.
-
-    Args:
-        region_name: AWS region name
-        access_key_id: Optional AWS access key ID
-        secret_access_key: Optional AWS secret access key
-
-        TODO: Implement model_provider and output_modality filtering
-        model_provider: Optional provider name to filter models. If None, returns all models.
-        output_modality: Output modality to filter models. Defaults to "text".
-
-    Returns:
-        List of model summaries
-
-    """
-    import boto3
-
-    try:
-        bedrock = boto3.client(
-            "bedrock",
-            region_name=region_name,
-            aws_access_key_id=access_key_id,
-            aws_secret_access_key=secret_access_key,
-        )
-        response = bedrock.list_inference_profiles()
-        return response["inferenceProfileSummaries"]
-    except Exception as e:
-        print(f"Error getting model list: {str(e)}")
-        raise e
-
-
 async def bedrock_get_model_list_async(
     access_key_id: Optional[str] = None,
     secret_access_key: Optional[str] = None,
     default_region: Optional[str] = None,
-) -> List[dict]:
+) -> list[dict]:
     from aioboto3.session import Session
 
     try:
@@ -96,11 +72,11 @@ async def bedrock_get_model_list_async(
             response = await bedrock.list_inference_profiles()
             return response["inferenceProfileSummaries"]
     except Exception as e:
-        print(f"Error getting model list: {str(e)}")
+        logger.error(f"Error getting model list for bedrock: %s", e)
         raise e
 
 
-def bedrock_get_model_details(region_name: str, model_id: str) -> Dict[str, Any]:
+def bedrock_get_model_details(region_name: str, model_id: str) -> dict[str, Any]:
     """
     Get details for a specific model from Bedrock.
     """
@@ -121,54 +97,8 @@ def bedrock_get_model_context_window(model_id: str) -> int:
     Get context window size for a specific model.
     """
     # Bedrock doesn't provide this via API, so we maintain a mapping
-    context_windows = {
-        "anthropic.claude-3-5-sonnet-20241022-v2:0": 200000,
-        "anthropic.claude-3-5-sonnet-20240620-v1:0": 200000,
-        "anthropic.claude-3-5-haiku-20241022-v1:0": 200000,
-        "anthropic.claude-3-haiku-20240307-v1:0": 200000,
-        "anthropic.claude-3-opus-20240229-v1:0": 200000,
-        "anthropic.claude-3-sonnet-20240229-v1:0": 200000,
-    }
-    return context_windows.get(model_id, 200000)  # default to 100k if unknown
-
-
-"""
-{
-    "id": "msg_123",
-    "type": "message",
-    "role": "assistant",
-    "model": "anthropic.claude-3-5-sonnet-20241022-v2:0",
-    "content": [
-        {
-            "type": "text",
-            "text": "I see the Firefox icon. Let me click on it and then navigate to a weather website."
-        },
-        {
-            "type": "tool_use",
-            "id": "toolu_123",
-            "name": "computer",
-            "input": {
-                "action": "mouse_move",
-                "coordinate": [
-                    708,
-                    736
-                ]
-            }
-        },
-        {
-            "type": "tool_use",
-            "id": "toolu_234",
-            "name": "computer",
-            "input": {
-                "action": "left_click"
-            }
-        }
-    ],
-    "stop_reason": "tool_use",
-    "stop_sequence": null,
-    "usage": {
-        "input_tokens": 3391,
-        "output_tokens": 132
-    }
-}
-"""
+    # 200k for anthropic: https://aws.amazon.com/bedrock/anthropic/
+    if model_id.startswith("anthropic"):
+        return 200_000
+    else:
+        return 100_000  # default to 100k if unknown

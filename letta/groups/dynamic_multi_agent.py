@@ -94,6 +94,7 @@ class DynamicMultiAgent(Agent):
                 for name, agent_id in [(agents[agent_id].agent_state.name, agent_id) for agent_id in agent_id_options]:
                     if name.lower() in assistant_message.content.lower():
                         speaker_id = agent_id
+                assert speaker_id is not None, f"No names found in {assistant_message.content}"
 
                 # Sum usage
                 total_usage.prompt_tokens += usage_stats.prompt_tokens

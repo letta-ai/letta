@@ -18,7 +18,7 @@ def get_ollama_completion(endpoint, auth_type, auth_key, model, prompt, context_
 
     if model is None:
         raise LocalLLMError(
-            f"Error: model name not specified. Set model in your config to the model you want to run (e.g. 'dolphin2.2-mistral')"
+            "Error: model name not specified. Set model in your config to the model you want to run (e.g. 'dolphin2.2-mistral')"
         )
 
     # Settings for the generation, includes the prompt + stop tokens, max length, etc
@@ -51,7 +51,7 @@ def get_ollama_completion(endpoint, auth_type, auth_key, model, prompt, context_
     # Set grammar
     if grammar is not None:
         # request["grammar_string"] = load_grammar_file(grammar)
-        raise NotImplementedError(f"Ollama does not support grammars")
+        raise NotImplementedError("Ollama does not support grammars")
 
     if not endpoint.startswith(("http://", "https://")):
         raise ValueError(f"Provided OPENAI_API_BASE value ({endpoint}) must begin with http:// or https://")

@@ -222,6 +222,13 @@ class GroupManager:
 
     @enforce_types
     @trace_method
+    async def delete_group_async(self, group_id: str, actor: PydanticUser) -> None:
+        async with db_registry.async_session() as session:
+            group = await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
+            await group.hard_delete_async(session)
+
+    @enforce_types
+    @trace_method
     def list_group_messages(
         self,
         actor: PydanticUser,

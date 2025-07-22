@@ -2,6 +2,8 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE
+
 
 class EmbeddingConfig(BaseModel):
     """
@@ -62,7 +64,7 @@ class EmbeddingConfig(BaseModel):
                 embedding_endpoint_type="openai",
                 embedding_endpoint="https://api.openai.com/v1",
                 embedding_dim=1536,
-                embedding_chunk_size=300,
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
             )
         if (model_name == "text-embedding-3-small" and provider == "openai") or (not model_name and provider == "openai"):
             return cls(
@@ -70,14 +72,14 @@ class EmbeddingConfig(BaseModel):
                 embedding_endpoint_type="openai",
                 embedding_endpoint="https://api.openai.com/v1",
                 embedding_dim=2000,
-                embedding_chunk_size=300,
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
             )
         elif model_name == "letta":
             return cls(
                 embedding_endpoint="https://embeddings.memgpt.ai",
                 embedding_model="BAAI/bge-large-en-v1.5",
                 embedding_dim=1024,
-                embedding_chunk_size=300,
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
                 embedding_endpoint_type="hugging-face",
             )
         else:

@@ -71,12 +71,12 @@ async def modify_provider(
 
 
 @router.get("/check", response_model=None, operation_id="check_provider")
-def check_provider(
+async def check_provider(
     request: ProviderCheck = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
 ):
     try:
-        server.provider_manager.check_provider_api_key(provider_check=request)
+        await server.provider_manager.check_provider_api_key(provider_check=request)
         return JSONResponse(
             status_code=status.HTTP_200_OK, content={"message": f"Valid api key for provider_type={request.provider_type.value}"}
         )
