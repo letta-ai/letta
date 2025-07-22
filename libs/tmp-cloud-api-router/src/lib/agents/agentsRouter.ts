@@ -81,7 +81,7 @@ async function createAgent(
       status: 400,
       body: {
         message:
-          'Programmatic creation of agents from templates is not supported',
+          'Programmatic creation of templates is not supported. If you want to create an agent from a template, check out (https://docs.letta.com/api-reference/templates/agents/create)',
       },
     };
   }
