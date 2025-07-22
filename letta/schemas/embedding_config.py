@@ -40,6 +40,7 @@ class EmbeddingConfig(BaseModel):
         "hugging-face",
         "mistral",
         "together",  # completions endpoint
+        "voyageai",
     ] = Field(..., description="The endpoint type for the model.")
     embedding_endpoint: Optional[str] = Field(None, description="The endpoint for the model (`None` if local).")
     embedding_model: str = Field(..., description="The model for the embedding.")
