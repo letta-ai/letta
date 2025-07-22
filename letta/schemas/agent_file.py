@@ -145,6 +145,8 @@ class AgentSchema(CreateAgent):
             enable_sleeptime=False,  # TODO: Need to figure out how to patch this
             response_format=agent_state.response_format,
             timezone=agent_state.timezone or "UTC",
+            max_files_open=agent_state.max_files_open,
+            per_file_view_window_char_limit=agent_state.per_file_view_window_char_limit,
         )
 
         messages = await message_manager.list_messages_for_agent_async(

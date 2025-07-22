@@ -88,6 +88,7 @@ from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import calculate_base_tools, calculate_multi_agent_tools, validate_agent_exists_async
 from letta.services.step_manager import FeedbackType
 from letta.settings import tool_settings
+from letta.utils import calculate_file_defaults_based_on_context_window
 from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
 from tests.utils import random_string
 
@@ -686,6 +687,7 @@ async def file_attachment(server, default_user, sarah_agent, default_file):
         source_id=default_file.source_id,
         actor=default_user,
         visible_content="initial",
+        max_files_open=sarah_agent.max_files_open,
     )
     yield assoc
 
@@ -933,6 +935,7 @@ async def test_get_context_window_basic(
         source_id=default_file.source_id,
         actor=default_user,
         visible_content="hello",
+        max_files_open=created_agent.max_files_open,
     )
 
     # Get context window and check for basic appearances
@@ -1055,6 +1058,113 @@ async def test_update_agent(
     comprehensive_agent_checks(updated_agent, update_agent_request, actor=default_user)
     assert updated_agent.message_ids == update_agent_request.message_ids
     assert updated_agent.updated_at > last_updated_timestamp
+
+
+@pytest.mark.asyncio
+async def test_agent_file_defaults_based_on_context_window(server: SyncServer, default_user, default_block, event_loop):
+    """Test that file-related defaults are set based on the model's context window size"""
+
+    # test with small context window model (8k)
+    llm_config_small = LLMConfig.default_config("gpt-4o-mini")
+    llm_config_small.context_window = 8000
+    create_agent_request = CreateAgent(
+        name="test_agent_small_context",
+        llm_config=llm_config_small,
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        include_base_tools=False,
+    )
+    agent_state = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+    assert agent_state.max_files_open == 3
+    assert (
+        agent_state.per_file_view_window_char_limit == calculate_file_defaults_based_on_context_window(llm_config_small.context_window)[1]
+    )
+    server.agent_manager.delete_agent(agent_id=agent_state.id, actor=default_user)
+
+    # test with medium context window model (32k)
+    llm_config_medium = LLMConfig.default_config("gpt-4o-mini")
+    llm_config_medium.context_window = 32000
+    create_agent_request = CreateAgent(
+        name="test_agent_medium_context",
+        llm_config=llm_config_medium,
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        include_base_tools=False,
+    )
+    agent_state = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+    assert agent_state.max_files_open == 5
+    assert (
+        agent_state.per_file_view_window_char_limit == calculate_file_defaults_based_on_context_window(llm_config_medium.context_window)[1]
+    )
+    server.agent_manager.delete_agent(agent_id=agent_state.id, actor=default_user)
+
+    # test with large context window model (128k)
+    llm_config_large = LLMConfig.default_config("gpt-4o-mini")
+    llm_config_large.context_window = 128000
+    create_agent_request = CreateAgent(
+        name="test_agent_large_context",
+        llm_config=llm_config_large,
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        include_base_tools=False,
+    )
+    agent_state = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+    assert agent_state.max_files_open == 10
+    assert (
+        agent_state.per_file_view_window_char_limit == calculate_file_defaults_based_on_context_window(llm_config_large.context_window)[1]
+    )
+    server.agent_manager.delete_agent(agent_id=agent_state.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_agent_file_defaults_explicit_values(server: SyncServer, default_user, default_block, event_loop):
+    """Test that explicitly set file-related values are respected"""
+
+    llm_config_explicit = LLMConfig.default_config("gpt-4o-mini")
+    llm_config_explicit.context_window = 32000  # would normally get defaults of 5 and 30k
+    create_agent_request = CreateAgent(
+        name="test_agent_explicit_values",
+        llm_config=llm_config_explicit,
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        include_base_tools=False,
+        max_files_open=20,  # explicit value
+        per_file_view_window_char_limit=500_000,  # explicit value
+    )
+    agent_state = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+    # verify explicit values are used instead of defaults
+    assert agent_state.max_files_open == 20
+    assert agent_state.per_file_view_window_char_limit == 500_000
+    server.agent_manager.delete_agent(agent_id=agent_state.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_update_agent_file_fields(server: SyncServer, comprehensive_test_agent_fixture, default_user, event_loop):
+    """Test updating file-related fields on an existing agent"""
+
+    agent, _ = comprehensive_test_agent_fixture
+
+    # update file-related fields
+    update_request = UpdateAgent(
+        max_files_open=15,
+        per_file_view_window_char_limit=150_000,
+    )
+    updated_agent = await server.agent_manager.update_agent_async(agent.id, update_request, actor=default_user)
+
+    assert updated_agent.max_files_open == 15
+    assert updated_agent.per_file_view_window_char_limit == 150_000
 
 
 # ======================================================================================================================
@@ -7654,6 +7764,7 @@ async def test_attach_creates_association(server, default_user, sarah_agent, def
         source_id=default_file.source_id,
         actor=default_user,
         visible_content="hello",
+        max_files_open=sarah_agent.max_files_open,
     )
 
     assert assoc.agent_id == sarah_agent.id
@@ -7677,6 +7788,7 @@ async def test_attach_is_idempotent(server, default_user, sarah_agent, default_f
         source_id=default_file.source_id,
         actor=default_user,
         visible_content="first",
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # second attach with different params
@@ -7688,6 +7800,7 @@ async def test_attach_is_idempotent(server, default_user, sarah_agent, default_f
         actor=default_user,
         is_open=False,
         visible_content="second",
+        max_files_open=sarah_agent.max_files_open,
     )
 
     assert a1.id == a2.id
@@ -7764,6 +7877,7 @@ async def test_list_files_and_agents(
         file_name=default_file.file_name,
         source_id=default_file.source_id,
         actor=default_user,
+        max_files_open=charles_agent.max_files_open,
     )
     # default_file ↔ sarah    (open)
     await server.file_agent_manager.attach_file(
@@ -7772,6 +7886,7 @@ async def test_list_files_and_agents(
         file_name=default_file.file_name,
         source_id=default_file.source_id,
         actor=default_user,
+        max_files_open=sarah_agent.max_files_open,
     )
     # another_file ↔ sarah    (closed)
     await server.file_agent_manager.attach_file(
@@ -7781,12 +7896,17 @@ async def test_list_files_and_agents(
         source_id=another_file.source_id,
         actor=default_user,
         is_open=False,
+        max_files_open=sarah_agent.max_files_open,
     )
 
-    files_for_sarah = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
+    files_for_sarah = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user
+    )
     assert {f.file_id for f in files_for_sarah} == {default_file.id, another_file.id}
 
-    open_only = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
+    open_only = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
     assert {f.file_id for f in open_only} == {default_file.id}
 
     agents_for_default = await server.file_agent_manager.list_agents_for_file(default_file.id, actor=default_user)
@@ -7832,10 +7952,13 @@ async def test_org_scoping(
         file_name=default_file.file_name,
         source_id=default_file.source_id,
         actor=default_user,
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # other org should see nothing
-    files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=other_user_different_org)
+    files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=other_user_different_org
+    )
     assert files == []
 
 
@@ -7870,6 +7993,7 @@ async def test_mark_access_bulk(server, default_user, sarah_agent, default_sourc
             source_id=file.source_id,
             actor=default_user,
             visible_content=f"content for {file.file_name}",
+            max_files_open=sarah_agent.max_files_open,
         )
         attached_files.append(file_agent)
 
@@ -7898,14 +8022,15 @@ async def test_mark_access_bulk(server, default_user, sarah_agent, default_sourc
 
 @pytest.mark.asyncio
 async def test_lru_eviction_on_attach(server, default_user, sarah_agent, default_source):
-    """Test that attaching files beyond MAX_FILES_OPEN triggers LRU eviction."""
+    """Test that attaching files beyond max_files_open triggers LRU eviction."""
     import time
 
-    from letta.constants import MAX_FILES_OPEN
+    # Use the agent's configured max_files_open
+    max_files_open = sarah_agent.max_files_open
 
     # Create more files than the limit
     files = []
-    for i in range(MAX_FILES_OPEN + 2):  # 7 files for MAX_FILES_OPEN=5
+    for i in range(max_files_open + 2):  # e.g., 7 files for max_files_open=5
         file_metadata = PydanticFileMetadata(
             file_name=f"lru_test_file_{i}.txt",
             organization_id=default_user.organization_id,
@@ -7929,41 +8054,52 @@ async def test_lru_eviction_on_attach(server, default_user, sarah_agent, default
             source_id=file.source_id,
             actor=default_user,
             visible_content=f"content for {file.file_name}",
+            max_files_open=sarah_agent.max_files_open,
         )
         attached_files.append(file_agent)
         all_closed_files.extend(closed_files)
 
-        # Check that we never exceed MAX_FILES_OPEN
-        open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-        assert len(open_files) <= MAX_FILES_OPEN, f"Should never exceed {MAX_FILES_OPEN} open files"
+        # Check that we never exceed max_files_open
+        open_files = await server.file_agent_manager.list_files_for_agent(
+            sarah_agent.id,
+            per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit,
+            actor=default_user,
+            is_open_only=True,
+        )
+        assert len(open_files) <= max_files_open, f"Should never exceed {max_files_open} open files"
 
-    # Should have closed exactly 2 files (7 - 5 = 2)
-    assert len(all_closed_files) == 2, f"Should have closed 2 files, but closed: {all_closed_files}"
+    # Should have closed exactly 2 files (e.g., 7 - 5 = 2 for max_files_open=5)
+    expected_closed_count = len(files) - max_files_open
+    assert (
+        len(all_closed_files) == expected_closed_count
+    ), f"Should have closed {expected_closed_count} files, but closed: {all_closed_files}"
 
-    # Check that the oldest files were closed (first 2 files attached)
-    expected_closed = [files[0].file_name, files[1].file_name]
+    # Check that the oldest files were closed (first N files attached)
+    expected_closed = [files[i].file_name for i in range(expected_closed_count)]
     assert set(all_closed_files) == set(expected_closed), f"Wrong files closed. Expected {expected_closed}, got {all_closed_files}"
 
-    # Check that exactly MAX_FILES_OPEN files are open
-    open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-    assert len(open_files) == MAX_FILES_OPEN
+    # Check that exactly max_files_open files are open
+    open_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
+    assert len(open_files) == max_files_open
 
     # Check that the most recently attached files are still open
     open_file_names = {f.file_name for f in open_files}
-    expected_open = {files[i].file_name for i in range(2, MAX_FILES_OPEN + 2)}  # files 2-6
+    expected_open = {files[i].file_name for i in range(expected_closed_count, len(files))}  # last max_files_open files
     assert open_file_names == expected_open
 
 
 @pytest.mark.asyncio
 async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, default_source):
-    """Test that opening a file beyond MAX_FILES_OPEN triggers LRU eviction."""
+    """Test that opening a file beyond max_files_open triggers LRU eviction."""
     import time
 
-    from letta.constants import MAX_FILES_OPEN
+    max_files_open = sarah_agent.max_files_open
 
     # Create files equal to the limit
     files = []
-    for i in range(MAX_FILES_OPEN + 1):  # 6 files for MAX_FILES_OPEN=5
+    for i in range(max_files_open + 1):  # 6 files for max_files_open=5
         file_metadata = PydanticFileMetadata(
             file_name=f"open_test_file_{i}.txt",
             organization_id=default_user.organization_id,
@@ -7972,8 +8108,8 @@ async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, defa
         file = await server.file_manager.create_file(file_metadata=file_metadata, actor=default_user, text=f"test content {i}")
         files.append(file)
 
-    # Attach first MAX_FILES_OPEN files
-    for i in range(MAX_FILES_OPEN):
+    # Attach first max_files_open files
+    for i in range(max_files_open):
         time.sleep(0.1)  # Small delay for different timestamps
         await server.file_agent_manager.attach_file(
             agent_id=sarah_agent.id,
@@ -7982,6 +8118,7 @@ async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, defa
             source_id=files[i].source_id,
             actor=default_user,
             visible_content=f"content for {files[i].file_name}",
+            max_files_open=sarah_agent.max_files_open,
         )
 
     # Attach the last file as closed
@@ -7993,13 +8130,18 @@ async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, defa
         actor=default_user,
         is_open=False,
         visible_content=f"content for {files[-1].file_name}",
+        max_files_open=sarah_agent.max_files_open,
     )
 
-    # All files should be attached but only MAX_FILES_OPEN should be open
-    all_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
-    open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-    assert len(all_files) == MAX_FILES_OPEN + 1
-    assert len(open_files) == MAX_FILES_OPEN
+    # All files should be attached but only max_files_open should be open
+    all_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user
+    )
+    open_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
+    assert len(all_files) == max_files_open + 1
+    assert len(open_files) == max_files_open
 
     # Wait a moment
     time.sleep(0.1)
@@ -8012,15 +8154,18 @@ async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, defa
         source_id=files[-1].source_id,
         actor=default_user,
         visible_content="updated content",
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # Should have closed 1 file (the oldest one)
     assert len(closed_files) == 1, f"Should have closed 1 file, got: {closed_files}"
     assert closed_files[0] == files[0].file_name, f"Should have closed oldest file {files[0].file_name}"
 
-    # Check that exactly MAX_FILES_OPEN files are still open
-    open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-    assert len(open_files) == MAX_FILES_OPEN
+    # Check that exactly max_files_open files are still open
+    open_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
+    assert len(open_files) == max_files_open
 
     # Check that the newly opened file is open and the oldest is closed
     last_file_agent = await server.file_agent_manager.get_file_agent_by_id(
@@ -8039,11 +8184,11 @@ async def test_lru_no_eviction_when_reopening_same_file(server, default_user, sa
     """Test that reopening an already open file doesn't trigger unnecessary eviction."""
     import time
 
-    from letta.constants import MAX_FILES_OPEN
+    max_files_open = sarah_agent.max_files_open
 
     # Create files equal to the limit
     files = []
-    for i in range(MAX_FILES_OPEN):
+    for i in range(max_files_open):
         file_metadata = PydanticFileMetadata(
             file_name=f"reopen_test_file_{i}.txt",
             organization_id=default_user.organization_id,
@@ -8062,11 +8207,14 @@ async def test_lru_no_eviction_when_reopening_same_file(server, default_user, sa
             source_id=file.source_id,
             actor=default_user,
             visible_content=f"content for {file.file_name}",
+            max_files_open=sarah_agent.max_files_open,
         )
 
     # All files should be open
-    open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-    assert len(open_files) == MAX_FILES_OPEN
+    open_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
+    assert len(open_files) == max_files_open
     initial_open_names = {f.file_name for f in open_files}
 
     # Wait a moment
@@ -8080,6 +8228,7 @@ async def test_lru_no_eviction_when_reopening_same_file(server, default_user, sa
         source_id=files[-1].source_id,
         actor=default_user,
         visible_content="updated content",
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # Should not have closed any files since we're within the limit
@@ -8087,8 +8236,10 @@ async def test_lru_no_eviction_when_reopening_same_file(server, default_user, sa
     assert was_already_open is True, "File should have been detected as already open"
 
     # All the same files should still be open
-    open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-    assert len(open_files) == MAX_FILES_OPEN
+    open_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
+    assert len(open_files) == max_files_open
     final_open_names = {f.file_name for f in open_files}
     assert initial_open_names == final_open_names, "Same files should remain open"
 
@@ -8113,6 +8264,7 @@ async def test_last_accessed_at_updates_correctly(server, default_user, sarah_ag
         source_id=file.source_id,
         actor=default_user,
         visible_content="initial content",
+        max_files_open=sarah_agent.max_files_open,
     )
 
     initial_time = file_agent.last_accessed_at
@@ -8166,13 +8318,16 @@ async def test_attach_files_bulk_basic(server, default_user, sarah_agent, defaul
         files_metadata=files,
         visible_content_map=visible_content_map,
         actor=default_user,
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # Should not close any files since we're under the limit
     assert closed_files == []
 
     # Verify all files are attached and open
-    attached_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
+    attached_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
     assert len(attached_files) == 3
 
     attached_file_names = {f.file_name for f in attached_files}
@@ -8213,10 +8368,13 @@ async def test_attach_files_bulk_deduplication(server, default_user, sarah_agent
         files_metadata=files_to_attach,
         visible_content_map=visible_content_map,
         actor=default_user,
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # Should only attach one file (deduplicated)
-    attached_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
+    attached_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user
+    )
     assert len(attached_files) == 1
     assert attached_files[0].file_name == "duplicate_test.txt"
 
@@ -8226,11 +8384,11 @@ async def test_attach_files_bulk_lru_eviction(server, default_user, sarah_agent,
     """Test that attach_files_bulk properly handles LRU eviction without duplicates."""
     import time
 
-    from letta.constants import MAX_FILES_OPEN
+    max_files_open = sarah_agent.max_files_open
 
     # First, fill up to the max with individual files
     existing_files = []
-    for i in range(MAX_FILES_OPEN):
+    for i in range(max_files_open):
         file_metadata = PydanticFileMetadata(
             file_name=f"existing_{i}.txt",
             organization_id=default_user.organization_id,
@@ -8247,11 +8405,14 @@ async def test_attach_files_bulk_lru_eviction(server, default_user, sarah_agent,
             source_id=file.source_id,
             actor=default_user,
             visible_content=f"existing content {i}",
+            max_files_open=sarah_agent.max_files_open,
         )
 
     # Verify we're at the limit
-    open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-    assert len(open_files) == MAX_FILES_OPEN
+    open_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
+    assert len(open_files) == max_files_open
 
     # Now bulk attach 3 new files (should trigger LRU eviction)
     new_files = []
@@ -8272,6 +8433,7 @@ async def test_attach_files_bulk_lru_eviction(server, default_user, sarah_agent,
         files_metadata=new_files,
         visible_content_map=visible_content_map,
         actor=default_user,
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # Should have closed exactly 3 files (oldest ones)
@@ -8285,9 +8447,11 @@ async def test_attach_files_bulk_lru_eviction(server, default_user, sarah_agent,
     actual_closed = set(closed_files)
     assert actual_closed == expected_closed
 
-    # Verify we still have exactly MAX_FILES_OPEN files open
-    open_files_after = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-    assert len(open_files_after) == MAX_FILES_OPEN
+    # Verify we still have exactly max_files_open files open
+    open_files_after = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
+    assert len(open_files_after) == max_files_open
 
     # Verify the new files are open
     open_file_names = {f.file_name for f in open_files_after}
@@ -8314,6 +8478,7 @@ async def test_attach_files_bulk_mixed_existing_new(server, default_user, sarah_
         actor=default_user,
         visible_content="old content",
         is_open=False,  # Start as closed
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # Create new files
@@ -8340,13 +8505,16 @@ async def test_attach_files_bulk_mixed_existing_new(server, default_user, sarah_
         files_metadata=files_to_attach,
         visible_content_map=visible_content_map,
         actor=default_user,
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # Should not close any files
     assert closed_files == []
 
     # Verify all files are now open
-    open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
+    open_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
     assert len(open_files) == 3
 
     # Verify existing file was updated
@@ -8361,27 +8529,26 @@ async def test_attach_files_bulk_mixed_existing_new(server, default_user, sarah_
 async def test_attach_files_bulk_empty_list(server, default_user, sarah_agent):
     """Test attach_files_bulk with empty file list."""
     closed_files = await server.file_agent_manager.attach_files_bulk(
-        agent_id=sarah_agent.id,
-        files_metadata=[],
-        visible_content_map={},
-        actor=default_user,
+        agent_id=sarah_agent.id, files_metadata=[], visible_content_map={}, actor=default_user, max_files_open=sarah_agent.max_files_open
     )
 
     assert closed_files == []
 
     # Verify no files are attached
-    attached_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
+    attached_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user
+    )
     assert len(attached_files) == 0
 
 
 @pytest.mark.asyncio
 async def test_attach_files_bulk_oversized_bulk(server, default_user, sarah_agent, default_source):
-    """Test bulk attach when trying to attach more files than MAX_FILES_OPEN allows."""
-    from letta.constants import MAX_FILES_OPEN
+    """Test bulk attach when trying to attach more files than max_files_open allows."""
+    max_files_open = sarah_agent.max_files_open
 
     # Create more files than the limit allows
     oversized_files = []
-    for i in range(MAX_FILES_OPEN + 3):  # 3 more than limit
+    for i in range(max_files_open + 3):  # 3 more than limit
         file_metadata = PydanticFileMetadata(
             file_name=f"oversized_{i}.txt",
             organization_id=default_user.organization_id,
@@ -8390,7 +8557,7 @@ async def test_attach_files_bulk_oversized_bulk(server, default_user, sarah_agen
         file = await server.file_manager.create_file(file_metadata=file_metadata, actor=default_user, text=f"oversized {i}")
         oversized_files.append(file)
 
-    visible_content_map = {f"oversized_{i}.txt": f"oversized visible {i}" for i in range(MAX_FILES_OPEN + 3)}
+    visible_content_map = {f"oversized_{i}.txt": f"oversized visible {i}" for i in range(max_files_open + 3)}
 
     # Bulk attach all files (more than limit)
     closed_files = await server.file_agent_manager.attach_files_bulk(
@@ -8398,6 +8565,7 @@ async def test_attach_files_bulk_oversized_bulk(server, default_user, sarah_agen
         files_metadata=oversized_files,
         visible_content_map=visible_content_map,
         actor=default_user,
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # Should have closed exactly 3 files (the excess)
@@ -8406,13 +8574,17 @@ async def test_attach_files_bulk_oversized_bulk(server, default_user, sarah_agen
     # CRITICAL: Verify no duplicates in closed_files list
     assert len(closed_files) == len(set(closed_files)), f"Duplicate file names in closed_files: {closed_files}"
 
-    # Should have exactly MAX_FILES_OPEN files open
-    open_files_after = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-    assert len(open_files_after) == MAX_FILES_OPEN
+    # Should have exactly max_files_open files open
+    open_files_after = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
+    assert len(open_files_after) == max_files_open
 
     # All files should be attached (some open, some closed)
-    all_files_after = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
-    assert len(all_files_after) == MAX_FILES_OPEN + 3
+    all_files_after = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user
+    )
+    assert len(all_files_after) == max_files_open + 3
 
 
 # ======================================================================================================================

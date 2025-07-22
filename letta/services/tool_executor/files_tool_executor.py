@@ -2,7 +2,7 @@ import asyncio
 import re
 from typing import Any, Dict, List, Optional
 
-from letta.constants import MAX_FILES_OPEN, PINECONE_TEXT_FIELD_NAME
+from letta.constants import PINECONE_TEXT_FIELD_NAME
 from letta.functions.types import FileOpenRequest
 from letta.helpers.pinecone_utils import search_pinecone_index, should_use_pinecone
 from letta.log import get_logger
@@ -117,8 +117,10 @@ class LettaFileToolExecutor(ToolExecutor):
         file_requests = parsed_requests
 
         # Validate file count first
-        if len(file_requests) > MAX_FILES_OPEN:
-            raise ValueError(f"Cannot open {len(file_requests)} files: exceeds maximum limit of {MAX_FILES_OPEN} files")
+        if len(file_requests) > agent_state.max_files_open:
+            raise ValueError(
+                f"Cannot open {len(file_requests)} files: exceeds configured maximum limit of {agent_state.max_files_open} files"
+            )
 
         if not file_requests:
             raise ValueError("No file requests provided")
@@ -186,6 +188,7 @@ class LettaFileToolExecutor(ToolExecutor):
                 source_id=file.source_id,
                 actor=self.actor,
                 visible_content=visible_content,
+                max_files_open=agent_state.max_files_open,
             )
 
             opened_files.append(file_name)
@@ -329,7 +332,9 @@ class LettaFileToolExecutor(ToolExecutor):
             include_regex = re.compile(include_pattern, re.IGNORECASE)
 
         # Get all attached files for this agent
-        file_agents = await self.files_agents_manager.list_files_for_agent(agent_id=agent_state.id, actor=self.actor)
+        file_agents = await self.files_agents_manager.list_files_for_agent(
+            agent_id=agent_state.id, per_file_view_window_char_limit=agent_state.per_file_view_window_char_limit, actor=self.actor
+        )
 
         if not file_agents:
             return "No files are currently attached to search"
@@ -509,7 +514,9 @@ class LettaFileToolExecutor(ToolExecutor):
             return f"No valid source IDs found for attached files"
 
         # Get all attached files for this agent
-        file_agents = await self.files_agents_manager.list_files_for_agent(agent_id=agent_state.id, actor=self.actor)
+        file_agents = await self.files_agents_manager.list_files_for_agent(
+            agent_id=agent_state.id, per_file_view_window_char_limit=agent_state.per_file_view_window_char_limit, actor=self.actor
+        )
         if not file_agents:
             return "No files are currently attached to search"
 

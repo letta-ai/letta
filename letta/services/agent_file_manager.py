@@ -158,7 +158,11 @@ class AgentFileManager:
 
         for agent_state in agent_states:
             files_agents = await self.file_agent_manager.list_files_for_agent(
-                agent_id=agent_state.id, actor=actor, is_open_only=False, return_as_blocks=False
+                agent_id=agent_state.id,
+                actor=actor,
+                is_open_only=False,
+                return_as_blocks=False,
+                per_file_view_window_char_limit=agent_state.per_file_view_window_char_limit,
             )
             # cache the results for reuse during conversion
             if files_agents_cache is not None:
@@ -182,7 +186,11 @@ class AgentFileManager:
             files_agents = files_agents_cache[agent_state.id]
         else:
             files_agents = await self.file_agent_manager.list_files_for_agent(
-                agent_id=agent_state.id, actor=actor, is_open_only=False, return_as_blocks=False
+                agent_id=agent_state.id,
+                actor=actor,
+                is_open_only=False,
+                return_as_blocks=False,
+                per_file_view_window_char_limit=agent_state.per_file_view_window_char_limit,
             )
         agent_schema = await AgentSchema.from_agent_state(
             agent_state, message_manager=self.message_manager, files_agents=files_agents, actor=actor
@@ -510,7 +518,11 @@ class AgentFileManager:
 
                     # Bulk attach files to agent
                     await self.file_agent_manager.attach_files_bulk(
-                        agent_id=agent_db_id, files_metadata=files_for_agent, visible_content_map=visible_content_map, actor=actor
+                        agent_id=agent_db_id,
+                        files_metadata=files_for_agent,
+                        visible_content_map=visible_content_map,
+                        actor=actor,
+                        max_files_open=agent_schema.max_files_open,
                     )
                     imported_count += len(files_for_agent)
 
