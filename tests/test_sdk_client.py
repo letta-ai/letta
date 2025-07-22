@@ -686,9 +686,13 @@ def test_include_return_message_types(client: LettaSDKClient, agent: AgentState,
             include_return_message_types=message_types,
         )
         # wait to finish
-        while response.status != "completed":
+        while response.status not in {"failed", "completed", "cancelled", "expired"}:
             time.sleep(1)
             response = client.runs.retrieve(run_id=response.id)
+
+        if response.status != "completed":
+            pytest.fail(f"Response status was NOT completed: {response}")
+
         messages = client.runs.messages.list(run_id=response.id)
         verify_message_types(messages, message_types)
 

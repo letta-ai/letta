@@ -1406,14 +1406,14 @@ async def test_list_agents_ordering_and_pagination(server: SyncServer, default_u
 async def test_attach_tool(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
     """Test attaching a tool to an agent."""
     # Attach the tool
-    server.agent_manager.attach_tool(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
 
     # Verify attachment through get_agent_by_id
     agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     assert print_tool.id in [t.id for t in agent.tools]
 
     # Verify that attaching the same tool again doesn't cause duplication
-    server.agent_manager.attach_tool(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
     agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     assert len([t for t in agent.tools if t.id == print_tool.id]) == 1
 
@@ -1422,39 +1422,125 @@ async def test_attach_tool(server: SyncServer, sarah_agent, print_tool, default_
 async def test_detach_tool(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
     """Test detaching a tool from an agent."""
     # Attach the tool first
-    server.agent_manager.attach_tool(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
 
     # Verify it's attached
     agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     assert print_tool.id in [t.id for t in agent.tools]
 
     # Detach the tool
-    server.agent_manager.detach_tool(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+    await server.agent_manager.detach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
 
     # Verify it's detached
     agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     assert print_tool.id not in [t.id for t in agent.tools]
 
     # Verify that detaching an already detached tool doesn't cause issues
-    server.agent_manager.detach_tool(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+    await server.agent_manager.detach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
 
 
-def test_attach_tool_nonexistent_agent(server: SyncServer, print_tool, default_user):
+@pytest.mark.asyncio
+async def test_bulk_detach_tools(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
+    """Test bulk detaching multiple tools from an agent."""
+    # First attach both tools
+    tool_ids = [print_tool.id, other_tool.id]
+    await server.agent_manager.bulk_attach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Verify both tools are attached
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert print_tool.id in [t.id for t in agent.tools]
+    assert other_tool.id in [t.id for t in agent.tools]
+
+    # Bulk detach both tools
+    await server.agent_manager.bulk_detach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Verify both tools are detached
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert print_tool.id not in [t.id for t in agent.tools]
+    assert other_tool.id not in [t.id for t in agent.tools]
+
+
+@pytest.mark.asyncio
+async def test_bulk_detach_tools_partial(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
+    """Test bulk detaching tools when some are not attached."""
+    # Only attach one tool
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+
+    # Try to bulk detach both tools (one attached, one not)
+    tool_ids = [print_tool.id, other_tool.id]
+    await server.agent_manager.bulk_detach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Verify the attached tool was detached
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert print_tool.id not in [t.id for t in agent.tools]
+    assert other_tool.id not in [t.id for t in agent.tools]
+
+
+@pytest.mark.asyncio
+async def test_bulk_detach_tools_empty_list(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
+    """Test bulk detaching empty list of tools."""
+    # Attach a tool first
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+
+    # Bulk detach empty list
+    await server.agent_manager.bulk_detach_tools_async(agent_id=sarah_agent.id, tool_ids=[], actor=default_user)
+
+    # Verify the tool is still attached
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert print_tool.id in [t.id for t in agent.tools]
+
+
+@pytest.mark.asyncio
+async def test_bulk_detach_tools_idempotent(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
+    """Test that bulk detach is idempotent."""
+    # Attach both tools
+    tool_ids = [print_tool.id, other_tool.id]
+    await server.agent_manager.bulk_attach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Bulk detach once
+    await server.agent_manager.bulk_detach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Verify tools are detached
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert len(agent.tools) == 0
+
+    # Bulk detach again (should be no-op, no errors)
+    await server.agent_manager.bulk_detach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Verify still no tools
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert len(agent.tools) == 0
+
+
+@pytest.mark.asyncio
+async def test_bulk_detach_tools_nonexistent_agent(server: SyncServer, print_tool, other_tool, default_user, event_loop):
+    """Test bulk detaching tools from a nonexistent agent."""
+    nonexistent_agent_id = "nonexistent-agent-id"
+    tool_ids = [print_tool.id, other_tool.id]
+
+    with pytest.raises(NoResultFound):
+        await server.agent_manager.bulk_detach_tools_async(agent_id=nonexistent_agent_id, tool_ids=tool_ids, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_attach_tool_nonexistent_agent(server: SyncServer, print_tool, default_user):
     """Test attaching a tool to a nonexistent agent."""
     with pytest.raises(NoResultFound):
-        server.agent_manager.attach_tool(agent_id="nonexistent-agent-id", tool_id=print_tool.id, actor=default_user)
+        await server.agent_manager.attach_tool_async(agent_id="nonexistent-agent-id", tool_id=print_tool.id, actor=default_user)
 
 
-def test_attach_tool_nonexistent_tool(server: SyncServer, sarah_agent, default_user):
+@pytest.mark.asyncio
+async def test_attach_tool_nonexistent_tool(server: SyncServer, sarah_agent, default_user):
     """Test attaching a nonexistent tool to an agent."""
     with pytest.raises(NoResultFound):
-        server.agent_manager.attach_tool(agent_id=sarah_agent.id, tool_id="nonexistent-tool-id", actor=default_user)
+        await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id="nonexistent-tool-id", actor=default_user)
 
 
-def test_detach_tool_nonexistent_agent(server: SyncServer, print_tool, default_user):
+@pytest.mark.asyncio
+async def test_detach_tool_nonexistent_agent(server: SyncServer, print_tool, default_user):
     """Test detaching a tool from a nonexistent agent."""
     with pytest.raises(NoResultFound):
-        server.agent_manager.detach_tool(agent_id="nonexistent-agent-id", tool_id=print_tool.id, actor=default_user)
+        await server.agent_manager.detach_tool_async(agent_id="nonexistent-agent-id", tool_id=print_tool.id, actor=default_user)
 
 
 @pytest.mark.asyncio
@@ -1465,8 +1551,8 @@ async def test_list_attached_tools(server: SyncServer, sarah_agent, print_tool, 
     assert len(agent.tools) == 0
 
     # Attach tools
-    server.agent_manager.attach_tool(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
-    server.agent_manager.attach_tool(agent_id=sarah_agent.id, tool_id=other_tool.id, actor=default_user)
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=other_tool.id, actor=default_user)
 
     # List tools and verify
     agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
@@ -1474,6 +1560,251 @@ async def test_list_attached_tools(server: SyncServer, sarah_agent, print_tool, 
     assert len(attached_tool_ids) == 2
     assert print_tool.id in attached_tool_ids
     assert other_tool.id in attached_tool_ids
+
+
+@pytest.mark.asyncio
+async def test_bulk_attach_tools(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
+    """Test bulk attaching multiple tools to an agent."""
+    # Bulk attach both tools
+    tool_ids = [print_tool.id, other_tool.id]
+    await server.agent_manager.bulk_attach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Verify both tools are attached
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    attached_tool_ids = [t.id for t in agent.tools]
+    assert print_tool.id in attached_tool_ids
+    assert other_tool.id in attached_tool_ids
+
+
+@pytest.mark.asyncio
+async def test_bulk_attach_tools_with_duplicates(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
+    """Test bulk attaching tools handles duplicates correctly."""
+    # First attach one tool
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+
+    # Bulk attach both tools (one already attached)
+    tool_ids = [print_tool.id, other_tool.id]
+    await server.agent_manager.bulk_attach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Verify both tools are attached and no duplicates
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    attached_tool_ids = [t.id for t in agent.tools]
+    assert len(attached_tool_ids) == 2
+    assert print_tool.id in attached_tool_ids
+    assert other_tool.id in attached_tool_ids
+    # Ensure no duplicates
+    assert len(set(attached_tool_ids)) == len(attached_tool_ids)
+
+
+@pytest.mark.asyncio
+async def test_bulk_attach_tools_empty_list(server: SyncServer, sarah_agent, default_user, event_loop):
+    """Test bulk attaching empty list of tools."""
+    # Bulk attach empty list
+    await server.agent_manager.bulk_attach_tools_async(agent_id=sarah_agent.id, tool_ids=[], actor=default_user)
+
+    # Verify no tools are attached
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert len(agent.tools) == 0
+
+
+@pytest.mark.asyncio
+async def test_bulk_attach_tools_nonexistent_tool(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
+    """Test bulk attaching tools with a nonexistent tool ID."""
+    # Try to bulk attach with one valid and one invalid tool ID
+    nonexistent_id = "nonexistent-tool-id"
+    tool_ids = [print_tool.id, nonexistent_id]
+
+    with pytest.raises(NoResultFound) as exc_info:
+        await server.agent_manager.bulk_attach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Verify error message contains the missing tool ID
+    assert nonexistent_id in str(exc_info.value)
+
+    # Verify no tools were attached (transaction should have rolled back)
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert len(agent.tools) == 0
+
+
+@pytest.mark.asyncio
+async def test_bulk_attach_tools_nonexistent_agent(server: SyncServer, print_tool, other_tool, default_user, event_loop):
+    """Test bulk attaching tools to a nonexistent agent."""
+    nonexistent_agent_id = "nonexistent-agent-id"
+    tool_ids = [print_tool.id, other_tool.id]
+
+    with pytest.raises(NoResultFound):
+        await server.agent_manager.bulk_attach_tools_async(agent_id=nonexistent_agent_id, tool_ids=tool_ids, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_attach_missing_files_tools_async(server: SyncServer, sarah_agent, default_user, event_loop):
+    """Test attaching missing file tools to an agent."""
+    # First ensure file tools exist in the system
+    await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
+
+    # Get initial agent state (should have no file tools)
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    initial_tool_count = len(agent_state.tools)
+
+    # Attach missing file tools
+    updated_agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify all file tools are now attached
+    file_tool_names = {tool.name for tool in updated_agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
+    assert file_tool_names == set(FILES_TOOLS)
+
+    # Verify the total tool count increased by the number of file tools
+    assert len(updated_agent_state.tools) == initial_tool_count + len(FILES_TOOLS)
+
+
+@pytest.mark.asyncio
+async def test_attach_missing_files_tools_async_partial(server: SyncServer, sarah_agent, default_user, event_loop):
+    """Test attaching missing file tools when some are already attached."""
+    # First ensure file tools exist in the system
+    await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
+
+    # Get file tool IDs
+    all_tools = await server.tool_manager.list_tools_async(actor=default_user)
+    file_tools = [tool for tool in all_tools if tool.tool_type == ToolType.LETTA_FILES_CORE and tool.name in FILES_TOOLS]
+
+    # Manually attach just the first file tool
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=file_tools[0].id, actor=default_user)
+
+    # Get agent state with one file tool already attached
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert len([t for t in agent_state.tools if t.tool_type == ToolType.LETTA_FILES_CORE]) == 1
+
+    # Attach missing file tools
+    updated_agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify all file tools are now attached
+    file_tool_names = {tool.name for tool in updated_agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
+    assert file_tool_names == set(FILES_TOOLS)
+
+    # Verify no duplicates
+    all_tool_ids = [tool.id for tool in updated_agent_state.tools]
+    assert len(all_tool_ids) == len(set(all_tool_ids))
+
+
+@pytest.mark.asyncio
+async def test_attach_missing_files_tools_async_idempotent(server: SyncServer, sarah_agent, default_user, event_loop):
+    """Test that attach_missing_files_tools is idempotent."""
+    # First ensure file tools exist in the system
+    await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
+
+    # Get initial agent state
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+
+    # Attach missing file tools the first time
+    updated_agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=default_user)
+    first_tool_count = len(updated_agent_state.tools)
+
+    # Call attach_missing_files_tools again (should be no-op)
+    final_agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=updated_agent_state, actor=default_user)
+
+    # Verify tool count didn't change
+    assert len(final_agent_state.tools) == first_tool_count
+
+    # Verify still have all file tools
+    file_tool_names = {tool.name for tool in final_agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
+    assert file_tool_names == set(FILES_TOOLS)
+
+
+@pytest.mark.asyncio
+async def test_detach_all_files_tools_async(server: SyncServer, sarah_agent, default_user, event_loop):
+    """Test detaching all file tools from an agent."""
+    # First ensure file tools exist and attach them
+    await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
+
+    # Get initial agent state and attach file tools
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify file tools are attached
+    file_tool_count_before = len([t for t in agent_state.tools if t.tool_type == ToolType.LETTA_FILES_CORE])
+    assert file_tool_count_before == len(FILES_TOOLS)
+
+    # Detach all file tools
+    updated_agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify all file tools are detached
+    file_tool_count_after = len([t for t in updated_agent_state.tools if t.tool_type == ToolType.LETTA_FILES_CORE])
+    assert file_tool_count_after == 0
+
+    # Verify the returned state was modified in-place (no DB reload)
+    assert updated_agent_state.id == agent_state.id
+    assert len(updated_agent_state.tools) == len(agent_state.tools) - file_tool_count_before
+
+
+@pytest.mark.asyncio
+async def test_detach_all_files_tools_async_empty(server: SyncServer, sarah_agent, default_user, event_loop):
+    """Test detaching all file tools when no file tools are attached."""
+    # Get agent state (should have no file tools initially)
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    initial_tool_count = len(agent_state.tools)
+
+    # Verify no file tools attached
+    file_tool_count = len([t for t in agent_state.tools if t.tool_type == ToolType.LETTA_FILES_CORE])
+    assert file_tool_count == 0
+
+    # Call detach_all_files_tools (should be no-op)
+    updated_agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify nothing changed
+    assert len(updated_agent_state.tools) == initial_tool_count
+    assert updated_agent_state == agent_state  # Should be the same object since no changes
+
+
+@pytest.mark.asyncio
+async def test_detach_all_files_tools_async_with_other_tools(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
+    """Test detaching all file tools preserves non-file tools."""
+    # First ensure file tools exist
+    await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
+
+    # Attach a non-file tool
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+
+    # Get agent state and attach file tools
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify both file tools and print tool are attached
+    file_tools = [t for t in agent_state.tools if t.tool_type == ToolType.LETTA_FILES_CORE]
+    assert len(file_tools) == len(FILES_TOOLS)
+    assert print_tool.id in [t.id for t in agent_state.tools]
+
+    # Detach all file tools
+    updated_agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify only file tools were removed, print tool remains
+    remaining_file_tools = [t for t in updated_agent_state.tools if t.tool_type == ToolType.LETTA_FILES_CORE]
+    assert len(remaining_file_tools) == 0
+    assert print_tool.id in [t.id for t in updated_agent_state.tools]
+    assert len(updated_agent_state.tools) == 1
+
+
+@pytest.mark.asyncio
+async def test_detach_all_files_tools_async_idempotent(server: SyncServer, sarah_agent, default_user, event_loop):
+    """Test that detach_all_files_tools is idempotent."""
+    # First ensure file tools exist and attach them
+    await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
+
+    # Get initial agent state and attach file tools
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Detach all file tools once
+    agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify no file tools
+    assert len([t for t in agent_state.tools if t.tool_type == ToolType.LETTA_FILES_CORE]) == 0
+    tool_count_after_first = len(agent_state.tools)
+
+    # Detach all file tools again (should be no-op)
+    final_agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify still no file tools and same tool count
+    assert len([t for t in final_agent_state.tools if t.tool_type == ToolType.LETTA_FILES_CORE]) == 0
+    assert len(final_agent_state.tools) == tool_count_after_first
 
 
 # ======================================================================================================================
