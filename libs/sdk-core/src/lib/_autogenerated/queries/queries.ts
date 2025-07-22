@@ -5287,6 +5287,107 @@ export const useAgentsServiceCloseAllOpenFiles = <
     ...options,
   });
 /**
+ * Open File
+ * Opens a specific file for a given agent.
+ *
+ * This endpoint marks a specific file as open in the agent's file state.
+ * The file will be included in the agent's working memory view.
+ * Returns a list of file names that were closed due to LRU eviction.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.fileId
+ * @param data.userId
+ * @returns string Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceOpenFile = <
+  TData = Common.AgentsServiceOpenFileMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        fileId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      fileId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, fileId, userId }) =>
+      AgentsService.openFile({
+        agentId,
+        fileId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Close File
+ * Closes a specific file for a given agent.
+ *
+ * This endpoint marks a specific file as closed in the agent's file state.
+ * The file will be removed from the agent's working memory view.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.fileId
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceCloseFile = <
+  TData = Common.AgentsServiceCloseFileMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        fileId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      fileId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, fileId, userId }) =>
+      AgentsService.closeFile({
+        agentId,
+        fileId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
  * Modify Block
  * Updates a core memory block of an agent.
  * @param data The data for the request.

@@ -5181,6 +5181,22 @@ export type CloseAllOpenFilesData = {
 
 export type CloseAllOpenFilesResponse = Array<string>;
 
+export type OpenFileData = {
+  agentId: string;
+  fileId: string;
+  userId?: string | null;
+};
+
+export type OpenFileResponse = Array<string>;
+
+export type CloseFileData = {
+  agentId: string;
+  fileId: string;
+  userId?: string | null;
+};
+
+export type CloseFileResponse = unknown;
+
 export type ListAgentSourcesData = {
   agentId: string;
   userId?: string | null;
@@ -7001,6 +7017,36 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Array<string>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/files/{file_id}/open': {
+    patch: {
+      req: OpenFileData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<string>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/files/{file_id}/close': {
+    patch: {
+      req: CloseFileData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: unknown;
         /**
          * Validation Error
          */

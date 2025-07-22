@@ -2715,6 +2715,108 @@
         }
       }
     },
+    "/v1/agents/{agent_id}/files/{file_id}/open": {
+      "patch": {
+        "tags": ["agents"],
+        "summary": "Open File",
+        "description": "Opens a specific file for a given agent.\n\nThis endpoint marks a specific file as open in the agent's file state.\nThe file will be included in the agent's working memory view.\nReturns a list of file names that were closed due to LRU eviction.",
+        "operationId": "open_file",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Response Open File"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}/files/{file_id}/close": {
+      "patch": {
+        "tags": ["agents"],
+        "summary": "Close File",
+        "description": "Closes a specific file for a given agent.\n\nThis endpoint marks a specific file as closed in the agent's file state.\nThe file will be removed from the agent's working memory view.",
+        "operationId": "close_file",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/{agent_id}/sources": {
       "get": {
         "tags": ["agents"],

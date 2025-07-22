@@ -102,6 +102,10 @@ import type {
   DetachSourceFromAgentResponse,
   CloseAllOpenFilesData,
   CloseAllOpenFilesResponse,
+  OpenFileData,
+  OpenFileResponse,
+  CloseFileData,
+  CloseFileResponse,
   ListAgentSourcesData,
   ListAgentSourcesResponse,
   RetrieveAgentMemoryData,
@@ -1659,6 +1663,69 @@ export class AgentsService {
       url: '/v1/agents/{agent_id}/files/close-all',
       path: {
         agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Open File
+   * Opens a specific file for a given agent.
+   *
+   * This endpoint marks a specific file as open in the agent's file state.
+   * The file will be included in the agent's working memory view.
+   * Returns a list of file names that were closed due to LRU eviction.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.fileId
+   * @param data.userId
+   * @returns string Successful Response
+   * @throws ApiError
+   */
+  public static openFile(
+    data: OpenFileData,
+    headers?: { user_id: string },
+  ): CancelablePromise<OpenFileResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/files/{file_id}/open',
+      path: {
+        agent_id: data.agentId,
+        file_id: data.fileId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Close File
+   * Closes a specific file for a given agent.
+   *
+   * This endpoint marks a specific file as closed in the agent's file state.
+   * The file will be removed from the agent's working memory view.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.fileId
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static closeFile(
+    data: CloseFileData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CloseFileResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/files/{file_id}/close',
+      path: {
+        agent_id: data.agentId,
+        file_id: data.fileId,
       },
       errors: {
         422: 'Validation Error',

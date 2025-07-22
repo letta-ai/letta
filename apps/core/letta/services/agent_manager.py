@@ -2881,6 +2881,34 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    async def get_agent_files_config_async(self, agent_id: str, actor: PydanticUser) -> Tuple[int, int]:
+        """Get per_file_view_window_char_limit and max_files_open for an agent.
+
+        This is a performant query that only fetches the specific fields needed.
+
+        Args:
+            agent_id: The ID of the agent
+            actor: The user making the request
+
+        Returns:
+            Tuple of per_file_view_window_char_limit, max_files_open values
+        """
+        async with db_registry.async_session() as session:
+            result = await session.execute(
+                select(AgentModel.per_file_view_window_char_limit, AgentModel.max_files_open)
+                .where(AgentModel.id == agent_id)
+                .where(AgentModel.organization_id == actor.organization_id)
+                .where(AgentModel.is_deleted == False)
+            )
+            row = result.one_or_none()
+
+            if row is None:
+                raise ValueError(f"Agent {agent_id} not found")
+
+            return row[0], row[1]
+
+    @enforce_types
+    @trace_method
     async def get_agent_max_files_open_async(self, agent_id: str, actor: PydanticUser) -> int:
         """Get max_files_open for an agent.
 
@@ -2894,7 +2922,6 @@ class AgentManager:
             max_files_open value
         """
         async with db_registry.async_session() as session:
-            # Direct query for just max_files_open
             result = await session.execute(
                 select(AgentModel.max_files_open)
                 .where(AgentModel.id == agent_id)
@@ -2923,7 +2950,6 @@ class AgentManager:
             per_file_view_window_char_limit value
         """
         async with db_registry.async_session() as session:
-            # Direct query for just per_file_view_window_char_limit
             result = await session.execute(
                 select(AgentModel.per_file_view_window_char_limit)
                 .where(AgentModel.id == agent_id)
