@@ -474,12 +474,13 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   left: 0;
   color: hsl(var(--muted));
   text-align: right;
-  width: 32px;
+  width: calc(var(--editor-lineNumber-gutter-width) - 5px);
   font-weight: 100;
   z-index: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
+  padding-right: 5px;
 }
 
 .editor.line-numbers:before {
