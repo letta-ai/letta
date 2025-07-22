@@ -65,7 +65,7 @@ To create a data source, you will need to specify a unique `name` as well as an 
 <CodeGroup>
 ```python title="python"
 # get an available embedding_config
-embedding_configs = client.models.list_embedding_models()
+embedding_configs = client.embedding_models.list()
 embedding_config = embedding_configs[0]
 
 # create the source
@@ -76,7 +76,7 @@ source = client.sources.create(
 ```
 ```typescript title="node.js"
 // get an available embedding_config
-const embeddingConfigs = await client.models.listEmbeddingModels();
+const embeddingConfigs = await client.embeddingModels.list()
 const embeddingConfig = embeddingConfigs[0];
 
 // create the source
