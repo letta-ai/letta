@@ -1813,6 +1813,7 @@ export type ChatCompletionAudioParam = z.infer<typeof ChatCompletionAudioParam>;
 export const ChatCompletionAudioParam = z.object({
   format: z.union([
     z.literal('wav'),
+    z.literal('aac'),
     z.literal('mp3'),
     z.literal('flac'),
     z.literal('opus'),
@@ -2193,6 +2194,16 @@ export const CompletionCreateParamsNonStreaming = z.object({
   ),
   model: z.union([
     z.string(),
+    z.literal('gpt-4.1'),
+    z.literal('gpt-4.1-mini'),
+    z.literal('gpt-4.1-nano'),
+    z.literal('gpt-4.1-2025-04-14'),
+    z.literal('gpt-4.1-mini-2025-04-14'),
+    z.literal('gpt-4.1-nano-2025-04-14'),
+    z.literal('o4-mini'),
+    z.literal('o4-mini-2025-04-16'),
+    z.literal('o3'),
+    z.literal('o3-2025-04-16'),
     z.literal('o3-mini'),
     z.literal('o3-mini-2025-01-31'),
     z.literal('o1'),
@@ -2208,6 +2219,7 @@ export const CompletionCreateParamsNonStreaming = z.object({
     z.literal('gpt-4o-audio-preview'),
     z.literal('gpt-4o-audio-preview-2024-10-01'),
     z.literal('gpt-4o-audio-preview-2024-12-17'),
+    z.literal('gpt-4o-audio-preview-2025-06-03'),
     z.literal('gpt-4o-mini-audio-preview'),
     z.literal('gpt-4o-mini-audio-preview-2024-12-17'),
     z.literal('gpt-4o-search-preview'),
@@ -2215,6 +2227,7 @@ export const CompletionCreateParamsNonStreaming = z.object({
     z.literal('gpt-4o-search-preview-2025-03-11'),
     z.literal('gpt-4o-mini-search-preview-2025-03-11'),
     z.literal('chatgpt-4o-latest'),
+    z.literal('codex-mini-latest'),
     z.literal('gpt-4o-mini'),
     z.literal('gpt-4o-mini-2024-07-18'),
     z.literal('gpt-4-turbo'),
@@ -2239,6 +2252,16 @@ export const CompletionCreateParamsNonStreaming = z.object({
     z.array(
       z.union([
         z.string(),
+        z.literal('gpt-4.1'),
+        z.literal('gpt-4.1-mini'),
+        z.literal('gpt-4.1-nano'),
+        z.literal('gpt-4.1-2025-04-14'),
+        z.literal('gpt-4.1-mini-2025-04-14'),
+        z.literal('gpt-4.1-nano-2025-04-14'),
+        z.literal('o4-mini'),
+        z.literal('o4-mini-2025-04-16'),
+        z.literal('o3'),
+        z.literal('o3-2025-04-16'),
         z.literal('o3-mini'),
         z.literal('o3-mini-2025-01-31'),
         z.literal('o1'),
@@ -2254,6 +2277,7 @@ export const CompletionCreateParamsNonStreaming = z.object({
         z.literal('gpt-4o-audio-preview'),
         z.literal('gpt-4o-audio-preview-2024-10-01'),
         z.literal('gpt-4o-audio-preview-2024-12-17'),
+        z.literal('gpt-4o-audio-preview-2025-06-03'),
         z.literal('gpt-4o-mini-audio-preview'),
         z.literal('gpt-4o-mini-audio-preview-2024-12-17'),
         z.literal('gpt-4o-search-preview'),
@@ -2261,6 +2285,7 @@ export const CompletionCreateParamsNonStreaming = z.object({
         z.literal('gpt-4o-search-preview-2025-03-11'),
         z.literal('gpt-4o-mini-search-preview-2025-03-11'),
         z.literal('chatgpt-4o-latest'),
+        z.literal('codex-mini-latest'),
         z.literal('gpt-4o-mini'),
         z.literal('gpt-4o-mini-2024-07-18'),
         z.literal('gpt-4-turbo'),
@@ -2444,8 +2469,20 @@ export const CompletionCreateParamsNonStreaming = z.object({
     .union([
       z.literal('auto'),
       z.literal('default'),
+      z.literal('flex'),
+      z.literal('scale'),
+      z.literal('priority'),
       z.null(),
-      z.array(z.union([z.literal('auto'), z.literal('default'), z.null()])),
+      z.array(
+        z.union([
+          z.literal('auto'),
+          z.literal('default'),
+          z.literal('flex'),
+          z.literal('scale'),
+          z.literal('priority'),
+          z.null(),
+        ]),
+      ),
       z.undefined(),
     ])
     .optional(),
@@ -2554,6 +2591,16 @@ export const CompletionCreateParamsStreaming = z.object({
   ),
   model: z.union([
     z.string(),
+    z.literal('gpt-4.1'),
+    z.literal('gpt-4.1-mini'),
+    z.literal('gpt-4.1-nano'),
+    z.literal('gpt-4.1-2025-04-14'),
+    z.literal('gpt-4.1-mini-2025-04-14'),
+    z.literal('gpt-4.1-nano-2025-04-14'),
+    z.literal('o4-mini'),
+    z.literal('o4-mini-2025-04-16'),
+    z.literal('o3'),
+    z.literal('o3-2025-04-16'),
     z.literal('o3-mini'),
     z.literal('o3-mini-2025-01-31'),
     z.literal('o1'),
@@ -2569,6 +2616,7 @@ export const CompletionCreateParamsStreaming = z.object({
     z.literal('gpt-4o-audio-preview'),
     z.literal('gpt-4o-audio-preview-2024-10-01'),
     z.literal('gpt-4o-audio-preview-2024-12-17'),
+    z.literal('gpt-4o-audio-preview-2025-06-03'),
     z.literal('gpt-4o-mini-audio-preview'),
     z.literal('gpt-4o-mini-audio-preview-2024-12-17'),
     z.literal('gpt-4o-search-preview'),
@@ -2576,6 +2624,7 @@ export const CompletionCreateParamsStreaming = z.object({
     z.literal('gpt-4o-search-preview-2025-03-11'),
     z.literal('gpt-4o-mini-search-preview-2025-03-11'),
     z.literal('chatgpt-4o-latest'),
+    z.literal('codex-mini-latest'),
     z.literal('gpt-4o-mini'),
     z.literal('gpt-4o-mini-2024-07-18'),
     z.literal('gpt-4-turbo'),
@@ -2600,6 +2649,16 @@ export const CompletionCreateParamsStreaming = z.object({
     z.array(
       z.union([
         z.string(),
+        z.literal('gpt-4.1'),
+        z.literal('gpt-4.1-mini'),
+        z.literal('gpt-4.1-nano'),
+        z.literal('gpt-4.1-2025-04-14'),
+        z.literal('gpt-4.1-mini-2025-04-14'),
+        z.literal('gpt-4.1-nano-2025-04-14'),
+        z.literal('o4-mini'),
+        z.literal('o4-mini-2025-04-16'),
+        z.literal('o3'),
+        z.literal('o3-2025-04-16'),
         z.literal('o3-mini'),
         z.literal('o3-mini-2025-01-31'),
         z.literal('o1'),
@@ -2615,6 +2674,7 @@ export const CompletionCreateParamsStreaming = z.object({
         z.literal('gpt-4o-audio-preview'),
         z.literal('gpt-4o-audio-preview-2024-10-01'),
         z.literal('gpt-4o-audio-preview-2024-12-17'),
+        z.literal('gpt-4o-audio-preview-2025-06-03'),
         z.literal('gpt-4o-mini-audio-preview'),
         z.literal('gpt-4o-mini-audio-preview-2024-12-17'),
         z.literal('gpt-4o-search-preview'),
@@ -2622,6 +2682,7 @@ export const CompletionCreateParamsStreaming = z.object({
         z.literal('gpt-4o-search-preview-2025-03-11'),
         z.literal('gpt-4o-mini-search-preview-2025-03-11'),
         z.literal('chatgpt-4o-latest'),
+        z.literal('codex-mini-latest'),
         z.literal('gpt-4o-mini'),
         z.literal('gpt-4o-mini-2024-07-18'),
         z.literal('gpt-4-turbo'),
@@ -2805,8 +2866,20 @@ export const CompletionCreateParamsStreaming = z.object({
     .union([
       z.literal('auto'),
       z.literal('default'),
+      z.literal('flex'),
+      z.literal('scale'),
+      z.literal('priority'),
       z.null(),
-      z.array(z.union([z.literal('auto'), z.literal('default'), z.null()])),
+      z.array(
+        z.union([
+          z.literal('auto'),
+          z.literal('default'),
+          z.literal('flex'),
+          z.literal('scale'),
+          z.literal('priority'),
+          z.null(),
+        ]),
+      ),
       z.undefined(),
     ])
     .optional(),
@@ -4622,6 +4695,14 @@ export type MCPTool = z.infer<typeof MCPTool>;
 export const MCPTool = z.intersection(
   z.object({
     name: z.string(),
+    title: z
+      .union([
+        z.string(),
+        z.null(),
+        z.array(z.union([z.string(), z.null()])),
+        z.undefined(),
+      ])
+      .optional(),
     description: z
       .union([
         z.string(),
@@ -4631,11 +4712,27 @@ export const MCPTool = z.intersection(
       ])
       .optional(),
     inputSchema: z.unknown(),
+    outputSchema: z
+      .union([
+        z.unknown(),
+        z.null(),
+        z.array(z.union([z.unknown(), z.null()])),
+        z.undefined(),
+      ])
+      .optional(),
     annotations: z
       .union([
         ToolAnnotations,
         z.null(),
         z.array(z.union([ToolAnnotations, z.null()])),
+        z.undefined(),
+      ])
+      .optional(),
+    _meta: z
+      .union([
+        z.unknown(),
+        z.null(),
+        z.array(z.union([z.unknown(), z.null()])),
         z.undefined(),
       ])
       .optional(),

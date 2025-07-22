@@ -27,7 +27,7 @@ from letta.services.block_manager import BlockManager
 from letta.services.file_manager import FileManager
 from letta.services.file_processor.embedder.base_embedder import BaseEmbedder
 from letta.services.file_processor.file_processor import FileProcessor
-from letta.services.file_processor.parser.mistral_parser import MistralFileParser
+from letta.services.file_processor.parser.base_parser import FileParser
 from letta.services.files_agents_manager import FileAgentManager
 from letta.services.group_manager import GroupManager
 from letta.services.mcp_manager import MCPManager
@@ -62,7 +62,7 @@ class AgentFileManager:
         file_agent_manager: FileAgentManager,
         message_manager: MessageManager,
         embedder: BaseEmbedder,
-        file_parser: MistralFileParser,
+        file_parser: FileParser,
         using_pinecone: bool = False,
     ):
         self.agent_manager = agent_manager

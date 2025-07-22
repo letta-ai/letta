@@ -28,7 +28,9 @@ from letta.schemas.user import User
 from letta.server.server import SyncServer
 from letta.services.agent_file_manager import AgentFileManager
 from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
+from letta.services.file_processor.parser.markitdown_parser import MarkitdownFileParser
 from letta.services.file_processor.parser.mistral_parser import MistralFileParser
+from letta.settings import settings
 from tests.utils import create_tool_from_func
 
 # ------------------------------
@@ -169,7 +171,7 @@ def agent_file_manager(server, default_user):
         file_agent_manager=server.file_agent_manager,
         message_manager=server.message_manager,
         embedder=OpenAIEmbedder(),
-        file_parser=MistralFileParser(),
+        file_parser=MistralFileParser() if settings.mistral_api_key else MarkitdownFileParser(),
         using_pinecone=False,
     )
     yield manager
