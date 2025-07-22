@@ -282,7 +282,7 @@ def test_attach_existing_files_creates_source_blocks_correctly(disable_pinecone,
 <metadata>
 - read_only=true
 - chars_current=46
-- chars_limit=50000
+- chars_limit=15000
 </metadata>
 <value>
 [Viewing file start (out of 1 chunks)]
@@ -339,7 +339,7 @@ def test_delete_source_removes_source_blocks_correctly(disable_pinecone, client:
 <metadata>
 - read_only=true
 - chars_current=46
-- chars_limit=50000
+- chars_limit=15000
 </metadata>
 <value>
 [Viewing file start (out of 1 chunks)]

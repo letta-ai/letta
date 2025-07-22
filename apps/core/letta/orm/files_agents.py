@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from letta.constants import CORE_MEMORY_SOURCE_CHAR_LIMIT, FILE_IS_TRUNCATED_WARNING
+from letta.constants import FILE_IS_TRUNCATED_WARNING
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.block import Block as PydanticBlock
@@ -86,13 +86,13 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
     )
 
     # TODO: This is temporary as we figure out if we want FileBlock as a first class citizen
-    def to_pydantic_block(self) -> PydanticBlock:
+    def to_pydantic_block(self, per_file_view_window_char_limit: int) -> PydanticBlock:
         visible_content = self.visible_content if self.visible_content and self.is_open else ""
 
         # Truncate content and add warnings here when converting from FileAgent to Block
-        if len(visible_content) > CORE_MEMORY_SOURCE_CHAR_LIMIT:
+        if len(visible_content) > per_file_view_window_char_limit:
             truncated_warning = f"...[TRUNCATED]\n{FILE_IS_TRUNCATED_WARNING}"
-            visible_content = visible_content[: CORE_MEMORY_SOURCE_CHAR_LIMIT - len(truncated_warning)]
+            visible_content = visible_content[: per_file_view_window_char_limit - len(truncated_warning)]
             visible_content += truncated_warning
 
         return PydanticBlock(
@@ -100,5 +100,5 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
             label=self.file_name,  # use denormalized file_name instead of self.file.file_name
             read_only=True,
             metadata={"source_id": self.source_id},  # use denormalized source_id
-            limit=CORE_MEMORY_SOURCE_CHAR_LIMIT,
+            limit=per_file_view_window_char_limit,
         )

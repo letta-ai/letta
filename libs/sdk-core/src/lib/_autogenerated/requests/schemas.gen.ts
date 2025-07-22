@@ -798,6 +798,32 @@ export const $AgentState = {
       title: 'Timezone',
       description: 'The timezone of the agent (IANA format).',
     },
+    max_files_open: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Files Open',
+      description:
+        'Maximum number of files that can be open at once for this agent. Setting this too high may exceed the context window, which will break the agent.',
+    },
+    per_file_view_window_char_limit: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Per File View Window Char Limit',
+      description:
+        'The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -4061,6 +4087,32 @@ export const $CreateAgentRequest = {
       ],
       title: 'Timezone',
       description: 'The timezone of the agent (IANA format).',
+    },
+    max_files_open: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Files Open',
+      description:
+        'Maximum number of files that can be open at once for this agent. Setting this too high may exceed the context window, which will break the agent.',
+    },
+    per_file_view_window_char_limit: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Per File View Window Char Limit',
+      description:
+        'The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.',
     },
     actor_id: {
       anyOf: [
@@ -11930,6 +11982,32 @@ export const $UpdateAgent = {
       ],
       title: 'Timezone',
       description: 'The timezone of the agent (IANA format).',
+    },
+    max_files_open: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Files Open',
+      description:
+        'Maximum number of files that can be open at once for this agent. Setting this too high may exceed the context window, which will break the agent.',
+    },
+    per_file_view_window_char_limit: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Per File View Window Char Limit',
+      description:
+        'The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.',
     },
   },
   type: 'object',

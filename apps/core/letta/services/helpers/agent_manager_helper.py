@@ -22,11 +22,12 @@ from letta.constants import (
 from letta.embeddings import embedding_model
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import format_datetime, get_local_time, get_local_time_fast
-from letta.orm import AgentPassage, SourcePassage, SourcesAgents
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.agents_tags import AgentsTags
 from letta.orm.errors import NoResultFound
 from letta.orm.identity import Identity
+from letta.orm.passage import AgentPassage, SourcePassage
+from letta.orm.sources_agents import SourcesAgents
 from letta.orm.sqlite_functions import adapt_array
 from letta.otel.tracing import trace_method
 from letta.prompts import gpt_system
@@ -45,7 +46,7 @@ from letta.system import get_initial_boot_messages, get_login_event, package_fun
 # Static methods
 @trace_method
 def _process_relationship(
-    session, agent: AgentModel, relationship_name: str, model_class, item_ids: List[str], allow_partial=False, replace=True
+    session, agent: "AgentModel", relationship_name: str, model_class, item_ids: List[str], allow_partial=False, replace=True
 ):
     """
     Generalized function to handle relationships like tools, sources, and blocks using item IDs.
@@ -88,7 +89,7 @@ def _process_relationship(
 
 @trace_method
 async def _process_relationship_async(
-    session, agent: AgentModel, relationship_name: str, model_class, item_ids: List[str], allow_partial=False, replace=True
+    session, agent: "AgentModel", relationship_name: str, model_class, item_ids: List[str], allow_partial=False, replace=True
 ):
     """
     Generalized function to handle relationships like tools, sources, and blocks using item IDs.
@@ -130,7 +131,7 @@ async def _process_relationship_async(
         current_relationship.extend(new_items)
 
 
-def _process_tags(agent: AgentModel, tags: List[str], replace=True):
+def _process_tags(agent: "AgentModel", tags: List[str], replace=True):
     """
     Handles tags for an agent.
 

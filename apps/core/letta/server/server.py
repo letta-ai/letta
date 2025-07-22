@@ -1427,6 +1427,7 @@ class SyncServer(Server):
                     files_metadata=[file_metadata_with_content],
                     visible_content_map=visible_content_map,
                     actor=actor,
+                    max_files_open=agent_state.max_files_open,
                 )
                 for agent_state in agent_states
             )
@@ -1460,6 +1461,7 @@ class SyncServer(Server):
             files_metadata=file_metadata_with_content,
             visible_content_map=visible_content_map,
             actor=actor,
+            max_files_open=agent_state.max_files_open,
         )
 
         if closed_files:

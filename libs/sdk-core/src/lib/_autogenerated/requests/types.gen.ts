@@ -266,6 +266,14 @@ export type AgentState = {
    * The timezone of the agent (IANA format).
    */
   timezone?: string | null;
+  /**
+   * Maximum number of files that can be open at once for this agent. Setting this too high may exceed the context window, which will break the agent.
+   */
+  max_files_open?: number | null;
+  /**
+   * The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.
+   */
+  per_file_view_window_char_limit?: number | null;
 };
 
 /**
@@ -1309,6 +1317,14 @@ export type CreateAgentRequest = {
    * The timezone of the agent (IANA format).
    */
   timezone?: string | null;
+  /**
+   * Maximum number of files that can be open at once for this agent. Setting this too high may exceed the context window, which will break the agent.
+   */
+  max_files_open?: number | null;
+  /**
+   * The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.
+   */
+  per_file_view_window_char_limit?: number | null;
   actor_id?: string | null;
 };
 
@@ -4367,6 +4383,14 @@ export type UpdateAgent = {
    * The timezone of the agent (IANA format).
    */
   timezone?: string | null;
+  /**
+   * Maximum number of files that can be open at once for this agent. Setting this too high may exceed the context window, which will break the agent.
+   */
+  max_files_open?: number | null;
+  /**
+   * The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.
+   */
+  per_file_view_window_char_limit?: number | null;
 };
 
 export type UpdateAssistantMessage = {

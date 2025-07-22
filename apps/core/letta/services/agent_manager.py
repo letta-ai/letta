@@ -359,6 +359,8 @@ class AgentManager:
                     created_by_id=actor.id,
                     last_updated_by_id=actor.id,
                     timezone=agent_create.timezone,
+                    max_files_open=agent_create.max_files_open,
+                    per_file_view_window_char_limit=agent_create.per_file_view_window_char_limit,
                 )
 
                 if _test_only_force_id:
@@ -548,6 +550,8 @@ class AgentManager:
                     created_by_id=actor.id,
                     last_updated_by_id=actor.id,
                     timezone=agent_create.timezone if agent_create.timezone else DEFAULT_TIMEZONE,
+                    max_files_open=agent_create.max_files_open,
+                    per_file_view_window_char_limit=agent_create.per_file_view_window_char_limit,
                 )
 
                 if _test_only_force_id:
@@ -711,6 +715,9 @@ class AgentManager:
                 "response_format": agent_update.response_format,
                 "last_run_completion": agent_update.last_run_completion,
                 "last_run_duration_ms": agent_update.last_run_duration_ms,
+                "max_files_open": agent_update.max_files_open,
+                "per_file_view_window_char_limit": agent_update.per_file_view_window_char_limit,
+                "timezone": agent_update.timezone,
             }
             for col, val in scalar_updates.items():
                 if val is not None:
@@ -834,6 +841,8 @@ class AgentManager:
                 "last_run_completion": agent_update.last_run_completion,
                 "last_run_duration_ms": agent_update.last_run_duration_ms,
                 "timezone": agent_update.timezone,
+                "max_files_open": agent_update.max_files_open,
+                "per_file_view_window_char_limit": agent_update.per_file_view_window_char_limit,
             }
             for col, val in scalar_updates.items():
                 if val is not None:
@@ -1864,7 +1873,10 @@ class AgentManager:
 
         if file_block_names:
             file_blocks = await self.file_agent_manager.get_all_file_blocks_by_name(
-                file_names=file_block_names, agent_id=agent_state.id, actor=actor
+                file_names=file_block_names,
+                agent_id=agent_state.id,
+                actor=actor,
+                per_file_view_window_char_limit=agent_state.per_file_view_window_char_limit,
             )
             agent_state.memory.file_blocks = [b for b in file_blocks if b is not None]
 
@@ -1873,7 +1885,12 @@ class AgentManager:
     @enforce_types
     @trace_method
     async def refresh_file_blocks(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
-        file_blocks = await self.file_agent_manager.list_files_for_agent(agent_id=agent_state.id, actor=actor, return_as_blocks=True)
+        file_blocks = await self.file_agent_manager.list_files_for_agent(
+            agent_id=agent_state.id,
+            per_file_view_window_char_limit=agent_state.per_file_view_window_char_limit,
+            actor=actor,
+            return_as_blocks=True,
+        )
         agent_state.memory.file_blocks = [b for b in file_blocks if b is not None]
         return agent_state
 
@@ -2861,6 +2878,64 @@ class AgentManager:
             # Extract the tag values from the result
             results = [row[0] for row in result.all()]
             return results
+
+    @enforce_types
+    @trace_method
+    async def get_agent_max_files_open_async(self, agent_id: str, actor: PydanticUser) -> int:
+        """Get max_files_open for an agent.
+
+        This is a performant query that only fetches the specific field needed.
+
+        Args:
+            agent_id: The ID of the agent
+            actor: The user making the request
+
+        Returns:
+            max_files_open value
+        """
+        async with db_registry.async_session() as session:
+            # Direct query for just max_files_open
+            result = await session.execute(
+                select(AgentModel.max_files_open)
+                .where(AgentModel.id == agent_id)
+                .where(AgentModel.organization_id == actor.organization_id)
+                .where(AgentModel.is_deleted == False)
+            )
+            row = result.scalar_one_or_none()
+
+            if row is None:
+                raise ValueError(f"Agent {agent_id} not found")
+
+            return row
+
+    @enforce_types
+    @trace_method
+    async def get_agent_per_file_view_window_char_limit_async(self, agent_id: str, actor: PydanticUser) -> int:
+        """Get per_file_view_window_char_limit for an agent.
+
+        This is a performant query that only fetches the specific field needed.
+
+        Args:
+            agent_id: The ID of the agent
+            actor: The user making the request
+
+        Returns:
+            per_file_view_window_char_limit value
+        """
+        async with db_registry.async_session() as session:
+            # Direct query for just per_file_view_window_char_limit
+            result = await session.execute(
+                select(AgentModel.per_file_view_window_char_limit)
+                .where(AgentModel.id == agent_id)
+                .where(AgentModel.organization_id == actor.organization_id)
+                .where(AgentModel.is_deleted == False)
+            )
+            row = result.scalar_one_or_none()
+
+            if row is None:
+                raise ValueError(f"Agent {agent_id} not found")
+
+            return row
 
     @trace_method
     async def get_context_window(self, agent_id: str, actor: PydanticUser) -> ContextWindowOverview:
