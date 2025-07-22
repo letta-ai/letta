@@ -1934,7 +1934,9 @@ class SyncServer(Server):
     def get_provider_from_name(self, provider_name: str, actor: User) -> Provider:
         providers = [provider for provider in self.get_enabled_providers(actor) if provider.name == provider_name]
         if not providers:
-            raise ValueError(f"Provider {provider_name} is not supported")
+            raise ValueError(
+                f"Provider {provider_name} is not supported (supported providers: {', '.join([provider.name for provider in self._enabled_providers])})"
+            )
         elif len(providers) > 1:
             raise ValueError(f"Multiple providers with name {provider_name} supported")
         else:
@@ -1946,7 +1948,9 @@ class SyncServer(Server):
         all_providers = await self.get_enabled_providers_async(actor)
         providers = [provider for provider in all_providers if provider.name == provider_name]
         if not providers:
-            raise ValueError(f"Provider {provider_name} is not supported")
+            raise ValueError(
+                f"Provider {provider_name} is not supported (supported providers: {', '.join([provider.name for provider in self._enabled_providers])})"
+            )
         elif len(providers) > 1:
             raise ValueError(f"Multiple providers with name {provider_name} supported")
         else:
