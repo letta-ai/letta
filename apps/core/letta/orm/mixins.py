@@ -62,3 +62,11 @@ class SandboxConfigMixin(Base):
     __abstract__ = True
 
     sandbox_config_id: Mapped[str] = mapped_column(String, ForeignKey("sandbox_configs.id"))
+
+
+class ProjectMixin(Base):
+    """Mixin for models that belong to a project."""
+
+    __abstract__ = True
+
+    project_id: Mapped[str] = mapped_column(String, nullable=True, doc="The associated project id.")
