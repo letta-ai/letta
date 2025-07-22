@@ -17,6 +17,7 @@ import {
   getDeployedTemplateByVersion,
   copyAgentById,
   updateAgentFromAgentId,
+  getTemplateProjectId,
 } from '@letta-cloud/utils-server';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { createTemplate } from 'tmp-cloud-api-router';
@@ -385,7 +386,7 @@ async function getAgentTemplateSimulatorSession(
   if (!simulatorSession) {
     const newAgent = await copyAgentById(agentTemplate.id, lettaAgentsId, {
       name: `sa-${agentTemplate.id}`,
-      projectId: 'simulated-agents',
+      projectId: getTemplateProjectId(agentTemplate.projectId),
     });
 
     agentId = newAgent.id;
@@ -961,7 +962,7 @@ async function importAgentFileAsTemplate(
     formData: {
       file: file as Blob,
     },
-    projectId: `templates-${project_id}`,
+    projectId: getTemplateProjectId(project_id),
     appendCopySuffix: append_copy_suffix,
     stripMessages: true,
     overrideExistingTools: override_existing_tools,
