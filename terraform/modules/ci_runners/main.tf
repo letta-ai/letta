@@ -93,67 +93,67 @@ resource "google_compute_firewall" "ci-runner_egress" {
   destination_ranges = ["0.0.0.0/0"]
 }
 
-# Create a Cloud Function to handle GitHub webhooks and scaling
-resource "google_storage_bucket" "function_bucket" {
-  name     = "letta-ci-runner-${var.env}-functions"
-  location = var.region
-  uniform_bucket_level_access = true
-}
+# # Create a Cloud Function to handle GitHub webhooks and scaling
+# resource "google_storage_bucket" "function_bucket" {
+#   name     = "letta-ci-runner-${var.env}-functions"
+#   location = var.region
+#   uniform_bucket_level_access = true
+# }
 
-# Zip the function code
-data "archive_file" "function_zip" {
-  type        = "zip"
-  output_path = "${path.module}/files/function.zip"
+# # Zip the function code
+# data "archive_file" "function_zip" {
+#   type        = "zip"
+#   output_path = "${path.module}/files/function.zip"
 
-  source {
-    content  = file("${path.module}/files/cloud_function.py")
-    filename = "main.py"
-  }
+#   source {
+#     content  = file("${path.module}/files/cloud_function.py")
+#     filename = "main.py"
+#   }
 
-  source {
-    content  = file("${path.module}/files/requirements.txt")
-    filename = "requirements.txt"
-  }
-}
+#   source {
+#     content  = file("${path.module}/files/requirements.txt")
+#     filename = "requirements.txt"
+#   }
+# }
 
-# Upload the zipped function code
-resource "google_storage_bucket_object" "function_code" {
-  name   = "function-${data.archive_file.function_zip.output_md5}.zip"
-  bucket = google_storage_bucket.function_bucket.name
-  source = data.archive_file.function_zip.output_path
-}
+# # Upload the zipped function code
+# resource "google_storage_bucket_object" "function_code" {
+#   name   = "function-${data.archive_file.function_zip.output_md5}.zip"
+#   bucket = google_storage_bucket.function_bucket.name
+#   source = data.archive_file.function_zip.output_path
+# }
 
-# Create the webhook handler function
-resource "google_cloudfunctions_function" "github_webhook" {
-  name        = "github-webhook-handler-${var.env}"
-  description = "Handles GitHub webhook events for scaling runners"
-  runtime     = "python310"
+# # Create the webhook handler function
+# resource "google_cloudfunctions_function" "github_webhook" {
+#   name        = "github-webhook-handler-${var.env}"
+#   description = "Handles GitHub webhook events for scaling runners"
+#   runtime     = "python310"
 
-  available_memory_mb   = 512
-  source_archive_bucket = google_storage_bucket.function_bucket.name
-  source_archive_object = google_storage_bucket_object.function_code.name
-  trigger_http          = true
-  entry_point           = "webhook_handler"
+#   available_memory_mb   = 512
+#   source_archive_bucket = google_storage_bucket.function_bucket.name
+#   source_archive_object = google_storage_bucket_object.function_code.name
+#   trigger_http          = true
+#   entry_point           = "webhook_handler"
 
-  environment_variables = {
-    PROJECT_ID           = var.project_id
-    ZONE                 = var.zone
-    INSTANCE_GROUP       = google_compute_instance_group_manager.ci-runners.name
-    MIN_RUNNERS          = var.min_runners
-    MAX_RUNNERS          = var.max_runners
-    GITHUB_ORG           = var.github_org
-    GITHUB_REPO          = var.github_repo
-    WEBHOOK_SECRET       = data.google_secret_manager_secret_version.github_app_webhook_secret.secret_data
-  }
+#   environment_variables = {
+#     PROJECT_ID           = var.project_id
+#     ZONE                 = var.zone
+#     INSTANCE_GROUP       = google_compute_instance_group_manager.ci-runners.name
+#     MIN_RUNNERS          = var.min_runners
+#     MAX_RUNNERS          = var.max_runners
+#     GITHUB_ORG           = var.github_org
+#     GITHUB_REPO          = var.github_repo
+#     WEBHOOK_SECRET       = data.google_secret_manager_secret_version.github_app_webhook_secret.secret_data
+#   }
 
-  service_account_email = google_service_account.ci-runner.email
-}
+#   service_account_email = google_service_account.ci-runner.email
+# }
 
-# Create IAM policy to allow public access to the webhook function
-resource "google_cloudfunctions_function_iam_member" "webhook_invoker" {
-  project        = var.project_id
-  region         = var.region
-  cloud_function = google_cloudfunctions_function.github_webhook.name
-  role           = "roles/cloudfunctions.invoker"
-  member         = "allUsers"
-}
+# # Create IAM policy to allow public access to the webhook function
+# resource "google_cloudfunctions_function_iam_member" "webhook_invoker" {
+#   project        = var.project_id
+#   region         = var.region
+#   cloud_function = google_cloudfunctions_function.github_webhook.name
+#   role           = "roles/cloudfunctions.invoker"
+#   member         = "allUsers"
+# }

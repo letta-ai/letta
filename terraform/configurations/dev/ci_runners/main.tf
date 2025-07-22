@@ -40,6 +40,6 @@ module "ci_runners" {
   github_repo = "letta-cloud"
 
   # auto scaling config
-  min_runners = 1
-  max_runners = 24
+  min_runners = 0
+  max_runners = 0
 }

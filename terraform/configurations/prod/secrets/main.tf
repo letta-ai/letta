@@ -20,9 +20,9 @@ provider "google" {
 locals {
   secrets = {
     # # "prod_service_secret-name" = var.prod_service_secret_name
-    # "prod_ci_gh-app-id"           = var.prod_ci_gh_app_id
-    # "prod_ci_gh-app-private-key"  = var.prod_ci_gh_app_private_key
-    # "prod_ci_webhook-secret"      = var.prod_ci_webhook_secret
+    "prod_ci_gh-app-id"           = var.prod_ci_gh_app_id
+    "prod_ci_gh-app-private-key"  = var.prod_ci_gh_app_private_key
+    "prod_ci_webhook-secret"      = var.prod_ci_webhook_secret
 
     # # Prod CI API Keys
     # "prod_ci_ANTHROPIC_API_KEY"   = var.prod_ci_ANTHROPIC_API_KEY

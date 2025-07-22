@@ -2,11 +2,11 @@ locals {
   # TODO: maybe refactor to pull region from vpc
   # resource and apply it to relevant resources
   env_region_suffix = "${var.env}-${var.region}"
-  vpc_name = var.env == "prod" ? "letta-vpc" : "letta-${local.env_region_suffix}-vpc"
-  subnet_name = var.env == "prod" ? "letta-subnet" : "letta-${local.env_region_suffix}-subnet"
-  private_ip_address = var.env == "prod" ? "private-ip-address" : "private-ip-address-letta-${local.env_region_suffix}"
-  letta_web_static_ip = var.env == "prod" ? "letta-web-ip" : "letta-web-static-ip-${local.env_region_suffix}"
-  # peering_network = var.env == "prod" ? "letta-vpc" : "letta-vpc-${local.env_region_suffix}"
+  vpc_name = var.env == "prod" && var.region == "us-central1" ? "letta-vpc" : "letta-${local.env_region_suffix}-vpc"
+  subnet_name = var.env == "prod" && var.region == "us-central1" ? "letta-subnet" : "letta-${local.env_region_suffix}-subnet"
+  private_ip_address = var.env == "prod" && var.region == "us-central1" ? "private-ip-address" : "private-ip-address-letta-${local.env_region_suffix}"
+  letta_web_static_ip = var.env == "prod" && var.region == "us-central1" ? "letta-web-ip" : "letta-web-static-ip-${local.env_region_suffix}"
+  # peering_network = var.env == "prod" && var.region == "us-central1" ? "letta-vpc" : "letta-vpc-${local.env_region_suffix}"
 }
 
 # Networking for GKE cluster
@@ -40,5 +40,5 @@ resource "google_service_networking_connection" "private_vpc_connection" {
 
 resource "google_compute_global_address" "letta_web_static_ip" {
   name        = local.letta_web_static_ip
-  description = var.env == "prod" ? "" : "Static IP for letta-web service"
+  description = var.env == "prod" && var.region == "us-central1" ? "" : "Static IP for letta-web service"
 }

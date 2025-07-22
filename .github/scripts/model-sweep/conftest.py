@@ -254,7 +254,8 @@ def get_model_sweep_config() -> Dict[str, Any]:
     Returns a dictionary of model sweep configuration.
     """
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    config = json.load(open(os.path.join(script_dir, "config.json"), "r"))
+    with open(os.path.join(script_dir, "config.json"), "r") as f:
+        config = json.load(f)
     return config
 
 # create a client to the started server started at
@@ -265,11 +266,15 @@ def get_available_llm_configs() -> [LLMConfig]:
     filtered_models = [model for model in temp_client.models.list() if model.handle not in get_model_sweep_config()["excluded_llm_handles"]]
     return filtered_models
 
-# dynamically insert llm_config paramter at collection time
+# fetch once at startup
+def pytest_configure(config):
+    config._cached_llm_configs = get_available_llm_configs()
+
+# dynamically paramaterize the llm_config arg
 def pytest_generate_tests(metafunc):
     """Dynamically parametrize tests that need llm_config."""
     if "llm_config" in metafunc.fixturenames:
-        configs = get_available_llm_configs()
+        configs = metafunc.config._cached_llm_configs
         if configs:
             metafunc.parametrize(
                 "llm_config",

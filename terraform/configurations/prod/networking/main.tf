@@ -23,3 +23,9 @@ module networking {
     region = "us-central1"
     vpc_subnet_cidr = "10.0.0.0/16"
 }
+module networking-us-east1 {
+    source = "../../../modules/networking"
+    env = "prod"
+    region = "us-east1"
+    vpc_subnet_cidr = "10.0.0.0/16"
+}

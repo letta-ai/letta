@@ -42,6 +42,22 @@ logger = get_logger(__name__)
 # ------------------------------
 
 
+def get_llm_config(filename: str, llm_config_dir: str = "tests/configs/llm_model_configs") -> LLMConfig:
+    filename = os.path.join(llm_config_dir, filename)
+    config_data = json.load(open(filename, "r"))
+    llm_config = LLMConfig(**config_data)
+    return llm_config
+
+
+def prefix_message_content_for_ollama(content: str, llm_config: LLMConfig) -> str:
+    """
+    Prefix message content with '/no_think' if model_endpoint is 'http://localhost:11434'
+    """
+    if llm_config.model_endpoint == "http://localhost:11434":
+        return f"/no_think {content}"
+    return content
+
+
 def roll_dice(num_sides: int) -> int:
     """
     Returns a random number between 1 and num_sides.
@@ -57,6 +73,18 @@ def roll_dice(num_sides: int) -> int:
 
 USER_MESSAGE_OTID = str(uuid.uuid4())
 USER_MESSAGE_RESPONSE: str = "Teamwork makes the dream work"
+def get_user_message_force_reply(llm_config: LLMConfig) -> List[MessageCreate]:
+    content = f"This is an automated test message. Call the send_message tool with the message '{USER_MESSAGE_RESPONSE}'."
+    content = prefix_message_content_for_ollama(content, llm_config)
+    return [
+        MessageCreate(
+            role="user",
+            content=content,
+            otid=USER_MESSAGE_OTID,
+        )
+    ]
+
+
 USER_MESSAGE_FORCE_REPLY: List[MessageCreate] = [
     MessageCreate(
         role="user",
@@ -64,6 +92,18 @@ USER_MESSAGE_FORCE_REPLY: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
+def get_user_message_roll_dice(llm_config: LLMConfig) -> List[MessageCreate]:
+    content = "This is an automated test message. Call the roll_dice tool with 16 sides and send me a message with the outcome."
+    content = prefix_message_content_for_ollama(content, llm_config)
+    return [
+        MessageCreate(
+            role="user",
+            content=content,
+            otid=USER_MESSAGE_OTID,
+        )
+    ]
+
+
 USER_MESSAGE_ROLL_DICE: List[MessageCreate] = [
     MessageCreate(
         role="user",
@@ -72,6 +112,21 @@ USER_MESSAGE_ROLL_DICE: List[MessageCreate] = [
     )
 ]
 URL_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg"
+def get_user_message_url_image(llm_config: LLMConfig) -> List[MessageCreate]:
+    text_content = "What is in this image?"
+    text_content = prefix_message_content_for_ollama(text_content, llm_config)
+    return [
+        MessageCreate(
+            role="user",
+            content=[
+                ImageContent(source=UrlImage(url=URL_IMAGE)),
+                TextContent(text=text_content),
+            ],
+            otid=USER_MESSAGE_OTID,
+        )
+    ]
+
+
 USER_MESSAGE_URL_IMAGE: List[MessageCreate] = [
     MessageCreate(
         role="user",
@@ -83,6 +138,21 @@ USER_MESSAGE_URL_IMAGE: List[MessageCreate] = [
     )
 ]
 BASE64_IMAGE = base64.standard_b64encode(httpx.get(URL_IMAGE).content).decode("utf-8")
+def get_user_message_base64_image(llm_config: LLMConfig) -> List[MessageCreate]:
+    text_content = "What is in this image?"
+    text_content = prefix_message_content_for_ollama(text_content, llm_config)
+    return [
+        MessageCreate(
+            role="user",
+            content=[
+                ImageContent(source=Base64Image(data=BASE64_IMAGE, media_type="image/jpeg")),
+                TextContent(text=text_content),
+            ],
+            otid=USER_MESSAGE_OTID,
+        )
+    ]
+
+
 USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
     MessageCreate(
         role="user",
@@ -452,7 +522,7 @@ def test_greeting_with_assistant_message(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_FORCE_REPLY,
+        messages=get_user_message_force_reply(llm_config),
     )
     assert_greeting_with_assistant_message_response(response.messages, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
@@ -475,7 +545,7 @@ def test_greeting_without_assistant_message(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_FORCE_REPLY,
+        messages=get_user_message_force_reply(llm_config),
         use_assistant_message=False,
     )
     assert_greeting_without_assistant_message_response(response.messages, llm_config=llm_config)
@@ -501,7 +571,7 @@ def test_tool_call(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_ROLL_DICE,
+        messages=get_user_message_roll_dice(llm_config),
     )
     assert_tool_call_response(response.messages, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
@@ -524,7 +594,7 @@ def test_url_image_input(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_URL_IMAGE,
+        messages=get_user_message_url_image(llm_config),
     )
     assert_image_input_response(response.messages, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
@@ -547,7 +617,7 @@ def test_base64_image_input(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_BASE64_IMAGE,
+        messages=get_user_message_base64_image(llm_config),
     )
     assert_image_input_response(response.messages, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
@@ -572,7 +642,7 @@ def test_agent_loop_error(
     with pytest.raises(ApiError):
         client.agents.messages.create(
             agent_id=agent_state.id,
-            messages=USER_MESSAGE_FORCE_REPLY,
+            messages=get_user_message_force_reply(llm_config),
         )
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert len(messages_from_db) == 0
@@ -595,7 +665,7 @@ def test_step_streaming_greeting_with_assistant_message(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_FORCE_REPLY,
+        messages=get_user_message_force_reply(llm_config),
     )
     chunks = list(response)
     messages = accumulate_chunks(chunks)
@@ -620,7 +690,7 @@ def test_step_streaming_greeting_without_assistant_message(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_FORCE_REPLY,
+        messages=get_user_message_force_reply(llm_config),
         use_assistant_message=False,
     )
     chunks = list(response)
@@ -648,7 +718,7 @@ def test_step_streaming_tool_call(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_ROLL_DICE,
+        messages=get_user_message_roll_dice(llm_config),
     )
     chunks = list(response)
     messages = accumulate_chunks(chunks)
@@ -675,7 +745,7 @@ def test_step_stream_agent_loop_error(
     with pytest.raises(ApiError):
         response = client.agents.messages.create_stream(
             agent_id=agent_state.id,
-            messages=USER_MESSAGE_FORCE_REPLY,
+            messages=get_user_message_force_reply(llm_config),
         )
         list(response)
 
@@ -700,7 +770,7 @@ def test_token_streaming_greeting_with_assistant_message(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_FORCE_REPLY,
+        messages=get_user_message_force_reply(llm_config),
         stream_tokens=True,
     )
     chunks = list(response)
@@ -726,7 +796,7 @@ def test_token_streaming_greeting_without_assistant_message(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_FORCE_REPLY,
+        messages=get_user_message_force_reply(llm_config),
         use_assistant_message=False,
         stream_tokens=True,
     )
@@ -755,7 +825,7 @@ def test_token_streaming_tool_call(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_ROLL_DICE,
+        messages=get_user_message_roll_dice(llm_config),
         stream_tokens=True,
     )
     chunks = list(response)
@@ -785,7 +855,7 @@ def test_token_streaming_agent_loop_error(
     try:
         response = client.agents.messages.create_stream(
             agent_id=agent_state.id,
-            messages=USER_MESSAGE_FORCE_REPLY,
+            messages=get_user_message_force_reply(llm_config),
             stream_tokens=True,
         )
         list(response)
@@ -813,7 +883,7 @@ def test_async_greeting_with_assistant_message(
 
     run = client.agents.messages.create_async(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_FORCE_REPLY,
+        messages=get_user_message_force_reply(llm_config),
     )
     run = wait_for_run_completion(client, run.id)
 
@@ -862,9 +932,10 @@ And if there is something underneath all of it—something real, something worth
     prev_length = None
 
     for attempt in range(MAX_ATTEMPTS):
+        content = prefix_message_content_for_ollama(philosophical_question, llm_config)
         client.agents.messages.create(
             agent_id=temp_agent_state.id,
-            messages=[MessageCreate(role="user", content=philosophical_question)],
+            messages=[MessageCreate(role="user", content=content)],
         )
 
         temp_agent_state = client.agents.retrieve(agent_id=temp_agent_state.id)

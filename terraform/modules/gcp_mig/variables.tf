@@ -87,3 +87,8 @@ variable "sa_email" {
 variable "pool_name_prefix" {
     type = string
 }
+
+variable "final_steps" {
+    type = string
+    default = ""
+}

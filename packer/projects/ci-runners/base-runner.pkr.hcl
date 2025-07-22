@@ -134,6 +134,17 @@ build {
     destination = "/tmp/"
   }
 
+  # Setup spot preemption monitor
+  provisioner "shell" {
+    inline = [
+      "sudo mv /tmp/spot-preemption-monitor.sh /usr/local/bin/spot-preemption-monitor.sh",
+      "sudo chmod +x /usr/local/bin/spot-preemption-monitor.sh",
+      "sudo mv /tmp/spot-preemption-monitor.service /etc/systemd/system/spot-preemption-monitor.service",
+      "sudo systemctl daemon-reload",
+      "sudo systemctl enable spot-preemption-monitor.service"
+    ]
+  }
+
   # Finalize setup
   provisioner "shell" {
     execute_command = "{{.Vars}} bash '{{.Path}}'"

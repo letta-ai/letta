@@ -353,6 +353,18 @@ jobs:
             export LLM_CONFIG_FILE="${{ matrix.config_file }}"
           fi
 
+          # Set Ollama base URL only for Ollama tests
+          if [[ "${{ inputs.test-type }}" == "integration" && "${{ inputs.runner }}" == *"ollama"* ]]; then
+            export LLM_CONFIG_FILE="ollama.json"
+            export OLLAMA_BASE_URL="http://localhost:11434"
+          fi
+
+          # Set VLLM base URL only for VLLM tests
+          if [[ "${{ inputs.test-type }}" == "integration" && "${{ inputs.runner }}" == *"vllm"* ]]; then
+            export LLM_CONFIG_FILE="vllm.json"
+            export VLLM_BASE_URL="http://localhost:8000"
+          fi
+
           # Handle different matrix variable names and test commands based on test type
           if [[ "${{ inputs.test-type }}" == "integration" ]]; then
             poetry run pip install letta

@@ -1,5 +1,5 @@
 data "google_compute_subnetwork" "subnetwork" {
-  name = "letta-dev-us-central1-subnet" # TODO: template this
+  name = "letta-${var.env}-${var.region}-subnet" # TODO: template this
   region = var.region
 }
 
@@ -45,6 +45,8 @@ resource "google_compute_instance_template" "pool_template" {
         env           = var.env,
         github_org    = var.github_org
         runner_labels = var.runner_labels
+        # pre registration with github
+        final_steps = var.final_steps
       }
     )
     shutdown-script = templatefile(
