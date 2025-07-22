@@ -167,6 +167,7 @@ def test_auto_attach_detach_files_tools(disable_pinecone, client: LettaSDKClient
     assert_no_file_tools(agent)
 
 
+@pytest.mark.parametrize("use_mistral_parser", [True, False])
 @pytest.mark.parametrize(
     "file_path, expected_value, expected_label_regex",
     [
@@ -190,60 +191,68 @@ def test_file_upload_creates_source_blocks_correctly(
     file_path: str,
     expected_value: str,
     expected_label_regex: str,
+    use_mistral_parser: bool,
 ):
-    # skip pdf tests if mistral api key is missing
-    if file_path.endswith(".pdf") and not settings.mistral_api_key:
-        pytest.skip("mistral api key required for pdf processing")
+    # Override mistral API key setting to force parser selection for testing
+    original_mistral_key = settings.mistral_api_key
+    try:
+        if not use_mistral_parser:
+            # Set to None to force markitdown parser selection
+            settings.mistral_api_key = None
 
-    # Create a new source
-    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
-    assert len(client.sources.list()) == 1
+        # Create a new source
+        source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
+        assert len(client.sources.list()) == 1
 
-    # Attach
-    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+        # Attach
+        client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
 
-    # Upload the file
-    upload_file_and_wait(client, source.id, file_path)
+        # Upload the file
+        upload_file_and_wait(client, source.id, file_path)
 
-    # Get uploaded files
-    files = client.sources.files.list(source_id=source.id, limit=1)
-    assert len(files) == 1
-    assert files[0].source_id == source.id
+        # Get uploaded files
+        files = client.sources.files.list(source_id=source.id, limit=1)
+        assert len(files) == 1
+        assert files[0].source_id == source.id
 
-    # Check that blocks were created
-    agent_state = client.agents.retrieve(agent_id=agent_state.id)
-    blocks = agent_state.memory.file_blocks
-    assert len(blocks) == 1
-    assert any(expected_value in b.value for b in blocks)
-    assert any(b.value.startswith("[Viewing file start") for b in blocks)
-    assert any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
+        # Check that blocks were created
+        agent_state = client.agents.retrieve(agent_id=agent_state.id)
+        blocks = agent_state.memory.file_blocks
+        assert len(blocks) == 1
+        assert any(expected_value in b.value for b in blocks)
+        assert any(b.value.startswith("[Viewing file start") for b in blocks)
+        assert any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
 
-    # verify raw system message contains source information
-    raw_system_message = get_raw_system_message(client, agent_state.id)
-    assert "test_source" in raw_system_message
-    assert "<directories>" in raw_system_message
-    # verify file-specific details in raw system message
-    file_name = files[0].file_name
-    assert f'name="test_source/{file_name}"' in raw_system_message
-    assert 'status="open"' in raw_system_message
+        # verify raw system message contains source information
+        raw_system_message = get_raw_system_message(client, agent_state.id)
+        assert "test_source" in raw_system_message
+        assert "<directories>" in raw_system_message
+        # verify file-specific details in raw system message
+        file_name = files[0].file_name
+        assert f'name="test_source/{file_name}"' in raw_system_message
+        assert 'status="open"' in raw_system_message
 
-    # Remove file from source
-    client.sources.files.delete(source_id=source.id, file_id=files[0].id)
+        # Remove file from source
+        client.sources.files.delete(source_id=source.id, file_id=files[0].id)
 
-    # Confirm blocks were removed
-    agent_state = client.agents.retrieve(agent_id=agent_state.id)
-    blocks = agent_state.memory.file_blocks
-    assert len(blocks) == 0
-    assert not any(expected_value in b.value for b in blocks)
-    assert not any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
+        # Confirm blocks were removed
+        agent_state = client.agents.retrieve(agent_id=agent_state.id)
+        blocks = agent_state.memory.file_blocks
+        assert len(blocks) == 0
+        assert not any(expected_value in b.value for b in blocks)
+        assert not any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
 
-    # verify raw system message no longer contains source information
-    raw_system_message_after_removal = get_raw_system_message(client, agent_state.id)
-    # this should be in, because we didn't delete the source
-    assert "test_source" in raw_system_message_after_removal
-    assert "<directories>" in raw_system_message_after_removal
-    # verify file-specific details are also removed
-    assert f'name="test_source/{file_name}"' not in raw_system_message_after_removal
+        # verify raw system message no longer contains source information
+        raw_system_message_after_removal = get_raw_system_message(client, agent_state.id)
+        # this should be in, because we didn't delete the source
+        assert "test_source" in raw_system_message_after_removal
+        assert "<directories>" in raw_system_message_after_removal
+        # verify file-specific details are also removed
+        assert f'name="test_source/{file_name}"' not in raw_system_message_after_removal
+
+    finally:
+        # Restore original mistral API key setting
+        settings.mistral_api_key = original_mistral_key
 
 
 def test_attach_existing_files_creates_source_blocks_correctly(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
