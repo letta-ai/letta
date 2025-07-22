@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from letta.constants import FILE_IS_TRUNCATED_WARNING
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
-from letta.schemas.block import Block as PydanticBlock
+from letta.schemas.block import FileBlock as PydanticFileBlock
 from letta.schemas.file import FileAgent as PydanticFileAgent
 
 if TYPE_CHECKING:
@@ -59,7 +59,7 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
         String,
         ForeignKey("sources.id", ondelete="CASCADE"),
         nullable=False,
-        doc="ID of the source (denormalized from files.source_id)",
+        doc="ID of the source",
     )
 
     file_name: Mapped[str] = mapped_column(
@@ -86,7 +86,7 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
     )
 
     # TODO: This is temporary as we figure out if we want FileBlock as a first class citizen
-    def to_pydantic_block(self, per_file_view_window_char_limit: int) -> PydanticBlock:
+    def to_pydantic_block(self, per_file_view_window_char_limit: int) -> PydanticFileBlock:
         visible_content = self.visible_content if self.visible_content and self.is_open else ""
 
         # Truncate content and add warnings here when converting from FileAgent to Block
@@ -95,10 +95,13 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
             visible_content = visible_content[: per_file_view_window_char_limit - len(truncated_warning)]
             visible_content += truncated_warning
 
-        return PydanticBlock(
+        return PydanticFileBlock(
             value=visible_content,
-            label=self.file_name,  # use denormalized file_name instead of self.file.file_name
+            label=self.file_name,
             read_only=True,
-            metadata={"source_id": self.source_id},  # use denormalized source_id
+            file_id=self.file_id,
+            source_id=self.source_id,
+            is_open=self.is_open,
+            last_accessed_at=self.last_accessed_at,
             limit=per_file_view_window_char_limit,
         )
