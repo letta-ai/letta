@@ -35,7 +35,7 @@ on:
         description: 'Runner to use'
         required: false
         type: string
-        default: '["self-hosted", "medium"]'
+        default: '["self-hosted", "small"]'
       matrix-strategy:
         description: 'JSON string for matrix strategy'
         required: false
