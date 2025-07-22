@@ -124,7 +124,7 @@ class SimpleSummaryWrapper(LLMChatCompletionWrapper):
 
         if self.include_assistant_prefix:
             # prompt += f"\nASSISTANT:"
-            prompt += f"\nSUMMARY:"
+            prompt += "\nSUMMARY:"
 
         # print(prompt)
         return prompt

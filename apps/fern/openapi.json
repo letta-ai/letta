@@ -17264,6 +17264,7 @@
           "openai",
           "letta",
           "deepseek",
+          "cerebras",
           "lmstudio_openai",
           "xai",
           "mistral",
@@ -17272,7 +17273,8 @@
           "together",
           "azure",
           "vllm",
-          "bedrock"
+          "bedrock",
+          "cohere"
         ],
         "title": "ProviderType"
       },

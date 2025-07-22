@@ -3184,6 +3184,7 @@ export type ProviderType =
   | 'openai'
   | 'letta'
   | 'deepseek'
+  | 'cerebras'
   | 'lmstudio_openai'
   | 'xai'
   | 'mistral'
@@ -3192,7 +3193,8 @@ export type ProviderType =
   | 'together'
   | 'azure'
   | 'vllm'
-  | 'bedrock';
+  | 'bedrock'
+  | 'cohere';
 
 export type ProviderUpdate = {
   /**

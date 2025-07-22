@@ -8,6 +8,7 @@ class ProviderType(str, Enum):
     openai = "openai"
     letta = "letta"
     deepseek = "deepseek"
+    cerebras = "cerebras"
     lmstudio_openai = "lmstudio_openai"
     xai = "xai"
     mistral = "mistral"
@@ -17,6 +18,7 @@ class ProviderType(str, Enum):
     azure = "azure"
     vllm = "vllm"
     bedrock = "bedrock"
+    cohere = "cohere"
 
 
 class ProviderCategory(str, Enum):

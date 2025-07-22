@@ -252,7 +252,7 @@ def unpack_all_inner_thoughts_from_kwargs(
 ) -> ChatCompletionResponse:
     """Strip the inner thoughts out of the tool call and put it in the message content"""
     if len(response.choices) == 0:
-        raise ValueError(f"Unpacking inner thoughts from empty response not supported")
+        raise ValueError("Unpacking inner thoughts from empty response not supported")
 
     new_choices = []
     for choice in response.choices:

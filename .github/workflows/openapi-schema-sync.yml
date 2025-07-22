@@ -52,10 +52,12 @@ jobs:
       with:
         version: 1.5.1
 
-    - name: Install Just
-      run: sudo apt install -y just
+    - name: Install just
+      uses: extractions/setup-just@v3
+      with:
+        just-version: '1.42.2'
 
-    - name: Install Dependencies
+    - name: Setup npm ci
       run: |
         npm ci --prefer-offline
 

@@ -8687,6 +8687,7 @@ export const $ProviderType = {
     'openai',
     'letta',
     'deepseek',
+    'cerebras',
     'lmstudio_openai',
     'xai',
     'mistral',
@@ -8696,6 +8697,7 @@ export const $ProviderType = {
     'azure',
     'vllm',
     'bedrock',
+    'cohere',
   ],
   title: 'ProviderType',
 } as const;

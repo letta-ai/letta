@@ -120,7 +120,7 @@ def build_deepseek_chat_completions_request(
 
         def add_functions_to_system_message(system_message: ChatMessage):
             system_message.content += f"<available functions> {''.join(json.dumps(f) for f in functions)} </available functions>"
-            system_message.content += f'Select best function to call simply respond with a single json block with the fields "name" and "arguments". Use double quotes around the arguments.'
+            system_message.content += 'Select best function to call simply respond with a single json block with the fields "name" and "arguments". Use double quotes around the arguments.'
 
         if llm_config.model == "deepseek-reasoner":  # R1 currently doesn't support function calling natively
             add_functions_to_system_message(

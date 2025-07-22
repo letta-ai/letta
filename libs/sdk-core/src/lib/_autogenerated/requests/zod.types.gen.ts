@@ -5095,6 +5095,7 @@ export const ProviderType = z.union([
   z.literal('openai'),
   z.literal('letta'),
   z.literal('deepseek'),
+  z.literal('cerebras'),
   z.literal('lmstudio_openai'),
   z.literal('xai'),
   z.literal('mistral'),
@@ -5104,6 +5105,7 @@ export const ProviderType = z.union([
   z.literal('azure'),
   z.literal('vllm'),
   z.literal('bedrock'),
+  z.literal('cohere'),
 ]);
 
 export type Provider = z.infer<typeof Provider>;

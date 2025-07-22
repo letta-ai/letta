@@ -58,18 +58,30 @@ class FileProcessor:
             for page in ocr_response.pages:
                 chunks = text_chunker.chunk_text(page)
                 if not chunks:
-                    log_event("file_processor.chunking_failed", {"filename": filename, "page_index": ocr_response.pages.index(page)})
+                    log_event(
+                        "file_processor.chunking_failed",
+                        {
+                            "filename": filename,
+                            "page_index": ocr_response.pages.index(page),
+                        },
+                    )
                     raise ValueError("No chunks created from text")
                 all_chunks.extend(chunks)
 
             all_passages = await self.embedder.generate_embedded_passages(
-                file_id=file_metadata.id, source_id=source_id, chunks=all_chunks, actor=self.actor
+                file_id=file_metadata.id,
+                source_id=source_id,
+                chunks=all_chunks,
+                actor=self.actor,
             )
             return all_passages
 
         except Exception as e:
             logger.warning(f"Failed to chunk/embed with file-specific chunker for {filename}: {str(e)}. Retrying with default chunker.")
-            log_event("file_processor.embedding_failed_retrying", {"filename": filename, "error": str(e), "error_type": type(e).__name__})
+            log_event(
+                "file_processor.embedding_failed_retrying",
+                {"filename": filename, "error": str(e), "error_type": type(e).__name__},
+            )
 
             # Retry with default chunker
             try:
@@ -80,31 +92,50 @@ class FileProcessor:
                     chunks = text_chunker.default_chunk_text(page)
                     if not chunks:
                         log_event(
-                            "file_processor.default_chunking_failed", {"filename": filename, "page_index": ocr_response.pages.index(page)}
+                            "file_processor.default_chunking_failed",
+                            {
+                                "filename": filename,
+                                "page_index": ocr_response.pages.index(page),
+                            },
                         )
                         raise ValueError("No chunks created from text with default chunker")
                     all_chunks.extend(chunks)
 
                 all_passages = await self.embedder.generate_embedded_passages(
-                    file_id=file_metadata.id, source_id=source_id, chunks=all_chunks, actor=self.actor
+                    file_id=file_metadata.id,
+                    source_id=source_id,
+                    chunks=all_chunks,
+                    actor=self.actor,
                 )
                 logger.info(f"Successfully generated passages with default chunker for {filename}")
-                log_event("file_processor.default_chunking_success", {"filename": filename, "total_chunks": len(all_chunks)})
+                log_event(
+                    "file_processor.default_chunking_success",
+                    {"filename": filename, "total_chunks": len(all_chunks)},
+                )
                 return all_passages
 
             except Exception as fallback_error:
                 logger.error("Default chunking also failed for %s: %s", filename, fallback_error)
                 log_event(
                     "file_processor.default_chunking_also_failed",
-                    {"filename": filename, "fallback_error": str(fallback_error), "fallback_error_type": type(fallback_error).__name__},
+                    {
+                        "filename": filename,
+                        "fallback_error": str(fallback_error),
+                        "fallback_error_type": type(fallback_error).__name__,
+                    },
                 )
                 raise fallback_error
 
     # TODO: Factor this function out of SyncServer
     @trace_method
     async def process(
-        self, server: SyncServer, agent_states: List[AgentState], source_id: str, content: bytes, file_metadata: FileMetadata
-    ) -> List[Passage]:
+        self,
+        server: SyncServer,
+        agent_states: list[AgentState],
+        source_id: str,
+        content: bytes,
+        file_metadata: FileMetadata,
+    ) -> list[Passage]:
         filename = file_metadata.file_name
 
         # Create file as early as possible with no content
@@ -170,18 +201,28 @@ class FileProcessor:
                 raise ValueError("No text extracted from PDF")
 
             logger.info("Chunking extracted text")
-            log_event("file_processor.chunking_started", {"filename": filename, "pages_to_process": len(ocr_response.pages)})
+            log_event(
+                "file_processor.chunking_started",
+                {"filename": filename, "pages_to_process": len(ocr_response.pages)},
+            )
 
             # Chunk and embed with fallback logic
             all_passages = await self._chunk_and_embed_with_fallback(
-                file_metadata=file_metadata, ocr_response=ocr_response, source_id=source_id
+                file_metadata=file_metadata,
+                ocr_response=ocr_response,
+                source_id=source_id,
             )
 
             if not self.using_pinecone:
                 all_passages = await self.passage_manager.create_many_source_passages_async(
-                    passages=all_passages, file_metadata=file_metadata, actor=self.actor
+                    passages=all_passages,
+                    file_metadata=file_metadata,
+                    actor=self.actor,
                 )
-                log_event("file_processor.passages_created", {"filename": filename, "total_passages": len(all_passages)})
+                log_event(
+                    "file_processor.passages_created",
+                    {"filename": filename, "total_passages": len(all_passages)},
+                )
 
             logger.info(f"Successfully processed {filename}: {len(all_passages)} passages")
             log_event(
@@ -197,11 +238,16 @@ class FileProcessor:
             # update job status
             if not self.using_pinecone:
                 await self.file_manager.update_file_status(
-                    file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.COMPLETED
+                    file_id=file_metadata.id,
+                    actor=self.actor,
+                    processing_status=FileProcessingStatus.COMPLETED,
                 )
             else:
                 await self.file_manager.update_file_status(
-                    file_id=file_metadata.id, actor=self.actor, total_chunks=len(all_passages), chunks_embedded=0
+                    file_id=file_metadata.id,
+                    actor=self.actor,
+                    total_chunks=len(all_passages),
+                    chunks_embedded=0,
                 )
 
             return all_passages
@@ -310,7 +356,10 @@ class FileProcessor:
                 },
             )
             await self.file_manager.update_file_status(
-                file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.ERROR, error_message=str(e)
+                file_id=file_metadata.id,
+                actor=self.actor,
+                processing_status=FileProcessingStatus.ERROR,
+                error_message=str(e),
             )
 
             return []

@@ -67,7 +67,6 @@ def retry_with_exponential_backoff(
                 # Stop retrying if user hits Ctrl-C
                 raise KeyboardInterrupt("User intentionally stopped thread. Stopping...")
             except requests.exceptions.HTTPError as http_err:
-
                 if not hasattr(http_err, "response") or not http_err.response:
                     raise
 
@@ -175,7 +174,6 @@ def create(
 
     # openai
     if llm_config.model_endpoint_type == "openai":
-
         if model_settings.openai_api_key is None and llm_config.model_endpoint == "https://api.openai.com/v1":
             # only is a problem if we are *not* using an openai proxy
             raise LettaConfigurationError(message="OpenAI key is missing from letta config file", missing_fields=["openai_api_key"])
@@ -256,7 +254,6 @@ def create(
         return response
 
     elif llm_config.model_endpoint_type == "xai":
-
         api_key = model_settings.xai_api_key
 
         if function_call is None and functions is not None and len(functions) > 0:
@@ -464,7 +461,7 @@ def create(
     #     )
     elif llm_config.model_endpoint_type == "groq":
         if stream:
-            raise NotImplementedError(f"Streaming not yet implemented for Groq.")
+            raise NotImplementedError("Streaming not yet implemented for Groq.")
 
         if model_settings.groq_api_key is None and llm_config.model_endpoint == "https://api.groq.com/openai/v1/chat/completions":
             raise LettaConfigurationError(message="Groq key is missing from letta config file", missing_fields=["groq_api_key"])
@@ -517,7 +514,7 @@ def create(
         """TogetherAI endpoint that goes via /completions instead of /chat/completions"""
 
         if stream:
-            raise NotImplementedError(f"Streaming not yet implemented for TogetherAI (via the /completions endpoint).")
+            raise NotImplementedError("Streaming not yet implemented for TogetherAI (via the /completions endpoint).")
 
         if model_settings.together_api_key is None and (
             llm_config.model_endpoint == "https://api.together.ai/v1/completions"
@@ -547,7 +544,7 @@ def create(
         """Anthropic endpoint that goes via /embeddings instead of /chat/completions"""
 
         if stream:
-            raise NotImplementedError(f"Streaming not yet implemented for Anthropic (via the /embeddings endpoint).")
+            raise NotImplementedError("Streaming not yet implemented for Anthropic (via the /embeddings endpoint).")
         if not use_tool_naming:
             raise NotImplementedError("Only tool calling supported on Anthropic API requests")
 
@@ -631,7 +628,7 @@ def create(
             messages[0].content[0].text += f"<available functions> {''.join(json.dumps(f) for f in functions)} </available functions>"
             messages[0].content[
                 0
-            ].text += f'Select best function to call simply by responding with a single json block with the keys "function" and "params". Use double quotes around the arguments.'
+            ].text += 'Select best function to call simply by responding with a single json block with the keys "function" and "params". Use double quotes around the arguments.'
         return get_chat_completion(
             model=llm_config.model,
             messages=messages,

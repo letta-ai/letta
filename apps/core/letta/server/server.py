@@ -68,8 +68,6 @@ from letta.schemas.providers import (
     OpenAIProvider,
     Provider,
     TogetherProvider,
-    VLLMChatCompletionsProvider,
-    VLLMCompletionsProvider,
     XAIProvider,
 )
 from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxConfigCreate, SandboxType
@@ -360,7 +358,7 @@ class SyncServer(Server):
                 )
             )
             # NOTE: to use the /chat/completions endpoint, you need to specify extra flags on vLLM startup
-            # see: https://docs.vllm.ai/en/latest/getting_started/examples/openai_chat_completion_client_with_tools.html
+            # see: https://docs.vllm.ai/en/stable/features/tool_calling.html
             # e.g. "... --enable-auto-tool-choice --tool-call-parser hermes"
             self._enabled_providers.append(
                 VLLMChatCompletionsProvider(
@@ -460,7 +458,7 @@ class SyncServer(Server):
             # Determine whether or not to token stream based on the capability of the interface
             token_streaming = letta_agent.interface.streaming_mode if hasattr(letta_agent.interface, "streaming_mode") else False
 
-            logger.debug(f"Starting agent step")
+            logger.debug("Starting agent step")
             if interface:
                 metadata = interface.metadata if hasattr(interface, "metadata") else None
             else:
@@ -534,7 +532,7 @@ class SyncServer(Server):
             letta_agent.interface.print_messages_raw(letta_agent.messages)
 
         elif command.lower() == "memory":
-            ret_str = f"\nDumping memory contents:\n" + f"\n{str(letta_agent.agent_state.memory)}" + f"\n{str(letta_agent.passage_manager)}"
+            ret_str = "\nDumping memory contents:\n" + f"\n{str(letta_agent.agent_state.memory)}" + f"\n{str(letta_agent.passage_manager)}"
             return ret_str
 
         elif command.lower() == "pop" or command.lower().startswith("pop "):
@@ -554,7 +552,7 @@ class SyncServer(Server):
 
         elif command.lower() == "retry":
             # TODO this needs to also modify the persistence manager
-            logger.debug(f"Retrying for another answer")
+            logger.debug("Retrying for another answer")
             while len(letta_agent.messages) > 0:
                 if letta_agent.messages[-1].get("role") == "user":
                     # we want to pop up to the last user message and send it again
@@ -770,6 +768,7 @@ class SyncServer(Server):
             self._embedding_config_cache[key] = self.get_embedding_config_from_handle(actor=actor, **kwargs)
         return self._embedding_config_cache[key]
 
+    # @async_redis_cache(key_func=lambda (actor, **kwargs): actor.id + hash(kwargs))
     @trace_method
     async def get_cached_embedding_config_async(self, actor: User, **kwargs):
         key = make_key(**kwargs)
@@ -782,9 +781,9 @@ class SyncServer(Server):
         self,
         request: CreateAgent,
         actor: User,
-        # interface
-        interface: Union[AgentInterface, None] = None,
+        interface: AgentInterface | None = None,
     ) -> AgentState:
+        warnings.warn("This method is deprecated, use create_agent_async where possible.", DeprecationWarning, stacklevel=2)
         if request.llm_config is None:
             if request.model is None:
                 raise ValueError("Must specify either model or llm_config in request")
@@ -1320,7 +1319,6 @@ class SyncServer(Server):
         # TODO: delete data from agent passage stores (?)
 
     async def load_file_to_source(self, source_id: str, file_path: str, job_id: str, actor: User) -> Job:
-
         # update job
         job = await self.job_manager.get_job_by_id_async(job_id, actor=actor)
         job.status = JobStatus.running
@@ -1564,7 +1562,6 @@ class SyncServer(Server):
         # Add extra metadata to the sources
         sources_with_metadata = []
         for source in sources:
-
             # count number of passages
             num_passages = self.agent_manager.passage_size(actor=actor, source_id=source.id)
 
@@ -2118,7 +2115,6 @@ class SyncServer(Server):
         mcp_config_path = os.path.join(constants.LETTA_DIR, constants.MCP_CONFIG_NAME)
         if os.path.exists(mcp_config_path):
             with open(mcp_config_path, "r") as f:
-
                 try:
                     mcp_config = json.load(f)
                 except Exception as e:
@@ -2130,7 +2126,6 @@ class SyncServer(Server):
                 # with the value being the schema from StdioServerParameters
                 if MCP_CONFIG_TOPLEVEL_KEY in mcp_config:
                     for server_name, server_params_raw in mcp_config[MCP_CONFIG_TOPLEVEL_KEY].items():
-
                         # No support for duplicate server names
                         if server_name in mcp_server_list:
                             logger.error(f"Duplicate MCP server name found (skipping): {server_name}")
@@ -2301,7 +2296,6 @@ class SyncServer(Server):
 
         # For streaming response
         try:
-
             # TODO: move this logic into server.py
 
             # Get the generator object off of the agent's streaming interface
@@ -2441,9 +2435,9 @@ class SyncServer(Server):
         if not stream_steps and stream_tokens:
             raise ValueError("stream_steps must be 'true' if stream_tokens is 'true'")
 
-        group = self.group_manager.retrieve_group(group_id=group_id, actor=actor)
+        group = await self.group_manager.retrieve_group_async(group_id=group_id, actor=actor)
         agent_state_id = group.manager_agent_id or (group.agent_ids[0] if len(group.agent_ids) > 0 else None)
-        agent_state = self.agent_manager.get_agent_by_id(agent_id=agent_state_id, actor=actor) if agent_state_id else None
+        agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_state_id, actor=actor) if agent_state_id else None
         letta_multi_agent = load_multi_agent(group=group, agent_state=agent_state, actor=actor)
 
         llm_config = letta_multi_agent.agent_state.llm_config

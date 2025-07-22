@@ -991,7 +991,8 @@ def test_default_tool_rules(server: SyncServer, user_id: str, base_tools, base_m
     assert len(agent_state.tool_rules) == len(base_tools + base_memory_tools)
 
 
-def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_tools, base_memory_tools):
+@pytest.mark.asyncio
+async def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_tools, base_memory_tools):
     """Test that the memory rebuild is generating the correct number of role=system messages"""
     actor = server.user_manager.get_user_or_default(user_id)
 
@@ -1055,12 +1056,12 @@ def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_to
 
     # Add all the base tools
     request.tool_ids = [b.id for b in base_tools]
-    agent_state = server.agent_manager.update_agent(agent_state.id, agent_update=request, actor=actor)
+    agent_state = await server.agent_manager.update_agent_async(agent_state.id, agent_update=request, actor=actor)
     assert len(agent_state.tools) == len(base_tools)
 
     # Remove one base tool
     request.tool_ids = [b.id for b in base_tools[:-2]]
-    agent_state = server.agent_manager.update_agent(agent_state.id, agent_update=request, actor=actor)
+    agent_state = await server.agent_manager.update_agent_async(agent_state.id, agent_update=request, actor=actor)
     assert len(agent_state.tools) == len(base_tools) - 2
 
 
