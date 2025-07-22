@@ -412,12 +412,13 @@ def generate_schema(function, name: Optional[str] = None, description: Optional[
     # Validate that the function has a Google Python style docstring
     try:
         validate_google_style_docstring(function)
-    except ValueError:
+    except ValueError as e:
         logger.warning(
             f"Function `{function.__name__}` in module `{function.__module__}` "
             f"{'(tool_id=' + tool_id + ') ' if tool_id else ''}"
             f"is not in Google style docstring format. "
             f"Docstring received:\n{repr(function.__doc__[:200]) if function.__doc__ else 'None'}"
+            f"\nError: {str(e)}"
         )
 
     # Get the signature of the function
