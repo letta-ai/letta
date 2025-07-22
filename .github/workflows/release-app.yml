@@ -47,7 +47,7 @@ jobs:
         shell: powershell
 
       - name: Install just
-        run: sudo apt install -y just
+        uses: taiki-e/install-action@just
 
       - name: Prepare desktop (postgres Windows install)
         run: |
@@ -119,8 +119,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install just
-        run: sudo apt install -y just
+      - uses: taiki-e/install-action@just
 
       - name: Set up python 3.12
         id: setup-python
