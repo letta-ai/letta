@@ -530,20 +530,15 @@ export function EditMemory() {
               fullHeight
               gap={false}
             >
-              <HStack
-                borderBottom
-                align="end"
-                gap={false}
-                fullWidth
-                paddingX="small"
-              >
-                <HStack
-                  paddingTop="xxsmall"
-                  paddingBottom="xxsmall"
-                  paddingRight="xsmall"
-                  className="h-[28px]"
-                >
-                  {isTemplate && isSplitViewEnabled && (
+              <HStack align="end" gap={false} fullWidth paddingX="small">
+                {isTemplate && isSplitViewEnabled && (
+                  <HStack
+                    paddingTop="xxsmall"
+                    paddingBottom="xxsmall"
+                    paddingLeft={false}
+                    paddingRight="xsmall"
+                    className="h-[28px]"
+                  >
                     <Button
                       hideLabel
                       size="3xsmall"
@@ -561,8 +556,8 @@ export function EditMemory() {
                       }
                       preIcon={<SplitscreenRightIcon size="auto" />}
                     />
-                  )}
-                </HStack>
+                  </HStack>
+                )}
 
                 {visualMode === 'page' ? (
                   <HStack fullWidth>
@@ -599,6 +594,7 @@ export function EditMemory() {
                 flex
                 overflow="auto"
                 paddingX="small"
+                paddingTop="xxsmall"
                 gap={false}
                 paddingBottom="small"
               >

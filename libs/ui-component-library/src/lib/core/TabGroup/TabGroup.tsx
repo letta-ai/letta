@@ -20,7 +20,7 @@ const listVariant = cva('flex items-center gap-2 flex-row', {
   variants: {
     variant: {
       default:
-        'border-b-2 border-b border-border pb-2 data-[state=active]:border-content pt-2',
+        'border-b-[2px] border-[hsl(var(--panel-input-background))] pb-2 data-[state=active]:border-[hsl(var(--text-lighter))] pt-2',
       chips: ' font-medium',
     },
     color: {
@@ -136,7 +136,7 @@ export function TabGroup(props: TabGroupProps) {
           >
             <Tabs.Trigger
               className={cn(
-                'px-4 h-[28px] flex items-center hover:bg-secondary-hover hover:!text-brand-hover-content gap-2 flex-row ',
+                'px-4 h-[28px] flex items-center hover:!text-brand-hover-content gap-2 flex-row ',
                 listVariant({ variant, color, size, fullWidth }),
               )}
               onClick={(e) => {

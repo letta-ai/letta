@@ -505,7 +505,11 @@ export function ContextWindowPanel() {
 
   return (
     <VStack fullWidth gap="small" paddingX="small" paddingY="xsmall">
-      <Typography variant="body4" uppercase bold className="tracking-[0.04em]">
+      <Typography
+        variant="body4"
+        uppercase
+        className="tracking-[0.04em] font-bold"
+      >
         {t('title')}
       </Typography>
       <HStack fullWidth>

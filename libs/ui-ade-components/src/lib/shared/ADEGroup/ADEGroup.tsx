@@ -48,11 +48,11 @@ export function ADEGroup(props: ADEGroupProps) {
               <HStack align="center" gap="small">
                 <Typography
                   uppercase
-                  bold
                   noWrap
                   overflow="ellipsis"
                   color={activeTab === index ? 'default' : 'muted'}
                   variant="body4"
+                  className="font-bold"
                 >
                   {item.title}
                 </Typography>

@@ -50,15 +50,15 @@ function ADEAccordionItem(props: ADEAccordionItemProps) {
         onClick={() => {
           onOpenChange(!open);
         }}
-        className="w-full h-[32px] flex justify-between px-2 cursor-pointer py-2"
+        className="w-full h-[32px] flex justify-between px-2.5 cursor-pointer py-2"
       >
         <Typography
           uppercase
-          bold
           noWrap
           overflow="ellipsis"
           color="default"
           variant="body4"
+          className="font-bold"
         >
           {label}
         </Typography>

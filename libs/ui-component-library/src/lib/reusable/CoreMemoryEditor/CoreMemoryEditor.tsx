@@ -53,8 +53,8 @@ function Limit(props: LimitProps) {
   return (
     <Tooltip content={tooltip}>
       <Typography
-        color={limit > value.length ? 'lighter' : 'destructive'}
-        variant="body3"
+        color={limit > value.length ? 'muted' : 'destructive'}
+        variant="body4"
       >
         {t('CoreMemoryEditorHeader.limit.label', {
           value: value.length,
@@ -74,7 +74,11 @@ function DescriptionView(props: DescriptionViewProps) {
   const t = useTranslations('components/CoreMemoryEditor');
 
   return (
-    <HStack padding="xsmall" gap="small" color="background-grey2">
+    <HStack
+      padding="xsmall"
+      gap="small"
+      className="border rounded-[2px] bg-background-grey2 dark:bg-card-background border-background-grey2-border dark:border-background-grey3-border"
+    >
       <Tooltip
         content={
           expanded
@@ -121,7 +125,11 @@ function CollapseController(props: CollapseControllerProps) {
         }}
         aria-label={tooltip}
       >
-        {isCollapsed ? <CaretDownIcon /> : <CaretUpIcon />}
+        {isCollapsed ? (
+          <CaretDownIcon color="muted" />
+        ) : (
+          <CaretUpIcon color="muted" />
+        )}
       </button>
     </Tooltip>
   );
@@ -473,7 +481,7 @@ export function CoreMemoryEditor(props: CoreMemoryEditorProps) {
 
   return (
     <VStack
-      gap="small"
+      gap={false}
       className={cn(!isCollapsed ? 'min-h-[150px]' : 'min-h-[30px]')}
       fullWidth
       overflow="hidden"
@@ -495,7 +503,7 @@ export function CoreMemoryEditor(props: CoreMemoryEditorProps) {
       />
 
       {!isCollapsed && (
-        <div className="relative w-full overflow-hidden flex-col h-0 flex-1 flex">
+        <div className="relative w-full overflow-hidden flex-col h-0 flex-1 flex gap-0.5">
           {memoryBlock.description && !hideDescription && (
             <DescriptionView description={memoryBlock.description || ''} />
           )}
