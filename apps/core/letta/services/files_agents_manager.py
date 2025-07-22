@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from sqlalchemy import and_, func, select, update
 
@@ -8,6 +8,7 @@ from letta.orm.errors import NoResultFound
 from letta.orm.files_agents import FileAgent as FileAgentModel
 from letta.otel.tracing import trace_method
 from letta.schemas.block import Block as PydanticBlock
+from letta.schemas.block import FileBlock as PydanticFileBlock
 from letta.schemas.file import FileAgent as PydanticFileAgent
 from letta.schemas.file import FileMetadata
 from letta.schemas.user import User as PydanticUser
@@ -231,7 +232,7 @@ class FileAgentManager:
         actor: PydanticUser,
         is_open_only: bool = False,
         return_as_blocks: bool = False,
-    ) -> List[PydanticFileAgent]:
+    ) -> Union[List[PydanticFileAgent], List[PydanticFileBlock]]:
         """Return associations for *agent_id* (filtering by `is_open` if asked)."""
         async with db_registry.async_session() as session:
             conditions = [
@@ -351,7 +352,7 @@ class FileAgentManager:
             agent_id: ID of the agent
             file_id: ID of the file to open
             file_name: Name of the file to open
-            source_id: ID of the source (denormalized from files.source_id)
+            source_id: ID of the source
             actor: User performing the action
             visible_content: Content to set for the opened file
 

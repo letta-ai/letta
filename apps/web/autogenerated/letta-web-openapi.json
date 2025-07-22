@@ -2496,9 +2496,53 @@
                                             {}
                                           ],
                                           "nullable": true
+                                        },
+                                        "file_id": {
+                                          "type": "string"
+                                        },
+                                        "source_id": {
+                                          "type": "string"
+                                        },
+                                        "is_open": {
+                                          "type": "boolean"
+                                        },
+                                        "last_accessed_at": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         }
                                       },
-                                      "required": ["value"]
+                                      "required": [
+                                        "value",
+                                        "file_id",
+                                        "source_id",
+                                        "is_open"
+                                      ]
                                     }
                                   },
                                   {}
@@ -7399,9 +7443,53 @@
                                             {}
                                           ],
                                           "nullable": true
+                                        },
+                                        "file_id": {
+                                          "type": "string"
+                                        },
+                                        "source_id": {
+                                          "type": "string"
+                                        },
+                                        "is_open": {
+                                          "type": "boolean"
+                                        },
+                                        "last_accessed_at": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         }
                                       },
-                                      "required": ["value"]
+                                      "required": [
+                                        "value",
+                                        "file_id",
+                                        "source_id",
+                                        "is_open"
+                                      ]
                                     }
                                   },
                                   {}

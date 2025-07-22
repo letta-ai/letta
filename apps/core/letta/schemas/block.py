@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 from pydantic import Field, model_validator
@@ -77,6 +78,16 @@ class Block(BaseBlock):
     # default orm fields
     created_by_id: Optional[str] = Field(None, description="The id of the user that made this Block.")
     last_updated_by_id: Optional[str] = Field(None, description="The id of the user that last updated this Block.")
+
+
+class FileBlock(Block):
+    file_id: str = Field(..., description="Unique identifier of the file.")
+    source_id: str = Field(..., description="Unique identifier of the source.")
+    is_open: bool = Field(..., description="True if the agent currently has the file open.")
+    last_accessed_at: Optional[datetime] = Field(
+        default_factory=datetime.utcnow,
+        description="UTC timestamp of the agent’s most recent access to this file. Any operations from the open, close, or search tools will update this field.",
+    )
 
 
 class Human(Block):

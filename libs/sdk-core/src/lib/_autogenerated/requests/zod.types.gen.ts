@@ -908,10 +908,86 @@ export const Block = z.object({
     .optional(),
 });
 
+export type FileBlock = z.infer<typeof FileBlock>;
+export const FileBlock = z.object({
+  value: z.string(),
+  limit: z.union([z.number(), z.undefined()]).optional(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  is_template: z.union([z.boolean(), z.undefined()]).optional(),
+  preserve_on_migration: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  label: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  read_only: z.union([z.boolean(), z.undefined()]).optional(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.union([z.string(), z.undefined()]).optional(),
+  created_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  last_updated_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  file_id: z.string(),
+  source_id: z.string(),
+  is_open: z.boolean(),
+  last_accessed_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type Memory = z.infer<typeof Memory>;
 export const Memory = z.object({
   blocks: z.array(Block),
-  file_blocks: z.union([z.array(Block), z.undefined()]).optional(),
+  file_blocks: z.union([z.array(FileBlock), z.undefined()]).optional(),
   prompt_template: z.union([z.string(), z.undefined()]).optional(),
 });
 

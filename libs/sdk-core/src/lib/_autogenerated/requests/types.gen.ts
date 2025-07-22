@@ -1527,6 +1527,75 @@ export type File = {
   type: 'file';
 };
 
+export type FileBlock = {
+  /**
+   * Value of the block.
+   */
+  value: string;
+  /**
+   * Character limit of the block.
+   */
+  limit?: number;
+  /**
+   * Name of the block if it is a template.
+   */
+  name?: string | null;
+  /**
+   * Whether the block is a template (e.g. saved human/persona options).
+   */
+  is_template?: boolean;
+  /**
+   * Preserve the block on template migration.
+   */
+  preserve_on_migration?: boolean | null;
+  /**
+   * Label of the block (e.g. 'human', 'persona') in the context window.
+   */
+  label?: string | null;
+  /**
+   * Whether the agent has read-only access to the block.
+   */
+  read_only?: boolean;
+  /**
+   * Description of the block.
+   */
+  description?: string | null;
+  /**
+   * Metadata of the block.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * The human-friendly ID of the Block
+   */
+  id?: string;
+  /**
+   * The id of the user that made this Block.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that last updated this Block.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * Unique identifier of the file.
+   */
+  file_id: string;
+  /**
+   * Unique identifier of the source (denormalized from files.source_id).
+   */
+  source_id: string;
+  /**
+   * True if the agent currently has the file open.
+   */
+  is_open: boolean;
+  /**
+   * UTC timestamp of the agent’s most recent access to this file.
+   */
+  last_accessed_at?: string | null;
+};
+
 export type FileFile = {
   file_data?: string;
   file_id?: string;
@@ -2531,9 +2600,9 @@ export type Memory = {
    */
   blocks: Array<Block>;
   /**
-   * Blocks representing the agent's in-context memory of an attached file
+   * Special blocks representing the agent's in-context memory of an attached file
    */
-  file_blocks?: Array<Block>;
+  file_blocks?: Array<FileBlock>;
   /**
    * Jinja2 template for compiling memory blocks into a prompt string
    */

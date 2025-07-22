@@ -13447,6 +13447,158 @@
         "required": ["file", "type"],
         "title": "File"
       },
+      "FileBlock": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "description": "Value of the block."
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "Character limit of the block.",
+            "default": 5000
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the block if it is a template."
+          },
+          "is_template": {
+            "type": "boolean",
+            "title": "Is Template",
+            "description": "Whether the block is a template (e.g. saved human/persona options).",
+            "default": false
+          },
+          "preserve_on_migration": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preserve On Migration",
+            "description": "Preserve the block on template migration.",
+            "default": false
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label",
+            "description": "Label of the block (e.g. 'human', 'persona') in the context window."
+          },
+          "read_only": {
+            "type": "boolean",
+            "title": "Read Only",
+            "description": "Whether the agent has read-only access to the block.",
+            "default": false
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Description of the block."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Metadata of the block.",
+            "default": {}
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^block-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Block",
+            "examples": ["block-123e4567-e89b-12d3-a456-426614174000"]
+          },
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this Block."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that last updated this Block."
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "Unique identifier of the file."
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id",
+            "description": "Unique identifier of the source (denormalized from files.source_id)."
+          },
+          "is_open": {
+            "type": "boolean",
+            "title": "Is Open",
+            "description": "True if the agent currently has the file open."
+          },
+          "last_accessed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Accessed At",
+            "description": "UTC timestamp of the agent’s most recent access to this file."
+          }
+        },
+        "type": "object",
+        "required": ["value", "file_id", "source_id", "is_open"],
+        "title": "FileBlock"
+      },
       "FileFile": {
         "properties": {
           "file_data": {
@@ -15759,11 +15911,11 @@
           },
           "file_blocks": {
             "items": {
-              "$ref": "#/components/schemas/Block"
+              "$ref": "#/components/schemas/FileBlock"
             },
             "type": "array",
             "title": "File Blocks",
-            "description": "Blocks representing the agent's in-context memory of an attached file"
+            "description": "Special blocks representing the agent's in-context memory of an attached file"
           },
           "prompt_template": {
             "type": "string",
