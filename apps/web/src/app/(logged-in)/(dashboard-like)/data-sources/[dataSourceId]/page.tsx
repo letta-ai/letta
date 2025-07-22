@@ -17,22 +17,7 @@ import {
 import { useCurrentDataSourceId } from './hooks';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useCurrentUser } from '$web/client/hooks';
-
-// const dataSourceColumns: Array<ColumnDef<Document>> = [
-//   {
-//     header: 'File Name',
-//     accessorFn: (row) => get(row.metadata, 'filename', ''),
-//   },
-//   {
-//     header: 'Size',
-//     accessorFn: (row) => row.text.length,
-//   },
-//   {
-//     header: '',
-//     id: 'actions',
-//     accessorKey: 'id',
-//   },
-// ];
+import { useTranslations } from '@letta-cloud/translations';
 
 const columns: Array<
   ColumnDef<{
@@ -51,6 +36,7 @@ const columns: Array<
 ];
 
 function DataSourceInfo() {
+  const t = useTranslations('data-sources/home/page');
   const dataSourceId = useCurrentDataSourceId();
   const { data } = useSourcesServiceRetrieveSource({
     sourceId: dataSourceId,
@@ -61,7 +47,7 @@ function DataSourceInfo() {
       return [];
     }
 
-    return Object.entries({
+    const configData = Object.entries({
       ...data.embedding_config,
       ...data.metadata,
     })
@@ -70,26 +56,16 @@ function DataSourceInfo() {
         detail: typeof value === 'string' ? value : JSON.stringify(value),
       }))
       .filter((row) => row.detail !== undefined);
-  }, [data]);
+
+    const instructionsRow = data.instructions
+      ? [{ name: t('instructions'), detail: data.instructions }]
+      : [];
+
+    return [...instructionsRow, ...configData];
+  }, [data, t]);
 
   return <DataTable columns={columns} data={tableData} />;
 }
-
-// function DataSourceList() {
-//   const dataSourceId = useCurrentDataSourceId();
-//   const { data } = useSourcesServiceListSourceDocuments({
-//     sourceId: dataSourceId,
-//   });
-//
-//   return (
-//     <DataTable
-//       columns={dataSourceColumns}
-//       data={data || []}
-//       isLoading={!data}
-//       noResultsText="There are no files in this datasource"
-//     />
-//   );
-// }
 
 interface JobItemProps {
   job: Job;

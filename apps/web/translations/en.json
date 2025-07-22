@@ -755,6 +755,7 @@
     "notSupported": "Not supported"
   },
   "data-sources/page": {
+    "title": "Data sources",
     "CreateDataSourceDialog": {
       "errors": {
         "default": "There was an error creating the data source, please try again or contact support.",
@@ -774,7 +775,28 @@
         "placeholder": "my-data-source-instructions"
       },
       "createButton": "Create data source"
+    },
+    "dataSourcesList": {
+      "loadingMessage": "Loading data sources...",
+      "noDataSources": "You have no data sources, create one below",
+      "noSearchResults": "We couldn't find any data sources matching your search",
+      "dataSourceItem": {
+        "createdAt": "Created at {date}",
+        "noCreatedAt": "No creation date",
+        "attachedAgents": "Attached agents",
+        "noAttachedAgents": "No agents attached",
+        "agentCount": {
+          "single": "{count} agent",
+          "plural": "{count} agents"
+        }
+      }
+    },
+    "searchInput": {
+      "placeholder": "Search data sources"
     }
+  },
+  "data-sources/home/page": {
+    "instructions": "instructions"
   },
   "components/ModelPricingView": {
     "CostRender": {
@@ -2863,7 +2885,21 @@
         "fileSize": "Size",
         "lastModified": "Last modified"
       }
-    }
+    },
+    "fileContent": {
+      "loading": "Loading content...",
+      "noContent": "No file content available"
+    },
+    "uploadDialog": {
+      "title": "Upload File",
+      "confirmText": "Upload",
+      "triggerLabel": "Upload File"
+    },
+    "fileType": {
+      "defaultType": "Text",
+      "untitled": "Untitled"
+    },
+    "viewButton": "View"
   },
   "components/TemplateNavigationSidebar": {
     "DistributionOnboardingStep": {

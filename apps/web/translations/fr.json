@@ -238,6 +238,7 @@
     }
   },
   "data-sources/page": {
+    "title": "Sources de données",
     "CreateDataSourceDialog": {
       "title": "Créer une nouvelle source de données",
       "trigger": "Créer une source de données",
@@ -253,7 +254,28 @@
         "placeholder": "ma-source-de-données-instructions"
       },
       "createButton": "Créer une source de données"
+    },
+    "dataSourcesList": {
+      "loadingMessage": "Chargement des sources de données...",
+      "noDataSources": "Vous n'avez pas de sources de données, créez-en une ci-dessous",
+      "noSearchResults": "Nous n'avons trouvé aucune source de données correspondant à votre recherche",
+      "dataSourceItem": {
+        "createdAt": "Créé le {date}",
+        "noCreatedAt": "Aucune date de création",
+        "attachedAgents": "Agents attachés",
+        "noAttachedAgents": "Aucun agent attaché",
+        "agentCount": {
+          "single": "{count} agent",
+          "plural": "{count} agents"
+        }
+      }
+    },
+    "searchInput": {
+      "placeholder": "Rechercher des sources de données"
     }
+  },
+  "data-sources/home/page": {
+    "instructions": "instructions"
   },
   "create-organization": {
     "error": "Une erreur s'est produite lors de la création de l'organisation. Veuillez réessayer ou contacter l'assistance.",
@@ -1461,7 +1483,21 @@
         "fileSize": "Taille",
         "lastModified": "Dernière modification"
       }
-    }
+    },
+    "fileContent": {
+      "loading": "Chargement du contenu...",
+      "noContent": "Aucun contenu de fichier disponible"
+    },
+    "uploadDialog": {
+      "title": "Télécharger le fichier",
+      "confirmText": "Télécharger",
+      "triggerLabel": "Télécharger le fichier"
+    },
+    "fileType": {
+      "defaultType": "Texte",
+      "untitled": "Sans titre"
+    },
+    "viewButton": "Voir"
   },
   "components/ImagePreview": {
     "removeFile": "Supprimer le fichier",

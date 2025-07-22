@@ -13,6 +13,11 @@ import {
   SingleFileUpload,
   UploadIcon,
   useForm,
+  VStack,
+  HStack,
+  Typography,
+  LoadingEmptyStatusComponent,
+  ArticleIcon,
 } from '@letta-cloud/ui-component-library';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
@@ -21,6 +26,7 @@ import {
   UseJobsServiceListActiveJobsKeyFn,
   UseSourcesServiceListSourceFilesKeyFn,
   useSourcesServiceUploadFileToSource,
+  useSourcesServiceGetFileMetadata,
 } from '@letta-cloud/sdk-core';
 import { useSourcesServiceListSourceFiles } from '@letta-cloud/sdk-core';
 import { useCurrentDataSourceId } from '../hooks';
@@ -32,6 +38,7 @@ import { DeleteFileDialog } from '@letta-cloud/ui-ade-components';
 import type { DeleteFilePayload } from '@letta-cloud/ui-ade-components';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { useFormatters } from '@letta-cloud/utils-client';
 
 const uploadToFormValuesSchema = z.object({
   file: z.custom<File>((v) => v instanceof File),
@@ -44,6 +51,7 @@ interface UploadFileDialogProps {
 }
 
 function UploadFileDialog({ limit }: UploadFileDialogProps) {
+  const t = useTranslations('data-sources/files/page');
   const dataSourceId = useCurrentDataSourceId();
 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -101,10 +109,15 @@ function UploadFileDialog({ limit }: UploadFileDialogProps) {
         onOpenChange={setIsDialogOpen}
         isOpen={isDialogOpen}
         onSubmit={form.handleSubmit(onSubmit)}
-        title="Upload File"
-        confirmText="Upload"
+        title={t('uploadDialog.title')}
+        confirmText={t('uploadDialog.confirmText')}
         isConfirmBusy={isPending}
-        trigger={<Button label="Upload File" preIcon={<UploadIcon />} />}
+        trigger={
+          <Button
+            label={t('uploadDialog.triggerLabel')}
+            preIcon={<UploadIcon />}
+          />
+        }
       >
         <FormField
           render={({ field }) => (
@@ -114,6 +127,120 @@ function UploadFileDialog({ limit }: UploadFileDialogProps) {
         />
       </Dialog>
     </FormProvider>
+  );
+}
+
+interface FileStatsProps {
+  file: FileMetadata;
+}
+
+function FileStats(props: FileStatsProps) {
+  const t = useTranslations('data-sources/files/page');
+  const { file } = props;
+
+  const { file_name, file_size } = file;
+
+  const fileTypeName = useMemo(() => {
+    const parts = (file_name || '').split('.');
+    if (parts.length > 1) {
+      return parts[parts.length - 1].toUpperCase();
+    }
+    return t('fileType.defaultType');
+  }, [file_name, t]);
+
+  const { dynamicFileSize } = useFormatters();
+
+  return (
+    <HStack gap="medium" align="center">
+      <HStack gap="small">
+        <ArticleIcon color="lighter" />
+        <Typography color="lighter" variant="body2">
+          {fileTypeName}
+        </Typography>
+      </HStack>
+
+      <Typography color="lighter" variant="body2">
+        {dynamicFileSize(file_size || 0)}
+      </Typography>
+    </HStack>
+  );
+}
+
+interface FileViewDialogProps {
+  file: FileMetadata;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function FileViewDialog({ file, isOpen, onClose }: FileViewDialogProps) {
+  const t = useTranslations('data-sources/files/page');
+  const { data } = useSourcesServiceGetFileMetadata(
+    {
+      fileId: file.id || '',
+      sourceId: file.source_id || '',
+      includeContent: true,
+    },
+    undefined,
+    {
+      enabled: !!file.id && isOpen,
+    },
+  );
+
+  const title = useMemo(() => {
+    if (file.file_name) {
+      return (
+        file.file_name.split('.').slice(0, -1).join('.') ||
+        t('fileType.untitled')
+      );
+    }
+    return t('fileType.untitled');
+  }, [file.file_name, t]);
+
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <Dialog
+      trigger={null}
+      size="xlarge"
+      title={title}
+      hideFooter
+      headerVariant="emphasis"
+      isOpen={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+    >
+      <VStack fullWidth overflow="hidden" fullHeight paddingBottom>
+        <HStack align="center">
+          <FileStats file={file} />
+        </HStack>
+        <HStack
+          padding="small"
+          overflowY="auto"
+          collapseHeight
+          flex
+          border
+          color="background"
+        >
+          {data ? (
+            data.content ? (
+              <Typography>{data.content}</Typography>
+            ) : (
+              <Typography italic>{t('fileContent.noContent')}</Typography>
+            )
+          ) : (
+            <LoadingEmptyStatusComponent
+              isLoading
+              loadingMessage={t('fileContent.loading')}
+            />
+          )}
+        </HStack>
+      </VStack>
+    </Dialog>
   );
 }
 
@@ -140,6 +267,8 @@ function DataSourceFilesPage() {
     'onClose'
   > | null>(null);
 
+  const [fileToView, setFileToView] = useState<FileMetadata | null>(null);
+
   const fileTableColumns: Array<ColumnDef<FileMetadata>> = useMemo(
     () => [
       {
@@ -151,15 +280,12 @@ function DataSourceFilesPage() {
         accessorKey: 'file_size',
       },
       {
-        header: t('table.columns.lastModified'),
-        accessorKey: 'file_last_modified_date',
-      },
-      {
         header: '',
         id: 'actions',
         cell: ({ cell }) => {
           return (
             <DropdownMenu
+              triggerAsChild
               trigger={
                 <Button
                   label={t('actions')}
@@ -184,6 +310,25 @@ function DataSourceFilesPage() {
         },
         accessorKey: 'id',
       },
+      {
+        header: '',
+        id: 'view',
+        meta: {
+          style: {
+            columnAlign: 'right',
+          },
+        },
+        accessorKey: 'id',
+        cell: ({ cell }) => (
+          <Button
+            color="secondary"
+            label={t('viewButton')}
+            onClick={() => {
+              setFileToView(cell.row.original);
+            }}
+          />
+        ),
+      },
     ],
     [sourceId, t],
   );
@@ -201,6 +346,13 @@ function DataSourceFilesPage() {
           }}
         />
       )}
+      <FileViewDialog
+        file={fileToView || ({} as FileMetadata)}
+        isOpen={!!fileToView}
+        onClose={() => {
+          setFileToView(null);
+        }}
+      />
       <DashboardPageLayout
         actions={<UploadFileDialog limit={limit} />}
         title={t('title')}

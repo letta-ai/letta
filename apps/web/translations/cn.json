@@ -702,6 +702,7 @@
     "notSupported": "不支持"
   },
   "data-sources/page": {
+    "title": "数据源",
     "CreateDataSourceDialog": {
       "errors": {
         "default": "创建数据源时出错，请重试或联系客服。",
@@ -721,7 +722,28 @@
         "placeholder": "my-data-source-instructions"
       },
       "createButton": "创建数据源"
+    },
+    "dataSourcesList": {
+      "loadingMessage": "加载数据源中...",
+      "noDataSources": "您没有数据源，请在下方创建一个",
+      "noSearchResults": "我们找不到与您搜索匹配的数据源",
+      "dataSourceItem": {
+        "createdAt": "创建于 {date}",
+        "noCreatedAt": "无创建日期",
+        "attachedAgents": "附加的代理",
+        "noAttachedAgents": "无附加代理",
+        "agentCount": {
+          "single": "{count} 代理",
+          "plural": "{count} 代理"
+        }
+      }
+    },
+    "searchInput": {
+      "placeholder": "搜索数据源"
     }
+  },
+  "data-sources/home/page": {
+    "instructions": "说明"
   },
   "components/ModelPricingView": {
     "CostRender": {
@@ -2048,7 +2070,21 @@
         "fileSize": "大小",
         "lastModified": "最后修改"
       }
-    }
+    },
+    "fileContent": {
+      "loading": "正在加载内容...",
+      "noContent": "无可用文件内容"
+    },
+    "uploadDialog": {
+      "title": "上传文件",
+      "confirmText": "上传",
+      "triggerLabel": "上传文件"
+    },
+    "fileType": {
+      "defaultType": "文本",
+      "untitled": "无标题"
+    },
+    "viewButton": "查看"
   },
   "components/TemplateNavigationSidebar": {
     "DistributionOnboardingStep": {
