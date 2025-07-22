@@ -293,7 +293,9 @@ async def attach_tool(
     Attach a tool to an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    return await server.agent_manager.attach_tool_async(agent_id=agent_id, tool_id=tool_id, actor=actor)
+    await server.agent_manager.attach_tool_async(agent_id=agent_id, tool_id=tool_id, actor=actor)
+    # TODO: Unfortunately we need this to preserve our current API behavior
+    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
 
 @router.patch("/{agent_id}/tools/detach/{tool_id}", response_model=AgentState, operation_id="detach_tool")
@@ -307,7 +309,9 @@ async def detach_tool(
     Detach a tool from an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    return await server.agent_manager.detach_tool_async(agent_id=agent_id, tool_id=tool_id, actor=actor)
+    await server.agent_manager.detach_tool_async(agent_id=agent_id, tool_id=tool_id, actor=actor)
+    # TODO: Unfortunately we need this to preserve our current API behavior
+    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
 
 @router.patch("/{agent_id}/sources/attach/{source_id}", response_model=AgentState, operation_id="attach_source_to_agent")
@@ -327,7 +331,8 @@ async def attach_source(
     agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=actor)
 
     files = await server.file_manager.list_files(source_id, actor, include_content=True)
-    await server.insert_files_into_context_window(agent_state=agent_state, file_metadata_with_content=files, actor=actor)
+    if files:
+        await server.insert_files_into_context_window(agent_state=agent_state, file_metadata_with_content=files, actor=actor)
 
     if agent_state.enable_sleeptime:
         source = await server.source_manager.get_source_by_id(source_id=source_id)
