@@ -7,8 +7,10 @@ from letta.schemas.providers import (
     GoogleAIProvider,
     GoogleVertexProvider,
     GroqProvider,
+    OllamaProvider,
     OpenAIProvider,
     TogetherProvider,
+    VLLMChatCompletionsProvider,
 )
 from letta.settings import model_settings
 
@@ -98,20 +100,21 @@ def test_azure():
     assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
 
 
-# def test_ollama():
-#     provider = OllamaProvider(
-#         name="ollama",
-#         base_url=model_settings.ollama_base_url,
-#         api_key=None,
-#         default_prompt_formatter=model_settings.default_prompt_formatter,
-#     )
-#     models = provider.list_llm_models()
-#     assert len(models) > 0
-#     assert models[0].handle == f"{provider.name}/{models[0].model}"
-#
-#     embedding_models = provider.list_embedding_models()
-#     assert len(embedding_models) > 0
-#     assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
+@pytest.mark.skipif(model_settings.ollama_base_url is None, reason="Only run if OLLAMA_BASE_URL is set.")
+def test_ollama():
+    provider = OllamaProvider(
+        name="ollama",
+        base_url=model_settings.ollama_base_url,
+        api_key=None,
+        default_prompt_formatter=model_settings.default_prompt_formatter,
+    )
+    models = provider.list_llm_models()
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
+
+    embedding_models = provider.list_embedding_models()
+    assert len(embedding_models) > 0
+    assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
 
 
 def test_googleai():
@@ -225,9 +228,10 @@ def test_custom_anthropic():
     assert models[0].handle == f"{provider.name}/{models[0].model}"
 
 
-# def test_vllm():
-#    provider = VLLMProvider(base_url=os.getenv("VLLM_API_BASE"))
-#    models = provider.list_llm_models()
-#    print(models)
-#
-#    provider.list_embedding_models()
+@pytest.mark.skipif(model_settings.vllm_api_base is None, reason="Only run if VLLM_API_BASE is set.")
+def test_vllm():
+    provider = VLLMChatCompletionsProvider(base_url=model_settings.vllm_api_base)
+    models = provider.list_llm_models()
+    print(models)
+
+    provider.list_embedding_models()
