@@ -21,7 +21,7 @@ async function listProjects(
 
   const { query } = req;
 
-  const { name, limit = 1, offset = 0 } = query;
+  const { name, limit = 10, offset = 0 } = query;
 
   const where = [eq(projects.organizationId, organizationId)];
 
