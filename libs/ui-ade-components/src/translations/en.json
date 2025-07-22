@@ -782,7 +782,7 @@
       "next": "Next"
     },
     "MemoryWrapper": {
-      "addMemory": "Create memory",
+      "addMemory": "Create block",
       "emptyMemoryBlock": "No memory blocks yet"
     },
     "advancedEditor": "Advanced",
