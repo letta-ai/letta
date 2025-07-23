@@ -429,7 +429,7 @@ class AgentSerializationManager:
 
             # 5. Process files for chunking/embedding (depends on files and sources)
             if should_use_pinecone():
-                embedder = PineconeEmbedder()
+                embedder = PineconeEmbedder(embedding_config=schema.agents[0].embedding_config)
             else:
                 embedder = OpenAIEmbedder(embedding_config=schema.agents[0].embedding_config)
             file_processor = FileProcessor(

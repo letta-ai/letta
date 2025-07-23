@@ -1,8 +1,9 @@
-from typing import List
+from typing import List, Optional
 
 from letta.helpers.pinecone_utils import upsert_file_records_to_pinecone_index
 from letta.log import get_logger
 from letta.otel.tracing import log_event, trace_method
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.passage import Passage
 from letta.schemas.user import User
 from letta.services.file_processor.embedder.base_embedder import BaseEmbedder
@@ -18,10 +19,15 @@ logger = get_logger(__name__)
 class PineconeEmbedder(BaseEmbedder):
     """Pinecone-based embedding generation"""
 
-    def __init__(self):
+    def __init__(self, embedding_config: Optional[EmbeddingConfig] = None):
         if not PINECONE_AVAILABLE:
             raise ImportError("Pinecone package is not installed. Install it with: pip install pinecone")
 
+        # set default embedding config if not provided
+        if embedding_config is None:
+            embedding_config = EmbeddingConfig.default_config(provider="pinecone")
+
+        self.embedding_config = embedding_config
         super().__init__()
 
     @trace_method
