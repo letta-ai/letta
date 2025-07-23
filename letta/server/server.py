@@ -42,7 +42,6 @@ from letta.schemas.embedding_config import EmbeddingConfig
 # openai schemas
 from letta.schemas.enums import JobStatus, MessageStreamStatus, ProviderCategory, ProviderType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
-from letta.schemas.file import FileMetadata
 from letta.schemas.group import GroupCreate, ManagerType, SleeptimeManager, VoiceSleeptimeManager
 from letta.schemas.job import Job, JobUpdate
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, MessageType, ToolReturnMessage
@@ -79,10 +78,9 @@ from letta.server.rest_api.chat_completions_interface import ChatCompletionsStre
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
-from letta.services.agent_serialization_manager import AgentFileManager
+from letta.services.agent_serialization_manager import AgentSerializationManager
 from letta.services.block_manager import BlockManager
 from letta.services.file_manager import FileManager
-from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.files_agents_manager import FileAgentManager
 from letta.services.group_manager import GroupManager
 from letta.services.helpers.tool_execution_helper import prepare_local_sandbox
@@ -224,7 +222,18 @@ class SyncServer(Server):
         self.telemetry_manager = TelemetryManager()
         self.file_agent_manager = FileAgentManager()
         self.file_manager = FileManager()
-        self.agent_serialization_manager = AgentFileManager()
+
+        self.agent_serialization_manager = AgentSerializationManager(
+            agent_manager=self.agent_manager,
+            tool_manager=self.tool_manager,
+            source_manager=self.source_manager,
+            block_manager=self.block_manager,
+            group_manager=self.group_manager,
+            mcp_manager=self.mcp_manager,
+            file_manager=self.file_manager,
+            file_agent_manager=self.file_agent_manager,
+            message_manager=self.message_manager,
+        )
 
         # A resusable httpx client
         timeout = httpx.Timeout(connect=10.0, read=20.0, write=10.0, pool=10.0)
@@ -874,7 +883,9 @@ class SyncServer(Server):
         if request.source_ids:
             for source_id in request.source_ids:
                 files = await self.file_manager.list_files(source_id, actor, include_content=True)
-                await self.insert_files_into_context_window(agent_state=main_agent, file_metadata_with_content=files, actor=actor)
+                await self.agent_manager.insert_files_into_context_window(
+                    agent_state=main_agent, file_metadata_with_content=files, actor=actor
+                )
 
             main_agent = await self.agent_manager.refresh_file_blocks(agent_state=main_agent, actor=actor)
             main_agent = await self.agent_manager.attach_missing_files_tools_async(agent_state=main_agent, actor=actor)
@@ -1396,76 +1407,6 @@ class SyncServer(Server):
             )
         except NoResultFound:
             logger.info(f"File {file_id} already removed from agent {agent_id}, skipping...")
-
-    async def insert_file_into_context_windows(
-        self, source_id: str, file_metadata_with_content: FileMetadata, actor: User, agent_states: Optional[List[AgentState]] = None
-    ) -> List[AgentState]:
-        """
-        Insert the uploaded document into the context window of all agents
-        attached to the given source.
-        """
-        agent_states = agent_states or await self.source_manager.list_attached_agents(source_id=source_id, actor=actor)
-
-        # Return early
-        if not agent_states:
-            return []
-
-        logger.info(f"Inserting document into context window for source: {source_id}")
-        logger.info(f"Attached agents: {[a.id for a in agent_states]}")
-
-        # Generate visible content for the file
-        line_chunker = LineChunker()
-        content_lines = line_chunker.chunk_text(file_metadata=file_metadata_with_content)
-        visible_content = "\n".join(content_lines)
-        visible_content_map = {file_metadata_with_content.file_name: visible_content}
-
-        # Attach file to each agent using bulk method (one file per agent, but atomic per agent)
-        all_closed_files = await asyncio.gather(
-            *(
-                self.file_agent_manager.attach_files_bulk(
-                    agent_id=agent_state.id,
-                    files_metadata=[file_metadata_with_content],
-                    visible_content_map=visible_content_map,
-                    actor=actor,
-                    max_files_open=agent_state.max_files_open,
-                )
-                for agent_state in agent_states
-            )
-        )
-        # Flatten and log if any files were closed
-        closed_files = [file for closed_list in all_closed_files for file in closed_list]
-        if closed_files:
-            logger.info(f"LRU eviction closed {len(closed_files)} files during bulk attach: {closed_files}")
-
-        return agent_states
-
-    async def insert_files_into_context_window(
-        self, agent_state: AgentState, file_metadata_with_content: List[FileMetadata], actor: User
-    ) -> None:
-        """
-        Insert the uploaded documents into the context window of an agent
-        attached to the given source.
-        """
-        logger.info(f"Inserting {len(file_metadata_with_content)} documents into context window for agent_state: {agent_state.id}")
-
-        # Generate visible content for each file
-        line_chunker = LineChunker()
-        visible_content_map = {}
-        for file_metadata in file_metadata_with_content:
-            content_lines = line_chunker.chunk_text(file_metadata=file_metadata)
-            visible_content_map[file_metadata.file_name] = "\n".join(content_lines)
-
-        # Use bulk attach to avoid race conditions and duplicate LRU eviction decisions
-        closed_files = await self.file_agent_manager.attach_files_bulk(
-            agent_id=agent_state.id,
-            files_metadata=file_metadata_with_content,
-            visible_content_map=visible_content_map,
-            actor=actor,
-            max_files_open=agent_state.max_files_open,
-        )
-
-        if closed_files:
-            logger.info(f"LRU eviction closed {len(closed_files)} files during bulk insert: {closed_files}")
 
     async def remove_file_from_context_windows(self, source_id: str, file_id: str, actor: User) -> None:
         """

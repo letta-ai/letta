@@ -481,6 +481,4 @@ async def load_file_to_source_cloud(
     else:
         embedder = OpenAIEmbedder(embedding_config=embedding_config)
     file_processor = FileProcessor(file_parser=file_parser, embedder=embedder, actor=actor, using_pinecone=using_pinecone)
-    await file_processor.process(
-        server=server, agent_states=agent_states, source_id=source_id, content=content, file_metadata=file_metadata
-    )
+    await file_processor.process(agent_states=agent_states, source_id=source_id, content=content, file_metadata=file_metadata)

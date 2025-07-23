@@ -26,11 +26,7 @@ from letta.schemas.organization import Organization
 from letta.schemas.source import Source
 from letta.schemas.user import User
 from letta.server.server import SyncServer
-from letta.services.agent_serialization_manager import AgentFileManager
-from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
-from letta.services.file_processor.parser.markitdown_parser import MarkitdownFileParser
-from letta.services.file_processor.parser.mistral_parser import MistralFileParser
-from letta.settings import settings
+from letta.services.agent_serialization_manager import AgentSerializationManager
 from tests.utils import create_tool_from_func
 
 # ------------------------------
@@ -159,8 +155,8 @@ def test_block(server: SyncServer, default_user):
 
 @pytest.fixture
 def agent_serialization_manager(server, default_user):
-    """Fixture to create AgentFileManager with all required services including file processing."""
-    manager = AgentFileManager(
+    """Fixture to create AgentSerializationManager with all required services including file processing."""
+    manager = AgentSerializationManager(
         agent_manager=server.agent_manager,
         tool_manager=server.tool_manager,
         source_manager=server.source_manager,
@@ -170,9 +166,6 @@ def agent_serialization_manager(server, default_user):
         file_manager=server.file_manager,
         file_agent_manager=server.file_agent_manager,
         message_manager=server.message_manager,
-        embedder=OpenAIEmbedder(),
-        file_parser=MistralFileParser() if settings.mistral_api_key else MarkitdownFileParser(),
-        using_pinecone=False,
     )
     yield manager
 
@@ -282,7 +275,9 @@ async def agent_with_files(server: SyncServer, default_user, test_block, weather
         actor=default_user,
     )
 
-    await server.insert_files_into_context_window(agent_state=agent_state, file_metadata_with_content=[test_file], actor=default_user)
+    await server.agent_manager.insert_files_into_context_window(
+        agent_state=agent_state, file_metadata_with_content=[test_file], actor=default_user
+    )
 
     return (agent_state.id, test_source.id, test_file.id)
 
@@ -348,7 +343,9 @@ async def create_test_agent_with_files(server: SyncServer, name: str, user: User
 
     for source_id, file_id in file_relationships:
         file_metadata = await server.file_manager.get_file_by_id(file_id, user)
-        await server.insert_files_into_context_window(agent_state=agent_state, file_metadata_with_content=[file_metadata], actor=user)
+        await server.agent_manager.insert_files_into_context_window(
+            agent_state=agent_state, file_metadata_with_content=[file_metadata], actor=user
+        )
 
     return agent_state
 

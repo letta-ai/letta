@@ -46,6 +46,7 @@ from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderType
+from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.group import Group as PydanticGroup
 from letta.schemas.group import ManagerType
 from letta.schemas.memory import ContextWindowOverview, Memory
@@ -65,6 +66,7 @@ from letta.server.db import db_registry
 from letta.services.block_manager import BlockManager
 from letta.services.context_window_calculator.context_window_calculator import ContextWindowCalculator
 from letta.services.context_window_calculator.token_counter import AnthropicTokenCounter, TiktokenCounter
+from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.files_agents_manager import FileAgentManager
 from letta.services.helpers.agent_manager_helper import (
     _apply_filters,
@@ -2945,6 +2947,83 @@ class AgentManager:
             result = await session.execute(query)
             tools = result.scalars().all()
             return [tool.to_pydantic() for tool in tools]
+
+    # ======================================================================================================================
+    # File Management
+    # ======================================================================================================================
+    async def insert_file_into_context_windows(
+        self,
+        source_id: str,
+        file_metadata_with_content: PydanticFileMetadata,
+        actor: PydanticUser,
+        agent_states: Optional[List[PydanticAgentState]] = None,
+    ) -> List[PydanticAgentState]:
+        """
+        Insert the uploaded document into the context window of all agents
+        attached to the given source.
+        """
+        agent_states = agent_states or await self.source_manager.list_attached_agents(source_id=source_id, actor=actor)
+
+        # Return early
+        if not agent_states:
+            return []
+
+        logger.info(f"Inserting document into context window for source: {source_id}")
+        logger.info(f"Attached agents: {[a.id for a in agent_states]}")
+
+        # Generate visible content for the file
+        line_chunker = LineChunker()
+        content_lines = line_chunker.chunk_text(file_metadata=file_metadata_with_content)
+        visible_content = "\n".join(content_lines)
+        visible_content_map = {file_metadata_with_content.file_name: visible_content}
+
+        # Attach file to each agent using bulk method (one file per agent, but atomic per agent)
+        all_closed_files = await asyncio.gather(
+            *(
+                self.file_agent_manager.attach_files_bulk(
+                    agent_id=agent_state.id,
+                    files_metadata=[file_metadata_with_content],
+                    visible_content_map=visible_content_map,
+                    actor=actor,
+                    max_files_open=agent_state.max_files_open,
+                )
+                for agent_state in agent_states
+            )
+        )
+        # Flatten and log if any files were closed
+        closed_files = [file for closed_list in all_closed_files for file in closed_list]
+        if closed_files:
+            logger.info(f"LRU eviction closed {len(closed_files)} files during bulk attach: {closed_files}")
+
+        return agent_states
+
+    async def insert_files_into_context_window(
+        self, agent_state: PydanticAgentState, file_metadata_with_content: List[PydanticFileMetadata], actor: PydanticUser
+    ) -> None:
+        """
+        Insert the uploaded documents into the context window of an agent
+        attached to the given source.
+        """
+        logger.info(f"Inserting {len(file_metadata_with_content)} documents into context window for agent_state: {agent_state.id}")
+
+        # Generate visible content for each file
+        line_chunker = LineChunker()
+        visible_content_map = {}
+        for file_metadata in file_metadata_with_content:
+            content_lines = line_chunker.chunk_text(file_metadata=file_metadata)
+            visible_content_map[file_metadata.file_name] = "\n".join(content_lines)
+
+        # Use bulk attach to avoid race conditions and duplicate LRU eviction decisions
+        closed_files = await self.file_agent_manager.attach_files_bulk(
+            agent_id=agent_state.id,
+            files_metadata=file_metadata_with_content,
+            visible_content_map=visible_content_map,
+            actor=actor,
+            max_files_open=agent_state.max_files_open,
+        )
+
+        if closed_files:
+            logger.info(f"LRU eviction closed {len(closed_files)} files during bulk insert: {closed_files}")
 
     # ======================================================================================================================
     # Tag Management
