@@ -1583,7 +1583,7 @@ export type FileBlock = {
    */
   file_id: string;
   /**
-   * Unique identifier of the source (denormalized from files.source_id).
+   * Unique identifier of the source.
    */
   source_id: string;
   /**
@@ -1591,7 +1591,7 @@ export type FileBlock = {
    */
   is_open: boolean;
   /**
-   * UTC timestamp of the agent’s most recent access to this file.
+   * UTC timestamp of the agent’s most recent access to this file. Any operations from the open, close, or search tools will update this field.
    */
   last_accessed_at?: string | null;
 };

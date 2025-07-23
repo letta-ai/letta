@@ -4692,8 +4692,7 @@ export const $FileBlock = {
     source_id: {
       type: 'string',
       title: 'Source Id',
-      description:
-        'Unique identifier of the source (denormalized from files.source_id).',
+      description: 'Unique identifier of the source.',
     },
     is_open: {
       type: 'boolean',
@@ -4712,7 +4711,7 @@ export const $FileBlock = {
       ],
       title: 'Last Accessed At',
       description:
-        'UTC timestamp of the agent’s most recent access to this file.',
+        'UTC timestamp of the agent’s most recent access to this file. Any operations from the open, close, or search tools will update this field.',
     },
   },
   type: 'object',

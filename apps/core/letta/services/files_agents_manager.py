@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import List, Optional, Union
 
-from sqlalchemy import and_, func, select, update
+from sqlalchemy import and_, delete, func, or_, select, update
 
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
@@ -161,6 +161,36 @@ class FileAgentManager:
         async with db_registry.async_session() as session:
             assoc = await self._get_association_by_file_id(session, agent_id, file_id, actor)
             await assoc.hard_delete_async(session, actor=actor)
+
+    @enforce_types
+    @trace_method
+    async def detach_file_bulk(self, *, agent_file_pairs: List, actor: PydanticUser) -> int:  # List of (agent_id, file_id) tuples
+        """
+        Bulk delete multiple agent-file associations in a single query.
+
+        Args:
+            agent_file_pairs: List of (agent_id, file_id) tuples to delete
+            actor: User performing the action
+
+        Returns:
+            Number of rows deleted
+        """
+        if not agent_file_pairs:
+            return 0
+
+        async with db_registry.async_session() as session:
+            # Build compound OR conditions for each agent-file pair
+            conditions = []
+            for agent_id, file_id in agent_file_pairs:
+                conditions.append(and_(FileAgentModel.agent_id == agent_id, FileAgentModel.file_id == file_id))
+
+            # Create delete statement with all conditions
+            stmt = delete(FileAgentModel).where(and_(or_(*conditions), FileAgentModel.organization_id == actor.organization_id))
+
+            result = await session.execute(stmt)
+            await session.commit()
+
+            return result.rowcount
 
     @enforce_types
     @trace_method
