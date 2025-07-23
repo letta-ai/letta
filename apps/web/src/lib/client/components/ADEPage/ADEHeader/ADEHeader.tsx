@@ -293,7 +293,7 @@ function LogoContainer() {
       className="min-h-biHeight min-w-[48px]"
       fullHeight
     >
-      <Logo size="small" color="background" />
+      <Logo size="medium" color="background" />
     </HStack>
   );
 }
@@ -330,10 +330,10 @@ function Actions() {
   } = useADELayoutConfig();
 
   return (
-    <HStack>
+    <HStack gap={false} paddingRight="xsmall">
       <Button
         preIcon={
-          <DockLeftIcon color={!isLeftSidebarOpen ? 'muted' : 'inherit'} />
+          <DockLeftIcon color={!isLeftSidebarOpen ? 'muted' : 'default'} />
         }
         hideLabel
         size="small"
@@ -347,7 +347,7 @@ function Actions() {
       />
       <Button
         preIcon={
-          <DockRightIcon color={!isRightSidebarOpen ? 'muted' : 'inherit'} />
+          <DockRightIcon color={!isRightSidebarOpen ? 'muted' : 'default'} />
         }
         hideLabel
         onClick={toggleRightPanel}
@@ -411,7 +411,7 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
         <HStack align="center" paddingLeft="medium" gap="medium">
           <Button
             href={isLocal ? '/development-servers' : projectUrl}
-            preIcon={<ProjectsIcon size="medium" />}
+            preIcon={<ProjectsIcon size="medium" color="default" />}
             label={
               isLocal ? t('nav.localDev') : t('nav.project', { projectName })
             }

@@ -406,7 +406,7 @@ export function ContextWindowPanel() {
                   ? Math.round((remainingLength / totalLength) * 100)
                   : 0;
               return makeFormattedTooltip({
-                color: `${e.color}`,
+                color: 'hsl(var(--input))',
                 label: `${e.seriesName || ''} (${formatNumber(percentage / 100, { style: 'percent' })})`,
                 value: `${remainingLength}`,
               });

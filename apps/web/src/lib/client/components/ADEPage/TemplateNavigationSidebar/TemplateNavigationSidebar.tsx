@@ -128,7 +128,7 @@ export function TemplateSidebarInner() {
     <VStack
       align="center"
       /* eslint-disable-next-line react/forbid-component-props */
-      className="w-[48px] min-w-[48px] pr-[1px] pt-[3px] bg-background-grey2 border border-background-grey3-border"
+      className="w-[48px] min-w-[48px] pt-[3px] bg-background-grey2 border border-background-grey3-border"
     >
       <VStack
         color="background-grey2"
