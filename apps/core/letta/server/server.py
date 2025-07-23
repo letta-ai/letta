@@ -79,6 +79,7 @@ from letta.server.rest_api.chat_completions_interface import ChatCompletionsStre
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
+from letta.services.agent_serialization_manager import AgentFileManager
 from letta.services.block_manager import BlockManager
 from letta.services.file_manager import FileManager
 from letta.services.file_processor.chunker.line_chunker import LineChunker
@@ -223,6 +224,7 @@ class SyncServer(Server):
         self.telemetry_manager = TelemetryManager()
         self.file_agent_manager = FileAgentManager()
         self.file_manager = FileManager()
+        self.agent_serialization_manager = AgentFileManager()
 
         # A resusable httpx client
         timeout = httpx.Timeout(connect=10.0, read=20.0, write=10.0, pool=10.0)
