@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Dict, List
 
 from letta.errors import AgentFileExportError, AgentFileImportError
+from letta.helpers.pinecone_utils import should_use_pinecone
 from letta.log import get_logger
 from letta.schemas.agent import AgentState, CreateAgent
 from letta.schemas.agent_file import (
@@ -25,21 +26,24 @@ from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.file_manager import FileManager
-from letta.services.file_processor.embedder.base_embedder import BaseEmbedder
+from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
+from letta.services.file_processor.embedder.pinecone_embedder import PineconeEmbedder
 from letta.services.file_processor.file_processor import FileProcessor
-from letta.services.file_processor.parser.base_parser import FileParser
+from letta.services.file_processor.parser.markitdown_parser import MarkitdownFileParser
+from letta.services.file_processor.parser.mistral_parser import MistralFileParser
 from letta.services.files_agents_manager import FileAgentManager
 from letta.services.group_manager import GroupManager
 from letta.services.mcp_manager import MCPManager
 from letta.services.message_manager import MessageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
+from letta.settings import settings
 from letta.utils import get_latest_alembic_revision
 
 logger = get_logger(__name__)
 
 
-class AgentFileManager:
+class AgentSerializationManager:
     """
     Manages export and import of agent files between database and AgentFileSchema format.
 
@@ -61,9 +65,6 @@ class AgentFileManager:
         file_manager: FileManager,
         file_agent_manager: FileAgentManager,
         message_manager: MessageManager,
-        embedder: BaseEmbedder,
-        file_parser: FileParser,
-        using_pinecone: bool = False,
     ):
         self.agent_manager = agent_manager
         self.tool_manager = tool_manager
@@ -74,9 +75,8 @@ class AgentFileManager:
         self.file_manager = file_manager
         self.file_agent_manager = file_agent_manager
         self.message_manager = message_manager
-        self.embedder = embedder
-        self.file_parser = file_parser
-        self.using_pinecone = using_pinecone
+        self.file_parser = MistralFileParser() if settings.mistral_api_key else MarkitdownFileParser()
+        self.using_pinecone = should_use_pinecone()
 
         # ID mapping state for export
         self._db_to_file_ids: Dict[str, str] = {}
@@ -428,9 +428,13 @@ class AgentFileManager:
                 imported_count += 1
 
             # 5. Process files for chunking/embedding (depends on files and sources)
+            if should_use_pinecone():
+                embedder = PineconeEmbedder()
+            else:
+                embedder = OpenAIEmbedder(embedding_config=schema.agents[0].embedding_config)
             file_processor = FileProcessor(
                 file_parser=self.file_parser,
-                embedder=self.embedder,
+                embedder=embedder,
                 actor=actor,
                 using_pinecone=self.using_pinecone,
             )

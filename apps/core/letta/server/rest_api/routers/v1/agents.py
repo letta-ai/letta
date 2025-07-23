@@ -332,7 +332,7 @@ async def attach_source(
 
     files = await server.file_manager.list_files(source_id, actor, include_content=True)
     if files:
-        await server.insert_files_into_context_window(agent_state=agent_state, file_metadata_with_content=files, actor=actor)
+        await server.agent_manager.insert_files_into_context_window(agent_state=agent_state, file_metadata_with_content=files, actor=actor)
 
     if agent_state.enable_sleeptime:
         source = await server.source_manager.get_source_by_id(source_id=source_id)

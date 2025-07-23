@@ -10,7 +10,7 @@ from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.file import FileMetadata
 from letta.schemas.passage import Passage
 from letta.schemas.user import User
-from letta.server.server import SyncServer
+from letta.services.agent_manager import AgentManager
 from letta.services.file_manager import FileManager
 from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.file_processor.chunker.llama_index_chunker import LlamaIndexChunker
@@ -42,6 +42,7 @@ class FileProcessor:
         self.source_manager = SourceManager()
         self.passage_manager = PassageManager()
         self.job_manager = JobManager()
+        self.agent_manager = AgentManager()
         self.actor = actor
         self.using_pinecone = using_pinecone
 
@@ -130,7 +131,6 @@ class FileProcessor:
     @trace_method
     async def process(
         self,
-        server: SyncServer,
         agent_states: list[AgentState],
         source_id: str,
         content: bytes,
@@ -182,7 +182,7 @@ class FileProcessor:
             )
             file_metadata = await self.file_manager.upsert_file_content(file_id=file_metadata.id, text=raw_markdown_text, actor=self.actor)
 
-            await server.insert_file_into_context_windows(
+            await self.agent_manager.insert_file_into_context_windows(
                 source_id=source_id,
                 file_metadata_with_content=file_metadata,
                 actor=self.actor,
