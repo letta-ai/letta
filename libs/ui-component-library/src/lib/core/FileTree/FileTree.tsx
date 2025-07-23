@@ -168,7 +168,13 @@ function RenderFolderInnerContent(props: RenderFolderContentProps) {
               ) : (
                 <FileIcon className="w-4" />
               )}
-              <Typography overflow="ellipsis" fullWidth noWrap align="left">
+              <Typography
+                overflow="ellipsis"
+                fullWidth
+                noWrap
+                align="left"
+                variant="body3"
+              >
                 {name}
               </Typography>
             </HStack>
@@ -301,7 +307,13 @@ export function FolderComponent(props: FolderComponentProps) {
         >
           {isOpen ? openIcon : icon}
           <HStack align="center">
-            <Typography overflow="ellipsis" fullWidth noWrap align="left">
+            <Typography
+              overflow="ellipsis"
+              fullWidth
+              noWrap
+              align="left"
+              variant="body3"
+            >
               {name}
             </Typography>
             {infoTooltip && (

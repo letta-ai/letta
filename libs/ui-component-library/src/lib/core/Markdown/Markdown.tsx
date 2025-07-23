@@ -32,7 +32,7 @@ export function Markdown(props: MarkdownProps) {
     <ReactMarkdown
       children={processedText}
       remarkPlugins={[remarkGfm]}
-      className="text-base"
+      className="text-sm"
       components={{
         table: function Table({ children }) {
           return <table className="table-auto w-full">{children}</table>;
@@ -99,7 +99,11 @@ export function Markdown(props: MarkdownProps) {
         },
         p({ children }) {
           return (
-            <Typography className="block markdown-paragraph" preWrap>
+            <Typography
+              variant="body3"
+              className="block markdown-paragraph"
+              preWrap
+            >
               {children}
             </Typography>
           );

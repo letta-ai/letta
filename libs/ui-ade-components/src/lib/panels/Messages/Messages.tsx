@@ -800,7 +800,7 @@ export function Messages(props: MessagesProps) {
                         </div>
                       )}
                     </HStack>
-                    <Typography color="lighter">
+                    <Typography color="lighter" variant="body3">
                       {agentMessage.reasoning}
                     </Typography>
                   </VStack>
@@ -824,7 +824,9 @@ export function Messages(props: MessagesProps) {
                   title: t('reasoningMessage'),
                 }}
               >
-                <Typography>{agentMessage.reasoning}</Typography>
+                <Typography variant="body3">
+                  {agentMessage.reasoning}
+                </Typography>
               </MessageWrapper>
             ),
             timestamp: new Date(agentMessage.date).toISOString(),
@@ -880,7 +882,7 @@ export function Messages(props: MessagesProps) {
                   title: t('reasoningMessage'),
                 }}
               >
-                <Typography>
+                <Typography variant="body3">
                   {(agentMessage.state === 'omitted'
                     ? 'hidden'
                     : agentMessage.state) + ' by model provider'}
