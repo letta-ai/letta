@@ -63,9 +63,9 @@ function ADEAccordionItem(props: ADEAccordionItemProps) {
           {label}
         </Typography>
         {open ? (
-          <ChevronDownIcon />
+          <ChevronDownIcon color="muted" />
         ) : (
-          <ChevronDownIcon className="rotate-180" />
+          <ChevronDownIcon color="muted" className="rotate-180" />
         )}
       </button>
       {open && (

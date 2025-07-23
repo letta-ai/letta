@@ -42,7 +42,7 @@
   "ADE/InstructionsView": {
     "noInstructions": "No instructions",
     "editInstructions": "Edit instructions",
-    "addInstructions": "Add instructions",
+    "addInstructions": "Set source instructions",
     "instructionsTooltip": "Optional instructions for how the agent should use this data source"
   },
   "AgentMobileNavigation": {

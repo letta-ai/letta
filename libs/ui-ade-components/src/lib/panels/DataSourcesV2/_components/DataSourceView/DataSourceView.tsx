@@ -1,6 +1,6 @@
 import {
   Button,
-  ChevronDownIcon,
+  CaretDownIcon,
   HStack,
   PlusIcon,
   Typography,
@@ -40,7 +40,7 @@ function DataSourceViewHeader(props: DataSourceViewHeaderProps) {
                 size="xsmall"
                 color="tertiary"
                 hideLabel
-                preIcon={<ChevronDownIcon />}
+                preIcon={<CaretDownIcon />}
               />
             }
           />
