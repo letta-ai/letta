@@ -8269,6 +8269,95 @@ async def test_detach_file(server, file_attachment, default_user):
 
 
 @pytest.mark.asyncio
+async def test_detach_file_bulk(
+    server,
+    default_user,
+    sarah_agent,
+    charles_agent,
+    default_source,
+):
+    """Test bulk deletion of multiple agent-file associations."""
+    # Create multiple files
+    files = []
+    for i in range(3):
+        file_metadata = PydanticFileMetadata(
+            file_name=f"test_file_{i}.txt",
+            source_id=default_source.id,
+            organization_id=default_user.organization_id,
+        )
+        file = await server.file_manager.create_file(file_metadata, actor=default_user)
+        files.append(file)
+
+    # Attach all files to both agents
+    for file in files:
+        await server.file_agent_manager.attach_file(
+            agent_id=sarah_agent.id,
+            file_id=file.id,
+            file_name=file.file_name,
+            source_id=file.source_id,
+            actor=default_user,
+            max_files_open=sarah_agent.max_files_open,
+        )
+        await server.file_agent_manager.attach_file(
+            agent_id=charles_agent.id,
+            file_id=file.id,
+            file_name=file.file_name,
+            source_id=file.source_id,
+            actor=default_user,
+            max_files_open=charles_agent.max_files_open,
+        )
+
+    # Verify all files are attached to both agents
+    sarah_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user
+    )
+    charles_files = await server.file_agent_manager.list_files_for_agent(
+        charles_agent.id, per_file_view_window_char_limit=charles_agent.per_file_view_window_char_limit, actor=default_user
+    )
+    assert len(sarah_files) == 3
+    assert len(charles_files) == 3
+
+    # Test 1: Bulk delete specific files from specific agents
+    agent_file_pairs = [
+        (sarah_agent.id, files[0].id),  # Remove file 0 from sarah
+        (sarah_agent.id, files[1].id),  # Remove file 1 from sarah
+        (charles_agent.id, files[1].id),  # Remove file 1 from charles
+    ]
+
+    deleted_count = await server.file_agent_manager.detach_file_bulk(agent_file_pairs=agent_file_pairs, actor=default_user)
+    assert deleted_count == 3
+
+    # Verify the correct files were deleted
+    sarah_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user
+    )
+    charles_files = await server.file_agent_manager.list_files_for_agent(
+        charles_agent.id, per_file_view_window_char_limit=charles_agent.per_file_view_window_char_limit, actor=default_user
+    )
+
+    # Sarah should only have file 2 left
+    assert len(sarah_files) == 1
+    assert sarah_files[0].file_id == files[2].id
+
+    # Charles should have files 0 and 2 left
+    assert len(charles_files) == 2
+    charles_file_ids = {f.file_id for f in charles_files}
+    assert charles_file_ids == {files[0].id, files[2].id}
+
+    # Test 2: Empty list should return 0 and not fail
+    deleted_count = await server.file_agent_manager.detach_file_bulk(agent_file_pairs=[], actor=default_user)
+    assert deleted_count == 0
+
+    # Test 3: Attempting to delete already deleted associations should return 0
+    agent_file_pairs = [
+        (sarah_agent.id, files[0].id),  # Already deleted
+        (sarah_agent.id, files[1].id),  # Already deleted
+    ]
+    deleted_count = await server.file_agent_manager.detach_file_bulk(agent_file_pairs=agent_file_pairs, actor=default_user)
+    assert deleted_count == 0
+
+
+@pytest.mark.asyncio
 async def test_org_scoping(
     server,
     default_user,

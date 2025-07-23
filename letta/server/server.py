@@ -1470,17 +1470,23 @@ class SyncServer(Server):
         Remove the document from the context window of all agents
         attached to the given source.
         """
-        # TODO: We probably do NOT need to get the entire agent state, we can just get the IDs
-        agent_states = await self.source_manager.list_attached_agents(source_id=source_id, actor=actor)
+        # Use the optimized ids_only parameter
+        agent_ids = await self.source_manager.list_attached_agents(source_id=source_id, actor=actor, ids_only=True)
 
-        # Return early
-        if not agent_states:
+        # Return early if no agents
+        if not agent_ids:
             return
 
         logger.info(f"Removing file from context window for source: {source_id}")
-        logger.info(f"Attached agents: {[a.id for a in agent_states]}")
+        logger.info(f"Attached agents: {agent_ids}")
 
-        await asyncio.gather(*(self._remove_file_from_agent(agent_state.id, file_id, actor) for agent_state in agent_states))
+        # Create agent-file pairs for bulk deletion
+        agent_file_pairs = [(agent_id, file_id) for agent_id in agent_ids]
+
+        # Bulk delete in a single query
+        deleted_count = await self.file_agent_manager.detach_file_bulk(agent_file_pairs=agent_file_pairs, actor=actor)
+
+        logger.info(f"Removed file {file_id} from {deleted_count} agent context windows")
 
     async def remove_files_from_context_window(self, agent_state: AgentState, file_ids: List[str], actor: User) -> None:
         """
@@ -1490,7 +1496,13 @@ class SyncServer(Server):
         logger.info(f"Removing files from context window for agent_state: {agent_state.id}")
         logger.info(f"Files to remove: {file_ids}")
 
-        await asyncio.gather(*(self._remove_file_from_agent(agent_state.id, file_id, actor) for file_id in file_ids))
+        # Create agent-file pairs for bulk deletion
+        agent_file_pairs = [(agent_state.id, file_id) for file_id in file_ids]
+
+        # Bulk delete in a single query
+        deleted_count = await self.file_agent_manager.detach_file_bulk(agent_file_pairs=agent_file_pairs, actor=actor)
+
+        logger.info(f"Removed {deleted_count} files from agent {agent_state.id}")
 
     async def create_document_sleeptime_agent_async(
         self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False
