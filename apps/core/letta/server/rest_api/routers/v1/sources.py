@@ -404,9 +404,15 @@ async def get_file_metadata(
                 file_status = file_metadata.processing_status
             else:
                 file_status = FileProcessingStatus.COMPLETED
-            file_metadata = await server.file_manager.update_file_status(
-                file_id=file_metadata.id, actor=actor, chunks_embedded=len(ids), processing_status=file_status
-            )
+            try:
+                file_metadata = await server.file_manager.update_file_status(
+                    file_id=file_metadata.id, actor=actor, chunks_embedded=len(ids), processing_status=file_status
+                )
+            except ValueError as e:
+                # state transition was blocked - this is a race condition
+                # log it but don't fail the request since we're just reading metadata
+                logger.warning(f"Race condition detected in get_file_metadata: {str(e)}")
+                # return the current file state without updating
 
     return file_metadata
 

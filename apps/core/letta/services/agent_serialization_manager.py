@@ -18,6 +18,7 @@ from letta.schemas.agent_file import (
     ToolSchema,
 )
 from letta.schemas.block import Block
+from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.file import FileMetadata
 from letta.schemas.message import Message
 from letta.schemas.source import Source
@@ -422,6 +423,11 @@ class AgentSerializationManager:
                 file_data = file_schema.model_dump(exclude={"id", "content"})
                 # Remap source_id from file ID to database ID
                 file_data["source_id"] = file_to_db_ids[file_schema.source_id]
+                # Set processing status to PARSING since we have parsed content but need to re-embed
+                file_data["processing_status"] = FileProcessingStatus.PARSING
+                file_data["error_message"] = None
+                file_data["total_chunks"] = None
+                file_data["chunks_embedded"] = None
                 file_metadata = FileMetadata(**file_data)
                 created_file = await self.file_manager.create_file(file_metadata, actor, text=file_schema.content)
                 file_to_db_ids[file_schema.id] = created_file.id

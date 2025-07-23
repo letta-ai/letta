@@ -5,6 +5,7 @@ import pytest
 
 from letta.config import LettaConfig
 from letta.errors import AgentFileExportError, AgentFileImportError
+from letta.helpers.pinecone_utils import should_use_pinecone
 from letta.orm import Base
 from letta.schemas.agent import CreateAgent
 from letta.schemas.agent_file import (
@@ -1056,7 +1057,11 @@ class TestAgentFileImportWithProcessing:
         imported_file_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id.startswith("file-"))
 
         imported_file = await server.file_manager.get_file_by_id(imported_file_id, other_user)
-        assert imported_file.processing_status.value == "completed"
+        # When using Pinecone, status stays at embedding until chunks are confirmed uploaded
+        if should_use_pinecone():
+            assert imported_file.processing_status.value == "embedding"
+        else:
+            assert imported_file.processing_status.value == "completed"
 
     async def test_import_passage_creation(self, server, agent_serialization_manager, default_user, other_user):
         """Test that import creates passages for file content."""
@@ -1073,11 +1078,16 @@ class TestAgentFileImportWithProcessing:
         imported_file_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id.startswith("file-"))
 
         passages = await server.passage_manager.list_passages_by_file_id_async(imported_file_id, other_user)
-        assert len(passages) > 0
 
-        for passage in passages:
-            assert passage.embedding is not None
-            assert len(passage.embedding) > 0
+        if should_use_pinecone():
+            # With Pinecone, passages are stored in Pinecone, not locally
+            assert len(passages) == 0
+        else:
+            # Without Pinecone, passages are stored locally
+            assert len(passages) > 0
+            for passage in passages:
+                assert passage.embedding is not None
+                assert len(passage.embedding) > 0
 
     async def test_import_file_status_updates(self, server, agent_serialization_manager, default_user, other_user):
         """Test that file processing status is updated correctly during import."""
@@ -1093,9 +1103,15 @@ class TestAgentFileImportWithProcessing:
         imported_file_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id.startswith("file-"))
         imported_file = await server.file_manager.get_file_by_id(imported_file_id, other_user)
 
-        assert imported_file.processing_status.value == "completed"
-        assert imported_file.total_chunks is None
-        assert imported_file.chunks_embedded is None
+        # When using Pinecone, status stays at embedding until chunks are confirmed uploaded
+        if should_use_pinecone():
+            assert imported_file.processing_status.value == "embedding"
+            assert imported_file.total_chunks == 1  # Pinecone tracks chunk counts
+            assert imported_file.chunks_embedded == 0
+        else:
+            assert imported_file.processing_status.value == "completed"
+            assert imported_file.total_chunks is None
+            assert imported_file.chunks_embedded is None
 
     async def test_import_multiple_files_processing(self, server, agent_serialization_manager, default_user, other_user):
         """Test import processes multiple files efficiently."""
@@ -1114,7 +1130,11 @@ class TestAgentFileImportWithProcessing:
 
         for file_id in imported_file_ids:
             imported_file = await server.file_manager.get_file_by_id(file_id, other_user)
-            assert imported_file.processing_status.value == "completed"
+            # When using Pinecone, status stays at embedding until chunks are confirmed uploaded
+            if should_use_pinecone():
+                assert imported_file.processing_status.value == "embedding"
+            else:
+                assert imported_file.processing_status.value == "completed"
 
 
 class TestAgentFileRoundTrip:

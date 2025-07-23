@@ -3660,7 +3660,12 @@ async def test_delete_tool_by_id(server: SyncServer, print_tool, default_user, e
 @pytest.mark.asyncio
 async def test_upsert_base_tools(server: SyncServer, default_user, event_loop):
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user)
-    expected_tool_names = sorted(LETTA_TOOL_SET)
+
+    # Calculate expected tools accounting for production filtering
+    if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
+        expected_tool_names = sorted(LETTA_TOOL_SET - set(LOCAL_ONLY_MULTI_AGENT_TOOLS))
+    else:
+        expected_tool_names = sorted(LETTA_TOOL_SET)
 
     assert sorted([t.name for t in tools]) == expected_tool_names
 
@@ -3708,7 +3713,12 @@ async def test_upsert_base_tools(server: SyncServer, default_user, event_loop):
 async def test_upsert_filtered_base_tools(server: SyncServer, default_user, tool_type, expected_names):
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={tool_type})
     tool_names = sorted([t.name for t in tools])
-    expected_sorted = sorted(expected_names)
+
+    # Adjust expected names for multi-agent tools in production
+    if tool_type == ToolType.LETTA_MULTI_AGENT_CORE and os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
+        expected_sorted = sorted(set(expected_names) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS))
+    else:
+        expected_sorted = sorted(expected_names)
 
     assert tool_names == expected_sorted
     assert all(t.tool_type == tool_type for t in tools)
@@ -6229,7 +6239,15 @@ async def test_update_file_status_with_chunks(server, default_user, default_sour
     )
     created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
 
-    # Update with chunk progress
+    # First transition: PENDING -> PARSING
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.PARSING,
+    )
+    assert updated.processing_status == FileProcessingStatus.PARSING
+
+    # Next transition: PARSING -> EMBEDDING with chunk progress
     updated = await server.file_manager.update_file_status(
         file_id=created.id,
         actor=default_user,
@@ -6250,6 +6268,428 @@ async def test_update_file_status_with_chunks(server, default_user, default_sour
     assert updated.chunks_embedded == 100
     assert updated.total_chunks == 100  # unchanged
     assert updated.processing_status == FileProcessingStatus.EMBEDDING  # unchanged
+
+
+@pytest.mark.asyncio
+async def test_file_status_valid_transitions(server, default_user, default_source):
+    """Test valid state transitions follow the expected flow."""
+    meta = PydanticFileMetadata(
+        file_name="valid_transitions.txt",
+        file_path="/tmp/valid_transitions.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
+    assert created.processing_status == FileProcessingStatus.PENDING
+
+    # PENDING -> PARSING
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.PARSING,
+    )
+    assert updated.processing_status == FileProcessingStatus.PARSING
+
+    # PARSING -> EMBEDDING
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.EMBEDDING,
+    )
+    assert updated.processing_status == FileProcessingStatus.EMBEDDING
+
+    # EMBEDDING -> COMPLETED
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.COMPLETED,
+    )
+    assert updated.processing_status == FileProcessingStatus.COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_file_status_invalid_transitions(server, default_user, default_source):
+    """Test that invalid state transitions are blocked."""
+    # Test PENDING -> COMPLETED (skipping PARSING and EMBEDDING)
+    meta = PydanticFileMetadata(
+        file_name="invalid_pending_to_completed.txt",
+        file_path="/tmp/invalid1.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
+
+    with pytest.raises(ValueError, match="Invalid state transition.*pending.*COMPLETED"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.COMPLETED,
+        )
+
+    # Test PARSING -> COMPLETED (skipping EMBEDDING)
+    meta2 = PydanticFileMetadata(
+        file_name="invalid_parsing_to_completed.txt",
+        file_path="/tmp/invalid2.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created2 = await server.file_manager.create_file(file_metadata=meta2, actor=default_user)
+    await server.file_manager.update_file_status(
+        file_id=created2.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.PARSING,
+    )
+
+    with pytest.raises(ValueError, match="Invalid state transition.*parsing.*COMPLETED"):
+        await server.file_manager.update_file_status(
+            file_id=created2.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.COMPLETED,
+        )
+
+    # Test PENDING -> EMBEDDING (skipping PARSING)
+    meta3 = PydanticFileMetadata(
+        file_name="invalid_pending_to_embedding.txt",
+        file_path="/tmp/invalid3.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created3 = await server.file_manager.create_file(file_metadata=meta3, actor=default_user)
+
+    with pytest.raises(ValueError, match="Invalid state transition.*pending.*EMBEDDING"):
+        await server.file_manager.update_file_status(
+            file_id=created3.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.EMBEDDING,
+        )
+
+
+@pytest.mark.asyncio
+async def test_file_status_terminal_states(server, default_user, default_source):
+    """Test that terminal states (COMPLETED and ERROR) cannot be updated."""
+    # Test COMPLETED is terminal
+    meta = PydanticFileMetadata(
+        file_name="completed_terminal.txt",
+        file_path="/tmp/completed_terminal.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
+
+    # Move through valid transitions to COMPLETED
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.PARSING)
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.EMBEDDING)
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.COMPLETED)
+
+    # Cannot transition from COMPLETED to any state
+    with pytest.raises(ValueError, match="Cannot update.*terminal state completed"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.EMBEDDING,
+        )
+
+    with pytest.raises(ValueError, match="Cannot update.*terminal state completed"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.ERROR,
+            error_message="Should not work",
+        )
+
+    # Test ERROR is terminal
+    meta2 = PydanticFileMetadata(
+        file_name="error_terminal.txt",
+        file_path="/tmp/error_terminal.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created2 = await server.file_manager.create_file(file_metadata=meta2, actor=default_user)
+
+    await server.file_manager.update_file_status(
+        file_id=created2.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.ERROR,
+        error_message="Test error",
+    )
+
+    # Cannot transition from ERROR to any state
+    with pytest.raises(ValueError, match="Cannot update.*terminal state error"):
+        await server.file_manager.update_file_status(
+            file_id=created2.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.PARSING,
+        )
+
+
+@pytest.mark.asyncio
+async def test_file_status_error_transitions(server, default_user, default_source):
+    """Test that any non-terminal state can transition to ERROR."""
+    # PENDING -> ERROR
+    meta1 = PydanticFileMetadata(
+        file_name="pending_to_error.txt",
+        file_path="/tmp/pending_error.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created1 = await server.file_manager.create_file(file_metadata=meta1, actor=default_user)
+
+    updated1 = await server.file_manager.update_file_status(
+        file_id=created1.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.ERROR,
+        error_message="Failed at PENDING",
+    )
+    assert updated1.processing_status == FileProcessingStatus.ERROR
+    assert updated1.error_message == "Failed at PENDING"
+
+    # PARSING -> ERROR
+    meta2 = PydanticFileMetadata(
+        file_name="parsing_to_error.txt",
+        file_path="/tmp/parsing_error.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created2 = await server.file_manager.create_file(file_metadata=meta2, actor=default_user)
+    await server.file_manager.update_file_status(
+        file_id=created2.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.PARSING,
+    )
+
+    updated2 = await server.file_manager.update_file_status(
+        file_id=created2.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.ERROR,
+        error_message="Failed at PARSING",
+    )
+    assert updated2.processing_status == FileProcessingStatus.ERROR
+    assert updated2.error_message == "Failed at PARSING"
+
+    # EMBEDDING -> ERROR
+    meta3 = PydanticFileMetadata(
+        file_name="embedding_to_error.txt",
+        file_path="/tmp/embedding_error.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created3 = await server.file_manager.create_file(file_metadata=meta3, actor=default_user)
+    await server.file_manager.update_file_status(file_id=created3.id, actor=default_user, processing_status=FileProcessingStatus.PARSING)
+    await server.file_manager.update_file_status(file_id=created3.id, actor=default_user, processing_status=FileProcessingStatus.EMBEDDING)
+
+    updated3 = await server.file_manager.update_file_status(
+        file_id=created3.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.ERROR,
+        error_message="Failed at EMBEDDING",
+    )
+    assert updated3.processing_status == FileProcessingStatus.ERROR
+    assert updated3.error_message == "Failed at EMBEDDING"
+
+
+@pytest.mark.asyncio
+async def test_file_status_terminal_state_non_status_updates(server, default_user, default_source):
+    """Test that terminal states block ALL updates, not just status changes."""
+    # Create file and move to COMPLETED
+    meta = PydanticFileMetadata(
+        file_name="terminal_blocks_all.txt",
+        file_path="/tmp/terminal_all.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
+
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.PARSING)
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.EMBEDDING)
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.COMPLETED)
+
+    # Cannot update chunks_embedded in COMPLETED state
+    with pytest.raises(ValueError, match="Cannot update.*terminal state completed"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            chunks_embedded=50,
+        )
+
+    # Cannot update total_chunks in COMPLETED state
+    with pytest.raises(ValueError, match="Cannot update.*terminal state completed"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            total_chunks=100,
+        )
+
+    # Cannot update error_message in COMPLETED state
+    with pytest.raises(ValueError, match="Cannot update.*terminal state completed"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            error_message="This should fail",
+        )
+
+    # Test same for ERROR state
+    meta2 = PydanticFileMetadata(
+        file_name="error_blocks_all.txt",
+        file_path="/tmp/error_all.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created2 = await server.file_manager.create_file(file_metadata=meta2, actor=default_user)
+    await server.file_manager.update_file_status(
+        file_id=created2.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.ERROR,
+        error_message="Initial error",
+    )
+
+    # Cannot update chunks_embedded in ERROR state
+    with pytest.raises(ValueError, match="Cannot update.*terminal state error"):
+        await server.file_manager.update_file_status(
+            file_id=created2.id,
+            actor=default_user,
+            chunks_embedded=25,
+        )
+
+
+@pytest.mark.asyncio
+async def test_file_status_race_condition_prevention(server, default_user, default_source):
+    """Test that race conditions are prevented when multiple updates happen."""
+    meta = PydanticFileMetadata(
+        file_name="race_condition_test.txt",
+        file_path="/tmp/race_test.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
+
+    # Move to PARSING
+    await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.PARSING,
+    )
+
+    # Simulate race condition: Try to update from PENDING again (stale read)
+    # This should fail because the file is already in PARSING
+    with pytest.raises(ValueError, match="Invalid state transition.*parsing.*PARSING"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.PARSING,
+        )
+
+    # Move to ERROR
+    await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.ERROR,
+        error_message="Simulated error",
+    )
+
+    # Try to continue with EMBEDDING as if error didn't happen (race condition)
+    # This should fail because file is in ERROR state
+    with pytest.raises(ValueError, match="Cannot update.*terminal state error"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.EMBEDDING,
+        )
+
+
+@pytest.mark.asyncio
+async def test_file_status_backwards_transitions(server, default_user, default_source):
+    """Test that backwards transitions are not allowed."""
+    meta = PydanticFileMetadata(
+        file_name="backwards_transitions.txt",
+        file_path="/tmp/backwards.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
+
+    # Move to EMBEDDING
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.PARSING)
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.EMBEDDING)
+
+    # Cannot go back to PARSING
+    with pytest.raises(ValueError, match="Invalid state transition.*embedding.*PARSING"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.PARSING,
+        )
+
+    # Cannot go back to PENDING
+    with pytest.raises(ValueError, match="Cannot transition to PENDING state.*PENDING is only valid as initial state"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.PENDING,
+        )
+
+
+@pytest.mark.asyncio
+async def test_file_status_update_with_chunks_progress(server, default_user, default_source):
+    """Test updating chunk progress during EMBEDDING state."""
+    meta = PydanticFileMetadata(
+        file_name="chunk_progress.txt",
+        file_path="/tmp/chunks.txt",
+        file_type="text/plain",
+        file_size=1000,
+        source_id=default_source.id,
+    )
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
+
+    # Move to EMBEDDING with initial chunk info
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.PARSING)
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.EMBEDDING,
+        total_chunks=100,
+        chunks_embedded=0,
+    )
+    assert updated.total_chunks == 100
+    assert updated.chunks_embedded == 0
+
+    # Update chunk progress without changing status
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        chunks_embedded=50,
+    )
+    assert updated.chunks_embedded == 50
+    assert updated.processing_status == FileProcessingStatus.EMBEDDING
+
+    # Update to completion
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        chunks_embedded=100,
+    )
+    assert updated.chunks_embedded == 100
+
+    # Move to COMPLETED
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.COMPLETED,
+    )
+    assert updated.processing_status == FileProcessingStatus.COMPLETED
+    assert updated.chunks_embedded == 100  # preserved
 
 
 @pytest.mark.asyncio
