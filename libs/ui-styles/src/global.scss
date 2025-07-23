@@ -111,7 +111,7 @@
   --card-background: 0, 0%, 97%;
   --list-item-background: 180, 8%, 97%;
 
-  --user-content-background: 0deg 0% 94.5%;
+  --user-content-background: 210deg 10% 96%;
   --agent-content-background: 240deg 33.33% 95.88%;
 
   --background-black: 0, 0%, 0%;
@@ -121,7 +121,7 @@
   --background-inverted: 0, 0%, 0%;
   --background-inverted-content: 0, 0%, 100%;
 
-  --background-violet: 276, 74%, 93%;
+  --background-violet: 260, 47%, 93%;
   --background-violet-content: var(--content);
 
   --popover: var(--background);
@@ -132,6 +132,7 @@
   --radius: 0.375rem;
   --violet: 278, 72%, 63%;
   --border-violet: 278, 72%, 86%;
+  --reasoning-background: 260, 47%, 93%;
 
   --button-input-height: 36px;
   --button-input-height-xs: 26px;
@@ -150,11 +151,11 @@
 
   --media-breakpoint-sidebar-visible: 840px;
 
-  --user-color: 180, 66%, 92%;
-  --user-color-content: 0, 0%, 0%;
+  --user-color: var(--background-black-content);
+  --user-color-content: 0, 0%, 9%;
 
-  --agent-color: 276, 74%, 93%;
-  --agent-color-content: 0, 0%, 0%;
+  --agent-color: 0, 0%, 8%;
+  --agent-color-content: 210, 10%, 96%;
 
   /* Model type chip colors */
   --chip-standard: 244, 245, 246, 0.4;
@@ -266,7 +267,7 @@
   --panel-input-background: 0, 0%, 8%;
   --panel-input-background-content: var(--text-default);
 
-  --user-content-background: 210deg 3.23% 12.16%;
+  --user-content-background: 0deg 0% 15%;
   --agent-content-background: 231.43deg 8.64% 15.88%;
 
   --background-inverted: 0, 0%, 100%;
@@ -289,11 +290,11 @@
 
   --element-focus: 240, 7%, 14%;
 
-  --user-color: 180, 45%, 36%;
-  --user-color-content: 0, 0%, 100%;
+  --user-color: var(--background);
+  --user-color-content: 210, 10%, 96%;
 
-  --agent-color: 278, 44%, 25%;
-  --agent-color-content: 0, 0%, 100%;
+  --agent-color: 210, 10%, 96%;
+  --agent-color-content: 0, 0%, 8%;
 
   --primary: 210 6% 73%;
   --primary-content: 0 0% 8%;
@@ -336,7 +337,7 @@
   --input: 0, 0%, 13%;
   --ring: 240 4.9% 83.9%;
 
-  --background-violet: 278, 44%, 25%;
+  --background-violet: 258, 10%, 19%;
   --background-violet-content: var(--content);
 
   --sidebar-color: 180, 2%, 11%;

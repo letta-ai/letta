@@ -311,11 +311,11 @@ function MessageGroup({ group }: MessageGroupType) {
   }, [messages]);
 
   return (
-    <HStack
+    <VStack
       paddingY="medium"
       paddingLeft="medium"
       position="relative"
-      paddingRight="xlarge"
+      paddingRight="medium"
       /* eslint-disable-next-line react/forbid-component-props */
       style={{
         backgroundColor:
@@ -344,33 +344,26 @@ function MessageGroup({ group }: MessageGroupType) {
           />
         </div>
       )}
-      <IconAvatar
-        textColor={textColor}
-        backgroundColor={backgroundColor}
-        icon={icon}
-        size={'xsmall'}
-      />
-      <VStack collapseWidth flex gap="small">
-        <HStack fullWidth align="center" justify="spaceBetween">
-          <Typography
-            semibold
-            variant="body3"
-            color="lighter"
-            className="tracking-[0.04em]"
-          >
-            {name.toUpperCase()}
-          </Typography>
-        </HStack>
-        <VStack
-          gap="large"
-          data-testid={`${name.toLowerCase()}-message-content`}
-        >
-          {sortedMessages.map((message, index) => (
-            <Message key={`${message.id}_${index}`} message={message} />
-          ))}
-        </VStack>
+      <HStack align="center" gap={true}>
+        <IconAvatar
+          textColor={textColor}
+          backgroundColor={backgroundColor}
+          icon={icon}
+          size={'xxsmall'}
+        />
+        <Typography variant="body4" className="tracking-[0.04em] font-bold">
+          {name.toUpperCase()}
+        </Typography>
+      </HStack>
+      <VStack
+        gap="medium"
+        data-testid={`${name.toLowerCase()}-message-content`}
+      >
+        {sortedMessages.map((message, index) => (
+          <Message key={`${message.id}_${index}`} message={message} />
+        ))}
       </VStack>
-    </HStack>
+    </VStack>
   );
 }
 
@@ -791,7 +784,7 @@ export function Messages(props: MessagesProps) {
                     <HStack align="center" justify="spaceBetween">
                       <HStack align="center" gap="small">
                         <InnerMonologueIcon color="violet" size="small" />
-                        <Typography bold color="violet" variant="body2">
+                        <Typography semibold color="violet" variant="body3">
                           {t('reasoning')}
                         </Typography>
                       </HStack>
@@ -852,7 +845,7 @@ export function Messages(props: MessagesProps) {
                   <VStack gap="small">
                     <HStack align="center" gap="small">
                       <InnerMonologueIcon color="violet" size="small" />
-                      <Typography bold color="violet" variant="body2">
+                      <Typography semibold color="violet" variant="body3">
                         {t('reasoning')}
                       </Typography>
                     </HStack>
@@ -1124,7 +1117,7 @@ export function Messages(props: MessagesProps) {
       fullWidth
       collapseHeight
       overflowY="auto"
-      gap="large"
+      gap="small"
       padding="small"
     >
       {hasNextPage && (
