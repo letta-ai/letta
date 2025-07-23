@@ -174,7 +174,7 @@ function DesktopLayout() {
                 {
                   id: 'datasources',
                   label: datasourcesTitle,
-                  minHeight: 150,
+                  minHeight: 300,
                   content: enabledDv2 ? (
                     <DataSourcesPanel />
                   ) : (
