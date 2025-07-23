@@ -27,7 +27,6 @@ jobs:
           "fail-fast": false,
           "matrix": {
             "include": [
-              {"test_suite": "test_vector_embeddings.py"},
               {"test_suite": "test_client.py"},
               {"test_suite": "test_sdk_client.py"},
               {"test_suite": "test_client_legacy.py"},

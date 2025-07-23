@@ -1,4 +1,3 @@
-import base64
 import sqlite3
 from typing import Optional, Union
 
@@ -7,11 +6,15 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
 from letta.constants import MAX_EMBEDDING_DIM
+from letta.settings import DatabaseChoice, settings
+
+if settings.database_engine == DatabaseChoice.SQLITE:
+    import sqlite_vec
 
 
 def adapt_array(arr):
     """
-    Converts numpy array to binary for SQLite storage
+    Converts numpy array to binary for SQLite storage using sqlite-vec
     """
     if arr is None:
         return None
@@ -21,15 +24,14 @@ def adapt_array(arr):
     elif not isinstance(arr, np.ndarray):
         raise ValueError(f"Unsupported type: {type(arr)}")
 
-    # Convert to bytes and then base64 encode
-    bytes_data = arr.tobytes()
-    base64_data = base64.b64encode(bytes_data)
-    return sqlite3.Binary(base64_data)
+    # Ensure float32 for compatibility
+    arr = arr.astype(np.float32)
+    return sqlite_vec.serialize_float32(arr.tolist())
 
 
 def convert_array(text):
     """
-    Converts binary back to numpy array
+    Converts binary back to numpy array using sqlite-vec format
     """
     if text is None:
         return None
@@ -41,13 +43,11 @@ def convert_array(text):
     # Handle both bytes and sqlite3.Binary
     binary_data = bytes(text) if isinstance(text, sqlite3.Binary) else text
 
-    try:
-        # First decode base64
-        decoded_data = base64.b64decode(binary_data)
-        # Then convert to numpy array
-        return np.frombuffer(decoded_data, dtype=np.float32)
-    except Exception:
-        return None
+    # Use sqlite-vec native format
+    if len(binary_data) % 4 == 0:  # Must be divisible by 4 for float32
+        return np.frombuffer(binary_data, dtype=np.float32)
+    else:
+        raise ValueError(f"Invalid sqlite-vec binary data length: {len(binary_data)}")
 
 
 def verify_embedding_dimension(embedding: np.ndarray, expected_dim: int = MAX_EMBEDDING_DIM) -> bool:
@@ -131,11 +131,55 @@ def cosine_distance(embedding1, embedding2, expected_dim=MAX_EMBEDDING_DIM):
     return distance
 
 
+# Note: sqlite-vec provides native SQL functions for vector operations
+# We don't need custom Python distance functions since sqlite-vec handles this at the SQL level
+
+
 @event.listens_for(Engine, "connect")
 def register_functions(dbapi_connection, connection_record):
-    """Register SQLite functions"""
-    if isinstance(dbapi_connection, sqlite3.Connection):
-        dbapi_connection.create_function("cosine_distance", 2, cosine_distance)
+    """Register SQLite functions and enable sqlite-vec extension"""
+    # Check for both sync SQLite connections and async aiosqlite connections
+    is_sqlite_connection = isinstance(dbapi_connection, sqlite3.Connection)
+    is_aiosqlite_connection = hasattr(dbapi_connection, "_connection") and str(type(dbapi_connection)).find("aiosqlite") != -1
+
+    if is_sqlite_connection or is_aiosqlite_connection:
+        # Get the actual SQLite connection for async connections
+        actual_connection = dbapi_connection._connection if is_aiosqlite_connection else dbapi_connection
+
+        # Enable sqlite-vec extension
+        try:
+            if is_aiosqlite_connection:
+                # For aiosqlite connections, we cannot use async operations in sync event handlers
+                # The extension will need to be loaded per-connection when actually used
+                print("Detected aiosqlite connection - sqlite-vec will be loaded per-query")
+            else:
+                # For sync connections
+                dbapi_connection.enable_load_extension(True)
+                sqlite_vec.load(dbapi_connection)
+                dbapi_connection.enable_load_extension(False)
+                print("Successfully loaded sqlite-vec extension (sync)")
+        except Exception as e:
+            raise RuntimeError(f"Failed to load sqlite-vec extension: {e}")
+
+        # Register custom cosine_distance function for backward compatibility
+        try:
+            if is_aiosqlite_connection:
+                # Try to register function on the actual connection, even though it might be async
+                # This may require the function to be registered per-connection
+                print("Attempting function registration for aiosqlite connection")
+                # For async connections, we need to register the function differently
+                # We'll use the sync-style registration on the underlying connection
+                raw_conn = getattr(actual_connection, "_connection", actual_connection)
+                if hasattr(raw_conn, "create_function"):
+                    raw_conn.create_function("cosine_distance", 2, cosine_distance)
+                    print("Successfully registered cosine_distance for aiosqlite")
+            else:
+                dbapi_connection.create_function("cosine_distance", 2, cosine_distance)
+                print("Successfully registered cosine_distance for sync connection")
+        except Exception as e:
+            raise RuntimeError(f"Failed to register cosine_distance function: {e}")
+    else:
+        print(f"Warning: Not a SQLite connection, but instead {type(dbapi_connection)}: skipping function registration")
 
 
 # Register adapters and converters for numpy arrays
