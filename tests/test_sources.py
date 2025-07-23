@@ -477,11 +477,6 @@ def test_agent_uses_open_close_file_correctly(disable_pinecone, client: LettaSDK
     print("✓ File successfully opened with different range - content differs as expected")
 
 
-@pytest.mark.skipif(
-    not hasattr(__import__("letta.settings"), "settings")
-    or not getattr(__import__("letta.settings").settings, "letta_pg_uri_no_default", None),
-    reason="Skipping vector-related tests when using SQLite (vector search requires PostgreSQL)",
-)
 def test_agent_uses_search_files_correctly(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
@@ -853,11 +848,6 @@ def test_open_files_schema_descriptions(disable_pinecone, client: LettaSDKClient
 # --- Pinecone Tests ---
 
 
-@pytest.mark.skipif(
-    not hasattr(__import__("letta.settings"), "settings")
-    or not getattr(__import__("letta.settings").settings, "letta_pg_uri_no_default", None),
-    reason="Skipping vector-related tests when using SQLite (vector search requires PostgreSQL)",
-)
 def test_pinecone_search_files_tool(client: LettaSDKClient):
     """Test that search_files tool uses Pinecone when enabled"""
     from letta.helpers.pinecone_utils import should_use_pinecone
@@ -909,11 +899,6 @@ def test_pinecone_search_files_tool(client: LettaSDKClient):
     ), f"Search results should contain relevant content: {search_results}"
 
 
-@pytest.mark.skipif(
-    not hasattr(__import__("letta.settings"), "settings")
-    or not getattr(__import__("letta.settings").settings, "letta_pg_uri_no_default", None),
-    reason="Skipping vector-related tests when using SQLite (vector search requires PostgreSQL)",
-)
 def test_pinecone_lifecycle_file_and_source_deletion(client: LettaSDKClient):
     """Test that file and source deletion removes records from Pinecone"""
     import asyncio

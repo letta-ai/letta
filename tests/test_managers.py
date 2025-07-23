@@ -2118,12 +2118,6 @@ async def test_list_agents_by_tags_pagination(server: SyncServer, default_user, 
 
 
 @pytest.mark.asyncio
-@pytest.mark.skipif(
-    not hasattr(__import__("letta.settings"), "settings")
-    or not getattr(__import__("letta.settings").settings, "letta_pg_uri_no_default", None)
-    or USING_SQLITE,
-    reason="Skipping vector-related tests when using SQLite (vector search requires PostgreSQL)",
-)
 async def test_list_agents_query_text_pagination(server: SyncServer, default_user, default_organization, event_loop):
     """Test listing agents with query text filtering and pagination."""
     # Create test agents with specific names and descriptions
@@ -2463,7 +2457,7 @@ async def test_attach_block(server: SyncServer, sarah_agent, default_block, defa
     assert agent.memory.blocks[0].label == default_block.label
 
 
-@pytest.mark.skipif(USING_SQLITE, reason="Test not applicable when using SQLite.")
+# Test should work with both SQLite and PostgreSQL
 def test_attach_block_duplicate_label(server: SyncServer, sarah_agent, default_block, other_block, default_user):
     """Test attempting to attach a block with a duplicate label."""
     # Set up both blocks with same label
@@ -2716,11 +2710,6 @@ async def test_agent_list_passages_filtering(server, default_user, sarah_agent, 
 
 
 @pytest.mark.asyncio
-@pytest.mark.skipif(
-    not hasattr(__import__("letta.settings"), "settings")
-    or not getattr(__import__("letta.settings").settings, "letta_pg_uri_no_default", None),
-    reason="Skipping vector-related tests when using SQLite (vector search requires PostgreSQL)",
-)
 async def test_agent_list_passages_vector_search(server, default_user, sarah_agent, default_source, default_file, event_loop):
     """Test vector search functionality of agent passages"""
     embed_model = embedding_model(DEFAULT_EMBEDDING_CONFIG)
@@ -3482,7 +3471,7 @@ def test_create_mcp_tool(server: SyncServer, mcp_tool, default_user, default_org
     assert mcp_tool.metadata_[MCP_TOOL_TAG_NAME_PREFIX]["server_name"] == "test"
 
 
-@pytest.mark.skipif(USING_SQLITE, reason="Test not applicable when using SQLite.")
+# Test should work with both SQLite and PostgreSQL
 def test_create_tool_duplicate_name(server: SyncServer, print_tool, default_user, default_organization):
     data = print_tool.model_dump(exclude=["id"])
     tool = PydanticTool(**data)
