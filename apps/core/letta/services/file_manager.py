@@ -9,7 +9,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from letta.constants import MAX_FILENAME_LENGTH
-from letta.helpers.decorators import async_redis_cache
 from letta.orm.errors import NoResultFound
 from letta.orm.file import FileContent as FileContentModel
 from letta.orm.file import FileMetadata as FileMetadataModel
@@ -38,13 +37,14 @@ class FileManager:
 
     async def _invalidate_file_caches(self, file_id: str, actor: PydanticUser, original_filename: str = None, source_id: str = None):
         """Invalidate all caches related to a file."""
-        # invalidate file content cache (all variants)
-        await self.get_file_by_id.cache_invalidate(self, file_id, actor, include_content=True)
-        await self.get_file_by_id.cache_invalidate(self, file_id, actor, include_content=False)
+        # TEMPORARILY DISABLED - caching is disabled
+        # # invalidate file content cache (all variants)
+        # await self.get_file_by_id.cache_invalidate(self, file_id, actor, include_content=True)
+        # await self.get_file_by_id.cache_invalidate(self, file_id, actor, include_content=False)
 
-        # invalidate filename-based cache if we have the info
-        if original_filename and source_id:
-            await self.get_file_by_original_name_and_source.cache_invalidate(self, original_filename, source_id, actor)
+        # # invalidate filename-based cache if we have the info
+        # if original_filename and source_id:
+        #     await self.get_file_by_original_name_and_source.cache_invalidate(self, original_filename, source_id, actor)
 
     @enforce_types
     @trace_method
@@ -86,12 +86,12 @@ class FileManager:
     # TODO: We make actor optional for now, but should most likely be enforced due to security reasons
     @enforce_types
     @trace_method
-    @async_redis_cache(
-        key_func=lambda self, file_id, actor=None, include_content=False, strip_directory_prefix=False: f"{file_id}:{actor.organization_id if actor else 'none'}:{include_content}:{strip_directory_prefix}",
-        prefix="file_content",
-        ttl_s=3600,
-        model_class=PydanticFileMetadata,
-    )
+    # @async_redis_cache(
+    #     key_func=lambda self, file_id, actor=None, include_content=False, strip_directory_prefix=False: f"{file_id}:{actor.organization_id if actor else 'none'}:{include_content}:{strip_directory_prefix}",
+    #     prefix="file_content",
+    #     ttl_s=3600,
+    #     model_class=PydanticFileMetadata,
+    # )
     async def get_file_by_id(
         self, file_id: str, actor: Optional[PydanticUser] = None, *, include_content: bool = False, strip_directory_prefix: bool = False
     ) -> Optional[PydanticFileMetadata]:
@@ -392,12 +392,12 @@ class FileManager:
 
     @enforce_types
     @trace_method
-    @async_redis_cache(
-        key_func=lambda self, original_filename, source_id, actor: f"{original_filename}:{source_id}:{actor.organization_id}",
-        prefix="file_by_name",
-        ttl_s=3600,
-        model_class=PydanticFileMetadata,
-    )
+    # @async_redis_cache(
+    #     key_func=lambda self, original_filename, source_id, actor: f"{original_filename}:{source_id}:{actor.organization_id}",
+    #     prefix="file_by_name",
+    #     ttl_s=3600,
+    #     model_class=PydanticFileMetadata,
+    # )
     async def get_file_by_original_name_and_source(
         self, original_filename: str, source_id: str, actor: PydanticUser
     ) -> Optional[PydanticFileMetadata]:
