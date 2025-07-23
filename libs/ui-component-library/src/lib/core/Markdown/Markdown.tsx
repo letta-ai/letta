@@ -13,9 +13,24 @@ interface MarkdownProps {
 }
 
 export function Markdown(props: MarkdownProps) {
+  // Preprocess the text to convert literal \n strings to actual newlines
+  const processedText = React.useMemo(() => {
+    if (!props.text) return '';
+
+    let processedContent = props.text;
+
+    // Convert double-escaped newlines (\\\\n) to single-escaped newlines (\\n)
+    processedContent = processedContent.replace(/\\\\n/g, '\\n');
+
+    // Convert single-escaped newlines (\\n) to actual newlines (\n)
+    processedContent = processedContent.replace(/\\n/g, '\n');
+
+    return processedContent;
+  }, [props.text]);
+
   return (
     <ReactMarkdown
-      children={props.text}
+      children={processedText}
       remarkPlugins={[remarkGfm]}
       className="text-base"
       components={{
@@ -84,7 +99,7 @@ export function Markdown(props: MarkdownProps) {
         },
         p({ children }) {
           return (
-            <Typography className="block markdown-paragraph">
+            <Typography className="block markdown-paragraph" preWrap>
               {children}
             </Typography>
           );
