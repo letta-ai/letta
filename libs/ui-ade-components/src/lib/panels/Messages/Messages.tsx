@@ -215,7 +215,8 @@ function Message({ message }: MessageProps) {
           />
         ) : (
           <HStack justify="spaceBetween" align="start">
-            <span
+            <div
+              className="w-full"
               style={{
                 textDecoration: message.isError
                   ? 'underline wavy hsl(var(--destructive))'
@@ -224,7 +225,7 @@ function Message({ message }: MessageProps) {
               }}
             >
               {message.content}
-            </span>
+            </div>
 
             {message.editId && enabledEditing && (
               <Button
