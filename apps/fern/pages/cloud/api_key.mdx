@@ -39,4 +39,9 @@ const client = new LettaClient({ token: "LETTA_API_KEY" });
 </CodeGroup>
 
 
-If you're using the REST API directly, you can pass the API key in the header as a bearer token.
+If you're using the REST API directly, you can pass the API key in the header as a bearer token, e.g.
+
+```bash
+curl https://api.letta.com/v1/agents/ \
+     -H "Authorization: Bearer <token>"
+```
