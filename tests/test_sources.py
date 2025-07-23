@@ -987,3 +987,68 @@ def test_pinecone_lifecycle_file_and_source_deletion(client: LettaSDKClient):
     ), f"All source records should be removed from Pinecone after source deletion, but found {len(records_after)}"
 
     print("✓ Pinecone lifecycle verified - namespace is clean after source deletion")
+
+
+def test_agent_open_file(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
+    """Test client.agents.open_file() function"""
+    # Create a new source
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
+
+    # Attach source to agent
+    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+
+    # Upload a file
+    file_path = "tests/data/test.txt"
+    file_metadata = upload_file_and_wait(client, source.id, file_path)
+
+    # Basic test open_file function
+    closed_files = client.agents.open_file(agent_id=agent_state.id, file_id=file_metadata.id)
+    assert len(closed_files) == 0
+
+
+def test_agent_close_file(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
+    """Test client.agents.close_file() function"""
+    # Create a new source
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
+
+    # Attach source to agent
+    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+
+    # Upload a file
+    file_path = "tests/data/test.txt"
+    file_metadata = upload_file_and_wait(client, source.id, file_path)
+
+    # First open the file
+    client.agents.open_file(agent_id=agent_state.id, file_id=file_metadata.id)
+
+    # Test close_file function
+    client.agents.close_file(agent_id=agent_state.id, file_id=file_metadata.id)
+
+    # Result can be None or any type based on the signature
+    # Just verify the function executes without error
+    assert True, "close_file should execute without error"
+
+
+def test_agent_close_all_open_files(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
+    """Test client.agents.close_all_open_files() function"""
+    # Create a new source
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
+
+    # Attach source to agent
+    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+
+    # Upload multiple files
+    file_paths = ["tests/data/test.txt", "tests/data/test.md"]
+    file_metadatas = []
+    for file_path in file_paths:
+        file_metadata = upload_file_and_wait(client, source.id, file_path)
+        file_metadatas.append(file_metadata)
+        # Open each file
+        client.agents.open_file(agent_id=agent_state.id, file_id=file_metadata.id)
+
+    # Test close_all_open_files function
+    result = client.agents.close_all_open_files(agent_id=agent_state.id)
+
+    # Verify result is a list of strings
+    assert isinstance(result, list), f"Expected list, got {type(result)}"
+    assert all(isinstance(item, str) for item in result), "All items in result should be strings"
