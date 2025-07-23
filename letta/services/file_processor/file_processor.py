@@ -300,7 +300,7 @@ class FileProcessor:
             # Create OCR response from existing content
             ocr_response = self._create_ocr_response_from_content(content)
 
-            # Update file status to embedding
+            # Update file status to embedding (valid transition from PARSING)
             file_metadata = await self.file_manager.update_file_status(
                 file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.EMBEDDING
             )
@@ -320,12 +320,14 @@ class FileProcessor:
                 )
                 log_event("file_processor.import_passages_created", {"filename": filename, "total_passages": len(all_passages)})
 
-            # Update file status to completed
+            # Update file status to completed (valid transition from EMBEDDING)
             if not self.using_pinecone:
                 await self.file_manager.update_file_status(
                     file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.COMPLETED
                 )
             else:
+                # For Pinecone, update chunk counts but keep status at EMBEDDING
+                # The status will be updated to COMPLETED later when chunks are confirmed embedded
                 await self.file_manager.update_file_status(
                     file_id=file_metadata.id, actor=self.actor, total_chunks=len(all_passages), chunks_embedded=0
                 )
