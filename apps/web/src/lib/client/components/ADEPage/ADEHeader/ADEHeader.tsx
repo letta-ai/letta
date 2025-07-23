@@ -1,7 +1,6 @@
 import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentProject';
 import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import {
-  Breadcrumb,
   Button,
   Dialog,
   DownloadIcon,
@@ -16,15 +15,16 @@ import {
   Typography,
   DotsVerticalIcon,
   VisibleOnMobile,
-  WarningIcon,
-  Tooltip,
-  BetaTag,
   TroubleshootIcon,
   HotKey,
   DropdownMenuSeparator,
   CloudSyncIcon,
+  ProjectsIcon,
+  DotsHorizontalIcon,
+  Link,
+  DockRightIcon,
+  DockLeftIcon,
 } from '@letta-cloud/ui-component-library';
-import type { QueryBuilderQuery } from '@letta-cloud/ui-component-library';
 import { ProjectSelector } from '$web/client/components';
 import React, { useCallback, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
@@ -41,14 +41,12 @@ import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { useRouter } from 'next/navigation';
 import { DeploymentButton } from '$web/client/components/ADEPage/DeploymentButton/DeploymentButton';
-import {
-  DashboardHeaderNavigation,
-  ProfilePopover,
-} from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
+import { ProfilePopover } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
 import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
 import { useNetworkInspectorVisibility } from '@letta-cloud/ui-ade-components';
 import { PublishAgentFileSettingsDialog } from '$web/client/components/ADEPage/PublishAgentFileSettingsDialog/PublishAgentFileSettingsDialog';
 import { ExternalVersionManagementDialog } from '$web/client/components/ADEPage/ExternalVersionManagementDialog/ExternalVersionManagementDialog';
+import { useADELayoutConfig } from '@letta-cloud/ui-ade-components';
 
 interface DesktopADEHeaderProps {
   name: string;
@@ -292,7 +290,7 @@ function LogoContainer() {
       justify="center"
       color="brand"
       /* eslint-disable-next-line react/forbid-component-props */
-      className="min-h-biHeight min-w-[36px]"
+      className="min-h-biHeight min-w-[48px]"
       fullHeight
     >
       <Logo size="small" color="background" />
@@ -321,15 +319,58 @@ function NetworkInspectorButton() {
   );
 }
 
+function Actions() {
+  const t = useTranslations('DesktopADEHeader/Actions');
+
+  const {
+    isLeftSidebarOpen,
+    isRightSidebarOpen,
+    toggleRightPanel,
+    toggleLeftPanel,
+  } = useADELayoutConfig();
+
+  return (
+    <HStack>
+      <Button
+        preIcon={
+          <DockLeftIcon color={!isLeftSidebarOpen ? 'muted' : 'inherit'} />
+        }
+        hideLabel
+        size="small"
+        onClick={toggleLeftPanel}
+        label={
+          isLeftSidebarOpen
+            ? t('toggleLeftSidebar.hide')
+            : t('toggleLeftSidebar.show')
+        }
+        color="tertiary"
+      />
+      <Button
+        preIcon={
+          <DockRightIcon color={!isRightSidebarOpen ? 'muted' : 'inherit'} />
+        }
+        hideLabel
+        onClick={toggleRightPanel}
+        size="small"
+        label={
+          isRightSidebarOpen
+            ? t('toggleRightSidebar.hide')
+            : t('toggleRightSidebar.show')
+        }
+        color="tertiary"
+      />
+    </HStack>
+  );
+}
+
 function DesktopADEHeader(props: DesktopADEHeaderProps) {
   const { name: agentName } = props;
-  const { slug } = useCurrentProject();
 
   const { name: projectName, id, slug: projectSlug } = useCurrentProject();
 
   const { template_id } = useCurrentAgent();
 
-  const { isTemplate, isLocal } = useCurrentAgentMetaData();
+  const { isLocal } = useCurrentAgentMetaData();
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
@@ -354,7 +395,7 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
       justify="spaceBetween"
       align="center"
       /* eslint-disable-next-line react/forbid-component-props */
-      className="h-[36px] min-h-[36px] largerThanMobile:pr-0 pr-3 relative"
+      className="h-[48px] min-h-[48px] largerThanMobile:pr-0 pr-3 relative"
       fullWidth
       gap="small"
       color="background"
@@ -364,93 +405,43 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
           trigger={
             <button className="h-full gap-2 flex items-center justify-center">
               <LogoContainer />
-              <BetaTag />
             </button>
           }
         />
-        <HStack align="center" gap={false}>
-          <Breadcrumb
-            size="xsmall"
-            items={[
-              ...(isLocal
-                ? [
-                    {
-                      label: t('nav.localDev'),
-                      href: '/development-servers',
-                      contentOverride: (
-                        <Button
-                          href={projectUrl}
-                          color="tertiary"
-                          label={t('nav.localDev')}
-                          size="xsmall"
-                          _use_rarely_className="text-text-lighter inline-flex items-center gap-1.5"
-                          postIcon={
-                            <Tooltip content={t('localAgentDevelopment')}>
-                              <span className="flex items-center justify-center">
-                                <WarningIcon color="inherit" size="small" />
-                              </span>
-                            </Tooltip>
-                          }
-                        />
-                      ),
-                    },
-                  ]
-                : [
-                    {
-                      label: projectName,
-                      href: projectUrl,
-                    },
-                  ]),
-              ...(agentTemplate?.body.fullVersion
-                ? [
-                    {
-                      label: agentTemplate?.body.fullVersion,
-                      href: `${projectUrl}/templates/${agentTemplate?.body.templateName}`,
-                    },
-                  ]
-                : []),
-              {
-                bold: true,
-                label: agentName,
-              },
-            ]}
+        <HStack align="center" paddingLeft="medium" gap="medium">
+          <Button
+            href={isLocal ? '/development-servers' : projectUrl}
+            preIcon={<ProjectsIcon size="medium" />}
+            label={
+              isLocal ? t('nav.localDev') : t('nav.project', { projectName })
+            }
+            hideLabel
+            size="small"
+            color="tertiary"
           />
-          <AgentSettingsDropdown icon={<DotsVerticalIcon />} />
+          <HStack align="center">
+            {agentTemplate?.body.fullVersion && (
+              <>
+                <Typography variant="body2">
+                  <Link
+                    data-testid={`fullversion:${agentTemplate.body.fullVersion}`}
+                    noUnderlineWithoutHover
+                    href={`/projects/${projectSlug}/templates/${agentTemplate.body.templateName}`}
+                  >
+                    {agentTemplate.body.fullVersion}
+                  </Link>
+                </Typography>
+                <Typography variant="body2">/</Typography>
+              </>
+            )}
+            <Typography variant="body2">{agentName}</Typography>
+          </HStack>
+          <AgentSettingsDropdown icon={<DotsHorizontalIcon />} />
         </HStack>
       </HStack>
       <HStack gap={false} align="center">
-        <HStack align="center" gap="small" paddingRight="small">
-          <DashboardHeaderNavigation />
-        </HStack>
-        <HStack align="center" gap="small">
-          {isTemplate && (
-            <HStack paddingRight="xxsmall">
-              <Button
-                size="default"
-                preIcon={<LettaInvaderOutlineIcon />}
-                label={t('viewAgents')}
-                target="_blank"
-                href={`/projects/${slug}/agents?query=${JSON.stringify({
-                  root: {
-                    combinator: 'AND',
-                    items: [
-                      {
-                        field: 'version',
-                        queryData: {
-                          operator: { label: 'equals', value: 'eq' },
-                          value: {
-                            label: `${agentName}:latest`,
-                            value: `${agentName}:latest`,
-                          },
-                        },
-                      },
-                    ],
-                  },
-                } satisfies QueryBuilderQuery)}`}
-                color="secondary"
-              />
-            </HStack>
-          )}
+        <HStack paddingRight="small" align="center" gap="small">
+          <Actions />
           <HStack paddingRight="xxsmall">
             <DeploymentButton />
           </HStack>

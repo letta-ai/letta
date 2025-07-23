@@ -77,6 +77,8 @@
 
   --sidebar-color: 240, 11%, 98%;
 
+  --ade-scrollbar: 196, 3%, 17%;
+
   /* backgrounds */
   --background: 0 0% 100%;
   --background-hover: 0 0% 98%;
@@ -232,6 +234,7 @@
 
   --sidebar-color: var(--background);
   --dashboard-color: var(--background);
+  --ade-scrollbar: var(--border);
 }
 
 /* darkmode.scss */
@@ -346,6 +349,7 @@
   --list-item-background: 200, 4%, 13%;
 
   --toggle-selector-border: 210, 3%, 28%;
+  --ade-scrollbar: 210, 10%, 96%;
 }
 
 html {

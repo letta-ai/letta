@@ -162,7 +162,7 @@
     "react-lottie": "^1.2.10",
     "react-markdown": "^9.0.1",
     "react-phone-number-input": "^3.4.12",
-    "react-resizable-panels": "^2.1.7",
+    "react-resizable-panels": "^3.0.3",
     "react-router-dom": "6.11.2",
     "react-select": "^5.9.0",
     "react-simple-code-editor": "^0.14.1",

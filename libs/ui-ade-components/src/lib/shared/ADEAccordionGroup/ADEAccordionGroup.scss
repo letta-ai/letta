@@ -1,3 +1,9 @@
+.ade-accordion-group {
+  scrollbar-width: thin;
+  scrollbar-color:  hsla(var(--ade-scrollbar), 0.16) transparent;
+
+}
+
 .ade-accordion-item {
   transition-property: all;
   transition-duration: 0.5s;
@@ -19,5 +25,4 @@
     height: 32px;
   }
 }
-
 

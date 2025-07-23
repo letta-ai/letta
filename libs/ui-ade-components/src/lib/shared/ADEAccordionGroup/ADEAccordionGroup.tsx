@@ -125,7 +125,7 @@ export function ADEAccordionGroup(props: ADEAccordionGroupProps) {
       },
       {
         root: containerRef.current,
-        threshold: 0.3,
+        threshold: 0.1,
       },
     );
 
@@ -207,7 +207,10 @@ export function ADEAccordionGroup(props: ADEAccordionGroupProps) {
   }, [openStates]);
 
   return (
-    <div ref={containerRef} className="overflow-auto flex flex-col h-full">
+    <div
+      ref={containerRef}
+      className="overflow-auto ade-accordion-group flex flex-col h-full"
+    >
       {topStickyPanels.length > 0 && (
         <StickyPanels
           panels={topStickyPanels}

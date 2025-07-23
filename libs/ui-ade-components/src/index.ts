@@ -28,3 +28,4 @@ export * from './lib/panels/ToolManager/hooks/useToolManagerState/useToolManager
 export * from './lib/panels/ToolManager/hooks/useToolManagerRouteCopy/useToolManagerRouteCopy';
 export * from './lib/panels/ToolRules/ToolRulesVisual';
 export * from './lib/ViewMessageTrace/ViewMessageTrace';
+export * from './lib/hooks/useADELayoutConfig/useADELayoutConfig'

@@ -2382,9 +2382,21 @@
       "listed": "Listed on agentfile.directory"
     }
   },
+  "DesktopADEHeader/Actions": {
+    "toggleLeftSidebar": {
+      "show": "Show left sidebar",
+      "hide": "Hide left sidebar"
+    },
+    "toggleRightSidebar": {
+      "show": "Show right sidebar",
+      "hide": "Hide right sidebar"
+    }
+  },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
     "nav": {
-      "localDev": "Self-hosted"
+      "localDev": "Return to self-hosted homepage",
+      "project": "Return to {projectName} dashboard",
+      "template": "Return to {templateName}"
     },
     "convertingToTemplate": "Converting to template...",
     "preparingAgent": "Preparing agent",
@@ -2444,7 +2456,7 @@
       "loading": "Loading version information...",
       "version": "VERSION {version}",
       "error": "ERROR",
-      "save": "Save template",
+      "save": "Save",
       "errorTooltip": "There was an error fetching template information, please refresh the page or contact support.",
       "readyToDeploy": {
         "trigger": "Template v{version}",
@@ -2902,6 +2914,7 @@
     "viewButton": "View"
   },
   "components/TemplateNavigationSidebar": {
+    "viewAgents": "View Agents",
     "DistributionOnboardingStep": {
       "title": "Distribute Your Agent",
       "description": "Ready to deploy your agent to production? The distribution tab lets you create agents from your template and manage them in Letta Cloud.\n\nYou'll find options for API keys, framework integrations, and usage tracking."

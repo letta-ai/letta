@@ -18,6 +18,7 @@ import { isAgentConvertingToTemplateAtom } from './DeploymentButton/DeploymentBu
 import { TemplateNavigationSidebar } from './TemplateNavigationSidebar/TemplateNavigationSidebar';
 import { useGlobalSystemWarning } from '$web/client/hooks/useGlobalSystemWarning/useGlobalSystemWarning';
 import './ADEPage.scss';
+
 interface LoaderContentProps {
   isError?: boolean;
 }
@@ -114,10 +115,10 @@ export function ADEPage(props: ADEPageProps) {
       overflow="hidden"
       color="background"
       /* eslint-disable-next-line react/forbid-component-props */
-      className={`w-[100vw] p-[8px]  ${systemWarning ? 'ade-page-system-warning' : 'h-[100dvh]'}`}
+      className={`w-[100vw]  ${systemWarning ? 'ade-page-system-warning' : 'h-[100dvh]'}`}
       fullHeight
       fullWidth
-      gap
+      gap={false}
     >
       <ADEHeader />
       <HStack collapseHeight overflowY="auto" fullWidth gap={false}>

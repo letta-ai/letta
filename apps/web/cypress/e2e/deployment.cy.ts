@@ -73,7 +73,7 @@ describe('letta', () => {
       /\/projects\/(.+)\/agents\/(.+)/,
     );
 
-    cy.findAllByTestId('breadcrumb-item:DEPLOYMENTAGENT:2', { timeout: 50000 })
+    cy.findAllByTestId('fullversion:DEPLOYMENTAGENT:2', { timeout: 50000 })
       .first()
       .should('exist');
 
@@ -103,7 +103,7 @@ describe('letta', () => {
       { timeout: 50000 },
     );
 
-    cy.findAllByTestId('breadcrumb-item:DEPLOYMENTAGENT:2')
+    cy.findAllByTestId('fullversion:DEPLOYMENTAGENT:2')
       .first()
       .click({ force: true });
 
@@ -133,9 +133,7 @@ describe('letta', () => {
       timeout: 50000,
     }).contains('WowCheese');
 
-    cy.findAllByTestId('breadcrumb-item:DEPLOYMENTAGENT:3')
-      .first()
-      .should('exist');
+    cy.findAllByTestId('fullversion:DEPLOYMENTAGENT:3').first().should('exist');
 
     cy.findByTestId('identity-viewer-input', { timeout: 50000 }).should(
       'have.value',

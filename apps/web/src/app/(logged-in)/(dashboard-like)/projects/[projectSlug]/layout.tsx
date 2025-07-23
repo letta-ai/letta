@@ -8,6 +8,8 @@ import {
 import { getProjectByIdOrSlug } from '$web/web-api/router';
 import { redirect } from 'next/navigation';
 import { ProjectLayoutInner } from './_components/ProjectLayoutInner/ProjectLayoutInner';
+import { cookies } from 'next/headers';
+import { getADEConfigConstants } from '@letta-cloud/utils-shared';
 
 interface ProjectPageWrapperProps {
   params: Promise<{
@@ -15,6 +17,8 @@ interface ProjectPageWrapperProps {
   }>;
   children: React.ReactNode;
 }
+
+const { ADELayoutCookieName, ADELayoutQueryKey, deserializeADELayoutConfig } = getADEConfigConstants();
 
 async function ProjectPageLayout(props: ProjectPageWrapperProps) {
   const { projectSlug } = await props.params;
@@ -35,6 +39,19 @@ async function ProjectPageLayout(props: ProjectPageWrapperProps) {
   await queryClient.prefetchQuery({
     queryKey: webApiQueryKeys.projects.getProjectByIdOrSlug(projectSlug),
     queryFn: () => project,
+  });
+
+  await queryClient.prefetchQuery({
+    queryKey: ADELayoutQueryKey,
+    queryFn: async () => {
+      try {
+        const cookie = await cookies();
+
+        return deserializeADELayoutConfig(cookie.get(ADELayoutCookieName)?.value || '');
+      } catch (_e) {
+        return undefined;
+      }
+    },
   });
 
   return (

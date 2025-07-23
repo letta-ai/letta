@@ -8,6 +8,9 @@ import {
   VStack,
   WrapNotificationDot,
   MonitoringIcon,
+  LettaInvaderOutlineIcon,
+  type QueryBuilderQuery,
+  Typography,
 } from '@letta-cloud/ui-component-library';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from '@letta-cloud/translations';
@@ -125,8 +128,18 @@ export function TemplateSidebarInner() {
     <VStack
       align="center"
       /* eslint-disable-next-line react/forbid-component-props */
-      className="w-[36px] min-w-[36px] pr-[1px] pt-[3px] bg-background-grey2 border border-background-grey3-border"
+      className="w-[48px] min-w-[48px] pr-[1px] pt-[3px] bg-background-grey2 border border-background-grey3-border"
     >
+      <VStack
+        color="background-grey2"
+        fullWidth
+        paddingY="xxsmall"
+        borderBottom
+      >
+        <Typography align="center" variant="body4" bold color="lighter">
+          BETA
+        </Typography>
+      </VStack>
       <SidebarButton
         icon={<LettaAlienChatIcon />}
         label={t('nav.templateEditor')}
@@ -144,6 +157,27 @@ export function TemplateSidebarInner() {
         icon={<MonitoringIcon />}
         label={t('nav.metrics')}
         href={`/projects/${slug}/templates/${templateName}/metrics`}
+      />
+      <SidebarButton
+        icon={<LettaInvaderOutlineIcon />}
+        label={t('viewAgents')}
+        href={`/projects/${slug}/agents?query=${JSON.stringify({
+          root: {
+            combinator: 'AND',
+            items: [
+              {
+                field: 'version',
+                queryData: {
+                  operator: { label: 'equals', value: 'eq' },
+                  value: {
+                    label: `${slug}:latest`,
+                    value: `${slug}:latest`,
+                  },
+                },
+              },
+            ],
+          },
+        } satisfies QueryBuilderQuery)}`}
       />
     </VStack>
   );

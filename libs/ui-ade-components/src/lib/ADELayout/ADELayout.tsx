@@ -60,8 +60,32 @@ import {
   ArchivalMemoriesPanel,
   useArchivalMemoriesTitle,
 } from '../panels/ArchivalMemoriesPanel/ArchivalMemoriesPanel';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import WelcomeWebp from './welcome-to-ade.webp';
+
+import type { ImperativePanelHandle } from 'react-resizable-panels';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { Slot } from '@radix-ui/react-slot';
+import { createPortal } from 'react-dom';
+import { useADETour } from '../hooks/useADETour/useADETour';
+import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
+import { NetworkInspector } from '../NetworkInspector/NetworkInspector';
+import {
+  useNetworkInspectorVisibility,
+  useGlobalNetworkInterceptor,
+} from '../hooks';
+import { useHotkeys } from '@mantine/hooks';
+import { adeKeyMap } from '../adeKeyMap';
+import {
+  useFeatureFlag,
+  useSetOnboardingStep,
+  useUnpauseOnboarding,
+} from '@letta-cloud/sdk-web';
+import { DataSourcesPanel } from '../panels/DataSourcesV2/DataSourcesPanel';
+import { useQuickADETour } from '../hooks/useQuickADETour/useQuickADETour';
+import { useRouter } from 'next/navigation';
+import { ADEAccordionGroup } from '../shared/ADEAccordionGroup/ADEAccordionGroup';
+import { useADELayoutConfig } from '../hooks/useADELayoutConfig/useADELayoutConfig';
 
 interface ADELayoutProps {
   user?: UserContextData['user'];
@@ -85,28 +109,6 @@ function useADETitleTranslations() {
   };
 }
 
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { Slot } from '@radix-ui/react-slot';
-import { createPortal } from 'react-dom';
-import { useADETour } from '../hooks/useADETour/useADETour';
-import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
-import { NetworkInspector } from '../NetworkInspector/NetworkInspector';
-import {
-  useNetworkInspectorVisibility,
-  useGlobalNetworkInterceptor,
-} from '../hooks';
-import { useHotkeys } from '@mantine/hooks';
-import { adeKeyMap } from '../adeKeyMap';
-import {
-  useFeatureFlag,
-  useSetOnboardingStep,
-  useUnpauseOnboarding,
-} from '@letta-cloud/sdk-web';
-import { DataSourcesPanel } from '../panels/DataSourcesV2/DataSourcesPanel';
-import { useQuickADETour } from '../hooks/useQuickADETour/useQuickADETour';
-import { useRouter } from 'next/navigation';
-import { ADEAccordionGroup } from '../shared/ADEAccordionGroup/ADEAccordionGroup';
-
 function DesktopLayout() {
   const t = useTranslations('ADELayout');
   const {
@@ -118,6 +120,16 @@ function DesktopLayout() {
   } = useADETitleTranslations();
 
   const { isTemplate, isLocal } = useCurrentAgentMetaData();
+
+  const {
+    layoutConfig,
+    setLayoutConfig,
+    leftPanelToggleId,
+    rightPanelToggleId,
+  } = useADELayoutConfig();
+
+  const leftSidebarRef = useRef<ImperativePanelHandle>(null);
+  const rightSidebarRef = useRef<ImperativePanelHandle>(null);
 
   const [networkInspectorOpen, setNetworkInspectorOpen] =
     useNetworkInspectorVisibility();
@@ -135,6 +147,41 @@ function DesktopLayout() {
 
   const { data: enabledDv2 } = useFeatureFlag('DATASOURCES_V2');
 
+  const onLayout = useCallback(
+    (panelLayout: number[]) => {
+      setLayoutConfig({ panelLayout });
+    },
+    [setLayoutConfig],
+  );
+
+  const toggleLeftPanel = useCallback(() => {
+    if (!leftSidebarRef.current) {
+      return;
+    }
+
+    if (leftSidebarRef.current.isCollapsed()) {
+      leftSidebarRef.current.expand();
+
+      return;
+    }
+
+    leftSidebarRef.current.collapse();
+  }, [leftSidebarRef]);
+
+  const toggleRightPanel = useCallback(() => {
+    if (!rightSidebarRef.current) {
+      return;
+    }
+
+    if (rightSidebarRef.current.isCollapsed()) {
+      rightSidebarRef.current.expand();
+
+      return;
+    }
+
+    rightSidebarRef.current.collapse();
+  }, [rightSidebarRef]);
+
   return (
     <HStack
       className={isTemplate ? 'border-t border-r border-b' : ''}
@@ -143,10 +190,31 @@ function DesktopLayout() {
       fullWidth
       fullHeight
     >
-      <PanelGroup className="h-full" direction="horizontal" autoSaveId="ade">
+      <div
+        className="w-[1px] h-[1px] opacity-0 fixed bg-transparent top-0 left-0"
+        onClick={toggleLeftPanel}
+        id={leftPanelToggleId}
+      ></div>
+      <div
+        className="w-[1px] h-[1px] opacity-0 fixed bg-transparent top-0 right-0"
+        onClick={toggleRightPanel}
+        id={rightPanelToggleId}
+      ></div>
+      <PanelGroup
+        onLayout={onLayout}
+        className="h-full"
+        direction="horizontal"
+        autoSaveId={!layoutConfig ? 'ade' : undefined}
+      >
         <Panel
-          defaultSize={30}
-          defaultValue={30}
+          ref={leftSidebarRef}
+          collapsible
+          collapsedSize={0}
+          defaultSize={
+            typeof layoutConfig?.panelLayout[0] === 'number'
+              ? layoutConfig?.panelLayout[0]
+              : 30
+          }
           className="h-full"
           minSize={20}
         >
@@ -187,8 +255,7 @@ function DesktopLayout() {
         </Panel>
         <PanelResizeHandle className="w-[1px] bg-border" />
         <Panel
-          defaultSize={40}
-          defaultValue={40}
+          defaultSize={layoutConfig?.panelLayout[1] || 40}
           className="h-full"
           minSize={30}
         >
@@ -222,8 +289,13 @@ function DesktopLayout() {
         </Panel>
         <PanelResizeHandle className="w-[1px] bg-border" />
         <Panel
-          defaultSize={30}
-          defaultValue={30}
+          ref={rightSidebarRef}
+          collapsible
+          defaultSize={
+            typeof layoutConfig?.panelLayout[2] === 'number'
+              ? layoutConfig?.panelLayout[2]
+              : 30
+          }
           className="h-full"
           minSize={20}
         >
