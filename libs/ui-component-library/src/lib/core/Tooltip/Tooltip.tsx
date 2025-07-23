@@ -18,6 +18,8 @@ import {
 } from '@floating-ui/react';
 import type { Placement } from '@floating-ui/react';
 import { Slot } from '@radix-ui/react-slot';
+import { cn } from '@letta-cloud/ui-styles';
+import './Tooltip.scss';
 
 interface TooltipOptions {
   initialOpen?: boolean;
@@ -169,7 +171,7 @@ const TooltipContent = React.forwardRef<
     <FloatingPortal root={document.body}>
       <div
         ref={ref}
-        className="z-tooltip max-w-[300px] py-1 text-sm px-2"
+        className={cn('tooltip', 'z-tooltip max-w-[300px] py-1 text-sm px-2')}
         style={{
           backgroundColor: 'hsl(var(--background-inverted))',
           color: 'hsl(var(--background-inverted-content))',

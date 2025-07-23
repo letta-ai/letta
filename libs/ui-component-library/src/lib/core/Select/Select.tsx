@@ -394,12 +394,7 @@ function AsyncSelectPrimitive(_props: AsyncSelectProps) {
   const loadOptions = useDebouncedLoadOptions(props.loadOptions, 300);
 
   if (!mounted) {
-    return (
-      <UnmountedSelect
-        className={props.__use_rarely_className}
-        fullWidth={props.fullWidth}
-      />
-    );
+    return <UnmountedSelect {..._props} />;
   }
 
   return (
@@ -442,22 +437,33 @@ function AsyncSelectPrimitive(_props: AsyncSelectProps) {
   );
 }
 
-interface UnmountedSelectProps {
-  className?: string;
-  fullWidth?: boolean;
-}
+const unmountedSelectVariants = cva(
+  'bg-background-grey min-w-[200px] min-h-biHeight',
+  {
+    variants: {
+      size: {
+        default: 'min-h-biHeight max-h-biHeight',
+        large: 'min-h-biHeight-lg max-h-biHeight-lg',
+        small: 'min-h-biHeight-sm max-h-biHeight-sm',
+      },
+    },
+    defaultVariants: {},
+  },
+);
 
-function UnmountedSelect(props: UnmountedSelectProps) {
-  const { className, fullWidth } = props;
+function UnmountedSelect(props: BaseSelectProps) {
+  const { __use_rarely_className, size, styleConfig, fullWidth } = props;
 
   return (
     <VStack
       fullWidth={fullWidth}
       border
       className={cn(
-        className,
-        'bg-background-grey min-h-biHeight',
-        'min-w-[200px]',
+        unmountedSelectVariants({
+          size: size,
+          ...styleConfig,
+        }),
+        __use_rarely_className,
       )}
     />
   );
@@ -512,12 +518,7 @@ function SelectPrimitive(_props: SelectProps) {
   const components = useSelectComponents(props);
 
   if (!mounted) {
-    return (
-      <UnmountedSelect
-        className={__use_rarely_className}
-        fullWidth={props.fullWidth}
-      />
-    );
+    return <UnmountedSelect {..._props} />;
   }
 
   return (
@@ -599,12 +600,7 @@ function CreatableAsyncSelectPrimitive(_props: AsyncSelectProps) {
   const loadOptions = useDebouncedLoadOptions(props.loadOptions, 300);
 
   if (!mounted) {
-    return (
-      <UnmountedSelect
-        className={props.__use_rarely_className}
-        fullWidth={props.fullWidth}
-      />
-    );
+    return <UnmountedSelect {..._props} />;
   }
 
   return (

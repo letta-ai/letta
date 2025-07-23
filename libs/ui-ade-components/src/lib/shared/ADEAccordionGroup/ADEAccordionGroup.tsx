@@ -9,6 +9,7 @@ import {
 import type { ReactNode } from 'react';
 import React from 'react';
 import { cn } from '@letta-cloud/ui-styles';
+import './ADEAccordionGroup.scss';
 
 interface PanelItem {
   id: string;
@@ -42,7 +43,11 @@ function ADEAccordionItem(props: ADEAccordionItemProps) {
         panelRefs.current[idx] = el;
       }}
       /* if the last element, allow it to flex and fill the remaining space */
-      className={cn(lastOpen ? 'flex-1' : '', 'flex flex-col h-auto')}
+      className={cn(
+        lastOpen ? 'flex-1' : '',
+        'flex flex-col  ade-accordion-item',
+        open ? 'open' : 'close min-h-[32px]',
+      )}
       data-id={id}
       data-testid={id}
     >
@@ -68,14 +73,9 @@ function ADEAccordionItem(props: ADEAccordionItemProps) {
           <ChevronDownIcon color="muted" className="rotate-180" />
         )}
       </button>
-      {open && (
-        <div
-          style={{ minHeight }}
-          className="flex flex-col h-full w-full transition-height"
-        >
-          {content}
-        </div>
-      )}
+      <div style={{ minHeight }} className={cn('flex flex-col h-full  w-full')}>
+        {content}
+      </div>
     </div>
   );
 

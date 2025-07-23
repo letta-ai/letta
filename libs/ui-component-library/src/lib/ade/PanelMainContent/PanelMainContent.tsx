@@ -13,7 +13,7 @@ export function PanelMainContent(props: PanelElementsListProps) {
   return (
     <VStack
       padding={variant === 'noPadding' ? false : 'small'}
-      overflow="auto"
+      overflow="hidden"
       zIndex="base"
       fullWidth
       gap={gap}

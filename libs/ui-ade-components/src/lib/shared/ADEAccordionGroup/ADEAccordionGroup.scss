@@ -1,0 +1,23 @@
+.ade-accordion-item {
+  transition-property: all;
+  transition-duration: 0.5s;
+  transition-behavior: allow-discrete;
+  interpolate-size: allow-keywords;
+  overflow: clip;
+
+  height: 32px;
+
+  @starting-style {
+    height: 32px
+  }
+
+  &.open {
+    height: auto;
+  }
+
+  &.close {
+    height: 32px;
+  }
+}
+
+
