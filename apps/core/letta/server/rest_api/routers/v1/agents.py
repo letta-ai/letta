@@ -387,7 +387,7 @@ async def close_all_open_files(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    return server.file_agent_manager.close_all_other_files(agent_id=agent_id, keep_file_names=[], actor=actor)
+    return await server.file_agent_manager.close_all_other_files(agent_id=agent_id, keep_file_names=[], actor=actor)
 
 
 @router.patch("/{agent_id}/files/{file_id}/open", response_model=List[str], operation_id="open_file")

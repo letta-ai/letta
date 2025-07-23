@@ -95,7 +95,7 @@ from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import DatabaseChoice, settings
-from letta.utils import enforce_types, united_diff
+from letta.utils import calculate_file_defaults_based_on_context_window, enforce_types, united_diff
 
 logger = get_logger(__name__)
 
@@ -3139,7 +3139,29 @@ class AgentManager:
             if row is None:
                 raise ValueError(f"Agent {agent_id} not found")
 
-            return row[0], row[1]
+            per_file_limit, max_files = row[0], row[1]
+
+            # Handle None values by calculating defaults based on context window
+            if per_file_limit is None or max_files is None:
+                # Get the agent's model context window to calculate appropriate defaults
+                model_result = await session.execute(
+                    select(AgentModel.llm_config)
+                    .where(AgentModel.id == agent_id)
+                    .where(AgentModel.organization_id == actor.organization_id)
+                    .where(AgentModel.is_deleted == False)
+                )
+                model_row = model_result.one_or_none()
+                context_window = model_row[0].context_window if model_row and model_row[0] else None
+
+                default_max_files, default_per_file_limit = calculate_file_defaults_based_on_context_window(context_window)
+
+                # Use calculated defaults for None values
+                if per_file_limit is None:
+                    per_file_limit = default_per_file_limit
+                if max_files is None:
+                    max_files = default_max_files
+
+            return per_file_limit, max_files
 
     @enforce_types
     @trace_method
