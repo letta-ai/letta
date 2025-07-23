@@ -1,5 +1,8 @@
 'use client';
-import { useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
+import {
+  useAgentsServiceRetrieveAgent,
+  UseAgentsServiceRetrieveAgentKeyFn,
+} from '@letta-cloud/sdk-core';
 import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
 
 export function useCurrentAgent() {
@@ -23,4 +26,12 @@ export function useCurrentAgent() {
     name: agentName,
     id: agentId,
   };
+}
+
+export function useCurrentAgentQueryKey() {
+  const { agentId } = useCurrentAgentMetaData();
+
+  return UseAgentsServiceRetrieveAgentKeyFn({
+    agentId,
+  });
 }

@@ -519,6 +519,12 @@
       "title": "Upload file to {sourceName}"
     }
   },
+  "ADE/DataSources/FileOpenStatus": {
+    "open": "This file is being read by the agent, click to stop the agent from reading it",
+    "closed": "This file is not being read by the agent, click to force the agent to read it",
+    "failedToClose": "Failed to close file, please check your logs or contact support.",
+    "failedToOpen": "Failed to open file, please check your logs or contact support."
+  },
   "ADE/DataSources/FilesView": {
     "error": "There was an error loading files, please try again or contact support."
   },

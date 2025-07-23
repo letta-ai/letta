@@ -10,7 +10,7 @@ import {
   Button,
   CancelIcon,
   Dialog,
-  EyeOpenIcon,
+  FileIcon,
   HStack,
   InfoIcon,
   LoadingEmptyStatusComponent,
@@ -28,6 +28,7 @@ import { DeleteFileModal } from '../../../DeleteFileModal';
 import { useQueryClient } from '@tanstack/react-query';
 import { DEFAULT_FILE_LIMIT } from '../../../../constants';
 import { MarkdownViewer } from './MarkdownViewer';
+import { FileOpenStatus } from './FileOpenStatus';
 
 interface FileContentProps {
   file: FileMetadata;
@@ -148,7 +149,7 @@ function FileViewActions(props: FileViewActionsProps) {
         trigger={
           <Button
             size="xsmall"
-            preIcon={<TrashIcon />}
+            preIcon={<TrashIcon size="small" />}
             label={t('delete')}
             color="tertiary"
             hideLabel
@@ -160,13 +161,14 @@ function FileViewActions(props: FileViewActionsProps) {
         trigger={
           <Button
             size="xsmall"
-            preIcon={<EyeOpenIcon />}
+            preIcon={<FileIcon size="xsmall" />}
             label={t('view')}
             color="tertiary"
             hideLabel
           />
         }
       />
+      <FileOpenStatus file={file} />
     </HStack>
   );
 }
@@ -383,9 +385,16 @@ export function FileView(props: FileViewProps) {
       padding="small"
     >
       {file?.processing_status === 'completed' && (
-        <div className="fileview-inner">
-          <FileViewActions file={file} />
-        </div>
+        <>
+          <div className="fileview-inner">
+            <FileViewActions file={file} />
+          </div>
+          <div className="fileview-agent-status">
+            <HStack border="transparent">
+              <FileOpenStatus file={file} />
+            </HStack>
+          </div>
+        </>
       )}
       <HStack align="center">
         <Typography fullWidth overflow="ellipsis" noWrap>

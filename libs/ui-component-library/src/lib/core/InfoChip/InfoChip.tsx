@@ -14,6 +14,7 @@ const infoChipVariants = cva(
         info: 'bg-background-grey ',
         success: 'bg-success-light text-success-light-content',
         brand: 'bg-brand-light text-brand-light-content',
+        warning: 'bg-warning-light text-warning-light-content',
       },
     },
     defaultVariants: {

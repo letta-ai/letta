@@ -1,6 +1,6 @@
 
 
-.fileview-inner, .fileview-status {
+.fileview-inner, .fileview-status, .fileview-agent-status {
   position: absolute;
   right: 0.25rem;
   display: none;
@@ -12,8 +12,18 @@
   display: flex;
 }
 
+
+
 .fileview-status {
   display: block;
+}
+
+.fileview-agent-status {
+  display: block;
+}
+
+.fileview:hover .fileview-agent-status {
+  display: none;
 }
 
 // Markdown overrides for file view only
