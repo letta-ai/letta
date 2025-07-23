@@ -182,6 +182,7 @@ export const EmbeddingConfig = z.object({
     z.literal('hugging-face'),
     z.literal('mistral'),
     z.literal('together'),
+    z.literal('pinecone'),
   ]),
   embedding_endpoint: z
     .union([

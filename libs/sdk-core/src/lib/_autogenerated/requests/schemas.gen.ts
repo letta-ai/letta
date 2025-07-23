@@ -4430,6 +4430,7 @@ export const $EmbeddingConfig = {
         'hugging-face',
         'mistral',
         'together',
+        'pinecone',
       ],
       title: 'Embedding Endpoint Type',
       description: 'The endpoint type for the model.',

@@ -477,7 +477,7 @@ async def load_file_to_source_cloud(
 
     using_pinecone = should_use_pinecone()
     if using_pinecone:
-        embedder = PineconeEmbedder()
+        embedder = PineconeEmbedder(embedding_config=embedding_config)
     else:
         embedder = OpenAIEmbedder(embedding_config=embedding_config)
     file_processor = FileProcessor(file_parser=file_parser, embedder=embedder, actor=actor, using_pinecone=using_pinecone)

@@ -1457,7 +1457,8 @@ export type EmbeddingConfig = {
     | 'vllm'
     | 'hugging-face'
     | 'mistral'
-    | 'together';
+    | 'together'
+    | 'pinecone';
   /**
    * The endpoint for the model (`None` if local).
    */
@@ -1518,7 +1519,8 @@ export type embedding_endpoint_type =
   | 'vllm'
   | 'hugging-face'
   | 'mistral'
-  | 'together';
+  | 'together'
+  | 'pinecone';
 
 export type FeedbackType = 'positive' | 'negative';
 

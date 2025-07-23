@@ -13323,7 +13323,8 @@
               "vllm",
               "hugging-face",
               "mistral",
-              "together"
+              "together",
+              "pinecone"
             ],
             "title": "Embedding Endpoint Type",
             "description": "The endpoint type for the model."

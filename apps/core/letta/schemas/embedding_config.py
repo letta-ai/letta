@@ -42,6 +42,7 @@ class EmbeddingConfig(BaseModel):
         "hugging-face",
         "mistral",
         "together",  # completions endpoint
+        "pinecone",
     ] = Field(..., description="The endpoint type for the model.")
     embedding_endpoint: Optional[str] = Field(None, description="The endpoint for the model (`None` if local).")
     embedding_model: str = Field(..., description="The model for the embedding.")
@@ -81,6 +82,15 @@ class EmbeddingConfig(BaseModel):
                 embedding_dim=1024,
                 embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
                 embedding_endpoint_type="hugging-face",
+            )
+        elif provider == "pinecone":
+            # default config for pinecone with empty endpoint
+            return cls(
+                embedding_endpoint=None,
+                embedding_model="llama-text-embed-v2",
+                embedding_dim=1536,  # assuming default openai dimension
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
+                embedding_endpoint_type="pinecone",
             )
         else:
             raise ValueError(f"Model {model_name} not supported.")
