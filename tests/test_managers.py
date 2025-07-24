@@ -55,6 +55,7 @@ from letta.schemas.block import BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ActorType, AgentStepStatus, FileProcessingStatus, JobStatus, JobType, MessageRole, ProviderType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
+from letta.schemas.file import FileMetadata
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate, IdentityUpsert
 from letta.schemas.job import BatchJob
