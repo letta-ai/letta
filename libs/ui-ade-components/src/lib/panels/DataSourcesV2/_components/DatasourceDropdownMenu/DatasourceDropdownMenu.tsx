@@ -1,6 +1,7 @@
 import { useTranslations } from '@letta-cloud/translations';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import type { Source } from '@letta-cloud/sdk-core';
+import { isAPIError } from '@letta-cloud/sdk-core';
 import {
   Button,
   VerticalDotsIcon,
@@ -50,7 +51,7 @@ function RenameDataSourceDialog({ source }: { source: Source }) {
     },
   });
 
-  const { mutate, isPending, isError } = useSourcesServiceModifySource({
+  const { mutate, isPending, error, reset } = useSourcesServiceModifySource({
     onSuccess: (response) => {
       queryClient.setQueriesData<AgentState | undefined>(
         {
@@ -84,6 +85,31 @@ function RenameDataSourceDialog({ source }: { source: Source }) {
     },
   });
 
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      setIsOpen(open);
+      if (!open) {
+        form.reset();
+        reset();
+      }
+    },
+    [form, reset, setIsOpen],
+  );
+
+  const errorMessage = useMemo(() => {
+    if (error) {
+      if (isAPIError(error)) {
+        if (error.status === 409) {
+          return t('errors.conflict');
+        }
+      }
+
+      return t('errors.default');
+    }
+
+    return undefined;
+  }, [error, t]);
+
   const handleSubmit = useCallback(
     (values: RenameDataSourceFormValues) => {
       mutate({
@@ -99,9 +125,9 @@ function RenameDataSourceDialog({ source }: { source: Source }) {
   return (
     <FormProvider {...form}>
       <Dialog
-        errorMessage={isError ? t('error') : undefined}
+        errorMessage={errorMessage}
         isOpen={isOpen}
-        onOpenChange={setIsOpen}
+        onOpenChange={handleOpenChange}
         onSubmit={form.handleSubmit(handleSubmit)}
         title={t('title')}
         confirmText={t('confirm')}

@@ -79,10 +79,16 @@ export function CreateDataSourceModal(props: CreateDataSourceModalProps) {
 
   const errorMessage = useMemo(() => {
     if (error) {
-      if (isAPIError(error) && error.status === 402) {
-        return t.rich('CreateDataSourceDialog.errors.overage', {
-          link: (chunks) => <BillingLink>{chunks}</BillingLink>,
-        });
+      if (isAPIError(error)) {
+        if (error.status === 409) {
+          return t('CreateDataSourceDialog.errors.duplicateName');
+        }
+
+        if (error.status === 402) {
+          return t.rich('CreateDataSourceDialog.errors.overage', {
+            link: (chunks) => <BillingLink>{chunks}</BillingLink>,
+          });
+        }
       }
 
       return t('CreateDataSourceDialog.errors.default');
@@ -201,6 +207,7 @@ export function CreateDataSourceModal(props: CreateDataSourceModalProps) {
               <Input
                 fullWidth
                 {...field}
+                description={t('CreateDataSourceDialog.name.description')}
                 data-testid="create-data-source-dialog-name"
                 label={t('CreateDataSourceDialog.name.label')}
                 placeholder={t('CreateDataSourceDialog.name.placeholder')}

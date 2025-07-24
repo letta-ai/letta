@@ -1070,7 +1070,9 @@ function RenameDataSourceDialog(props: RenameDataSourceDialogProps) {
   return (
     <FormProvider {...form}>
       <Dialog
-        errorMessage={isError ? t('RenameDataSourceDialog.error') : undefined}
+        errorMessage={
+          isError ? t('RenameDataSourceDialog.errors.default') : undefined
+        }
         isOpen
         onOpenChange={(state) => {
           if (!state) {

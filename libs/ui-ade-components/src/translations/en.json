@@ -343,7 +343,10 @@
       "title": "Rename source",
       "trigger": "Rename source",
       "confirm": "Rename",
-      "error": "There was an error renaming this folder, please try again or contact support.",
+      "errors": {
+        "default": "There was an error renaming this folder, please try again or contact support.",
+        "conflict": "There is already a folder with this name, Letta uses the folder name as a unique identifier, please choose a different name."
+      },
       "name": {
         "label": "Source Name",
         "placeholder": "my-source-name"
@@ -400,6 +403,7 @@
       "trigger": "Create folder",
       "goBack": "Go back",
       "errors": {
+        "duplicateName": "There is already a folder with this name, Letta uses the folder name as a unique identifier, please choose a different name.",
         "default": "There was an error creating the folder, please try again or contact support.",
         "overage": "You have reached the maximum number of folders for your plan, please <link>upgrade</link> or delete some folders."
       },
@@ -409,6 +413,7 @@
         "placeholder": "For example: 'These are files that contain information about my startup plans'"
       },
       "name": {
+        "description": "Folder names are unique identifiers for your folders, they are used to reference the folder agent's runtime.",
         "label": "Name",
         "placeholder": "my-folder-name"
       },
@@ -480,9 +485,12 @@
       "title": "Rename folder",
       "trigger": "Rename folder",
       "confirm": "Rename",
-      "error": "There was an error renaming this folder, please try again or contact support.",
+      "errors": {
+        "default": "There was an error renaming this folder, please try again or contact support.",
+        "conflict": "There is already a folder with this name, Letta uses the folder name as a unique identifier, please choose a different name."
+      },
       "name": {
-        "label": "Data Source Name",
+        "label": "Folder Name",
         "placeholder": "Enter folder name"
       }
     },
