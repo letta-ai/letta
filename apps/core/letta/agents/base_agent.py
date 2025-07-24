@@ -122,7 +122,9 @@ class BaseAgent(ABC):
             curr_dynamic_section = extract_dynamic_section(curr_system_message_text)
 
             # generate just the memory string with current state for comparison
-            curr_memory_str = agent_state.memory.compile(tool_usage_rules=tool_constraint_block, sources=agent_state.sources)
+            curr_memory_str = agent_state.memory.compile(
+                tool_usage_rules=tool_constraint_block, sources=agent_state.sources, max_files_open=agent_state.max_files_open
+            )
             new_dynamic_section = extract_dynamic_section(curr_memory_str)
 
             # compare just the dynamic sections (memory blocks, tool rules, directories)
@@ -149,6 +151,7 @@ class BaseAgent(ABC):
                 archival_memory_size=num_archival_memories,
                 tool_rules_solver=tool_rules_solver,
                 sources=agent_state.sources,
+                max_files_open=agent_state.max_files_open,
             )
 
             diff = united_diff(curr_system_message_text, new_system_message_str)

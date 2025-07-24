@@ -153,6 +153,7 @@ class VoiceAgent(BaseAgent):
             previous_message_count=self.num_messages,
             archival_memory_size=self.num_archival_memories,
             sources=agent_state.sources,
+            max_files_open=agent_state.max_files_open,
         )
         letta_message_db_queue = create_input_messages(
             input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=self.actor
