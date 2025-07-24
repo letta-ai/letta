@@ -1236,6 +1236,6 @@ def calculate_file_defaults_based_on_context_window(context_window: Optional[int
     elif context_window <= 128_000:  # Large models (100K-128K)
         return 10, 25_000  # ~62.5K tokens
     elif context_window <= 200_000:  # Very large models (128K-200K)
-        return 10, 50_000  # ~128k tokens
+        return 10, 40_000  # ~100k tokens
     else:  # Extremely large models (200K+)
-        return 15, 50_000  # ~187.5k tokens
+        return 15, 40_000  # ~1505k tokens
