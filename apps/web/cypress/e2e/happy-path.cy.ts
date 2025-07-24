@@ -126,13 +126,13 @@ describe('letta', () => {
 
     cy.findByTestId('complete-create-data-source').click();
 
-    cy.findByTestId('datasources').contains('Sources (1)');
+    cy.findByTestId('datasources').contains('Filesystem (1)');
     cy.findByTestId('filetree-actions:1-0').click();
     cy.findByTestId('filetree-action-detach').click();
     cy.findByTestId('detach-data-source-dialog-confirm-button').click();
     cy.findByTestId('datasources', {
       timeout: 50000,
-    }).contains('Sources (0)');
+    }).contains('Filesystem (0)');
 
     cy.findByTestId('create-data-source-dialog-trigger', {
       timeout: 50000,

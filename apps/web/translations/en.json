@@ -18,7 +18,7 @@
       "close": "Hide limits",
       "agents": "Agents",
       "identities": "Identities",
-      "dataSources": "Data sources",
+      "dataSources": "Filesystem",
       "templates": "Templates",
       "projects": "Projects",
       "storage": "Storage"
@@ -440,7 +440,7 @@
     "nav": {
       "projects": "Projects",
       "apiKeys": "API keys",
-      "dataSources": "Data sources",
+      "dataSources": "Filesystem",
       "admin": "Admin",
       "models": "Models",
       "localDev": "Self-hosted",
@@ -489,7 +489,7 @@
     "title": "Account settings",
     "DeleteAccountSection": {
       "title": "Delete account",
-      "description": "Deleting your account is permanent and cannot be undone. This will delete any organizations you are the sole member of. Those organizations will have all their projects, agents, data sources, and other data deleted as well. <action>Delete account</action>."
+      "description": "Deleting your account is permanent and cannot be undone. This will delete any organizations you are the sole member of. Those organizations will have all their projects, agents, filesystem, and other data deleted as well. <action>Delete account</action>."
     },
     "DeleteAccountDialog": {
       "title": "Delete account",
@@ -755,31 +755,31 @@
     "notSupported": "Not supported"
   },
   "data-sources/page": {
-    "title": "Data sources",
+    "title": "Filesystem",
     "CreateDataSourceDialog": {
       "errors": {
-        "default": "There was an error creating the data source, please try again or contact support.",
-        "overage": "You have reached the maximum number of data sources for your plan, please <link>upgrade your plan</link> to create more data sources."
+        "default": "There was an error creating the folder, please try again or contact support.",
+        "overage": "You have reached the maximum number of folders for your plan, please <link>upgrade your plan</link> to create more folders."
       },
-      "title": "Create a new data source",
-      "trigger": "Create data source",
+      "title": "Create a new folder",
+      "trigger": "Create folder",
       "name": {
-        "label": "Data source name",
-        "placeholder": "my-data-source-name"
+        "label": "Folder name",
+        "placeholder": "my-folder-name"
       },
       "embeddingModel": {
         "label": "Embedding model"
       },
       "instructions": {
         "label": "Instructions",
-        "placeholder": "my-data-source-instructions"
+        "placeholder": "my-folder-instructions"
       },
-      "createButton": "Create data source"
+      "createButton": "Create folder"
     },
     "dataSourcesList": {
-      "loadingMessage": "Loading data sources...",
-      "noDataSources": "You have no data sources, create one below",
-      "noSearchResults": "We couldn't find any data sources matching your search",
+      "loadingMessage": "Loading filesystem...",
+      "noDataSources": "You have no folders, create one below",
+      "noSearchResults": "We couldn't find any folders matching your search",
       "dataSourceItem": {
         "createdAt": "Created at {date}",
         "noCreatedAt": "No creation date",
@@ -792,7 +792,7 @@
       }
     },
     "searchInput": {
-      "placeholder": "Search data sources"
+      "placeholder": "Search folders"
     }
   },
   "data-sources/home/page": {
@@ -901,7 +901,7 @@
   "components/CancelPlanDialog": {
     "title": "Cancel plan",
     "error": "There was an error canceling your plan, please try again or contact support.",
-    "description": "Are you sure you want to cancel your plan? This will cancel your current subscription at the end of the billing period. You will not be charged again, but you will lose access to the Pro plan features and any additional agents, identities, and data sources will be deleted. You can resume your subscription at any time before your billing period ends."
+    "description": "Are you sure you want to cancel your plan? This will cancel your current subscription at the end of the billing period. You will not be charged again, but you will lose access to the Pro plan features and any additional agents, identities, and folders/files will be deleted. You can resume your subscription at any time before your billing period ends."
   },
   "components/UpgradeToProPlanDialog": {
     "title": "Upgrade your plan",
@@ -1874,8 +1874,8 @@
       "config": "Config",
       "memoryBlocks": "Memory Blocks",
       "dataSources": {
-        "new": "New data source",
-        "main": "Data sources"
+        "new": "New folder",
+        "main": "Filesystem"
       },
       "tools": "Tools",
       "agentSimulator": "Simulator",

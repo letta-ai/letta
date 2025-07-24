@@ -45,7 +45,7 @@ export function CreateDataSourceModal(props: CreateDataSourceModalProps) {
   const form = useForm<CreateDataSourceFormValues>({
     resolver: zodResolver(CreateDataSourceSchema),
     defaultValues: {
-      name: 'my-new-data-source',
+      name: 'my-new-folder',
       instructions: '',
     },
   });

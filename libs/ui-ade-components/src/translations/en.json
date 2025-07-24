@@ -43,7 +43,7 @@
     "noInstructions": "No instructions",
     "editInstructions": "Edit instructions",
     "addInstructions": "Set source instructions",
-    "instructionsTooltip": "Optional instructions for how the agent should use this data source"
+    "instructionsTooltip": "Optional instructions for how the agent should use data in this folder"
   },
   "AgentMobileNavigation": {
     "more": "More panels",
@@ -51,10 +51,10 @@
   },
   "ADE/DataSourceViewHeader": {
     "addFile": "Add file",
-    "selectDataSource": "View attached data sources"
+    "selectDataSource": "View attached folders"
   },
   "ADE/DataSourcesPanel/NoDatasourceView": {
-    "title": "No data sources attached",
+    "title": "No folders attached",
     "new": "Create new",
     "or": "or",
     "attach": "Attach existing"
@@ -295,24 +295,24 @@
   },
   "ADE/EditDataSourcesPanel/DataSourceCompatibilityWarning": {
     "title": "Compatibility error",
-    "description": "This data source's embedding config <embedding></embedding> does not match the agent config <agent></agent> you will not be able to use this data source until the models match. Edit embedding config in the advanced settings tab."
+    "description": "This folder's embedding config <embedding></embedding> does not match the agent config <agent></agent> you will not be able to use this folder until the models match. Edit embedding config in the advanced settings tab."
   },
   "ADE/EditDataSourcesPanel": {
-    "mobileTitle": "Data Sources",
+    "mobileTitle": "Filesystem",
     "infoTooltip": "External files loaded into the agent's archival memory for RAG",
     "AttachDataSourceView": {
       "notCompatible": {
         "title": "Not Compatible",
-        "details": "This data source's embedding model is not compatible with your current model."
+        "details": "This folder's embedding model is not compatible with your current model."
       },
-      "emptyMessage": "You have not created any data sources yet",
-      "emptySearchMessage": "No data sources found",
-      "emptyAction": "Create a new data source",
+      "emptyMessage": "You have not created any folders yet",
+      "emptySearchMessage": "No folders found",
+      "emptyAction": "Create a new folder",
       "attach": "Attach",
       "attached": "Attached",
       "searchInput": {
-        "placeholder": "Search data sources",
-        "label": "Search data sources"
+        "placeholder": "Search folders",
+        "label": "Search folders"
       }
     },
     "DeleteFileDialog": {
@@ -327,13 +327,13 @@
       "areYouSure": "Are you sure you want to detach {sourceName}?",
       "trigger": "Detach Data Source",
       "confirm": "Detach",
-      "error": "There was an error detaching this data source, please try again or contact support."
+      "error": "There was an error detaching this folder, please try again or contact support."
     },
     "UpdateDataSourceInstructionsDialog": {
       "title": "Update source instructions",
       "trigger": "Update source instructions",
       "confirm": "Update",
-      "error": "There was an error updating this data source, please try again or contact support.",
+      "error": "There was an error updating this folder, please try again or contact support.",
       "instructions": {
         "label": "Source Instructions",
         "placeholder": "my-source-instructions"
@@ -343,7 +343,7 @@
       "title": "Rename source",
       "trigger": "Rename source",
       "confirm": "Rename",
-      "error": "There was an error renaming this data source, please try again or contact support.",
+      "error": "There was an error renaming this folder, please try again or contact support.",
       "name": {
         "label": "Source Name",
         "placeholder": "my-source-name"
@@ -363,10 +363,10 @@
     },
     "EditDataSourcesContent": {
       "notCompatible": {
-        "details": "This data source's embedding config does not match the agent config, this may lead to the agent not remembering data properly",
+        "details": "This folder's embedding config does not match the agent config, this may lead to the agent not remembering data properly",
         "title": "Not Compatible"
       },
-      "processing": "This data source is being processed, please wait...",
+      "processing": "This folder is being processed, please wait...",
       "delete": "Delete file",
       "addFile": "Add file",
       "uploadFile": "Upload file",
@@ -383,72 +383,72 @@
         "genericError": "There was an error uploading the file, please try again or contact support."
       }
     },
-    "title": "Data Sources ({count})",
-    "errorDetaching": "There was an error detaching this data source, please try again or contact support.",
+    "title": "Filesystem ({count})",
+    "errorDetaching": "There was an error detaching this folder, please try again or contact support.",
     "editName": {
-      "label": "Data source name",
-      "placeholder": "my-data-source-name"
+      "label": "Folder name",
+      "placeholder": "my-folder-name"
     },
     "edit": "Edit",
-    "detach": "Detach Data Source",
-    "loading": "Loading data sources...",
-    "error": "There was an error loading data sources, please try again or contact support.",
-    "noDataSources": "You have no data sources attached to this agent. Click the + button to attach a data source.",
+    "detach": "Detach Folder",
+    "loading": "Loading folders...",
+    "error": "There was an error loading folders, please try again or contact support.",
+    "noDataSources": "You have no folders attached to this agent. Click the + button to attach a folder.",
     "CreateDataSourceDialog": {
-      "titlev2": "Create a new data source",
-      "titles": "Add New Data Source",
-      "trigger": "Create source",
+      "titlev2": "Create a new folder",
+      "titles": "Add New Folder",
+      "trigger": "Create folder",
       "goBack": "Go back",
       "errors": {
-        "default": "There was an error creating the data source, please try again or contact support.",
-        "overage": "You have reached the maximum number of data sources for your plan, please <link>upgrade</link> or delete some data sources."
+        "default": "There was an error creating the folder, please try again or contact support.",
+        "overage": "You have reached the maximum number of folders for your plan, please <link>upgrade</link> or delete some folders."
       },
       "instructions": {
         "label": "Instructions",
-        "details": "Provide your agent with relevant instructions for how to use files uploaded to this data source.",
+        "details": "Provide your agent with relevant instructions for how to use files uploaded to this folder.",
         "placeholder": "For example: 'These are files that contain information about my startup plans'"
       },
       "name": {
         "label": "Name",
-        "placeholder": "my-data-source-name"
+        "placeholder": "my-folder-name"
       },
       "cancel": "Cancel",
-      "create": "Create source",
+      "create": "Create folder",
 
-      "creatingDataSource": "Creating data source...",
-      "title": "Attach a data source",
+      "creatingDataSource": "Creating folder...",
+      "title": "Attach a folder",
       "options": {
         "createANewDataSource": {
-          "title": "New data source",
-          "description": "Create a new data source to use in your agent and other projects."
+          "title": "New folder",
+          "description": "Create a new folder to use in your agent and other projects."
         },
         "attachAnExistingDataSource": {
-          "title": "Existing data source",
-          "description": "Attach an existing data source that you have already created."
+          "title": "Existing folder",
+          "description": "Attach an existing folder that you have already created."
         }
       }
     },
     "AttachDataSourceModal": {
-      "title": "Attach data source",
-      "support": "You can link multiple sources to an agent",
+      "title": "Attach folder",
+      "support": "You can link multiple folders to an agent",
       "searchInput": {
-        "label": "Search data sources",
-        "placeholder": "Search data sources"
+        "label": "Search folders",
+        "placeholder": "Search folders"
       },
-      "loading": "Loading data sources...",
-      "error": "Failed to load data sources",
-      "emptyMessage": "No data sources available",
-      "emptySearchMessage": "No data sources found",
+      "loading": "Loading folders...",
+      "error": "Failed to load folders",
+      "emptyMessage": "No folders available",
+      "emptySearchMessage": "No folders found",
       "attach": "Attach",
       "attached": "Attached",
       "notCompatible": {
         "title": "Not Compatible",
-        "details": "This data source's embedding model is not compatible with your current model."
+        "details": "This folder's embedding model is not compatible with your current model."
       }
     },
     "NoFilesView": {
       "title": "No files uploaded yet",
-      "description": "Upload files to add them to this data source",
+      "description": "Upload files to add them to this folder",
       "uploadButton": "Upload from device",
       "or": "or",
       "dragAndDrop": "Drop your file here",
@@ -469,51 +469,51 @@
     "UpdateSourceInstructionsModal": {
       "title": "Update source instructions",
       "confirm": "Update",
-      "error": "There was an error updating this data source, please try again or contact support.",
+      "error": "There was an error updating this folder, please try again or contact support.",
       "instructions": {
-        "details": "Provide your agent with relevant instructions for how to use files uploaded to this data source.",
+        "details": "Provide your agent with relevant instructions for how to use files uploaded to this folder.",
         "label": "Source instructions",
         "placeholder": "For example: 'These are files that contain information about my startup plans'"
       }
     },
     "RenameDataSourceModal": {
-      "title": "Rename data source",
-      "trigger": "Rename data source",
+      "title": "Rename folder",
+      "trigger": "Rename folder",
       "confirm": "Rename",
-      "error": "There was an error renaming this data source, please try again or contact support.",
+      "error": "There was an error renaming this folder, please try again or contact support.",
       "name": {
         "label": "Data Source Name",
-        "placeholder": "Enter data source name"
+        "placeholder": "Enter folder name"
       }
     },
     "DatasourceDropdownMenu": {
       "menuLabel": "Data source actions",
-      "rename": "Rename data source",
-      "detach": "Detach data source",
-      "delete": "Delete data source"
+      "rename": "Rename folder",
+      "detach": "Detach folder",
+      "delete": "Delete folder"
     },
     "DetachDataSourceModal": {
       "title": "Detach {sourceName}",
-      "trigger": "Detach data source",
+      "trigger": "Detach folder",
       "areYouSure": "Are you sure you want to detach {sourceName}?",
       "confirm": "Detach",
-      "error": "There was an error detaching this data source, please try again or contact support."
+      "error": "There was an error detaching this folder, please try again or contact support."
     },
     "DeleteDataSourceModal": {
-      "title": "Delete data source",
-      "trigger": "Delete data source",
+      "title": "Delete folder",
+      "trigger": "Delete folder",
       "description": "This will permanently delete {sourceName}. This action cannot be undone.",
       "confirm": "Delete",
-      "error": "There was an error deleting this data source, please try again or contact support.",
+      "error": "There was an error deleting this folder, please try again or contact support.",
       "confirmName": {
-        "label": "Type the data source name to confirm",
+        "label": "Type the folder name to confirm",
         "error": "Name does not match"
       }
     },
     "DataSourceSelector": {
-      "createNewDataSource": "Create new data source",
-      "incompatibleWarningTooltip": "This data source's embedding config does not match the agent config, this may lead to the agent not remembering data properly. Open this data source to see more details.",
-      "attachExistingDataSource": "Attach existing data source"
+      "createNewDataSource": "Create new folder",
+      "incompatibleWarningTooltip": "This folder's embedding config does not match the agent config, this may lead to the agent not remembering data properly. Open this folder to see more details.",
+      "attachExistingDataSource": "Attach existing folder"
     },
     "UploadFileModal": {
       "title": "Upload file to {sourceName}"
@@ -2380,7 +2380,7 @@
   },
   "components/StarterKitSelector": {
     "sleeptimeAlert": {
-      "title": "When sleep-time is enabled, additional sleep-time agents are spawned to manage memory and process data sources in the background."
+      "title": "When sleep-time is enabled, additional sleep-time agents are spawned to manage memory and process files in the background."
     },
     "ArchitectureSelector": {
       "title": "Select architecture",
