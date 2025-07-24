@@ -7,6 +7,7 @@ import {
   AuthService,
   BlocksService,
   EmbeddingsService,
+  FoldersService,
   GroupsService,
   HealthService,
   IdentitiesService,
@@ -378,6 +379,182 @@ export const UseSourcesServiceGetFileMetadataKeyFn = (
 ) => [
   useSourcesServiceGetFileMetadataKey,
   ...(queryKey ?? [{ fileId, includeContent, sourceId, userId }]),
+];
+export type FoldersServiceCountFoldersDefaultResponse = Awaited<
+  ReturnType<typeof FoldersService.countFolders>
+>;
+export type FoldersServiceCountFoldersQueryResult<
+  TData = FoldersServiceCountFoldersDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useFoldersServiceCountFoldersKey = 'FoldersServiceCountFolders';
+export const UseFoldersServiceCountFoldersKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useFoldersServiceCountFoldersKey, ...(queryKey ?? [{ userId }])];
+export type FoldersServiceRetrieveFolderDefaultResponse = Awaited<
+  ReturnType<typeof FoldersService.retrieveFolder>
+>;
+export type FoldersServiceRetrieveFolderQueryResult<
+  TData = FoldersServiceRetrieveFolderDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useFoldersServiceRetrieveFolderKey =
+  'FoldersServiceRetrieveFolder';
+export const UseFoldersServiceRetrieveFolderKeyFn = (
+  {
+    folderId,
+    userId,
+  }: {
+    folderId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useFoldersServiceRetrieveFolderKey,
+  ...(queryKey ?? [{ folderId, userId }]),
+];
+export type FoldersServiceGetFolderIdByNameDefaultResponse = Awaited<
+  ReturnType<typeof FoldersService.getFolderIdByName>
+>;
+export type FoldersServiceGetFolderIdByNameQueryResult<
+  TData = FoldersServiceGetFolderIdByNameDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useFoldersServiceGetFolderIdByNameKey =
+  'FoldersServiceGetFolderIdByName';
+export const UseFoldersServiceGetFolderIdByNameKeyFn = (
+  {
+    folderName,
+    userId,
+  }: {
+    folderName: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useFoldersServiceGetFolderIdByNameKey,
+  ...(queryKey ?? [{ folderName, userId }]),
+];
+export type FoldersServiceGetFoldersMetadataDefaultResponse = Awaited<
+  ReturnType<typeof FoldersService.getFoldersMetadata>
+>;
+export type FoldersServiceGetFoldersMetadataQueryResult<
+  TData = FoldersServiceGetFoldersMetadataDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useFoldersServiceGetFoldersMetadataKey =
+  'FoldersServiceGetFoldersMetadata';
+export const UseFoldersServiceGetFoldersMetadataKeyFn = (
+  {
+    includeDetailedPerSourceMetadata,
+    userId,
+  }: {
+    includeDetailedPerSourceMetadata?: boolean;
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [
+  useFoldersServiceGetFoldersMetadataKey,
+  ...(queryKey ?? [{ includeDetailedPerSourceMetadata, userId }]),
+];
+export type FoldersServiceListFoldersDefaultResponse = Awaited<
+  ReturnType<typeof FoldersService.listFolders>
+>;
+export type FoldersServiceListFoldersQueryResult<
+  TData = FoldersServiceListFoldersDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useFoldersServiceListFoldersKey = 'FoldersServiceListFolders';
+export const UseFoldersServiceListFoldersKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useFoldersServiceListFoldersKey, ...(queryKey ?? [{ userId }])];
+export type FoldersServiceGetAgentsForFolderDefaultResponse = Awaited<
+  ReturnType<typeof FoldersService.getAgentsForFolder>
+>;
+export type FoldersServiceGetAgentsForFolderQueryResult<
+  TData = FoldersServiceGetAgentsForFolderDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useFoldersServiceGetAgentsForFolderKey =
+  'FoldersServiceGetAgentsForFolder';
+export const UseFoldersServiceGetAgentsForFolderKeyFn = (
+  {
+    folderId,
+    userId,
+  }: {
+    folderId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useFoldersServiceGetAgentsForFolderKey,
+  ...(queryKey ?? [{ folderId, userId }]),
+];
+export type FoldersServiceListFolderPassagesDefaultResponse = Awaited<
+  ReturnType<typeof FoldersService.listFolderPassages>
+>;
+export type FoldersServiceListFolderPassagesQueryResult<
+  TData = FoldersServiceListFolderPassagesDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useFoldersServiceListFolderPassagesKey =
+  'FoldersServiceListFolderPassages';
+export const UseFoldersServiceListFolderPassagesKeyFn = (
+  {
+    after,
+    before,
+    folderId,
+    limit,
+    userId,
+  }: {
+    after?: string;
+    before?: string;
+    folderId: string;
+    limit?: number;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useFoldersServiceListFolderPassagesKey,
+  ...(queryKey ?? [{ after, before, folderId, limit, userId }]),
+];
+export type FoldersServiceListFolderFilesDefaultResponse = Awaited<
+  ReturnType<typeof FoldersService.listFolderFiles>
+>;
+export type FoldersServiceListFolderFilesQueryResult<
+  TData = FoldersServiceListFolderFilesDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useFoldersServiceListFolderFilesKey =
+  'FoldersServiceListFolderFiles';
+export const UseFoldersServiceListFolderFilesKeyFn = (
+  {
+    after,
+    folderId,
+    includeContent,
+    limit,
+    userId,
+  }: {
+    after?: string;
+    folderId: string;
+    includeContent?: boolean;
+    limit?: number;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useFoldersServiceListFolderFilesKey,
+  ...(queryKey ?? [{ after, folderId, includeContent, limit, userId }]),
 ];
 export type AgentsServiceListAgentsDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgents>
@@ -1790,6 +1967,12 @@ export type SourcesServiceCreateSourceMutationResult = Awaited<
 export type SourcesServiceUploadFileToSourceMutationResult = Awaited<
   ReturnType<typeof SourcesService.uploadFileToSource>
 >;
+export type FoldersServiceCreateFolderMutationResult = Awaited<
+  ReturnType<typeof FoldersService.createFolder>
+>;
+export type FoldersServiceUploadFileToFolderMutationResult = Awaited<
+  ReturnType<typeof FoldersService.uploadFileToFolder>
+>;
 export type AgentsServiceCreateAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.createAgent>
 >;
@@ -1919,6 +2102,9 @@ export type ToolsServiceUpdateMcpServerMutationResult = Awaited<
 export type SourcesServiceModifySourceMutationResult = Awaited<
   ReturnType<typeof SourcesService.modifySource>
 >;
+export type FoldersServiceModifyFolderMutationResult = Awaited<
+  ReturnType<typeof FoldersService.modifyFolder>
+>;
 export type AgentsServiceModifyAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.modifyAgent>
 >;
@@ -2020,6 +2206,12 @@ export type SourcesServiceDeleteSourceMutationResult = Awaited<
 >;
 export type SourcesServiceDeleteFileFromSourceMutationResult = Awaited<
   ReturnType<typeof SourcesService.deleteFileFromSource>
+>;
+export type FoldersServiceDeleteFolderMutationResult = Awaited<
+  ReturnType<typeof FoldersService.deleteFolder>
+>;
+export type FoldersServiceDeleteFileFromFolderMutationResult = Awaited<
+  ReturnType<typeof FoldersService.deleteFileFromFolder>
 >;
 export type AgentsServiceDeleteAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.deleteAgent>

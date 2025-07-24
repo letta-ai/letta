@@ -1821,6 +1821,19 @@ export const $Body_import_agent_serialized = {
   title: 'Body_import_agent_serialized',
 } as const;
 
+export const $Body_upload_file_to_folder = {
+  properties: {
+    file: {
+      type: 'string',
+      format: 'binary',
+      title: 'File',
+    },
+  },
+  type: 'object',
+  required: ['file'],
+  title: 'Body_upload_file_to_folder',
+} as const;
+
 export const $Body_upload_file_to_source = {
   properties: {
     file: {
@@ -4982,6 +4995,295 @@ export const $FileStats = {
   required: ['file_id', 'file_name'],
   title: 'FileStats',
   description: 'File statistics for metadata endpoint',
+} as const;
+
+export const $Folder = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+      description: 'The name of the folder.',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+      description: 'The description of the folder.',
+    },
+    instructions: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Instructions',
+      description: 'Instructions for how to use the folder.',
+    },
+    metadata: {
+      anyOf: [
+        {
+          additionalProperties: true,
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata',
+      description: 'Metadata associated with the folder.',
+    },
+    id: {
+      type: 'string',
+      pattern: '^folder-[a-fA-F0-9]{8}',
+      title: 'Id',
+      description: 'The human-friendly ID of the Folder',
+      examples: ['folder-123e4567-e89b-12d3-a456-426614174000'],
+    },
+    embedding_config: {
+      $ref: '#/components/schemas/EmbeddingConfig',
+      description: 'The embedding configuration used by the folder.',
+    },
+    organization_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Organization Id',
+      description: 'The ID of the organization that created the folder.',
+    },
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this Tool.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this Tool.',
+    },
+    created_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created At',
+      description: 'The timestamp when the folder was created.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the folder was last updated.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['name', 'embedding_config'],
+  title: 'Folder',
+  description: `Representation of a folder, which is a collection of files and passages.
+
+Parameters:
+    id (str): The ID of the folder
+    name (str): The name of the folder.
+    embedding_config (EmbeddingConfig): The embedding configuration used by the folder.
+    user_id (str): The ID of the user that created the folder.
+    metadata (dict): Metadata associated with the folder.
+    description (str): The description of the folder.`,
+} as const;
+
+export const $FolderCreate = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+      description: 'The name of the folder.',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+      description: 'The description of the folder.',
+    },
+    instructions: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Instructions',
+      description: 'Instructions for how to use the folder.',
+    },
+    metadata: {
+      anyOf: [
+        {
+          additionalProperties: true,
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata',
+      description: 'Metadata associated with the folder.',
+    },
+    embedding: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Embedding',
+      description: 'The handle for the embedding config used by the folder.',
+    },
+    embedding_chunk_size: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Embedding Chunk Size',
+      description: 'The chunk size of the embedding.',
+    },
+    embedding_config: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/EmbeddingConfig',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: '(Legacy) The embedding configuration used by the folder.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['name'],
+  title: 'FolderCreate',
+  description: 'Schema for creating a new Folder.',
+} as const;
+
+export const $FolderUpdate = {
+  properties: {
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+      description: 'The name of the folder.',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+      description: 'The description of the folder.',
+    },
+    instructions: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Instructions',
+      description: 'Instructions for how to use the folder.',
+    },
+    metadata: {
+      anyOf: [
+        {
+          additionalProperties: true,
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata',
+      description: 'Metadata associated with the folder.',
+    },
+    embedding_config: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/EmbeddingConfig',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'The embedding configuration used by the folder.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  title: 'FolderUpdate',
+  description: 'Schema for updating an existing Folder.',
 } as const;
 
 export const $Function_Output = {

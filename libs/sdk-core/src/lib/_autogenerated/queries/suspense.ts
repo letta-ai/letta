@@ -6,6 +6,7 @@ import {
   AgentsService,
   BlocksService,
   EmbeddingsService,
+  FoldersService,
   GroupsService,
   HealthService,
   IdentitiesService,
@@ -588,6 +589,294 @@ export const useSourcesServiceGetFileMetadataSuspense = <
         fileId,
         includeContent,
         sourceId,
+        userId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * Count Folders
+ * Count all data folders created by a user.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const useFoldersServiceCountFoldersSuspense = <
+  TData = Common.FoldersServiceCountFoldersDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseFoldersServiceCountFoldersKeyFn({ userId }, queryKey),
+    queryFn: () => FoldersService.countFolders({ userId }) as TData,
+    ...options,
+  });
+/**
+ * Retrieve Folder
+ * Get a folder by ID
+ * @param data The data for the request.
+ * @param data.folderId
+ * @param data.userId
+ * @returns Folder Successful Response
+ * @throws ApiError
+ */
+export const useFoldersServiceRetrieveFolderSuspense = <
+  TData = Common.FoldersServiceRetrieveFolderDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    folderId,
+    userId,
+  }: {
+    folderId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseFoldersServiceRetrieveFolderKeyFn(
+      { folderId, userId },
+      queryKey,
+    ),
+    queryFn: () => FoldersService.retrieveFolder({ folderId, userId }) as TData,
+    ...options,
+  });
+/**
+ * Get Folder Id By Name
+ * Get a folder by name
+ * @param data The data for the request.
+ * @param data.folderName
+ * @param data.userId
+ * @returns string Successful Response
+ * @throws ApiError
+ */
+export const useFoldersServiceGetFolderIdByNameSuspense = <
+  TData = Common.FoldersServiceGetFolderIdByNameDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    folderName,
+    userId,
+  }: {
+    folderName: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseFoldersServiceGetFolderIdByNameKeyFn(
+      { folderName, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      FoldersService.getFolderIdByName({ folderName, userId }) as TData,
+    ...options,
+  });
+/**
+ * Get Folders Metadata
+ * Get aggregated metadata for all folders in an organization.
+ *
+ * Returns structured metadata including:
+ * - Total number of folders
+ * - Total number of files across all folders
+ * - Total size of all files
+ * - Per-source breakdown with file details (file_name, file_size per file) if include_detailed_per_source_metadata is True
+ * @param data The data for the request.
+ * @param data.includeDetailedPerSourceMetadata
+ * @param data.userId
+ * @returns OrganizationSourcesStats Successful Response
+ * @throws ApiError
+ */
+export const useFoldersServiceGetFoldersMetadataSuspense = <
+  TData = Common.FoldersServiceGetFoldersMetadataDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    includeDetailedPerSourceMetadata,
+    userId,
+  }: {
+    includeDetailedPerSourceMetadata?: boolean;
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseFoldersServiceGetFoldersMetadataKeyFn(
+      { includeDetailedPerSourceMetadata, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      FoldersService.getFoldersMetadata({
+        includeDetailedPerSourceMetadata,
+        userId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * List Folders
+ * List all data folders created by a user.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns Folder Successful Response
+ * @throws ApiError
+ */
+export const useFoldersServiceListFoldersSuspense = <
+  TData = Common.FoldersServiceListFoldersDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseFoldersServiceListFoldersKeyFn({ userId }, queryKey),
+    queryFn: () => FoldersService.listFolders({ userId }) as TData,
+    ...options,
+  });
+/**
+ * Get Agents For Folder
+ * Get all agent IDs that have the specified folder attached.
+ * @param data The data for the request.
+ * @param data.folderId
+ * @param data.userId
+ * @returns string Successful Response
+ * @throws ApiError
+ */
+export const useFoldersServiceGetAgentsForFolderSuspense = <
+  TData = Common.FoldersServiceGetAgentsForFolderDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    folderId,
+    userId,
+  }: {
+    folderId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseFoldersServiceGetAgentsForFolderKeyFn(
+      { folderId, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      FoldersService.getAgentsForFolder({ folderId, userId }) as TData,
+    ...options,
+  });
+/**
+ * List Folder Passages
+ * List all passages associated with a data folder.
+ * @param data The data for the request.
+ * @param data.folderId
+ * @param data.after Message after which to retrieve the returned messages.
+ * @param data.before Message before which to retrieve the returned messages.
+ * @param data.limit Maximum number of messages to retrieve.
+ * @param data.userId
+ * @returns Passage Successful Response
+ * @throws ApiError
+ */
+export const useFoldersServiceListFolderPassagesSuspense = <
+  TData = Common.FoldersServiceListFolderPassagesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    after,
+    before,
+    folderId,
+    limit,
+    userId,
+  }: {
+    after?: string;
+    before?: string;
+    folderId: string;
+    limit?: number;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseFoldersServiceListFolderPassagesKeyFn(
+      { after, before, folderId, limit, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      FoldersService.listFolderPassages({
+        after,
+        before,
+        folderId,
+        limit,
+        userId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * List Folder Files
+ * List paginated files associated with a data folder.
+ * @param data The data for the request.
+ * @param data.folderId
+ * @param data.limit Number of files to return
+ * @param data.after Pagination cursor to fetch the next set of results
+ * @param data.includeContent Whether to include full file content
+ * @param data.userId
+ * @returns FileMetadata Successful Response
+ * @throws ApiError
+ */
+export const useFoldersServiceListFolderFilesSuspense = <
+  TData = Common.FoldersServiceListFolderFilesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    after,
+    folderId,
+    includeContent,
+    limit,
+    userId,
+  }: {
+    after?: string;
+    folderId: string;
+    includeContent?: boolean;
+    limit?: number;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseFoldersServiceListFolderFilesKeyFn(
+      { after, folderId, includeContent, limit, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      FoldersService.listFolderFiles({
+        after,
+        folderId,
+        includeContent,
+        limit,
         userId,
       }) as TData,
     ...options,

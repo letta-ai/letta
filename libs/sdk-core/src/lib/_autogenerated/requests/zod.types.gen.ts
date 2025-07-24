@@ -1781,6 +1781,13 @@ export const Body_import_agent_serialized = z.object({
   file: z.string(),
 });
 
+export type Body_upload_file_to_folder = z.infer<
+  typeof Body_upload_file_to_folder
+>;
+export const Body_upload_file_to_folder = z.object({
+  file: z.string(),
+});
+
 export type Body_upload_file_to_source = z.infer<
   typeof Body_upload_file_to_source
 >;
@@ -3856,6 +3863,153 @@ export const FileStats = z.object({
       z.null(),
       z.array(z.union([z.number(), z.null()])),
       z.undefined(),
+    ])
+    .optional(),
+});
+
+export type Folder = z.infer<typeof Folder>;
+export const Folder = z.object({
+  name: z.string(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  instructions: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.union([z.string(), z.undefined()]).optional(),
+  embedding_config: EmbeddingConfig,
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  last_updated_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  updated_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type FolderCreate = z.infer<typeof FolderCreate>;
+export const FolderCreate = z.object({
+  name: z.string(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  instructions: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding_chunk_size: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding_config: z
+    .union([
+      EmbeddingConfig,
+      z.null(),
+      z.array(z.union([EmbeddingConfig, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type FolderUpdate = z.infer<typeof FolderUpdate>;
+export const FolderUpdate = z.object({
+  name: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  description: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  instructions: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  metadata: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+  embedding_config: z
+    .union([
+      EmbeddingConfig,
+      z.null(),
+      z.array(z.union([EmbeddingConfig, z.null()])),
     ])
     .optional(),
 });
@@ -6971,6 +7125,257 @@ export const delete_Delete_file_from_source = {
   response: z.unknown(),
 };
 
+export type get_Count_folders = typeof get_Count_folders;
+export const get_Count_folders = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/folders/count'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.number(),
+};
+
+export type get_Retrieve_folder = typeof get_Retrieve_folder;
+export const get_Retrieve_folder = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/folders/{folder_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      folder_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Folder,
+};
+
+export type patch_Modify_folder = typeof patch_Modify_folder;
+export const patch_Modify_folder = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/folders/{folder_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      folder_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: FolderUpdate,
+  }),
+  response: Folder,
+};
+
+export type delete_Delete_folder = typeof delete_Delete_folder;
+export const delete_Delete_folder = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/folders/{folder_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      folder_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.unknown(),
+};
+
+export type get_Get_folder_id_by_name = typeof get_Get_folder_id_by_name;
+export const get_Get_folder_id_by_name = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/folders/name/{folder_name}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      folder_name: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.string(),
+};
+
+export type get_Get_folders_metadata = typeof get_Get_folders_metadata;
+export const get_Get_folders_metadata = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/folders/metadata'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      include_detailed_per_source_metadata: z.boolean().optional(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: OrganizationSourcesStats,
+};
+
+export type get_List_folders = typeof get_List_folders;
+export const get_List_folders = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/folders/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Folder),
+};
+
+export type post_Create_folder = typeof post_Create_folder;
+export const post_Create_folder = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/folders/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: FolderCreate,
+  }),
+  response: Folder,
+};
+
+export type post_Upload_file_to_folder = typeof post_Upload_file_to_folder;
+export const post_Upload_file_to_folder = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/folders/{folder_id}/upload'),
+  requestFormat: z.literal('form-data'),
+  parameters: z.object({
+    query: z.object({
+      duplicate_handling: z
+        .union([z.literal('skip'), z.literal('error'), z.literal('suffix')])
+        .optional(),
+    }),
+    path: z.object({
+      folder_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: Body_upload_file_to_folder,
+  }),
+  response: FileMetadata,
+};
+
+export type get_Get_agents_for_folder = typeof get_Get_agents_for_folder;
+export const get_Get_agents_for_folder = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/folders/{folder_id}/agents'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      folder_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(z.string()),
+};
+
+export type get_List_folder_passages = typeof get_List_folder_passages;
+export const get_List_folder_passages = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/folders/{folder_id}/passages'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z.number().optional(),
+    }),
+    path: z.object({
+      folder_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Passage),
+};
+
+export type get_List_folder_files = typeof get_List_folder_files;
+export const get_List_folder_files = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/folders/{folder_id}/files'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      limit: z.number().optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      include_content: z.boolean().optional(),
+    }),
+    path: z.object({
+      folder_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(FileMetadata),
+};
+
+export type delete_Delete_file_from_folder =
+  typeof delete_Delete_file_from_folder;
+export const delete_Delete_file_from_folder = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/folders/{folder_id}/{file_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      folder_id: z.string(),
+      file_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.unknown(),
+};
+
 export type get_List_agents = typeof get_List_agents;
 export const get_List_agents = {
   method: z.literal('GET'),
@@ -9593,6 +9998,8 @@ export const EndpointByMethod = {
     '/v1/tools/mcp/servers/{mcp_server_name}': delete_Delete_mcp_server,
     '/v1/sources/{source_id}': delete_Delete_source,
     '/v1/sources/{source_id}/{file_id}': delete_Delete_file_from_source,
+    '/v1/folders/{folder_id}': delete_Delete_folder,
+    '/v1/folders/{folder_id}/{file_id}': delete_Delete_file_from_folder,
     '/v1/agents/{agent_id}': delete_Delete_agent,
     '/v1/agents/{agent_id}/archival-memory/{memory_id}': delete_Delete_passage,
     '/v1/groups/{group_id}': delete_Delete_group,
@@ -9627,6 +10034,14 @@ export const EndpointByMethod = {
     '/v1/sources/{source_id}/passages': get_List_source_passages,
     '/v1/sources/{source_id}/files': get_List_source_files,
     '/v1/sources/{source_id}/files/{file_id}': get_Get_file_metadata,
+    '/v1/folders/count': get_Count_folders,
+    '/v1/folders/{folder_id}': get_Retrieve_folder,
+    '/v1/folders/name/{folder_name}': get_Get_folder_id_by_name,
+    '/v1/folders/metadata': get_Get_folders_metadata,
+    '/v1/folders/': get_List_folders,
+    '/v1/folders/{folder_id}/agents': get_Get_agents_for_folder,
+    '/v1/folders/{folder_id}/passages': get_List_folder_passages,
+    '/v1/folders/{folder_id}/files': get_List_folder_files,
     '/v1/agents/': get_List_agents,
     '/v1/agents/count': get_Count_agents,
     '/v1/agents/{agent_id}/export': get_Export_agent_serialized,
@@ -9684,6 +10099,7 @@ export const EndpointByMethod = {
     '/v1/tools/{tool_id}': patch_Modify_tool,
     '/v1/tools/mcp/servers/{mcp_server_name}': patch_Update_mcp_server,
     '/v1/sources/{source_id}': patch_Modify_source,
+    '/v1/folders/{folder_id}': patch_Modify_folder,
     '/v1/agents/{agent_id}': patch_Modify_agent,
     '/v1/agents/{agent_id}/tools/attach/{tool_id}': patch_Attach_tool,
     '/v1/agents/{agent_id}/tools/detach/{tool_id}': patch_Detach_tool,
@@ -9732,6 +10148,8 @@ export const EndpointByMethod = {
     '/v1/tools/generate-tool': post_Generate_tool,
     '/v1/sources/': post_Create_source,
     '/v1/sources/{source_id}/upload': post_Upload_file_to_source,
+    '/v1/folders/': post_Create_folder,
+    '/v1/folders/{folder_id}/upload': post_Upload_file_to_folder,
     '/v1/agents/': post_Create_agent,
     '/v1/agents/import': post_Import_agent_serialized,
     '/v1/agents/{agent_id}/archival-memory': post_Create_passage,

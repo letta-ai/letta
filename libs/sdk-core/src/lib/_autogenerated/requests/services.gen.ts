@@ -74,6 +74,32 @@ import type {
   GetFileMetadataResponse,
   DeleteFileFromSourceData,
   DeleteFileFromSourceResponse,
+  CountFoldersData,
+  CountFoldersResponse,
+  RetrieveFolderData,
+  RetrieveFolderResponse,
+  ModifyFolderData,
+  ModifyFolderResponse,
+  DeleteFolderData,
+  DeleteFolderResponse,
+  GetFolderIdByNameData,
+  GetFolderIdByNameResponse,
+  GetFoldersMetadataData,
+  GetFoldersMetadataResponse,
+  ListFoldersData,
+  ListFoldersResponse,
+  CreateFolderData,
+  CreateFolderResponse,
+  UploadFileToFolderData,
+  UploadFileToFolderResponse,
+  GetAgentsForFolderData,
+  GetAgentsForFolderResponse,
+  ListFolderPassagesData,
+  ListFolderPassagesResponse,
+  ListFolderFilesData,
+  ListFolderFilesResponse,
+  DeleteFileFromFolderData,
+  DeleteFileFromFolderResponse,
   ListAgentsData,
   ListAgentsResponse,
   CreateAgentData,
@@ -1240,6 +1266,372 @@ export class SourcesService {
       url: '/v1/sources/{source_id}/{file_id}',
       path: {
         source_id: data.sourceId,
+        file_id: data.fileId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+}
+
+export class FoldersService {
+  /**
+   * Count Folders
+   * Count all data folders created by a user.
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns number Successful Response
+   * @throws ApiError
+   */
+  public static countFolders(
+    data: CountFoldersData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<CountFoldersResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/folders/count',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Retrieve Folder
+   * Get a folder by ID
+   * @param data The data for the request.
+   * @param data.folderId
+   * @param data.userId
+   * @returns Folder Successful Response
+   * @throws ApiError
+   */
+  public static retrieveFolder(
+    data: RetrieveFolderData,
+    headers?: { user_id: string },
+  ): CancelablePromise<RetrieveFolderResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/folders/{folder_id}',
+      path: {
+        folder_id: data.folderId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Modify Folder
+   * Update the name or documentation of an existing data folder.
+   * @param data The data for the request.
+   * @param data.folderId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Folder Successful Response
+   * @throws ApiError
+   */
+  public static modifyFolder(
+    data: ModifyFolderData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ModifyFolderResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/folders/{folder_id}',
+      path: {
+        folder_id: data.folderId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Folder
+   * Delete a data folder.
+   * @param data The data for the request.
+   * @param data.folderId
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static deleteFolder(
+    data: DeleteFolderData,
+    headers?: { user_id: string },
+  ): CancelablePromise<DeleteFolderResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/folders/{folder_id}',
+      path: {
+        folder_id: data.folderId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Folder Id By Name
+   * Get a folder by name
+   * @param data The data for the request.
+   * @param data.folderName
+   * @param data.userId
+   * @returns string Successful Response
+   * @throws ApiError
+   */
+  public static getFolderIdByName(
+    data: GetFolderIdByNameData,
+    headers?: { user_id: string },
+  ): CancelablePromise<GetFolderIdByNameResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/folders/name/{folder_name}',
+      path: {
+        folder_name: data.folderName,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Folders Metadata
+   * Get aggregated metadata for all folders in an organization.
+   *
+   * Returns structured metadata including:
+   * - Total number of folders
+   * - Total number of files across all folders
+   * - Total size of all files
+   * - Per-source breakdown with file details (file_name, file_size per file) if include_detailed_per_source_metadata is True
+   * @param data The data for the request.
+   * @param data.includeDetailedPerSourceMetadata
+   * @param data.userId
+   * @returns OrganizationSourcesStats Successful Response
+   * @throws ApiError
+   */
+  public static getFoldersMetadata(
+    data: GetFoldersMetadataData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<GetFoldersMetadataResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/folders/metadata',
+      query: {
+        include_detailed_per_source_metadata:
+          data.includeDetailedPerSourceMetadata,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Folders
+   * List all data folders created by a user.
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns Folder Successful Response
+   * @throws ApiError
+   */
+  public static listFolders(
+    data: ListFoldersData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<ListFoldersResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/folders/',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Folder
+   * Create a new data folder.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Folder Successful Response
+   * @throws ApiError
+   */
+  public static createFolder(
+    data: CreateFolderData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CreateFolderResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/folders/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Upload File To Folder
+   * Upload a file to a data folder.
+   * @param data The data for the request.
+   * @param data.folderId
+   * @param data.formData
+   * @param data.duplicateHandling How to handle duplicate filenames
+   * @param data.userId
+   * @returns FileMetadata Successful Response
+   * @throws ApiError
+   */
+  public static uploadFileToFolder(
+    data: UploadFileToFolderData,
+    headers?: { user_id: string },
+  ): CancelablePromise<UploadFileToFolderResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/folders/{folder_id}/upload',
+      path: {
+        folder_id: data.folderId,
+      },
+      query: {
+        duplicate_handling: data.duplicateHandling,
+      },
+      formData: data.formData,
+      mediaType: 'multipart/form-data',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Agents For Folder
+   * Get all agent IDs that have the specified folder attached.
+   * @param data The data for the request.
+   * @param data.folderId
+   * @param data.userId
+   * @returns string Successful Response
+   * @throws ApiError
+   */
+  public static getAgentsForFolder(
+    data: GetAgentsForFolderData,
+    headers?: { user_id: string },
+  ): CancelablePromise<GetAgentsForFolderResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/folders/{folder_id}/agents',
+      path: {
+        folder_id: data.folderId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Folder Passages
+   * List all passages associated with a data folder.
+   * @param data The data for the request.
+   * @param data.folderId
+   * @param data.after Message after which to retrieve the returned messages.
+   * @param data.before Message before which to retrieve the returned messages.
+   * @param data.limit Maximum number of messages to retrieve.
+   * @param data.userId
+   * @returns Passage Successful Response
+   * @throws ApiError
+   */
+  public static listFolderPassages(
+    data: ListFolderPassagesData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ListFolderPassagesResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/folders/{folder_id}/passages',
+      path: {
+        folder_id: data.folderId,
+      },
+      query: {
+        after: data.after,
+        before: data.before,
+        limit: data.limit,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Folder Files
+   * List paginated files associated with a data folder.
+   * @param data The data for the request.
+   * @param data.folderId
+   * @param data.limit Number of files to return
+   * @param data.after Pagination cursor to fetch the next set of results
+   * @param data.includeContent Whether to include full file content
+   * @param data.userId
+   * @returns FileMetadata Successful Response
+   * @throws ApiError
+   */
+  public static listFolderFiles(
+    data: ListFolderFilesData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ListFolderFilesResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/folders/{folder_id}/files',
+      path: {
+        folder_id: data.folderId,
+      },
+      query: {
+        limit: data.limit,
+        after: data.after,
+        include_content: data.includeContent,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete File From Folder
+   * Delete a file from a folder.
+   * @param data The data for the request.
+   * @param data.folderId
+   * @param data.fileId
+   * @param data.userId
+   * @returns void Successful Response
+   * @throws ApiError
+   */
+  public static deleteFileFromFolder(
+    data: DeleteFileFromFolderData,
+    headers?: { user_id: string },
+  ): CancelablePromise<DeleteFileFromFolderResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/folders/{folder_id}/{file_id}',
+      path: {
+        folder_id: data.folderId,
         file_id: data.fileId,
       },
       errors: {

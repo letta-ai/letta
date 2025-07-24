@@ -615,6 +615,10 @@ export type Body_import_agent_serialized = {
   file: Blob | File;
 };
 
+export type Body_upload_file_to_folder = {
+  file: Blob | File;
+};
+
 export type Body_upload_file_to_source = {
   file: Blob | File;
 };
@@ -1705,6 +1709,130 @@ export type FileStats = {
    * Size of the file in bytes
    */
   file_size?: number | null;
+};
+
+/**
+ * Representation of a folder, which is a collection of files and passages.
+ *
+ * Parameters:
+ * id (str): The ID of the folder
+ * name (str): The name of the folder.
+ * embedding_config (EmbeddingConfig): The embedding configuration used by the folder.
+ * user_id (str): The ID of the user that created the folder.
+ * metadata (dict): Metadata associated with the folder.
+ * description (str): The description of the folder.
+ */
+export type Folder = {
+  /**
+   * The name of the folder.
+   */
+  name: string;
+  /**
+   * The description of the folder.
+   */
+  description?: string | null;
+  /**
+   * Instructions for how to use the folder.
+   */
+  instructions?: string | null;
+  /**
+   * Metadata associated with the folder.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * The human-friendly ID of the Folder
+   */
+  id?: string;
+  /**
+   * The embedding configuration used by the folder.
+   */
+  embedding_config: EmbeddingConfig;
+  /**
+   * The ID of the organization that created the folder.
+   */
+  organization_id?: string | null;
+  /**
+   * The id of the user that made this Tool.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this Tool.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * The timestamp when the folder was created.
+   */
+  created_at?: string | null;
+  /**
+   * The timestamp when the folder was last updated.
+   */
+  updated_at?: string | null;
+};
+
+/**
+ * Schema for creating a new Folder.
+ */
+export type FolderCreate = {
+  /**
+   * The name of the folder.
+   */
+  name: string;
+  /**
+   * The description of the folder.
+   */
+  description?: string | null;
+  /**
+   * Instructions for how to use the folder.
+   */
+  instructions?: string | null;
+  /**
+   * Metadata associated with the folder.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * The handle for the embedding config used by the folder.
+   */
+  embedding?: string | null;
+  /**
+   * The chunk size of the embedding.
+   */
+  embedding_chunk_size?: number | null;
+  /**
+   * (Legacy) The embedding configuration used by the folder.
+   */
+  embedding_config?: EmbeddingConfig | null;
+};
+
+/**
+ * Schema for updating an existing Folder.
+ */
+export type FolderUpdate = {
+  /**
+   * The name of the folder.
+   */
+  name?: string | null;
+  /**
+   * The description of the folder.
+   */
+  description?: string | null;
+  /**
+   * Instructions for how to use the folder.
+   */
+  instructions?: string | null;
+  /**
+   * Metadata associated with the folder.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * The embedding configuration used by the folder.
+   */
+  embedding_config?: EmbeddingConfig | null;
 };
 
 export type Function_Output = {
@@ -5108,6 +5236,126 @@ export type DeleteFileFromSourceData = {
 
 export type DeleteFileFromSourceResponse = void;
 
+export type CountFoldersData = {
+  userId?: string | null;
+};
+
+export type CountFoldersResponse = number;
+
+export type RetrieveFolderData = {
+  folderId: string;
+  userId?: string | null;
+};
+
+export type RetrieveFolderResponse = Folder;
+
+export type ModifyFolderData = {
+  folderId: string;
+  requestBody: FolderUpdate;
+  userId?: string | null;
+};
+
+export type ModifyFolderResponse = Folder;
+
+export type DeleteFolderData = {
+  folderId: string;
+  userId?: string | null;
+};
+
+export type DeleteFolderResponse = unknown;
+
+export type GetFolderIdByNameData = {
+  folderName: string;
+  userId?: string | null;
+};
+
+export type GetFolderIdByNameResponse = string;
+
+export type GetFoldersMetadataData = {
+  includeDetailedPerSourceMetadata?: boolean;
+  userId?: string | null;
+};
+
+export type GetFoldersMetadataResponse = OrganizationSourcesStats;
+
+export type ListFoldersData = {
+  userId?: string | null;
+};
+
+export type ListFoldersResponse = Array<Folder>;
+
+export type CreateFolderData = {
+  requestBody: FolderCreate;
+  userId?: string | null;
+};
+
+export type CreateFolderResponse = Folder;
+
+export type UploadFileToFolderData = {
+  /**
+   * How to handle duplicate filenames
+   */
+  duplicateHandling?: DuplicateFileHandling;
+  folderId: string;
+  formData: Body_upload_file_to_folder;
+  userId?: string | null;
+};
+
+export type UploadFileToFolderResponse = FileMetadata;
+
+export type GetAgentsForFolderData = {
+  folderId: string;
+  userId?: string | null;
+};
+
+export type GetAgentsForFolderResponse = Array<string>;
+
+export type ListFolderPassagesData = {
+  /**
+   * Message after which to retrieve the returned messages.
+   */
+  after?: string | null;
+  /**
+   * Message before which to retrieve the returned messages.
+   */
+  before?: string | null;
+  folderId: string;
+  /**
+   * Maximum number of messages to retrieve.
+   */
+  limit?: number;
+  userId?: string | null;
+};
+
+export type ListFolderPassagesResponse = Array<Passage>;
+
+export type ListFolderFilesData = {
+  /**
+   * Pagination cursor to fetch the next set of results
+   */
+  after?: string | null;
+  folderId: string;
+  /**
+   * Whether to include full file content
+   */
+  includeContent?: boolean;
+  /**
+   * Number of files to return
+   */
+  limit?: number;
+  userId?: string | null;
+};
+
+export type ListFolderFilesResponse = Array<FileMetadata>;
+
+export type DeleteFileFromFolderData = {
+  fileId: string;
+  folderId: string;
+  userId?: string | null;
+};
+
+export type DeleteFileFromFolderResponse = void;
+
 export type ListAgentsData = {
   /**
    * Cursor for pagination
@@ -6928,6 +7176,195 @@ export type $OpenApiTs = {
   '/v1/sources/{source_id}/{file_id}': {
     delete: {
       req: DeleteFileFromSourceData;
+      res: {
+        /**
+         * Successful Response
+         */
+        204: void;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/folders/count': {
+    get: {
+      req: CountFoldersData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: number;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/folders/{folder_id}': {
+    get: {
+      req: RetrieveFolderData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Folder;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    patch: {
+      req: ModifyFolderData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Folder;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    delete: {
+      req: DeleteFolderData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: unknown;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/folders/name/{folder_name}': {
+    get: {
+      req: GetFolderIdByNameData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: string;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/folders/metadata': {
+    get: {
+      req: GetFoldersMetadataData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: OrganizationSourcesStats;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/folders/': {
+    get: {
+      req: ListFoldersData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Folder>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    post: {
+      req: CreateFolderData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Folder;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/folders/{folder_id}/upload': {
+    post: {
+      req: UploadFileToFolderData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: FileMetadata;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/folders/{folder_id}/agents': {
+    get: {
+      req: GetAgentsForFolderData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<string>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/folders/{folder_id}/passages': {
+    get: {
+      req: ListFolderPassagesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Passage>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/folders/{folder_id}/files': {
+    get: {
+      req: ListFolderFilesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<FileMetadata>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/folders/{folder_id}/{file_id}': {
+    delete: {
+      req: DeleteFileFromFolderData;
       res: {
         /**
          * Successful Response

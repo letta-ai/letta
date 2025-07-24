@@ -6,6 +6,7 @@ import {
   AgentsService,
   BlocksService,
   EmbeddingsService,
+  FoldersService,
   GroupsService,
   HealthService,
   IdentitiesService,
@@ -489,6 +490,247 @@ export const prefetchUseSourcesServiceGetFileMetadata = (
         fileId,
         includeContent,
         sourceId,
+        userId,
+      }),
+  });
+/**
+ * Count Folders
+ * Count all data folders created by a user.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseFoldersServiceCountFolders = (
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseFoldersServiceCountFoldersKeyFn({ userId }),
+    queryFn: () => FoldersService.countFolders({ userId }),
+  });
+/**
+ * Retrieve Folder
+ * Get a folder by ID
+ * @param data The data for the request.
+ * @param data.folderId
+ * @param data.userId
+ * @returns Folder Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseFoldersServiceRetrieveFolder = (
+  queryClient: QueryClient,
+  {
+    folderId,
+    userId,
+  }: {
+    folderId: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseFoldersServiceRetrieveFolderKeyFn({ folderId, userId }),
+    queryFn: () => FoldersService.retrieveFolder({ folderId, userId }),
+  });
+/**
+ * Get Folder Id By Name
+ * Get a folder by name
+ * @param data The data for the request.
+ * @param data.folderName
+ * @param data.userId
+ * @returns string Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseFoldersServiceGetFolderIdByName = (
+  queryClient: QueryClient,
+  {
+    folderName,
+    userId,
+  }: {
+    folderName: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseFoldersServiceGetFolderIdByNameKeyFn({
+      folderName,
+      userId,
+    }),
+    queryFn: () => FoldersService.getFolderIdByName({ folderName, userId }),
+  });
+/**
+ * Get Folders Metadata
+ * Get aggregated metadata for all folders in an organization.
+ *
+ * Returns structured metadata including:
+ * - Total number of folders
+ * - Total number of files across all folders
+ * - Total size of all files
+ * - Per-source breakdown with file details (file_name, file_size per file) if include_detailed_per_source_metadata is True
+ * @param data The data for the request.
+ * @param data.includeDetailedPerSourceMetadata
+ * @param data.userId
+ * @returns OrganizationSourcesStats Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseFoldersServiceGetFoldersMetadata = (
+  queryClient: QueryClient,
+  {
+    includeDetailedPerSourceMetadata,
+    userId,
+  }: {
+    includeDetailedPerSourceMetadata?: boolean;
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseFoldersServiceGetFoldersMetadataKeyFn({
+      includeDetailedPerSourceMetadata,
+      userId,
+    }),
+    queryFn: () =>
+      FoldersService.getFoldersMetadata({
+        includeDetailedPerSourceMetadata,
+        userId,
+      }),
+  });
+/**
+ * List Folders
+ * List all data folders created by a user.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns Folder Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseFoldersServiceListFolders = (
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseFoldersServiceListFoldersKeyFn({ userId }),
+    queryFn: () => FoldersService.listFolders({ userId }),
+  });
+/**
+ * Get Agents For Folder
+ * Get all agent IDs that have the specified folder attached.
+ * @param data The data for the request.
+ * @param data.folderId
+ * @param data.userId
+ * @returns string Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseFoldersServiceGetAgentsForFolder = (
+  queryClient: QueryClient,
+  {
+    folderId,
+    userId,
+  }: {
+    folderId: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseFoldersServiceGetAgentsForFolderKeyFn({
+      folderId,
+      userId,
+    }),
+    queryFn: () => FoldersService.getAgentsForFolder({ folderId, userId }),
+  });
+/**
+ * List Folder Passages
+ * List all passages associated with a data folder.
+ * @param data The data for the request.
+ * @param data.folderId
+ * @param data.after Message after which to retrieve the returned messages.
+ * @param data.before Message before which to retrieve the returned messages.
+ * @param data.limit Maximum number of messages to retrieve.
+ * @param data.userId
+ * @returns Passage Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseFoldersServiceListFolderPassages = (
+  queryClient: QueryClient,
+  {
+    after,
+    before,
+    folderId,
+    limit,
+    userId,
+  }: {
+    after?: string;
+    before?: string;
+    folderId: string;
+    limit?: number;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseFoldersServiceListFolderPassagesKeyFn({
+      after,
+      before,
+      folderId,
+      limit,
+      userId,
+    }),
+    queryFn: () =>
+      FoldersService.listFolderPassages({
+        after,
+        before,
+        folderId,
+        limit,
+        userId,
+      }),
+  });
+/**
+ * List Folder Files
+ * List paginated files associated with a data folder.
+ * @param data The data for the request.
+ * @param data.folderId
+ * @param data.limit Number of files to return
+ * @param data.after Pagination cursor to fetch the next set of results
+ * @param data.includeContent Whether to include full file content
+ * @param data.userId
+ * @returns FileMetadata Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseFoldersServiceListFolderFiles = (
+  queryClient: QueryClient,
+  {
+    after,
+    folderId,
+    includeContent,
+    limit,
+    userId,
+  }: {
+    after?: string;
+    folderId: string;
+    includeContent?: boolean;
+    limit?: number;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseFoldersServiceListFolderFilesKeyFn({
+      after,
+      folderId,
+      includeContent,
+      limit,
+      userId,
+    }),
+    queryFn: () =>
+      FoldersService.listFolderFiles({
+        after,
+        folderId,
+        includeContent,
+        limit,
         userId,
       }),
   });
