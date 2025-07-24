@@ -12,7 +12,7 @@ class BaseFolder(LettaBase):
     Shared attributes across all folder schemas.
     """
 
-    __id_prefix__ = "folder"
+    __id_prefix__ = "source"  # TODO: change to "folder"
 
     # Core folder fields
     name: str = Field(..., description="The name of the folder.")

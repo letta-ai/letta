@@ -20,8 +20,9 @@ from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import DuplicateFileHandling, FileProcessingStatus
 from letta.schemas.file import FileMetadata
-from letta.schemas.folder import Folder, FolderCreate, FolderUpdate
+from letta.schemas.folder import Folder
 from letta.schemas.passage import Passage
+from letta.schemas.source import Source, SourceCreate, SourceUpdate
 from letta.schemas.source_metadata import OrganizationSourcesStats
 from letta.schemas.user import User
 from letta.server.rest_api.utils import get_letta_server
@@ -125,7 +126,7 @@ async def list_folders(
 
 @router.post("/", response_model=Folder, operation_id="create_folder")
 async def create_folder(
-    folder_create: FolderCreate,
+    folder_create: SourceCreate,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -144,7 +145,7 @@ async def create_folder(
             embedding_chunk_size=folder_create.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
             actor=actor,
         )
-    folder = Folder(
+    folder = Source(
         name=folder_create.name,
         embedding_config=folder_create.embedding_config,
         description=folder_create.description,
@@ -157,7 +158,7 @@ async def create_folder(
 @router.patch("/{folder_id}", response_model=Folder, operation_id="modify_folder")
 async def modify_folder(
     folder_id: str,
-    folder: FolderUpdate,
+    folder: SourceUpdate,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
