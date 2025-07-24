@@ -278,6 +278,10 @@ class Settings(BaseSettings):
     pinecone_agent_index: Optional[str] = "recall"
     upsert_pinecone_indices: bool = False
 
+    # File processing timeout settings
+    file_processing_timeout_minutes: int = 30
+    file_processing_timeout_error_message: str = "File processing timed out after {} minutes. Please try again."
+
     @property
     def letta_pg_uri(self) -> str:
         if self.pg_uri:
