@@ -21,13 +21,25 @@ const createAgentsFromTemplate = c.mutation({
   }),
   body: z.object({
     tags: z
-      .array(z.string())
+      .array(
+        z.string().regex(/^[a-zA-Z0-9-_ ]*$/, {
+          message:
+            'Tags can only contain alphanumeric characters, spaces, dashes, and underscores',
+        }),
+      )
       .optional()
       .openapi({ description: 'The tags to assign to the agent' }),
-    agent_name: z.string().optional().openapi({
-      description:
-        'The name of the agent, optional otherwise a random one will be assigned',
-    }),
+    agent_name: z
+      .string()
+      .regex(/^[a-zA-Z0-9-_ ]*$/, {
+        message:
+          'Agent name can only contain alphanumeric characters, spaces, dashes, and underscores',
+      })
+      .optional()
+      .openapi({
+        description:
+          'The name of the agent, optional otherwise a random one will be assigned',
+      }),
     initial_message_sequence: z
       .object({
         role: z.enum(['user', 'system', 'assistant']),
