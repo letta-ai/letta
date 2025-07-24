@@ -99,6 +99,62 @@ paths:
         - sources
         - files
       x-fern-sdk-method-name: delete
+  /v1/folders/{folder_id}:
+    get:
+      x-fern-sdk-group-name:
+        - folders
+      x-fern-sdk-method-name: retrieve
+    delete:
+      x-fern-sdk-group-name:
+        - folders
+      x-fern-sdk-method-name: delete
+    patch:
+      x-fern-sdk-group-name:
+        - folders
+      x-fern-sdk-method-name: modify
+  /v1/folders/name/{folder_name}:
+    get:
+      x-fern-sdk-group-name:
+        - folders
+      x-fern-sdk-method-name: retrieve_by_name
+  /v1/folders/:
+    get:
+      x-fern-sdk-group-name:
+        - folders
+      x-fern-sdk-method-name: list
+    post:
+      x-fern-sdk-group-name:
+        - folders
+      x-fern-sdk-method-name: create
+  /v1/folders/count:
+    get:
+      x-fern-sdk-group-name:
+        - folders
+      x-fern-sdk-method-name: count
+  /v1/folders/{folder_id}/upload:
+    post:
+      x-fern-sdk-group-name:
+        - folders
+        - files
+      x-fern-sdk-method-name: upload
+  /v1/folders/{folder_id}/passages:
+    get:
+      x-fern-sdk-group-name:
+        - folders
+        - passages
+      x-fern-sdk-method-name: list
+  /v1/folders/{folder_id}/files:
+    get:
+      x-fern-sdk-group-name:
+        - folders
+        - files
+      x-fern-sdk-method-name: list
+  /v1/folders/{folder_id}/{file_id}:
+    delete:
+      x-fern-sdk-group-name:
+        - folders
+        - files
+      x-fern-sdk-method-name: delete
   /v1/agents/:
     get:
       x-fern-sdk-group-name:
@@ -484,6 +540,46 @@ paths:
           required: true
           schema:
             type: string
+  /v1/agents/{agent_id}/folders:
+    get:
+      x-fern-sdk-group-name:
+        - agents
+        - folders
+      x-fern-sdk-method-name: list
+  /v1/agents/{agent_id}/folders/attach/{folder_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - folders
+      x-fern-sdk-method-name: attach
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: folder_id
+          in: path
+          required: true
+          schema:
+            type: string
+  /v1/agents/{agent_id}/folders/detach/{folder_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - folders
+      x-fern-sdk-method-name: detach
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: folder_id
+          in: path
+          required: true
+          schema:
+            type: string
   /v1/agents/import:
     post:
       x-fern-sdk-group-name:
@@ -827,3 +923,21 @@ paths:
       x-fern-sdk-group-name:
         - templates
       x-fern-sdk-method-name: list
+  /v1/agents/{agent_id}/files/{file_id}/close:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - files
+      x-fern-sdk-method-name: close
+  /v1/agents/{agent_id}/files/{file_id}/open:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - files
+      x-fern-sdk-method-name: open
+  /v1/agents/{agent_id}/files/close-all:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - files
+      x-fern-sdk-method-name: close_all
