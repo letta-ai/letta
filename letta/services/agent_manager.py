@@ -1587,6 +1587,7 @@ class AgentManager:
             previous_message_count=num_messages - len(agent_state.message_ids),
             archival_memory_size=num_archival_memories,
             sources=agent_state.sources,
+            max_files_open=agent_state.max_files_open,
         )
 
         diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
@@ -1644,7 +1645,9 @@ class AgentManager:
         # note: we only update the system prompt if the core memory is changed
         # this means that the archival/recall memory statistics may be someout out of date
         curr_memory_str = agent_state.memory.compile(
-            sources=agent_state.sources, tool_usage_rules=tool_rules_solver.compile_tool_rule_prompts()
+            sources=agent_state.sources,
+            tool_usage_rules=tool_rules_solver.compile_tool_rule_prompts(),
+            max_files_open=agent_state.max_files_open,
         )
         if curr_memory_str in curr_system_message_openai["content"] and not force:
             # NOTE: could this cause issues if a block is removed? (substring match would still work)
@@ -1672,6 +1675,7 @@ class AgentManager:
             archival_memory_size=num_archival_memories,
             tool_rules_solver=tool_rules_solver,
             sources=agent_state.sources,
+            max_files_open=agent_state.max_files_open,
         )
 
         diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
@@ -1831,7 +1835,11 @@ class AgentManager:
         system_message = await self.message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)
         temp_tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
         if (
-            new_memory.compile(sources=agent_state.sources, tool_usage_rules=temp_tool_rules_solver.compile_tool_rule_prompts())
+            new_memory.compile(
+                sources=agent_state.sources,
+                tool_usage_rules=temp_tool_rules_solver.compile_tool_rule_prompts(),
+                max_files_open=agent_state.max_files_open,
+            )
             not in system_message.content[0].text
         ):
             # update the blocks (LRW) in the DB

@@ -360,6 +360,12 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
         return (
             "{% if sources %}"
             "<directories>\n"
+            "{% if max_files_open %}"
+            "<file_limits>\n"
+            "- current_files_open={{ file_blocks|selectattr('value')|list|length }}\n"
+            "- max_files_open={{ max_files_open }}\n"
+            "</file_limits>\n"
+            "{% endif %}"
             "{% for source in sources %}"
             f'<directory name="{{{{ source.name }}}}">\n'
             "{% if source.description %}"
@@ -427,6 +433,12 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% endif %}"
             "\n\n{% if sources %}"
             "<directories>\n"
+            "{% if max_files_open %}"
+            "<file_limits>\n"
+            "- current_files_open={{ file_blocks|selectattr('value')|list|length }}\n"
+            "- max_files_open={{ max_files_open }}\n"
+            "</file_limits>\n"
+            "{% endif %}"
             "{% for source in sources %}"
             f'<directory name="{{{{ source.name }}}}">\n'
             "{% if source.description %}"
@@ -493,6 +505,12 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% endif %}"
             "\n\n{% if sources %}"
             "<directories>\n"
+            "{% if max_files_open %}"
+            "<file_limits>\n"
+            "- current_files_open={{ file_blocks|selectattr('value')|list|length }}\n"
+            "- max_files_open={{ max_files_open }}\n"
+            "</file_limits>\n"
+            "{% endif %}"
             "{% for source in sources %}"
             f'<directory name="{{{{ source.name }}}}">\n'
             "{% if source.description %}"
