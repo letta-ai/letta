@@ -151,7 +151,8 @@ class FileManager:
         Enforces state transition rules (when enforce_state_transitions=True):
         - PENDING -> PARSING -> EMBEDDING -> COMPLETED (normal flow)
         - Any non-terminal state -> ERROR
-        - ERROR and COMPLETED are terminal (no transitions allowed)
+        - Same-state transitions are allowed (e.g., EMBEDDING -> EMBEDDING)
+        - ERROR and COMPLETED are terminal (no status transitions allowed, metadata updates blocked)
 
         Args:
             file_id: ID of the file to update
@@ -196,27 +197,30 @@ class FileManager:
             ]
 
             # only add state transition validation if enforce_state_transitions is True
-            if enforce_state_transitions:
-                # prevent updates to terminal states (ERROR, COMPLETED)
+            if enforce_state_transitions and processing_status is not None:
+                # enforce specific transitions based on target status
+                if processing_status == FileProcessingStatus.PARSING:
+                    where_conditions.append(
+                        FileMetadataModel.processing_status.in_([FileProcessingStatus.PENDING, FileProcessingStatus.PARSING])
+                    )
+                elif processing_status == FileProcessingStatus.EMBEDDING:
+                    where_conditions.append(
+                        FileMetadataModel.processing_status.in_([FileProcessingStatus.PARSING, FileProcessingStatus.EMBEDDING])
+                    )
+                elif processing_status == FileProcessingStatus.COMPLETED:
+                    where_conditions.append(
+                        FileMetadataModel.processing_status.in_([FileProcessingStatus.EMBEDDING, FileProcessingStatus.COMPLETED])
+                    )
+                elif processing_status == FileProcessingStatus.ERROR:
+                    # ERROR can be set from any non-terminal state
+                    where_conditions.append(
+                        FileMetadataModel.processing_status.notin_([FileProcessingStatus.ERROR, FileProcessingStatus.COMPLETED])
+                    )
+            elif enforce_state_transitions and processing_status is None:
+                # If only updating metadata fields (not status), prevent updates to terminal states
                 where_conditions.append(
                     FileMetadataModel.processing_status.notin_([FileProcessingStatus.ERROR, FileProcessingStatus.COMPLETED])
                 )
-
-                if processing_status is not None:
-                    # enforce specific transitions based on target status
-                    if processing_status == FileProcessingStatus.PARSING:
-                        where_conditions.append(
-                            FileMetadataModel.processing_status.in_([FileProcessingStatus.PENDING, FileProcessingStatus.PARSING])
-                        )
-                    elif processing_status == FileProcessingStatus.EMBEDDING:
-                        where_conditions.append(
-                            FileMetadataModel.processing_status.in_([FileProcessingStatus.PARSING, FileProcessingStatus.EMBEDDING])
-                        )
-                    elif processing_status == FileProcessingStatus.COMPLETED:
-                        where_conditions.append(
-                            FileMetadataModel.processing_status.in_([FileProcessingStatus.EMBEDDING, FileProcessingStatus.COMPLETED])
-                        )
-                    # ERROR can be set from any non-terminal state (already handled by terminal check above)
 
             # fast in-place update with state validation
             stmt = (
