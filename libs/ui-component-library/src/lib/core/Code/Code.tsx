@@ -79,6 +79,7 @@ export interface CodeProps extends VariantProps<typeof codeVariants> {
   inline?: boolean;
   lineNumberError?: Record<number, string>;
   color?: FrameProps['color'];
+  minHeight?: number | string;
 }
 
 const languageToFileNameMap: Record<SupportedLangauges, string> = {
@@ -166,6 +167,7 @@ export function Code(props: CodeProps) {
     toolbarAction,
     lineNumberError,
     highlightCurrentLine,
+    minHeight,
   } = props;
 
   const id = useId();
@@ -342,6 +344,7 @@ export function Code(props: CodeProps) {
               fontFamily: 'inherit',
               fontSize: 'inherit',
               outline: 0,
+              ...(minHeight ? { minHeight } : {}),
             }}
           />
         </VStack>

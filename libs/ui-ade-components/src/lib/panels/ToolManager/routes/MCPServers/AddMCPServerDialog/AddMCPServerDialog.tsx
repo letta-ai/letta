@@ -25,6 +25,8 @@ import {
   parseArgsString,
   parseEnvironmentArray,
 } from '../utils';
+import { ConfigSection } from './ConfigSection';
+import { useConfigHandler } from './configUtils';
 import { AuthModes } from '../AuthenticationSection';
 import {
   ServerNameField,
@@ -71,6 +73,7 @@ export function generateServerName(
 
 function AddStdioServerForm(props: AddStdioServerFormProps) {
   const { onCancel, onSuccess } = props;
+  const [configValue, setConfigValue] = useState('');
 
   const AddStdioServerSchema = useStdioServerSchema();
   const getErrorMessage = useMCPErrorMessage();
@@ -110,8 +113,15 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
   const handleReset = useCallback(() => {
     form.reset();
     reset();
+    setConfigValue('');
     onCancel();
   }, [form, reset, onCancel]);
+
+  const handleConfigChange = useConfigHandler({
+    form,
+    serverType: MCPServerTypes.Stdio,
+    setConfigValue,
+  });
 
   const handleSubmit = useCallback(
     (values: AddStdioServerFormValues) => {
@@ -138,6 +148,10 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
           <CommandField />
           <ArgsField />
           <EnvironmentField />
+          <ConfigSection
+            configValue={configValue}
+            onChange={handleConfigChange}
+          />
           <TestMCPConnectionButton serverType={MCPServerTypes.Stdio} />
           <MCPFormActions
             errorMessage={isError ? getErrorMessage(error) : undefined}
@@ -152,6 +166,7 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
 
 function AddSSEServerForm(props: AddStdioServerFormProps) {
   const { onCancel, onSuccess } = props;
+  const [configValue, setConfigValue] = useState('');
 
   const AddSSEServerSchema = useSSEServerSchema();
   const getErrorMessage = useMCPErrorMessage();
@@ -192,8 +207,15 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
   const handleReset = useCallback(() => {
     form.reset();
     reset();
+    setConfigValue('');
     onCancel();
   }, [form, reset, onCancel]);
+
+  const handleConfigChange = useConfigHandler({
+    form,
+    serverType: MCPServerTypes.Sse,
+    setConfigValue,
+  });
 
   const handleSubmit = useCallback(
     (values: AddSSEServerFormValues) => {
@@ -225,6 +247,10 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
           <ServerNameField />
           <ServerUrlField />
           <AuthenticationSection />
+          <ConfigSection
+            configValue={configValue}
+            onChange={handleConfigChange}
+          />
           <TestMCPConnectionButton serverType={MCPServerTypes.Sse} />
           <MCPFormActions
             errorMessage={isError ? getErrorMessage(error) : undefined}
@@ -239,6 +265,7 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
 
 function AddStreamableHttpServerForm(props: AddStdioServerFormProps) {
   const { onCancel, onSuccess } = props;
+  const [configValue, setConfigValue] = useState('');
 
   const AddStreamableHttpServerSchema = useStreamableHttpServerSchema();
   const getErrorMessage = useMCPErrorMessage();
@@ -281,8 +308,15 @@ function AddStreamableHttpServerForm(props: AddStdioServerFormProps) {
   const handleReset = useCallback(() => {
     form.reset();
     reset();
+    setConfigValue('');
     onCancel();
   }, [form, reset, onCancel]);
+
+  const handleConfigChange = useConfigHandler({
+    form,
+    serverType: MCPServerTypes.StreamableHttp,
+    setConfigValue,
+  });
 
   const handleSubmit = useCallback(
     (values: AddStreamableHttpServerFormValues) => {
@@ -314,6 +348,10 @@ function AddStreamableHttpServerForm(props: AddStdioServerFormProps) {
           <ServerNameField />
           <ServerUrlField />
           <AuthenticationSection />
+          <ConfigSection
+            configValue={configValue}
+            onChange={handleConfigChange}
+          />
           <TestMCPConnectionButton serverType={MCPServerTypes.StreamableHttp} />
           <MCPFormActions
             errorMessage={isError ? getErrorMessage(error) : undefined}
@@ -336,7 +374,7 @@ export function AddServerDialog(props: AddServerDialogProps) {
 
   const { isLocal } = useCurrentAgentMetaData();
   const [serverType, setServerType] = useState<MCPServerType>(
-    MCPServerTypes.Sse,
+    MCPServerTypes.StreamableHttp,
   );
 
   const t = useTranslations('ToolsEditor/MCPServers');
@@ -344,12 +382,12 @@ export function AddServerDialog(props: AddServerDialogProps) {
   const options = useMemo(() => {
     return [
       {
-        label: t('AddServerDialog.type.options.sse'),
-        value: MCPServerTypes.Sse,
-      },
-      {
         label: t('AddServerDialog.type.options.streamable_http'),
         value: MCPServerTypes.StreamableHttp,
+      },
+      {
+        label: t('AddServerDialog.type.options.sse'),
+        value: MCPServerTypes.Sse,
       },
       ...(isLocal
         ? [

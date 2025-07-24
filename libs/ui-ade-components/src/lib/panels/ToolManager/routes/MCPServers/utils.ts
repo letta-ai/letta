@@ -124,3 +124,10 @@ export function environmentToArray(
   if (!envObject) return [{ key: '', value: '' }];
   return Object.entries(envObject).map(([key, value]) => ({ key, value }));
 }
+
+export { parseMCPJsonConfig as parseMCPConfig } from './configParser';
+export type {
+  MCPJsonServerConfig,
+  MCPJsonConfig,
+  ParsedJsonConfig,
+} from './configParser';

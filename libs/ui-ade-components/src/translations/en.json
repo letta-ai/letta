@@ -1747,6 +1747,12 @@
         "addVariable": "Add Variable",
         "removeVariable": "Remove variable"
       },
+      "advancedSettings": {
+        "label": "Advanced Settings",
+        "config": "Configuration",
+        "description": "Requires a valid JSON to auto-fill server parameters. Supports configurations for popular MCP clients such as Cursor, Windsurf, Claude Desktop, etc.",
+        "placeholder": "'{'\n\t\"mcpServers\": '{'\n\t\t\"server-name\": '{'\n\t\t\t\"command\": \"npx\",\n\t\t\t\"args\": [\n\t\t\t\t\"mcp-remote\",\n\t\t\t\t\"https://remote.mcp.server/mcp\",\n\t\t\t\t\"--header\",\n\t\t\t\t\"Authorization: Bearer $'{'AUTH_TOKEN'}'\"\n\t\t\t],\n\t\t\t\"env\": '{'\n\t\t\t\t\"AUTH_TOKEN\": \"...\"\n\t\t\t'}'\n\t\t'}'\n\t'}'\n'}'"
+      },
       "error": "There was an error adding this server, please try again or contact support.",
       "duplicateName": {
         "error": "Server name already exists, please try a different name."
