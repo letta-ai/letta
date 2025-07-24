@@ -995,7 +995,7 @@ def test_agent_open_file(disable_pinecone, client: LettaSDKClient, agent_state: 
     file_metadata = upload_file_and_wait(client, source.id, file_path)
 
     # Basic test open_file function
-    closed_files = client.agents.open_file(agent_id=agent_state.id, file_id=file_metadata.id)
+    closed_files = client.agents.files.open(agent_id=agent_state.id, file_id=file_metadata.id)
     assert len(closed_files) == 0
 
 
@@ -1012,10 +1012,10 @@ def test_agent_close_file(disable_pinecone, client: LettaSDKClient, agent_state:
     file_metadata = upload_file_and_wait(client, source.id, file_path)
 
     # First open the file
-    client.agents.open_file(agent_id=agent_state.id, file_id=file_metadata.id)
+    client.agents.files.open(agent_id=agent_state.id, file_id=file_metadata.id)
 
     # Test close_file function
-    client.agents.close_file(agent_id=agent_state.id, file_id=file_metadata.id)
+    client.agents.files.close(agent_id=agent_state.id, file_id=file_metadata.id)
 
     # Result can be None or any type based on the signature
     # Just verify the function executes without error
@@ -1037,10 +1037,10 @@ def test_agent_close_all_open_files(disable_pinecone, client: LettaSDKClient, ag
         file_metadata = upload_file_and_wait(client, source.id, file_path)
         file_metadatas.append(file_metadata)
         # Open each file
-        client.agents.open_file(agent_id=agent_state.id, file_id=file_metadata.id)
+        client.agents.files.open(agent_id=agent_state.id, file_id=file_metadata.id)
 
     # Test close_all_open_files function
-    result = client.agents.close_all_open_files(agent_id=agent_state.id)
+    result = client.agents.files.close_all(agent_id=agent_state.id)
 
     # Verify result is a list of strings
     assert isinstance(result, list), f"Expected list, got {type(result)}"
