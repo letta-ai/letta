@@ -15,6 +15,8 @@ from letta.constants import (
     BASE_TOOLS,
     BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
     BASE_VOICE_SLEEPTIME_TOOLS,
+    DEFAULT_CORE_MEMORY_SOURCE_CHAR_LIMIT,
+    DEFAULT_MAX_FILES_OPEN,
     DEFAULT_TIMEZONE,
     DEPRECATED_LETTA_TOOLS,
     FILES_TOOLS,
@@ -3168,6 +3170,12 @@ class AgentManager:
                     per_file_limit = default_per_file_limit
                 if max_files is None:
                     max_files = default_max_files
+
+            # FINAL fallback: ensure neither is None (should never happen, but just in case)
+            if per_file_limit is None:
+                per_file_limit = DEFAULT_CORE_MEMORY_SOURCE_CHAR_LIMIT
+            if max_files is None:
+                max_files = DEFAULT_MAX_FILES_OPEN
 
             return per_file_limit, max_files
 
