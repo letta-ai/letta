@@ -277,6 +277,10 @@ def test_attach_existing_files_creates_source_blocks_correctly(disable_pinecone,
 
     # Assert that the expected chunk is in the raw system message
     expected_chunk = """<directories>
+<file_limits>
+- current_files_open=1
+- max_files_open=5
+</file_limits>
 <directory name="test_source">
 <file status="open" name="test_source/test.txt">
 <metadata>
@@ -334,6 +338,10 @@ def test_delete_source_removes_source_blocks_correctly(disable_pinecone, client:
     raw_system_message = get_raw_system_message(client, agent_state.id)
     # Assert that the expected chunk is in the raw system message
     expected_chunk = """<directories>
+<file_limits>
+- current_files_open=1
+- max_files_open=5
+</file_limits>
 <directory name="test_source">
 <file status="open" name="test_source/test.txt">
 <metadata>
