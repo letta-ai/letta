@@ -431,11 +431,9 @@ async def get_file_metadata(
             else:
                 file_status = FileProcessingStatus.COMPLETED
             try:
-                print("GETTING PINECONE!!!")
                 file_metadata = await server.file_manager.update_file_status(
                     file_id=file_metadata.id, actor=actor, chunks_embedded=len(ids), processing_status=file_status
                 )
-                print(file_metadata)
             except ValueError as e:
                 # state transition was blocked - this is a race condition
                 # log it but don't fail the request since we're just reading metadata
