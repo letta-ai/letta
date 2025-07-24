@@ -41,11 +41,7 @@ import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissio
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { CreateNewMemoryBlockDialog } from './CreateNewMemoryBlockDialog/CreateNewMemoryBlockDialog';
 import './AdvancedCoreMemoryEditor.scss';
-
-interface CurrentAdvancedCoreMemoryState {
-  selectedMemoryBlockLabel?: string;
-  isOpen: boolean;
-}
+import { currentAdvancedCoreMemoryAtom } from './currentAdvancedCoreMemoryAtom';
 
 interface MemoryWarningProps {
   rootLabel: string;
@@ -485,11 +481,6 @@ function DeleteMemoryBlockDialog(props: DeleteMemoryBlockDialogProps) {
   );
 }
 
-const currentAdvancedCoreMemoryAtom = atom<CurrentAdvancedCoreMemoryState>({
-  selectedMemoryBlockLabel: '',
-  isOpen: false,
-});
-
 function CoreMemoryMobileNav() {
   const agent = useCurrentAgent();
 
@@ -526,6 +517,10 @@ function CoreMemoryMobileNav() {
   const selectedOption = useMemo(() => {
     return options.find((option) => option.label === selectedMemoryBlockLabel);
   }, [options, selectedMemoryBlockLabel]);
+
+  if (options.length === 0) {
+    return null;
+  }
 
   return (
     <HStack
@@ -600,6 +595,10 @@ function CoreMemorySidebar() {
 
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
+  if (blocks.length === 0) {
+    return null;
+  }
+
   return (
     <VStack
       overflow="hidden"
@@ -610,12 +609,13 @@ function CoreMemorySidebar() {
       borderRight
       width="sidebar"
     >
-      <HStack align="center" padding="small" fullWidth>
+      <VStack align="start" padding="small" fullWidth>
         <RawInput
           size="default"
           fullWidth
+          variant="tertiary"
           hideLabel
-          preIcon={<SearchIcon />}
+          postIcon={<SearchIcon />}
           placeholder={t('CoreMemorySidebar.search.label')}
           label={t('CoreMemorySidebar.search.placeholder')}
           value={search}
@@ -627,16 +627,16 @@ function CoreMemorySidebar() {
           trigger={
             canUpdateAgent && (
               <Button
-                hideLabel
                 preIcon={<PlusIcon />}
                 data-testid="create-new-memory-block-item"
                 color="secondary"
+                size="small"
                 label={t('CoreMemorySidebar.create')}
               />
             )
           }
         />
-      </HStack>
+      </VStack>
       <VStack collapseHeight flex overflowY="auto">
         <VStack>
           {!blocks.length && (
@@ -735,10 +735,29 @@ function EditorContent() {
   }, [selectedMemoryBlockLabel, setHasUnsavedChanges]);
 
   const t = useTranslations('ADE/AdvancedCoreMemoryEditor');
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
   if (!selectedMemoryBlock) {
     return (
-      <LoadingEmptyStatusComponent emptyMessage={t('EditorContent.empty')} />
+      <LoadingEmptyStatusComponent
+        loaderFillColor="background-grey"
+        emptyMessage={t('EditorContent.empty')}
+        emptyAction={
+          <CreateNewMemoryBlockDialog
+            trigger={
+              canUpdateAgent && (
+                <Button
+                  preIcon={<PlusIcon />}
+                  data-testid="create-new-memory-block-item"
+                  color="secondary"
+                  size="small"
+                  label={t('CoreMemorySidebar.create')}
+                />
+              )
+            }
+          />
+        }
+      />
     );
   }
 

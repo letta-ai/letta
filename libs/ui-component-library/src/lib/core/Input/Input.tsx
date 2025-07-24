@@ -19,7 +19,7 @@ import { HStack } from '../../framing/HStack/HStack';
 import { VStack } from '../../framing/VStack/VStack';
 
 export const inputVariants = cva(
-  'flex  items-center overflow-hidden border border-input text-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring',
+  'flex  items-center overflow-hidden border  text-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring',
   {
     variants: {
       size: {
@@ -28,8 +28,10 @@ export const inputVariants = cva(
         large: 'h-biHeight-lg',
       },
       variant: {
-        primary: 'text-default',
-        secondary: 'text-lighter font-light',
+        primary: 'text-default border-input',
+        secondary: 'text-lighter font-light border-input',
+        tertiary:
+          'border-t-transparent border-x-transparent bg-transparent border-b-input',
       },
       disabled: {
         true: '',
@@ -59,6 +61,11 @@ export const inputVariants = cva(
         disabled: true,
         className:
           'cursor-not-allowed bg-background-grey text-background-content',
+      },
+      {
+        variant: 'tertiary',
+        className:
+          'bg-transparent focus-within:ring-transparent focus-within:border-b-brand',
       },
     ],
     defaultVariants: {
@@ -159,6 +166,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
       width,
       warned,
       allowCopy,
+      variant,
       postIcon,
       isUpdating,
       preIcon,
@@ -221,6 +229,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
             width,
             size,
             warned,
+            variant,
             readOnly,
             fullWidth,
             color,

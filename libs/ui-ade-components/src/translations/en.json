@@ -985,7 +985,7 @@
         "label": "Search by label",
         "placeholder": "Search by label"
       },
-      "create": "Create new memory block"
+      "create": "New block"
     }
   },
   "ADE/useCurrentSimulatedAgent": {

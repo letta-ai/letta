@@ -30,6 +30,8 @@ import { useCurrentAgentMetaData } from '../../../hooks/useCurrentAgentMetaData/
 import { useCurrentAgent } from '../../../hooks';
 import type { ExampleBlockPayload } from './ExampleBlocks';
 import { ExampleBlocks } from './ExampleBlocks';
+import { useSetAtom } from 'jotai/index';
+import { currentAdvancedCoreMemoryAtom } from '../currentAdvancedCoreMemoryAtom';
 
 interface CreateNewMemoryBlockDialogProps {
   trigger: React.ReactNode;
@@ -142,6 +144,20 @@ export function CreateNewMemoryBlockDialog(
   const queryClient = useQueryClient();
   const { agentId: currentAgentId } = useCurrentAgentMetaData();
   const agent = useCurrentAgent();
+
+  const setIsAdvancedCoreMemoryEditorOpen = useSetAtom(
+    currentAdvancedCoreMemoryAtom,
+  );
+
+  const setCurrentMemoryBlock = useCallback(
+    (label: string) => {
+      setIsAdvancedCoreMemoryEditorOpen((prev) => ({
+        ...prev,
+        selectedMemoryBlockLabel: label,
+      }));
+    },
+    [setIsAdvancedCoreMemoryEditorOpen],
+  );
 
   const existingMemoryLabels = useMemo(() => {
     return new Set(
@@ -264,6 +280,8 @@ export function CreateNewMemoryBlockDialog(
                     },
                   );
 
+                  setCurrentMemoryBlock(values.label);
+
                   toast.success(t('success'));
                   handleOpenChange(false);
                 },
@@ -277,12 +295,13 @@ export function CreateNewMemoryBlockDialog(
       );
     },
     [
-      createBlock,
-      attachBlock,
       currentAgentId,
-      queryClient,
-      handleOpenChange,
+      createBlock,
       t,
+      attachBlock,
+      queryClient,
+      setCurrentMemoryBlock,
+      handleOpenChange,
     ],
   );
 
