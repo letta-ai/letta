@@ -240,6 +240,8 @@ def validate_context_window_overview(
         assert attached_file.visible_content in overview.core_memory, "File must be attached in core memory"
         assert '<file status="open"' in overview.core_memory
         assert "</file>" in overview.core_memory
+        assert "max_files_open" in overview.core_memory, "Max files should be set in core memory"
+        assert "current_files_open" in overview.core_memory, "Current files should be set in core memory"
 
     # Check for tools
     assert overview.num_tokens_functions_definitions > 0

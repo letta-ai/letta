@@ -22,11 +22,12 @@ from letta.constants import (
 from letta.embeddings import embedding_model
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import format_datetime, get_local_time, get_local_time_fast
-from letta.orm import AgentPassage, SourcePassage, SourcesAgents
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.agents_tags import AgentsTags
 from letta.orm.errors import NoResultFound
 from letta.orm.identity import Identity
+from letta.orm.passage import AgentPassage, SourcePassage
+from letta.orm.sources_agents import SourcesAgents
 from letta.orm.sqlite_functions import adapt_array
 from letta.otel.tracing import trace_method
 from letta.prompts import gpt_system
@@ -45,7 +46,7 @@ from letta.system import get_initial_boot_messages, get_login_event, package_fun
 # Static methods
 @trace_method
 def _process_relationship(
-    session, agent: AgentModel, relationship_name: str, model_class, item_ids: List[str], allow_partial=False, replace=True
+    session, agent: "AgentModel", relationship_name: str, model_class, item_ids: List[str], allow_partial=False, replace=True
 ):
     """
     Generalized function to handle relationships like tools, sources, and blocks using item IDs.
@@ -88,7 +89,7 @@ def _process_relationship(
 
 @trace_method
 async def _process_relationship_async(
-    session, agent: AgentModel, relationship_name: str, model_class, item_ids: List[str], allow_partial=False, replace=True
+    session, agent: "AgentModel", relationship_name: str, model_class, item_ids: List[str], allow_partial=False, replace=True
 ):
     """
     Generalized function to handle relationships like tools, sources, and blocks using item IDs.
@@ -130,7 +131,7 @@ async def _process_relationship_async(
         current_relationship.extend(new_items)
 
 
-def _process_tags(agent: AgentModel, tags: List[str], replace=True):
+def _process_tags(agent: "AgentModel", tags: List[str], replace=True):
     """
     Handles tags for an agent.
 
@@ -207,16 +208,21 @@ def compile_memory_metadata_block(
     timestamp_str = format_datetime(memory_edit_timestamp, timezone)
 
     # Create a metadata block of info so the agent knows about the metadata of out-of-context memories
-    memory_metadata_block = "\n".join(
-        [
-            "<memory_metadata>",
-            f"- The current time is: {get_local_time_fast(timezone)}",
-            f"- Memory blocks were last modified: {timestamp_str}",
-            f"- {previous_message_count} previous messages between you and the user are stored in recall memory (use tools to access them)",
-            f"- {archival_memory_size} total memories you created are stored in archival memory (use tools to access them)",
-            "</memory_metadata>",
-        ]
-    )
+    metadata_lines = [
+        "<memory_metadata>",
+        f"- The current time is: {get_local_time_fast(timezone)}",
+        f"- Memory blocks were last modified: {timestamp_str}",
+        f"- {previous_message_count} previous messages between you and the user are stored in recall memory (use tools to access them)",
+    ]
+
+    # Only include archival memory line if there are archival memories
+    if archival_memory_size > 0:
+        metadata_lines.append(
+            f"- {archival_memory_size} total memories you created are stored in archival memory (use tools to access them)"
+        )
+
+    metadata_lines.append("</memory_metadata>")
+    memory_metadata_block = "\n".join(metadata_lines)
     return memory_metadata_block
 
 
@@ -253,6 +259,7 @@ def compile_system_message(
     archival_memory_size: int = 0,
     tool_rules_solver: Optional[ToolRulesSolver] = None,
     sources: Optional[List] = None,
+    max_files_open: Optional[int] = None,
 ) -> str:
     """Prepare the final/full system message that will be fed into the LLM API
 
@@ -285,7 +292,9 @@ def compile_system_message(
             timezone=timezone,
         )
 
-        memory_with_sources = in_context_memory.compile(tool_usage_rules=tool_constraint_block, sources=sources)
+        memory_with_sources = in_context_memory.compile(
+            tool_usage_rules=tool_constraint_block, sources=sources, max_files_open=max_files_open
+        )
         full_memory_string = memory_with_sources + "\n\n" + memory_metadata_string
 
         # Add to the variables list to inject
@@ -337,6 +346,7 @@ def initialize_message_sequence(
         previous_message_count=previous_message_count,
         archival_memory_size=archival_memory_size,
         sources=agent_state.sources,
+        max_files_open=agent_state.max_files_open,
     )
     first_user_message = get_login_event(agent_state.timezone)  # event letting Letta know the user just logged in
 

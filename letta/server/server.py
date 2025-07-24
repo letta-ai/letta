@@ -42,7 +42,6 @@ from letta.schemas.embedding_config import EmbeddingConfig
 # openai schemas
 from letta.schemas.enums import JobStatus, MessageStreamStatus, ProviderCategory, ProviderType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
-from letta.schemas.file import FileMetadata
 from letta.schemas.group import GroupCreate, ManagerType, SleeptimeManager, VoiceSleeptimeManager
 from letta.schemas.job import Job, JobUpdate
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, MessageType, ToolReturnMessage
@@ -68,8 +67,6 @@ from letta.schemas.providers import (
     OpenAIProvider,
     Provider,
     TogetherProvider,
-    VLLMChatCompletionsProvider,
-    VLLMCompletionsProvider,
     XAIProvider,
 )
 from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxConfigCreate, SandboxType
@@ -81,9 +78,9 @@ from letta.server.rest_api.chat_completions_interface import ChatCompletionsStre
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
+from letta.services.agent_serialization_manager import AgentSerializationManager
 from letta.services.block_manager import BlockManager
 from letta.services.file_manager import FileManager
-from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.files_agents_manager import FileAgentManager
 from letta.services.group_manager import GroupManager
 from letta.services.helpers.tool_execution_helper import prepare_local_sandbox
@@ -226,6 +223,18 @@ class SyncServer(Server):
         self.file_agent_manager = FileAgentManager()
         self.file_manager = FileManager()
 
+        self.agent_serialization_manager = AgentSerializationManager(
+            agent_manager=self.agent_manager,
+            tool_manager=self.tool_manager,
+            source_manager=self.source_manager,
+            block_manager=self.block_manager,
+            group_manager=self.group_manager,
+            mcp_manager=self.mcp_manager,
+            file_manager=self.file_manager,
+            file_agent_manager=self.file_agent_manager,
+            message_manager=self.message_manager,
+        )
+
         # A resusable httpx client
         timeout = httpx.Timeout(connect=10.0, read=20.0, write=10.0, pool=10.0)
         limits = httpx.Limits(max_connections=100, max_keepalive_connections=80, keepalive_expiry=300)
@@ -360,7 +369,7 @@ class SyncServer(Server):
                 )
             )
             # NOTE: to use the /chat/completions endpoint, you need to specify extra flags on vLLM startup
-            # see: https://docs.vllm.ai/en/latest/getting_started/examples/openai_chat_completion_client_with_tools.html
+            # see: https://docs.vllm.ai/en/stable/features/tool_calling.html
             # e.g. "... --enable-auto-tool-choice --tool-call-parser hermes"
             self._enabled_providers.append(
                 VLLMChatCompletionsProvider(
@@ -460,7 +469,7 @@ class SyncServer(Server):
             # Determine whether or not to token stream based on the capability of the interface
             token_streaming = letta_agent.interface.streaming_mode if hasattr(letta_agent.interface, "streaming_mode") else False
 
-            logger.debug(f"Starting agent step")
+            logger.debug("Starting agent step")
             if interface:
                 metadata = interface.metadata if hasattr(interface, "metadata") else None
             else:
@@ -534,7 +543,7 @@ class SyncServer(Server):
             letta_agent.interface.print_messages_raw(letta_agent.messages)
 
         elif command.lower() == "memory":
-            ret_str = f"\nDumping memory contents:\n" + f"\n{str(letta_agent.agent_state.memory)}" + f"\n{str(letta_agent.passage_manager)}"
+            ret_str = "\nDumping memory contents:\n" + f"\n{str(letta_agent.agent_state.memory)}" + f"\n{str(letta_agent.passage_manager)}"
             return ret_str
 
         elif command.lower() == "pop" or command.lower().startswith("pop "):
@@ -554,7 +563,7 @@ class SyncServer(Server):
 
         elif command.lower() == "retry":
             # TODO this needs to also modify the persistence manager
-            logger.debug(f"Retrying for another answer")
+            logger.debug("Retrying for another answer")
             while len(letta_agent.messages) > 0:
                 if letta_agent.messages[-1].get("role") == "user":
                     # we want to pop up to the last user message and send it again
@@ -770,6 +779,7 @@ class SyncServer(Server):
             self._embedding_config_cache[key] = self.get_embedding_config_from_handle(actor=actor, **kwargs)
         return self._embedding_config_cache[key]
 
+    # @async_redis_cache(key_func=lambda (actor, **kwargs): actor.id + hash(kwargs))
     @trace_method
     async def get_cached_embedding_config_async(self, actor: User, **kwargs):
         key = make_key(**kwargs)
@@ -782,9 +792,9 @@ class SyncServer(Server):
         self,
         request: CreateAgent,
         actor: User,
-        # interface
-        interface: Union[AgentInterface, None] = None,
+        interface: AgentInterface | None = None,
     ) -> AgentState:
+        warnings.warn("This method is deprecated, use create_agent_async where possible.", DeprecationWarning, stacklevel=2)
         if request.llm_config is None:
             if request.model is None:
                 raise ValueError("Must specify either model or llm_config in request")
@@ -873,7 +883,9 @@ class SyncServer(Server):
         if request.source_ids:
             for source_id in request.source_ids:
                 files = await self.file_manager.list_files(source_id, actor, include_content=True)
-                await self.insert_files_into_context_window(agent_state=main_agent, file_metadata_with_content=files, actor=actor)
+                await self.agent_manager.insert_files_into_context_window(
+                    agent_state=main_agent, file_metadata_with_content=files, actor=actor
+                )
 
             main_agent = await self.agent_manager.refresh_file_blocks(agent_state=main_agent, actor=actor)
             main_agent = await self.agent_manager.attach_missing_files_tools_async(agent_state=main_agent, actor=actor)
@@ -1320,7 +1332,6 @@ class SyncServer(Server):
         # TODO: delete data from agent passage stores (?)
 
     async def load_file_to_source(self, source_id: str, file_path: str, job_id: str, actor: User) -> Job:
-
         # update job
         job = await self.job_manager.get_job_by_id_async(job_id, actor=actor)
         job.status = JobStatus.running
@@ -1397,90 +1408,28 @@ class SyncServer(Server):
         except NoResultFound:
             logger.info(f"File {file_id} already removed from agent {agent_id}, skipping...")
 
-    async def insert_file_into_context_windows(
-        self, source_id: str, file_metadata_with_content: FileMetadata, actor: User, agent_states: Optional[List[AgentState]] = None
-    ) -> List[AgentState]:
-        """
-        Insert the uploaded document into the context window of all agents
-        attached to the given source.
-        """
-        agent_states = agent_states or await self.source_manager.list_attached_agents(source_id=source_id, actor=actor)
-
-        # Return early
-        if not agent_states:
-            return []
-
-        logger.info(f"Inserting document into context window for source: {source_id}")
-        logger.info(f"Attached agents: {[a.id for a in agent_states]}")
-
-        # Generate visible content for the file
-        line_chunker = LineChunker()
-        content_lines = line_chunker.chunk_text(file_metadata=file_metadata_with_content)
-        visible_content = "\n".join(content_lines)
-        visible_content_map = {file_metadata_with_content.file_name: visible_content}
-
-        # Attach file to each agent using bulk method (one file per agent, but atomic per agent)
-        all_closed_files = await asyncio.gather(
-            *(
-                self.file_agent_manager.attach_files_bulk(
-                    agent_id=agent_state.id,
-                    files_metadata=[file_metadata_with_content],
-                    visible_content_map=visible_content_map,
-                    actor=actor,
-                )
-                for agent_state in agent_states
-            )
-        )
-        # Flatten and log if any files were closed
-        closed_files = [file for closed_list in all_closed_files for file in closed_list]
-        if closed_files:
-            logger.info(f"LRU eviction closed {len(closed_files)} files during bulk attach: {closed_files}")
-
-        return agent_states
-
-    async def insert_files_into_context_window(
-        self, agent_state: AgentState, file_metadata_with_content: List[FileMetadata], actor: User
-    ) -> None:
-        """
-        Insert the uploaded documents into the context window of an agent
-        attached to the given source.
-        """
-        logger.info(f"Inserting {len(file_metadata_with_content)} documents into context window for agent_state: {agent_state.id}")
-
-        # Generate visible content for each file
-        line_chunker = LineChunker()
-        visible_content_map = {}
-        for file_metadata in file_metadata_with_content:
-            content_lines = line_chunker.chunk_text(file_metadata=file_metadata)
-            visible_content_map[file_metadata.file_name] = "\n".join(content_lines)
-
-        # Use bulk attach to avoid race conditions and duplicate LRU eviction decisions
-        closed_files = await self.file_agent_manager.attach_files_bulk(
-            agent_id=agent_state.id,
-            files_metadata=file_metadata_with_content,
-            visible_content_map=visible_content_map,
-            actor=actor,
-        )
-
-        if closed_files:
-            logger.info(f"LRU eviction closed {len(closed_files)} files during bulk insert: {closed_files}")
-
     async def remove_file_from_context_windows(self, source_id: str, file_id: str, actor: User) -> None:
         """
         Remove the document from the context window of all agents
         attached to the given source.
         """
-        # TODO: We probably do NOT need to get the entire agent state, we can just get the IDs
-        agent_states = await self.source_manager.list_attached_agents(source_id=source_id, actor=actor)
+        # Use the optimized ids_only parameter
+        agent_ids = await self.source_manager.list_attached_agents(source_id=source_id, actor=actor, ids_only=True)
 
-        # Return early
-        if not agent_states:
+        # Return early if no agents
+        if not agent_ids:
             return
 
         logger.info(f"Removing file from context window for source: {source_id}")
-        logger.info(f"Attached agents: {[a.id for a in agent_states]}")
+        logger.info(f"Attached agents: {agent_ids}")
 
-        await asyncio.gather(*(self._remove_file_from_agent(agent_state.id, file_id, actor) for agent_state in agent_states))
+        # Create agent-file pairs for bulk deletion
+        agent_file_pairs = [(agent_id, file_id) for agent_id in agent_ids]
+
+        # Bulk delete in a single query
+        deleted_count = await self.file_agent_manager.detach_file_bulk(agent_file_pairs=agent_file_pairs, actor=actor)
+
+        logger.info(f"Removed file {file_id} from {deleted_count} agent context windows")
 
     async def remove_files_from_context_window(self, agent_state: AgentState, file_ids: List[str], actor: User) -> None:
         """
@@ -1490,7 +1439,13 @@ class SyncServer(Server):
         logger.info(f"Removing files from context window for agent_state: {agent_state.id}")
         logger.info(f"Files to remove: {file_ids}")
 
-        await asyncio.gather(*(self._remove_file_from_agent(agent_state.id, file_id, actor) for file_id in file_ids))
+        # Create agent-file pairs for bulk deletion
+        agent_file_pairs = [(agent_state.id, file_id) for file_id in file_ids]
+
+        # Bulk delete in a single query
+        deleted_count = await self.file_agent_manager.detach_file_bulk(agent_file_pairs=agent_file_pairs, actor=actor)
+
+        logger.info(f"Removed {deleted_count} files from agent {agent_state.id}")
 
     async def create_document_sleeptime_agent_async(
         self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False
@@ -1562,7 +1517,6 @@ class SyncServer(Server):
         # Add extra metadata to the sources
         sources_with_metadata = []
         for source in sources:
-
             # count number of passages
             num_passages = self.agent_manager.passage_size(actor=actor, source_id=source.id)
 
@@ -1932,7 +1886,9 @@ class SyncServer(Server):
     def get_provider_from_name(self, provider_name: str, actor: User) -> Provider:
         providers = [provider for provider in self.get_enabled_providers(actor) if provider.name == provider_name]
         if not providers:
-            raise ValueError(f"Provider {provider_name} is not supported")
+            raise ValueError(
+                f"Provider {provider_name} is not supported (supported providers: {', '.join([provider.name for provider in self._enabled_providers])})"
+            )
         elif len(providers) > 1:
             raise ValueError(f"Multiple providers with name {provider_name} supported")
         else:
@@ -1944,7 +1900,9 @@ class SyncServer(Server):
         all_providers = await self.get_enabled_providers_async(actor)
         providers = [provider for provider in all_providers if provider.name == provider_name]
         if not providers:
-            raise ValueError(f"Provider {provider_name} is not supported")
+            raise ValueError(
+                f"Provider {provider_name} is not supported (supported providers: {', '.join([provider.name for provider in self._enabled_providers])})"
+            )
         elif len(providers) > 1:
             raise ValueError(f"Multiple providers with name {provider_name} supported")
         else:
@@ -2112,7 +2070,6 @@ class SyncServer(Server):
         mcp_config_path = os.path.join(constants.LETTA_DIR, constants.MCP_CONFIG_NAME)
         if os.path.exists(mcp_config_path):
             with open(mcp_config_path, "r") as f:
-
                 try:
                     mcp_config = json.load(f)
                 except Exception as e:
@@ -2124,7 +2081,6 @@ class SyncServer(Server):
                 # with the value being the schema from StdioServerParameters
                 if MCP_CONFIG_TOPLEVEL_KEY in mcp_config:
                     for server_name, server_params_raw in mcp_config[MCP_CONFIG_TOPLEVEL_KEY].items():
-
                         # No support for duplicate server names
                         if server_name in mcp_server_list:
                             logger.error(f"Duplicate MCP server name found (skipping): {server_name}")
@@ -2295,7 +2251,6 @@ class SyncServer(Server):
 
         # For streaming response
         try:
-
             # TODO: move this logic into server.py
 
             # Get the generator object off of the agent's streaming interface
@@ -2435,9 +2390,9 @@ class SyncServer(Server):
         if not stream_steps and stream_tokens:
             raise ValueError("stream_steps must be 'true' if stream_tokens is 'true'")
 
-        group = self.group_manager.retrieve_group(group_id=group_id, actor=actor)
+        group = await self.group_manager.retrieve_group_async(group_id=group_id, actor=actor)
         agent_state_id = group.manager_agent_id or (group.agent_ids[0] if len(group.agent_ids) > 0 else None)
-        agent_state = self.agent_manager.get_agent_by_id(agent_id=agent_state_id, actor=actor) if agent_state_id else None
+        agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_state_id, actor=actor) if agent_state_id else None
         letta_multi_agent = load_multi_agent(group=group, agent_state=agent_state, actor=actor)
 
         llm_config = letta_multi_agent.agent_state.llm_config

@@ -9,7 +9,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from letta.constants import MAX_FILENAME_LENGTH
-from letta.helpers.decorators import async_redis_cache
 from letta.orm.errors import NoResultFound
 from letta.orm.file import FileContent as FileContentModel
 from letta.orm.file import FileMetadata as FileMetadataModel
@@ -38,13 +37,14 @@ class FileManager:
 
     async def _invalidate_file_caches(self, file_id: str, actor: PydanticUser, original_filename: str = None, source_id: str = None):
         """Invalidate all caches related to a file."""
-        # invalidate file content cache (all variants)
-        await self.get_file_by_id.cache_invalidate(self, file_id, actor, include_content=True)
-        await self.get_file_by_id.cache_invalidate(self, file_id, actor, include_content=False)
+        # TEMPORARILY DISABLED - caching is disabled
+        # # invalidate file content cache (all variants)
+        # await self.get_file_by_id.cache_invalidate(self, file_id, actor, include_content=True)
+        # await self.get_file_by_id.cache_invalidate(self, file_id, actor, include_content=False)
 
-        # invalidate filename-based cache if we have the info
-        if original_filename and source_id:
-            await self.get_file_by_original_name_and_source.cache_invalidate(self, original_filename, source_id, actor)
+        # # invalidate filename-based cache if we have the info
+        # if original_filename and source_id:
+        #     await self.get_file_by_original_name_and_source.cache_invalidate(self, original_filename, source_id, actor)
 
     @enforce_types
     @trace_method
@@ -86,12 +86,12 @@ class FileManager:
     # TODO: We make actor optional for now, but should most likely be enforced due to security reasons
     @enforce_types
     @trace_method
-    @async_redis_cache(
-        key_func=lambda self, file_id, actor=None, include_content=False, strip_directory_prefix=False: f"{file_id}:{actor.organization_id if actor else 'none'}:{include_content}:{strip_directory_prefix}",
-        prefix="file_content",
-        ttl_s=3600,
-        model_class=PydanticFileMetadata,
-    )
+    # @async_redis_cache(
+    #     key_func=lambda self, file_id, actor=None, include_content=False, strip_directory_prefix=False: f"{file_id}:{actor.organization_id if actor else 'none'}:{include_content}:{strip_directory_prefix}",
+    #     prefix="file_content",
+    #     ttl_s=3600,
+    #     model_class=PydanticFileMetadata,
+    # )
     async def get_file_by_id(
         self, file_id: str, actor: Optional[PydanticUser] = None, *, include_content: bool = False, strip_directory_prefix: bool = False
     ) -> Optional[PydanticFileMetadata]:
@@ -143,12 +143,31 @@ class FileManager:
         error_message: Optional[str] = None,
         total_chunks: Optional[int] = None,
         chunks_embedded: Optional[int] = None,
-    ) -> PydanticFileMetadata:
+        enforce_state_transitions: bool = True,
+    ) -> Optional[PydanticFileMetadata]:
         """
         Update processing_status, error_message, total_chunks, and/or chunks_embedded on a FileMetadata row.
 
-        * 1st round-trip → UPDATE
-        * 2nd round-trip → SELECT fresh row (same as read_async)
+        Enforces state transition rules (when enforce_state_transitions=True):
+        - PENDING -> PARSING -> EMBEDDING -> COMPLETED (normal flow)
+        - Any non-terminal state -> ERROR
+        - ERROR and COMPLETED are terminal (no transitions allowed)
+
+        Args:
+            file_id: ID of the file to update
+            actor: User performing the update
+            processing_status: New processing status to set
+            error_message: Error message to set (if any)
+            total_chunks: Total number of chunks in the file
+            chunks_embedded: Number of chunks already embedded
+            enforce_state_transitions: Whether to enforce state transition rules (default: True).
+                                     Set to False to bypass validation for testing or special cases.
+
+        Returns:
+            Updated file metadata, or None if the update was blocked
+
+        * 1st round-trip → UPDATE with optional state validation
+        * 2nd round-trip → SELECT fresh row (same as read_async) if update succeeded
         """
 
         if processing_status is None and error_message is None and total_chunks is None and chunks_embedded is None:
@@ -164,23 +183,79 @@ class FileManager:
         if chunks_embedded is not None:
             values["chunks_embedded"] = chunks_embedded
 
+        # validate state transitions before making any database calls
+        if enforce_state_transitions and processing_status == FileProcessingStatus.PENDING:
+            # PENDING cannot be set after initial creation
+            raise ValueError(f"Cannot transition to PENDING state for file {file_id} - PENDING is only valid as initial state")
+
         async with db_registry.async_session() as session:
-            # Fast in-place update – no ORM hydration
+            # build where conditions
+            where_conditions = [
+                FileMetadataModel.id == file_id,
+                FileMetadataModel.organization_id == actor.organization_id,
+            ]
+
+            # only add state transition validation if enforce_state_transitions is True
+            if enforce_state_transitions:
+                # prevent updates to terminal states (ERROR, COMPLETED)
+                where_conditions.append(
+                    FileMetadataModel.processing_status.notin_([FileProcessingStatus.ERROR, FileProcessingStatus.COMPLETED])
+                )
+
+                if processing_status is not None:
+                    # enforce specific transitions based on target status
+                    if processing_status == FileProcessingStatus.PARSING:
+                        where_conditions.append(FileMetadataModel.processing_status == FileProcessingStatus.PENDING)
+                    elif processing_status == FileProcessingStatus.EMBEDDING:
+                        where_conditions.append(FileMetadataModel.processing_status == FileProcessingStatus.PARSING)
+                    elif processing_status == FileProcessingStatus.COMPLETED:
+                        where_conditions.append(FileMetadataModel.processing_status == FileProcessingStatus.EMBEDDING)
+                    # ERROR can be set from any non-terminal state (already handled by terminal check above)
+
+            # fast in-place update with state validation
             stmt = (
                 update(FileMetadataModel)
-                .where(
-                    FileMetadataModel.id == file_id,
-                    FileMetadataModel.organization_id == actor.organization_id,
-                )
+                .where(*where_conditions)
                 .values(**values)
+                .returning(FileMetadataModel.id)  # return id if update succeeded
             )
-            await session.execute(stmt)
+            result = await session.execute(stmt)
+            updated_id = result.scalar()
+
+            if not updated_id:
+                # update was blocked
+                await session.commit()
+
+                if enforce_state_transitions:
+                    # update was blocked by state transition rules - raise error
+                    # fetch current state to provide informative error
+                    current_file = await FileMetadataModel.read_async(
+                        db_session=session,
+                        identifier=file_id,
+                        actor=actor,
+                    )
+                    current_status = current_file.processing_status
+
+                    # build informative error message
+                    if processing_status is not None:
+                        if current_status in [FileProcessingStatus.ERROR, FileProcessingStatus.COMPLETED]:
+                            raise ValueError(
+                                f"Cannot update file {file_id} status from terminal state {current_status} to {processing_status}"
+                            )
+                        else:
+                            raise ValueError(f"Invalid state transition for file {file_id}: {current_status} -> {processing_status}")
+                    else:
+                        raise ValueError(f"Cannot update file {file_id} in terminal state {current_status}")
+                else:
+                    # validation was bypassed but update still failed (e.g., file doesn't exist)
+                    return None
+
             await session.commit()
 
             # invalidate cache for this file
             await self._invalidate_file_caches(file_id, actor)
 
-            # Reload via normal accessor so we return a fully-attached object
+            # reload via normal accessor so we return a fully-attached object
             file_orm = await FileMetadataModel.read_async(
                 db_session=session,
                 identifier=file_id,
@@ -317,12 +392,12 @@ class FileManager:
 
     @enforce_types
     @trace_method
-    @async_redis_cache(
-        key_func=lambda self, original_filename, source_id, actor: f"{original_filename}:{source_id}:{actor.organization_id}",
-        prefix="file_by_name",
-        ttl_s=3600,
-        model_class=PydanticFileMetadata,
-    )
+    # @async_redis_cache(
+    #     key_func=lambda self, original_filename, source_id, actor: f"{original_filename}:{source_id}:{actor.organization_id}",
+    #     prefix="file_by_name",
+    #     ttl_s=3600,
+    #     model_class=PydanticFileMetadata,
+    # )
     async def get_file_by_original_name_and_source(
         self, original_filename: str, source_id: str, actor: PydanticUser
     ) -> Optional[PydanticFileMetadata]:

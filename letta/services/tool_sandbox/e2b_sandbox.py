@@ -94,57 +94,61 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
             env_vars.update(additional_env_vars)
         code = self.generate_execution_script(agent_state=agent_state)
 
-        log_event(
-            "e2b_execution_started",
-            {"tool": self.tool_name, "sandbox_id": e2b_sandbox.sandbox_id, "code": code, "env_vars": env_vars},
-        )
-        execution = await e2b_sandbox.run_code(code, envs=env_vars)
-        if execution.results:
-            func_return, agent_state = parse_stdout_best_effort(execution.results[0].text)
+        try:
             log_event(
-                "e2b_execution_succeeded",
-                {
-                    "tool": self.tool_name,
-                    "sandbox_id": e2b_sandbox.sandbox_id,
-                    "func_return": func_return,
-                },
+                "e2b_execution_started",
+                {"tool": self.tool_name, "sandbox_id": e2b_sandbox.sandbox_id, "code": code, "env_vars": env_vars},
             )
-        elif execution.error:
-            logger.error(f"Executing tool {self.tool_name} raised a {execution.error.name} with message: \n{execution.error.value}")
-            logger.error(f"Traceback from e2b sandbox: \n{execution.error.traceback}")
-            func_return = get_friendly_error_msg(
-                function_name=self.tool_name, exception_name=execution.error.name, exception_message=execution.error.value
-            )
-            execution.logs.stderr.append(execution.error.traceback)
-            log_event(
-                "e2b_execution_failed",
-                {
-                    "tool": self.tool_name,
-                    "sandbox_id": e2b_sandbox.sandbox_id,
-                    "error_type": execution.error.name,
-                    "error_message": execution.error.value,
-                    "func_return": func_return,
-                },
-            )
-        else:
-            log_event(
-                "e2b_execution_empty",
-                {
-                    "tool": self.tool_name,
-                    "sandbox_id": e2b_sandbox.sandbox_id,
-                    "status": "no_results_no_error",
-                },
-            )
-            raise ValueError(f"Tool {self.tool_name} returned execution with None")
+            execution = await e2b_sandbox.run_code(code, envs=env_vars)
 
-        return ToolExecutionResult(
-            func_return=func_return,
-            agent_state=agent_state,
-            stdout=execution.logs.stdout,
-            stderr=execution.logs.stderr,
-            status="error" if execution.error else "success",
-            sandbox_config_fingerprint=sbx_config.fingerprint(),
-        )
+            if execution.results:
+                func_return, agent_state = parse_stdout_best_effort(execution.results[0].text)
+                log_event(
+                    "e2b_execution_succeeded",
+                    {
+                        "tool": self.tool_name,
+                        "sandbox_id": e2b_sandbox.sandbox_id,
+                        "func_return": func_return,
+                    },
+                )
+            elif execution.error:
+                logger.error(f"Executing tool {self.tool_name} raised a {execution.error.name} with message: \n{execution.error.value}")
+                logger.error(f"Traceback from e2b sandbox: \n{execution.error.traceback}")
+                func_return = get_friendly_error_msg(
+                    function_name=self.tool_name, exception_name=execution.error.name, exception_message=execution.error.value
+                )
+                execution.logs.stderr.append(execution.error.traceback)
+                log_event(
+                    "e2b_execution_failed",
+                    {
+                        "tool": self.tool_name,
+                        "sandbox_id": e2b_sandbox.sandbox_id,
+                        "error_type": execution.error.name,
+                        "error_message": execution.error.value,
+                        "func_return": func_return,
+                    },
+                )
+            else:
+                log_event(
+                    "e2b_execution_empty",
+                    {
+                        "tool": self.tool_name,
+                        "sandbox_id": e2b_sandbox.sandbox_id,
+                        "status": "no_results_no_error",
+                    },
+                )
+                raise ValueError(f"Tool {self.tool_name} returned execution with None")
+
+            return ToolExecutionResult(
+                func_return=func_return,
+                agent_state=agent_state,
+                stdout=execution.logs.stdout,
+                stderr=execution.logs.stderr,
+                status="error" if execution.error else "success",
+                sandbox_config_fingerprint=sbx_config.fingerprint(),
+            )
+        finally:
+            await e2b_sandbox.kill()
 
     @staticmethod
     def parse_exception_from_e2b_execution(e2b_execution: "Execution") -> Exception:

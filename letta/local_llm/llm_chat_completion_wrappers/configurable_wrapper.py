@@ -91,9 +91,9 @@ class ConfigurableJSONWrapper(LLMChatCompletionWrapper):
         func_str = ""
         func_str += f"{schema['name']}:"
         func_str += f"\n  description: {schema['description']}"
-        func_str += f"\n  params:"
+        func_str += "\n  params:"
         if add_inner_thoughts:
-            func_str += f"\n    inner_thoughts: Deep inner monologue private to you only."
+            func_str += "\n    inner_thoughts: Deep inner monologue private to you only."
         for param_k, param_v in schema["parameters"]["properties"].items():
             # TODO we're ignoring type
             func_str += f"\n    {param_k}: {param_v['description']}"
@@ -105,8 +105,8 @@ class ConfigurableJSONWrapper(LLMChatCompletionWrapper):
         prompt = ""
 
         # prompt += f"\nPlease select the most suitable function and parameters from the list of available functions below, based on the user's input. Provide your response in JSON format."
-        prompt += f"Please select the most suitable function and parameters from the list of available functions below, based on the ongoing conversation. Provide your response in JSON format."
-        prompt += f"\nAvailable functions:"
+        prompt += "Please select the most suitable function and parameters from the list of available functions below, based on the ongoing conversation. Provide your response in JSON format."
+        prompt += "\nAvailable functions:"
         for function_dict in functions:
             prompt += f"\n{self._compile_function_description(function_dict)}"
 
@@ -117,8 +117,8 @@ class ConfigurableJSONWrapper(LLMChatCompletionWrapper):
         prompt = system_message
         prompt += "\n"
         if function_documentation is not None:
-            prompt += f"Please select the most suitable function and parameters from the list of available functions below, based on the ongoing conversation. Provide your response in JSON format."
-            prompt += f"\nAvailable functions:"
+            prompt += "Please select the most suitable function and parameters from the list of available functions below, based on the ongoing conversation. Provide your response in JSON format."
+            prompt += "\nAvailable functions:"
             prompt += function_documentation
         else:
             prompt += self._compile_function_block(functions)

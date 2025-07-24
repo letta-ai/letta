@@ -207,7 +207,7 @@ class ProviderManager:
 
     @enforce_types
     @trace_method
-    def check_provider_api_key(self, provider_check: ProviderCheck) -> None:
+    async def check_provider_api_key(self, provider_check: ProviderCheck) -> None:
         provider = PydanticProvider(
             name=provider_check.provider_type.value,
             provider_type=provider_check.provider_type,
@@ -221,4 +221,4 @@ class ProviderManager:
         if not provider.api_key:
             raise ValueError("API key is required")
 
-        provider.check_api_key()
+        await provider.check_api_key()

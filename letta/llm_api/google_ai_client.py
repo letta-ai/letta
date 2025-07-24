@@ -66,44 +66,6 @@ def google_ai_check_valid_api_key(api_key: str):
         raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
 
 
-def google_ai_get_model_list(base_url: str, api_key: str, key_in_header: bool = True) -> List[dict]:
-    """Synchronous version to get model list from Google AI API using httpx."""
-    import httpx
-
-    from letta.utils import printd
-
-    url, headers = get_gemini_endpoint_and_headers(base_url, None, api_key, key_in_header)
-
-    try:
-        with httpx.Client() as client:
-            response = client.get(url, headers=headers)
-            response.raise_for_status()  # Raises HTTPStatusError for 4XX/5XX status
-            response_data = response.json()  # convert to dict from string
-
-            # Grab the models out
-            model_list = response_data["models"]
-            return model_list
-
-    except httpx.HTTPStatusError as http_err:
-        # Handle HTTP errors (e.g., response 4XX, 5XX)
-        printd(f"Got HTTPError, exception={http_err}")
-        # Print the HTTP status code
-        print(f"HTTP Error: {http_err.response.status_code}")
-        # Print the response content (error message from server)
-        print(f"Message: {http_err.response.text}")
-        raise http_err
-
-    except httpx.RequestError as req_err:
-        # Handle other httpx-related errors (e.g., connection error)
-        printd(f"Got RequestException, exception={req_err}")
-        raise req_err
-
-    except Exception as e:
-        # Handle other potential errors
-        printd(f"Got unknown Exception, exception={e}")
-        raise e
-
-
 async def google_ai_get_model_list_async(
     base_url: str, api_key: str, key_in_header: bool = True, client: Optional[httpx.AsyncClient] = None
 ) -> List[dict]:

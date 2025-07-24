@@ -1,0 +1,15 @@
+        {
+          "object": "list",
+          "data": [
+            {
+              "id": "qwen2-vl-7b-instruct",
+              "object": "model",
+              "type": "vlm",
+              "publisher": "mlx-community",
+              "arch": "qwen2_vl",
+              "compatibility_type": "mlx",
+              "quantization": "4bit",
+              "state": "not-loaded",
+              "max_context_length": 32768
+            },
+            ...,

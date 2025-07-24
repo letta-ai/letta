@@ -19,7 +19,7 @@ from letta.schemas.response_format import ResponseFormatUnion
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.tool_rule import ToolRule
-from letta.utils import create_random_username
+from letta.utils import calculate_file_defaults_based_on_context_window, create_random_username
 
 
 class AgentType(str, Enum):
@@ -112,12 +112,43 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     # timezone
     timezone: Optional[str] = Field(None, description="The timezone of the agent (IANA format).")
 
+    # file related controls
+    max_files_open: Optional[int] = Field(
+        None,
+        description="Maximum number of files that can be open at once for this agent. Setting this too high may exceed the context window, which will break the agent.",
+    )
+    per_file_view_window_char_limit: Optional[int] = Field(
+        None,
+        description="The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.",
+    )
+
     def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
         # Get environment variables for this agent specifically
         per_agent_env_vars = {}
         for agent_env_var_obj in self.tool_exec_environment_variables:
             per_agent_env_vars[agent_env_var_obj.key] = agent_env_var_obj.value
         return per_agent_env_vars
+
+    @model_validator(mode="after")
+    def set_file_defaults_based_on_context_window(self) -> "AgentState":
+        """Set reasonable defaults for file-related fields based on the model's context window size."""
+        # Only set defaults if not explicitly provided
+        if self.max_files_open is not None and self.per_file_view_window_char_limit is not None:
+            return self
+
+        # Get context window size from llm_config
+        context_window = self.llm_config.context_window if self.llm_config and self.llm_config.context_window else None
+
+        # Calculate defaults using the helper function
+        default_max_files, default_char_limit = calculate_file_defaults_based_on_context_window(context_window)
+
+        # Apply defaults only if not set
+        if self.max_files_open is None:
+            self.max_files_open = default_max_files
+        if self.per_file_view_window_char_limit is None:
+            self.per_file_view_window_char_limit = default_char_limit
+
+        return self
 
 
 class CreateAgent(BaseModel, validate_assignment=True):  #
@@ -197,6 +228,14 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     enable_sleeptime: Optional[bool] = Field(None, description="If set to True, memory management will move to a background agent thread.")
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the agent.")
     timezone: Optional[str] = Field(None, description="The timezone of the agent (IANA format).")
+    max_files_open: Optional[int] = Field(
+        None,
+        description="Maximum number of files that can be open at once for this agent. Setting this too high may exceed the context window, which will break the agent.",
+    )
+    per_file_view_window_char_limit: Optional[int] = Field(
+        None,
+        description="The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.",
+    )
 
     @field_validator("name")
     @classmethod
@@ -291,6 +330,14 @@ class UpdateAgent(BaseModel):
     last_run_completion: Optional[datetime] = Field(None, description="The timestamp when the agent last completed a run.")
     last_run_duration_ms: Optional[int] = Field(None, description="The duration in milliseconds of the agent's last run.")
     timezone: Optional[str] = Field(None, description="The timezone of the agent (IANA format).")
+    max_files_open: Optional[int] = Field(
+        None,
+        description="Maximum number of files that can be open at once for this agent. Setting this too high may exceed the context window, which will break the agent.",
+    )
+    per_file_view_window_char_limit: Optional[int] = Field(
+        None,
+        description="The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.",
+    )
 
     class Config:
         extra = "ignore"  # Ignores extra fields
@@ -313,6 +360,12 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
         return (
             "{% if sources %}"
             "<directories>\n"
+            "{% if max_files_open %}"
+            "<file_limits>\n"
+            "- current_files_open={{ file_blocks|selectattr('value')|list|length }}\n"
+            "- max_files_open={{ max_files_open }}\n"
+            "</file_limits>\n"
+            "{% endif %}"
             "{% for source in sources %}"
             f'<directory name="{{{{ source.name }}}}">\n'
             "{% if source.description %}"
@@ -323,7 +376,7 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% endif %}"
             "{% if file_blocks %}"
             "{% for block in file_blocks %}"
-            "{% if block.metadata and block.metadata.get('source_id') == source.id %}"
+            "{% if block.source_id and block.source_id == source.id %}"
             f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\">\n"
             "<{{ block.label }}>\n"
             "<description>\n"
@@ -380,6 +433,12 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% endif %}"
             "\n\n{% if sources %}"
             "<directories>\n"
+            "{% if max_files_open %}"
+            "<file_limits>\n"
+            "- current_files_open={{ file_blocks|selectattr('value')|list|length }}\n"
+            "- max_files_open={{ max_files_open }}\n"
+            "</file_limits>\n"
+            "{% endif %}"
             "{% for source in sources %}"
             f'<directory name="{{{{ source.name }}}}">\n'
             "{% if source.description %}"
@@ -390,7 +449,7 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% endif %}"
             "{% if file_blocks %}"
             "{% for block in file_blocks %}"
-            "{% if block.metadata and block.metadata.get('source_id') == source.id %}"
+            "{% if block.source_id and block.source_id == source.id %}"
             f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\" name=\"{{{{ block.label }}}}\">\n"
             "{% if block.description %}"
             "<description>\n"
@@ -446,6 +505,12 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% endif %}"
             "\n\n{% if sources %}"
             "<directories>\n"
+            "{% if max_files_open %}"
+            "<file_limits>\n"
+            "- current_files_open={{ file_blocks|selectattr('value')|list|length }}\n"
+            "- max_files_open={{ max_files_open }}\n"
+            "</file_limits>\n"
+            "{% endif %}"
             "{% for source in sources %}"
             f'<directory name="{{{{ source.name }}}}">\n'
             "{% if source.description %}"
@@ -456,7 +521,7 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
             "{% endif %}"
             "{% if file_blocks %}"
             "{% for block in file_blocks %}"
-            "{% if block.metadata and block.metadata.get('source_id') == source.id %}"
+            "{% if block.source_id and block.source_id == source.id %}"
             f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\" name=\"{{{{ block.label }}}}\">\n"
             "{% if block.description %}"
             "<description>\n"

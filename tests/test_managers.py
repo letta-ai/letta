@@ -88,6 +88,7 @@ from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import calculate_base_tools, calculate_multi_agent_tools, validate_agent_exists_async
 from letta.services.step_manager import FeedbackType
 from letta.settings import tool_settings
+from letta.utils import calculate_file_defaults_based_on_context_window
 from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
 from tests.utils import random_string
 
@@ -686,6 +687,7 @@ async def file_attachment(server, default_user, sarah_agent, default_file):
         source_id=default_file.source_id,
         actor=default_user,
         visible_content="initial",
+        max_files_open=sarah_agent.max_files_open,
     )
     yield assoc
 
@@ -933,6 +935,7 @@ async def test_get_context_window_basic(
         source_id=default_file.source_id,
         actor=default_user,
         visible_content="hello",
+        max_files_open=created_agent.max_files_open,
     )
 
     # Get context window and check for basic appearances
@@ -1055,6 +1058,113 @@ async def test_update_agent(
     comprehensive_agent_checks(updated_agent, update_agent_request, actor=default_user)
     assert updated_agent.message_ids == update_agent_request.message_ids
     assert updated_agent.updated_at > last_updated_timestamp
+
+
+@pytest.mark.asyncio
+async def test_agent_file_defaults_based_on_context_window(server: SyncServer, default_user, default_block, event_loop):
+    """Test that file-related defaults are set based on the model's context window size"""
+
+    # test with small context window model (8k)
+    llm_config_small = LLMConfig.default_config("gpt-4o-mini")
+    llm_config_small.context_window = 8000
+    create_agent_request = CreateAgent(
+        name="test_agent_small_context",
+        llm_config=llm_config_small,
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        include_base_tools=False,
+    )
+    agent_state = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+    assert agent_state.max_files_open == 3
+    assert (
+        agent_state.per_file_view_window_char_limit == calculate_file_defaults_based_on_context_window(llm_config_small.context_window)[1]
+    )
+    server.agent_manager.delete_agent(agent_id=agent_state.id, actor=default_user)
+
+    # test with medium context window model (32k)
+    llm_config_medium = LLMConfig.default_config("gpt-4o-mini")
+    llm_config_medium.context_window = 32000
+    create_agent_request = CreateAgent(
+        name="test_agent_medium_context",
+        llm_config=llm_config_medium,
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        include_base_tools=False,
+    )
+    agent_state = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+    assert agent_state.max_files_open == 5
+    assert (
+        agent_state.per_file_view_window_char_limit == calculate_file_defaults_based_on_context_window(llm_config_medium.context_window)[1]
+    )
+    server.agent_manager.delete_agent(agent_id=agent_state.id, actor=default_user)
+
+    # test with large context window model (128k)
+    llm_config_large = LLMConfig.default_config("gpt-4o-mini")
+    llm_config_large.context_window = 128000
+    create_agent_request = CreateAgent(
+        name="test_agent_large_context",
+        llm_config=llm_config_large,
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        include_base_tools=False,
+    )
+    agent_state = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+    assert agent_state.max_files_open == 10
+    assert (
+        agent_state.per_file_view_window_char_limit == calculate_file_defaults_based_on_context_window(llm_config_large.context_window)[1]
+    )
+    server.agent_manager.delete_agent(agent_id=agent_state.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_agent_file_defaults_explicit_values(server: SyncServer, default_user, default_block, event_loop):
+    """Test that explicitly set file-related values are respected"""
+
+    llm_config_explicit = LLMConfig.default_config("gpt-4o-mini")
+    llm_config_explicit.context_window = 32000  # would normally get defaults of 5 and 30k
+    create_agent_request = CreateAgent(
+        name="test_agent_explicit_values",
+        llm_config=llm_config_explicit,
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        include_base_tools=False,
+        max_files_open=20,  # explicit value
+        per_file_view_window_char_limit=500_000,  # explicit value
+    )
+    agent_state = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+    # verify explicit values are used instead of defaults
+    assert agent_state.max_files_open == 20
+    assert agent_state.per_file_view_window_char_limit == 500_000
+    server.agent_manager.delete_agent(agent_id=agent_state.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_update_agent_file_fields(server: SyncServer, comprehensive_test_agent_fixture, default_user, event_loop):
+    """Test updating file-related fields on an existing agent"""
+
+    agent, _ = comprehensive_test_agent_fixture
+
+    # update file-related fields
+    update_request = UpdateAgent(
+        max_files_open=15,
+        per_file_view_window_char_limit=150_000,
+    )
+    updated_agent = await server.agent_manager.update_agent_async(agent.id, update_request, actor=default_user)
+
+    assert updated_agent.max_files_open == 15
+    assert updated_agent.per_file_view_window_char_limit == 150_000
 
 
 # ======================================================================================================================
@@ -1296,14 +1406,14 @@ async def test_list_agents_ordering_and_pagination(server: SyncServer, default_u
 async def test_attach_tool(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
     """Test attaching a tool to an agent."""
     # Attach the tool
-    server.agent_manager.attach_tool(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
 
     # Verify attachment through get_agent_by_id
     agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     assert print_tool.id in [t.id for t in agent.tools]
 
     # Verify that attaching the same tool again doesn't cause duplication
-    server.agent_manager.attach_tool(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
     agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     assert len([t for t in agent.tools if t.id == print_tool.id]) == 1
 
@@ -1312,39 +1422,125 @@ async def test_attach_tool(server: SyncServer, sarah_agent, print_tool, default_
 async def test_detach_tool(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
     """Test detaching a tool from an agent."""
     # Attach the tool first
-    server.agent_manager.attach_tool(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
 
     # Verify it's attached
     agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     assert print_tool.id in [t.id for t in agent.tools]
 
     # Detach the tool
-    server.agent_manager.detach_tool(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+    await server.agent_manager.detach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
 
     # Verify it's detached
     agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
     assert print_tool.id not in [t.id for t in agent.tools]
 
     # Verify that detaching an already detached tool doesn't cause issues
-    server.agent_manager.detach_tool(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+    await server.agent_manager.detach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
 
 
-def test_attach_tool_nonexistent_agent(server: SyncServer, print_tool, default_user):
+@pytest.mark.asyncio
+async def test_bulk_detach_tools(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
+    """Test bulk detaching multiple tools from an agent."""
+    # First attach both tools
+    tool_ids = [print_tool.id, other_tool.id]
+    await server.agent_manager.bulk_attach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Verify both tools are attached
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert print_tool.id in [t.id for t in agent.tools]
+    assert other_tool.id in [t.id for t in agent.tools]
+
+    # Bulk detach both tools
+    await server.agent_manager.bulk_detach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Verify both tools are detached
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert print_tool.id not in [t.id for t in agent.tools]
+    assert other_tool.id not in [t.id for t in agent.tools]
+
+
+@pytest.mark.asyncio
+async def test_bulk_detach_tools_partial(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
+    """Test bulk detaching tools when some are not attached."""
+    # Only attach one tool
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+
+    # Try to bulk detach both tools (one attached, one not)
+    tool_ids = [print_tool.id, other_tool.id]
+    await server.agent_manager.bulk_detach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Verify the attached tool was detached
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert print_tool.id not in [t.id for t in agent.tools]
+    assert other_tool.id not in [t.id for t in agent.tools]
+
+
+@pytest.mark.asyncio
+async def test_bulk_detach_tools_empty_list(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
+    """Test bulk detaching empty list of tools."""
+    # Attach a tool first
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+
+    # Bulk detach empty list
+    await server.agent_manager.bulk_detach_tools_async(agent_id=sarah_agent.id, tool_ids=[], actor=default_user)
+
+    # Verify the tool is still attached
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert print_tool.id in [t.id for t in agent.tools]
+
+
+@pytest.mark.asyncio
+async def test_bulk_detach_tools_idempotent(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
+    """Test that bulk detach is idempotent."""
+    # Attach both tools
+    tool_ids = [print_tool.id, other_tool.id]
+    await server.agent_manager.bulk_attach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Bulk detach once
+    await server.agent_manager.bulk_detach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Verify tools are detached
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert len(agent.tools) == 0
+
+    # Bulk detach again (should be no-op, no errors)
+    await server.agent_manager.bulk_detach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Verify still no tools
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert len(agent.tools) == 0
+
+
+@pytest.mark.asyncio
+async def test_bulk_detach_tools_nonexistent_agent(server: SyncServer, print_tool, other_tool, default_user, event_loop):
+    """Test bulk detaching tools from a nonexistent agent."""
+    nonexistent_agent_id = "nonexistent-agent-id"
+    tool_ids = [print_tool.id, other_tool.id]
+
+    with pytest.raises(NoResultFound):
+        await server.agent_manager.bulk_detach_tools_async(agent_id=nonexistent_agent_id, tool_ids=tool_ids, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_attach_tool_nonexistent_agent(server: SyncServer, print_tool, default_user):
     """Test attaching a tool to a nonexistent agent."""
     with pytest.raises(NoResultFound):
-        server.agent_manager.attach_tool(agent_id="nonexistent-agent-id", tool_id=print_tool.id, actor=default_user)
+        await server.agent_manager.attach_tool_async(agent_id="nonexistent-agent-id", tool_id=print_tool.id, actor=default_user)
 
 
-def test_attach_tool_nonexistent_tool(server: SyncServer, sarah_agent, default_user):
+@pytest.mark.asyncio
+async def test_attach_tool_nonexistent_tool(server: SyncServer, sarah_agent, default_user):
     """Test attaching a nonexistent tool to an agent."""
     with pytest.raises(NoResultFound):
-        server.agent_manager.attach_tool(agent_id=sarah_agent.id, tool_id="nonexistent-tool-id", actor=default_user)
+        await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id="nonexistent-tool-id", actor=default_user)
 
 
-def test_detach_tool_nonexistent_agent(server: SyncServer, print_tool, default_user):
+@pytest.mark.asyncio
+async def test_detach_tool_nonexistent_agent(server: SyncServer, print_tool, default_user):
     """Test detaching a tool from a nonexistent agent."""
     with pytest.raises(NoResultFound):
-        server.agent_manager.detach_tool(agent_id="nonexistent-agent-id", tool_id=print_tool.id, actor=default_user)
+        await server.agent_manager.detach_tool_async(agent_id="nonexistent-agent-id", tool_id=print_tool.id, actor=default_user)
 
 
 @pytest.mark.asyncio
@@ -1355,8 +1551,8 @@ async def test_list_attached_tools(server: SyncServer, sarah_agent, print_tool, 
     assert len(agent.tools) == 0
 
     # Attach tools
-    server.agent_manager.attach_tool(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
-    server.agent_manager.attach_tool(agent_id=sarah_agent.id, tool_id=other_tool.id, actor=default_user)
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=other_tool.id, actor=default_user)
 
     # List tools and verify
     agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
@@ -1364,6 +1560,251 @@ async def test_list_attached_tools(server: SyncServer, sarah_agent, print_tool, 
     assert len(attached_tool_ids) == 2
     assert print_tool.id in attached_tool_ids
     assert other_tool.id in attached_tool_ids
+
+
+@pytest.mark.asyncio
+async def test_bulk_attach_tools(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
+    """Test bulk attaching multiple tools to an agent."""
+    # Bulk attach both tools
+    tool_ids = [print_tool.id, other_tool.id]
+    await server.agent_manager.bulk_attach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Verify both tools are attached
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    attached_tool_ids = [t.id for t in agent.tools]
+    assert print_tool.id in attached_tool_ids
+    assert other_tool.id in attached_tool_ids
+
+
+@pytest.mark.asyncio
+async def test_bulk_attach_tools_with_duplicates(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
+    """Test bulk attaching tools handles duplicates correctly."""
+    # First attach one tool
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+
+    # Bulk attach both tools (one already attached)
+    tool_ids = [print_tool.id, other_tool.id]
+    await server.agent_manager.bulk_attach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Verify both tools are attached and no duplicates
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    attached_tool_ids = [t.id for t in agent.tools]
+    assert len(attached_tool_ids) == 2
+    assert print_tool.id in attached_tool_ids
+    assert other_tool.id in attached_tool_ids
+    # Ensure no duplicates
+    assert len(set(attached_tool_ids)) == len(attached_tool_ids)
+
+
+@pytest.mark.asyncio
+async def test_bulk_attach_tools_empty_list(server: SyncServer, sarah_agent, default_user, event_loop):
+    """Test bulk attaching empty list of tools."""
+    # Bulk attach empty list
+    await server.agent_manager.bulk_attach_tools_async(agent_id=sarah_agent.id, tool_ids=[], actor=default_user)
+
+    # Verify no tools are attached
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert len(agent.tools) == 0
+
+
+@pytest.mark.asyncio
+async def test_bulk_attach_tools_nonexistent_tool(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
+    """Test bulk attaching tools with a nonexistent tool ID."""
+    # Try to bulk attach with one valid and one invalid tool ID
+    nonexistent_id = "nonexistent-tool-id"
+    tool_ids = [print_tool.id, nonexistent_id]
+
+    with pytest.raises(NoResultFound) as exc_info:
+        await server.agent_manager.bulk_attach_tools_async(agent_id=sarah_agent.id, tool_ids=tool_ids, actor=default_user)
+
+    # Verify error message contains the missing tool ID
+    assert nonexistent_id in str(exc_info.value)
+
+    # Verify no tools were attached (transaction should have rolled back)
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert len(agent.tools) == 0
+
+
+@pytest.mark.asyncio
+async def test_bulk_attach_tools_nonexistent_agent(server: SyncServer, print_tool, other_tool, default_user, event_loop):
+    """Test bulk attaching tools to a nonexistent agent."""
+    nonexistent_agent_id = "nonexistent-agent-id"
+    tool_ids = [print_tool.id, other_tool.id]
+
+    with pytest.raises(NoResultFound):
+        await server.agent_manager.bulk_attach_tools_async(agent_id=nonexistent_agent_id, tool_ids=tool_ids, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_attach_missing_files_tools_async(server: SyncServer, sarah_agent, default_user, event_loop):
+    """Test attaching missing file tools to an agent."""
+    # First ensure file tools exist in the system
+    await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
+
+    # Get initial agent state (should have no file tools)
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    initial_tool_count = len(agent_state.tools)
+
+    # Attach missing file tools
+    updated_agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify all file tools are now attached
+    file_tool_names = {tool.name for tool in updated_agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
+    assert file_tool_names == set(FILES_TOOLS)
+
+    # Verify the total tool count increased by the number of file tools
+    assert len(updated_agent_state.tools) == initial_tool_count + len(FILES_TOOLS)
+
+
+@pytest.mark.asyncio
+async def test_attach_missing_files_tools_async_partial(server: SyncServer, sarah_agent, default_user, event_loop):
+    """Test attaching missing file tools when some are already attached."""
+    # First ensure file tools exist in the system
+    await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
+
+    # Get file tool IDs
+    all_tools = await server.tool_manager.list_tools_async(actor=default_user)
+    file_tools = [tool for tool in all_tools if tool.tool_type == ToolType.LETTA_FILES_CORE and tool.name in FILES_TOOLS]
+
+    # Manually attach just the first file tool
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=file_tools[0].id, actor=default_user)
+
+    # Get agent state with one file tool already attached
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert len([t for t in agent_state.tools if t.tool_type == ToolType.LETTA_FILES_CORE]) == 1
+
+    # Attach missing file tools
+    updated_agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify all file tools are now attached
+    file_tool_names = {tool.name for tool in updated_agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
+    assert file_tool_names == set(FILES_TOOLS)
+
+    # Verify no duplicates
+    all_tool_ids = [tool.id for tool in updated_agent_state.tools]
+    assert len(all_tool_ids) == len(set(all_tool_ids))
+
+
+@pytest.mark.asyncio
+async def test_attach_missing_files_tools_async_idempotent(server: SyncServer, sarah_agent, default_user, event_loop):
+    """Test that attach_missing_files_tools is idempotent."""
+    # First ensure file tools exist in the system
+    await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
+
+    # Get initial agent state
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+
+    # Attach missing file tools the first time
+    updated_agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=default_user)
+    first_tool_count = len(updated_agent_state.tools)
+
+    # Call attach_missing_files_tools again (should be no-op)
+    final_agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=updated_agent_state, actor=default_user)
+
+    # Verify tool count didn't change
+    assert len(final_agent_state.tools) == first_tool_count
+
+    # Verify still have all file tools
+    file_tool_names = {tool.name for tool in final_agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
+    assert file_tool_names == set(FILES_TOOLS)
+
+
+@pytest.mark.asyncio
+async def test_detach_all_files_tools_async(server: SyncServer, sarah_agent, default_user, event_loop):
+    """Test detaching all file tools from an agent."""
+    # First ensure file tools exist and attach them
+    await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
+
+    # Get initial agent state and attach file tools
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify file tools are attached
+    file_tool_count_before = len([t for t in agent_state.tools if t.tool_type == ToolType.LETTA_FILES_CORE])
+    assert file_tool_count_before == len(FILES_TOOLS)
+
+    # Detach all file tools
+    updated_agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify all file tools are detached
+    file_tool_count_after = len([t for t in updated_agent_state.tools if t.tool_type == ToolType.LETTA_FILES_CORE])
+    assert file_tool_count_after == 0
+
+    # Verify the returned state was modified in-place (no DB reload)
+    assert updated_agent_state.id == agent_state.id
+    assert len(updated_agent_state.tools) == len(agent_state.tools) - file_tool_count_before
+
+
+@pytest.mark.asyncio
+async def test_detach_all_files_tools_async_empty(server: SyncServer, sarah_agent, default_user, event_loop):
+    """Test detaching all file tools when no file tools are attached."""
+    # Get agent state (should have no file tools initially)
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    initial_tool_count = len(agent_state.tools)
+
+    # Verify no file tools attached
+    file_tool_count = len([t for t in agent_state.tools if t.tool_type == ToolType.LETTA_FILES_CORE])
+    assert file_tool_count == 0
+
+    # Call detach_all_files_tools (should be no-op)
+    updated_agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify nothing changed
+    assert len(updated_agent_state.tools) == initial_tool_count
+    assert updated_agent_state == agent_state  # Should be the same object since no changes
+
+
+@pytest.mark.asyncio
+async def test_detach_all_files_tools_async_with_other_tools(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
+    """Test detaching all file tools preserves non-file tools."""
+    # First ensure file tools exist
+    await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
+
+    # Attach a non-file tool
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
+
+    # Get agent state and attach file tools
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify both file tools and print tool are attached
+    file_tools = [t for t in agent_state.tools if t.tool_type == ToolType.LETTA_FILES_CORE]
+    assert len(file_tools) == len(FILES_TOOLS)
+    assert print_tool.id in [t.id for t in agent_state.tools]
+
+    # Detach all file tools
+    updated_agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify only file tools were removed, print tool remains
+    remaining_file_tools = [t for t in updated_agent_state.tools if t.tool_type == ToolType.LETTA_FILES_CORE]
+    assert len(remaining_file_tools) == 0
+    assert print_tool.id in [t.id for t in updated_agent_state.tools]
+    assert len(updated_agent_state.tools) == 1
+
+
+@pytest.mark.asyncio
+async def test_detach_all_files_tools_async_idempotent(server: SyncServer, sarah_agent, default_user, event_loop):
+    """Test that detach_all_files_tools is idempotent."""
+    # First ensure file tools exist and attach them
+    await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
+
+    # Get initial agent state and attach file tools
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Detach all file tools once
+    agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify no file tools
+    assert len([t for t in agent_state.tools if t.tool_type == ToolType.LETTA_FILES_CORE]) == 0
+    tool_count_after_first = len(agent_state.tools)
+
+    # Detach all file tools again (should be no-op)
+    final_agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=default_user)
+
+    # Verify still no file tools and same tool count
+    assert len([t for t in final_agent_state.tools if t.tool_type == ToolType.LETTA_FILES_CORE]) == 0
+    assert len(final_agent_state.tools) == tool_count_after_first
 
 
 # ======================================================================================================================
@@ -1677,12 +2118,6 @@ async def test_list_agents_by_tags_pagination(server: SyncServer, default_user, 
 
 
 @pytest.mark.asyncio
-@pytest.mark.skipif(
-    not hasattr(__import__("letta.settings"), "settings")
-    or not getattr(__import__("letta.settings").settings, "letta_pg_uri_no_default", None)
-    or USING_SQLITE,
-    reason="Skipping vector-related tests when using SQLite (vector search requires PostgreSQL)",
-)
 async def test_list_agents_query_text_pagination(server: SyncServer, default_user, default_organization, event_loop):
     """Test listing agents with query text filtering and pagination."""
     # Create test agents with specific names and descriptions
@@ -2022,7 +2457,7 @@ async def test_attach_block(server: SyncServer, sarah_agent, default_block, defa
     assert agent.memory.blocks[0].label == default_block.label
 
 
-@pytest.mark.skipif(USING_SQLITE, reason="Test not applicable when using SQLite.")
+# Test should work with both SQLite and PostgreSQL
 def test_attach_block_duplicate_label(server: SyncServer, sarah_agent, default_block, other_block, default_user):
     """Test attempting to attach a block with a duplicate label."""
     # Set up both blocks with same label
@@ -2275,11 +2710,6 @@ async def test_agent_list_passages_filtering(server, default_user, sarah_agent, 
 
 
 @pytest.mark.asyncio
-@pytest.mark.skipif(
-    not hasattr(__import__("letta.settings"), "settings")
-    or not getattr(__import__("letta.settings").settings, "letta_pg_uri_no_default", None),
-    reason="Skipping vector-related tests when using SQLite (vector search requires PostgreSQL)",
-)
 async def test_agent_list_passages_vector_search(server, default_user, sarah_agent, default_source, default_file, event_loop):
     """Test vector search functionality of agent passages"""
     embed_model = embedding_model(DEFAULT_EMBEDDING_CONFIG)
@@ -3041,7 +3471,7 @@ def test_create_mcp_tool(server: SyncServer, mcp_tool, default_user, default_org
     assert mcp_tool.metadata_[MCP_TOOL_TAG_NAME_PREFIX]["server_name"] == "test"
 
 
-@pytest.mark.skipif(USING_SQLITE, reason="Test not applicable when using SQLite.")
+# Test should work with both SQLite and PostgreSQL
 def test_create_tool_duplicate_name(server: SyncServer, print_tool, default_user, default_organization):
     data = print_tool.model_dump(exclude=["id"])
     tool = PydanticTool(**data)
@@ -3219,7 +3649,12 @@ async def test_delete_tool_by_id(server: SyncServer, print_tool, default_user, e
 @pytest.mark.asyncio
 async def test_upsert_base_tools(server: SyncServer, default_user, event_loop):
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user)
-    expected_tool_names = sorted(LETTA_TOOL_SET)
+
+    # Calculate expected tools accounting for production filtering
+    if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
+        expected_tool_names = sorted(LETTA_TOOL_SET - set(LOCAL_ONLY_MULTI_AGENT_TOOLS))
+    else:
+        expected_tool_names = sorted(LETTA_TOOL_SET)
 
     assert sorted([t.name for t in tools]) == expected_tool_names
 
@@ -3267,7 +3702,12 @@ async def test_upsert_base_tools(server: SyncServer, default_user, event_loop):
 async def test_upsert_filtered_base_tools(server: SyncServer, default_user, tool_type, expected_names):
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={tool_type})
     tool_names = sorted([t.name for t in tools])
-    expected_sorted = sorted(expected_names)
+
+    # Adjust expected names for multi-agent tools in production
+    if tool_type == ToolType.LETTA_MULTI_AGENT_CORE and os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
+        expected_sorted = sorted(set(expected_names) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS))
+    else:
+        expected_sorted = sorted(expected_names)
 
     assert tool_names == expected_sorted
     assert all(t.tool_type == tool_type for t in tools)
@@ -5788,7 +6228,15 @@ async def test_update_file_status_with_chunks(server, default_user, default_sour
     )
     created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
 
-    # Update with chunk progress
+    # First transition: PENDING -> PARSING
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.PARSING,
+    )
+    assert updated.processing_status == FileProcessingStatus.PARSING
+
+    # Next transition: PARSING -> EMBEDDING with chunk progress
     updated = await server.file_manager.update_file_status(
         file_id=created.id,
         actor=default_user,
@@ -5809,6 +6257,428 @@ async def test_update_file_status_with_chunks(server, default_user, default_sour
     assert updated.chunks_embedded == 100
     assert updated.total_chunks == 100  # unchanged
     assert updated.processing_status == FileProcessingStatus.EMBEDDING  # unchanged
+
+
+@pytest.mark.asyncio
+async def test_file_status_valid_transitions(server, default_user, default_source):
+    """Test valid state transitions follow the expected flow."""
+    meta = PydanticFileMetadata(
+        file_name="valid_transitions.txt",
+        file_path="/tmp/valid_transitions.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
+    assert created.processing_status == FileProcessingStatus.PENDING
+
+    # PENDING -> PARSING
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.PARSING,
+    )
+    assert updated.processing_status == FileProcessingStatus.PARSING
+
+    # PARSING -> EMBEDDING
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.EMBEDDING,
+    )
+    assert updated.processing_status == FileProcessingStatus.EMBEDDING
+
+    # EMBEDDING -> COMPLETED
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.COMPLETED,
+    )
+    assert updated.processing_status == FileProcessingStatus.COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_file_status_invalid_transitions(server, default_user, default_source):
+    """Test that invalid state transitions are blocked."""
+    # Test PENDING -> COMPLETED (skipping PARSING and EMBEDDING)
+    meta = PydanticFileMetadata(
+        file_name="invalid_pending_to_completed.txt",
+        file_path="/tmp/invalid1.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
+
+    with pytest.raises(ValueError, match="Invalid state transition.*pending.*COMPLETED"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.COMPLETED,
+        )
+
+    # Test PARSING -> COMPLETED (skipping EMBEDDING)
+    meta2 = PydanticFileMetadata(
+        file_name="invalid_parsing_to_completed.txt",
+        file_path="/tmp/invalid2.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created2 = await server.file_manager.create_file(file_metadata=meta2, actor=default_user)
+    await server.file_manager.update_file_status(
+        file_id=created2.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.PARSING,
+    )
+
+    with pytest.raises(ValueError, match="Invalid state transition.*parsing.*COMPLETED"):
+        await server.file_manager.update_file_status(
+            file_id=created2.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.COMPLETED,
+        )
+
+    # Test PENDING -> EMBEDDING (skipping PARSING)
+    meta3 = PydanticFileMetadata(
+        file_name="invalid_pending_to_embedding.txt",
+        file_path="/tmp/invalid3.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created3 = await server.file_manager.create_file(file_metadata=meta3, actor=default_user)
+
+    with pytest.raises(ValueError, match="Invalid state transition.*pending.*EMBEDDING"):
+        await server.file_manager.update_file_status(
+            file_id=created3.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.EMBEDDING,
+        )
+
+
+@pytest.mark.asyncio
+async def test_file_status_terminal_states(server, default_user, default_source):
+    """Test that terminal states (COMPLETED and ERROR) cannot be updated."""
+    # Test COMPLETED is terminal
+    meta = PydanticFileMetadata(
+        file_name="completed_terminal.txt",
+        file_path="/tmp/completed_terminal.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
+
+    # Move through valid transitions to COMPLETED
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.PARSING)
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.EMBEDDING)
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.COMPLETED)
+
+    # Cannot transition from COMPLETED to any state
+    with pytest.raises(ValueError, match="Cannot update.*terminal state completed"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.EMBEDDING,
+        )
+
+    with pytest.raises(ValueError, match="Cannot update.*terminal state completed"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.ERROR,
+            error_message="Should not work",
+        )
+
+    # Test ERROR is terminal
+    meta2 = PydanticFileMetadata(
+        file_name="error_terminal.txt",
+        file_path="/tmp/error_terminal.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created2 = await server.file_manager.create_file(file_metadata=meta2, actor=default_user)
+
+    await server.file_manager.update_file_status(
+        file_id=created2.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.ERROR,
+        error_message="Test error",
+    )
+
+    # Cannot transition from ERROR to any state
+    with pytest.raises(ValueError, match="Cannot update.*terminal state error"):
+        await server.file_manager.update_file_status(
+            file_id=created2.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.PARSING,
+        )
+
+
+@pytest.mark.asyncio
+async def test_file_status_error_transitions(server, default_user, default_source):
+    """Test that any non-terminal state can transition to ERROR."""
+    # PENDING -> ERROR
+    meta1 = PydanticFileMetadata(
+        file_name="pending_to_error.txt",
+        file_path="/tmp/pending_error.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created1 = await server.file_manager.create_file(file_metadata=meta1, actor=default_user)
+
+    updated1 = await server.file_manager.update_file_status(
+        file_id=created1.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.ERROR,
+        error_message="Failed at PENDING",
+    )
+    assert updated1.processing_status == FileProcessingStatus.ERROR
+    assert updated1.error_message == "Failed at PENDING"
+
+    # PARSING -> ERROR
+    meta2 = PydanticFileMetadata(
+        file_name="parsing_to_error.txt",
+        file_path="/tmp/parsing_error.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created2 = await server.file_manager.create_file(file_metadata=meta2, actor=default_user)
+    await server.file_manager.update_file_status(
+        file_id=created2.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.PARSING,
+    )
+
+    updated2 = await server.file_manager.update_file_status(
+        file_id=created2.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.ERROR,
+        error_message="Failed at PARSING",
+    )
+    assert updated2.processing_status == FileProcessingStatus.ERROR
+    assert updated2.error_message == "Failed at PARSING"
+
+    # EMBEDDING -> ERROR
+    meta3 = PydanticFileMetadata(
+        file_name="embedding_to_error.txt",
+        file_path="/tmp/embedding_error.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created3 = await server.file_manager.create_file(file_metadata=meta3, actor=default_user)
+    await server.file_manager.update_file_status(file_id=created3.id, actor=default_user, processing_status=FileProcessingStatus.PARSING)
+    await server.file_manager.update_file_status(file_id=created3.id, actor=default_user, processing_status=FileProcessingStatus.EMBEDDING)
+
+    updated3 = await server.file_manager.update_file_status(
+        file_id=created3.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.ERROR,
+        error_message="Failed at EMBEDDING",
+    )
+    assert updated3.processing_status == FileProcessingStatus.ERROR
+    assert updated3.error_message == "Failed at EMBEDDING"
+
+
+@pytest.mark.asyncio
+async def test_file_status_terminal_state_non_status_updates(server, default_user, default_source):
+    """Test that terminal states block ALL updates, not just status changes."""
+    # Create file and move to COMPLETED
+    meta = PydanticFileMetadata(
+        file_name="terminal_blocks_all.txt",
+        file_path="/tmp/terminal_all.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
+
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.PARSING)
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.EMBEDDING)
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.COMPLETED)
+
+    # Cannot update chunks_embedded in COMPLETED state
+    with pytest.raises(ValueError, match="Cannot update.*terminal state completed"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            chunks_embedded=50,
+        )
+
+    # Cannot update total_chunks in COMPLETED state
+    with pytest.raises(ValueError, match="Cannot update.*terminal state completed"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            total_chunks=100,
+        )
+
+    # Cannot update error_message in COMPLETED state
+    with pytest.raises(ValueError, match="Cannot update.*terminal state completed"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            error_message="This should fail",
+        )
+
+    # Test same for ERROR state
+    meta2 = PydanticFileMetadata(
+        file_name="error_blocks_all.txt",
+        file_path="/tmp/error_all.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created2 = await server.file_manager.create_file(file_metadata=meta2, actor=default_user)
+    await server.file_manager.update_file_status(
+        file_id=created2.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.ERROR,
+        error_message="Initial error",
+    )
+
+    # Cannot update chunks_embedded in ERROR state
+    with pytest.raises(ValueError, match="Cannot update.*terminal state error"):
+        await server.file_manager.update_file_status(
+            file_id=created2.id,
+            actor=default_user,
+            chunks_embedded=25,
+        )
+
+
+@pytest.mark.asyncio
+async def test_file_status_race_condition_prevention(server, default_user, default_source):
+    """Test that race conditions are prevented when multiple updates happen."""
+    meta = PydanticFileMetadata(
+        file_name="race_condition_test.txt",
+        file_path="/tmp/race_test.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
+
+    # Move to PARSING
+    await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.PARSING,
+    )
+
+    # Simulate race condition: Try to update from PENDING again (stale read)
+    # This should fail because the file is already in PARSING
+    with pytest.raises(ValueError, match="Invalid state transition.*parsing.*PARSING"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.PARSING,
+        )
+
+    # Move to ERROR
+    await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.ERROR,
+        error_message="Simulated error",
+    )
+
+    # Try to continue with EMBEDDING as if error didn't happen (race condition)
+    # This should fail because file is in ERROR state
+    with pytest.raises(ValueError, match="Cannot update.*terminal state error"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.EMBEDDING,
+        )
+
+
+@pytest.mark.asyncio
+async def test_file_status_backwards_transitions(server, default_user, default_source):
+    """Test that backwards transitions are not allowed."""
+    meta = PydanticFileMetadata(
+        file_name="backwards_transitions.txt",
+        file_path="/tmp/backwards.txt",
+        file_type="text/plain",
+        file_size=100,
+        source_id=default_source.id,
+    )
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
+
+    # Move to EMBEDDING
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.PARSING)
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.EMBEDDING)
+
+    # Cannot go back to PARSING
+    with pytest.raises(ValueError, match="Invalid state transition.*embedding.*PARSING"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.PARSING,
+        )
+
+    # Cannot go back to PENDING
+    with pytest.raises(ValueError, match="Cannot transition to PENDING state.*PENDING is only valid as initial state"):
+        await server.file_manager.update_file_status(
+            file_id=created.id,
+            actor=default_user,
+            processing_status=FileProcessingStatus.PENDING,
+        )
+
+
+@pytest.mark.asyncio
+async def test_file_status_update_with_chunks_progress(server, default_user, default_source):
+    """Test updating chunk progress during EMBEDDING state."""
+    meta = PydanticFileMetadata(
+        file_name="chunk_progress.txt",
+        file_path="/tmp/chunks.txt",
+        file_type="text/plain",
+        file_size=1000,
+        source_id=default_source.id,
+    )
+    created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
+
+    # Move to EMBEDDING with initial chunk info
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.PARSING)
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.EMBEDDING,
+        total_chunks=100,
+        chunks_embedded=0,
+    )
+    assert updated.total_chunks == 100
+    assert updated.chunks_embedded == 0
+
+    # Update chunk progress without changing status
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        chunks_embedded=50,
+    )
+    assert updated.chunks_embedded == 50
+    assert updated.processing_status == FileProcessingStatus.EMBEDDING
+
+    # Update to completion
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        chunks_embedded=100,
+    )
+    assert updated.chunks_embedded == 100
+
+    # Move to COMPLETED
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.COMPLETED,
+    )
+    assert updated.processing_status == FileProcessingStatus.COMPLETED
+    assert updated.chunks_embedded == 100  # preserved
 
 
 @pytest.mark.asyncio
@@ -7654,6 +8524,7 @@ async def test_attach_creates_association(server, default_user, sarah_agent, def
         source_id=default_file.source_id,
         actor=default_user,
         visible_content="hello",
+        max_files_open=sarah_agent.max_files_open,
     )
 
     assert assoc.agent_id == sarah_agent.id
@@ -7677,6 +8548,7 @@ async def test_attach_is_idempotent(server, default_user, sarah_agent, default_f
         source_id=default_file.source_id,
         actor=default_user,
         visible_content="first",
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # second attach with different params
@@ -7688,6 +8560,7 @@ async def test_attach_is_idempotent(server, default_user, sarah_agent, default_f
         actor=default_user,
         is_open=False,
         visible_content="second",
+        max_files_open=sarah_agent.max_files_open,
     )
 
     assert a1.id == a2.id
@@ -7764,6 +8637,7 @@ async def test_list_files_and_agents(
         file_name=default_file.file_name,
         source_id=default_file.source_id,
         actor=default_user,
+        max_files_open=charles_agent.max_files_open,
     )
     # default_file ↔ sarah    (open)
     await server.file_agent_manager.attach_file(
@@ -7772,6 +8646,7 @@ async def test_list_files_and_agents(
         file_name=default_file.file_name,
         source_id=default_file.source_id,
         actor=default_user,
+        max_files_open=sarah_agent.max_files_open,
     )
     # another_file ↔ sarah    (closed)
     await server.file_agent_manager.attach_file(
@@ -7781,12 +8656,17 @@ async def test_list_files_and_agents(
         source_id=another_file.source_id,
         actor=default_user,
         is_open=False,
+        max_files_open=sarah_agent.max_files_open,
     )
 
-    files_for_sarah = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
+    files_for_sarah = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user
+    )
     assert {f.file_id for f in files_for_sarah} == {default_file.id, another_file.id}
 
-    open_only = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
+    open_only = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
     assert {f.file_id for f in open_only} == {default_file.id}
 
     agents_for_default = await server.file_agent_manager.list_agents_for_file(default_file.id, actor=default_user)
@@ -7818,6 +8698,95 @@ async def test_detach_file(server, file_attachment, default_user):
 
 
 @pytest.mark.asyncio
+async def test_detach_file_bulk(
+    server,
+    default_user,
+    sarah_agent,
+    charles_agent,
+    default_source,
+):
+    """Test bulk deletion of multiple agent-file associations."""
+    # Create multiple files
+    files = []
+    for i in range(3):
+        file_metadata = PydanticFileMetadata(
+            file_name=f"test_file_{i}.txt",
+            source_id=default_source.id,
+            organization_id=default_user.organization_id,
+        )
+        file = await server.file_manager.create_file(file_metadata, actor=default_user)
+        files.append(file)
+
+    # Attach all files to both agents
+    for file in files:
+        await server.file_agent_manager.attach_file(
+            agent_id=sarah_agent.id,
+            file_id=file.id,
+            file_name=file.file_name,
+            source_id=file.source_id,
+            actor=default_user,
+            max_files_open=sarah_agent.max_files_open,
+        )
+        await server.file_agent_manager.attach_file(
+            agent_id=charles_agent.id,
+            file_id=file.id,
+            file_name=file.file_name,
+            source_id=file.source_id,
+            actor=default_user,
+            max_files_open=charles_agent.max_files_open,
+        )
+
+    # Verify all files are attached to both agents
+    sarah_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user
+    )
+    charles_files = await server.file_agent_manager.list_files_for_agent(
+        charles_agent.id, per_file_view_window_char_limit=charles_agent.per_file_view_window_char_limit, actor=default_user
+    )
+    assert len(sarah_files) == 3
+    assert len(charles_files) == 3
+
+    # Test 1: Bulk delete specific files from specific agents
+    agent_file_pairs = [
+        (sarah_agent.id, files[0].id),  # Remove file 0 from sarah
+        (sarah_agent.id, files[1].id),  # Remove file 1 from sarah
+        (charles_agent.id, files[1].id),  # Remove file 1 from charles
+    ]
+
+    deleted_count = await server.file_agent_manager.detach_file_bulk(agent_file_pairs=agent_file_pairs, actor=default_user)
+    assert deleted_count == 3
+
+    # Verify the correct files were deleted
+    sarah_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user
+    )
+    charles_files = await server.file_agent_manager.list_files_for_agent(
+        charles_agent.id, per_file_view_window_char_limit=charles_agent.per_file_view_window_char_limit, actor=default_user
+    )
+
+    # Sarah should only have file 2 left
+    assert len(sarah_files) == 1
+    assert sarah_files[0].file_id == files[2].id
+
+    # Charles should have files 0 and 2 left
+    assert len(charles_files) == 2
+    charles_file_ids = {f.file_id for f in charles_files}
+    assert charles_file_ids == {files[0].id, files[2].id}
+
+    # Test 2: Empty list should return 0 and not fail
+    deleted_count = await server.file_agent_manager.detach_file_bulk(agent_file_pairs=[], actor=default_user)
+    assert deleted_count == 0
+
+    # Test 3: Attempting to delete already deleted associations should return 0
+    agent_file_pairs = [
+        (sarah_agent.id, files[0].id),  # Already deleted
+        (sarah_agent.id, files[1].id),  # Already deleted
+    ]
+    deleted_count = await server.file_agent_manager.detach_file_bulk(agent_file_pairs=agent_file_pairs, actor=default_user)
+    assert deleted_count == 0
+
+
+@pytest.mark.asyncio
 async def test_org_scoping(
     server,
     default_user,
@@ -7832,10 +8801,13 @@ async def test_org_scoping(
         file_name=default_file.file_name,
         source_id=default_file.source_id,
         actor=default_user,
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # other org should see nothing
-    files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=other_user_different_org)
+    files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=other_user_different_org
+    )
     assert files == []
 
 
@@ -7870,6 +8842,7 @@ async def test_mark_access_bulk(server, default_user, sarah_agent, default_sourc
             source_id=file.source_id,
             actor=default_user,
             visible_content=f"content for {file.file_name}",
+            max_files_open=sarah_agent.max_files_open,
         )
         attached_files.append(file_agent)
 
@@ -7898,14 +8871,15 @@ async def test_mark_access_bulk(server, default_user, sarah_agent, default_sourc
 
 @pytest.mark.asyncio
 async def test_lru_eviction_on_attach(server, default_user, sarah_agent, default_source):
-    """Test that attaching files beyond MAX_FILES_OPEN triggers LRU eviction."""
+    """Test that attaching files beyond max_files_open triggers LRU eviction."""
     import time
 
-    from letta.constants import MAX_FILES_OPEN
+    # Use the agent's configured max_files_open
+    max_files_open = sarah_agent.max_files_open
 
     # Create more files than the limit
     files = []
-    for i in range(MAX_FILES_OPEN + 2):  # 7 files for MAX_FILES_OPEN=5
+    for i in range(max_files_open + 2):  # e.g., 7 files for max_files_open=5
         file_metadata = PydanticFileMetadata(
             file_name=f"lru_test_file_{i}.txt",
             organization_id=default_user.organization_id,
@@ -7929,41 +8903,52 @@ async def test_lru_eviction_on_attach(server, default_user, sarah_agent, default
             source_id=file.source_id,
             actor=default_user,
             visible_content=f"content for {file.file_name}",
+            max_files_open=sarah_agent.max_files_open,
         )
         attached_files.append(file_agent)
         all_closed_files.extend(closed_files)
 
-        # Check that we never exceed MAX_FILES_OPEN
-        open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-        assert len(open_files) <= MAX_FILES_OPEN, f"Should never exceed {MAX_FILES_OPEN} open files"
+        # Check that we never exceed max_files_open
+        open_files = await server.file_agent_manager.list_files_for_agent(
+            sarah_agent.id,
+            per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit,
+            actor=default_user,
+            is_open_only=True,
+        )
+        assert len(open_files) <= max_files_open, f"Should never exceed {max_files_open} open files"
 
-    # Should have closed exactly 2 files (7 - 5 = 2)
-    assert len(all_closed_files) == 2, f"Should have closed 2 files, but closed: {all_closed_files}"
+    # Should have closed exactly 2 files (e.g., 7 - 5 = 2 for max_files_open=5)
+    expected_closed_count = len(files) - max_files_open
+    assert (
+        len(all_closed_files) == expected_closed_count
+    ), f"Should have closed {expected_closed_count} files, but closed: {all_closed_files}"
 
-    # Check that the oldest files were closed (first 2 files attached)
-    expected_closed = [files[0].file_name, files[1].file_name]
+    # Check that the oldest files were closed (first N files attached)
+    expected_closed = [files[i].file_name for i in range(expected_closed_count)]
     assert set(all_closed_files) == set(expected_closed), f"Wrong files closed. Expected {expected_closed}, got {all_closed_files}"
 
-    # Check that exactly MAX_FILES_OPEN files are open
-    open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-    assert len(open_files) == MAX_FILES_OPEN
+    # Check that exactly max_files_open files are open
+    open_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
+    assert len(open_files) == max_files_open
 
     # Check that the most recently attached files are still open
     open_file_names = {f.file_name for f in open_files}
-    expected_open = {files[i].file_name for i in range(2, MAX_FILES_OPEN + 2)}  # files 2-6
+    expected_open = {files[i].file_name for i in range(expected_closed_count, len(files))}  # last max_files_open files
     assert open_file_names == expected_open
 
 
 @pytest.mark.asyncio
 async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, default_source):
-    """Test that opening a file beyond MAX_FILES_OPEN triggers LRU eviction."""
+    """Test that opening a file beyond max_files_open triggers LRU eviction."""
     import time
 
-    from letta.constants import MAX_FILES_OPEN
+    max_files_open = sarah_agent.max_files_open
 
     # Create files equal to the limit
     files = []
-    for i in range(MAX_FILES_OPEN + 1):  # 6 files for MAX_FILES_OPEN=5
+    for i in range(max_files_open + 1):  # 6 files for max_files_open=5
         file_metadata = PydanticFileMetadata(
             file_name=f"open_test_file_{i}.txt",
             organization_id=default_user.organization_id,
@@ -7972,8 +8957,8 @@ async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, defa
         file = await server.file_manager.create_file(file_metadata=file_metadata, actor=default_user, text=f"test content {i}")
         files.append(file)
 
-    # Attach first MAX_FILES_OPEN files
-    for i in range(MAX_FILES_OPEN):
+    # Attach first max_files_open files
+    for i in range(max_files_open):
         time.sleep(0.1)  # Small delay for different timestamps
         await server.file_agent_manager.attach_file(
             agent_id=sarah_agent.id,
@@ -7982,6 +8967,7 @@ async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, defa
             source_id=files[i].source_id,
             actor=default_user,
             visible_content=f"content for {files[i].file_name}",
+            max_files_open=sarah_agent.max_files_open,
         )
 
     # Attach the last file as closed
@@ -7993,13 +8979,18 @@ async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, defa
         actor=default_user,
         is_open=False,
         visible_content=f"content for {files[-1].file_name}",
+        max_files_open=sarah_agent.max_files_open,
     )
 
-    # All files should be attached but only MAX_FILES_OPEN should be open
-    all_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
-    open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-    assert len(all_files) == MAX_FILES_OPEN + 1
-    assert len(open_files) == MAX_FILES_OPEN
+    # All files should be attached but only max_files_open should be open
+    all_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user
+    )
+    open_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
+    assert len(all_files) == max_files_open + 1
+    assert len(open_files) == max_files_open
 
     # Wait a moment
     time.sleep(0.1)
@@ -8012,15 +9003,18 @@ async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, defa
         source_id=files[-1].source_id,
         actor=default_user,
         visible_content="updated content",
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # Should have closed 1 file (the oldest one)
     assert len(closed_files) == 1, f"Should have closed 1 file, got: {closed_files}"
     assert closed_files[0] == files[0].file_name, f"Should have closed oldest file {files[0].file_name}"
 
-    # Check that exactly MAX_FILES_OPEN files are still open
-    open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-    assert len(open_files) == MAX_FILES_OPEN
+    # Check that exactly max_files_open files are still open
+    open_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
+    assert len(open_files) == max_files_open
 
     # Check that the newly opened file is open and the oldest is closed
     last_file_agent = await server.file_agent_manager.get_file_agent_by_id(
@@ -8039,11 +9033,11 @@ async def test_lru_no_eviction_when_reopening_same_file(server, default_user, sa
     """Test that reopening an already open file doesn't trigger unnecessary eviction."""
     import time
 
-    from letta.constants import MAX_FILES_OPEN
+    max_files_open = sarah_agent.max_files_open
 
     # Create files equal to the limit
     files = []
-    for i in range(MAX_FILES_OPEN):
+    for i in range(max_files_open):
         file_metadata = PydanticFileMetadata(
             file_name=f"reopen_test_file_{i}.txt",
             organization_id=default_user.organization_id,
@@ -8062,11 +9056,14 @@ async def test_lru_no_eviction_when_reopening_same_file(server, default_user, sa
             source_id=file.source_id,
             actor=default_user,
             visible_content=f"content for {file.file_name}",
+            max_files_open=sarah_agent.max_files_open,
         )
 
     # All files should be open
-    open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-    assert len(open_files) == MAX_FILES_OPEN
+    open_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
+    assert len(open_files) == max_files_open
     initial_open_names = {f.file_name for f in open_files}
 
     # Wait a moment
@@ -8080,6 +9077,7 @@ async def test_lru_no_eviction_when_reopening_same_file(server, default_user, sa
         source_id=files[-1].source_id,
         actor=default_user,
         visible_content="updated content",
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # Should not have closed any files since we're within the limit
@@ -8087,8 +9085,10 @@ async def test_lru_no_eviction_when_reopening_same_file(server, default_user, sa
     assert was_already_open is True, "File should have been detected as already open"
 
     # All the same files should still be open
-    open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-    assert len(open_files) == MAX_FILES_OPEN
+    open_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
+    assert len(open_files) == max_files_open
     final_open_names = {f.file_name for f in open_files}
     assert initial_open_names == final_open_names, "Same files should remain open"
 
@@ -8113,6 +9113,7 @@ async def test_last_accessed_at_updates_correctly(server, default_user, sarah_ag
         source_id=file.source_id,
         actor=default_user,
         visible_content="initial content",
+        max_files_open=sarah_agent.max_files_open,
     )
 
     initial_time = file_agent.last_accessed_at
@@ -8166,13 +9167,16 @@ async def test_attach_files_bulk_basic(server, default_user, sarah_agent, defaul
         files_metadata=files,
         visible_content_map=visible_content_map,
         actor=default_user,
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # Should not close any files since we're under the limit
     assert closed_files == []
 
     # Verify all files are attached and open
-    attached_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
+    attached_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
     assert len(attached_files) == 3
 
     attached_file_names = {f.file_name for f in attached_files}
@@ -8213,10 +9217,13 @@ async def test_attach_files_bulk_deduplication(server, default_user, sarah_agent
         files_metadata=files_to_attach,
         visible_content_map=visible_content_map,
         actor=default_user,
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # Should only attach one file (deduplicated)
-    attached_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
+    attached_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user
+    )
     assert len(attached_files) == 1
     assert attached_files[0].file_name == "duplicate_test.txt"
 
@@ -8226,11 +9233,11 @@ async def test_attach_files_bulk_lru_eviction(server, default_user, sarah_agent,
     """Test that attach_files_bulk properly handles LRU eviction without duplicates."""
     import time
 
-    from letta.constants import MAX_FILES_OPEN
+    max_files_open = sarah_agent.max_files_open
 
     # First, fill up to the max with individual files
     existing_files = []
-    for i in range(MAX_FILES_OPEN):
+    for i in range(max_files_open):
         file_metadata = PydanticFileMetadata(
             file_name=f"existing_{i}.txt",
             organization_id=default_user.organization_id,
@@ -8247,11 +9254,14 @@ async def test_attach_files_bulk_lru_eviction(server, default_user, sarah_agent,
             source_id=file.source_id,
             actor=default_user,
             visible_content=f"existing content {i}",
+            max_files_open=sarah_agent.max_files_open,
         )
 
     # Verify we're at the limit
-    open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-    assert len(open_files) == MAX_FILES_OPEN
+    open_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
+    assert len(open_files) == max_files_open
 
     # Now bulk attach 3 new files (should trigger LRU eviction)
     new_files = []
@@ -8272,6 +9282,7 @@ async def test_attach_files_bulk_lru_eviction(server, default_user, sarah_agent,
         files_metadata=new_files,
         visible_content_map=visible_content_map,
         actor=default_user,
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # Should have closed exactly 3 files (oldest ones)
@@ -8285,9 +9296,11 @@ async def test_attach_files_bulk_lru_eviction(server, default_user, sarah_agent,
     actual_closed = set(closed_files)
     assert actual_closed == expected_closed
 
-    # Verify we still have exactly MAX_FILES_OPEN files open
-    open_files_after = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-    assert len(open_files_after) == MAX_FILES_OPEN
+    # Verify we still have exactly max_files_open files open
+    open_files_after = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
+    assert len(open_files_after) == max_files_open
 
     # Verify the new files are open
     open_file_names = {f.file_name for f in open_files_after}
@@ -8314,6 +9327,7 @@ async def test_attach_files_bulk_mixed_existing_new(server, default_user, sarah_
         actor=default_user,
         visible_content="old content",
         is_open=False,  # Start as closed
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # Create new files
@@ -8340,13 +9354,16 @@ async def test_attach_files_bulk_mixed_existing_new(server, default_user, sarah_
         files_metadata=files_to_attach,
         visible_content_map=visible_content_map,
         actor=default_user,
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # Should not close any files
     assert closed_files == []
 
     # Verify all files are now open
-    open_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
+    open_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
     assert len(open_files) == 3
 
     # Verify existing file was updated
@@ -8361,27 +9378,26 @@ async def test_attach_files_bulk_mixed_existing_new(server, default_user, sarah_
 async def test_attach_files_bulk_empty_list(server, default_user, sarah_agent):
     """Test attach_files_bulk with empty file list."""
     closed_files = await server.file_agent_manager.attach_files_bulk(
-        agent_id=sarah_agent.id,
-        files_metadata=[],
-        visible_content_map={},
-        actor=default_user,
+        agent_id=sarah_agent.id, files_metadata=[], visible_content_map={}, actor=default_user, max_files_open=sarah_agent.max_files_open
     )
 
     assert closed_files == []
 
     # Verify no files are attached
-    attached_files = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
+    attached_files = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user
+    )
     assert len(attached_files) == 0
 
 
 @pytest.mark.asyncio
 async def test_attach_files_bulk_oversized_bulk(server, default_user, sarah_agent, default_source):
-    """Test bulk attach when trying to attach more files than MAX_FILES_OPEN allows."""
-    from letta.constants import MAX_FILES_OPEN
+    """Test bulk attach when trying to attach more files than max_files_open allows."""
+    max_files_open = sarah_agent.max_files_open
 
     # Create more files than the limit allows
     oversized_files = []
-    for i in range(MAX_FILES_OPEN + 3):  # 3 more than limit
+    for i in range(max_files_open + 3):  # 3 more than limit
         file_metadata = PydanticFileMetadata(
             file_name=f"oversized_{i}.txt",
             organization_id=default_user.organization_id,
@@ -8390,7 +9406,7 @@ async def test_attach_files_bulk_oversized_bulk(server, default_user, sarah_agen
         file = await server.file_manager.create_file(file_metadata=file_metadata, actor=default_user, text=f"oversized {i}")
         oversized_files.append(file)
 
-    visible_content_map = {f"oversized_{i}.txt": f"oversized visible {i}" for i in range(MAX_FILES_OPEN + 3)}
+    visible_content_map = {f"oversized_{i}.txt": f"oversized visible {i}" for i in range(max_files_open + 3)}
 
     # Bulk attach all files (more than limit)
     closed_files = await server.file_agent_manager.attach_files_bulk(
@@ -8398,6 +9414,7 @@ async def test_attach_files_bulk_oversized_bulk(server, default_user, sarah_agen
         files_metadata=oversized_files,
         visible_content_map=visible_content_map,
         actor=default_user,
+        max_files_open=sarah_agent.max_files_open,
     )
 
     # Should have closed exactly 3 files (the excess)
@@ -8406,13 +9423,17 @@ async def test_attach_files_bulk_oversized_bulk(server, default_user, sarah_agen
     # CRITICAL: Verify no duplicates in closed_files list
     assert len(closed_files) == len(set(closed_files)), f"Duplicate file names in closed_files: {closed_files}"
 
-    # Should have exactly MAX_FILES_OPEN files open
-    open_files_after = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user, is_open_only=True)
-    assert len(open_files_after) == MAX_FILES_OPEN
+    # Should have exactly max_files_open files open
+    open_files_after = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user, is_open_only=True
+    )
+    assert len(open_files_after) == max_files_open
 
     # All files should be attached (some open, some closed)
-    all_files_after = await server.file_agent_manager.list_files_for_agent(sarah_agent.id, actor=default_user)
-    assert len(all_files_after) == MAX_FILES_OPEN + 3
+    all_files_after = await server.file_agent_manager.list_files_for_agent(
+        sarah_agent.id, per_file_view_window_char_limit=sarah_agent.per_file_view_window_char_limit, actor=default_user
+    )
+    assert len(all_files_after) == max_files_open + 3
 
 
 # ======================================================================================================================

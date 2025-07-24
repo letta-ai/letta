@@ -59,7 +59,7 @@ def test_get_allowed_tool_names_no_matching_rule_error():
     solver = ToolRulesSolver(tool_rules=[init_rule])
 
     solver.register_tool_call(UNRECOGNIZED_TOOL)
-    with pytest.raises(ValueError, match=f"No valid tools found based on tool rules."):
+    with pytest.raises(ValueError, match="No valid tools found based on tool rules."):
         solver.get_allowed_tool_names(set(), error_on_empty=True)
 
 

@@ -2,6 +2,8 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE
+
 
 class EmbeddingConfig(BaseModel):
     """
@@ -40,6 +42,7 @@ class EmbeddingConfig(BaseModel):
         "hugging-face",
         "mistral",
         "together",  # completions endpoint
+        "pinecone",
     ] = Field(..., description="The endpoint type for the model.")
     embedding_endpoint: Optional[str] = Field(None, description="The endpoint for the model (`None` if local).")
     embedding_model: str = Field(..., description="The model for the embedding.")
@@ -62,7 +65,7 @@ class EmbeddingConfig(BaseModel):
                 embedding_endpoint_type="openai",
                 embedding_endpoint="https://api.openai.com/v1",
                 embedding_dim=1536,
-                embedding_chunk_size=300,
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
             )
         if (model_name == "text-embedding-3-small" and provider == "openai") or (not model_name and provider == "openai"):
             return cls(
@@ -70,15 +73,24 @@ class EmbeddingConfig(BaseModel):
                 embedding_endpoint_type="openai",
                 embedding_endpoint="https://api.openai.com/v1",
                 embedding_dim=2000,
-                embedding_chunk_size=300,
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
             )
         elif model_name == "letta":
             return cls(
                 embedding_endpoint="https://embeddings.memgpt.ai",
                 embedding_model="BAAI/bge-large-en-v1.5",
                 embedding_dim=1024,
-                embedding_chunk_size=300,
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
                 embedding_endpoint_type="hugging-face",
+            )
+        elif provider == "pinecone":
+            # default config for pinecone with empty endpoint
+            return cls(
+                embedding_endpoint=None,
+                embedding_model="llama-text-embed-v2",
+                embedding_dim=1536,  # assuming default openai dimension
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
+                embedding_endpoint_type="pinecone",
             )
         else:
             raise ValueError(f"Model {model_name} not supported.")

@@ -407,9 +407,10 @@ def start_server(
                 address=host or "127.0.0.1",  # Note granian address must be an ip address
                 port=port or REST_DEFAULT_PORT,
                 workers=settings.uvicorn_workers,
-                # threads=
+                # runtime_blocking_threads=
+                # runtime_threads=
                 reload=reload or settings.uvicorn_reload,
-                reload_ignore_patterns=["openapi_letta.json"],
+                reload_paths=["letta/"],
                 reload_ignore_worker_failure=True,
                 reload_tick=4000,  # set to 4s to prevent crashing on weird state
                 # log_level="info"
@@ -451,7 +452,7 @@ def start_server(
                 # runtime_blocking_threads=
                 # runtime_threads=
                 reload=reload or settings.uvicorn_reload,
-                reload_paths=["../letta/"],
+                reload_paths=["letta/"],
                 reload_ignore_worker_failure=True,
                 reload_tick=4000,  # set to 4s to prevent crashing on weird state
                 # log_level="info"

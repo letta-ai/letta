@@ -1,14 +1,14 @@
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Union
 
-from sqlalchemy import and_, func, select, update
+from sqlalchemy import and_, delete, func, or_, select, update
 
-from letta.constants import MAX_FILES_OPEN
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.files_agents import FileAgent as FileAgentModel
 from letta.otel.tracing import trace_method
 from letta.schemas.block import Block as PydanticBlock
+from letta.schemas.block import FileBlock as PydanticFileBlock
 from letta.schemas.file import FileAgent as PydanticFileAgent
 from letta.schemas.file import FileMetadata
 from letta.schemas.user import User as PydanticUser
@@ -31,6 +31,7 @@ class FileAgentManager:
         file_name: str,
         source_id: str,
         actor: PydanticUser,
+        max_files_open: int,
         is_open: bool = True,
         visible_content: Optional[str] = None,
     ) -> tuple[PydanticFileAgent, List[str]]:
@@ -40,7 +41,7 @@ class FileAgentManager:
         • If the row already exists → update `is_open`, `visible_content`
           and always refresh `last_accessed_at`.
         • Otherwise create a brand-new association.
-        • If is_open=True, enforces MAX_FILES_OPEN using LRU eviction.
+        • If is_open=True, enforces max_files_open using LRU eviction.
 
         Returns:
             Tuple of (file_agent, closed_file_names)
@@ -54,6 +55,7 @@ class FileAgentManager:
                 source_id=source_id,
                 actor=actor,
                 visible_content=visible_content or "",
+                max_files_open=max_files_open,
             )
 
             # Get the updated file agent to return
@@ -162,6 +164,36 @@ class FileAgentManager:
 
     @enforce_types
     @trace_method
+    async def detach_file_bulk(self, *, agent_file_pairs: List, actor: PydanticUser) -> int:  # List of (agent_id, file_id) tuples
+        """
+        Bulk delete multiple agent-file associations in a single query.
+
+        Args:
+            agent_file_pairs: List of (agent_id, file_id) tuples to delete
+            actor: User performing the action
+
+        Returns:
+            Number of rows deleted
+        """
+        if not agent_file_pairs:
+            return 0
+
+        async with db_registry.async_session() as session:
+            # Build compound OR conditions for each agent-file pair
+            conditions = []
+            for agent_id, file_id in agent_file_pairs:
+                conditions.append(and_(FileAgentModel.agent_id == agent_id, FileAgentModel.file_id == file_id))
+
+            # Create delete statement with all conditions
+            stmt = delete(FileAgentModel).where(and_(or_(*conditions), FileAgentModel.organization_id == actor.organization_id))
+
+            result = await session.execute(stmt)
+            await session.commit()
+
+            return result.rowcount
+
+    @enforce_types
+    @trace_method
     async def get_file_agent_by_id(self, *, agent_id: str, file_id: str, actor: PydanticUser) -> Optional[PydanticFileAgent]:
         async with db_registry.async_session() as session:
             try:
@@ -177,6 +209,7 @@ class FileAgentManager:
         *,
         file_names: List[str],
         agent_id: str,
+        per_file_view_window_char_limit: int,
         actor: PydanticUser,
     ) -> List[PydanticBlock]:
         """
@@ -185,6 +218,7 @@ class FileAgentManager:
         Args:
             file_names: List of file names to retrieve
             agent_id: ID of the agent to retrieve file blocks for
+            per_file_view_window_char_limit: The per-file view window char limit
             actor: The user making the request
 
         Returns:
@@ -207,7 +241,7 @@ class FileAgentManager:
             rows = (await session.execute(query)).scalars().all()
 
             # Convert to Pydantic models
-            return [row.to_pydantic_block() for row in rows]
+            return [row.to_pydantic_block(per_file_view_window_char_limit=per_file_view_window_char_limit) for row in rows]
 
     @enforce_types
     @trace_method
@@ -222,8 +256,13 @@ class FileAgentManager:
     @enforce_types
     @trace_method
     async def list_files_for_agent(
-        self, agent_id: str, actor: PydanticUser, is_open_only: bool = False, return_as_blocks: bool = False
-    ) -> List[PydanticFileAgent]:
+        self,
+        agent_id: str,
+        per_file_view_window_char_limit: int,
+        actor: PydanticUser,
+        is_open_only: bool = False,
+        return_as_blocks: bool = False,
+    ) -> Union[List[PydanticFileAgent], List[PydanticFileBlock]]:
         """Return associations for *agent_id* (filtering by `is_open` if asked)."""
         async with db_registry.async_session() as session:
             conditions = [
@@ -236,7 +275,7 @@ class FileAgentManager:
             rows = (await session.execute(select(FileAgentModel).where(and_(*conditions)))).scalars().all()
 
             if return_as_blocks:
-                return [r.to_pydantic_block() for r in rows]
+                return [r.to_pydantic_block(per_file_view_window_char_limit=per_file_view_window_char_limit) for r in rows]
             else:
                 return [r.to_pydantic() for r in rows]
 
@@ -334,7 +373,7 @@ class FileAgentManager:
     @enforce_types
     @trace_method
     async def enforce_max_open_files_and_open(
-        self, *, agent_id: str, file_id: str, file_name: str, source_id: str, actor: PydanticUser, visible_content: str
+        self, *, agent_id: str, file_id: str, file_name: str, source_id: str, actor: PydanticUser, visible_content: str, max_files_open: int
     ) -> tuple[List[str], bool]:
         """
         Efficiently handle LRU eviction and file opening in a single transaction.
@@ -343,7 +382,7 @@ class FileAgentManager:
             agent_id: ID of the agent
             file_id: ID of the file to open
             file_name: Name of the file to open
-            source_id: ID of the source (denormalized from files.source_id)
+            source_id: ID of the source
             actor: User performing the action
             visible_content: Content to set for the opened file
 
@@ -386,7 +425,7 @@ class FileAgentManager:
 
             # Calculate how many files need to be closed
             current_other_count = len(other_open_files)
-            target_other_count = MAX_FILES_OPEN - 1  # Reserve 1 slot for file we're opening
+            target_other_count = max_files_open - 1  # Reserve 1 slot for file we're opening
 
             closed_file_names = []
             if current_other_count > target_other_count:
@@ -443,6 +482,7 @@ class FileAgentManager:
         *,
         agent_id: str,
         files_metadata: list[FileMetadata],
+        max_files_open: int,
         visible_content_map: Optional[dict[str, str]] = None,
         actor: PydanticUser,
     ) -> list[str]:
@@ -496,17 +536,17 @@ class FileAgentManager:
             still_open_names = [r.file_name for r in currently_open if r.file_name not in new_names_set]
 
             # decide final open set
-            if len(new_names) >= MAX_FILES_OPEN:
-                final_open = new_names[:MAX_FILES_OPEN]
+            if len(new_names) >= max_files_open:
+                final_open = new_names[:max_files_open]
             else:
-                room_for_old = MAX_FILES_OPEN - len(new_names)
+                room_for_old = max_files_open - len(new_names)
                 final_open = new_names + still_open_names[-room_for_old:]
             final_open_set = set(final_open)
 
             closed_file_names = [r.file_name for r in currently_open if r.file_name not in final_open_set]
-            # Add new files that won't be opened due to MAX_FILES_OPEN limit
-            if len(new_names) >= MAX_FILES_OPEN:
-                closed_file_names.extend(new_names[MAX_FILES_OPEN:])
+            # Add new files that won't be opened due to max_files_open limit
+            if len(new_names) >= max_files_open:
+                closed_file_names.extend(new_names[max_files_open:])
             evicted_ids = [r.file_id for r in currently_open if r.file_name in closed_file_names]
 
             # upsert requested files

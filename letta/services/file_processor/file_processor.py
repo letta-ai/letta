@@ -10,12 +10,12 @@ from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.file import FileMetadata
 from letta.schemas.passage import Passage
 from letta.schemas.user import User
-from letta.server.server import SyncServer
+from letta.services.agent_manager import AgentManager
 from letta.services.file_manager import FileManager
 from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.file_processor.chunker.llama_index_chunker import LlamaIndexChunker
 from letta.services.file_processor.embedder.base_embedder import BaseEmbedder
-from letta.services.file_processor.parser.mistral_parser import MistralFileParser
+from letta.services.file_processor.parser.base_parser import FileParser
 from letta.services.job_manager import JobManager
 from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
@@ -28,7 +28,7 @@ class FileProcessor:
 
     def __init__(
         self,
-        file_parser: MistralFileParser,
+        file_parser: FileParser,
         embedder: BaseEmbedder,
         actor: User,
         using_pinecone: bool,
@@ -42,6 +42,7 @@ class FileProcessor:
         self.source_manager = SourceManager()
         self.passage_manager = PassageManager()
         self.job_manager = JobManager()
+        self.agent_manager = AgentManager()
         self.actor = actor
         self.using_pinecone = using_pinecone
 
@@ -50,7 +51,7 @@ class FileProcessor:
         filename = file_metadata.file_name
 
         # Create file-type-specific chunker
-        text_chunker = LlamaIndexChunker(file_type=file_metadata.file_type)
+        text_chunker = LlamaIndexChunker(file_type=file_metadata.file_type, chunk_size=self.embedder.embedding_config.embedding_chunk_size)
 
         # First attempt with file-specific chunker
         try:
@@ -58,18 +59,30 @@ class FileProcessor:
             for page in ocr_response.pages:
                 chunks = text_chunker.chunk_text(page)
                 if not chunks:
-                    log_event("file_processor.chunking_failed", {"filename": filename, "page_index": ocr_response.pages.index(page)})
+                    log_event(
+                        "file_processor.chunking_failed",
+                        {
+                            "filename": filename,
+                            "page_index": ocr_response.pages.index(page),
+                        },
+                    )
                     raise ValueError("No chunks created from text")
                 all_chunks.extend(chunks)
 
             all_passages = await self.embedder.generate_embedded_passages(
-                file_id=file_metadata.id, source_id=source_id, chunks=all_chunks, actor=self.actor
+                file_id=file_metadata.id,
+                source_id=source_id,
+                chunks=all_chunks,
+                actor=self.actor,
             )
             return all_passages
 
         except Exception as e:
             logger.warning(f"Failed to chunk/embed with file-specific chunker for {filename}: {str(e)}. Retrying with default chunker.")
-            log_event("file_processor.embedding_failed_retrying", {"filename": filename, "error": str(e), "error_type": type(e).__name__})
+            log_event(
+                "file_processor.embedding_failed_retrying",
+                {"filename": filename, "error": str(e), "error_type": type(e).__name__},
+            )
 
             # Retry with default chunker
             try:
@@ -80,31 +93,49 @@ class FileProcessor:
                     chunks = text_chunker.default_chunk_text(page)
                     if not chunks:
                         log_event(
-                            "file_processor.default_chunking_failed", {"filename": filename, "page_index": ocr_response.pages.index(page)}
+                            "file_processor.default_chunking_failed",
+                            {
+                                "filename": filename,
+                                "page_index": ocr_response.pages.index(page),
+                            },
                         )
                         raise ValueError("No chunks created from text with default chunker")
                     all_chunks.extend(chunks)
 
                 all_passages = await self.embedder.generate_embedded_passages(
-                    file_id=file_metadata.id, source_id=source_id, chunks=all_chunks, actor=self.actor
+                    file_id=file_metadata.id,
+                    source_id=source_id,
+                    chunks=all_chunks,
+                    actor=self.actor,
                 )
                 logger.info(f"Successfully generated passages with default chunker for {filename}")
-                log_event("file_processor.default_chunking_success", {"filename": filename, "total_chunks": len(all_chunks)})
+                log_event(
+                    "file_processor.default_chunking_success",
+                    {"filename": filename, "total_chunks": len(all_chunks)},
+                )
                 return all_passages
 
             except Exception as fallback_error:
                 logger.error("Default chunking also failed for %s: %s", filename, fallback_error)
                 log_event(
                     "file_processor.default_chunking_also_failed",
-                    {"filename": filename, "fallback_error": str(fallback_error), "fallback_error_type": type(fallback_error).__name__},
+                    {
+                        "filename": filename,
+                        "fallback_error": str(fallback_error),
+                        "fallback_error_type": type(fallback_error).__name__,
+                    },
                 )
                 raise fallback_error
 
     # TODO: Factor this function out of SyncServer
     @trace_method
     async def process(
-        self, server: SyncServer, agent_states: List[AgentState], source_id: str, content: bytes, file_metadata: FileMetadata
-    ) -> List[Passage]:
+        self,
+        agent_states: list[AgentState],
+        source_id: str,
+        content: bytes,
+        file_metadata: FileMetadata,
+    ) -> list[Passage]:
         filename = file_metadata.file_name
 
         # Create file as early as possible with no content
@@ -151,7 +182,7 @@ class FileProcessor:
             )
             file_metadata = await self.file_manager.upsert_file_content(file_id=file_metadata.id, text=raw_markdown_text, actor=self.actor)
 
-            await server.insert_file_into_context_windows(
+            await self.agent_manager.insert_file_into_context_windows(
                 source_id=source_id,
                 file_metadata_with_content=file_metadata,
                 actor=self.actor,
@@ -170,18 +201,28 @@ class FileProcessor:
                 raise ValueError("No text extracted from PDF")
 
             logger.info("Chunking extracted text")
-            log_event("file_processor.chunking_started", {"filename": filename, "pages_to_process": len(ocr_response.pages)})
+            log_event(
+                "file_processor.chunking_started",
+                {"filename": filename, "pages_to_process": len(ocr_response.pages)},
+            )
 
             # Chunk and embed with fallback logic
             all_passages = await self._chunk_and_embed_with_fallback(
-                file_metadata=file_metadata, ocr_response=ocr_response, source_id=source_id
+                file_metadata=file_metadata,
+                ocr_response=ocr_response,
+                source_id=source_id,
             )
 
             if not self.using_pinecone:
                 all_passages = await self.passage_manager.create_many_source_passages_async(
-                    passages=all_passages, file_metadata=file_metadata, actor=self.actor
+                    passages=all_passages,
+                    file_metadata=file_metadata,
+                    actor=self.actor,
                 )
-                log_event("file_processor.passages_created", {"filename": filename, "total_passages": len(all_passages)})
+                log_event(
+                    "file_processor.passages_created",
+                    {"filename": filename, "total_passages": len(all_passages)},
+                )
 
             logger.info(f"Successfully processed {filename}: {len(all_passages)} passages")
             log_event(
@@ -197,17 +238,22 @@ class FileProcessor:
             # update job status
             if not self.using_pinecone:
                 await self.file_manager.update_file_status(
-                    file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.COMPLETED
+                    file_id=file_metadata.id,
+                    actor=self.actor,
+                    processing_status=FileProcessingStatus.COMPLETED,
                 )
             else:
                 await self.file_manager.update_file_status(
-                    file_id=file_metadata.id, actor=self.actor, total_chunks=len(all_passages), chunks_embedded=0
+                    file_id=file_metadata.id,
+                    actor=self.actor,
+                    total_chunks=len(all_passages),
+                    chunks_embedded=0,
                 )
 
             return all_passages
 
         except Exception as e:
-            logger.error("File processing failed for %s: %s", filename, e)
+            logger.exception("File processing failed for %s: %s", filename, e)
             log_event(
                 "file_processor.processing_failed",
                 {
@@ -254,7 +300,7 @@ class FileProcessor:
             # Create OCR response from existing content
             ocr_response = self._create_ocr_response_from_content(content)
 
-            # Update file status to embedding
+            # Update file status to embedding (valid transition from PARSING)
             file_metadata = await self.file_manager.update_file_status(
                 file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.EMBEDDING
             )
@@ -274,12 +320,14 @@ class FileProcessor:
                 )
                 log_event("file_processor.import_passages_created", {"filename": filename, "total_passages": len(all_passages)})
 
-            # Update file status to completed
+            # Update file status to completed (valid transition from EMBEDDING)
             if not self.using_pinecone:
                 await self.file_manager.update_file_status(
                     file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.COMPLETED
                 )
             else:
+                # For Pinecone, update chunk counts but keep status at EMBEDDING
+                # The status will be updated to COMPLETED later when chunks are confirmed embedded
                 await self.file_manager.update_file_status(
                     file_id=file_metadata.id, actor=self.actor, total_chunks=len(all_passages), chunks_embedded=0
                 )
@@ -310,7 +358,10 @@ class FileProcessor:
                 },
             )
             await self.file_manager.update_file_status(
-                file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.ERROR, error_message=str(e)
+                file_id=file_metadata.id,
+                actor=self.actor,
+                processing_status=FileProcessingStatus.ERROR,
+                error_message=str(e),
             )
 
             return []

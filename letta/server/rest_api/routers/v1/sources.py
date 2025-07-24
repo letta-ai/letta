@@ -30,12 +30,8 @@ from letta.server.server import SyncServer
 from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
 from letta.services.file_processor.embedder.pinecone_embedder import PineconeEmbedder
 from letta.services.file_processor.file_processor import FileProcessor
-from letta.services.file_processor.file_types import (
-    get_allowed_media_types,
-    get_extension_to_mime_type_map,
-    is_simple_text_mime_type,
-    register_mime_types,
-)
+from letta.services.file_processor.file_types import get_allowed_media_types, get_extension_to_mime_type_map, register_mime_types
+from letta.services.file_processor.parser.markitdown_parser import MarkitdownFileParser
 from letta.services.file_processor.parser.mistral_parser import MistralFileParser
 from letta.settings import settings
 from letta.utils import safe_create_task, sanitize_filename
@@ -220,17 +216,7 @@ async def upload_file_to_source(
     """
     # NEW: Cloud based file processing
     # Determine file's MIME type
-    file_mime_type = mimetypes.guess_type(file.filename)[0] or "application/octet-stream"
-
-    # Check if it's a simple text file
-    is_simple_file = is_simple_text_mime_type(file_mime_type)
-
-    # For complex files, require Mistral API key
-    if not is_simple_file and not settings.mistral_api_key:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Mistral API key is required to process this file type {file_mime_type}. Please configure your Mistral API key to upload complex file formats.",
-        )
+    mimetypes.guess_type(file.filename)[0] or "application/octet-stream"
 
     allowed_media_types = get_allowed_media_types()
 
@@ -418,9 +404,15 @@ async def get_file_metadata(
                 file_status = file_metadata.processing_status
             else:
                 file_status = FileProcessingStatus.COMPLETED
-            file_metadata = await server.file_manager.update_file_status(
-                file_id=file_metadata.id, actor=actor, chunks_embedded=len(ids), processing_status=file_status
-            )
+            try:
+                file_metadata = await server.file_manager.update_file_status(
+                    file_id=file_metadata.id, actor=actor, chunks_embedded=len(ids), processing_status=file_status
+                )
+            except ValueError as e:
+                # state transition was blocked - this is a race condition
+                # log it but don't fail the request since we're just reading metadata
+                logger.warning(f"Race condition detected in get_file_metadata: {str(e)}")
+                # return the current file state without updating
 
     return file_metadata
 
@@ -483,13 +475,16 @@ async def load_file_to_source_cloud(
     embedding_config: EmbeddingConfig,
     file_metadata: FileMetadata,
 ):
-    file_processor = MistralFileParser()
+    # Choose parser based on mistral API key availability
+    if settings.mistral_api_key:
+        file_parser = MistralFileParser()
+    else:
+        file_parser = MarkitdownFileParser()
+
     using_pinecone = should_use_pinecone()
     if using_pinecone:
-        embedder = PineconeEmbedder()
+        embedder = PineconeEmbedder(embedding_config=embedding_config)
     else:
         embedder = OpenAIEmbedder(embedding_config=embedding_config)
-    file_processor = FileProcessor(file_parser=file_processor, embedder=embedder, actor=actor, using_pinecone=using_pinecone)
-    await file_processor.process(
-        server=server, agent_states=agent_states, source_id=source_id, content=content, file_metadata=file_metadata
-    )
+    file_processor = FileProcessor(file_parser=file_parser, embedder=embedder, actor=actor, using_pinecone=using_pinecone)
+    await file_processor.process(agent_states=agent_states, source_id=source_id, content=content, file_metadata=file_metadata)

@@ -17,7 +17,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from functools import wraps
 from logging import Logger
-from typing import Any, Coroutine, Union, _GenericAlias, get_args, get_origin, get_type_hints
+from typing import Any, Coroutine, Optional, Union, _GenericAlias, get_args, get_origin, get_type_hints
 from urllib.parse import urljoin, urlparse
 
 import demjson3 as demjson
@@ -30,6 +30,8 @@ from letta.constants import (
     CLI_WARNING_PREFIX,
     CORE_MEMORY_HUMAN_CHAR_LIMIT,
     CORE_MEMORY_PERSONA_CHAR_LIMIT,
+    DEFAULT_CORE_MEMORY_SOURCE_CHAR_LIMIT,
+    DEFAULT_MAX_FILES_OPEN,
     ERROR_MESSAGE_PREFIX,
     LETTA_DIR,
     MAX_FILENAME_LENGTH,
@@ -1206,3 +1208,34 @@ async def get_latest_alembic_revision() -> str:
     except Exception as e:
         logger.error(f"Error getting latest alembic revision: {e}")
         return "unknown"
+
+
+def calculate_file_defaults_based_on_context_window(context_window: Optional[int]) -> tuple[int, int]:
+    """Calculate reasonable defaults for max_files_open and per_file_view_window_char_limit
+    based on the model's context window size.
+
+    Args:
+        context_window: The context window size of the model. If None, returns conservative defaults.
+
+    Returns:
+        A tuple of (max_files_open, per_file_view_window_char_limit)
+    """
+    if not context_window:
+        # If no context window info, use conservative defaults
+        return DEFAULT_MAX_FILES_OPEN, DEFAULT_CORE_MEMORY_SOURCE_CHAR_LIMIT
+
+    # Define defaults based on context window ranges
+    # Assuming ~4 chars per token
+    # Available chars = available_tokens * 4
+
+    # TODO: Check my math here
+    if context_window <= 8_000:  # Small models (4K-8K)
+        return 3, 5_000  # ~3.75K tokens
+    elif context_window <= 32_000:  # Medium models (16K-32K)
+        return 5, 15_000  # ~18.75K tokens
+    elif context_window <= 128_000:  # Large models (100K-128K)
+        return 10, 25_000  # ~62.5K tokens
+    elif context_window <= 200_000:  # Very large models (128K-200K)
+        return 10, 50_000  # ~128k tokens
+    else:  # Extremely large models (200K+)
+        return 15, 50_000  # ~187.5k tokens

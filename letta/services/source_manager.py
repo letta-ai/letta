@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from sqlalchemy import and_, exists, select
 
@@ -234,37 +234,56 @@ class SourceManager:
 
     @enforce_types
     @trace_method
-    async def list_attached_agents(self, source_id: str, actor: PydanticUser) -> List[PydanticAgentState]:
+    async def list_attached_agents(
+        self, source_id: str, actor: PydanticUser, ids_only: bool = False
+    ) -> Union[List[PydanticAgentState], List[str]]:
         """
         Lists all agents that have the specified source attached.
 
         Args:
             source_id: ID of the source to find attached agents for
             actor: User performing the action
+            ids_only: If True, return only agent IDs instead of full agent states
 
         Returns:
-            List[PydanticAgentState]: List of agents that have this source attached
+            List[PydanticAgentState] | List[str]: List of agents or agent IDs that have this source attached
         """
         async with db_registry.async_session() as session:
             # Verify source exists and user has permission to access it
             await self._validate_source_exists_async(session, source_id, actor)
 
-            # Use junction table query instead of relationship to avoid performance issues
-            query = (
-                select(AgentModel)
-                .join(SourcesAgents, AgentModel.id == SourcesAgents.agent_id)
-                .where(
-                    SourcesAgents.source_id == source_id,
-                    AgentModel.organization_id == actor.organization_id,
-                    AgentModel.is_deleted == False,
+            if ids_only:
+                # Query only agent IDs for performance
+                query = (
+                    select(AgentModel.id)
+                    .join(SourcesAgents, AgentModel.id == SourcesAgents.agent_id)
+                    .where(
+                        SourcesAgents.source_id == source_id,
+                        AgentModel.organization_id == actor.organization_id,
+                        AgentModel.is_deleted == False,
+                    )
+                    .order_by(AgentModel.created_at.desc(), AgentModel.id)
                 )
-                .order_by(AgentModel.created_at.desc(), AgentModel.id)
-            )
 
-            result = await session.execute(query)
-            agents_orm = result.scalars().all()
+                result = await session.execute(query)
+                return list(result.scalars().all())
+            else:
+                # Use junction table query instead of relationship to avoid performance issues
+                query = (
+                    select(AgentModel)
+                    .join(SourcesAgents, AgentModel.id == SourcesAgents.agent_id)
+                    .where(
+                        SourcesAgents.source_id == source_id,
+                        AgentModel.organization_id == actor.organization_id,
+                        AgentModel.is_deleted == False,
+                    )
+                    .order_by(AgentModel.created_at.desc(), AgentModel.id)
+                )
 
-            return await asyncio.gather(*[agent.to_pydantic_async() for agent in agents_orm])
+                result = await session.execute(query)
+                agents_orm = result.scalars().all()
+
+                return await asyncio.gather(*[agent.to_pydantic_async() for agent in agents_orm])
 
     @enforce_types
     @trace_method

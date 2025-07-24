@@ -1,4 +1,3 @@
-import base64
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
@@ -43,7 +42,10 @@ from letta.schemas.tool_rule import (
     TerminalToolRule,
     ToolRule,
 )
+from letta.settings import DatabaseChoice, settings
 
+if settings.database_engine == DatabaseChoice.SQLITE:
+    import sqlite_vec
 # --------------------------
 # LLMConfig Serialization
 # --------------------------
@@ -272,22 +274,28 @@ def deserialize_message_content(data: Optional[List[Dict]]) -> List[MessageConte
 
 
 def serialize_vector(vector: Optional[Union[List[float], np.ndarray]]) -> Optional[bytes]:
-    """Convert a NumPy array or list into a base64-encoded byte string."""
+    """Convert a NumPy array or list into serialized format using sqlite-vec."""
     if vector is None:
         return None
     if isinstance(vector, list):
         vector = np.array(vector, dtype=np.float32)
+    else:
+        vector = vector.astype(np.float32)
 
-    return base64.b64encode(vector.tobytes())
+    return sqlite_vec.serialize_float32(vector.tolist())
 
 
 def deserialize_vector(data: Optional[bytes], dialect: Dialect) -> Optional[np.ndarray]:
-    """Convert a base64-encoded byte string back into a NumPy array."""
+    """Convert serialized data back into a NumPy array using sqlite-vec format."""
     if not data:
         return None
 
     if dialect.name == "sqlite":
-        data = base64.b64decode(data)
+        # Use sqlite-vec format
+        if len(data) % 4 == 0:  # Must be divisible by 4 for float32
+            return np.frombuffer(data, dtype=np.float32)
+        else:
+            raise ValueError(f"Invalid sqlite-vec binary data length: {len(data)}")
 
     return np.frombuffer(data, dtype=np.float32)
 

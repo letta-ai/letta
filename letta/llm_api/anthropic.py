@@ -729,7 +729,7 @@ def _prepare_anthropic_request(
         data["temperature"] = 1.0
 
     if "functions" in data:
-        raise ValueError(f"'functions' unexpected in Anthropic API payload")
+        raise ValueError("'functions' unexpected in Anthropic API payload")
 
     # Handle tools
     if "tools" in data and data["tools"] is None:
@@ -1162,7 +1162,7 @@ def anthropic_chat_completions_process_stream(
                                     accum_message.tool_calls[tool_call_delta.index].function.arguments += tool_call_delta.function.arguments
 
                 if message_delta.function_call is not None:
-                    raise NotImplementedError(f"Old function_call style not support with stream=True")
+                    raise NotImplementedError("Old function_call style not support with stream=True")
 
             # overwrite response fields based on latest chunk
             if not create_message_id:

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 from openai.types.beta.function_tool import FunctionTool as OpenAITool
 
 from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT
-from letta.schemas.block import Block
+from letta.schemas.block import Block, FileBlock
 from letta.schemas.message import Message
 
 
@@ -66,8 +66,8 @@ class Memory(BaseModel, validate_assignment=True):
 
     # Memory.block contains the list of memory blocks in the core memory
     blocks: List[Block] = Field(..., description="Memory blocks contained in the agent's in-context memory")
-    file_blocks: List[Block] = Field(
-        default_factory=list, description="Blocks representing the agent's in-context memory of an attached file"
+    file_blocks: List[FileBlock] = Field(
+        default_factory=list, description="Special blocks representing the agent's in-context memory of an attached file"
     )
 
     @field_validator("file_blocks")
@@ -124,7 +124,7 @@ class Memory(BaseModel, validate_assignment=True):
             Template(prompt_template)
 
             # Validate compatibility with current memory structure
-            Template(prompt_template).render(blocks=self.blocks, file_blocks=self.file_blocks, sources=[])
+            Template(prompt_template).render(blocks=self.blocks, file_blocks=self.file_blocks, sources=[], max_files_open=None)
 
             # If we get here, the template is valid and compatible
             self.prompt_template = prompt_template
@@ -133,11 +133,17 @@ class Memory(BaseModel, validate_assignment=True):
         except Exception as e:
             raise ValueError(f"Prompt template is not compatible with current memory structure: {str(e)}")
 
-    def compile(self, tool_usage_rules=None, sources=None) -> str:
+    def compile(self, tool_usage_rules=None, sources=None, max_files_open=None) -> str:
         """Generate a string representation of the memory in-context using the Jinja2 template"""
         try:
             template = Template(self.prompt_template)
-            return template.render(blocks=self.blocks, file_blocks=self.file_blocks, tool_usage_rules=tool_usage_rules, sources=sources)
+            return template.render(
+                blocks=self.blocks,
+                file_blocks=self.file_blocks,
+                tool_usage_rules=tool_usage_rules,
+                sources=sources,
+                max_files_open=max_files_open,
+            )
         except TemplateSyntaxError as e:
             raise ValueError(f"Invalid Jinja2 template syntax: {str(e)}")
         except Exception as e:

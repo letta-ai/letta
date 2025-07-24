@@ -67,7 +67,7 @@ class FileAgentBase(LettaBase):
     # Core file-agent association fields
     agent_id: str = Field(..., description="Unique identifier of the agent.")
     file_id: str = Field(..., description="Unique identifier of the file.")
-    source_id: str = Field(..., description="Unique identifier of the source (denormalized from files.source_id).")
+    source_id: str = Field(..., description="Unique identifier of the source.")
     file_name: str = Field(..., description="Name of the file.")
     is_open: bool = Field(True, description="True if the agent currently has the file open.")
     visible_content: Optional[str] = Field(

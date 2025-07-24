@@ -71,7 +71,7 @@ class ChatMLInnerMonologueWrapper(LLMChatCompletionWrapper):
         func_str = ""
         func_str += f"{schema['name']}:"
         func_str += f"\n  description: {schema['description']}"
-        func_str += f"\n  params:"
+        func_str += "\n  params:"
         if add_inner_thoughts:
             from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 
@@ -87,8 +87,8 @@ class ChatMLInnerMonologueWrapper(LLMChatCompletionWrapper):
         prompt = ""
 
         # prompt += f"\nPlease select the most suitable function and parameters from the list of available functions below, based on the user's input. Provide your response in JSON format."
-        prompt += f"Please select the most suitable function and parameters from the list of available functions below, based on the ongoing conversation. Provide your response in JSON format."
-        prompt += f"\nAvailable functions:"
+        prompt += "Please select the most suitable function and parameters from the list of available functions below, based on the ongoing conversation. Provide your response in JSON format."
+        prompt += "\nAvailable functions:"
         for function_dict in functions:
             prompt += f"\n{self._compile_function_description(function_dict)}"
 
@@ -101,8 +101,8 @@ class ChatMLInnerMonologueWrapper(LLMChatCompletionWrapper):
         prompt += system_message
         prompt += "\n"
         if function_documentation is not None:
-            prompt += f"Please select the most suitable function and parameters from the list of available functions below, based on the ongoing conversation. Provide your response in JSON format."
-            prompt += f"\nAvailable functions:\n"
+            prompt += "Please select the most suitable function and parameters from the list of available functions below, based on the ongoing conversation. Provide your response in JSON format."
+            prompt += "\nAvailable functions:\n"
             prompt += function_documentation
         else:
             prompt += self._compile_function_block(functions)
@@ -230,7 +230,6 @@ class ChatMLInnerMonologueWrapper(LLMChatCompletionWrapper):
                 prompt += f"\n<|im_start|>{role_str}\n{msg_str.strip()}<|im_end|>"
 
             elif message["role"] == "system":
-
                 role_str = "system"
                 msg_str = self._compile_system_message(
                     system_message=message["content"], functions=functions, function_documentation=function_documentation
@@ -255,7 +254,7 @@ class ChatMLInnerMonologueWrapper(LLMChatCompletionWrapper):
                 raise ValueError(message)
 
         if self.include_assistant_prefix:
-            prompt += f"\n<|im_start|>assistant"
+            prompt += "\n<|im_start|>assistant"
             if self.assistant_prefix_hint:
                 prompt += f"\n{FIRST_PREFIX_HINT if first_message else PREFIX_HINT}"
             if self.supports_first_message and first_message:
@@ -386,7 +385,7 @@ class ChatMLOuterInnerMonologueWrapper(ChatMLInnerMonologueWrapper):
                 "You must always include inner thoughts, but you do not always have to call a function.",
             ]
         )
-        prompt += f"\nAvailable functions:"
+        prompt += "\nAvailable functions:"
         for function_dict in functions:
             prompt += f"\n{self._compile_function_description(function_dict, add_inner_thoughts=False)}"
 

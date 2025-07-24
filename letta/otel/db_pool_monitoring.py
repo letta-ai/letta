@@ -89,18 +89,18 @@ class DatabasePoolMonitor:
             try:
                 from letta.otel.metric_registry import MetricRegistry
 
-                # Record current pool statistics
-                pool_stats = self._get_pool_stats(pool)
                 attrs = {
                     "engine_name": engine_name,
                     **get_ctx_attributes(),
                 }
-
-                MetricRegistry().db_pool_connections_checked_out_gauge.set(pool_stats["checked_out"], attributes=attrs)
-                MetricRegistry().db_pool_connections_available_gauge.set(pool_stats["available"], attributes=attrs)
-                MetricRegistry().db_pool_connections_total_gauge.set(pool_stats["total"], attributes=attrs)
-                if pool_stats["overflow"] is not None:
-                    MetricRegistry().db_pool_connections_overflow_gauge.set(pool_stats["overflow"], attributes=attrs)
+                # Record current pool statistics
+                if isinstance(pool, QueuePool):
+                    pool_stats = self._get_pool_stats(pool)
+                    MetricRegistry().db_pool_connections_checked_out_gauge.set(pool_stats["checked_out"], attributes=attrs)
+                    MetricRegistry().db_pool_connections_available_gauge.set(pool_stats["available"], attributes=attrs)
+                    MetricRegistry().db_pool_connections_total_gauge.set(pool_stats["total"], attributes=attrs)
+                    if pool_stats["overflow"] is not None:
+                        MetricRegistry().db_pool_connections_overflow_gauge.set(pool_stats["overflow"], attributes=attrs)
 
                 # Record checkout event
                 attrs["event"] = "checkout"
@@ -137,15 +137,16 @@ class DatabasePoolMonitor:
             try:
                 from letta.otel.metric_registry import MetricRegistry
 
-                # Record current pool statistics after checkin
-                pool_stats = self._get_pool_stats(pool)
                 attrs = {
                     "engine_name": engine_name,
                     **get_ctx_attributes(),
                 }
 
-                MetricRegistry().db_pool_connections_checked_out_gauge.set(pool_stats["checked_out"], attributes=attrs)
-                MetricRegistry().db_pool_connections_available_gauge.set(pool_stats["available"], attributes=attrs)
+                # Record current pool statistics after checkin
+                if isinstance(pool, QueuePool):
+                    pool_stats = self._get_pool_stats(pool)
+                    MetricRegistry().db_pool_connections_checked_out_gauge.set(pool_stats["checked_out"], attributes=attrs)
+                    MetricRegistry().db_pool_connections_available_gauge.set(pool_stats["available"], attributes=attrs)
 
                 # Record checkin event
                 attrs["event"] = "checkin"

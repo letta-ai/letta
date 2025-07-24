@@ -85,7 +85,7 @@ class Dolphin21MistralWrapper(LLMChatCompletionWrapper):
             func_str = ""
             func_str += f"{schema['name']}:"
             func_str += f"\n  description: {schema['description']}"
-            func_str += f"\n  params:"
+            func_str += "\n  params:"
             for param_k, param_v in schema["parameters"]["properties"].items():
                 # TODO we're ignoring type
                 func_str += f"\n    {param_k}: {param_v['description']}"
@@ -93,8 +93,8 @@ class Dolphin21MistralWrapper(LLMChatCompletionWrapper):
             return func_str
 
         # prompt += f"\nPlease select the most suitable function and parameters from the list of available functions below, based on the user's input. Provide your response in JSON format."
-        prompt += f"\nPlease select the most suitable function and parameters from the list of available functions below, based on the ongoing conversation. Provide your response in JSON format."
-        prompt += f"\nAvailable functions:"
+        prompt += "\nPlease select the most suitable function and parameters from the list of available functions below, based on the ongoing conversation. Provide your response in JSON format."
+        prompt += "\nAvailable functions:"
         if function_documentation is not None:
             prompt += f"\n{function_documentation}"
         else:

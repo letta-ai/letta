@@ -167,6 +167,7 @@ def test_auto_attach_detach_files_tools(disable_pinecone, client: LettaSDKClient
     assert_no_file_tools(agent)
 
 
+@pytest.mark.parametrize("use_mistral_parser", [True, False])
 @pytest.mark.parametrize(
     "file_path, expected_value, expected_label_regex",
     [
@@ -190,60 +191,68 @@ def test_file_upload_creates_source_blocks_correctly(
     file_path: str,
     expected_value: str,
     expected_label_regex: str,
+    use_mistral_parser: bool,
 ):
-    # skip pdf tests if mistral api key is missing
-    if file_path.endswith(".pdf") and not settings.mistral_api_key:
-        pytest.skip("mistral api key required for pdf processing")
+    # Override mistral API key setting to force parser selection for testing
+    original_mistral_key = settings.mistral_api_key
+    try:
+        if not use_mistral_parser:
+            # Set to None to force markitdown parser selection
+            settings.mistral_api_key = None
 
-    # Create a new source
-    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
-    assert len(client.sources.list()) == 1
+        # Create a new source
+        source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
+        assert len(client.sources.list()) == 1
 
-    # Attach
-    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+        # Attach
+        client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
 
-    # Upload the file
-    upload_file_and_wait(client, source.id, file_path)
+        # Upload the file
+        upload_file_and_wait(client, source.id, file_path)
 
-    # Get uploaded files
-    files = client.sources.files.list(source_id=source.id, limit=1)
-    assert len(files) == 1
-    assert files[0].source_id == source.id
+        # Get uploaded files
+        files = client.sources.files.list(source_id=source.id, limit=1)
+        assert len(files) == 1
+        assert files[0].source_id == source.id
 
-    # Check that blocks were created
-    agent_state = client.agents.retrieve(agent_id=agent_state.id)
-    blocks = agent_state.memory.file_blocks
-    assert len(blocks) == 1
-    assert any(expected_value in b.value for b in blocks)
-    assert any(b.value.startswith("[Viewing file start") for b in blocks)
-    assert any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
+        # Check that blocks were created
+        agent_state = client.agents.retrieve(agent_id=agent_state.id)
+        blocks = agent_state.memory.file_blocks
+        assert len(blocks) == 1
+        assert any(expected_value in b.value for b in blocks)
+        assert any(b.value.startswith("[Viewing file start") for b in blocks)
+        assert any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
 
-    # verify raw system message contains source information
-    raw_system_message = get_raw_system_message(client, agent_state.id)
-    assert "test_source" in raw_system_message
-    assert "<directories>" in raw_system_message
-    # verify file-specific details in raw system message
-    file_name = files[0].file_name
-    assert f'name="test_source/{file_name}"' in raw_system_message
-    assert 'status="open"' in raw_system_message
+        # verify raw system message contains source information
+        raw_system_message = get_raw_system_message(client, agent_state.id)
+        assert "test_source" in raw_system_message
+        assert "<directories>" in raw_system_message
+        # verify file-specific details in raw system message
+        file_name = files[0].file_name
+        assert f'name="test_source/{file_name}"' in raw_system_message
+        assert 'status="open"' in raw_system_message
 
-    # Remove file from source
-    client.sources.files.delete(source_id=source.id, file_id=files[0].id)
+        # Remove file from source
+        client.sources.files.delete(source_id=source.id, file_id=files[0].id)
 
-    # Confirm blocks were removed
-    agent_state = client.agents.retrieve(agent_id=agent_state.id)
-    blocks = agent_state.memory.file_blocks
-    assert len(blocks) == 0
-    assert not any(expected_value in b.value for b in blocks)
-    assert not any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
+        # Confirm blocks were removed
+        agent_state = client.agents.retrieve(agent_id=agent_state.id)
+        blocks = agent_state.memory.file_blocks
+        assert len(blocks) == 0
+        assert not any(expected_value in b.value for b in blocks)
+        assert not any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
 
-    # verify raw system message no longer contains source information
-    raw_system_message_after_removal = get_raw_system_message(client, agent_state.id)
-    # this should be in, because we didn't delete the source
-    assert "test_source" in raw_system_message_after_removal
-    assert "<directories>" in raw_system_message_after_removal
-    # verify file-specific details are also removed
-    assert f'name="test_source/{file_name}"' not in raw_system_message_after_removal
+        # verify raw system message no longer contains source information
+        raw_system_message_after_removal = get_raw_system_message(client, agent_state.id)
+        # this should be in, because we didn't delete the source
+        assert "test_source" in raw_system_message_after_removal
+        assert "<directories>" in raw_system_message_after_removal
+        # verify file-specific details are also removed
+        assert f'name="test_source/{file_name}"' not in raw_system_message_after_removal
+
+    finally:
+        # Restore original mistral API key setting
+        settings.mistral_api_key = original_mistral_key
 
 
 def test_attach_existing_files_creates_source_blocks_correctly(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
@@ -273,7 +282,7 @@ def test_attach_existing_files_creates_source_blocks_correctly(disable_pinecone,
 <metadata>
 - read_only=true
 - chars_current=46
-- chars_limit=50000
+- chars_limit=15000
 </metadata>
 <value>
 [Viewing file start (out of 1 chunks)]
@@ -330,7 +339,7 @@ def test_delete_source_removes_source_blocks_correctly(disable_pinecone, client:
 <metadata>
 - read_only=true
 - chars_current=46
-- chars_limit=50000
+- chars_limit=15000
 </metadata>
 <value>
 [Viewing file start (out of 1 chunks)]
@@ -468,11 +477,6 @@ def test_agent_uses_open_close_file_correctly(disable_pinecone, client: LettaSDK
     print("✓ File successfully opened with different range - content differs as expected")
 
 
-@pytest.mark.skipif(
-    not hasattr(__import__("letta.settings"), "settings")
-    or not getattr(__import__("letta.settings").settings, "letta_pg_uri_no_default", None),
-    reason="Skipping vector-related tests when using SQLite (vector search requires PostgreSQL)",
-)
 def test_agent_uses_search_files_correctly(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
@@ -844,11 +848,6 @@ def test_open_files_schema_descriptions(disable_pinecone, client: LettaSDKClient
 # --- Pinecone Tests ---
 
 
-@pytest.mark.skipif(
-    not hasattr(__import__("letta.settings"), "settings")
-    or not getattr(__import__("letta.settings").settings, "letta_pg_uri_no_default", None),
-    reason="Skipping vector-related tests when using SQLite (vector search requires PostgreSQL)",
-)
 def test_pinecone_search_files_tool(client: LettaSDKClient):
     """Test that search_files tool uses Pinecone when enabled"""
     from letta.helpers.pinecone_utils import should_use_pinecone
@@ -900,11 +899,6 @@ def test_pinecone_search_files_tool(client: LettaSDKClient):
     ), f"Search results should contain relevant content: {search_results}"
 
 
-@pytest.mark.skipif(
-    not hasattr(__import__("letta.settings"), "settings")
-    or not getattr(__import__("letta.settings").settings, "letta_pg_uri_no_default", None),
-    reason="Skipping vector-related tests when using SQLite (vector search requires PostgreSQL)",
-)
 def test_pinecone_lifecycle_file_and_source_deletion(client: LettaSDKClient):
     """Test that file and source deletion removes records from Pinecone"""
     import asyncio
@@ -978,3 +972,68 @@ def test_pinecone_lifecycle_file_and_source_deletion(client: LettaSDKClient):
     ), f"All source records should be removed from Pinecone after source deletion, but found {len(records_after)}"
 
     print("✓ Pinecone lifecycle verified - namespace is clean after source deletion")
+
+
+def test_agent_open_file(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
+    """Test client.agents.open_file() function"""
+    # Create a new source
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
+
+    # Attach source to agent
+    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+
+    # Upload a file
+    file_path = "tests/data/test.txt"
+    file_metadata = upload_file_and_wait(client, source.id, file_path)
+
+    # Basic test open_file function
+    closed_files = client.agents.open_file(agent_id=agent_state.id, file_id=file_metadata.id)
+    assert len(closed_files) == 0
+
+
+def test_agent_close_file(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
+    """Test client.agents.close_file() function"""
+    # Create a new source
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
+
+    # Attach source to agent
+    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+
+    # Upload a file
+    file_path = "tests/data/test.txt"
+    file_metadata = upload_file_and_wait(client, source.id, file_path)
+
+    # First open the file
+    client.agents.open_file(agent_id=agent_state.id, file_id=file_metadata.id)
+
+    # Test close_file function
+    client.agents.close_file(agent_id=agent_state.id, file_id=file_metadata.id)
+
+    # Result can be None or any type based on the signature
+    # Just verify the function executes without error
+    assert True, "close_file should execute without error"
+
+
+def test_agent_close_all_open_files(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
+    """Test client.agents.close_all_open_files() function"""
+    # Create a new source
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
+
+    # Attach source to agent
+    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+
+    # Upload multiple files
+    file_paths = ["tests/data/test.txt", "tests/data/test.md"]
+    file_metadatas = []
+    for file_path in file_paths:
+        file_metadata = upload_file_and_wait(client, source.id, file_path)
+        file_metadatas.append(file_metadata)
+        # Open each file
+        client.agents.open_file(agent_id=agent_state.id, file_id=file_metadata.id)
+
+    # Test close_all_open_files function
+    result = client.agents.close_all_open_files(agent_id=agent_state.id)
+
+    # Verify result is a list of strings
+    assert isinstance(result, list), f"Expected list, got {type(result)}"
+    assert all(isinstance(item, str) for item in result), "All items in result should be strings"

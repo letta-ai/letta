@@ -293,7 +293,9 @@ async def attach_tool(
     Attach a tool to an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    return await server.agent_manager.attach_tool_async(agent_id=agent_id, tool_id=tool_id, actor=actor)
+    await server.agent_manager.attach_tool_async(agent_id=agent_id, tool_id=tool_id, actor=actor)
+    # TODO: Unfortunately we need this to preserve our current API behavior
+    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
 
 @router.patch("/{agent_id}/tools/detach/{tool_id}", response_model=AgentState, operation_id="detach_tool")
@@ -307,7 +309,9 @@ async def detach_tool(
     Detach a tool from an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    return await server.agent_manager.detach_tool_async(agent_id=agent_id, tool_id=tool_id, actor=actor)
+    await server.agent_manager.detach_tool_async(agent_id=agent_id, tool_id=tool_id, actor=actor)
+    # TODO: Unfortunately we need this to preserve our current API behavior
+    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
 
 @router.patch("/{agent_id}/sources/attach/{source_id}", response_model=AgentState, operation_id="attach_source_to_agent")
@@ -327,7 +331,8 @@ async def attach_source(
     agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=actor)
 
     files = await server.file_manager.list_files(source_id, actor, include_content=True)
-    await server.insert_files_into_context_window(agent_state=agent_state, file_metadata_with_content=files, actor=actor)
+    if files:
+        await server.agent_manager.insert_files_into_context_window(agent_state=agent_state, file_metadata_with_content=files, actor=actor)
 
     if agent_state.enable_sleeptime:
         source = await server.source_manager.get_source_by_id(source_id=source_id)
@@ -382,7 +387,78 @@ async def close_all_open_files(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    return server.file_agent_manager.close_all_other_files(agent_id=agent_id, keep_file_names=[], actor=actor)
+    return await server.file_agent_manager.close_all_other_files(agent_id=agent_id, keep_file_names=[], actor=actor)
+
+
+@router.patch("/{agent_id}/files/{file_id}/open", response_model=List[str], operation_id="open_file")
+async def open_file(
+    agent_id: str,
+    file_id: str,
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Opens a specific file for a given agent.
+
+    This endpoint marks a specific file as open in the agent's file state.
+    The file will be included in the agent's working memory view.
+    Returns a list of file names that were closed due to LRU eviction.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+
+    # Get the agent to access files configuration
+    try:
+        per_file_view_window_char_limit, max_files_open = await server.agent_manager.get_agent_files_config_async(
+            agent_id=agent_id, actor=actor
+        )
+    except ValueError:
+        raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found")
+
+    # Get file metadata
+    file_metadata = await server.file_manager.get_file_by_id(file_id=file_id, actor=actor, include_content=True)
+    if not file_metadata:
+        raise HTTPException(status_code=404, detail=f"File with id={file_id} not found")
+
+    # Use enforce_max_open_files_and_open for efficient LRU handling
+    closed_files, was_already_open = await server.file_agent_manager.enforce_max_open_files_and_open(
+        agent_id=agent_id,
+        file_id=file_id,
+        file_name=file_metadata.file_name,
+        source_id=file_metadata.source_id,
+        actor=actor,
+        visible_content=file_metadata.content[:per_file_view_window_char_limit] if file_metadata.content else "",
+        max_files_open=max_files_open,
+    )
+
+    return closed_files
+
+
+@router.patch("/{agent_id}/files/{file_id}/close", response_model=None, operation_id="close_file")
+async def close_file(
+    agent_id: str,
+    file_id: str,
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Closes a specific file for a given agent.
+
+    This endpoint marks a specific file as closed in the agent's file state.
+    The file will be removed from the agent's working memory view.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+
+    # Use update_file_agent_by_id to close the file
+    try:
+        await server.file_agent_manager.update_file_agent_by_id(
+            agent_id=agent_id,
+            file_id=file_id,
+            actor=actor,
+            is_open=False,
+        )
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"File id={file_id} successfully closed"})
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail=f"File association for file_id={file_id} and agent_id={agent_id} not found")
 
 
 @router.get("/{agent_id}", response_model=AgentState, operation_id="retrieve_agent")

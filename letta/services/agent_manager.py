@@ -46,6 +46,7 @@ from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderType
+from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.group import Group as PydanticGroup
 from letta.schemas.group import ManagerType
 from letta.schemas.memory import ContextWindowOverview, Memory
@@ -65,6 +66,7 @@ from letta.server.db import db_registry
 from letta.services.block_manager import BlockManager
 from letta.services.context_window_calculator.context_window_calculator import ContextWindowCalculator
 from letta.services.context_window_calculator.token_counter import AnthropicTokenCounter, TiktokenCounter
+from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.files_agents_manager import FileAgentManager
 from letta.services.helpers.agent_manager_helper import (
     _apply_filters,
@@ -93,7 +95,7 @@ from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import DatabaseChoice, settings
-from letta.utils import enforce_types, united_diff
+from letta.utils import calculate_file_defaults_based_on_context_window, enforce_types, united_diff
 
 logger = get_logger(__name__)
 
@@ -109,32 +111,6 @@ class AgentManager:
         self.passage_manager = PassageManager()
         self.identity_manager = IdentityManager()
         self.file_agent_manager = FileAgentManager()
-
-    @trace_method
-    async def _validate_agent_exists_async(self, session, agent_id: str, actor: PydanticUser) -> None:
-        """
-        Validate that an agent exists and user has access to it using raw SQL for efficiency.
-
-        Args:
-            session: Database session
-            agent_id: ID of the agent to validate
-            actor: User performing the action
-
-        Raises:
-            NoResultFound: If agent doesn't exist or user doesn't have access
-        """
-        agent_check_query = sa.text(
-            """
-            SELECT 1 FROM agents
-            WHERE id = :agent_id
-            AND organization_id = :org_id
-            AND is_deleted = false
-        """
-        )
-        agent_exists = await session.execute(agent_check_query, {"agent_id": agent_id, "org_id": actor.organization_id})
-
-        if not agent_exists.fetchone():
-            raise NoResultFound(f"Agent with ID {agent_id} not found")
 
     @staticmethod
     def _resolve_tools(session, names: Set[str], ids: Set[str], org_id: str) -> Tuple[Dict[str, str], Dict[str, str]]:
@@ -385,6 +361,8 @@ class AgentManager:
                     created_by_id=actor.id,
                     last_updated_by_id=actor.id,
                     timezone=agent_create.timezone,
+                    max_files_open=agent_create.max_files_open,
+                    per_file_view_window_char_limit=agent_create.per_file_view_window_char_limit,
                 )
 
                 if _test_only_force_id:
@@ -574,6 +552,8 @@ class AgentManager:
                     created_by_id=actor.id,
                     last_updated_by_id=actor.id,
                     timezone=agent_create.timezone if agent_create.timezone else DEFAULT_TIMEZONE,
+                    max_files_open=agent_create.max_files_open,
+                    per_file_view_window_char_limit=agent_create.per_file_view_window_char_limit,
                 )
 
                 if _test_only_force_id:
@@ -737,6 +717,9 @@ class AgentManager:
                 "response_format": agent_update.response_format,
                 "last_run_completion": agent_update.last_run_completion,
                 "last_run_duration_ms": agent_update.last_run_duration_ms,
+                "max_files_open": agent_update.max_files_open,
+                "per_file_view_window_char_limit": agent_update.per_file_view_window_char_limit,
+                "timezone": agent_update.timezone,
             }
             for col, val in scalar_updates.items():
                 if val is not None:
@@ -860,6 +843,8 @@ class AgentManager:
                 "last_run_completion": agent_update.last_run_completion,
                 "last_run_duration_ms": agent_update.last_run_duration_ms,
                 "timezone": agent_update.timezone,
+                "max_files_open": agent_update.max_files_open,
+                "per_file_view_window_char_limit": agent_update.per_file_view_window_char_limit,
             }
             for col, val in scalar_updates.items():
                 if val is not None:
@@ -1602,6 +1587,7 @@ class AgentManager:
             previous_message_count=num_messages - len(agent_state.message_ids),
             archival_memory_size=num_archival_memories,
             sources=agent_state.sources,
+            max_files_open=agent_state.max_files_open,
         )
 
         diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
@@ -1659,7 +1645,9 @@ class AgentManager:
         # note: we only update the system prompt if the core memory is changed
         # this means that the archival/recall memory statistics may be someout out of date
         curr_memory_str = agent_state.memory.compile(
-            sources=agent_state.sources, tool_usage_rules=tool_rules_solver.compile_tool_rule_prompts()
+            sources=agent_state.sources,
+            tool_usage_rules=tool_rules_solver.compile_tool_rule_prompts(),
+            max_files_open=agent_state.max_files_open,
         )
         if curr_memory_str in curr_system_message_openai["content"] and not force:
             # NOTE: could this cause issues if a block is removed? (substring match would still work)
@@ -1687,6 +1675,7 @@ class AgentManager:
             archival_memory_size=num_archival_memories,
             tool_rules_solver=tool_rules_solver,
             sources=agent_state.sources,
+            max_files_open=agent_state.max_files_open,
         )
 
         diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
@@ -1846,7 +1835,11 @@ class AgentManager:
         system_message = await self.message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)
         temp_tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
         if (
-            new_memory.compile(sources=agent_state.sources, tool_usage_rules=temp_tool_rules_solver.compile_tool_rule_prompts())
+            new_memory.compile(
+                sources=agent_state.sources,
+                tool_usage_rules=temp_tool_rules_solver.compile_tool_rule_prompts(),
+                max_files_open=agent_state.max_files_open,
+            )
             not in system_message.content[0].text
         ):
             # update the blocks (LRW) in the DB
@@ -1890,7 +1883,10 @@ class AgentManager:
 
         if file_block_names:
             file_blocks = await self.file_agent_manager.get_all_file_blocks_by_name(
-                file_names=file_block_names, agent_id=agent_state.id, actor=actor
+                file_names=file_block_names,
+                agent_id=agent_state.id,
+                actor=actor,
+                per_file_view_window_char_limit=agent_state.per_file_view_window_char_limit,
             )
             agent_state.memory.file_blocks = [b for b in file_blocks if b is not None]
 
@@ -1899,7 +1895,12 @@ class AgentManager:
     @enforce_types
     @trace_method
     async def refresh_file_blocks(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
-        file_blocks = await self.file_agent_manager.list_files_for_agent(agent_id=agent_state.id, actor=actor, return_as_blocks=True)
+        file_blocks = await self.file_agent_manager.list_files_for_agent(
+            agent_id=agent_state.id,
+            per_file_view_window_char_limit=agent_state.per_file_view_window_char_limit,
+            actor=actor,
+            return_as_blocks=True,
+        )
         agent_state.memory.file_blocks = [b for b in file_blocks if b is not None]
         return agent_state
 
@@ -2593,7 +2594,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
-    async def attach_tool_async(self, agent_id: str, tool_id: str, actor: PydanticUser) -> PydanticAgentState:
+    async def attach_tool_async(self, agent_id: str, tool_id: str, actor: PydanticUser) -> None:
         """
         Attaches a tool to an agent.
 
@@ -2610,22 +2611,112 @@ class AgentManager:
         """
         async with db_registry.async_session() as session:
             # Verify the agent exists and user has permission to access it
-            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            await validate_agent_exists_async(session, agent_id, actor)
 
-            # Use the _process_relationship helper to attach the tool
-            await _process_relationship_async(
-                session=session,
-                agent=agent,
-                relationship_name="tools",
-                model_class=ToolModel,
-                item_ids=[tool_id],
-                allow_partial=False,  # Ensure the tool exists
-                replace=False,  # Extend the existing tools
+            # verify tool exists and belongs to organization in a single query with the insert
+            # first, check if tool exists with correct organization
+            tool_check_query = select(func.count(ToolModel.id)).where(
+                ToolModel.id == tool_id, ToolModel.organization_id == actor.organization_id
             )
+            tool_result = await session.execute(tool_check_query)
+            if tool_result.scalar() == 0:
+                raise NoResultFound(f"Tool with id={tool_id} not found in organization={actor.organization_id}")
 
-            # Commit and refresh the agent
-            await agent.update_async(session, actor=actor)
-            return await agent.to_pydantic_async()
+            # use postgresql on conflict or mysql on duplicate key update for atomic operation
+            if settings.letta_pg_uri_no_default:
+                from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+                insert_stmt = pg_insert(ToolsAgents).values(agent_id=agent_id, tool_id=tool_id)
+                # on conflict do nothing - silently ignore if already exists
+                insert_stmt = insert_stmt.on_conflict_do_nothing(index_elements=["agent_id", "tool_id"])
+                result = await session.execute(insert_stmt)
+                if result.rowcount == 0:
+                    logger.info(f"Tool id={tool_id} is already attached to agent id={agent_id}")
+            else:
+                # for sqlite/mysql, check then insert
+                existing_query = (
+                    select(func.count()).select_from(ToolsAgents).where(ToolsAgents.agent_id == agent_id, ToolsAgents.tool_id == tool_id)
+                )
+                existing_result = await session.execute(existing_query)
+                if existing_result.scalar() == 0:
+                    insert_stmt = insert(ToolsAgents).values(agent_id=agent_id, tool_id=tool_id)
+                    await session.execute(insert_stmt)
+                else:
+                    logger.info(f"Tool id={tool_id} is already attached to agent id={agent_id}")
+
+            await session.commit()
+
+    @enforce_types
+    @trace_method
+    async def bulk_attach_tools_async(self, agent_id: str, tool_ids: List[str], actor: PydanticUser) -> None:
+        """
+        Efficiently attaches multiple tools to an agent in a single operation.
+
+        Args:
+            agent_id: ID of the agent to attach the tools to.
+            tool_ids: List of tool IDs to attach.
+            actor: User performing the action.
+
+        Raises:
+            NoResultFound: If the agent or any tool is not found.
+        """
+        if not tool_ids:
+            # no tools to attach, nothing to do
+            return
+
+        async with db_registry.async_session() as session:
+            # Verify the agent exists and user has permission to access it
+            await validate_agent_exists_async(session, agent_id, actor)
+
+            # verify all tools exist and belong to organization in a single query
+            tool_check_query = select(func.count(ToolModel.id)).where(
+                ToolModel.id.in_(tool_ids), ToolModel.organization_id == actor.organization_id
+            )
+            tool_result = await session.execute(tool_check_query)
+            found_count = tool_result.scalar()
+
+            if found_count != len(tool_ids):
+                # find which tools are missing for better error message
+                existing_query = select(ToolModel.id).where(ToolModel.id.in_(tool_ids), ToolModel.organization_id == actor.organization_id)
+                existing_result = await session.execute(existing_query)
+                existing_ids = {row[0] for row in existing_result}
+                missing_ids = set(tool_ids) - existing_ids
+                raise NoResultFound(f"Tools with ids={missing_ids} not found in organization={actor.organization_id}")
+
+            if settings.letta_pg_uri_no_default:
+                from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+                # prepare bulk values
+                values = [{"agent_id": agent_id, "tool_id": tool_id} for tool_id in tool_ids]
+
+                # bulk insert with on conflict do nothing
+                insert_stmt = pg_insert(ToolsAgents).values(values)
+                insert_stmt = insert_stmt.on_conflict_do_nothing(index_elements=["agent_id", "tool_id"])
+                result = await session.execute(insert_stmt)
+                logger.info(
+                    f"Attached {result.rowcount} new tools to agent {agent_id} (skipped {len(tool_ids) - result.rowcount} already attached)"
+                )
+            else:
+                # for sqlite/mysql, first check which tools are already attached
+                existing_query = select(ToolsAgents.tool_id).where(ToolsAgents.agent_id == agent_id, ToolsAgents.tool_id.in_(tool_ids))
+                existing_result = await session.execute(existing_query)
+                already_attached = {row[0] for row in existing_result}
+
+                # only insert tools that aren't already attached
+                new_tool_ids = [tid for tid in tool_ids if tid not in already_attached]
+
+                if new_tool_ids:
+                    # bulk insert new attachments
+                    values = [{"agent_id": agent_id, "tool_id": tool_id} for tool_id in new_tool_ids]
+                    insert_stmt = insert(ToolsAgents).values(values)
+                    await session.execute(insert_stmt)
+                    logger.info(
+                        f"Attached {len(new_tool_ids)} new tools to agent {agent_id} (skipped {len(already_attached)} already attached)"
+                    )
+                else:
+                    logger.info(f"All {len(tool_ids)} tools already attached to agent {agent_id}")
+
+            await session.commit()
 
     @enforce_types
     @trace_method
@@ -2634,7 +2725,7 @@ class AgentManager:
         Attaches missing core file tools to an agent.
 
         Args:
-            agent_id: ID of the agent to attach the tools to.
+            agent_state: The current agent state with tools already loaded.
             actor: User performing the action.
 
         Raises:
@@ -2643,21 +2734,50 @@ class AgentManager:
         Returns:
             PydanticAgentState: The updated agent state.
         """
-        # Check if the agent is missing any files tools
-        core_tool_names = {tool.name for tool in agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
-        missing_tool_names = set(FILES_TOOLS).difference(core_tool_names)
+        # get current file tools attached to the agent
+        attached_file_tool_names = {tool.name for tool in agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
 
-        for tool_name in missing_tool_names:
-            tool_id = await self.tool_manager.get_tool_id_by_name_async(tool_name=tool_name, actor=actor)
+        # determine which file tools are missing
+        missing_tool_names = set(FILES_TOOLS) - attached_file_tool_names
 
-            # TODO: This is hacky and deserves a rethink - how do we keep all the base tools available in every org always?
-            if not tool_id:
-                await self.tool_manager.upsert_base_tools_async(actor=actor, allowed_types={ToolType.LETTA_FILES_CORE})
+        if not missing_tool_names:
+            # agent already has all file tools
+            return agent_state
 
-            # TODO: Inefficient - I think this re-retrieves the agent_state?
-            agent_state = await self.attach_tool_async(agent_id=agent_state.id, tool_id=tool_id, actor=actor)
+        # get full tool objects for all missing file tools in one query
+        async with db_registry.async_session() as session:
+            query = select(ToolModel).where(
+                ToolModel.name.in_(missing_tool_names),
+                ToolModel.organization_id == actor.organization_id,
+                ToolModel.tool_type == ToolType.LETTA_FILES_CORE,
+            )
+            result = await session.execute(query)
+            found_tool_models = result.scalars().all()
 
-        return agent_state
+        if not found_tool_models:
+            logger.warning(f"No file tools found for organization {actor.organization_id}. Expected tools: {missing_tool_names}")
+            return agent_state
+
+        # convert to pydantic tools
+        found_tools = [tool.to_pydantic() for tool in found_tool_models]
+        found_tool_names = {tool.name for tool in found_tools}
+
+        # log if any expected tools weren't found
+        still_missing = missing_tool_names - found_tool_names
+        if still_missing:
+            logger.warning(f"File tools {still_missing} not found in organization {actor.organization_id}")
+
+        # extract tool IDs for bulk attach
+        tool_ids_to_attach = [tool.id for tool in found_tools]
+
+        # bulk attach all found file tools
+        await self.bulk_attach_tools_async(agent_id=agent_state.id, tool_ids=tool_ids_to_attach, actor=actor)
+
+        # create a shallow copy with updated tools list to avoid modifying input
+        agent_state_dict = agent_state.model_dump()
+        agent_state_dict["tools"] = agent_state.tools + found_tools
+
+        return PydanticAgentState(**agent_state_dict)
 
     @enforce_types
     @trace_method
@@ -2666,25 +2786,30 @@ class AgentManager:
         Detach all core file tools from an agent.
 
         Args:
-            agent_id: ID of the agent to detach the tools from.
+            agent_state: The current agent state with tools already loaded.
             actor: User performing the action.
 
         Raises:
-            NoResultFound: If the agent or tool is not found.
+            NoResultFound: If the agent is not found.
 
         Returns:
             PydanticAgentState: The updated agent state.
         """
-        # Check if the agent is missing any files tools
-        core_tool_names = {tool.name for tool in agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
+        # extract file tool IDs directly from agent_state.tools
+        file_tool_ids = [tool.id for tool in agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE]
 
-        for tool_name in core_tool_names:
-            tool_id = await self.tool_manager.get_tool_id_by_name_async(tool_name=tool_name, actor=actor)
+        if not file_tool_ids:
+            # no file tools to detach
+            return agent_state
 
-            # TODO: Inefficient - I think this re-retrieves the agent_state?
-            agent_state = await self.detach_tool_async(agent_id=agent_state.id, tool_id=tool_id, actor=actor)
+        # bulk detach all file tools in one operation
+        await self.bulk_detach_tools_async(agent_id=agent_state.id, tool_ids=file_tool_ids, actor=actor)
 
-        return agent_state
+        # create a shallow copy with updated tools list to avoid modifying input
+        agent_state_dict = agent_state.model_dump()
+        agent_state_dict["tools"] = [tool for tool in agent_state.tools if tool.tool_type != ToolType.LETTA_FILES_CORE]
+
+        return PydanticAgentState(**agent_state_dict)
 
     @enforce_types
     @trace_method
@@ -2722,7 +2847,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
-    async def detach_tool_async(self, agent_id: str, tool_id: str, actor: PydanticUser) -> PydanticAgentState:
+    async def detach_tool_async(self, agent_id: str, tool_id: str, actor: PydanticUser) -> None:
         """
         Detaches a tool from an agent.
 
@@ -2732,27 +2857,58 @@ class AgentManager:
             actor: User performing the action.
 
         Raises:
-            NoResultFound: If the agent or tool is not found.
-
-        Returns:
-            PydanticAgentState: The updated agent state.
+            NoResultFound: If the agent is not found.
         """
         async with db_registry.async_session() as session:
             # Verify the agent exists and user has permission to access it
-            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            await validate_agent_exists_async(session, agent_id, actor)
 
-            # Filter out the tool to be detached
-            remaining_tools = [tool for tool in agent.tools if tool.id != tool_id]
+            # Delete the association directly - if it doesn't exist, rowcount will be 0
+            delete_query = delete(ToolsAgents).where(ToolsAgents.agent_id == agent_id, ToolsAgents.tool_id == tool_id)
+            result = await session.execute(delete_query)
 
-            if len(remaining_tools) == len(agent.tools):  # Tool ID was not in the relationship
+            if result.rowcount == 0:
                 logger.warning(f"Attempted to remove unattached tool id={tool_id} from agent id={agent_id} by actor={actor}")
+            else:
+                logger.debug(f"Detached tool id={tool_id} from agent id={agent_id}")
 
-            # Update the tools relationship
-            agent.tools = remaining_tools
+            await session.commit()
 
-            # Commit and refresh the agent
-            await agent.update_async(session, actor=actor)
-            return await agent.to_pydantic_async()
+    @enforce_types
+    @trace_method
+    async def bulk_detach_tools_async(self, agent_id: str, tool_ids: List[str], actor: PydanticUser) -> None:
+        """
+        Efficiently detaches multiple tools from an agent in a single operation.
+
+        Args:
+            agent_id: ID of the agent to detach the tools from.
+            tool_ids: List of tool IDs to detach.
+            actor: User performing the action.
+
+        Raises:
+            NoResultFound: If the agent is not found.
+        """
+        if not tool_ids:
+            # no tools to detach, nothing to do
+            return
+
+        async with db_registry.async_session() as session:
+            # Verify the agent exists and user has permission to access it
+            await validate_agent_exists_async(session, agent_id, actor)
+
+            # Delete all associations in a single query
+            delete_query = delete(ToolsAgents).where(ToolsAgents.agent_id == agent_id, ToolsAgents.tool_id.in_(tool_ids))
+            result = await session.execute(delete_query)
+
+            detached_count = result.rowcount
+            if detached_count == 0:
+                logger.warning(f"No tools from list {tool_ids} were attached to agent id={agent_id}")
+            elif detached_count < len(tool_ids):
+                logger.info(f"Detached {detached_count} tools from agent {agent_id} ({len(tool_ids) - detached_count} were not attached)")
+            else:
+                logger.info(f"Detached all {detached_count} tools from agent {agent_id}")
+
+            await session.commit()
 
     @enforce_types
     @trace_method
@@ -2799,6 +2955,83 @@ class AgentManager:
             result = await session.execute(query)
             tools = result.scalars().all()
             return [tool.to_pydantic() for tool in tools]
+
+    # ======================================================================================================================
+    # File Management
+    # ======================================================================================================================
+    async def insert_file_into_context_windows(
+        self,
+        source_id: str,
+        file_metadata_with_content: PydanticFileMetadata,
+        actor: PydanticUser,
+        agent_states: Optional[List[PydanticAgentState]] = None,
+    ) -> List[PydanticAgentState]:
+        """
+        Insert the uploaded document into the context window of all agents
+        attached to the given source.
+        """
+        agent_states = agent_states or await self.source_manager.list_attached_agents(source_id=source_id, actor=actor)
+
+        # Return early
+        if not agent_states:
+            return []
+
+        logger.info(f"Inserting document into context window for source: {source_id}")
+        logger.info(f"Attached agents: {[a.id for a in agent_states]}")
+
+        # Generate visible content for the file
+        line_chunker = LineChunker()
+        content_lines = line_chunker.chunk_text(file_metadata=file_metadata_with_content)
+        visible_content = "\n".join(content_lines)
+        visible_content_map = {file_metadata_with_content.file_name: visible_content}
+
+        # Attach file to each agent using bulk method (one file per agent, but atomic per agent)
+        all_closed_files = await asyncio.gather(
+            *(
+                self.file_agent_manager.attach_files_bulk(
+                    agent_id=agent_state.id,
+                    files_metadata=[file_metadata_with_content],
+                    visible_content_map=visible_content_map,
+                    actor=actor,
+                    max_files_open=agent_state.max_files_open,
+                )
+                for agent_state in agent_states
+            )
+        )
+        # Flatten and log if any files were closed
+        closed_files = [file for closed_list in all_closed_files for file in closed_list]
+        if closed_files:
+            logger.info(f"LRU eviction closed {len(closed_files)} files during bulk attach: {closed_files}")
+
+        return agent_states
+
+    async def insert_files_into_context_window(
+        self, agent_state: PydanticAgentState, file_metadata_with_content: List[PydanticFileMetadata], actor: PydanticUser
+    ) -> None:
+        """
+        Insert the uploaded documents into the context window of an agent
+        attached to the given source.
+        """
+        logger.info(f"Inserting {len(file_metadata_with_content)} documents into context window for agent_state: {agent_state.id}")
+
+        # Generate visible content for each file
+        line_chunker = LineChunker()
+        visible_content_map = {}
+        for file_metadata in file_metadata_with_content:
+            content_lines = line_chunker.chunk_text(file_metadata=file_metadata)
+            visible_content_map[file_metadata.file_name] = "\n".join(content_lines)
+
+        # Use bulk attach to avoid race conditions and duplicate LRU eviction decisions
+        closed_files = await self.file_agent_manager.attach_files_bulk(
+            agent_id=agent_state.id,
+            files_metadata=file_metadata_with_content,
+            visible_content_map=visible_content_map,
+            actor=actor,
+            max_files_open=agent_state.max_files_open,
+        )
+
+        if closed_files:
+            logger.info(f"LRU eviction closed {len(closed_files)} files during bulk insert: {closed_files}")
 
     # ======================================================================================================================
     # Tag Management
@@ -2888,6 +3121,112 @@ class AgentManager:
             results = [row[0] for row in result.all()]
             return results
 
+    @enforce_types
+    @trace_method
+    async def get_agent_files_config_async(self, agent_id: str, actor: PydanticUser) -> Tuple[int, int]:
+        """Get per_file_view_window_char_limit and max_files_open for an agent.
+
+        This is a performant query that only fetches the specific fields needed.
+
+        Args:
+            agent_id: The ID of the agent
+            actor: The user making the request
+
+        Returns:
+            Tuple of per_file_view_window_char_limit, max_files_open values
+        """
+        async with db_registry.async_session() as session:
+            result = await session.execute(
+                select(AgentModel.per_file_view_window_char_limit, AgentModel.max_files_open)
+                .where(AgentModel.id == agent_id)
+                .where(AgentModel.organization_id == actor.organization_id)
+                .where(AgentModel.is_deleted == False)
+            )
+            row = result.one_or_none()
+
+            if row is None:
+                raise ValueError(f"Agent {agent_id} not found")
+
+            per_file_limit, max_files = row[0], row[1]
+
+            # Handle None values by calculating defaults based on context window
+            if per_file_limit is None or max_files is None:
+                # Get the agent's model context window to calculate appropriate defaults
+                model_result = await session.execute(
+                    select(AgentModel.llm_config)
+                    .where(AgentModel.id == agent_id)
+                    .where(AgentModel.organization_id == actor.organization_id)
+                    .where(AgentModel.is_deleted == False)
+                )
+                model_row = model_result.one_or_none()
+                context_window = model_row[0].context_window if model_row and model_row[0] else None
+
+                default_max_files, default_per_file_limit = calculate_file_defaults_based_on_context_window(context_window)
+
+                # Use calculated defaults for None values
+                if per_file_limit is None:
+                    per_file_limit = default_per_file_limit
+                if max_files is None:
+                    max_files = default_max_files
+
+            return per_file_limit, max_files
+
+    @enforce_types
+    @trace_method
+    async def get_agent_max_files_open_async(self, agent_id: str, actor: PydanticUser) -> int:
+        """Get max_files_open for an agent.
+
+        This is a performant query that only fetches the specific field needed.
+
+        Args:
+            agent_id: The ID of the agent
+            actor: The user making the request
+
+        Returns:
+            max_files_open value
+        """
+        async with db_registry.async_session() as session:
+            result = await session.execute(
+                select(AgentModel.max_files_open)
+                .where(AgentModel.id == agent_id)
+                .where(AgentModel.organization_id == actor.organization_id)
+                .where(AgentModel.is_deleted == False)
+            )
+            row = result.scalar_one_or_none()
+
+            if row is None:
+                raise ValueError(f"Agent {agent_id} not found")
+
+            return row
+
+    @enforce_types
+    @trace_method
+    async def get_agent_per_file_view_window_char_limit_async(self, agent_id: str, actor: PydanticUser) -> int:
+        """Get per_file_view_window_char_limit for an agent.
+
+        This is a performant query that only fetches the specific field needed.
+
+        Args:
+            agent_id: The ID of the agent
+            actor: The user making the request
+
+        Returns:
+            per_file_view_window_char_limit value
+        """
+        async with db_registry.async_session() as session:
+            result = await session.execute(
+                select(AgentModel.per_file_view_window_char_limit)
+                .where(AgentModel.id == agent_id)
+                .where(AgentModel.organization_id == actor.organization_id)
+                .where(AgentModel.is_deleted == False)
+            )
+            row = result.scalar_one_or_none()
+
+            if row is None:
+                raise ValueError(f"Agent {agent_id} not found")
+
+            return row
+
     @trace_method
     async def get_context_window(self, agent_id: str, actor: PydanticUser) -> ContextWindowOverview:
         agent_state, system_message, num_messages, num_archival_memories = await self.rebuild_system_prompt_async(
@@ -2895,7 +3234,7 @@ class AgentManager:
         )
         calculator = ContextWindowCalculator()
 
-        if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" and agent_state.llm_config.model_endpoint_type == "anthropic":
+        if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" or agent_state.llm_config.model_endpoint_type == "anthropic":
             anthropic_client = LLMClient.create(provider_type=ProviderType.anthropic, actor=actor)
             model = agent_state.llm_config.model if agent_state.llm_config.model_endpoint_type == "anthropic" else None
 

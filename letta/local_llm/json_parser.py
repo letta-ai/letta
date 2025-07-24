@@ -1,5 +1,6 @@
 import json
 import re
+import warnings
 
 from letta.errors import LLMJSONParsingError
 from letta.helpers.json_helpers import json_loads
@@ -77,10 +78,19 @@ def add_missing_heartbeat(llm_json):
 
 
 def clean_and_interpret_send_message_json(json_string):
+    from letta.local_llm.constants import INNER_THOUGHTS_KWARG, VALID_INNER_THOUGHTS_KWARGS
+    from letta.settings import model_settings
+
+    kwarg = model_settings.inner_thoughts_kwarg
+    if kwarg not in VALID_INNER_THOUGHTS_KWARGS:
+        warnings.warn(f"INNER_THOUGHTS_KWARG is not valid: {kwarg}")
+        kwarg = INNER_THOUGHTS_KWARG
+
     # If normal parsing fails, attempt to clean and extract manually
     cleaned_json_string = re.sub(r"[^\x00-\x7F]+", "", json_string)  # Remove non-ASCII characters
     function_match = re.search(r'"function":\s*"send_message"', cleaned_json_string)
-    inner_thoughts_match = re.search(r'"inner_thoughts":\s*"([^"]+)"', cleaned_json_string)
+
+    inner_thoughts_match = re.search(rf'"{kwarg}":\s*"([^"]+)"', cleaned_json_string)
     message_match = re.search(r'"message":\s*"([^"]+)"', cleaned_json_string)
 
     if function_match and inner_thoughts_match and message_match:

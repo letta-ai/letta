@@ -36,6 +36,7 @@ from letta.interface import AgentInterface
 from letta.llm_api.helpers import calculate_summarizer_cutoff, get_token_counts_for_messages, is_context_overflow_error
 from letta.llm_api.llm_api_tools import create
 from letta.llm_api.llm_client import LLMClient
+from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.log import get_logger
 from letta.memory import summarize_messages
@@ -548,8 +549,8 @@ class Agent(BaseAgent):
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 
             # Check if inner thoughts is in the function call arguments (possible apparently if you are using Azure)
-            if "inner_thoughts" in function_args:
-                response_message.content = function_args.pop("inner_thoughts")
+            if INNER_THOUGHTS_KWARG in function_args:
+                response_message.content = function_args.pop(INNER_THOUGHTS_KWARG)
             # The content if then internal monologue, not chat
             if response_message.content and not nonnull_content:
                 self.interface.internal_monologue(response_message.content, msg_obj=messages[-1], chunk_index=chunk_index)

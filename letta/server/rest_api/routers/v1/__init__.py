@@ -1,6 +1,7 @@
 from letta.server.rest_api.routers.v1.agents import router as agents_router
 from letta.server.rest_api.routers.v1.blocks import router as blocks_router
 from letta.server.rest_api.routers.v1.embeddings import router as embeddings_router
+from letta.server.rest_api.routers.v1.folders import router as folders_router
 from letta.server.rest_api.routers.v1.groups import router as groups_router
 from letta.server.rest_api.routers.v1.health import router as health_router
 from letta.server.rest_api.routers.v1.identities import router as identities_router
@@ -20,6 +21,7 @@ from letta.server.rest_api.routers.v1.voice import router as voice_router
 ROUTERS = [
     tools_router,
     sources_router,
+    folders_router,
     agents_router,
     groups_router,
     identities_router,

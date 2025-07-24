@@ -3,6 +3,8 @@ import os
 import warnings
 from typing import List, Optional, Set, Union
 
+from sqlalchemy import func, select
+
 from letta.constants import (
     BASE_FUNCTION_RETURN_CHAR_LIMIT,
     BASE_MEMORY_TOOLS,
@@ -289,6 +291,16 @@ class ToolManager:
                 return tool.id
         except NoResultFound:
             return None
+
+    @enforce_types
+    @trace_method
+    async def tool_exists_async(self, tool_id: str, actor: PydanticUser) -> bool:
+        """Check if a tool exists and belongs to the user's organization (lightweight check)."""
+        async with db_registry.async_session() as session:
+            query = select(func.count(ToolModel.id)).where(ToolModel.id == tool_id, ToolModel.organization_id == actor.organization_id)
+            result = await session.execute(query)
+            count = result.scalar()
+            return count > 0
 
     @enforce_types
     @trace_method
