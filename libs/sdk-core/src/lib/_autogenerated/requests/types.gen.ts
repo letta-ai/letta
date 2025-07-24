@@ -1742,7 +1742,7 @@ export type Folder = {
     [key: string]: unknown;
   } | null;
   /**
-   * The human-friendly ID of the Folder
+   * The human-friendly ID of the Source
    */
   id?: string;
   /**
@@ -1769,70 +1769,6 @@ export type Folder = {
    * The timestamp when the folder was last updated.
    */
   updated_at?: string | null;
-};
-
-/**
- * Schema for creating a new Folder.
- */
-export type FolderCreate = {
-  /**
-   * The name of the folder.
-   */
-  name: string;
-  /**
-   * The description of the folder.
-   */
-  description?: string | null;
-  /**
-   * Instructions for how to use the folder.
-   */
-  instructions?: string | null;
-  /**
-   * Metadata associated with the folder.
-   */
-  metadata?: {
-    [key: string]: unknown;
-  } | null;
-  /**
-   * The handle for the embedding config used by the folder.
-   */
-  embedding?: string | null;
-  /**
-   * The chunk size of the embedding.
-   */
-  embedding_chunk_size?: number | null;
-  /**
-   * (Legacy) The embedding configuration used by the folder.
-   */
-  embedding_config?: EmbeddingConfig | null;
-};
-
-/**
- * Schema for updating an existing Folder.
- */
-export type FolderUpdate = {
-  /**
-   * The name of the folder.
-   */
-  name?: string | null;
-  /**
-   * The description of the folder.
-   */
-  description?: string | null;
-  /**
-   * Instructions for how to use the folder.
-   */
-  instructions?: string | null;
-  /**
-   * Metadata associated with the folder.
-   */
-  metadata?: {
-    [key: string]: unknown;
-  } | null;
-  /**
-   * The embedding configuration used by the folder.
-   */
-  embedding_config?: EmbeddingConfig | null;
 };
 
 export type Function_Output = {
@@ -5251,7 +5187,7 @@ export type RetrieveFolderResponse = Folder;
 
 export type ModifyFolderData = {
   folderId: string;
-  requestBody: FolderUpdate;
+  requestBody: SourceUpdate;
   userId?: string | null;
 };
 
@@ -5285,7 +5221,7 @@ export type ListFoldersData = {
 export type ListFoldersResponse = Array<Folder>;
 
 export type CreateFolderData = {
-  requestBody: FolderCreate;
+  requestBody: SourceCreate;
   userId?: string | null;
 };
 

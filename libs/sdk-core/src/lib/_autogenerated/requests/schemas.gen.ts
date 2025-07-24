@@ -5043,10 +5043,10 @@ export const $Folder = {
     },
     id: {
       type: 'string',
-      pattern: '^folder-[a-fA-F0-9]{8}',
+      pattern: '^source-[a-fA-F0-9]{8}',
       title: 'Id',
-      description: 'The human-friendly ID of the Folder',
-      examples: ['folder-123e4567-e89b-12d3-a456-426614174000'],
+      description: 'The human-friendly ID of the Source',
+      examples: ['source-123e4567-e89b-12d3-a456-426614174000'],
     },
     embedding_config: {
       $ref: '#/components/schemas/EmbeddingConfig',
@@ -5128,162 +5128,6 @@ Parameters:
     user_id (str): The ID of the user that created the folder.
     metadata (dict): Metadata associated with the folder.
     description (str): The description of the folder.`,
-} as const;
-
-export const $FolderCreate = {
-  properties: {
-    name: {
-      type: 'string',
-      title: 'Name',
-      description: 'The name of the folder.',
-    },
-    description: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Description',
-      description: 'The description of the folder.',
-    },
-    instructions: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Instructions',
-      description: 'Instructions for how to use the folder.',
-    },
-    metadata: {
-      anyOf: [
-        {
-          additionalProperties: true,
-          type: 'object',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Metadata',
-      description: 'Metadata associated with the folder.',
-    },
-    embedding: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Embedding',
-      description: 'The handle for the embedding config used by the folder.',
-    },
-    embedding_chunk_size: {
-      anyOf: [
-        {
-          type: 'integer',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Embedding Chunk Size',
-      description: 'The chunk size of the embedding.',
-    },
-    embedding_config: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/EmbeddingConfig',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: '(Legacy) The embedding configuration used by the folder.',
-    },
-  },
-  additionalProperties: false,
-  type: 'object',
-  required: ['name'],
-  title: 'FolderCreate',
-  description: 'Schema for creating a new Folder.',
-} as const;
-
-export const $FolderUpdate = {
-  properties: {
-    name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Name',
-      description: 'The name of the folder.',
-    },
-    description: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Description',
-      description: 'The description of the folder.',
-    },
-    instructions: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Instructions',
-      description: 'Instructions for how to use the folder.',
-    },
-    metadata: {
-      anyOf: [
-        {
-          additionalProperties: true,
-          type: 'object',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Metadata',
-      description: 'Metadata associated with the folder.',
-    },
-    embedding_config: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/EmbeddingConfig',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: 'The embedding configuration used by the folder.',
-    },
-  },
-  additionalProperties: false,
-  type: 'object',
-  title: 'FolderUpdate',
-  description: 'Schema for updating an existing Folder.',
 } as const;
 
 export const $Function_Output = {

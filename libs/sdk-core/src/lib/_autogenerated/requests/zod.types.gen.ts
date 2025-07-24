@@ -3938,82 +3938,6 @@ export const Folder = z.object({
     .optional(),
 });
 
-export type FolderCreate = z.infer<typeof FolderCreate>;
-export const FolderCreate = z.object({
-  name: z.string(),
-  description: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  instructions: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  metadata: z
-    .union([
-      z.unknown(),
-      z.null(),
-      z.array(z.union([z.unknown(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  embedding: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  embedding_chunk_size: z
-    .union([
-      z.number(),
-      z.null(),
-      z.array(z.union([z.number(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  embedding_config: z
-    .union([
-      EmbeddingConfig,
-      z.null(),
-      z.array(z.union([EmbeddingConfig, z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type FolderUpdate = z.infer<typeof FolderUpdate>;
-export const FolderUpdate = z.object({
-  name: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
-  description: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
-  instructions: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
-  metadata: z
-    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
-    .optional(),
-  embedding_config: z
-    .union([
-      EmbeddingConfig,
-      z.null(),
-      z.array(z.union([EmbeddingConfig, z.null()])),
-    ])
-    .optional(),
-});
-
 export type GenerateToolInput = z.infer<typeof GenerateToolInput>;
 export const GenerateToolInput = z.object({
   tool_name: z.string(),
@@ -7172,7 +7096,7 @@ export const patch_Modify_folder = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
-    body: FolderUpdate,
+    body: SourceUpdate,
   }),
   response: Folder,
 };
@@ -7257,7 +7181,7 @@ export const post_Create_folder = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
-    body: FolderCreate,
+    body: SourceCreate,
   }),
   response: Folder,
 };

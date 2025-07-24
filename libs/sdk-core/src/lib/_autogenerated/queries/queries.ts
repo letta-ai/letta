@@ -46,8 +46,6 @@ import {
   CreateBlock,
   DuplicateFileHandling,
   FeedbackType,
-  FolderCreate,
-  FolderUpdate,
   GenerateToolInput,
   GroupCreate,
   GroupUpdate,
@@ -3722,7 +3720,7 @@ export const useFoldersServiceCreateFolder = <
       TData,
       TError,
       {
-        requestBody: FolderCreate;
+        requestBody: SourceCreate;
         userId?: string;
       },
       TContext
@@ -3734,7 +3732,7 @@ export const useFoldersServiceCreateFolder = <
     TData,
     TError,
     {
-      requestBody: FolderCreate;
+      requestBody: SourceCreate;
       userId?: string;
     },
     TContext
@@ -5488,7 +5486,7 @@ export const useFoldersServiceModifyFolder = <
       TError,
       {
         folderId: string;
-        requestBody: FolderUpdate;
+        requestBody: SourceUpdate;
         userId?: string;
       },
       TContext
@@ -5501,7 +5499,7 @@ export const useFoldersServiceModifyFolder = <
     TError,
     {
       folderId: string;
-      requestBody: FolderUpdate;
+      requestBody: SourceUpdate;
       userId?: string;
     },
     TContext
