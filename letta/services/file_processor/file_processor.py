@@ -177,9 +177,7 @@ class FileProcessor:
                 "file_processor.ocr_completed",
                 {"filename": filename, "pages_extracted": len(ocr_response.pages), "text_length": len(raw_markdown_text)},
             )
-            file_metadata = await self.file_manager.update_file_status(
-                file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.EMBEDDING
-            )
+
             file_metadata = await self.file_manager.upsert_file_content(file_id=file_metadata.id, text=raw_markdown_text, actor=self.actor)
 
             await self.agent_manager.insert_file_into_context_windows(
@@ -207,6 +205,11 @@ class FileProcessor:
             )
 
             # Chunk and embed with fallback logic
+            if not self.using_pinecone:
+                file_metadata = await self.file_manager.update_file_status(
+                    file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.EMBEDDING
+                )
+
             all_passages = await self._chunk_and_embed_with_fallback(
                 file_metadata=file_metadata,
                 ocr_response=ocr_response,
@@ -243,12 +246,16 @@ class FileProcessor:
                     processing_status=FileProcessingStatus.COMPLETED,
                 )
             else:
-                await self.file_manager.update_file_status(
+                print("UPDATING HERE!!!!")
+
+                file_metadata = await self.file_manager.update_file_status(
                     file_id=file_metadata.id,
                     actor=self.actor,
                     total_chunks=len(all_passages),
                     chunks_embedded=0,
+                    processing_status=FileProcessingStatus.EMBEDDING,
                 )
+                print(file_metadata)
 
             return all_passages
 
