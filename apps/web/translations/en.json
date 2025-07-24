@@ -2914,16 +2914,16 @@
     "viewButton": "View"
   },
   "components/TemplateNavigationSidebar": {
-    "viewAgents": "View Agents",
+    "viewAgents": "View deployed agents",
     "DistributionOnboardingStep": {
       "title": "Distribute Your Agent",
       "description": "Ready to deploy your agent to production? The distribution tab lets you create agents from your template and manage them in Letta Cloud.\n\nYou'll find options for API keys, framework integrations, and usage tracking."
     },
     "nav": {
-      "migrations": "Migrations",
-      "templateEditor": "Template Editor",
+      "migrations": "Agent migrations",
+      "templateEditor": "Template editor",
       "metrics": "Monitoring",
-      "distribution": "Distribution"
+      "distribution": "Agent deployment"
     }
   },
   "components/CompareTemplateVersions": {

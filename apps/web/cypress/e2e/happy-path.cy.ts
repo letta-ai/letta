@@ -80,10 +80,13 @@ describe('letta', () => {
 
     cy.clearPointerEventLock();
 
-    cy.findAllByTestId('edit-memory-block-human-content').first().dblclick();
+    cy.findAllByTestId('edit-memory-block-human-content')
+      .first()
+      .dblclick({ force: true });
 
     cy.findAllByTestId('edit-memory-block-human-content', { timeout: 50000 })
       .first()
+      .should('have.prop', 'tagName', 'TEXTAREA')
       .type(
         'The users name is {{name}}. Please include the word BananaMan at the end of every message.',
         { parseSpecialCharSequences: false },

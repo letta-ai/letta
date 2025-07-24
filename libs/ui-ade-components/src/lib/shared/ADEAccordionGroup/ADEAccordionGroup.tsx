@@ -106,7 +106,8 @@ export function ADEAccordionGroup(props: ADEAccordionGroupProps) {
   const [visibleBottomPanelHeaderIds, setVisibleBottomPanelHeaderIds] =
     useState<string[]>([]);
 
-  const middle = Math.ceil(panels.length / 2);
+  // Only first 3 panels show as top sticky to avoid confusion
+  const middle = Math.min(3, Math.ceil(panels.length / 2));
 
   useEffect(() => {
     if (!containerRef.current) return;

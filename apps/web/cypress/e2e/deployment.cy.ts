@@ -86,12 +86,14 @@ describe('letta', () => {
     }).contains('Charles');
 
     // add identity
+    // First open the Metadata accordion panel
+    cy.findByTestId('metadata').click();
 
     cy.findByTestId('update-identities').click();
 
-    cy.findByTestId('select-text-area-identities-selector').type(
-      'DEPLOYMENTIDENTITY',
-    );
+    cy.findByTestId('select-text-area-identities-selector', {
+      timeout: 10000,
+    }).type('DEPLOYMENTIDENTITY');
 
     cy.findByText('DEPLOYMENTIDENTITY (DEPLOYMENTIDENTITY)').click();
 
@@ -134,6 +136,9 @@ describe('letta', () => {
     }).contains('WowCheese');
 
     cy.findAllByTestId('fullversion:DEPLOYMENTAGENT:3').first().should('exist');
+
+    // Open Metadata accordion to access identity viewer
+    cy.findByTestId('metadata').click();
 
     cy.findByTestId('identity-viewer-input', { timeout: 50000 }).should(
       'have.value',

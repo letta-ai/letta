@@ -82,6 +82,9 @@ import {
   useUnpauseOnboarding,
 } from '@letta-cloud/sdk-web';
 import { DataSourcesPanel } from '../panels/DataSourcesV2/DataSourcesPanel';
+import { LLMConfigPanel } from '../panels/LLMConfigPanel/LLMConfigPanel';
+import { EmbeddingConfigPanel } from '../panels/EmbeddingConfigPanel/EmbeddingConfigPanel';
+import { MetadataPanel } from '../panels/MetadataPanel/MetadataPanel';
 import { useQuickADETour } from '../hooks/useQuickADETour/useQuickADETour';
 import { useRouter } from 'next/navigation';
 import { ADEAccordionGroup } from '../shared/ADEAccordionGroup/ADEAccordionGroup';
@@ -229,11 +232,6 @@ function DesktopLayout() {
                   minHeight: 150,
                 },
                 {
-                  id: 'advanced-settings',
-                  label: t('advancedSettings'),
-                  content: <AdvancedSettingsPanel />,
-                },
-                {
                   id: 'tools',
                   label: toolsTitle,
                   content: <ToolsPanel />,
@@ -248,6 +246,34 @@ function DesktopLayout() {
                   ) : (
                     <EditDataSourcesPanel />
                   ),
+                },
+                {
+                  id: 'metadata',
+                  label: 'Metadata',
+                  content: <MetadataPanel />,
+                  minHeight: 150,
+                  defaultOpen: false,
+                },
+                {
+                  id: 'llm-config',
+                  label: 'LLM Config',
+                  content: <LLMConfigPanel />,
+                  minHeight: 150,
+                  defaultOpen: false,
+                },
+                {
+                  id: 'embedding-config',
+                  label: 'Embedding Config',
+                  content: <EmbeddingConfigPanel />,
+                  minHeight: 200,
+                  defaultOpen: false,
+                },
+                {
+                  id: 'advanced-settings',
+                  label: t('advancedSettings'),
+                  content: <AdvancedSettingsPanel />,
+                  minHeight: 100,
+                  defaultOpen: false,
                 },
               ]}
             />

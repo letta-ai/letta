@@ -1,7 +1,6 @@
 import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
 import {
   Button,
-  LettaAlienChatIcon,
   OnboardingAsideFocus,
   RocketIcon,
   ConveyorBeltIcon,
@@ -9,6 +8,7 @@ import {
   WrapNotificationDot,
   MonitoringIcon,
   LettaInvaderOutlineIcon,
+  TemplateIcon,
   type QueryBuilderQuery,
   Typography,
 } from '@letta-cloud/ui-component-library';
@@ -134,18 +134,20 @@ export function TemplateSidebarInner() {
         color="background-grey2"
         fullWidth
         paddingY="xxsmall"
-        borderBottom
+        /* eslint-disable-next-line react/forbid-component-props */
+        style={{
+          borderBottom: '1px solid hsl(var(--background-grey3-border))',
+        }}
       >
         <Typography align="center" variant="body4" bold color="lighter">
           BETA
         </Typography>
       </VStack>
       <SidebarButton
-        icon={<LettaAlienChatIcon />}
+        icon={<TemplateIcon />}
         label={t('nav.templateEditor')}
         href={`/projects/${slug}/templates/${templateName}`}
       />
-      <MigrationsButton />
       <DistributionOnboardingStep>
         <SidebarButton
           label={t('nav.distribution')}
@@ -153,6 +155,7 @@ export function TemplateSidebarInner() {
           href={`/projects/${slug}/templates/${templateName}/distribution`}
         />
       </DistributionOnboardingStep>
+      <MigrationsButton />
       <SidebarButton
         icon={<MonitoringIcon />}
         label={t('nav.metrics')}
