@@ -343,6 +343,35 @@ async def attach_source(
     return agent_state
 
 
+@router.patch("/{agent_id}/folders/attach/{folder_id}", response_model=AgentState, operation_id="attach_folder_to_agent")
+async def attach_folder_to_agent(
+    agent_id: str,
+    folder_id: str,
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: str | None = Header(None, alias="user_id"),
+):
+    """
+    Attach a folder to an agent.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    agent_state = await server.agent_manager.attach_source_async(agent_id=agent_id, source_id=folder_id, actor=actor)
+
+    # Check if the agent is missing any files tools
+    agent_state = await server.agent_manager.attach_missing_files_tools_async(agent_state=agent_state, actor=actor)
+
+    files = await server.file_manager.list_files(folder_id, actor, include_content=True)
+    if files:
+        await server.agent_manager.insert_files_into_context_window(agent_state=agent_state, file_metadata_with_content=files, actor=actor)
+
+    if agent_state.enable_sleeptime:
+        source = await server.source_manager.get_source_by_id(source_id=folder_id)
+        safe_create_task(
+            server.sleeptime_document_ingest_async(agent_state, source, actor), logger=logger, label="sleeptime_document_ingest_async"
+        )
+
+    return agent_state
+
+
 @router.patch("/{agent_id}/sources/detach/{source_id}", response_model=AgentState, operation_id="detach_source_from_agent")
 async def detach_source(
     agent_id: str,
@@ -366,6 +395,36 @@ async def detach_source(
     if agent_state.enable_sleeptime:
         try:
             source = await server.source_manager.get_source_by_id(source_id=source_id)
+            block = await server.agent_manager.get_block_with_label_async(agent_id=agent_state.id, block_label=source.name, actor=actor)
+            await server.block_manager.delete_block_async(block.id, actor)
+        except:
+            pass
+    return agent_state
+
+
+@router.patch("/{agent_id}/folders/detach/{folder_id}", response_model=AgentState, operation_id="detach_folder_from_agent")
+async def detach_folder_from_agent(
+    agent_id: str,
+    folder_id: str,
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: str | None = Header(None, alias="user_id"),
+):
+    """
+    Detach a folder from an agent.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    agent_state = await server.agent_manager.detach_source_async(agent_id=agent_id, source_id=folder_id, actor=actor)
+
+    if not agent_state.sources:
+        agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=actor)
+
+    files = await server.file_manager.list_files(folder_id, actor)
+    file_ids = [f.id for f in files]
+    await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
+
+    if agent_state.enable_sleeptime:
+        try:
+            source = await server.source_manager.get_source_by_id(source_id=folder_id)
             block = await server.agent_manager.get_block_with_label_async(agent_id=agent_state.id, block_label=source.name, actor=actor)
             await server.block_manager.delete_block_async(block.id, actor)
         except:
@@ -511,6 +570,19 @@ async def list_agent_sources(
 ):
     """
     Get the sources associated with an agent.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    return await server.agent_manager.list_attached_sources_async(agent_id=agent_id, actor=actor)
+
+
+@router.get("/{agent_id}/folders", response_model=list[Source], operation_id="list_agent_folders")
+async def list_agent_folders(
+    agent_id: str,
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    """
+    Get the folders associated with an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     return await server.agent_manager.list_attached_sources_async(agent_id=agent_id, actor=actor)
