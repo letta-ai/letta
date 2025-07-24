@@ -1,3 +1,4 @@
+import base64
 import json
 from datetime import datetime
 
@@ -11,7 +12,11 @@ def json_dumps(data, indent=2):
         if isinstance(obj, datetime):
             return obj.isoformat()
         if isinstance(obj, bytes):
-            return obj.decode("utf-8")
+            try:
+                return obj.decode("utf-8")
+            except Exception:
+                print(f"Error decoding bytes as utf-8: {obj}")
+                return base64.b64encode(obj).decode("utf-8")
         raise TypeError(f"Type {type(obj)} not serializable")
 
     return json.dumps(data, indent=indent, default=safe_serializer, ensure_ascii=False)
