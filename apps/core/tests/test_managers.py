@@ -6574,14 +6574,14 @@ async def test_file_status_race_condition_prevention(server, default_user, defau
         processing_status=FileProcessingStatus.PARSING,
     )
 
-    # Simulate race condition: Try to update from PENDING again (stale read)
-    # This should fail because the file is already in PARSING
-    with pytest.raises(ValueError, match="Invalid state transition.*parsing.*PARSING"):
-        await server.file_manager.update_file_status(
-            file_id=created.id,
-            actor=default_user,
-            processing_status=FileProcessingStatus.PARSING,
-        )
+    # Simulate race condition: Try to update from PARSING to PARSING again (stale read)
+    # This should now be allowed (same-state transition) to prevent race conditions
+    updated_again = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.PARSING,
+    )
+    assert updated_again.processing_status == FileProcessingStatus.PARSING
 
     # Move to ERROR
     await server.file_manager.update_file_status(
@@ -6683,6 +6683,43 @@ async def test_file_status_update_with_chunks_progress(server, default_user, def
     )
     assert updated.processing_status == FileProcessingStatus.COMPLETED
     assert updated.chunks_embedded == 100  # preserved
+
+
+@pytest.mark.asyncio
+async def test_same_state_transitions_allowed(server, default_user, default_source):
+    """Test that same-state transitions are allowed to prevent race conditions."""
+    # Create file
+    created = await server.file_manager.create_file(
+        FileMetadata(
+            file_name="same_state_test.txt",
+            source_id=default_source.id,
+            processing_status=FileProcessingStatus.PENDING,
+        ),
+        default_user,
+    )
+
+    # Test PARSING -> PARSING
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.PARSING)
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.PARSING
+    )
+    assert updated.processing_status == FileProcessingStatus.PARSING
+
+    # Test EMBEDDING -> EMBEDDING
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.EMBEDDING)
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.EMBEDDING, chunks_embedded=5
+    )
+    assert updated.processing_status == FileProcessingStatus.EMBEDDING
+    assert updated.chunks_embedded == 5
+
+    # Test COMPLETED -> COMPLETED
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.COMPLETED)
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.COMPLETED, total_chunks=10
+    )
+    assert updated.processing_status == FileProcessingStatus.COMPLETED
+    assert updated.total_chunks == 10
 
 
 @pytest.mark.asyncio

@@ -205,11 +205,17 @@ class FileManager:
                 if processing_status is not None:
                     # enforce specific transitions based on target status
                     if processing_status == FileProcessingStatus.PARSING:
-                        where_conditions.append(FileMetadataModel.processing_status == FileProcessingStatus.PENDING)
+                        where_conditions.append(
+                            FileMetadataModel.processing_status.in_([FileProcessingStatus.PENDING, FileProcessingStatus.PARSING])
+                        )
                     elif processing_status == FileProcessingStatus.EMBEDDING:
-                        where_conditions.append(FileMetadataModel.processing_status == FileProcessingStatus.PARSING)
+                        where_conditions.append(
+                            FileMetadataModel.processing_status.in_([FileProcessingStatus.PARSING, FileProcessingStatus.EMBEDDING])
+                        )
                     elif processing_status == FileProcessingStatus.COMPLETED:
-                        where_conditions.append(FileMetadataModel.processing_status == FileProcessingStatus.EMBEDDING)
+                        where_conditions.append(
+                            FileMetadataModel.processing_status.in_([FileProcessingStatus.EMBEDDING, FileProcessingStatus.COMPLETED])
+                        )
                     # ERROR can be set from any non-terminal state (already handled by terminal check above)
 
             # fast in-place update with state validation
