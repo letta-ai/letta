@@ -24,7 +24,7 @@ interface OpenFileSlotProps {
   file: FileMetadata;
 }
 
-function OpenFileButton(props: OpenFileSlotProps) {
+function FileIsClosedButton(props: OpenFileSlotProps) {
   const { agentId, file } = props;
 
   const currentAgentQueryKey = useCurrentAgentQueryKey();
@@ -89,13 +89,13 @@ function OpenFileButton(props: OpenFileSlotProps) {
       size="xsmall"
       hideLabel
       color="tertiary"
-      label={t('open')}
+      label={t('closed')}
       preIcon={<EyeClosedIcon size="xsmall" />}
     ></Button>
   );
 }
 
-function CloseFileButton(props: OpenFileSlotProps) {
+function FileIsOpenButton(props: OpenFileSlotProps) {
   const { agentId, file } = props;
 
   const currentAgentQueryKey = useCurrentAgentQueryKey();
@@ -159,7 +159,7 @@ function CloseFileButton(props: OpenFileSlotProps) {
       size="xsmall"
       hideLabel
       color="tertiary"
-      label={t('closed')}
+      label={t('open')}
       preIcon={<EyeOpenIcon size="xsmall" />}
     />
   );
@@ -184,10 +184,10 @@ function FileOpenStatusInner(props: FileOpenStatusInnerProps) {
   }, [agent.memory.file_blocks, file.id]);
 
   if (isFileOpen) {
-    return <CloseFileButton agentId={agent.id} file={file} />;
+    return <FileIsOpenButton agentId={agent.id} file={file} />;
   }
 
-  return <OpenFileButton agentId={agent.id} file={file} />;
+  return <FileIsClosedButton agentId={agent.id} file={file} />;
 }
 
 interface FileOpenStatusProps {
