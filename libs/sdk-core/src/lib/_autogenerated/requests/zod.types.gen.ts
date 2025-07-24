@@ -3860,6 +3860,36 @@ export const FileStats = z.object({
     .optional(),
 });
 
+export type GenerateToolInput = z.infer<typeof GenerateToolInput>;
+export const GenerateToolInput = z.object({
+  tool_name: z.string(),
+  prompt: z.string(),
+  handle: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  starter_code: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  validation_errors: z.array(z.string()),
+});
+
+export type GenerateToolOutput = z.infer<typeof GenerateToolOutput>;
+export const GenerateToolOutput = z.object({
+  tool: Tool,
+  sample_args: z.unknown(),
+  response: z.string(),
+});
+
 export type RoundRobinManager = z.infer<typeof RoundRobinManager>;
 export const RoundRobinManager = z.object({
   manager_type: z.string().optional(),
@@ -6650,6 +6680,22 @@ export const post_Generate_json_schema = {
     body: CodeInput,
   }),
   response: z.unknown(),
+};
+
+export type post_Generate_tool = typeof post_Generate_tool;
+export const post_Generate_tool = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/tools/generate-tool'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: GenerateToolInput,
+  }),
+  response: GenerateToolOutput,
 };
 
 export type get_Count_sources = typeof get_Count_sources;
@@ -9683,6 +9729,7 @@ export const EndpointByMethod = {
       post_Add_mcp_tool,
     '/v1/tools/mcp/servers/test': post_Test_mcp_server,
     '/v1/tools/generate-schema': post_Generate_json_schema,
+    '/v1/tools/generate-tool': post_Generate_tool,
     '/v1/sources/': post_Create_source,
     '/v1/sources/{source_id}/upload': post_Upload_file_to_source,
     '/v1/agents/': post_Create_agent,

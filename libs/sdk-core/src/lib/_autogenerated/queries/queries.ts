@@ -44,6 +44,7 @@ import {
   CreateBlock,
   DuplicateFileHandling,
   FeedbackType,
+  GenerateToolInput,
   GroupCreate,
   GroupUpdate,
   IdentityCreate,
@@ -3236,6 +3237,49 @@ export const useToolsServiceGenerateJsonSchema = <
   >({
     mutationFn: ({ requestBody, userId }) =>
       ToolsService.generateJsonSchema({
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Generate Tool From Prompt
+ * Generate a tool from the given user prompt.
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @returns GenerateToolOutput Successful Response
+ * @throws ApiError
+ */
+export const useToolsServiceGenerateTool = <
+  TData = Common.ToolsServiceGenerateToolMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: GenerateToolInput;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: GenerateToolInput;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, userId }) =>
+      ToolsService.generateTool({
         requestBody,
         userId,
       }) as unknown as Promise<TData>,

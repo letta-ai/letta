@@ -1743,6 +1743,46 @@ export type FunctionTool = {
   [key: string]: unknown | FunctionDefinition_Output | 'function';
 };
 
+export type GenerateToolInput = {
+  /**
+   * Name of the tool to generate code for
+   */
+  tool_name: string;
+  /**
+   * User prompt to generate code
+   */
+  prompt: string;
+  /**
+   * Handle of the tool to generate code for
+   */
+  handle?: string | null;
+  /**
+   * Python source code to parse for JSON schema
+   */
+  starter_code?: string | null;
+  /**
+   * List of validation errors
+   */
+  validation_errors: Array<string>;
+};
+
+export type GenerateToolOutput = {
+  /**
+   * Generated tool
+   */
+  tool: Tool;
+  /**
+   * Sample arguments for the tool
+   */
+  sample_args: {
+    [key: string]: unknown;
+  };
+  /**
+   * Response from the assistant
+   */
+  response: string;
+};
+
 export type Group = {
   /**
    * The id of the group. Assigned by the database.
@@ -4929,6 +4969,13 @@ export type GenerateJsonSchemaResponse = {
   [key: string]: unknown;
 };
 
+export type GenerateToolData = {
+  requestBody: GenerateToolInput;
+  userId?: string | null;
+};
+
+export type GenerateToolResponse = GenerateToolOutput;
+
 export type CountSourcesData = {
   userId?: string | null;
 };
@@ -6667,6 +6714,21 @@ export type $OpenApiTs = {
         200: {
           [key: string]: unknown;
         };
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tools/generate-tool': {
+    post: {
+      req: GenerateToolData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: GenerateToolOutput;
         /**
          * Validation Error
          */

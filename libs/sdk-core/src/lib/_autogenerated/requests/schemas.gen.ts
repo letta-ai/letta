@@ -5113,6 +5113,79 @@ export const $FunctionTool = {
   title: 'FunctionTool',
 } as const;
 
+export const $GenerateToolInput = {
+  properties: {
+    tool_name: {
+      type: 'string',
+      title: 'Tool Name',
+      description: 'Name of the tool to generate code for',
+    },
+    prompt: {
+      type: 'string',
+      title: 'Prompt',
+      description: 'User prompt to generate code',
+    },
+    handle: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Handle',
+      description: 'Handle of the tool to generate code for',
+    },
+    starter_code: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Starter Code',
+      description: 'Python source code to parse for JSON schema',
+    },
+    validation_errors: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Validation Errors',
+      description: 'List of validation errors',
+    },
+  },
+  type: 'object',
+  required: ['tool_name', 'prompt', 'validation_errors'],
+  title: 'GenerateToolInput',
+} as const;
+
+export const $GenerateToolOutput = {
+  properties: {
+    tool: {
+      $ref: '#/components/schemas/Tool',
+      description: 'Generated tool',
+    },
+    sample_args: {
+      additionalProperties: true,
+      type: 'object',
+      title: 'Sample Args',
+      description: 'Sample arguments for the tool',
+    },
+    response: {
+      type: 'string',
+      title: 'Response',
+      description: 'Response from the assistant',
+    },
+  },
+  type: 'object',
+  required: ['tool', 'sample_args', 'response'],
+  title: 'GenerateToolOutput',
+} as const;
+
 export const $Group = {
   properties: {
     id: {

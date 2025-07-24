@@ -44,6 +44,8 @@ import type {
   TestMcpServerResponse,
   GenerateJsonSchemaData,
   GenerateJsonSchemaResponse,
+  GenerateToolData,
+  GenerateToolResponse,
   CountSourcesData,
   CountSourcesResponse,
   RetrieveSourceData,
@@ -815,6 +817,31 @@ export class ToolsService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/tools/generate-schema',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Generate Tool From Prompt
+   * Generate a tool from the given user prompt.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns GenerateToolOutput Successful Response
+   * @throws ApiError
+   */
+  public static generateTool(
+    data: GenerateToolData,
+    headers?: { user_id: string },
+  ): CancelablePromise<GenerateToolResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/tools/generate-tool',
       body: data.requestBody,
       mediaType: 'application/json',
       errors: {

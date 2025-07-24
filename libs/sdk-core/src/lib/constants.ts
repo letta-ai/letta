@@ -5,6 +5,7 @@ export const RESTRICTED_ROUTE_BASE_PATHS = [
   '/v1/sandbox-config/',
   '/v1/steps/{step_id}/transaction/{transaction_id}',
   '/v1/tools/generate-schema',
+  '/v1/tools/generate-tool',
 ];
 
 export const ACCEPTABLE_FILETYPES = [
