@@ -43,8 +43,8 @@ module medium_runners {
   github_repo = "letta-cloud"
 
   # auto scaling config
-  min_runners = 20
-  max_runners = 20
+  min_runners = 17
+  max_runners = 17
 }
 
 # hitting CPU quota on GCP bc all runners were sized to support cypress, so trying with smaller runners
@@ -74,8 +74,8 @@ module small_runners {
   github_repo = "letta-cloud"
 
   # auto scaling config
-  min_runners = 16
-  max_runners = 16
+  min_runners = 26
+  max_runners = 26
 }
 
 #ollama
