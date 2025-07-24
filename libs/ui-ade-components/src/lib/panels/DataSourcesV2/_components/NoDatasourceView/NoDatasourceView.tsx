@@ -34,6 +34,7 @@ export function NoDatasourceView() {
                 trigger={
                   <Button
                     fullWidth
+                    data-testid="attach-data-source"
                     color="primary"
                     preIcon={<LinkIcon />}
                     size="small"
@@ -44,6 +45,7 @@ export function NoDatasourceView() {
               <CreateDataSourceModal
                 trigger={
                   <Button
+                    data-testid="create-new-data-source"
                     size="small"
                     fullWidth
                     color="tertiary"

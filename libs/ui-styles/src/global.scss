@@ -523,3 +523,12 @@ summary::-webkit-details-marker {
     -moz-appearance: textfield;
   }
 }
+
+
+.stabilize-scrollbar {
+  scrollbar-gutter: stable;
+}
+
+.w-fullplusscollbar {
+  width: 100%;
+}

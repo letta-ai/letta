@@ -120,25 +120,22 @@ describe('letta', () => {
       timeout: 50000,
     }).contains('Shubham', { timeout: 50000 });
 
-    cy.findByTestId('create-data-source-dialog-trigger').click();
     cy.findByTestId('create-new-data-source').click();
     cy.findByTestId('create-data-source-dialog-name').type('test');
 
-    cy.findByTestId('complete-create-data-source').click();
+    cy.findByTestId('create-data-source-modal-confirm-button').click();
 
     cy.findByTestId('datasources').contains('Filesystem (1)');
-    cy.findByTestId('filetree-actions:1-0').click();
-    cy.findByTestId('filetree-action-detach').click();
+    cy.findByTestId('datasource-dropdown-menu').click();
+    cy.findByTestId('detach-data-source-dialog-trigger').click();
     cy.findByTestId('detach-data-source-dialog-confirm-button').click();
     cy.findByTestId('datasources', {
       timeout: 50000,
     }).contains('Filesystem (0)');
 
-    cy.findByTestId('create-data-source-dialog-trigger', {
+    cy.findByTestId('attach-data-source', {
       timeout: 50000,
     }).click({ waitForAnimations: true, force: true });
-
-    cy.findByTestId('attach-existing-data-source').click();
 
     cy.findAllByTestId('attach-data-source-button', {
       timeout: 50000,

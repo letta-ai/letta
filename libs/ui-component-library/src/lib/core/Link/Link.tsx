@@ -8,9 +8,10 @@ export function Link(
   props: LinkProps &
     PropsWithChildren & { target?: string; noUnderlineWithoutHover?: boolean },
 ) {
+  const { noUnderlineWithoutHover, ...rest } = props;
   return (
     <NextLink
-      {...props}
+      {...rest}
       className={cn(
         'hover:underline',
         !props.noUnderlineWithoutHover ? 'underline' : '',

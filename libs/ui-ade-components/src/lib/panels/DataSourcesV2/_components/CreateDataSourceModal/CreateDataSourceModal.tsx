@@ -3,9 +3,11 @@ import React, { useCallback, useMemo } from 'react';
 import {
   type AgentState,
   isAPIError,
+  type SourcesServiceListSourcesDefaultResponse,
   useAgentsServiceAttachSourceToAgent,
   UseAgentsServiceRetrieveAgentKeyFn,
   useSourcesServiceCreateSource,
+  UseSourcesServiceListSourcesKeyFn,
 } from '@letta-cloud/sdk-core';
 import {
   BillingLink,
@@ -114,6 +116,26 @@ export function CreateDataSourceModal(props: CreateDataSourceModalProps) {
               },
               {
                 onSuccess: () => {
+                  queryClient.setQueriesData<
+                    SourcesServiceListSourcesDefaultResponse | undefined
+                  >(
+                    {
+                      queryKey: UseSourcesServiceListSourcesKeyFn(),
+                    },
+                    (oldData) => {
+                      if (!oldData) {
+                        return [response];
+                      }
+
+                      return [
+                        response,
+                        ...oldData.filter(
+                          (currentSource) => currentSource.id !== response.id,
+                        ),
+                      ];
+                    },
+                  );
+
                   queryClient.setQueriesData<AgentState | undefined>(
                     {
                       queryKey: UseAgentsServiceRetrieveAgentKeyFn({

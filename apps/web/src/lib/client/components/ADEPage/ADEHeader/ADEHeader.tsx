@@ -26,7 +26,7 @@ import {
   DockLeftIcon,
 } from '@letta-cloud/ui-component-library';
 import { ProjectSelector } from '$web/client/components';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   adeKeyMap,
@@ -275,7 +275,7 @@ function MobileADEHeader(props: DesktopADEHeaderProps) {
   return (
     <HStack justify="spaceBetween" align="center" fullWidth color="background">
       <HStack align="center">
-        <LogoContainer />
+        <ADEHeaderLogoContainer />
         <Typography variant="body">{name}</Typography>
       </HStack>
       <AgentSettingsDropdown icon={<DotsVerticalIcon size="medium" />} />
@@ -283,7 +283,7 @@ function MobileADEHeader(props: DesktopADEHeaderProps) {
   );
 }
 
-function LogoContainer() {
+export function ADEHeaderLogoContainer() {
   return (
     <HStack
       align="center"
@@ -363,7 +363,10 @@ function Actions() {
   );
 }
 
-function DesktopADEHeader(props: DesktopADEHeaderProps) {
+export const DESKTOP_ADE_HEADER_CLASSNAME =
+  'h-[48px] min-h-[48px] largerThanMobile:pr-0 pr-3 relative';
+
+export function DesktopADEHeader(props: DesktopADEHeaderProps) {
   const { name: agentName } = props;
 
   const { name: projectName, id, slug: projectSlug } = useCurrentProject();
@@ -374,6 +377,12 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { data: agentTemplate } =
     webApi.agentTemplates.getDeployedAgentTemplateById.useQuery({
@@ -395,7 +404,7 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
       justify="spaceBetween"
       align="center"
       /* eslint-disable-next-line react/forbid-component-props */
-      className="h-[48px] min-h-[48px] largerThanMobile:pr-0 pr-3 relative"
+      className={DESKTOP_ADE_HEADER_CLASSNAME}
       fullWidth
       gap="small"
       color="background"
@@ -404,7 +413,7 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
         <ProjectSelector
           trigger={
             <button className="h-full gap-2 flex items-center justify-center">
-              <LogoContainer />
+              <ADEHeaderLogoContainer />
             </button>
           }
         />
@@ -420,7 +429,7 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
             color="tertiary"
           />
           <HStack align="center">
-            {agentTemplate?.body.fullVersion && (
+            {mounted && agentTemplate?.body.fullVersion && (
               <>
                 <Typography variant="body2">
                   <Link

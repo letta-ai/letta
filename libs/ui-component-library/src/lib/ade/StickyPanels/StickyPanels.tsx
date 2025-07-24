@@ -27,17 +27,16 @@ function StickyLabel({ label }: StickyLabelProps) {
     <HStack
       align="center"
       fullHeight
-      className="h-[32px] px-2 hover:bg-secondary-hover"
+      className="w-full h-[32px]  flex justify-between px-2.5 cursor-pointer py-2"
       as="span"
     >
       <Typography
         uppercase
-        bold
         noWrap
         overflow="ellipsis"
         color="default"
         variant="body4"
-        overrideEl="span"
+        className="font-bold"
       >
         {label}
       </Typography>
@@ -52,7 +51,7 @@ export function StickyPanels({
 }: StickyPanelsProps) {
   const stickyBorder = <div className="h-[1px] w-full border-t" />;
   const stickyStyle = cn(
-    'bg-background-grey w-full sticky cursor-pointer z-[1]',
+    'bg-background-grey w-full border-r sticky  cursor-pointer z-[1]',
     position === 'top' ? ' top-0 border-b' : ' bottom-0 border-t',
   );
 

@@ -45,7 +45,7 @@ function ADEAccordionItem(props: ADEAccordionItemProps) {
       /* if the last element, allow it to flex and fill the remaining space */
       className={cn(
         lastOpen ? 'flex-1' : '',
-        'flex flex-col  ade-accordion-item',
+        'flex flex-col  ade-accordion-item border-r',
         open ? 'open' : 'close min-h-[32px]',
       )}
       data-id={id}
@@ -55,7 +55,7 @@ function ADEAccordionItem(props: ADEAccordionItemProps) {
         onClick={() => {
           onOpenChange(!open);
         }}
-        className="w-full h-[32px] flex justify-between px-2.5 cursor-pointer py-2"
+        className="w-full h-[32px]  flex justify-between px-2.5 cursor-pointer py-2"
       >
         <Typography
           uppercase
@@ -109,6 +109,8 @@ export function ADEAccordionGroup(props: ADEAccordionGroupProps) {
   // Only first 3 panels show as top sticky to avoid confusion
   const middle = Math.min(3, Math.ceil(panels.length / 2));
 
+  const mounted = useRef(false);
+
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -140,6 +142,10 @@ export function ADEAccordionGroup(props: ADEAccordionGroupProps) {
   }, [panels, visibleIds, visibleTopPanelHeaderIds]);
 
   useEffect(() => {
+    if (!visibleIds.length || !mounted.current) {
+      mounted.current = true;
+      return;
+    }
     const visSet = new Set(visibleIds);
     const invTop: string[] = [];
     const invBottom: string[] = [];
@@ -210,7 +216,7 @@ export function ADEAccordionGroup(props: ADEAccordionGroupProps) {
   return (
     <div
       ref={containerRef}
-      className="overflow-auto ade-accordion-group flex flex-col h-full"
+      className="overflow-auto stabilize-scrollbar ade-accordion-group flex flex-col h-full"
     >
       {topStickyPanels.length > 0 && (
         <StickyPanels
@@ -238,7 +244,7 @@ export function ADEAccordionGroup(props: ADEAccordionGroupProps) {
             panelRefs={panelRefs}
           />
           {idx < panels.length - 1 && (
-            <div className="h-[1px] min-h-[1px] bg-border w-full" />
+            <div className="h-[1px] min-h-[1px] bg-border w-fullplusscollbar" />
           )}
         </Fragment>
       ))}

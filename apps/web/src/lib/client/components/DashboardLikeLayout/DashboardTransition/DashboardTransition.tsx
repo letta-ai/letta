@@ -11,6 +11,8 @@ import {
 import * as React from 'react';
 import './DashboardTransition.scss';
 import { cn } from '@letta-cloud/ui-styles';
+import type { GoingToADEViewType } from '$web/client/components/GoingToADEView/GoingToADEView';
+import { GoingToADEView } from '$web/client/components/GoingToADEView/GoingToADEView';
 
 function TransitionLoader() {
   // only will appear if element has existed for more than 0.5s
@@ -46,12 +48,22 @@ export function DashboardTransition({
   children: React.ReactNode;
 }) {
   const [isTransitioning, setIsTransitioning] = React.useState(false);
+  const [goingToADE, setGoingToADE] = React.useState<
+    GoingToADEViewType | undefined
+  >(undefined);
 
   return (
     <Frame fullHeight fullWidth>
       <TransitionRouter
         auto={true}
-        leave={(next) => {
+        leave={(next, _from, to) => {
+          if (to) {
+            if (to.includes('/templates/')) {
+              setGoingToADE('template');
+            } else if (to.includes('/agents/')) {
+              setGoingToADE('agent');
+            }
+          }
           setIsTransitioning(true);
           const tl = gsap.timeline({
             onComplete: next,
@@ -90,6 +102,7 @@ export function DashboardTransition({
           return () => tl.kill();
         }}
       >
+        {isTransitioning && goingToADE && <GoingToADEView mode={goingToADE} />}
         <VStack
           /* eslint-disable-next-line react/forbid-component-props */
           className={cn(

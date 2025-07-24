@@ -19,7 +19,6 @@ import {
   SystemIcon,
   Markdown,
   PersonIcon,
-  LettaInvaderIcon,
   ThoughtsIcon,
   Tooltip,
   Typography,
@@ -32,6 +31,7 @@ import {
   InteractiveSystemMessage,
   EditIcon,
   CircleIcon,
+  SmallInvaderOutlineIcon,
 } from '@letta-cloud/ui-component-library';
 import type {
   AgentMessage,
@@ -291,7 +291,7 @@ function MessageGroup({ group }: MessageGroupType) {
 
   const icon = useMemo(() => {
     if (name === 'Agent') {
-      return <LettaInvaderIcon />;
+      return <SmallInvaderOutlineIcon size="xsmall" />;
     }
 
     if (name === 'User') {
@@ -324,9 +324,8 @@ function MessageGroup({ group }: MessageGroupType) {
             ? 'hsl(var(--user-content-background))'
             : 'hsl(var(--agent-content-background))',
       }}
-      className="rounded-t-[0.75rem] rounded-br-[0.75rem]"
+      className="rounded-t-[0.375rem] gap-1.5 rounded-br-[0.375rem]"
       data-testid="message-group"
-      gap="medium"
     >
       {firstMessageWithStepId?.stepId && (
         <div className="absolute right-[7px] top-[7px]">
@@ -345,7 +344,7 @@ function MessageGroup({ group }: MessageGroupType) {
           />
         </div>
       )}
-      <HStack align="center" gap={true}>
+      <HStack align="center" className="gap-1.5">
         <IconAvatar
           textColor={textColor}
           backgroundColor={backgroundColor}
@@ -1120,6 +1119,7 @@ export function Messages(props: MessagesProps) {
       fullWidth
       collapseHeight
       overflowY="auto"
+      className="relative"
       gap="small"
       padding="small"
     >
@@ -1149,13 +1149,19 @@ export function Messages(props: MessagesProps) {
             emptyMessage={t('noMessages')}
           />
         )}
-      {!data && (
+      <div
+        className={cn(
+          'absolute w-full overflow-hidden h-full top-0 left-0 items-center justify-center transition-opacity duration-500',
+          data ? 'opacity-0 pointer-events-none' : '',
+        )}
+      >
         <LoadingEmptyStatusComponent
           isLoading
+          loaderFillColor="background-grey"
           loadingMessage={t('loadingMessages')}
           loaderVariant="spinner"
         />
-      )}
+      </div>
     </VStack>
   );
 }

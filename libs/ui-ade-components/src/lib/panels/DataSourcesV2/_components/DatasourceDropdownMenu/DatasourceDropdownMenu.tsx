@@ -189,6 +189,7 @@ function DetachDataSourceDialog({ source }: { source: Source }) {
       errorMessage={isError ? t('error') : undefined}
       trigger={
         <DropdownMenuItem
+          data-testid="detach-data-source-dialog-trigger"
           doNotCloseOnSelect
           preIcon={<DatabaseIcon />}
           label={t('trigger')}
@@ -338,6 +339,7 @@ export function DatasourceDropdownMenu(props: DatasourceDropdownMenuProps) {
       trigger={
         trigger || (
           <Button
+            data-testid="datasource-dropdown-menu"
             color="tertiary"
             size="xsmall"
             hideLabel

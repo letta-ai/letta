@@ -452,7 +452,7 @@ const unmountedSelectVariants = cva(
 );
 
 function UnmountedSelect(props: BaseSelectProps) {
-  const { __use_rarely_className, size, styleConfig, fullWidth } = props;
+  const { __use_rarely_className, size, fullWidth } = props;
 
   return (
     <VStack
@@ -461,7 +461,6 @@ function UnmountedSelect(props: BaseSelectProps) {
       className={cn(
         unmountedSelectVariants({
           size: size,
-          ...styleConfig,
         }),
         __use_rarely_className,
       )}

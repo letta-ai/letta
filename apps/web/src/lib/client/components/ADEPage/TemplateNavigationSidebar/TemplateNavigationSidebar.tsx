@@ -119,6 +119,9 @@ function MigrationsButton() {
   );
 }
 
+export const TEMPLATE_SIDEBAR_CLASSNAME =
+  'w-[48px] min-w-[48px] pt-[3px] bg-background-grey2 border border-background-grey3-border';
+
 export function TemplateSidebarInner() {
   const t = useTranslations('components/TemplateNavigationSidebar');
   const { slug } = useCurrentProject();
@@ -128,7 +131,7 @@ export function TemplateSidebarInner() {
     <VStack
       align="center"
       /* eslint-disable-next-line react/forbid-component-props */
-      className="w-[48px] min-w-[48px] pt-[3px] bg-background-grey2 border border-background-grey3-border"
+      className={TEMPLATE_SIDEBAR_CLASSNAME}
     >
       <VStack
         color="background-grey2"

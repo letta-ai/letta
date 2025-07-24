@@ -77,7 +77,6 @@ import {
 import { useHotkeys } from '@mantine/hooks';
 import { adeKeyMap } from '../adeKeyMap';
 import {
-  useFeatureFlag,
   useSetOnboardingStep,
   useUnpauseOnboarding,
 } from '@letta-cloud/sdk-web';
@@ -148,8 +147,6 @@ function DesktopLayout() {
     ],
   ]);
 
-  const { data: enabledDv2 } = useFeatureFlag('DATASOURCES_V2');
-
   const onLayout = useCallback(
     (panelLayout: number[]) => {
       setLayoutConfig({ panelLayout });
@@ -215,7 +212,7 @@ function DesktopLayout() {
           collapsedSize={0}
           defaultSize={
             typeof layoutConfig?.panelLayout[0] === 'number'
-              ? layoutConfig?.panelLayout[0]
+              ? layoutConfig?.panelLayout[0] || 0
               : 30
           }
           className="h-full"
@@ -241,11 +238,7 @@ function DesktopLayout() {
                   id: 'datasources',
                   label: datasourcesTitle,
                   minHeight: 300,
-                  content: enabledDv2 ? (
-                    <DataSourcesPanel />
-                  ) : (
-                    <EditDataSourcesPanel />
-                  ),
+                  content: <DataSourcesPanel />,
                 },
                 {
                   id: 'metadata',
@@ -319,7 +312,7 @@ function DesktopLayout() {
           collapsible
           defaultSize={
             typeof layoutConfig?.panelLayout[2] === 'number'
-              ? layoutConfig?.panelLayout[2]
+              ? layoutConfig?.panelLayout[2] || 0
               : 30
           }
           className="h-full"

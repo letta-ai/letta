@@ -74,10 +74,11 @@ interface LettaLoaderBaseProps extends VariantProps<typeof loaderVariants> {
   stopAnimation?: boolean;
   id?: string;
   isDarkMode?: boolean;
+  fillColor?: string;
 }
 
 function LettaSpinLoader(props: LettaLoaderBaseProps) {
-  const { id, size, stopAnimation } = props;
+  const { id, size, fillColor, stopAnimation } = props;
 
   return (
     <div
@@ -90,13 +91,13 @@ function LettaSpinLoader(props: LettaLoaderBaseProps) {
           !stopAnimation ? 'fadeInAnUp' : '',
         )}
       >
-        <LettaSpinnerOuter />
+        <LettaSpinnerOuter fillColor={fillColor} />
       </div>
       <div className={cn('absolute w-full flex items-center')}>
-        <LettaSpinnerInner />
+        <LettaSpinnerInner fillColor={fillColor} />
       </div>
       <div className="opacity-0 mb-[10%]">
-        <LettaSpinnerOuter />
+        <LettaSpinnerOuter fillColor={fillColor} />
       </div>
     </div>
   );

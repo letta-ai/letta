@@ -19,3 +19,16 @@
   width: 100dvw;
   padding-left: 4px;
 }
+
+.animate-ade-in {
+  animation: ade-in 0.3s ease-in-out forwards;
+}
+
+@keyframes ade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

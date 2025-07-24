@@ -115,7 +115,7 @@ export function ADEPage(props: ADEPageProps) {
       overflow="hidden"
       color="background"
       /* eslint-disable-next-line react/forbid-component-props */
-      className={`w-[100vw]  ${systemWarning ? 'ade-page-system-warning' : 'h-[100dvh]'}`}
+      className={`w-[100vw] ade-page  ${systemWarning ? 'ade-page-system-warning' : 'h-[100dvh]'}`}
       fullHeight
       fullWidth
       gap={false}

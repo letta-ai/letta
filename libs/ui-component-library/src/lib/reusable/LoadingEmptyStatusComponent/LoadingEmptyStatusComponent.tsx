@@ -13,6 +13,7 @@ interface LoadingEmptyStatusComponentProps {
   errorMessage?: string;
   errorAction?: React.ReactNode;
   loaderVariant?: LettaLoaderProps['variant'];
+  loaderFillColor?: string;
   noMinHeight?: boolean;
   className?: string;
   hideText?: boolean;
@@ -33,6 +34,7 @@ export function LoadingEmptyStatusComponent(
     loaderVariant = 'spinner',
     hideText,
     loadingMessage,
+    loaderFillColor,
     isLoading,
     className,
     emptyAction,
@@ -101,6 +103,7 @@ export function LoadingEmptyStatusComponent(
           <VStack paddingBottom="medium">{iconOverride}</VStack>
         ) : (
           <LettaLoader
+            fillColor={loaderFillColor}
             variant={loaderVariant}
             stopAnimation={!isLoading}
             color={stateColor}
