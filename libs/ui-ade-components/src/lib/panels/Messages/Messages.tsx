@@ -377,6 +377,7 @@ interface MessagesProps {
   mode: MessagesDisplayMode;
   isPanelActive?: boolean;
   renderAgentsLink?: boolean;
+  injectSpaceForHeader?: boolean;
 }
 
 interface LastMessageReceived {
@@ -385,8 +386,14 @@ interface LastMessageReceived {
 }
 
 export function Messages(props: MessagesProps) {
-  const { isSendingMessage, renderAgentsLink, mode, isPanelActive, agentId } =
-    props;
+  const {
+    isSendingMessage,
+    injectSpaceForHeader,
+    renderAgentsLink,
+    mode,
+    isPanelActive,
+    agentId,
+  } = props;
 
   const ref = useRef<HTMLDivElement>(null);
   const hasScrolledInitially = useRef(false);
@@ -1134,6 +1141,7 @@ export function Messages(props: MessagesProps) {
           label="Load more"
         />
       )}
+      {injectSpaceForHeader && <div style={{ minHeight: 35 }} />}
       {messageGroups.map((group) => (
         <MessageGroup key={group.id} group={group} />
       ))}

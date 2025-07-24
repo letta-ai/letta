@@ -739,10 +739,6 @@
     "contextWindowSimulator": "Context simulator",
     "settings": "{baseName} Settings",
     "advancedSettings": "Advanced",
-    "liveAgentWarning": {
-      "label": "Live agent",
-      "tooltip": "You are editing a live agent, be aware that editing this agent may impact live deployments"
-    },
     "ADEOnboarding": {
       "welcome": "Your Agent Development Environment (ADE)",
       "skip": "Pause onboarding",
@@ -1141,6 +1137,10 @@
     }
   },
   "ADE/AgentSimulator": {
+    "liveAgentWarning": {
+      "label": "Live agent",
+      "tooltip": "You are editing a live agent, be aware that editing this agent may impact live deployments"
+    },
     "QuickOnboarding": {
       "title": "Message your agent",
       "description": "The agent simulator allows you to test your agent in real-time, before deploying it. You can chat with your agent, see how it uses tools, and verify that memory edits are working correctly.\n\nSend a message to your agent to get started."
@@ -2098,8 +2098,10 @@
     "title": "Context Window",
     "mobileTitle": "Context Window",
     "ContextWindowPreview": {
+      "remainingTokens": "{percentageRemaining} left",
+      "viewContextWindow": "Context explorer",
       "summarize": "Summarize",
-      "usage": "{used}/{total} TOKENS",
+      "usage": "<used></used> of <total></total> tokens used",
       "systemPrompt": "System instructions",
       "toolPrompt": "Tools descriptions",
       "memoryBlocks": "Core memory",

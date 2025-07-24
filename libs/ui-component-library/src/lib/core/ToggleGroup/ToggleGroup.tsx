@@ -25,7 +25,7 @@ const toggleVariants = cva(
       size: {
         default: 'h-biHeight px-3',
         small: 'h-biHeight-sm px-2.5',
-        xsmall: 'h-biHeight-xsm px-2',
+        xsmall: 'h-biHeight-sm px-2',
       },
       fullWidth: {
         true: 'w-full',

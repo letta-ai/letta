@@ -20,7 +20,7 @@ import { Tooltip } from '../Tooltip/Tooltip';
 import { Slot } from '@radix-ui/react-slot';
 import './DynamicApp.scss';
 import { atom, useAtom } from 'jotai';
-import { useSessionStorage } from '@mantine/hooks';
+import { useSessionStorage, useViewportSize } from '@mantine/hooks';
 import { VStack } from '../../framing/VStack/VStack';
 
 type DynamicAppViewVariant = 'fullscreen' | 'windowed';
@@ -44,22 +44,61 @@ function useDynamicAppWindowState(
   const { configuration, isWindowed, isOpen } = options;
   const { minWidth, minHeight, defaultWidth, defaultHeight } = configuration;
 
-  useEffect(() => {
-    // center the window when it opens
-    if (isOpen && isWindowed) {
-      const windowWidth = window.innerWidth;
-      const windowHeight = window.innerHeight;
+  const getCorrectDefaultWidth = useCallback(() => {
+    // if default width is larger than the viewport width, set it to the viewport width*0.90;
+    const viewportWidth = window.innerWidth;
+    return Math.min(viewportWidth * 0.9, defaultWidth);
+  }, [defaultWidth]);
 
-      setLeft((windowWidth - defaultWidth) / 2);
-      setTop((windowHeight - defaultHeight) / 2);
+  const getCorrectDefaultHeight = useCallback(() => {
+    // if default height is larger than the viewport height, set it to the viewport height*0.90;
+    const viewportHeight = window.innerHeight;
+    return Math.min(viewportHeight * 0.9, defaultHeight);
+  }, [defaultHeight]);
+
+  const [width, setWidth] = React.useState<number>(getCorrectDefaultWidth);
+  const [height, setHeight] = React.useState<number>(getCorrectDefaultHeight);
+
+  const opened = useRef(isOpen);
+
+  useEffect(() => {
+    if (isWindowed) {
+      // center the window when it opens
+      if (isOpen) {
+        if (opened.current) {
+          // If the window is already opened, we don't need to reset the position
+          return;
+        }
+
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+
+        const nextHeight = Math.min(height, windowHeight * 0.9);
+        const nextWidth = Math.min(width, windowWidth * 0.9);
+
+        setLeft((windowWidth - nextWidth) / 2);
+        setTop((windowHeight - nextHeight) / 2);
+
+        console.log('fasd', {
+          nextWidth,
+          nextHeight,
+        });
+        setWidth(nextWidth);
+        setHeight(nextHeight);
+
+        opened.current = true;
+      }
     }
-  }, [defaultHeight, defaultWidth, isOpen, isWindowed]);
+  }, [width, height, isOpen, isWindowed]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      opened.current = false;
+    }
+  }, [isOpen]);
 
   const [top, setTop] = React.useState<number>(0);
   const [left, setLeft] = React.useState<number>(0);
-
-  const [width, setWidth] = React.useState<number>(defaultWidth);
-  const [height, setHeight] = React.useState<number>(defaultHeight);
 
   const attachMove = useCallback(
     (dragElement: HTMLElement, windowElement: HTMLElement) => {
@@ -316,12 +355,13 @@ function DynamicHeaderButton(props: DynamicHeaderButtonProps) {
 interface DynamicHeaderProps {
   title: string;
   view: DynamicAppViewVariant;
+  forceMobileView?: boolean;
   onSetView: (view: DynamicAppViewVariant) => void;
   ref: React.Ref<HTMLDivElement>;
 }
 
 function DynamicHeader(props: DynamicHeaderProps) {
-  const { title, view, ref, onSetView } = props;
+  const { title, view, forceMobileView, ref, onSetView } = props;
 
   const t = useTranslations('DynamicApp.DynamicHeader');
   return (
@@ -340,22 +380,26 @@ function DynamicHeader(props: DynamicHeaderProps) {
         </Typography>
       </DialogTitle>
       <HStack gap>
-        <DynamicHeaderButton
-          label={t('fullscreen')}
-          icon={<FullscreenIcon />}
-          onClick={() => {
-            onSetView('fullscreen');
-          }}
-          active={view === 'fullscreen'}
-        ></DynamicHeaderButton>
-        <DynamicHeaderButton
-          label={t('windowed')}
-          icon={<WindowedIcon />}
-          onClick={() => {
-            onSetView('windowed');
-          }}
-          active={view === 'windowed'}
-        ></DynamicHeaderButton>
+        {!forceMobileView && (
+          <>
+            <DynamicHeaderButton
+              label={t('fullscreen')}
+              icon={<FullscreenIcon />}
+              onClick={() => {
+                onSetView('fullscreen');
+              }}
+              active={view === 'fullscreen'}
+            ></DynamicHeaderButton>
+            <DynamicHeaderButton
+              label={t('windowed')}
+              icon={<WindowedIcon />}
+              onClick={() => {
+                onSetView('windowed');
+              }}
+              active={view === 'windowed'}
+            ></DynamicHeaderButton>
+          </>
+        )}
 
         <CloseApp asChild>
           <DynamicHeaderButton
@@ -399,11 +443,29 @@ export function DynamicApp(props: DynamicAppProps) {
     return localOnOpenChange;
   }, [parentOnOpenChange, localOnOpenChange]);
 
-  const [view, setView] = useState<DynamicAppViewVariant>(
+  const [_view, setView] = useState<DynamicAppViewVariant>(
     defaultView || 'windowed',
   );
 
+  const { width: viewPortWidth, height: viewPortHeight } = useViewportSize();
+
   const [focusedAppId, setFocusedApp] = useAtom(focusedDynamicApp);
+
+  const forceMobileView = useMemo(() => {
+    // if the viewport height or width is less than 500px, switch to fullscreen view
+    return viewPortHeight < 500 || viewPortWidth < 500;
+  }, [viewPortHeight, viewPortWidth]);
+
+  const view = useMemo(() => {
+    // if the viewport height or width is less than 500px, switch to fullscreen view
+
+    if (forceMobileView) {
+      return 'fullscreen';
+    }
+
+    return _view;
+  }, [_view, forceMobileView]);
+
   const isWindowed = view === 'windowed';
   const isFullscreen = view === 'fullscreen';
 
@@ -568,6 +630,7 @@ export function DynamicApp(props: DynamicAppProps) {
             >
               <DynamicHeader
                 ref={headerRef}
+                forceMobileView={forceMobileView}
                 onSetView={setView}
                 view={view}
                 title={name}

@@ -49,6 +49,7 @@ const buttonVariants = cva(
       },
       size: {
         '3xsmall': 'gap-1 px-[0.5]',
+        '2xsmall': 'gap-1 px-[0.5]',
         xsmall:
           'px-2 py-1 h-biHeight-xs min-h-biHeight-xs text-xs font-medium gap-1',
         large:
@@ -125,6 +126,12 @@ const buttonVariants = cva(
           'w-[12px] min-w-[12px] h-[12px] max-h-[12px] p-0 items-center justify-center flex',
       },
       {
+        square: true,
+        size: '2xsmall',
+        className:
+          'w-4 min-w-4 h-4 max-h-4 p-0 items-center justify-center flex',
+      },
+      {
         hideLabel: true,
         size: 'xsmall',
         className:
@@ -148,6 +155,7 @@ export type ButtonProps = Omit<
       busy?: boolean;
       preload?: boolean;
       href?: string;
+      hideLabelOnSmallPanel?: boolean;
       disabled?: boolean;
       fullWidthLabel?: boolean;
       hideLabel?: boolean;
@@ -180,6 +188,7 @@ export const Button = forwardRef<
     square,
     size,
     fullWidthLabel,
+    hideLabelOnSmallPanel,
     hideLabel,
     _use_rarely_className,
     _use_rarely_disableTooltip,
@@ -189,6 +198,10 @@ export const Button = forwardRef<
   const iconSize = useMemo(() => {
     if (size === '3xsmall') {
       return 'h-3 w-3';
+    }
+
+    if (size === '2xsmall') {
+      return 'h-4 w-4';
     }
 
     if (size === 'small') {
@@ -246,7 +259,13 @@ export const Button = forwardRef<
         {hideLabel ? (
           <span className="sr-only">{label}</span>
         ) : (
-          <span className={cn(bold && 'font-bold', 'button-label')}>
+          <span
+            className={cn(
+              bold && 'font-bold',
+              'button-label',
+              hideLabelOnSmallPanel ? 'hide-label-on-small-panel' : '',
+            )}
+          >
             {label}
           </span>
         )}

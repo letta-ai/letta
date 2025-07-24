@@ -7,6 +7,8 @@ import {
   Chart,
   Code,
   CompressIcon,
+  ContextExplorerIcon,
+  DynamicApp,
   HStack,
   makeFormattedTooltip,
   Typography,
@@ -207,7 +209,7 @@ export function ContextWindowPanel() {
   // Add percentage calculation
   const percentageRemaining = useMemo(() => {
     if (totalLength === 0) return 0;
-    return Math.round((remainingLength / totalLength) * 100);
+    return Math.round((remainingLength / totalLength) * 100) / 100;
   }, [remainingLength, totalLength]);
 
   const standardChartOptions = useMemo(() => {
@@ -462,13 +464,15 @@ export function ContextWindowPanel() {
     formatNumber, // Add this dependency
   ]);
 
+  const [_, setOpenContextDialog] = useAtom(contextEditorDialogState);
+
   const onChartInit = useCallback(
     (chart: echarts.ECharts) => {
       chart.on('click', (params) => {
         if (params.componentType === 'series') {
           const seriesName = params.seriesName;
 
-          document.getElementById(`tab:context-window-simulator`)?.click();
+          setOpenContextDialog(true);
 
           const idMap: Record<string, string> = {
             [t('ContextWindowPreview.systemPrompt')]: CONTEXT_PARTS.system,
@@ -500,19 +504,12 @@ export function ContextWindowPanel() {
         }
       });
     },
-    [t],
+    [t, setOpenContextDialog],
   );
 
   return (
-    <VStack fullWidth gap="small" paddingX="small" paddingY="xsmall">
-      <Typography
-        variant="body4"
-        uppercase
-        className="tracking-[0.04em] font-bold"
-      >
-        {t('title')}
-      </Typography>
-      <HStack fullWidth>
+    <VStack fullWidth gap="small" paddingX="small" paddingBottom="xsmall">
+      <HStack gap="small" fullWidth>
         <div className="w-full relative">
           <div className="w-full relative z-[1] px-[1px]">
             <Chart
@@ -523,50 +520,83 @@ export function ContextWindowPanel() {
           </div>
           <div className="h-[19px] mt-[3px] w-full absolute z-[0] pointer-events-none top-0 bg-panel-input-background border border-input" />
         </div>
-        <SummerizerDialog
-          trigger={
-            <Button
-              size="xsmall"
-              hideLabel
-              square
-              color="tertiary"
-              preIcon={<CompressIcon />}
-              label={t('ContextWindowPreview.summarize')}
-            />
-          }
-        />
+        <HStack align="center">
+          <ContextEditorDialog
+            trigger={
+              <Button
+                square
+                size="2xsmall"
+                color="secondary"
+                hideLabel
+                id="open-context-window-simulator"
+                preIcon={<ContextExplorerIcon />}
+                label={t('ContextWindowPreview.viewContextWindow')}
+              />
+            }
+          />
+          <SummerizerDialog
+            trigger={
+              <Button
+                square
+                size="2xsmall"
+                hideLabel
+                color="tertiary"
+                preIcon={<CompressIcon />}
+                label={t('ContextWindowPreview.summarize')}
+              />
+            }
+          />
+        </HStack>
       </HStack>
-      <HStack fullWidth>
-        <HStack fullWidth justify="start">
+      <HStack align="center" justify="spaceBetween">
+        <HStack gap={false} fullWidth justify="spaceBetween">
           <Typography
             color={totalUsedLength > totalLength ? 'destructive' : 'muted'}
             variant="body4"
           >
-            <span
-              className="font-semibold"
-              style={{
-                color:
-                  totalUsedLength > totalLength
-                    ? 'hsl(var(--destructive))'
-                    : 'hsl(var(--text-default))',
-              }}
-            >
-              {totalUsedLength}
-            </span>
-            {` of ${totalLength} tokens used`}
+            {t.rich('ContextWindowPreview.usage', {
+              total: () =>
+                formatNumber(totalLength, {
+                  maximumFractionDigits: 0,
+                  minimumFractionDigits: 0,
+                }),
+              used: () => {
+                return (
+                  <span
+                    className="font-semibold"
+                    style={{
+                      color:
+                        totalUsedLength > totalLength
+                          ? 'hsl(var(--destructive))'
+                          : 'hsl(var(--text-default))',
+                    }}
+                  >
+                    {formatNumber(totalUsedLength)}
+                  </span>
+                );
+              },
+            })}
           </Typography>
-        </HStack>
-        <HStack fullWidth justify="end">
-          <Typography color="muted" variant="body4" className="ml-2">
-            {percentageRemaining}% remaining
-          </Typography>
+          <HStack
+            /* eslint-disable-next-line react/forbid-component-props */
+            style={{ marginRight: 45 }}
+          >
+            <Typography color="muted" variant="body4">
+              {t('ContextWindowPreview.remainingTokens', {
+                percentageRemaining: formatNumber(percentageRemaining, {
+                  maximumFractionDigits: 2,
+                  style: 'percent',
+                }),
+              })}
+            </Typography>
+          </HStack>
         </HStack>
       </HStack>
     </VStack>
   );
 }
 
-export function ContextWindowSimulator() {
+function ContextWindowSimulator() {
   const {
     systemPromptLength,
     toolLength,
@@ -704,5 +734,37 @@ export function ContextWindowSimulator() {
         totalContextSize={totalLength}
       />
     </VStack>
+  );
+}
+
+interface ContextEditorDialogProps {
+  trigger: React.ReactNode;
+}
+
+const contextEditorDialogState = atom<boolean>(false);
+
+function ContextEditorDialog(props: ContextEditorDialogProps) {
+  const { trigger } = props;
+
+  const [open, setOpen] = useAtom(contextEditorDialogState);
+
+  const t = useTranslations('ADE/ContextEditorPanel');
+
+  return (
+    <DynamicApp
+      onOpenChange={setOpen}
+      isOpen={open}
+      defaultView="windowed"
+      windowConfiguration={{
+        minWidth: 350,
+        minHeight: 350,
+        defaultWidth: 400,
+        defaultHeight: 600,
+      }}
+      trigger={trigger}
+      name={t('title')}
+    >
+      <ContextWindowSimulator />
+    </DynamicApp>
   );
 }

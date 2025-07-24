@@ -1,27 +1,12 @@
 'use client';
 import {
   Button,
-  ChatBubbleIcon,
   ChatInput,
-  ChatIcon,
-  CodeIcon,
-  Dialog,
-  DotsHorizontalIcon,
-  DropdownMenu,
-  DropdownMenuItem,
-  HStack,
   PersonIcon,
-  RawToggleGroup,
   SystemIcon,
   toast,
   Typography,
-  VariableIcon,
   WarningIcon,
-  FlushIcon,
-  useForm,
-  FormProvider,
-  FormField,
-  Checkbox,
   Link,
   OnboardingAsideFocus,
   Avatar,
@@ -30,10 +15,8 @@ import type {
   ChatInputRef,
   RoleOption,
 } from '@letta-cloud/ui-component-library';
-import { PanelBar } from '@letta-cloud/ui-component-library';
 import { VStack } from '@letta-cloud/ui-component-library';
 import { useEffect } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
 import { useMemo } from 'react';
 import React, { useCallback, useRef, useState } from 'react';
 import type {
@@ -46,13 +29,9 @@ import type {
   UserMessage,
 } from '@letta-cloud/sdk-core';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  IdentitiesService,
-  useAgentsServiceResetMessages,
-} from '@letta-cloud/sdk-core';
+import { IdentitiesService } from '@letta-cloud/sdk-core';
 import { isAgentState } from '@letta-cloud/sdk-core';
 import { ErrorMessageSchema } from '@letta-cloud/sdk-core';
-import { getIsAgentState } from '@letta-cloud/sdk-core';
 import { useAgentsServiceListAgentSources } from '@letta-cloud/sdk-core';
 import {
   AgentMessageSchema,
@@ -61,7 +40,7 @@ import {
 import { OpenInNetworkInspectorButton, useCurrentAgent } from '../../hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { get } from 'lodash-es';
-import { z } from 'zod';
+import type { z } from 'zod';
 import { useTranslations } from '@letta-cloud/translations';
 import { useDebouncedCallback, useLocalStorage } from '@mantine/hooks';
 import {
@@ -69,32 +48,27 @@ import {
   webApi,
   webApiQueryKeys,
 } from '@letta-cloud/sdk-web';
-import {
-  compareAgentStates,
-  findMemoryBlockVariables,
-} from '@letta-cloud/utils-shared';
+import { compareAgentStates } from '@letta-cloud/utils-shared';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useCurrentAgentMetaData } from '../../hooks';
 import { useAtom } from 'jotai';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { jsonToCurl } from '@letta-cloud/utils-shared';
-import type { GetAgentTemplateSimulatorSessionResponseBody } from '@letta-cloud/sdk-web';
 import { Messages } from '../Messages/Messages';
 import type { MessagesDisplayMode } from '../Messages/Messages';
 import {
   useCurrentAPIHostConfig,
   useLettaAgentsAPI,
 } from '@letta-cloud/utils-client';
-import { AgentVariablesModal } from './AgentVariablesModal/AgentVariablesModal';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { ShareAgentDialog } from './ShareAgentDialog/ShareAgentDialog';
 import { isSendingMessageAtom } from './atoms';
 import { useADETour } from '../../hooks/useADETour/useADETour';
 import type { InfiniteData } from '@tanstack/query-core';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useNetworkRequest } from '../../hooks/useNetworkRequest/useNetworkRequest';
 import { useQuickADETour } from '../../hooks/useQuickADETour/useQuickADETour';
+import { ChatroomContext } from './ChatroomContext/ChatroomContext';
+import { AgentSimulatorHeader } from './AgentSimulatorHeader/AgentSimulatorHeader';
 
 type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
@@ -558,263 +532,6 @@ export function useSendMessage(
   };
 }
 
-interface ChatroomContextType {
-  renderMode: MessagesDisplayMode;
-  setRenderMode: Dispatch<SetStateAction<ChatroomContextType['renderMode']>>;
-}
-
-const ChatroomContext = React.createContext<ChatroomContextType>({
-  renderMode: 'interactive',
-  setRenderMode: () => {
-    return;
-  },
-});
-
-function ControlChatroomRenderMode() {
-  const t = useTranslations('ADE/AgentSimulator');
-  const { renderMode, setRenderMode } = React.useContext(ChatroomContext);
-
-  return (
-    <RawToggleGroup
-      border
-      size="small"
-      onValueChange={(value) => {
-        if (value) {
-          setRenderMode(value as MessagesDisplayMode);
-        }
-      }}
-      value={renderMode}
-      label={t('setChatroomRenderMode.label')}
-      hideLabel
-      items={[
-        {
-          icon: <CodeIcon />,
-          label: t('setChatroomRenderMode.options.debug'),
-          value: 'debug',
-          hideLabel: true,
-        },
-        {
-          icon: <ChatIcon />,
-          label: t('setChatroomRenderMode.options.interactive'),
-          value: 'interactive',
-          hideLabel: true,
-        },
-        {
-          icon: <ChatBubbleIcon />,
-          label: t('setChatroomRenderMode.options.simple'),
-          value: 'simple',
-          hideLabel: true,
-        },
-      ]}
-    />
-  );
-}
-
-function FlushSimulationSessionDialog() {
-  const [isOpen, setIsOpen] = useState(false);
-  const t = useTranslations('ADE/AgentSimulator');
-  const queryClient = useQueryClient();
-  const { agentId: agentTemplateId } = useCurrentAgentMetaData();
-  const { agentSession } = useCurrentSimulatedAgent();
-
-  const { mutate: createSession, isPending: isCreatingNewSession } =
-    webApi.agentTemplates.createAgentTemplateSimulatorSession.useMutation({
-      onSuccess: (response) => {
-        toast.success(t('FlushSimulationSessionDialog.success'));
-
-        queryClient.setQueriesData<GetAgentTemplateSimulatorSessionResponseBody>(
-          {
-            queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateSession({
-              agentTemplateId,
-            }),
-          },
-          () => {
-            return {
-              status: 200,
-              body: response.body,
-            };
-          },
-        );
-
-        setIsOpen(false);
-      },
-    });
-
-  const { mutate, isPending: isDeletingSession } =
-    webApi.agentTemplates.deleteAgentTemplateSimulatorSession.useMutation({
-      onSuccess: async () => {
-        createSession({
-          params: {
-            agentTemplateId,
-          },
-          body: {
-            memoryVariables: agentSession?.body.memoryVariables || {},
-            toolVariables: agentSession?.body.toolVariables || {},
-          },
-        });
-      },
-      onError: () => {
-        toast.error(t('FlushSimulationSessionDialog.error'));
-      },
-    });
-
-  const isPending = useMemo(() => {
-    return isCreatingNewSession || isDeletingSession;
-  }, [isCreatingNewSession, isDeletingSession]);
-
-  const handleFlushSession = useCallback(() => {
-    mutate({
-      params: {
-        agentTemplateId,
-        agentSessionId: agentSession?.body.id || '',
-      },
-    });
-  }, [agentSession?.body.id, agentTemplateId, mutate]);
-
-  return (
-    <Dialog
-      isConfirmBusy={isPending}
-      isOpen={isOpen}
-      trigger={
-        <Button
-          size="small"
-          color="tertiary"
-          preIcon={<FlushIcon />}
-          hideLabel
-          label={t('FlushSimulationSessionDialog.trigger')}
-        />
-      }
-      title={t('FlushSimulationSessionDialog.title')}
-      confirmText={t('FlushSimulationSessionDialog.confirm')}
-      onConfirm={handleFlushSession}
-      onOpenChange={setIsOpen}
-    >
-      <Typography>{t('FlushSimulationSessionDialog.description')}</Typography>
-    </Dialog>
-  );
-}
-
-const AgentResetMessagesSchema = z.object({
-  addDefaultInitialMessages: z.boolean(),
-});
-
-type AgentResetMessagesPayload = z.infer<typeof AgentResetMessagesSchema>;
-
-function AgentResetMessagesDialog() {
-  const [isOpen, setIsOpen] = useState(false);
-  const t = useTranslations('ADE/AgentSimulator');
-
-  const form = useForm<AgentResetMessagesPayload>({
-    resolver: zodResolver(AgentResetMessagesSchema),
-    defaultValues: {
-      addDefaultInitialMessages: true,
-    },
-  });
-
-  const queryClient = useQueryClient();
-
-  const { id: agentId } = useCurrentSimulatedAgent();
-
-  const {
-    mutate: resetMessages,
-    isPending,
-    reset,
-  } = useAgentsServiceResetMessages({
-    onSuccess: async () => {
-      await queryClient.resetQueries({
-        queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
-      });
-      toast.success(t('AgentResetMessagesDialog.success'));
-      form.reset();
-      reset();
-      setIsOpen(false);
-    },
-    onError: () => {
-      toast.error(t('AgentResetMessagesDialog.error'));
-    },
-  });
-
-  const handleResetMessages = useCallback(
-    (values: AgentResetMessagesPayload) => {
-      resetMessages({
-        agentId,
-        addDefaultInitialMessages: values.addDefaultInitialMessages,
-      });
-    },
-    [agentId, resetMessages],
-  );
-
-  return (
-    <FormProvider {...form}>
-      <Dialog
-        isConfirmBusy={isPending}
-        isOpen={isOpen}
-        trigger={
-          <DropdownMenuItem
-            doNotCloseOnSelect
-            label={t('AgentResetMessagesDialog.trigger')}
-          />
-        }
-        title={t('AgentResetMessagesDialog.title')}
-        confirmText={t('AgentResetMessagesDialog.confirm')}
-        onSubmit={form.handleSubmit(handleResetMessages)}
-        onOpenChange={setIsOpen}
-      >
-        <Typography>{t('AgentResetMessagesDialog.description')}</Typography>
-        <HStack padding="small" paddingBottom="xxsmall" border fullWidth>
-          <FormField
-            name="addDefaultInitialMessages"
-            render={({ field }) => (
-              <Checkbox
-                label={t('AgentResetMessagesDialog.addDefaultInitialMessages')}
-                onCheckedChange={field.onChange}
-                checked={field.value}
-              />
-            )}
-          />
-        </HStack>
-      </Dialog>
-    </FormProvider>
-  );
-}
-
-function AgentFlushButton() {
-  const { isTemplate } = useCurrentAgentMetaData();
-  const { agentSession } = useCurrentSimulatedAgent();
-
-  if (!(isTemplate && agentSession?.body.agentId)) {
-    return null;
-  }
-
-  return <FlushSimulationSessionDialog />;
-}
-
-function AgentSimulatorOptionsMenu() {
-  const t = useTranslations('ADE/AgentSimulator');
-  const { isLocal, isTemplate } = useCurrentAgentMetaData();
-
-  return (
-    <>
-      <DropdownMenu
-        triggerAsChild
-        align="end"
-        trigger={
-          <Button
-            size="small"
-            color="tertiary"
-            preIcon={<DotsHorizontalIcon />}
-            hideLabel
-            label={t('AgentSimulatorOptionsMenu.trigger')}
-          />
-        }
-      >
-        <AgentResetMessagesDialog />
-        {!isLocal && !isTemplate && <ShareAgentDialog />}
-      </DropdownMenu>
-    </>
-  );
-}
-
 interface QuickAgentSimulatorOnboardingProps {
   children: React.ReactNode;
 }
@@ -948,26 +665,10 @@ export function AgentSimulator() {
 
   const billingTier = useBillingTier();
 
-  const variableList = useMemo(() => {
-    if (!getIsAgentState(agentState)) {
-      return [];
-    }
-
-    return findMemoryBlockVariables(agentState);
-  }, [agentState]);
-
   const { isLocal } = useCurrentAgentMetaData();
   const { id: agentIdToUse, agentSession } = useCurrentSimulatedAgent();
 
   const mounted = useRef(false);
-
-  const hasVariableMismatch = useMemo(() => {
-    // check if variable mismatch
-    const sessionVariables = agentSession?.body.memoryVariables || {};
-
-    // it's ok if there's more variables defined in the session than in the agent, but not the other way around
-    return variableList.some((variable) => !sessionVariables[variable]);
-  }, [agentSession?.body.memoryVariables, variableList]);
 
   const agentStateStore = useRef<AgentState>(agentState as AgentState);
 
@@ -1046,10 +747,6 @@ export function AgentSimulator() {
       ref.current?.setChatMessage(message);
     },
   });
-
-  const hasVariableIssue = useMemo(() => {
-    return hasVariableMismatch;
-  }, [hasVariableMismatch]);
 
   const hasFailedToSendMessageText = useMemo(() => {
     if (!hasFailedToSendMessage) {
@@ -1214,44 +911,15 @@ export function AgentSimulator() {
   return (
     <AgentSimulatorOnboarding>
       <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
-        <VStack gap={false} fullHeight fullWidth>
-          <PanelBar
-            actions={
-              <HStack>
-                <ControlChatroomRenderMode />
-                <AgentFlushButton />
-                <AgentSimulatorOptionsMenu />
-              </HStack>
-            }
-          >
-            <VStack paddingLeft="small">
-              <HStack>
-                <AgentVariablesModal
-                  trigger={
-                    <Button
-                      data-testid="toggle-variables-button"
-                      preIcon={
-                        hasVariableIssue ? (
-                          <WarningIcon color="warning" />
-                        ) : (
-                          <VariableIcon />
-                        )
-                      }
-                      color="tertiary"
-                      label={t('showVariables')}
-                      size="small"
-                    />
-                  }
-                />
-              </HStack>
-            </VStack>
-          </PanelBar>
+        <VStack position="relative" gap={false} fullHeight fullWidth>
+          <AgentSimulatorHeader />
           <VStack collapseHeight gap={false} fullWidth>
             <VStack gap="large" collapseHeight>
               <VStack collapseHeight position="relative">
                 <ErrorBoundary fallback={<InvalidMessages />}>
                   <Messages
                     renderAgentsLink
+                    injectSpaceForHeader
                     mode={renderMode}
                     isPanelActive
                     isSendingMessage={isPending}

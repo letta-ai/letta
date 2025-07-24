@@ -1,7 +1,6 @@
 'use client';
 import {
   AppsIcon,
-  Badge,
   Button,
   CloseIcon,
   CodeIcon,
@@ -12,7 +11,6 @@ import {
   EditIcon,
   Frame,
   HiddenOnMobile,
-  HR,
   HStack,
   LettaInvaderIcon,
   Logo,
@@ -22,17 +20,14 @@ import {
   OnboardingSteps,
   SettingsApplicationsIcon,
   ToolsIcon,
-  Tooltip,
   Typography,
   VisibleOnMobile,
   VStack,
-  WarningIcon,
 } from '@letta-cloud/ui-component-library';
 import {
   AgentSettingsOnboarding,
   AgentSettingsPanel,
 } from '../panels/AgentSettingsPanel/AgentSettingsPanel';
-import { ADEGroup } from '../shared/ADEGroup/ADEGroup';
 import { useTranslations } from '@letta-cloud/translations';
 import { useAgentBaseTypeName, useCurrentAgentMetaData } from '../hooks';
 import {
@@ -45,10 +40,7 @@ import {
   useDataSourcesTitle,
 } from '../panels/EditDataSourcesPanel/EditDataSourcesPanel';
 import { AgentSimulator } from '../panels/AgentSimulator/AgentSimulator';
-import {
-  ContextWindowPanel,
-  ContextWindowSimulator,
-} from '../panels/ContextEditorPanel/ContextEditorPanel';
+import { ContextWindowPanel } from '../panels/ContextEditorPanel/ContextEditorPanel';
 import { AppContextProvider } from '../AppContext/AppContext';
 import type { UserContextData } from '../AppContext/AppContext';
 
@@ -121,7 +113,7 @@ function DesktopLayout() {
     archivalMemoriesTitle,
   } = useADETitleTranslations();
 
-  const { isTemplate, isLocal } = useCurrentAgentMetaData();
+  const { isTemplate } = useCurrentAgentMetaData();
 
   const {
     layoutConfig,
@@ -215,7 +207,7 @@ function DesktopLayout() {
               ? layoutConfig?.panelLayout[0] || 0
               : 30
           }
-          className="h-full"
+          className="h-full ade-panel"
           minSize={20}
         >
           <VStack gap={false} fullWidth fullHeight>
@@ -275,36 +267,10 @@ function DesktopLayout() {
         <PanelResizeHandle className="w-[1px] bg-border" />
         <Panel
           defaultSize={layoutConfig?.panelLayout[1] || 40}
-          className="h-full"
+          className="h-full ade-panel"
           minSize={30}
         >
-          <HStack fullWidth fullHeight>
-            <ADEGroup
-              items={[
-                {
-                  badge: !isTemplate && !isLocal && (
-                    <Tooltip asChild content={t('liveAgentWarning.tooltip')}>
-                      <Badge
-                        border
-                        preIcon={<WarningIcon />}
-                        size="small"
-                        variant="warning"
-                        content={t('liveAgentWarning.label')}
-                      />
-                    </Tooltip>
-                  ),
-                  title: t('agentSimulator'),
-                  id: 'agent-simulator',
-                  content: <AgentSimulator />,
-                },
-                {
-                  title: t('contextWindowSimulator'),
-                  id: 'context-window-simulator',
-                  content: <ContextWindowSimulator />,
-                },
-              ]}
-            />
-          </HStack>
+          <AgentSimulator />
         </Panel>
         <PanelResizeHandle className="w-[1px] bg-border" />
         <Panel
@@ -315,16 +281,17 @@ function DesktopLayout() {
               ? layoutConfig?.panelLayout[2] || 0
               : 30
           }
-          className="h-full"
+          className="h-full ade-panel"
           minSize={20}
         >
           <VStack gap={false} fullWidth fullHeight>
-            <HStack className="max-h-[100px]">
-              <ContextWindowPanel />
-            </HStack>
-            <HR />
             <ADEAccordionGroup
               panels={[
+                {
+                  id: 'context-window',
+                  label: t('contextWindow'),
+                  content: <ContextWindowPanel />,
+                },
                 {
                   id: 'core-memories',
                   label: editCoreMemoriesTitle,
@@ -339,7 +306,6 @@ function DesktopLayout() {
                   defaultOpen: false,
                 },
               ]}
-              topOffset={100} // height of context window panel
             />
           </VStack>
         </Panel>

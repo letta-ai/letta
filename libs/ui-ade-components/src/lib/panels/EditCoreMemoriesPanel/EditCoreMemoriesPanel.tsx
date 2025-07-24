@@ -394,24 +394,7 @@ function AdvancedEditorButton() {
         color="secondary"
         size="xsmall"
         bold
-        _use_rarely_className="hide-label-on-core-memory-size"
-        preIcon={<MemoryBlocksIcon />}
-        label={t('advancedEditor')}
-        onClick={() => {
-          if (isOpen) {
-            close();
-            return;
-          }
-
-          open(firstLabel || undefined);
-        }}
-      />
-      <Button
-        color="secondary"
-        size="xsmall"
-        bold
-        hideLabel
-        _use_rarely_className="show-label-on-core-memory-size"
+        hideLabelOnSmallPanel
         preIcon={<MemoryBlocksIcon />}
         label={t('advancedEditor')}
         onClick={() => {

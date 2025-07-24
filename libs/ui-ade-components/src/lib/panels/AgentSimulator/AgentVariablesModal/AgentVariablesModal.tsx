@@ -1,7 +1,7 @@
 import {
   Alert,
   Button,
-  Dialog,
+  DynamicApp,
   Form,
   FormActions,
   FormField,
@@ -504,6 +504,7 @@ function AgentVariablesContent() {
   return (
     <VStack fullHeight>
       <TabGroup
+        value={displayMode}
         onValueChange={(value) => {
           setDisplayMode(value as VariableDisplayMode);
         }}
@@ -526,8 +527,6 @@ export function AgentVariablesModal(props: AgentVariablesModalProps) {
   const t = useTranslations('ADE/AgentVariablesModal');
   useAgentVariables();
 
-  const [isOpen, setIsOpen] = useAtom(agentVariableModalState);
-
   const { isTemplate } = useCurrentAgentMetaData();
   const title = useMemo(() => {
     if (isTemplate) {
@@ -538,22 +537,20 @@ export function AgentVariablesModal(props: AgentVariablesModalProps) {
   }, [t, isTemplate]);
 
   return (
-    <Dialog
-      hideFooter
-      maintainAspectRatio
-      isOpen={isOpen}
-      onOpenChange={(nextOpen) => {
-        setIsOpen(nextOpen);
+    <DynamicApp
+      defaultView="windowed"
+      windowConfiguration={{
+        minWidth: 480,
+        minHeight: 400,
+        defaultWidth: 480,
+        defaultHeight: 480,
       }}
-      disableForm
-      color="background"
-      size="large"
       trigger={trigger}
-      title={title}
+      name={title}
     >
-      <VStack fullHeight paddingBottom>
+      <VStack color="background" overflowY="auto" padding="small" fullHeight>
         <AgentVariablesContent />
       </VStack>
-    </Dialog>
+    </DynamicApp>
   );
 }

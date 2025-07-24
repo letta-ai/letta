@@ -38,6 +38,8 @@ export function buildConfig(appDir: string): Config {
         height: {
           biHeight: 'var(--button-input-height)',
           'biHeight-xs': 'var(--button-input-height-xs)',
+          'biHeight-xsm': 'var(--button-input-height-xsm)',
+
           'biHeight-sm': 'var(--button-input-height-sm)',
           'biHeight-lg': 'var(--button-input-height-lg)',
           inputHeight: 'var(--input-height)',
@@ -48,6 +50,7 @@ export function buildConfig(appDir: string): Config {
         minHeight: {
           header: 'var(--header-height)',
           'header-sm': 'var(--header-height-sm)',
+          'biHeight-xsm': 'var(--button-input-height-xsm)',
           biHeight: 'var(--button-input-height)',
           'biHeight-xs': 'var(--button-input-height-xs)',
           'biHeight-sm': 'var(--button-input-height-sm)',

@@ -29,3 +29,22 @@
     pointer-events: none;
   }
 }
+
+
+
+
+.ade-panel {
+  container-type: inline-size;
+}
+
+.ade-panel .hide-label-on-small-panel  {
+  display: flex;
+  visibility: visible;
+}
+
+@container (max-width: 400px) {
+  .ade-panel .hide-label-on-small-panel {
+    visibility: hidden;
+    display: none;
+  }
+}
