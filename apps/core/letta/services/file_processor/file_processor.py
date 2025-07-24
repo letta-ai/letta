@@ -69,6 +69,15 @@ class FileProcessor:
                     raise ValueError("No chunks created from text")
                 all_chunks.extend(chunks)
 
+            # Update with chunks length
+            file_metadata = await self.file_manager.update_file_status(
+                file_id=file_metadata.id,
+                actor=self.actor,
+                processing_status=FileProcessingStatus.EMBEDDING,
+                total_chunks=len(all_chunks),
+                chunks_embedded=0,
+            )
+
             all_passages = await self.embedder.generate_embedded_passages(
                 file_id=file_metadata.id,
                 source_id=source_id,
@@ -205,11 +214,6 @@ class FileProcessor:
             )
 
             # Chunk and embed with fallback logic
-            if not self.using_pinecone:
-                file_metadata = await self.file_manager.update_file_status(
-                    file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.EMBEDDING
-                )
-
             all_passages = await self._chunk_and_embed_with_fallback(
                 file_metadata=file_metadata,
                 ocr_response=ocr_response,
@@ -244,18 +248,8 @@ class FileProcessor:
                     file_id=file_metadata.id,
                     actor=self.actor,
                     processing_status=FileProcessingStatus.COMPLETED,
+                    chunks_embedded=len(all_passages),
                 )
-            else:
-                print("UPDATING HERE!!!!")
-
-                file_metadata = await self.file_manager.update_file_status(
-                    file_id=file_metadata.id,
-                    actor=self.actor,
-                    total_chunks=len(all_passages),
-                    chunks_embedded=0,
-                    processing_status=FileProcessingStatus.EMBEDDING,
-                )
-                print(file_metadata)
 
             return all_passages
 
@@ -293,6 +287,7 @@ class FileProcessor:
             document_annotation=None,
         )
 
+    # TODO: The file state machine here is kind of out of date, we need to match with the correct one above
     @trace_method
     async def process_imported_file(self, file_metadata: FileMetadata, source_id: str) -> List[Passage]:
         """Process an imported file that already has content - skip OCR, do chunking/embedding"""
