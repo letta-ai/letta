@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from letta.constants import MAX_FILENAME_LENGTH
