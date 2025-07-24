@@ -5028,12 +5028,14 @@
                   "tags": {
                     "type": "array",
                     "items": {
-                      "type": "string"
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9-_ ]*$"
                     },
                     "description": "The tags to assign to the agent"
                   },
                   "agent_name": {
                     "type": "string",
+                    "pattern": "^[a-zA-Z0-9-_ ]*$",
                     "description": "The name of the agent, optional otherwise a random one will be assigned"
                   },
                   "initial_message_sequence": {
