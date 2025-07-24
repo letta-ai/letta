@@ -1256,6 +1256,38 @@ export const useAgentsServiceListAgentSources = <
     ...options,
   });
 /**
+ * List Agent Folders
+ * Get the folders associated with an agent.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.userId
+ * @returns Source Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceListAgentFolders = <
+  TData = Common.AgentsServiceListAgentFoldersDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceListAgentFoldersKeyFn(
+      { agentId, userId },
+      queryKey,
+    ),
+    queryFn: () => AgentsService.listAgentFolders({ agentId, userId }) as TData,
+    ...options,
+  });
+/**
  * Retrieve Agent Memory
  * Retrieve the memory state of a specific agent.
  * This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
@@ -5671,6 +5703,53 @@ export const useAgentsServiceAttachSourceToAgent = <
     ...options,
   });
 /**
+ * Attach Folder To Agent
+ * Attach a folder to an agent.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.folderId
+ * @param data.userId
+ * @returns AgentState Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceAttachFolderToAgent = <
+  TData = Common.AgentsServiceAttachFolderToAgentMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        folderId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      folderId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, folderId, userId }) =>
+      AgentsService.attachFolderToAgent({
+        agentId,
+        folderId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
  * Detach Source
  * Detach a source from an agent.
  * @param data The data for the request.
@@ -5713,6 +5792,53 @@ export const useAgentsServiceDetachSourceFromAgent = <
       AgentsService.detachSourceFromAgent({
         agentId,
         sourceId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Detach Folder From Agent
+ * Detach a folder from an agent.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.folderId
+ * @param data.userId
+ * @returns AgentState Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceDetachFolderFromAgent = <
+  TData = Common.AgentsServiceDetachFolderFromAgentMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        folderId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      folderId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, folderId, userId }) =>
+      AgentsService.detachFolderFromAgent({
+        agentId,
+        folderId,
         userId,
       }) as unknown as Promise<TData>,
     ...options,

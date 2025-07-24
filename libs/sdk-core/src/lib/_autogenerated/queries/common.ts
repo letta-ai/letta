@@ -752,6 +752,28 @@ export const UseAgentsServiceListAgentSourcesKeyFn = (
   useAgentsServiceListAgentSourcesKey,
   ...(queryKey ?? [{ agentId, userId }]),
 ];
+export type AgentsServiceListAgentFoldersDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.listAgentFolders>
+>;
+export type AgentsServiceListAgentFoldersQueryResult<
+  TData = AgentsServiceListAgentFoldersDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceListAgentFoldersKey =
+  'AgentsServiceListAgentFolders';
+export const UseAgentsServiceListAgentFoldersKeyFn = (
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useAgentsServiceListAgentFoldersKey,
+  ...(queryKey ?? [{ agentId, userId }]),
+];
 export type AgentsServiceRetrieveAgentMemoryDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.retrieveAgentMemory>
 >;
@@ -2117,8 +2139,14 @@ export type AgentsServiceDetachToolMutationResult = Awaited<
 export type AgentsServiceAttachSourceToAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.attachSourceToAgent>
 >;
+export type AgentsServiceAttachFolderToAgentMutationResult = Awaited<
+  ReturnType<typeof AgentsService.attachFolderToAgent>
+>;
 export type AgentsServiceDetachSourceFromAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.detachSourceFromAgent>
+>;
+export type AgentsServiceDetachFolderFromAgentMutationResult = Awaited<
+  ReturnType<typeof AgentsService.detachFolderFromAgent>
 >;
 export type AgentsServiceCloseAllOpenFilesMutationResult = Awaited<
   ReturnType<typeof AgentsService.closeAllOpenFiles>

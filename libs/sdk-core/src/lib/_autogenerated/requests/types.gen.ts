@@ -5534,6 +5534,14 @@ export type AttachSourceToAgentData = {
 
 export type AttachSourceToAgentResponse = AgentState;
 
+export type AttachFolderToAgentData = {
+  agentId: string;
+  folderId: string;
+  userId?: string | null;
+};
+
+export type AttachFolderToAgentResponse = AgentState;
+
 export type DetachSourceFromAgentData = {
   agentId: string;
   sourceId: string;
@@ -5541,6 +5549,14 @@ export type DetachSourceFromAgentData = {
 };
 
 export type DetachSourceFromAgentResponse = AgentState;
+
+export type DetachFolderFromAgentData = {
+  agentId: string;
+  folderId: string;
+  userId?: string | null;
+};
+
+export type DetachFolderFromAgentResponse = AgentState;
 
 export type CloseAllOpenFilesData = {
   agentId: string;
@@ -5571,6 +5587,13 @@ export type ListAgentSourcesData = {
 };
 
 export type ListAgentSourcesResponse = Array<Source>;
+
+export type ListAgentFoldersData = {
+  agentId: string;
+  userId?: string | null;
+};
+
+export type ListAgentFoldersResponse = Array<Source>;
 
 export type RetrieveAgentMemoryData = {
   agentId: string;
@@ -7566,9 +7589,39 @@ export type $OpenApiTs = {
       };
     };
   };
+  '/v1/agents/{agent_id}/folders/attach/{folder_id}': {
+    patch: {
+      req: AttachFolderToAgentData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
   '/v1/agents/{agent_id}/sources/detach/{source_id}': {
     patch: {
       req: DetachSourceFromAgentData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/folders/detach/{folder_id}': {
+    patch: {
+      req: DetachFolderFromAgentData;
       res: {
         /**
          * Successful Response
@@ -7629,6 +7682,21 @@ export type $OpenApiTs = {
   '/v1/agents/{agent_id}/sources': {
     get: {
       req: ListAgentSourcesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Source>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/folders': {
+    get: {
+      req: ListAgentFoldersData;
       res: {
         /**
          * Successful Response

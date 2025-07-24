@@ -993,6 +993,29 @@ export const prefetchUseAgentsServiceListAgentSources = (
     queryFn: () => AgentsService.listAgentSources({ agentId, userId }),
   });
 /**
+ * List Agent Folders
+ * Get the folders associated with an agent.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.userId
+ * @returns Source Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseAgentsServiceListAgentFolders = (
+  queryClient: QueryClient,
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseAgentsServiceListAgentFoldersKeyFn({ agentId, userId }),
+    queryFn: () => AgentsService.listAgentFolders({ agentId, userId }),
+  });
+/**
  * Retrieve Agent Memory
  * Retrieve the memory state of a specific agent.
  * This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.

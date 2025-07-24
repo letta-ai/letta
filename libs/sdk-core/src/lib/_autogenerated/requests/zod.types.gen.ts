@@ -7685,6 +7685,25 @@ export const patch_Attach_source_to_agent = {
   response: AgentState,
 };
 
+export type patch_Attach_folder_to_agent = typeof patch_Attach_folder_to_agent;
+export const patch_Attach_folder_to_agent = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/agents/{agent_id}/folders/attach/{folder_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+      folder_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: AgentState,
+};
+
 export type patch_Detach_source_from_agent =
   typeof patch_Detach_source_from_agent;
 export const patch_Detach_source_from_agent = {
@@ -7695,6 +7714,26 @@ export const patch_Detach_source_from_agent = {
     path: z.object({
       agent_id: z.string(),
       source_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: AgentState,
+};
+
+export type patch_Detach_folder_from_agent =
+  typeof patch_Detach_folder_from_agent;
+export const patch_Detach_folder_from_agent = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/agents/{agent_id}/folders/detach/{folder_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+      folder_id: z.string(),
     }),
     header: z.object({
       user_id: z
@@ -7765,6 +7804,24 @@ export type get_List_agent_sources = typeof get_List_agent_sources;
 export const get_List_agent_sources = {
   method: z.literal('GET'),
   path: z.literal('/v1/agents/{agent_id}/sources'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Source),
+};
+
+export type get_List_agent_folders = typeof get_List_agent_folders;
+export const get_List_agent_folders = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/{agent_id}/folders'),
   requestFormat: z.literal('json'),
   parameters: z.object({
     path: z.object({
@@ -10049,6 +10106,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}': get_Retrieve_agent,
     '/v1/agents/{agent_id}/tools': get_List_agent_tools,
     '/v1/agents/{agent_id}/sources': get_List_agent_sources,
+    '/v1/agents/{agent_id}/folders': get_List_agent_folders,
     '/v1/agents/{agent_id}/core-memory': get_Retrieve_agent_memory,
     '/v1/agents/{agent_id}/core-memory/blocks/{block_label}':
       get_Retrieve_core_memory_block,
@@ -10105,8 +10163,12 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/tools/detach/{tool_id}': patch_Detach_tool,
     '/v1/agents/{agent_id}/sources/attach/{source_id}':
       patch_Attach_source_to_agent,
+    '/v1/agents/{agent_id}/folders/attach/{folder_id}':
+      patch_Attach_folder_to_agent,
     '/v1/agents/{agent_id}/sources/detach/{source_id}':
       patch_Detach_source_from_agent,
+    '/v1/agents/{agent_id}/folders/detach/{folder_id}':
+      patch_Detach_folder_from_agent,
     '/v1/agents/{agent_id}/files/close-all': patch_Close_all_open_files,
     '/v1/agents/{agent_id}/files/{file_id}/open': patch_Open_file,
     '/v1/agents/{agent_id}/files/{file_id}/close': patch_Close_file,

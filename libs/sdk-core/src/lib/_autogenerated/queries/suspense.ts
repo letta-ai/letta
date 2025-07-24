@@ -1197,6 +1197,38 @@ export const useAgentsServiceListAgentSourcesSuspense = <
     ...options,
   });
 /**
+ * List Agent Folders
+ * Get the folders associated with an agent.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.userId
+ * @returns Source Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceListAgentFoldersSuspense = <
+  TData = Common.AgentsServiceListAgentFoldersDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceListAgentFoldersKeyFn(
+      { agentId, userId },
+      queryKey,
+    ),
+    queryFn: () => AgentsService.listAgentFolders({ agentId, userId }) as TData,
+    ...options,
+  });
+/**
  * Retrieve Agent Memory
  * Retrieve the memory state of a specific agent.
  * This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.

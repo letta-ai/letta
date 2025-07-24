@@ -126,8 +126,12 @@ import type {
   DetachToolResponse,
   AttachSourceToAgentData,
   AttachSourceToAgentResponse,
+  AttachFolderToAgentData,
+  AttachFolderToAgentResponse,
   DetachSourceFromAgentData,
   DetachSourceFromAgentResponse,
+  DetachFolderFromAgentData,
+  DetachFolderFromAgentResponse,
   CloseAllOpenFilesData,
   CloseAllOpenFilesResponse,
   OpenFileData,
@@ -136,6 +140,8 @@ import type {
   CloseFileResponse,
   ListAgentSourcesData,
   ListAgentSourcesResponse,
+  ListAgentFoldersData,
+  ListAgentFoldersResponse,
   RetrieveAgentMemoryData,
   RetrieveAgentMemoryResponse,
   RetrieveCoreMemoryBlockData,
@@ -2034,6 +2040,34 @@ export class AgentsService {
   }
 
   /**
+   * Attach Folder To Agent
+   * Attach a folder to an agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.folderId
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static attachFolderToAgent(
+    data: AttachFolderToAgentData,
+    headers?: { user_id: string },
+  ): CancelablePromise<AttachFolderToAgentResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/folders/attach/{folder_id}',
+      path: {
+        agent_id: data.agentId,
+        folder_id: data.folderId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
    * Detach Source
    * Detach a source from an agent.
    * @param data The data for the request.
@@ -2053,6 +2087,34 @@ export class AgentsService {
       path: {
         agent_id: data.agentId,
         source_id: data.sourceId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Detach Folder From Agent
+   * Detach a folder from an agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.folderId
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static detachFolderFromAgent(
+    data: DetachFolderFromAgentData,
+    headers?: { user_id: string },
+  ): CancelablePromise<DetachFolderFromAgentResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/folders/detach/{folder_id}',
+      path: {
+        agent_id: data.agentId,
+        folder_id: data.folderId,
       },
       errors: {
         422: 'Validation Error',
@@ -2169,6 +2231,32 @@ export class AgentsService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/agents/{agent_id}/sources',
+      path: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Agent Folders
+   * Get the folders associated with an agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.userId
+   * @returns Source Successful Response
+   * @throws ApiError
+   */
+  public static listAgentFolders(
+    data: ListAgentFoldersData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ListAgentFoldersResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/folders',
       path: {
         agent_id: data.agentId,
       },
