@@ -117,8 +117,8 @@ navigation:
                 path: pages/agents/memory_blocks.mdx
               - page: Agentic Context Engineering
                 path: pages/agents/context_engineering.mdx
-          - page: Data Sources & Files
-            path: pages/agents/data_sources.mdx
+          - page: Filesystem 
+            path: pages/agents/filesystem.mdx
           - page: Streaming Responses
             path: pages/agents/streaming.mdx
           - page: JSON Mode & Structured Output
@@ -664,3 +664,5 @@ redirects:
     destination: "/overview"
   - source: "/guides/agents/sleep-time-agents"
     destination: "/guides/agents/architectures/sleeptime"
+  - source: "/guides/agents/sources"
+    destination: "/guides/agents/filesystem"
