@@ -45,12 +45,22 @@ function useDynamicAppWindowState(
   const { minWidth, minHeight, defaultWidth, defaultHeight } = configuration;
 
   const getCorrectDefaultWidth = useCallback(() => {
+    if (typeof window === 'undefined') {
+      // If we're on the server, return the default width
+      return defaultWidth;
+    }
+
     // if default width is larger than the viewport width, set it to the viewport width*0.90;
     const viewportWidth = window.innerWidth;
     return Math.min(viewportWidth * 0.9, defaultWidth);
   }, [defaultWidth]);
 
   const getCorrectDefaultHeight = useCallback(() => {
+    if (typeof window === 'undefined') {
+      // If we're on the server, return the default height
+      return defaultHeight;
+    }
+
     // if default height is larger than the viewport height, set it to the viewport height*0.90;
     const viewportHeight = window.innerHeight;
     return Math.min(viewportHeight * 0.9, defaultHeight);
