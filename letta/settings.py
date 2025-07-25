@@ -242,7 +242,7 @@ class Settings(BaseSettings):
     uvicorn_reload: bool = False
     uvicorn_timeout_keep_alive: int = 5
 
-    use_uvloop: bool = Field(default=True, description="Enable uvloop as asyncio event loop.")
+    use_uvloop: bool = Field(default=False, description="Enable uvloop as asyncio event loop.")
     use_granian: bool = Field(default=False, description="Use Granian for workers")
     sqlalchemy_tracing: bool = False
 
