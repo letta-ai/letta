@@ -1,5 +1,6 @@
 import { AUTH_TOKEN_BEARER_PREFIX } from './constants';
 import { AuthModes, type CustomHeader } from './FormFields';
+import type { MCPTool } from './types';
 
 export function formatAuthToken(token: string | undefined): string | undefined {
   if (!token) return undefined;
@@ -123,6 +124,48 @@ export function environmentToArray(
 ): Array<{ key: string; value: string }> {
   if (!envObject) return [{ key: '', value: '' }];
   return Object.entries(envObject).map(([key, value]) => ({ key, value }));
+}
+
+/**
+ * Parses a raw tool object (from backend) into an MCPTool.
+ * Handles various possible shapes for name, description, and inputSchema.
+ */
+export function parseMCPTool(tool: any, index = 0): MCPTool {
+  // Extract name from various possible locations
+  const name = tool.name || tool.function?.name || `Tool ${index + 1}`;
+
+  // Extract description from various possible locations
+  const description =
+    tool.description || tool.function?.description || undefined;
+
+  // Extract input schema from various possible locations
+  // Priority: inputSchema > json_schema > args_json_schema > function.parameters
+  let inputSchema = undefined;
+  if (tool.inputSchema && typeof tool.inputSchema === 'object') {
+    inputSchema = tool.inputSchema;
+  } else if (tool.json_schema && typeof tool.json_schema === 'object') {
+    if (tool.json_schema.parameters) {
+      inputSchema = tool.json_schema.parameters;
+    } else {
+      inputSchema = tool.json_schema;
+    }
+  } else if (
+    tool.args_json_schema &&
+    typeof tool.args_json_schema === 'object'
+  ) {
+    inputSchema = tool.args_json_schema;
+  } else if (
+    tool.function?.parameters &&
+    typeof tool.function.parameters === 'object'
+  ) {
+    inputSchema = tool.function.parameters;
+  }
+
+  return {
+    name,
+    description,
+    inputSchema,
+  };
 }
 
 export { parseMCPJsonConfig as parseMCPConfig } from './configParser';

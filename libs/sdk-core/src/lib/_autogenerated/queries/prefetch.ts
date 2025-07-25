@@ -213,6 +213,51 @@ export const prefetchUseToolsServiceListMcpToolsByServer = (
     queryFn: () => ToolsService.listMcpToolsByServer({ mcpServerName, userId }),
   });
 /**
+ * Mcp Oauth Callback
+ * Handle OAuth callback for MCP server authentication.
+ * @param data The data for the request.
+ * @param data.sessionId
+ * @param data.code OAuth authorization code
+ * @param data.state OAuth state parameter
+ * @param data.error OAuth error
+ * @param data.errorDescription OAuth error description
+ * @returns string Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseToolsServiceMcpOauthCallback = (
+  queryClient: QueryClient,
+  {
+    code,
+    error,
+    errorDescription,
+    sessionId,
+    state,
+  }: {
+    code?: string;
+    error?: string;
+    errorDescription?: string;
+    sessionId: string;
+    state?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseToolsServiceMcpOauthCallbackKeyFn({
+      code,
+      error,
+      errorDescription,
+      sessionId,
+      state,
+    }),
+    queryFn: () =>
+      ToolsService.mcpOauthCallback({
+        code,
+        error,
+        errorDescription,
+        sessionId,
+        state,
+      }),
+  });
+/**
  * Count Sources
  * Count all data sources created by a user.
  * @param data The data for the request.

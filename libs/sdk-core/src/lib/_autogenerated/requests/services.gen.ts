@@ -42,8 +42,12 @@ import type {
   DeleteMcpServerResponse,
   TestMcpServerData,
   TestMcpServerResponse,
+  ConnectMcpServerData,
+  ConnectMcpServerResponse,
   GenerateJsonSchemaData,
   GenerateJsonSchemaResponse,
+  McpOauthCallbackData,
+  McpOauthCallbackResponse,
   GenerateToolData,
   GenerateToolResponse,
   CountSourcesData,
@@ -811,10 +815,11 @@ export class ToolsService {
   /**
    * Test Mcp Server
    * Test connection to an MCP server without adding it.
-   * Returns the list of available tools if successful.
+   * Returns the list of available tools if successful, or OAuth information if OAuth is required.
    * @param data The data for the request.
    * @param data.requestBody
-   * @returns MCPTool Successful Response
+   * @param data.userId
+   * @returns unknown Successful Response
    * @throws ApiError
    */
   public static testMcpServer(
@@ -824,6 +829,32 @@ export class ToolsService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/tools/mcp/servers/test',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Connect Mcp Server
+   * Connect to an MCP server with support for OAuth via SSE.
+   * Returns a stream of events handling authorization state and exchange if OAuth is required.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns unknown Successful response
+   * @throws ApiError
+   */
+  public static connectMcpServer(
+    data: ConnectMcpServerData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ConnectMcpServerResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/tools/mcp/servers/connect',
       body: data.requestBody,
       mediaType: 'application/json',
       errors: {
@@ -851,6 +882,41 @@ export class ToolsService {
       url: '/v1/tools/generate-schema',
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Mcp Oauth Callback
+   * Handle OAuth callback for MCP server authentication.
+   * @param data The data for the request.
+   * @param data.sessionId
+   * @param data.code OAuth authorization code
+   * @param data.state OAuth state parameter
+   * @param data.error OAuth error
+   * @param data.errorDescription OAuth error description
+   * @returns string Successful Response
+   * @throws ApiError
+   */
+  public static mcpOauthCallback(
+    data: McpOauthCallbackData,
+    headers?: { user_id: string },
+  ): CancelablePromise<McpOauthCallbackResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/tools/mcp/oauth/callback/{session_id}',
+      path: {
+        session_id: data.sessionId,
+      },
+      query: {
+        code: data.code,
+        state: data.state,
+        error: data.error,
+        error_description: data.errorDescription,
+      },
       errors: {
         422: 'Validation Error',
       },

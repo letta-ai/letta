@@ -262,6 +262,54 @@ export const useToolsServiceListMcpToolsByServerSuspense = <
     ...options,
   });
 /**
+ * Mcp Oauth Callback
+ * Handle OAuth callback for MCP server authentication.
+ * @param data The data for the request.
+ * @param data.sessionId
+ * @param data.code OAuth authorization code
+ * @param data.state OAuth state parameter
+ * @param data.error OAuth error
+ * @param data.errorDescription OAuth error description
+ * @returns string Successful Response
+ * @throws ApiError
+ */
+export const useToolsServiceMcpOauthCallbackSuspense = <
+  TData = Common.ToolsServiceMcpOauthCallbackDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    code,
+    error,
+    errorDescription,
+    sessionId,
+    state,
+  }: {
+    code?: string;
+    error?: string;
+    errorDescription?: string;
+    sessionId: string;
+    state?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseToolsServiceMcpOauthCallbackKeyFn(
+      { code, error, errorDescription, sessionId, state },
+      queryKey,
+    ),
+    queryFn: () =>
+      ToolsService.mcpOauthCallback({
+        code,
+        error,
+        errorDescription,
+        sessionId,
+        state,
+      }) as TData,
+    ...options,
+  });
+/**
  * Count Sources
  * Count all data sources created by a user.
  * @param data The data for the request.

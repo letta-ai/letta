@@ -1779,8 +1779,10 @@
       },
       "failed": {
         "label": "Failed",
-        "tooltip": "Unable to connect, please verify your server URL and authentication configuration."
-      }
+        "tooltip": "Unable to connect, please verify your server URL and authentication configuration.",
+        "authorization": "This server requires authentication via OAuth, click `Authorize` to grant your agents access."
+      },
+      "oauthPending": "Waiting for authorization..."
     },
     "UpdateServerDialog": {
       "title": "Edit Server",

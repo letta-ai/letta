@@ -178,6 +178,34 @@ export const UseToolsServiceListMcpToolsByServerKeyFn = (
   useToolsServiceListMcpToolsByServerKey,
   ...(queryKey ?? [{ mcpServerName, userId }]),
 ];
+export type ToolsServiceMcpOauthCallbackDefaultResponse = Awaited<
+  ReturnType<typeof ToolsService.mcpOauthCallback>
+>;
+export type ToolsServiceMcpOauthCallbackQueryResult<
+  TData = ToolsServiceMcpOauthCallbackDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useToolsServiceMcpOauthCallbackKey =
+  'ToolsServiceMcpOauthCallback';
+export const UseToolsServiceMcpOauthCallbackKeyFn = (
+  {
+    code,
+    error,
+    errorDescription,
+    sessionId,
+    state,
+  }: {
+    code?: string;
+    error?: string;
+    errorDescription?: string;
+    sessionId: string;
+    state?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useToolsServiceMcpOauthCallbackKey,
+  ...(queryKey ?? [{ code, error, errorDescription, sessionId, state }]),
+];
 export type SourcesServiceCountSourcesDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.countSources>
 >;
@@ -1976,6 +2004,9 @@ export type ToolsServiceAddMcpToolMutationResult = Awaited<
 >;
 export type ToolsServiceTestMcpServerMutationResult = Awaited<
   ReturnType<typeof ToolsService.testMcpServer>
+>;
+export type ToolsServiceConnectMcpServerMutationResult = Awaited<
+  ReturnType<typeof ToolsService.connectMcpServer>
 >;
 export type ToolsServiceGenerateJsonSchemaMutationResult = Awaited<
   ReturnType<typeof ToolsService.generateJsonSchema>

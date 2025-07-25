@@ -97,6 +97,11 @@ export const featureFlags = {
     expiryDate: '2025-08-15',
     flagValue: z.boolean(),
   },
+  MCP_OAUTH: {
+    description: 'Enable MCP OAuth flow using streaming endpoint',
+    expiryDate: '2025-12-31',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;

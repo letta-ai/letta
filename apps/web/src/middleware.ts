@@ -123,7 +123,7 @@ export async function middleware(request: NextRequest) {
     url.port = new URL(cloudAPIUrl).port;
     url.protocol = new URL(cloudAPIUrl).protocol;
 
-    if (request.nextUrl.pathname.includes('/stream')) {
+    if (request.nextUrl.pathname.includes('/stream') || request.nextUrl.pathname.includes('/mcp/servers/connect')) {
       return handleStream(request);
     }
 

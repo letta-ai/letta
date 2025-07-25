@@ -5020,9 +5020,17 @@ export type DeleteMcpServerResponse = Array<
 
 export type TestMcpServerData = {
   requestBody: StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig;
+  userId?: string | null;
 };
 
-export type TestMcpServerResponse = Array<MCPTool>;
+export type TestMcpServerResponse = unknown;
+
+export type ConnectMcpServerData = {
+  requestBody: StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig;
+  userId?: string | null;
+};
+
+export type ConnectMcpServerResponse = unknown;
 
 export type GenerateJsonSchemaData = {
   requestBody: CodeInput;
@@ -5032,6 +5040,28 @@ export type GenerateJsonSchemaData = {
 export type GenerateJsonSchemaResponse = {
   [key: string]: unknown;
 };
+
+export type McpOauthCallbackData = {
+  /**
+   * OAuth authorization code
+   */
+  code?: string | null;
+  /**
+   * OAuth error
+   */
+  error?: string | null;
+  /**
+   * OAuth error description
+   */
+  errorDescription?: string | null;
+  sessionId: string;
+  /**
+   * OAuth state parameter
+   */
+  state?: string | null;
+};
+
+export type McpOauthCallbackResponse = string;
 
 export type GenerateToolData = {
   requestBody: GenerateToolInput;
@@ -6903,7 +6933,22 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Array<MCPTool>;
+        200: unknown;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tools/mcp/servers/connect': {
+    post: {
+      req: ConnectMcpServerData;
+      res: {
+        /**
+         * Successful response
+         */
+        200: unknown;
         /**
          * Validation Error
          */
@@ -6921,6 +6966,21 @@ export type $OpenApiTs = {
         200: {
           [key: string]: unknown;
         };
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tools/mcp/oauth/callback/{session_id}': {
+    get: {
+      req: McpOauthCallbackData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: string;
         /**
          * Validation Error
          */

@@ -927,9 +927,11 @@
       "post": {
         "tags": ["tools"],
         "summary": "Test Mcp Server",
-        "description": "Test connection to an MCP server without adding it.\nReturns the list of available tools if successful.",
+        "description": "Test connection to an MCP server without adding it.\nReturns the list of available tools if successful, or OAuth information if OAuth is required.",
         "operationId": "test_mcp_server",
+        "parameters": [],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -947,20 +949,179 @@
                 "title": "Request"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/MCPTool"
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tools/mcp/servers/connect": {
+      "post": {
+        "tags": ["tools"],
+        "summary": "Connect Mcp Server",
+        "description": "Connect to an MCP server with support for OAuth via SSE.\nReturns a stream of events handling authorization state and exchange if OAuth is required.",
+        "operationId": "connect_mcp_server",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/StdioServerConfig"
                   },
-                  "type": "array",
-                  "title": "Response Test Mcp Server"
+                  {
+                    "$ref": "#/components/schemas/SSEServerConfig"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StreamableHTTPServerConfig"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/event-stream": {
+                "description": "Server-Sent Events stream"
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tools/mcp/oauth/callback/{session_id}": {
+      "get": {
+        "tags": ["tools"],
+        "summary": "Mcp Oauth Callback",
+        "description": "Handle OAuth callback for MCP server authentication.",
+        "operationId": "mcp_oauth_callback",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "OAuth authorization code",
+              "title": "Code"
+            },
+            "description": "OAuth authorization code"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "OAuth state parameter",
+              "title": "State"
+            },
+            "description": "OAuth state parameter"
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "OAuth error",
+              "title": "Error"
+            },
+            "description": "OAuth error"
+          },
+          {
+            "name": "error_description",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "OAuth error description",
+              "title": "Error Description"
+            },
+            "description": "OAuth error description"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
                 }
               }
             }

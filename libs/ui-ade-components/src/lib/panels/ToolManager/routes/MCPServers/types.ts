@@ -51,3 +51,12 @@ export interface MCPTool {
   description?: string;
   inputSchema?: MCPToolInputSchema;
 }
+
+export enum OauthStreamEvent {
+  CONNECTION_ATTEMPT = 'connection_attempt',
+  SUCCESS = 'success',
+  ERROR = 'error',
+  OAUTH_REQUIRED = 'oauth_required',
+  AUTHORIZATION_URL = 'authorization_url',
+  WAITING_FOR_AUTH = 'waiting_for_auth',
+}

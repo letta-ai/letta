@@ -6728,6 +6728,11 @@ export const post_Test_mcp_server = {
   path: z.literal('/v1/tools/mcp/servers/test'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
     body: z.union([
       StdioServerConfig,
       SSEServerConfig,
@@ -6741,7 +6746,34 @@ export const post_Test_mcp_server = {
       ),
     ]),
   }),
-  response: z.array(MCPTool),
+  response: z.unknown(),
+};
+
+export type post_Connect_mcp_server = typeof post_Connect_mcp_server;
+export const post_Connect_mcp_server = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/tools/mcp/servers/connect'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: z.union([
+      StdioServerConfig,
+      SSEServerConfig,
+      StreamableHTTPServerConfig,
+      z.array(
+        z.union([
+          StdioServerConfig,
+          SSEServerConfig,
+          StreamableHTTPServerConfig,
+        ]),
+      ),
+    ]),
+  }),
+  response: z.unknown(),
 };
 
 export type post_Generate_json_schema = typeof post_Generate_json_schema;
@@ -6756,6 +6788,33 @@ export const post_Generate_json_schema = {
         .optional(),
     }),
     body: CodeInput,
+  }),
+  response: z.unknown(),
+};
+
+export type get_Mcp_oauth_callback = typeof get_Mcp_oauth_callback;
+export const get_Mcp_oauth_callback = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/tools/mcp/oauth/callback/{session_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      code: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      state: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      error: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      error_description: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    path: z.object({
+      session_id: z.string(),
+    }),
   }),
   response: z.unknown(),
 };
@@ -10006,6 +10065,7 @@ export const EndpointByMethod = {
     '/v1/tools/mcp/servers': get_List_mcp_servers,
     '/v1/tools/mcp/servers/{mcp_server_name}/tools':
       get_List_mcp_tools_by_server,
+    '/v1/tools/mcp/oauth/callback/{session_id}': get_Mcp_oauth_callback,
     '/v1/sources/count': get_Count_sources,
     '/v1/sources/{source_id}': get_Retrieve_source,
     '/v1/sources/name/{source_name}': get_Get_source_id_by_name,
@@ -10130,6 +10190,7 @@ export const EndpointByMethod = {
     '/v1/tools/mcp/servers/{mcp_server_name}/{mcp_tool_name}':
       post_Add_mcp_tool,
     '/v1/tools/mcp/servers/test': post_Test_mcp_server,
+    '/v1/tools/mcp/servers/connect': post_Connect_mcp_server,
     '/v1/tools/generate-schema': post_Generate_json_schema,
     '/v1/tools/generate-tool': post_Generate_tool,
     '/v1/sources/': post_Create_source,

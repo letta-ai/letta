@@ -319,6 +319,54 @@ export const useToolsServiceListMcpToolsByServer = <
     ...options,
   });
 /**
+ * Mcp Oauth Callback
+ * Handle OAuth callback for MCP server authentication.
+ * @param data The data for the request.
+ * @param data.sessionId
+ * @param data.code OAuth authorization code
+ * @param data.state OAuth state parameter
+ * @param data.error OAuth error
+ * @param data.errorDescription OAuth error description
+ * @returns string Successful Response
+ * @throws ApiError
+ */
+export const useToolsServiceMcpOauthCallback = <
+  TData = Common.ToolsServiceMcpOauthCallbackDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    code,
+    error,
+    errorDescription,
+    sessionId,
+    state,
+  }: {
+    code?: string;
+    error?: string;
+    errorDescription?: string;
+    sessionId: string;
+    state?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseToolsServiceMcpOauthCallbackKeyFn(
+      { code, error, errorDescription, sessionId, state },
+      queryKey,
+    ),
+    queryFn: () =>
+      ToolsService.mcpOauthCallback({
+        code,
+        error,
+        errorDescription,
+        sessionId,
+        state,
+      }) as TData,
+    ...options,
+  });
+/**
  * Count Sources
  * Count all data sources created by a user.
  * @param data The data for the request.
@@ -3480,10 +3528,11 @@ export const useToolsServiceAddMcpTool = <
 /**
  * Test Mcp Server
  * Test connection to an MCP server without adding it.
- * Returns the list of available tools if successful.
+ * Returns the list of available tools if successful, or OAuth information if OAuth is required.
  * @param data The data for the request.
  * @param data.requestBody
- * @returns MCPTool Successful Response
+ * @param data.userId
+ * @returns unknown Successful Response
  * @throws ApiError
  */
 export const useToolsServiceTestMcpServer = <
@@ -3500,6 +3549,7 @@ export const useToolsServiceTestMcpServer = <
           | StdioServerConfig
           | SSEServerConfig
           | StreamableHTTPServerConfig;
+        userId?: string;
       },
       TContext
     >,
@@ -3514,11 +3564,65 @@ export const useToolsServiceTestMcpServer = <
         | StdioServerConfig
         | SSEServerConfig
         | StreamableHTTPServerConfig;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody }) =>
-      ToolsService.testMcpServer({ requestBody }) as unknown as Promise<TData>,
+    mutationFn: ({ requestBody, userId }) =>
+      ToolsService.testMcpServer({
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Connect Mcp Server
+ * Connect to an MCP server with support for OAuth via SSE.
+ * Returns a stream of events handling authorization state and exchange if OAuth is required.
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @returns unknown Successful response
+ * @throws ApiError
+ */
+export const useToolsServiceConnectMcpServer = <
+  TData = Common.ToolsServiceConnectMcpServerMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody:
+          | StdioServerConfig
+          | SSEServerConfig
+          | StreamableHTTPServerConfig;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody:
+        | StdioServerConfig
+        | SSEServerConfig
+        | StreamableHTTPServerConfig;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, userId }) =>
+      ToolsService.connectMcpServer({
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
     ...options,
   });
 /**
