@@ -101,6 +101,7 @@ certifi = "^2025.6.15"
 aioboto3 = {version = "^14.3.0", optional = true}
 pinecone = {extras = ["asyncio"], version = "^7.3.0", optional = true}
 markitdown = {extras = ["docx", "pdf", "pptx"], version = "^0.1.2"}
+google-cloud-profiler = {version = "^4.1.0", optional = true}
 
 
 [tool.poetry.extras]
@@ -108,7 +109,7 @@ postgres = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2", "asyncpg"]
 redis = ["redis"]
 pinecone = ["pinecone"]
 dev = ["pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "pyright", "pytest-order", "autoflake", "isort", "locust"]
-experimental = ["uvloop", "granian"]
+experimental = ["uvloop", "granian", "google-cloud-profiler"]
 server = ["websockets", "fastapi", "uvicorn"]
 cloud-tool-sandbox = ["e2b-code-interpreter"]
 external-tools = ["docker", "langchain", "wikipedia", "langchain-community", "firecrawl-py"]
@@ -116,7 +117,7 @@ tests = ["wikipedia"]
 bedrock = ["boto3", "aioboto3"]
 google = ["google-genai"]
 desktop = ["pyright", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust"]
-all = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2", "pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "pyright", "pytest-order", "autoflake", "isort", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust", "uvloop", "granian", "redis", "pinecone"]
+all = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2", "pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "pyright", "pytest-order", "autoflake", "isort", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust", "uvloop", "granian", "redis", "pinecone", "google-cloud-profiler"]
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"

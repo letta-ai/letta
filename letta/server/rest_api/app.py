@@ -12,7 +12,6 @@ from typing import Optional
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
 from letta.__init__ import __version__ as letta_version
@@ -35,6 +34,7 @@ from letta.server.db import db_registry
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
 from letta.server.rest_api.auth.index import setup_auth_router  # TODO: probably remove right?
 from letta.server.rest_api.interface import StreamingServerInterface
+from letta.server.rest_api.middleware import CheckPasswordMiddleware, ProfilerContextMiddleware
 from letta.server.rest_api.routers.openai.chat_completions.chat_completions import router as openai_chat_completions_router
 from letta.server.rest_api.routers.v1 import ROUTERS as v1_routes
 from letta.server.rest_api.routers.v1.organizations import router as organizations_router
@@ -42,7 +42,7 @@ from letta.server.rest_api.routers.v1.users import router as users_router  # TOD
 from letta.server.rest_api.static_files import mount_static_files
 from letta.server.rest_api.utils import SENTRY_ENABLED
 from letta.server.server import SyncServer
-from letta.settings import settings
+from letta.settings import settings, telemetry_settings
 
 if SENTRY_ENABLED:
     import sentry_sdk
@@ -92,30 +92,25 @@ def generate_password():
 random_password = os.getenv("LETTA_SERVER_PASSWORD") or generate_password()
 
 
-class CheckPasswordMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        # Exclude health check endpoint from password protection
-        if request.url.path in {"/v1/health", "/v1/health/", "/latest/health/"}:
-            return await call_next(request)
-
-        if (
-            request.headers.get("X-BARE-PASSWORD") == f"password {random_password}"
-            or request.headers.get("Authorization") == f"Bearer {random_password}"
-        ):
-            return await call_next(request)
-
-        return JSONResponse(
-            content={"detail": "Unauthorized"},
-            status_code=401,
-        )
-
-
 @asynccontextmanager
 async def lifespan(app_: FastAPI):
     """
     FastAPI lifespan context manager with setup before the app starts pre-yield and on shutdown after the yield.
     """
     worker_id = os.getpid()
+
+    if telemetry_settings.profiler:
+        try:
+            import googlecloudprofiler
+
+            googlecloudprofiler.start(
+                service="memgpt-server",
+                service_version=str(letta_version),
+                verbose=3,
+            )
+            logger.info("Profiler started.")
+        except (ValueError, NotImplementedError) as exc:
+            logger.info("Profiler not enabled: %", exc)
 
     logger.info(f"[Worker {worker_id}] Starting lifespan initialization")
     logger.info(f"[Worker {worker_id}] Initializing database connections")
@@ -283,10 +278,13 @@ def create_application() -> "FastAPI":
 
     if (os.getenv("LETTA_SERVER_SECURE") == "true") or "--secure" in sys.argv:
         print(f"▶ Using secure mode with password: {random_password}")
-        app.add_middleware(CheckPasswordMiddleware)
+        app.add_middleware(CheckPasswordMiddleware, password=random_password)
 
     # Add reverse proxy middleware to handle X-Forwarded-* headers
     # app.add_middleware(ReverseProxyMiddleware, base_path=settings.server_base_path)
+
+    if telemetry_settings.profiler:
+        app.add_middleware(ProfilerContextMiddleware)
 
     app.add_middleware(
         CORSMiddleware,
