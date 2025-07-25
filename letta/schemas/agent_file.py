@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -8,6 +8,7 @@ from letta.schemas.block import Block, CreateBlock
 from letta.schemas.enums import MessageRole
 from letta.schemas.file import FileAgent, FileAgentBase, FileMetadata, FileMetadataBase
 from letta.schemas.group import GroupCreate
+from letta.schemas.mcp import MCPServer
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.source import Source, SourceCreate
 from letta.schemas.tool import Tool
@@ -264,9 +265,34 @@ class ToolSchema(Tool):
         return cls(**tool.model_dump())
 
 
-# class MCPServerSchema(RegisterMCPServer):
-#     """MCP Server with human-readable ID for agent file"""
-#     id: str = Field(..., description="Human-readable identifier for this MCP server in the file")
+class MCPServerSchema(BaseModel):
+    """MCP server schema for agent files with remapped ID."""
+
+    __id_prefix__ = "mcp_server"
+
+    id: str = Field(..., description="Human-readable MCP server ID")
+    server_type: str
+    server_name: str
+    server_url: Optional[str] = None
+    stdio_config: Optional[Dict[str, Any]] = None
+    metadata_: Optional[Dict[str, Any]] = None
+
+    @classmethod
+    def from_mcp_server(cls, mcp_server: MCPServer) -> "MCPServerSchema":
+        """Convert MCPServer to MCPServerSchema (excluding auth fields)."""
+        return cls(
+            id=mcp_server.id,  # remapped by serialization manager
+            server_type=mcp_server.server_type,
+            server_name=mcp_server.server_name,
+            server_url=mcp_server.server_url,
+            # exclude token, custom_headers, and the env field in stdio_config that may contain authentication credentials
+            stdio_config=cls.strip_env_from_stdio_config(mcp_server.stdio_config.model_dump()) if mcp_server.stdio_config else None,
+            metadata_=mcp_server.metadata_,
+        )
+
+    def strip_env_from_stdio_config(stdio_config: Dict[str, Any]) -> Dict[str, Any]:
+        """Strip out the env field from the stdio config."""
+        return {k: v for k, v in stdio_config.items() if k != "env"}
 
 
 class AgentFileSchema(BaseModel):
@@ -278,7 +304,7 @@ class AgentFileSchema(BaseModel):
     files: List[FileSchema] = Field(..., description="List of files in this agent file")
     sources: List[SourceSchema] = Field(..., description="List of sources in this agent file")
     tools: List[ToolSchema] = Field(..., description="List of tools in this agent file")
-    # mcp_servers: List[MCPServerSchema] = Field(..., description="List of MCP servers in this agent file")
+    mcp_servers: List[MCPServerSchema] = Field(..., description="List of MCP servers in this agent file")
     metadata: Dict[str, str] = Field(
         default_factory=dict, description="Metadata for this agent file, including revision_id and other export information."
     )

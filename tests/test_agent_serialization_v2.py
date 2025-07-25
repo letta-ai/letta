@@ -283,6 +283,68 @@ async def agent_with_files(server: SyncServer, default_user, test_block, weather
     return (agent_state.id, test_source.id, test_file.id)
 
 
+@pytest.fixture
+async def test_mcp_server(server: SyncServer, default_user):
+    """Fixture to create and return a test MCP server."""
+    from letta.schemas.mcp import MCPServer, MCPServerType
+
+    mcp_server_data = MCPServer(
+        server_name="test_mcp_server",
+        server_type=MCPServerType.SSE,
+        server_url="http://test-mcp-server.com",
+        token="test-token-12345",  # This should be excluded during export
+        custom_headers={"X-API-Key": "secret-key"},  # This should be excluded during export
+    )
+    mcp_server = await server.mcp_manager.create_or_update_mcp_server(mcp_server_data, default_user)
+    yield mcp_server
+
+
+@pytest.fixture
+async def mcp_tool(server: SyncServer, default_user, test_mcp_server):
+    """Fixture to create and return an MCP tool."""
+    from letta.schemas.tool import MCPTool, ToolCreate
+
+    # Create a mock MCP tool
+    mcp_tool_data = MCPTool(
+        name="test_mcp_tool",
+        description="Test MCP tool for serialization",
+        inputSchema={"type": "object", "properties": {"input": {"type": "string"}}},
+    )
+    tool_create = ToolCreate.from_mcp(test_mcp_server.server_name, mcp_tool_data)
+
+    # Create tool with MCP metadata
+    mcp_tool = await server.tool_manager.create_mcp_tool_async(tool_create, test_mcp_server.server_name, test_mcp_server.id, default_user)
+    yield mcp_tool
+
+
+@pytest.fixture
+async def agent_with_mcp_tools(server: SyncServer, default_user, test_block, mcp_tool, test_mcp_server):
+    """Fixture to create and return an agent with MCP tools."""
+    memory_blocks = [
+        CreateBlock(label="human", value="User is a test user"),
+        CreateBlock(label="persona", value="I am a helpful test assistant"),
+    ]
+
+    create_agent_request = CreateAgent(
+        name="test_agent_mcp",
+        system="You are a helpful assistant with MCP tools.",
+        memory_blocks=memory_blocks,
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[test_block.id],
+        tool_ids=[mcp_tool.id],
+        tags=["test", "mcp", "export"],
+        description="Test agent with MCP tools for serialization testing",
+    )
+
+    agent_state = await server.agent_manager.create_agent_async(
+        agent_create=create_agent_request,
+        actor=default_user,
+    )
+
+    return agent_state
+
+
 # ------------------------------
 # Helper Functions
 # ------------------------------
@@ -1258,7 +1320,7 @@ class TestAgentFileValidation:
             files=[],
             sources=[],
             tools=[],
-            # mcp_servers=[],
+            mcp_servers=[],
         )
 
         # Should not raise
@@ -1302,7 +1364,7 @@ class TestAgentFileValidation:
                     json_schema={"name": "test_tool", "parameters": {"type": "object", "properties": {}}},
                 )
             ],
-            # mcp_servers=[],
+            mcp_servers=[],
         )
 
         assert validate_id_format(valid_schema)
@@ -1316,10 +1378,281 @@ class TestAgentFileValidation:
             files=[],
             sources=[],
             tools=[],
-            # mcp_servers=[],
+            mcp_servers=[],
         )
 
         assert not validate_id_format(invalid_schema)
+
+
+class TestMCPServerSerialization:
+    """Tests for MCP server export/import functionality."""
+
+    async def test_mcp_server_export(self, agent_serialization_manager, agent_with_mcp_tools, default_user):
+        """Test that MCP servers are exported correctly."""
+        agent_file = await agent_serialization_manager.export([agent_with_mcp_tools.id], default_user)
+
+        # Verify MCP server is included
+        assert len(agent_file.mcp_servers) == 1
+        mcp_server = agent_file.mcp_servers[0]
+
+        # Verify server details
+        assert mcp_server.server_name == "test_mcp_server"
+        assert mcp_server.server_url == "http://test-mcp-server.com"
+        assert mcp_server.server_type == "sse"
+
+        # Verify auth fields are excluded
+        assert not hasattr(mcp_server, "token")
+        assert not hasattr(mcp_server, "custom_headers")
+
+        # Verify ID format
+        assert _validate_entity_id(mcp_server.id, "mcp_server")
+
+    async def test_mcp_server_auth_scrubbing(self, server, agent_serialization_manager, default_user):
+        """Test that authentication information is scrubbed during export."""
+        from letta.schemas.mcp import MCPServer, MCPServerType
+
+        # Create MCP server with auth info
+        mcp_server_data_stdio = MCPServer(
+            server_name="auth_test_server",
+            server_type=MCPServerType.STDIO,
+            # token="super-secret-token",
+            # custom_headers={"Authorization": "Bearer secret-key", "X-Custom": "custom-value"},
+            stdio_config={
+                "server_name": "auth_test_server",
+                "command": "test-command",
+                "args": ["arg1", "arg2"],
+                "env": {"ENV_VAR": "value"},
+            },
+        )
+        mcp_server = await server.mcp_manager.create_or_update_mcp_server(mcp_server_data_stdio, default_user)
+
+        mcp_server_data_http = MCPServer(
+            server_name="auth_test_server_http",
+            server_type=MCPServerType.STREAMABLE_HTTP,
+            server_url="http://auth_test_server_http.com",
+            token="super-secret-token",
+            custom_headers={"X-Custom": "custom-value"},
+        )
+        mcp_server_http = await server.mcp_manager.create_or_update_mcp_server(mcp_server_data_http, default_user)
+        # Create tool from MCP server
+        from letta.schemas.tool import MCPTool, ToolCreate
+
+        mcp_tool_data = MCPTool(
+            name="auth_test_tool_stdio",
+            description="Tool with auth",
+            inputSchema={"type": "object", "properties": {}},
+        )
+        tool_create_stdio = ToolCreate.from_mcp(mcp_server.server_name, mcp_tool_data)
+
+        mcp_tool_data_http = MCPTool(
+            name="auth_test_tool_http",
+            description="Tool with auth",
+            inputSchema={"type": "object", "properties": {}},
+        )
+
+        tool_create_http = ToolCreate.from_mcp(mcp_server_http.server_name, mcp_tool_data_http)
+
+        mcp_tool = await server.tool_manager.create_mcp_tool_async(tool_create_stdio, mcp_server.server_name, mcp_server.id, default_user)
+        mcp_tool_http = await server.tool_manager.create_mcp_tool_async(
+            tool_create_http, mcp_server_http.server_name, mcp_server_http.id, default_user
+        )
+
+        # Create agent with the tool
+        from letta.schemas.agent import CreateAgent
+
+        create_agent_request = CreateAgent(
+            name="auth_test_agent",
+            tool_ids=[mcp_tool.id, mcp_tool_http.id],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        )
+        agent = await server.agent_manager.create_agent_async(create_agent_request, default_user)
+
+        # Export
+        agent_file = await agent_serialization_manager.export([agent.id], default_user)
+
+        for server in agent_file.mcp_servers:
+            if server.server_name == "auth_test_server":
+                exported_server_stdio = server
+            elif server.server_name == "auth_test_server_http":
+                exported_server_http = server
+
+        # Verify env variables in stdio server are excluded (typically used for auth)
+        assert exported_server_stdio.id != mcp_server.id
+        assert exported_server_stdio.server_name == "auth_test_server"
+        assert exported_server_stdio.stdio_config == {
+            "server_name": "auth_test_server",
+            "type": "stdio",
+            "command": "test-command",
+            "args": ["arg1", "arg2"],
+        }  # Non-auth config preserved
+        assert exported_server_stdio.server_type == "stdio"
+
+        # Verify token and custom headers are excluded from export for http server
+        assert exported_server_http.id != mcp_server_http.id
+        assert exported_server_http.server_name == "auth_test_server_http"
+        assert exported_server_http.server_type == "streamable_http"
+        assert exported_server_http.server_url == "http://auth_test_server_http.com"
+        assert not hasattr(exported_server_http, "token")
+        assert not hasattr(exported_server_http, "custom_headers")
+
+    async def test_mcp_tool_metadata_with_server_id(self, agent_serialization_manager, agent_with_mcp_tools, default_user):
+        """Test that MCP tools have server_id in metadata."""
+        agent_file = await agent_serialization_manager.export([agent_with_mcp_tools.id], default_user)
+
+        # Find the MCP tool
+        mcp_tool = next((t for t in agent_file.tools if t.name == "test_mcp_tool"), None)
+        assert mcp_tool is not None
+
+        # Verify metadata contains server info
+        assert mcp_tool.metadata_ is not None
+        assert "mcp" in mcp_tool.metadata_
+        assert "server_name" in mcp_tool.metadata_["mcp"]
+        assert "server_id" in mcp_tool.metadata_["mcp"]
+        assert mcp_tool.metadata_["mcp"]["server_name"] == "test_mcp_server"
+
+        # Verify tag format
+        assert any(tag.startswith("mcp:") for tag in mcp_tool.tags)
+
+    async def test_mcp_server_import(self, agent_serialization_manager, agent_with_mcp_tools, default_user, other_user):
+        """Test importing agents with MCP servers."""
+        # Export from default user
+        agent_file = await agent_serialization_manager.export([agent_with_mcp_tools.id], default_user)
+
+        # Import to other user
+        result = await agent_serialization_manager.import_file(agent_file, other_user)
+
+        assert result.success
+
+        # Verify MCP server was imported
+        mcp_server_id = next((db_id for file_id, db_id in result.id_mappings.items() if file_id.startswith("mcp_server-")), None)
+        assert mcp_server_id is not None
+
+    async def test_multiple_mcp_servers_export(self, server, agent_serialization_manager, default_user):
+        """Test exporting multiple MCP servers from different agents."""
+        from letta.schemas.mcp import MCPServer, MCPServerType
+
+        # Create two MCP servers
+        mcp_server1 = await server.mcp_manager.create_or_update_mcp_server(
+            MCPServer(
+                server_name="mcp1",
+                server_type=MCPServerType.STREAMABLE_HTTP,
+                server_url="http://mcp1.com",
+                token="super-secret-token",
+                custom_headers={"X-Custom": "custom-value"},
+            ),
+            default_user,
+        )
+        mcp_server2 = await server.mcp_manager.create_or_update_mcp_server(
+            MCPServer(
+                server_name="mcp2",
+                server_type=MCPServerType.STDIO,
+                stdio_config={
+                    "server_name": "mcp2",
+                    "command": "mcp2-cmd",
+                    "args": ["arg1", "arg2"],
+                },
+            ),
+            default_user,
+        )
+
+        # Create tools from each server
+        from letta.schemas.tool import MCPTool, ToolCreate
+
+        tool1 = await server.tool_manager.create_mcp_tool_async(
+            ToolCreate.from_mcp(
+                "mcp1",
+                MCPTool(name="tool1", description="Tool 1", inputSchema={"type": "object", "properties": {}}),
+            ),
+            "mcp1",
+            mcp_server1.id,
+            default_user,
+        )
+        tool2 = await server.tool_manager.create_mcp_tool_async(
+            ToolCreate.from_mcp(
+                "mcp2",
+                MCPTool(name="tool2", description="Tool 2", inputSchema={"type": "object", "properties": {}}),
+            ),
+            "mcp2",
+            mcp_server2.id,
+            default_user,
+        )
+
+        # Create agents with different MCP tools
+        from letta.schemas.agent import CreateAgent
+
+        agent1 = await server.agent_manager.create_agent_async(
+            CreateAgent(
+                name="agent1",
+                tool_ids=[tool1.id],
+                llm_config=LLMConfig.default_config("gpt-4o-mini"),
+                embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            ),
+            default_user,
+        )
+        agent2 = await server.agent_manager.create_agent_async(
+            CreateAgent(
+                name="agent2",
+                tool_ids=[tool2.id],
+                llm_config=LLMConfig.default_config("gpt-4o-mini"),
+                embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            ),
+            default_user,
+        )
+
+        # Export both agents
+        agent_file = await agent_serialization_manager.export([agent1.id, agent2.id], default_user)
+
+        # Verify both MCP servers are included
+        assert len(agent_file.mcp_servers) == 2
+
+        # Verify server types
+        streamable_http_server = next(s for s in agent_file.mcp_servers if s.server_name == "mcp1")
+        stdio_server = next(s for s in agent_file.mcp_servers if s.server_name == "mcp2")
+
+        assert streamable_http_server.server_name == "mcp1"
+        assert streamable_http_server.server_type == "streamable_http"
+        assert streamable_http_server.server_url == "http://mcp1.com"
+
+        assert stdio_server.server_name == "mcp2"
+        assert stdio_server.server_type == "stdio"
+        assert stdio_server.stdio_config == {
+            "server_name": "mcp2",
+            "type": "stdio",
+            "command": "mcp2-cmd",
+            "args": ["arg1", "arg2"],
+        }
+
+    async def test_mcp_server_deduplication(self, server, agent_serialization_manager, default_user, test_mcp_server, mcp_tool):
+        """Test that shared MCP servers are deduplicated during export."""
+        # Create two agents using the same MCP tool
+        from letta.schemas.agent import CreateAgent
+
+        agent1 = await server.agent_manager.create_agent_async(
+            CreateAgent(
+                name="agent_dup1",
+                tool_ids=[mcp_tool.id],
+                llm_config=LLMConfig.default_config("gpt-4o-mini"),
+                embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            ),
+            default_user,
+        )
+        agent2 = await server.agent_manager.create_agent_async(
+            CreateAgent(
+                name="agent_dup2",
+                tool_ids=[mcp_tool.id],
+                llm_config=LLMConfig.default_config("gpt-4o-mini"),
+                embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            ),
+            default_user,
+        )
+
+        # Export both agents
+        agent_file = await agent_serialization_manager.export([agent1.id, agent2.id], default_user)
+
+        # Verify only one MCP server is exported
+        assert len(agent_file.mcp_servers) == 1
+        assert agent_file.mcp_servers[0].server_name == "test_mcp_server"
 
 
 if __name__ == "__main__":

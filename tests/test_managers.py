@@ -269,8 +269,11 @@ def mcp_tool(server, default_user):
         },
     )
     mcp_server_name = "test"
+    mcp_server_id = "test-server-id"  # Mock server ID for testing
     tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
-    tool = server.tool_manager.create_or_update_mcp_tool(tool_create=tool_create, mcp_server_name=mcp_server_name, actor=default_user)
+    tool = server.tool_manager.create_or_update_mcp_tool(
+        tool_create=tool_create, mcp_server_name=mcp_server_name, mcp_server_id=mcp_server_id, actor=default_user
+    )
     yield tool
 
 
@@ -3474,6 +3477,7 @@ def test_create_mcp_tool(server: SyncServer, mcp_tool, default_user, default_org
     assert mcp_tool.created_by_id == default_user.id
     assert mcp_tool.tool_type == ToolType.EXTERNAL_MCP
     assert mcp_tool.metadata_[MCP_TOOL_TAG_NAME_PREFIX]["server_name"] == "test"
+    assert mcp_tool.metadata_[MCP_TOOL_TAG_NAME_PREFIX]["server_id"] == "test-server-id"
 
 
 # Test should work with both SQLite and PostgreSQL
@@ -8550,6 +8554,83 @@ async def test_create_mcp_server(server, default_user, event_loop):
     assert tool.name == tool_name
     assert f"mcp:{created_server.server_name}" in tool.tags, f"Expected tag {f'mcp:{created_server.server_name}'}, got {tool.tags}"
     print("TAGS", tool.tags)
+
+
+async def test_get_mcp_servers_by_ids(server, default_user, event_loop):
+    from letta.schemas.mcp import MCPServer, MCPServerType, SSEServerConfig, StdioServerConfig
+    from letta.settings import tool_settings
+
+    if tool_settings.mcp_read_from_config:
+        return
+
+    # Create multiple MCP servers for testing
+    servers_data = [
+        {
+            "name": "test_server_1",
+            "config": StdioServerConfig(
+                server_name="test_server_1", type=MCPServerType.STDIO, command="echo 'test1'", args=["arg1"], env={"ENV1": "value1"}
+            ),
+            "type": MCPServerType.STDIO,
+        },
+        {
+            "name": "test_server_2",
+            "config": SSEServerConfig(server_name="test_server_2", server_url="https://test2.example.com/sse"),
+            "type": MCPServerType.SSE,
+        },
+        {
+            "name": "test_server_3",
+            "config": SSEServerConfig(server_name="test_server_3", server_url="https://test3.example.com/sse"),
+            "type": MCPServerType.SSE,
+        },
+    ]
+
+    created_servers = []
+    for server_data in servers_data:
+        if server_data["type"] == MCPServerType.STDIO:
+            mcp_server = MCPServer(server_name=server_data["name"], server_type=server_data["type"], stdio_config=server_data["config"])
+        else:
+            mcp_server = MCPServer(
+                server_name=server_data["name"], server_type=server_data["type"], server_url=server_data["config"].server_url
+            )
+
+        created = await server.mcp_manager.create_or_update_mcp_server(mcp_server, actor=default_user)
+        created_servers.append(created)
+
+    # Test fetching multiple servers by IDs
+    server_ids = [s.id for s in created_servers]
+    fetched_servers = await server.mcp_manager.get_mcp_servers_by_ids(server_ids, actor=default_user)
+
+    assert len(fetched_servers) == len(created_servers)
+    fetched_ids = {s.id for s in fetched_servers}
+    expected_ids = {s.id for s in created_servers}
+    assert fetched_ids == expected_ids
+
+    # Test fetching subset of servers
+    subset_ids = server_ids[:2]
+    subset_servers = await server.mcp_manager.get_mcp_servers_by_ids(subset_ids, actor=default_user)
+    assert len(subset_servers) == 2
+    assert all(s.id in subset_ids for s in subset_servers)
+
+    # Test fetching with empty list
+    empty_result = await server.mcp_manager.get_mcp_servers_by_ids([], actor=default_user)
+    assert empty_result == []
+
+    # Test fetching with non-existent ID mixed with valid IDs
+    mixed_ids = [server_ids[0], "non-existent-id", server_ids[1]]
+    mixed_result = await server.mcp_manager.get_mcp_servers_by_ids(mixed_ids, actor=default_user)
+    # Should only return the existing servers
+    assert len(mixed_result) == 2
+    assert all(s.id in server_ids for s in mixed_result)
+
+    # Test that servers from different organizations are not returned
+    # This would require creating another user/org, but for now we'll just verify
+    # that the function respects the actor's organization
+    all_servers = await server.mcp_manager.list_mcp_servers(actor=default_user)
+    all_server_ids = [s.id for s in all_servers]
+    bulk_fetched = await server.mcp_manager.get_mcp_servers_by_ids(all_server_ids, actor=default_user)
+
+    # All fetched servers should belong to the same organization
+    assert all(s.organization_id == default_user.organization_id for s in bulk_fetched)
 
 
 # ======================================================================================================================

@@ -475,7 +475,11 @@ async def add_mcp_tool(
             )
 
         tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
-        return await server.tool_manager.create_mcp_tool_async(tool_create=tool_create, mcp_server_name=mcp_server_name, actor=actor)
+        # For config-based servers, use the server name as ID since they don't have database IDs
+        mcp_server_id = mcp_server_name
+        return await server.tool_manager.create_mcp_tool_async(
+            tool_create=tool_create, mcp_server_name=mcp_server_name, mcp_server_id=mcp_server_id, actor=actor
+        )
 
     else:
         return await server.mcp_manager.add_tool_from_mcp_server(mcp_server_name=mcp_server_name, mcp_tool_name=mcp_tool_name, actor=actor)
