@@ -1092,6 +1092,7 @@ class TestAgentFileImport:
             files=[],
             sources=[],
             tools=[],
+            mcp_servers=[],
         )
 
         with pytest.raises(AgentFileImportError):

@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Dict, List
 
+from letta.constants import MCP_TOOL_TAG_NAME_PREFIX
 from letta.errors import AgentFileExportError, AgentFileImportError
 from letta.helpers.pinecone_utils import should_use_pinecone
 from letta.log import get_logger
@@ -262,8 +263,6 @@ class AgentSerializationManager:
 
     async def _extract_unique_mcp_servers(self, tools: List, actor: User) -> List:
         """Extract unique MCP servers from tools based on metadata, using server_id if available, otherwise falling back to server_name."""
-        from letta.constants import MCP_TOOL_TAG_NAME_PREFIX
-
         mcp_server_ids = set()
         mcp_server_names = set()
         for tool in tools:
@@ -280,14 +279,11 @@ class AgentSerializationManager:
         mcp_servers = []
         fetched_server_ids = set()
         if mcp_server_ids:
-            for server_id in mcp_server_ids:
-                try:
-                    mcp_server = await self.mcp_manager.get_mcp_server_by_id_async(server_id, actor)
-                    if mcp_server:
-                        mcp_servers.append(mcp_server)
-                        fetched_server_ids.add(server_id)
-                except Exception as e:
-                    logger.warning(f"Failed to fetch MCP server {server_id}: {e}")
+            try:
+                mcp_servers = await self.mcp_manager.get_mcp_servers_by_ids(list(mcp_server_ids), actor)
+                fetched_server_ids.update([mcp_server.id for mcp_server in mcp_servers])
+            except Exception as e:
+                logger.warning(f"Failed to fetch MCP servers by IDs {mcp_server_ids}: {e}")
 
         # Fetch MCP servers by name if not already fetched by ID
         if mcp_server_names:

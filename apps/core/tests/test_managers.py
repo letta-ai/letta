@@ -8579,8 +8579,8 @@ async def test_get_mcp_servers_by_ids(server, default_user, event_loop):
         },
         {
             "name": "test_server_3",
-            "config": SSEServerConfig(server_name="test_server_3", server_url="https://test3.example.com/sse"),
-            "type": MCPServerType.SSE,
+            "config": SSEServerConfig(server_name="test_server_3", server_url="https://test3.example.com/mcp"),
+            "type": MCPServerType.STREAMABLE_HTTP,
         },
     ]
 
