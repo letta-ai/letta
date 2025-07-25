@@ -230,6 +230,7 @@ describe-web:
         --set secrets.MCP_DISABLE_STDIO=true \
         --set secrets.LETTA_TRACK_LAST_AGENT_RUN=true \
         --set secrets.LETTA_TRACK_ERRORED_MESSAGES=true \
+        --set secrets.LETTA_TELEMETRY_PROFILER=true \
         --set secrets.FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY} \
         --set secrets.LETTA_PINECONE_API_KEY=${LETTA_PINECONE_API_KEY} \
         --set secrets.LETTA_ENABLE_PINECONE=${LETTA_ENABLE_PINECONE}

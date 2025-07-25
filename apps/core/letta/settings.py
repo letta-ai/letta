@@ -331,6 +331,11 @@ class LogSettings(BaseSettings):
     verbose_telemetry_logging: bool = Field(False)
 
 
+class TelemetrySettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="letta_telemetry_", extra="ignore")
+    profiler: bool | None = Field(False, description="Enable use of the profiler.")
+
+
 # singleton
 settings = Settings(_env_parse_none_str="None")
 test_settings = TestSettings()
@@ -338,3 +343,4 @@ model_settings = ModelSettings()
 tool_settings = ToolSettings()
 summarizer_settings = SummarizerSettings()
 log_settings = LogSettings()
+telemetry_settings = TelemetrySettings()
