@@ -9,7 +9,6 @@ Create Date: 2025-07-21 15:07:32.133538
 from typing import Sequence, Union
 
 import sqlalchemy as sa
-from sqlalchemy import text
 
 from alembic import op
 
@@ -25,40 +24,43 @@ def upgrade() -> None:
     op.add_column("block", sa.Column("project_id", sa.String(), nullable=True))
     op.add_column("groups", sa.Column("project_id", sa.String(), nullable=True))
 
+    # NOTE: running the backfill on alembic will result in locking with running application.
+    # This is okay if okay with downtime. Options also to do rolling migration or dynamic updates.
+
     # Backfill project_id for blocks table
     # Since all agents for a block have the same project_id, we can just grab the first one
-    op.execute(
-        text(
-            """
-        UPDATE block
-        SET project_id = (
-            SELECT a.project_id
-            FROM blocks_agents ba
-            JOIN agents a ON ba.agent_id = a.id
-            WHERE ba.block_id = block.id
-            AND a.project_id IS NOT NULL
-            LIMIT 1
-        )
-    """
-        )
-    )
+    # op.execute(
+    #     text(
+    #         """
+    #     UPDATE block
+    #     SET project_id = (
+    #         SELECT a.project_id
+    #         FROM blocks_agents ba
+    #         JOIN agents a ON ba.agent_id = a.id
+    #         WHERE ba.block_id = block.id
+    #         AND a.project_id IS NOT NULL
+    #         LIMIT 1
+    #     )
+    # """
+    #     )
+    # )
 
     # Backfill project_id for groups table
-    op.execute(
-        text(
-            """
-        UPDATE groups
-        SET project_id = (
-            SELECT a.project_id
-            FROM groups_agents ga
-            JOIN agents a ON ga.agent_id = a.id
-            WHERE ga.group_id = groups.id
-            AND a.project_id IS NOT NULL
-            LIMIT 1
-        )
-    """
-        )
-    )
+    # op.execute(
+    #     text(
+    #         """
+    #     UPDATE groups
+    #     SET project_id = (
+    #         SELECT a.project_id
+    #         FROM groups_agents ga
+    #         JOIN agents a ON ga.agent_id = a.id
+    #         WHERE ga.group_id = groups.id
+    #         AND a.project_id IS NOT NULL
+    #         LIMIT 1
+    #     )
+    # """
+    #     )
+    # )
     # ### end Alembic commands ###
 
 
