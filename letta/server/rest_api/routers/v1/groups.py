@@ -31,12 +31,12 @@ def list_groups(
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.group_manager.list_groups(
+        actor=actor,
         project_id=project_id,
         manager_type=manager_type,
         before=before,
         after=after,
         limit=limit,
-        actor=actor,
     )
 
 

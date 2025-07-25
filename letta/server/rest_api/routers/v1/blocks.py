@@ -22,6 +22,7 @@ async def list_blocks(
     name: Optional[str] = Query(None, description="Name of the block"),
     identity_id: Optional[str] = Query(None, description="Search agents by identifier id"),
     identifier_keys: Optional[List[str]] = Query(None, description="Search agents by identifier keys"),
+    project_id: Optional[str] = Query(None, description="Search blocks by project id"),
     limit: Optional[int] = Query(50, description="Number of blocks to return"),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -34,6 +35,7 @@ async def list_blocks(
         template_name=name,
         identity_id=identity_id,
         identifier_keys=identifier_keys,
+        project_id=project_id,
         limit=limit,
     )
 

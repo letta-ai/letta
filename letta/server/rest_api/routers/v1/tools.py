@@ -703,7 +703,7 @@ async def connect_mcp_server(
     """
 
     async def oauth_stream_generator(
-        request: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig]
+        request: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig],
     ) -> AsyncGenerator[str, None]:
         client = None
         oauth_provider = None
