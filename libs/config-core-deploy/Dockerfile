@@ -13,7 +13,7 @@ WORKDIR /app
 
 COPY apps/core/pyproject.toml apps/core/poetry.lock ./
 RUN poetry lock
-RUN poetry install --no-root --extras "postgres redis pinecone server cloud-tool-sandbox external-tools tests bedrock google desktop"
+RUN poetry install --no-root --all-extras
 
 # The collector image, used to get the OpenTelemetry Collector
 FROM otel/opentelemetry-collector-contrib:0.96.0 as collector
