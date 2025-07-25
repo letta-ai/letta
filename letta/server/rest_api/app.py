@@ -109,7 +109,7 @@ async def lifespan(app_: FastAPI):
                 verbose=3,
             )
             logger.info("Profiler started.")
-        except (ValueError, NotImplementedError) as exc:
+        except Exception as exc:
             logger.info("Profiler not enabled: %", exc)
 
     logger.info(f"[Worker {worker_id}] Starting lifespan initialization")
