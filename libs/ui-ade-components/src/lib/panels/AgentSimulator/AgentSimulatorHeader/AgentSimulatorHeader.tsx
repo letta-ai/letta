@@ -108,9 +108,19 @@ export function AgentSimulatorHeader() {
       position="absolute"
       zIndex="rightAboveZero"
       justify="spaceBetween"
+      color="transparent"
+      className="pointer-events-none"
     >
-      <AgentStatus />
-      <HStack border gap={false} align="center" color="background-grey2">
+      <div className="pointer-events-auto">
+        <AgentStatus />
+      </div>
+      <HStack
+        border
+        gap={false}
+        align="center"
+        color="background-grey2"
+        className="pointer-events-auto"
+      >
         <AgentVariablesContainer />
 
         <HStack borderX>
