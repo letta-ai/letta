@@ -268,6 +268,7 @@ function DataSourceFilesPage() {
   > | null>(null);
 
   const [fileToView, setFileToView] = useState<FileMetadata | null>(null);
+  const { dynamicFileSize } = useFormatters();
 
   const fileTableColumns: Array<ColumnDef<FileMetadata>> = useMemo(
     () => [
@@ -278,6 +279,13 @@ function DataSourceFilesPage() {
       {
         header: t('table.columns.fileSize'),
         accessorKey: 'file_size',
+        cell: ({ row }) => {
+          return (
+            <Typography>
+              {dynamicFileSize(row.original.file_size || 0)}
+            </Typography>
+          );
+        },
       },
       {
         header: '',
@@ -330,7 +338,7 @@ function DataSourceFilesPage() {
         ),
       },
     ],
-    [sourceId, t],
+    [sourceId, t, dynamicFileSize],
   );
 
   return (
