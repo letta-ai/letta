@@ -98,12 +98,19 @@ class MCPManager:
     @enforce_types
     async def add_tool_from_mcp_server(self, mcp_server_name: str, mcp_tool_name: str, actor: PydanticUser) -> PydanticTool:
         """Add a tool from an MCP server to the Letta tool registry."""
+        # get the MCP server ID, we should migrate to use the server_id instead of the name
+        mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor=actor)
+        if not mcp_server_id:
+            raise ValueError(f"MCP server '{mcp_server_name}' not found")
+
         mcp_tools = await self.list_mcp_server_tools(mcp_server_name, actor=actor)
 
         for mcp_tool in mcp_tools:
             if mcp_tool.name == mcp_tool_name:
                 tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
-                return await self.tool_manager.create_mcp_tool_async(tool_create=tool_create, mcp_server_name=mcp_server_name, actor=actor)
+                return await self.tool_manager.create_mcp_tool_async(
+                    tool_create=tool_create, mcp_server_name=mcp_server_name, mcp_server_id=mcp_server_id, actor=actor
+                )
 
         # failed to add - handle error?
         return None
@@ -194,14 +201,7 @@ class MCPManager:
         """Update an MCP server by its name."""
         mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor)
         if not mcp_server_id:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "code": "MCPServerNotFoundError",
-                    "message": f"MCP server {mcp_server_name} not found",
-                    "mcp_server_name": mcp_server_name,
-                },
-            )
+            raise ValueError(f"MCP server {mcp_server_name} not found")
         return await self.update_mcp_server_by_id(mcp_server_id, mcp_server_update, actor)
 
     @enforce_types
@@ -224,20 +224,25 @@ class MCPManager:
             return mcp_server.to_pydantic()
 
     @enforce_types
+    async def get_mcp_servers_by_ids(self, mcp_server_ids: List[str], actor: PydanticUser) -> List[MCPServer]:
+        """Fetch multiple MCP servers by their IDs in a single query."""
+        if not mcp_server_ids:
+            return []
+
+        async with db_registry.async_session() as session:
+            mcp_servers = await MCPServerModel.list_async(
+                db_session=session, organization_id=actor.organization_id, id=mcp_server_ids  # This will use the IN operator
+            )
+            return [mcp_server.to_pydantic() for mcp_server in mcp_servers]
+
+    @enforce_types
     async def get_mcp_server(self, mcp_server_name: str, actor: PydanticUser) -> PydanticTool:
         """Get a tool by name."""
         async with db_registry.async_session() as session:
             mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor)
             mcp_server = await MCPServerModel.read_async(db_session=session, identifier=mcp_server_id, actor=actor)
             if not mcp_server:
-                raise HTTPException(
-                    status_code=404,  # Not Found
-                    detail={
-                        "code": "MCPServerNotFoundError",
-                        "message": f"MCP server {mcp_server_name} not found",
-                        "mcp_server_name": mcp_server_name,
-                    },
-                )
+                raise ValueError(f"MCP server {mcp_server_name} not found")
             return mcp_server.to_pydantic()
 
     # @enforce_types
