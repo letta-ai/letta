@@ -1437,7 +1437,7 @@
       "attach": "Attach tool",
       "detach": "Detach tool",
       "attached": "Attached",
-      "empty": "This server has no tools attached to it"
+      "empty": "No tools found, please check your server configuration."
     },
     "RemoveMCPServerDialog": {
       "error": "There was an error removing this server, please try again or contact support.",

@@ -48,20 +48,21 @@ class MCPManager:
     @enforce_types
     async def list_mcp_server_tools(self, mcp_server_name: str, actor: PydanticUser) -> List[MCPTool]:
         """Get a list of all tools for a specific MCP server."""
-        mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor=actor)
-        mcp_config = await self.get_mcp_server_by_id_async(mcp_server_id, actor=actor)
-        server_config = mcp_config.to_config()
+        try:
+            mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor=actor)
+            mcp_config = await self.get_mcp_server_by_id_async(mcp_server_id, actor=actor)
+            server_config = mcp_config.to_config()
+            mcp_client = await self.get_mcp_client(server_config, actor)
+            await mcp_client.connect_to_server()
 
-        mcp_client = await self.get_mcp_client(server_config, actor)
-        await mcp_client.connect_to_server()
-
-        # list tools
-        tools = await mcp_client.list_tools()
-
-        # TODO: change to pydantic tools
-        await mcp_client.cleanup()
-
-        return tools
+            # list tools
+            tools = await mcp_client.list_tools()
+            return tools
+        except Exception as e:
+            logger.error(f"Error listing tools for MCP server {mcp_server_name}: {e}")
+            return []
+        finally:
+            await mcp_client.cleanup()
 
     @enforce_types
     async def execute_mcp_server_tool(
