@@ -6,6 +6,7 @@ import { useCurrentAgent } from '../useCurrentAgent/useCurrentAgent';
 import { useEffect, useMemo } from 'react';
 import { toast } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
+import { UseAgentsServiceRetrieveAgentKeyFn } from '@letta-cloud/sdk-core';
 
 export function useCurrentSimulatedAgent() {
   const agentState = useCurrentAgent();
@@ -45,4 +46,12 @@ export function useCurrentSimulatedAgent() {
     agentSession,
     id: agentIdToUse || '',
   };
+}
+
+export function useCurrentSimulatedAgentQueryKey() {
+  const { id: agentId } = useCurrentSimulatedAgent();
+
+  return UseAgentsServiceRetrieveAgentKeyFn({
+    agentId,
+  });
 }

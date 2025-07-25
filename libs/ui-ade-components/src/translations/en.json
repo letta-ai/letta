@@ -540,8 +540,9 @@
     }
   },
   "ADE/DataSources/FileOpenStatus": {
-    "open": "This file is being read by the agent, click to stop the agent from reading it",
-    "closed": "This file is not being read by the agent, click to force the agent to read it",
+    "open": "This file is being read by the {agentType} agent, click to stop the {agentType} agent from reading it",
+    "simulated": "simulated",
+    "closed": "This file is not being read by the {agentType} agent, click to force the {agentType} agent to read it",
     "failedToClose": "Failed to close file, please check your logs or contact support.",
     "failedToOpen": "Failed to open file, please check your logs or contact support."
   },

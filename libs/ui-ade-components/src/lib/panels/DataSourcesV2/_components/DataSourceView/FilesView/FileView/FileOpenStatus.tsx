@@ -1,4 +1,5 @@
 import type { AgentState, FileMetadata } from '@letta-cloud/sdk-core';
+import { UseAgentsServiceRetrieveAgentKeyFn } from '@letta-cloud/sdk-core';
 import {
   useAgentsServiceCloseFile,
   useAgentsServiceOpenFile,
@@ -7,10 +8,6 @@ import { isAgentState } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
 import { useMemo } from 'react';
 import {
-  useCurrentAgent,
-  useCurrentAgentQueryKey,
-} from '../../../../../../hooks';
-import {
   Button,
   EyeClosedIcon,
   EyeOpenIcon,
@@ -18,6 +15,11 @@ import {
 } from '@letta-cloud/ui-component-library';
 import * as React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useCurrentSimulatedAgent } from '../../../../../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
+import {
+  useCurrentAgent,
+  useCurrentAgentMetaData,
+} from '../../../../../../hooks';
 
 interface OpenFileSlotProps {
   agentId: string;
@@ -27,7 +29,9 @@ interface OpenFileSlotProps {
 function FileIsClosedButton(props: OpenFileSlotProps) {
   const { agentId, file } = props;
 
-  const currentAgentQueryKey = useCurrentAgentQueryKey();
+  const currentAgentQueryKey = UseAgentsServiceRetrieveAgentKeyFn({
+    agentId,
+  });
 
   const queryClient = useQueryClient();
 
@@ -77,6 +81,8 @@ function FileIsClosedButton(props: OpenFileSlotProps) {
 
   const t = useTranslations('ADE/DataSources/FileOpenStatus');
 
+  const { isTemplate } = useCurrentAgentMetaData();
+
   return (
     <Button
       busy={isPending}
@@ -89,7 +95,9 @@ function FileIsClosedButton(props: OpenFileSlotProps) {
       size="xsmall"
       hideLabel
       color="tertiary"
-      label={t('closed')}
+      label={t('closed', {
+        agentType: isTemplate ? t('simulated') : '',
+      })}
       preIcon={<EyeClosedIcon size="xsmall" />}
     ></Button>
   );
@@ -98,7 +106,9 @@ function FileIsClosedButton(props: OpenFileSlotProps) {
 function FileIsOpenButton(props: OpenFileSlotProps) {
   const { agentId, file } = props;
 
-  const currentAgentQueryKey = useCurrentAgentQueryKey();
+  const currentAgentQueryKey = UseAgentsServiceRetrieveAgentKeyFn({
+    agentId,
+  });
 
   const queryClient = useQueryClient();
   const t = useTranslations('ADE/DataSources/FileOpenStatus');
@@ -147,6 +157,8 @@ function FileIsOpenButton(props: OpenFileSlotProps) {
     },
   });
 
+  const { isTemplate } = useCurrentAgentMetaData();
+
   return (
     <Button
       busy={isPending}
@@ -159,7 +171,9 @@ function FileIsOpenButton(props: OpenFileSlotProps) {
       size="xsmall"
       hideLabel
       color="tertiary"
-      label={t('open')}
+      label={t('open', {
+        agentType: isTemplate ? t('simulated') : '',
+      })}
       preIcon={<EyeOpenIcon size="xsmall" />}
     />
   );
@@ -195,7 +209,17 @@ interface FileOpenStatusProps {
 }
 
 export function FileOpenStatus(props: FileOpenStatusProps) {
-  const agent = useCurrentAgent();
+  const simulatedAgent = useCurrentSimulatedAgent();
+  const baseAgent = useCurrentAgent();
+  const { isTemplate } = useCurrentAgentMetaData();
+
+  const agent = useMemo(() => {
+    if (isTemplate) {
+      return simulatedAgent.agentSession?.body.agent;
+    }
+    return baseAgent;
+  }, [baseAgent, isTemplate, simulatedAgent.agentSession?.body.agent]);
+
   const { file } = props;
 
   if (!isAgentState(agent)) {
