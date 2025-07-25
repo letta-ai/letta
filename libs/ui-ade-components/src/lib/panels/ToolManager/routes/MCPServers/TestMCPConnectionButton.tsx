@@ -84,9 +84,11 @@ export function TestMCPConnectionButton({
     setAvailableTools([]);
     setOauthUrl(null);
 
-    if (!serverUrl) {
-      setTestingStatus('failed');
-      return;
+    if (serverType === MCPServerTypes.Sse || serverType === MCPServerTypes.StreamableHttp) {
+      if (!serverUrl) {
+        setTestingStatus('failed');
+        return;
+      }
     }
 
     // Abort any existing request
@@ -282,9 +284,11 @@ export function TestMCPConnectionButton({
     setAvailableTools([]);
     setOauthUrl(null);
 
-    if (!serverUrl) {
-      setTestingStatus('failed');
-      return;
+    if (serverType === MCPServerTypes.Sse || serverType === MCPServerTypes.StreamableHttp) {
+      if (!serverUrl) {
+        setTestingStatus('failed');
+        return;
+      }
     }
 
     const formValues = getValues();

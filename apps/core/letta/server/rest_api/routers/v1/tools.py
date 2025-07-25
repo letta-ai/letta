@@ -43,6 +43,7 @@ from letta.services.mcp.oauth_utils import (
     get_oauth_success_html,
     oauth_stream_event,
 )
+from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.mcp.types import OauthStreamEvent
 from letta.settings import tool_settings
 
@@ -730,8 +731,13 @@ async def connect_mcp_server(
                 yield oauth_stream_event(OauthStreamEvent.SUCCESS, tools=tools)
                 return
             except ConnectionError:
+                # TODO: jnjpng make this connection error check more specific to the 401 unauthorized error
+                if isinstance(client, AsyncStdioMCPClient):
+                    logger.warning(f"OAuth not supported for stdio")
+                    yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"OAuth not supported for stdio")
+                    return
                 # Continue to OAuth flow
-                logger.info(f"Attempting OAuth flow for {request.server_url}...")
+                logger.info(f"Attempting OAuth flow for {request}...")
             except Exception as e:
                 yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"Connection failed: {str(e)}")
                 return
