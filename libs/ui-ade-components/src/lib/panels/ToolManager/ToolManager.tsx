@@ -364,7 +364,7 @@ function ToolManagerNavigationSidebar() {
           title={
             <HStack align="center" collapseWidth className="gap-2">
               <div className="bg-agent min-w-[24px] flex items-center justify-center h-[24px]">
-                <LettaInvaderIcon />
+                <LettaInvaderIcon color="white" />
               </div>
               <Tooltip asChild content={name}>
                 <Typography

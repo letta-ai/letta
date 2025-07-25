@@ -2095,9 +2095,17 @@
     "ToolsListPage": {
       "openExplorer": "Tool Manager",
       "openRules": "Rules",
-      "openVariables": "Env Vars"
+      "openVariables": "Env Vars",
+      "search": {
+        "trigger": "Search tools",
+        "placeholder": "Search tools",
+        "label": "Search tools",
+        "close": "Close search"
+      }
     },
     "ToolsList": {
+      "lettaTools": "Core ({count})",
+      "customTools": "Custom ({count})",
       "editTool": "Edit tool",
       "attachCoreTool": "Attach core tool",
       "attachCustomTool": "Attach custom tool",

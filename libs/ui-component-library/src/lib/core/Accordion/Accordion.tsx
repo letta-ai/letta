@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import * as AccordionPrimitive from '@radix-ui/react-accordion';
-import { ChevronDownIcon } from '../../icons';
+import { CaretDownIcon, ChevronDownIcon } from '../../icons';
 import { cn } from '@letta-cloud/ui-styles';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
@@ -10,14 +10,15 @@ import { cva } from 'class-variance-authority';
 type Themes = 'ade' | 'agentfile' | 'default' | 'destructive';
 
 const accordionTriggerVariants = cva(
-  'flex flex-1 px-4 w-full items-center justify-between py-2 font-medium transition-all  [&[data-state=open]>svg]:rotate-180',
+  'flex flex-1  w-full items-center justify-between  font-medium transition-all  [&[data-state=open]>svg]:rotate-180',
   {
     variants: {
       theme: {
-        ade: 'px-3',
-        agentfile: 'text-sm font-bold p-3 bg-background-grey',
-        destructive: 'border bg-destructive text-destructive-content',
-        default: 'text-sm font-semibold',
+        ade: 'px-3 py-2',
+        agentfile: 'text-sm font-bold p-3 bg-background-grey px-4 py-2',
+        destructive: 'border bg-destructive text-destructive-content px-4 py-2',
+        default: 'text-sm font-semibold px-4',
+        minimal: '',
       },
     },
   },
@@ -51,13 +52,16 @@ AccordionItem.displayName = 'AccordionItem';
 type AccordionTriggerProps = React.ComponentProps<
   typeof AccordionPrimitive.Trigger
 > &
-  VariantProps<typeof accordionTriggerVariants>;
+  VariantProps<typeof accordionTriggerVariants> & {
+    caretType?: 'arrow' | 'chevron';
+  };
 
 function AccordionTrigger({
   className,
   children,
   ref,
   theme,
+  caretType,
   ...props
 }: AccordionTriggerProps) {
   return (
@@ -68,7 +72,11 @@ function AccordionTrigger({
         {...props}
       >
         {children}
-        <ChevronDownIcon className="h-4 w-4 shrink-0 transition-transform duration-200" />
+        {caretType === 'chevron' ? (
+          <ChevronDownIcon className="h-4 w-4 shrink-0 transition-transform duration-200" />
+        ) : (
+          <CaretDownIcon className="h-4 w-4 shrink-0 transition-transform duration-200" />
+        )}
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>
   );
@@ -122,6 +130,7 @@ interface AccordionProps {
   fullWidth?: boolean;
   children: React.ReactNode;
   defaultOpen?: boolean;
+  caretType?: 'arrow' | 'chevron';
   theme?: Themes;
 }
 
@@ -130,6 +139,7 @@ export function Accordion({
   trigger,
   defaultOpen,
   children,
+  caretType,
   theme,
 }: AccordionProps) {
   return (
@@ -140,7 +150,9 @@ export function Accordion({
       collapsible
     >
       <AccordionItem theme={theme} value={id}>
-        <AccordionTrigger theme={theme}>{trigger}</AccordionTrigger>
+        <AccordionTrigger caretType={caretType} theme={theme}>
+          {trigger}
+        </AccordionTrigger>
         <AccordionContent theme={theme}>{children}</AccordionContent>
       </AccordionItem>
     </AccordionRoot>

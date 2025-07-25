@@ -4,6 +4,7 @@ import {
   UseAgentsServiceRetrieveAgentKeyFn,
 } from '@letta-cloud/sdk-core';
 import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useMemo } from 'react';
 
 export function useCurrentAgent() {
   const { agentId, agentName } = useCurrentAgentMetaData();
@@ -21,11 +22,14 @@ export function useCurrentAgent() {
     },
   );
 
-  return {
-    ...agent,
-    name: agentName,
-    id: agentId,
-  };
+  return useMemo(
+    () => ({
+      ...agent,
+      name: agentName,
+      id: agentId,
+    }),
+    [agent, agentId, agentName],
+  );
 }
 
 export function useCurrentAgentQueryKey() {

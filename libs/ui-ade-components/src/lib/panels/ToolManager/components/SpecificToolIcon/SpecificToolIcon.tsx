@@ -1,17 +1,19 @@
 import type { Tool } from '@letta-cloud/sdk-core';
+import type { IconWrapperProps } from '@letta-cloud/ui-component-library';
 import {
   ComposioLogoMarkDynamic,
-  LettaLogoIcon,
+  LettaToolIcon,
   McpIcon,
   PythonIcon,
 } from '@letta-cloud/ui-component-library';
 
 interface SpecificToolIconProps {
   toolType: Tool['tool_type'];
+  size?: IconWrapperProps['size'];
 }
 
 export function SpecificToolIcon(props: SpecificToolIconProps) {
-  const { toolType } = props;
+  const { toolType, size } = props;
 
   switch (toolType) {
     case 'letta_memory_core':
@@ -19,12 +21,13 @@ export function SpecificToolIcon(props: SpecificToolIconProps) {
     case 'letta_multi_agent_core':
     case 'letta_sleeptime_core':
     case 'letta_builtin':
-      return <LettaLogoIcon />;
+    case 'letta_files_core':
+      return <LettaToolIcon size={size} />;
     case 'external_composio':
-      return <ComposioLogoMarkDynamic />;
+      return <ComposioLogoMarkDynamic size={size} />;
     case 'external_mcp':
-      return <McpIcon />;
+      return <McpIcon size={size} />;
     default:
-      return <PythonIcon />;
+      return <PythonIcon size={size} />;
   }
 }

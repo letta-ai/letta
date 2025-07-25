@@ -1,30 +1,25 @@
 'use client';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useId, useMemo, useState } from 'react';
 import {
-  AddLinkIcon,
+  Accordion,
+  CloseIcon,
   EditIcon,
   HStack,
   LinkOffIcon,
   OnboardingAsideFocus,
+  RawInput,
   RuleIcon,
+  SearchIcon,
   ToolManagerIcon,
+  Typography,
   VariableIcon,
 } from '@letta-cloud/ui-component-library';
-import type { FileTreeContentsType } from '@letta-cloud/ui-component-library';
 import { VStack } from '@letta-cloud/ui-component-library';
-import { brandKeyToLogo, isBrandKey } from '@letta-cloud/ui-component-library';
-import { getIsGenericFolder } from '@letta-cloud/ui-component-library';
-import {
-  Dialog,
-  FileTree,
-  Logo,
-  ToolsIcon,
-} from '@letta-cloud/ui-component-library';
+import { Dialog } from '@letta-cloud/ui-component-library';
 import { Button, PanelMainContent } from '@letta-cloud/ui-component-library';
 import { useCurrentAgent } from '../../hooks';
-import type { AgentState } from '@letta-cloud/sdk-core';
+import type { AgentState, ToolType } from '@letta-cloud/sdk-core';
 import { useAgentsServiceDetachTool } from '@letta-cloud/sdk-core';
-import { isLettaTool } from '@letta-cloud/sdk-core';
 import { UseAgentsServiceRetrieveAgentKeyFn } from '@letta-cloud/sdk-core';
 
 import { useQueryClient } from '@tanstack/react-query';
@@ -37,6 +32,7 @@ import {
 import { useADETour } from '../../hooks/useADETour/useADETour';
 import { useQuickADETour } from '../../hooks/useQuickADETour/useQuickADETour';
 import { useNetworkInspector } from '../../hooks/useNetworkInspector/useNetworkInspector';
+import { SpecificToolIcon } from '../ToolManager/components/SpecificToolIcon/SpecificToolIcon';
 
 interface RemoveToolPayload {
   toolName: string;
@@ -122,158 +118,92 @@ function RemoveToolDialog(props: RemoveToolFromAgentDialogProps) {
   );
 }
 
-function ToolsList() {
+interface ToolsListProps {
+  search: string;
+}
+
+function ToolsList(props: ToolsListProps) {
+  const { search } = props;
   const { tools: currentTools } = useCurrentAgent();
   const { openToolManager } = useToolManagerState();
 
-  const search = '';
   const t = useTranslations('ADE/Tools');
 
   const [removeToolPayload, setRemoveToolPayload] =
     useState<RemoveToolPayload | null>(null);
 
-  const toolsList: FileTreeContentsType = useMemo(() => {
+  const toolsList: ParsedTool[] = useMemo(() => {
     if (!currentTools) {
       return [];
     }
 
-    let lettaCoreToolCount = 0;
-    let otherToolCount = 0;
-
-    const fileTreeTools: FileTreeContentsType = [
-      {
-        name: '',
-        id: 'core-tools',
-        contents: [],
-        actionNode: (
-          <Button
-            hideLabel
-            size="xsmall"
-            _use_rarely_className="p-1"
-            color="tertiary"
-            preIcon={<AddLinkIcon />}
-            label={t('ToolsList.attachCoreTool')}
-            onClick={() => {
-              openToolManager('/letta-tools');
-            }}
-          />
-        ),
-      },
-      {
-        id: 'other-tools',
-        name: '',
-        contents: [],
-        defaultOpen: true,
-        actionNode: (
-          <Button
-            hideLabel
-            size="xsmall"
-            _use_rarely_className="p-1"
-            color="tertiary"
-            preIcon={<AddLinkIcon />}
-            label={t('ToolsList.attachCustomTool')}
-            onClick={() => {
-              openToolManager('/my-tools');
-            }}
-          />
-        ),
-      },
-    ];
-
-    currentTools.forEach((tool) => {
-      if (!tool.name?.toLowerCase().includes(search.toLowerCase())) {
-        return;
-      }
-
-      if (isLettaTool(tool)) {
-        lettaCoreToolCount += 1;
-        if (getIsGenericFolder(fileTreeTools[0])) {
-          fileTreeTools[0].contents.push({
-            name: tool.name || '',
-            id: tool.id || '',
-            onClick: () => {
-              openToolManager('/current-agent-tools', tool.id);
-            },
-            actionNode: (
-              <Button
-                hideLabel
-                size="xsmall"
-                _use_rarely_className="p-1"
-                color="tertiary"
-                preIcon={<LinkOffIcon />}
-                label={t('ToolsList.removeTool')}
-                onClick={() => {
-                  setRemoveToolPayload({
-                    toolName: tool.name || '',
-                    toolId: tool.id || '',
-                  });
-                }}
-              />
-            ),
-            icon: <Logo size="small" />,
-          });
+    return currentTools
+      .filter((tool) => {
+        if (!search) {
+          return true;
         }
-      } else {
-        otherToolCount += 1;
-        if (getIsGenericFolder(fileTreeTools[1])) {
-          const creator = tool.tags?.find((tag) => isBrandKey(tag)) || '';
 
-          fileTreeTools[1].contents.push({
-            name: tool.name || '',
-            id: tool.id,
-            onClick: () => {
-              openToolManager('/current-agent-tools', tool.id);
-            },
-            icon: isBrandKey(creator) ? brandKeyToLogo(creator) : <ToolsIcon />,
-            actionNode: (
-              <HStack gap={false}>
-                <Button
-                  hideLabel
-                  size="xsmall"
-                  _use_rarely_className="p-1"
-                  color="tertiary"
-                  preIcon={<EditIcon />}
-                  label={t('ToolsList.editTool')}
-                  onClick={() => {
-                    openToolManager('/current-agent-tools', tool.id);
-                  }}
-                />
-                <Button
-                  hideLabel
-                  size="xsmall"
-                  _use_rarely_className="p-1"
-                  color="tertiary"
-                  preIcon={<LinkOffIcon />}
-                  label={t('ToolsList.removeTool')}
-                  onClick={() => {
-                    setRemoveToolPayload({
-                      toolName: tool.name || '',
-                      toolId: tool.id || '',
-                    });
-                  }}
-                />
-              </HStack>
-            ),
-          });
-        }
-      }
-    });
+        const toolName = tool.name?.toLowerCase() || '';
+        const searchLower = search.toLowerCase();
 
-    fileTreeTools[0].name = t('ToolsList.lettaCoreTools', {
-      toolCount: lettaCoreToolCount,
-    });
-    fileTreeTools[0].infoTooltip = {
-      text: t('ToolsList.lettaCoreToolsInfo'),
-    };
-    fileTreeTools[1].name = t('ToolsList.otherTools', {
-      toolCount: otherToolCount,
-    });
-
-    return fileTreeTools;
+        return toolName.includes(searchLower);
+      })
+      .toSorted((a, b) => {
+        return a.name?.localeCompare(b.name || '') || 0;
+      })
+      .map((tool) => ({
+        name: tool.name || '',
+        id: tool.id || '',
+        onClick: () => {
+          openToolManager('/current-agent-tools', tool.id);
+        },
+        type: tool.tool_type || 'custom',
+        icon: <SpecificToolIcon toolType={tool.tool_type} />,
+        actionNode: (
+          <HStack gap={false}>
+            <Button
+              hideLabel
+              size="xsmall"
+              color="tertiary"
+              preIcon={<EditIcon />}
+              label={t('ToolsList.editTool')}
+              onClick={() => {
+                openToolManager('/current-agent-tools', tool.id);
+              }}
+            />
+            <Button
+              hideLabel
+              size="xsmall"
+              color="tertiary"
+              preIcon={<LinkOffIcon />}
+              label={t('ToolsList.removeTool')}
+              onClick={() => {
+                setRemoveToolPayload({
+                  toolName: tool.name || '',
+                  toolId: tool.id || '',
+                });
+              }}
+            />
+          </HStack>
+        ),
+      }));
   }, [currentTools, openToolManager, search, t]);
 
+  const lettaTools = useMemo(() => {
+    return toolsList.filter((tool) => tool.type.includes('letta'));
+  }, [toolsList]);
+
+  const customTools = useMemo(() => {
+    return toolsList.filter((tool) => !tool.type.includes('letta'));
+  }, [toolsList]);
+
   return (
-    <VStack gap={false} paddingX="small">
+    <VStack
+      gap="medium"
+      paddingX="medium"
+      paddingY="xsmall"
+      paddingBottom="small"
+    >
       {removeToolPayload && (
         <RemoveToolDialog
           toolId={removeToolPayload.toolId}
@@ -283,8 +213,80 @@ function ToolsList() {
           }}
         />
       )}
-      <FileTree root={toolsList} />
+      <ToolAccordion
+        defaultOpen={false}
+        label={t('ToolsList.lettaTools', { count: lettaTools.length })}
+        tools={lettaTools}
+      />
+      <ToolAccordion
+        defaultOpen
+        label={t('ToolsList.customTools', { count: customTools.length })}
+        tools={customTools}
+      />
     </VStack>
+  );
+}
+
+interface ParsedTool {
+  name: string;
+  id: string;
+  type: ToolType;
+  icon: React.ReactNode;
+  actionNode?: React.ReactNode;
+  onClick?: () => void;
+}
+
+interface ToolAccordionProps {
+  tools: ParsedTool[];
+  label: string;
+  defaultOpen?: boolean;
+}
+
+function ToolAccordion(props: ToolAccordionProps) {
+  const { tools, label, defaultOpen } = props;
+
+  const id = useId();
+
+  return (
+    <Accordion
+      defaultOpen={defaultOpen}
+      id={id}
+      caretType="arrow"
+      trigger={
+        <HStack>
+          <Typography variant="body3">{label}</Typography>
+        </HStack>
+      }
+    >
+      <VStack paddingY="xsmall" gap="small">
+        {tools.map((tool) => (
+          <HStack
+            justify="spaceBetween"
+            color="background-grey2"
+            align="center"
+            paddingLeft="small"
+            paddingRight="xxsmall"
+            paddingY="xxsmall"
+            border
+            key={tool.id}
+          >
+            <HStack collapseWidth flex>
+              <SpecificToolIcon size="xsmall" toolType={tool.type} />
+              <Typography
+                noWrap
+                fullWidth
+                overflow="ellipsis"
+                bold
+                variant="body3"
+              >
+                {tool.name}
+              </Typography>
+            </HStack>
+            <HStack>{tool.actionNode}</HStack>
+          </HStack>
+        ))}
+      </VStack>
+    </Accordion>
   );
 }
 
@@ -356,57 +358,136 @@ function ToolsOnboarding(props: ToolsOnboardingProps) {
   return <PanelMainContent variant="noPadding">{children}</PanelMainContent>;
 }
 
-function ToolUtilities() {
+interface ToolUtilitiesProps {
+  onSearchChange: (search: string) => void;
+  search: string;
+}
+
+function ToolUtilities(props: ToolUtilitiesProps) {
+  const { onSearchChange, search } = props;
   const { openToolManager } = useToolManagerState();
+
+  const [showSearch, setShowSearch] = useState(false);
 
   const t = useTranslations('ADE/Tools');
 
+  const onKeyUpInput = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Escape') {
+        setShowSearch(false);
+        onSearchChange('');
+      }
+    },
+    [onSearchChange],
+  );
+
   return (
-    <HStack gap="small" align="center" paddingX="small" paddingY="xsmall">
+    <HStack
+      gap="small"
+      justify="spaceBetween"
+      position="relative"
+      align="center"
+      paddingX="small"
+      paddingY="xsmall"
+    >
+      {showSearch && (
+        <div
+          style={{ paddingRight: '0.7rem', paddingTop: '0.1rem' }}
+          className="absolute animate-in z-[1] duration-500  top-0 left-0 px-2 w-full"
+        >
+          <HStack align="center" color="background-grey" fullWidth>
+            <RawInput
+              fullWidth
+              preIcon={<SearchIcon />}
+              variant="tertiary"
+              label={t('ToolsListPage.search.label')}
+              autoFocus
+              value={search}
+              hideLabel
+              onKeyUp={onKeyUpInput}
+              onChange={(e) => {
+                onSearchChange(e.target.value);
+              }}
+              placeholder={t('ToolsListPage.search.placeholder')}
+            />
+            <Button
+              hideLabel
+              size="xsmall"
+              color="tertiary"
+              preIcon={<CloseIcon />}
+              label={t('ToolsListPage.search.close')}
+              onClick={() => {
+                setShowSearch(false);
+                onSearchChange('');
+              }}
+            />
+          </HStack>
+        </div>
+      )}
+      <HStack align="center">
+        <Button
+          label={t('ToolsListPage.openExplorer')}
+          color="secondary"
+          size="xsmall"
+          disabled={showSearch}
+          bold
+          data-testid="open-tool-explorer"
+          preIcon={<ToolManagerIcon />}
+          onClick={() => {
+            openToolManager('/current-agent-tools');
+          }}
+        />
+        <Button
+          label={t('ToolsListPage.openVariables')}
+          color="tertiary"
+          bold
+          disabled={showSearch}
+          size="xsmall"
+          preIcon={<VariableIcon />}
+          onClick={() => {
+            openToolManager('/tool-variables');
+          }}
+        />
+        <Button
+          bold
+          disabled={showSearch}
+          label={t('ToolsListPage.openRules')}
+          color="tertiary"
+          size="xsmall"
+          preIcon={<RuleIcon />}
+          onClick={() => {
+            openToolManager('/tool-rules');
+          }}
+        />
+      </HStack>
       <Button
-        label={t('ToolsListPage.openExplorer')}
-        color="secondary"
-        size="xsmall"
         bold
-        data-testid="open-tool-explorer"
-        preIcon={<ToolManagerIcon />}
-        onClick={() => {
-          openToolManager('/current-agent-tools');
-        }}
-      />
-      <Button
-        label={t('ToolsListPage.openVariables')}
+        label={t('ToolsListPage.search.trigger')}
         color="tertiary"
-        bold
         size="xsmall"
-        preIcon={<VariableIcon />}
+        disabled={showSearch}
+        hideLabel
         onClick={() => {
-          openToolManager('/tool-variables');
+          setShowSearch(!showSearch);
         }}
-      />
-      <Button
-        bold
-        label={t('ToolsListPage.openRules')}
-        color="tertiary"
-        size="xsmall"
-        preIcon={<RuleIcon />}
-        onClick={() => {
-          openToolManager('/tool-rules');
-        }}
+        active={showSearch}
+        preIcon={<SearchIcon />}
       />
     </HStack>
   );
 }
 
 export function ToolsPanel() {
+  const [search, setSearch] = useState('');
+
   return (
     <ToolManagerProvider>
       <ToolsOnboarding>
         <ToolManager />
 
         <VStack gap={false}>
-          <ToolUtilities />
-          <ToolsList />
+          <ToolUtilities search={search} onSearchChange={setSearch} />
+          <ToolsList search={search} />
         </VStack>
       </ToolsOnboarding>
     </ToolManagerProvider>

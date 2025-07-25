@@ -158,6 +158,7 @@ function SelectedToolViewer(props: SelectedToolViewerProps) {
     case 'letta_multi_agent_core':
     case 'letta_sleeptime_core':
     case 'letta_builtin':
+    case 'letta_files_core':
       return <LettaToolViewer tool={selectedTool} />;
     case 'custom':
       return <LocalToolViewer tool={selectedTool} />;
