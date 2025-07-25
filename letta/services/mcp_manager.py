@@ -1,5 +1,8 @@
 import json
 import os
+import secrets
+import uuid
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from sqlalchemy import null
@@ -8,8 +11,18 @@ import letta.constants as constants
 from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
+from letta.orm.mcp_oauth import MCPOAuth, OAuthSessionStatus
 from letta.orm.mcp_server import MCPServer as MCPServerModel
-from letta.schemas.mcp import MCPServer, UpdateMCPServer, UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer
+from letta.schemas.mcp import (
+    MCPOAuthSession,
+    MCPOAuthSessionCreate,
+    MCPOAuthSessionUpdate,
+    MCPServer,
+    UpdateMCPServer,
+    UpdateSSEMCPServer,
+    UpdateStdioMCPServer,
+    UpdateStreamableHTTPMCPServer,
+)
 from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool import ToolCreate
 from letta.schemas.user import User as PydanticUser
@@ -38,14 +51,7 @@ class MCPManager:
         mcp_config = await self.get_mcp_server_by_id_async(mcp_server_id, actor=actor)
         server_config = mcp_config.to_config()
 
-        if mcp_config.server_type == MCPServerType.SSE:
-            mcp_client = AsyncSSEMCPClient(server_config=server_config)
-        elif mcp_config.server_type == MCPServerType.STDIO:
-            mcp_client = AsyncStdioMCPClient(server_config=server_config)
-        elif mcp_config.server_type == MCPServerType.STREAMABLE_HTTP:
-            mcp_client = AsyncStreamableHTTPMCPClient(server_config=server_config)
-        else:
-            raise ValueError(f"Unsupported MCP server type: {mcp_config.server_type}")
+        mcp_client = await self.get_mcp_client(server_config, actor)
         await mcp_client.connect_to_server()
 
         # list tools
@@ -72,28 +78,20 @@ class MCPManager:
             # read from config file
             mcp_config = self.read_mcp_config()
             if mcp_server_name not in mcp_config:
-                print("MCP server not found in config.", mcp_config)
                 raise ValueError(f"MCP server {mcp_server_name} not found in config.")
             server_config = mcp_config[mcp_server_name]
 
-        if isinstance(server_config, SSEServerConfig):
-            # mcp_client = AsyncSSEMCPClient(server_config=server_config)
-            async with AsyncSSEMCPClient(server_config=server_config) as mcp_client:
-                result, success = await mcp_client.execute_tool(tool_name, tool_args)
-                logger.info(f"MCP Result: {result}, Success: {success}")
-                return result, success
-        elif isinstance(server_config, StdioServerConfig):
-            async with AsyncStdioMCPClient(server_config=server_config) as mcp_client:
-                result, success = await mcp_client.execute_tool(tool_name, tool_args)
-                logger.info(f"MCP Result: {result}, Success: {success}")
-                return result, success
-        elif isinstance(server_config, StreamableHTTPServerConfig):
-            async with AsyncStreamableHTTPMCPClient(server_config=server_config) as mcp_client:
-                result, success = await mcp_client.execute_tool(tool_name, tool_args)
-                logger.info(f"MCP Result: {result}, Success: {success}")
-                return result, success
-        else:
-            raise ValueError(f"Unsupported server config type: {type(server_config)}")
+        mcp_client = await self.get_mcp_client(server_config, actor)
+        await mcp_client.connect_to_server()
+
+        # call tool
+        result, success = await mcp_client.execute_tool(tool_name, tool_args)
+        logger.info(f"MCP Result: {result}, Success: {success}")
+        # TODO: change to pydantic tool
+
+        await mcp_client.cleanup()
+
+        return result, success
 
     @enforce_types
     async def add_tool_from_mcp_server(self, mcp_server_name: str, mcp_tool_name: str, actor: PydanticUser) -> PydanticTool:
@@ -324,3 +322,246 @@ class MCPManager:
                                 logger.error(f"Failed to parse server params for MCP server {server_name} (skipping): {e}")
                                 continue
         return mcp_server_list
+
+    async def get_mcp_client(
+        self,
+        server_config: Union[SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig],
+        actor: PydanticUser,
+        oauth_provider: Optional[Any] = None,
+    ) -> Union[AsyncSSEMCPClient, AsyncStdioMCPClient, AsyncStreamableHTTPMCPClient]:
+        """
+        Helper function to create the appropriate MCP client based on server configuration.
+
+        Args:
+            server_config: The server configuration object
+            actor: The user making the request
+            oauth_provider: Optional OAuth provider for authentication
+
+        Returns:
+            The appropriate MCP client instance
+
+        Raises:
+            ValueError: If server config type is not supported
+        """
+        # If no OAuth provider is provided, check if we have stored OAuth credentials
+        if oauth_provider is None and hasattr(server_config, "server_url"):
+            oauth_session = await self.get_oauth_session_by_server(server_config.server_url, actor)
+            if oauth_session and oauth_session.access_token:
+                # Create OAuth provider from stored credentials
+                from letta.services.mcp.oauth_utils import create_oauth_provider
+
+                oauth_provider = await create_oauth_provider(
+                    session_id=oauth_session.id,
+                    server_url=oauth_session.server_url,
+                    redirect_uri=oauth_session.redirect_uri,
+                    mcp_manager=self,
+                    actor=actor,
+                )
+
+        if server_config.type == MCPServerType.SSE:
+            server_config = SSEServerConfig(**server_config.model_dump())
+            return AsyncSSEMCPClient(server_config=server_config, oauth_provider=oauth_provider)
+        elif server_config.type == MCPServerType.STDIO:
+            server_config = StdioServerConfig(**server_config.model_dump())
+            return AsyncStdioMCPClient(server_config=server_config, oauth_provider=oauth_provider)
+        elif server_config.type == MCPServerType.STREAMABLE_HTTP:
+            server_config = StreamableHTTPServerConfig(**server_config.model_dump())
+            return AsyncStreamableHTTPMCPClient(server_config=server_config, oauth_provider=oauth_provider)
+        else:
+            raise ValueError(f"Unsupported server config type: {type(server_config)}")
+
+    # OAuth-related methods
+    @enforce_types
+    async def create_oauth_session(self, session_create: MCPOAuthSessionCreate, actor: PydanticUser) -> MCPOAuthSession:
+        """Create a new OAuth session for MCP server authentication."""
+        async with db_registry.async_session() as session:
+            # Create the OAuth session with a unique state
+            oauth_session = MCPOAuth(
+                id="mcp-oauth-" + str(uuid.uuid4())[:8],
+                state=secrets.token_urlsafe(32),
+                server_url=session_create.server_url,
+                server_name=session_create.server_name,
+                user_id=session_create.user_id,
+                organization_id=session_create.organization_id,
+                status=OAuthSessionStatus.PENDING,
+                created_at=datetime.now(),
+                updated_at=datetime.now(),
+            )
+            oauth_session = await oauth_session.create_async(session, actor=actor)
+
+            # Convert to Pydantic model
+            return MCPOAuthSession(
+                id=oauth_session.id,
+                state=oauth_session.state,
+                server_url=oauth_session.server_url,
+                server_name=oauth_session.server_name,
+                user_id=oauth_session.user_id,
+                organization_id=oauth_session.organization_id,
+                status=oauth_session.status,
+                created_at=oauth_session.created_at,
+                updated_at=oauth_session.updated_at,
+            )
+
+    @enforce_types
+    async def get_oauth_session_by_id(self, session_id: str, actor: PydanticUser) -> Optional[MCPOAuthSession]:
+        """Get an OAuth session by its ID."""
+        async with db_registry.async_session() as session:
+            try:
+                oauth_session = await MCPOAuth.read_async(db_session=session, identifier=session_id, actor=actor)
+                return MCPOAuthSession(
+                    id=oauth_session.id,
+                    state=oauth_session.state,
+                    server_url=oauth_session.server_url,
+                    server_name=oauth_session.server_name,
+                    user_id=oauth_session.user_id,
+                    organization_id=oauth_session.organization_id,
+                    authorization_url=oauth_session.authorization_url,
+                    authorization_code=oauth_session.authorization_code,
+                    access_token=oauth_session.access_token,
+                    refresh_token=oauth_session.refresh_token,
+                    token_type=oauth_session.token_type,
+                    expires_at=oauth_session.expires_at,
+                    scope=oauth_session.scope,
+                    client_id=oauth_session.client_id,
+                    client_secret=oauth_session.client_secret,
+                    redirect_uri=oauth_session.redirect_uri,
+                    status=oauth_session.status,
+                    created_at=oauth_session.created_at,
+                    updated_at=oauth_session.updated_at,
+                )
+            except NoResultFound:
+                return None
+
+    @enforce_types
+    async def get_oauth_session_by_server(self, server_url: str, actor: PydanticUser) -> Optional[MCPOAuthSession]:
+        """Get the latest OAuth session by server URL, organization, and user."""
+        from sqlalchemy import desc, select
+
+        async with db_registry.async_session() as session:
+            # Query for OAuth session matching organization, user, server URL, and status
+            # Order by updated_at desc to get the most recent record
+            result = await session.execute(
+                select(MCPOAuth)
+                .where(
+                    MCPOAuth.organization_id == actor.organization_id,
+                    MCPOAuth.user_id == actor.id,
+                    MCPOAuth.server_url == server_url,
+                    MCPOAuth.status == OAuthSessionStatus.AUTHORIZED,
+                )
+                .order_by(desc(MCPOAuth.updated_at))
+                .limit(1)
+            )
+            oauth_session = result.scalar_one_or_none()
+
+            if not oauth_session:
+                return None
+
+            return MCPOAuthSession(
+                id=oauth_session.id,
+                state=oauth_session.state,
+                server_url=oauth_session.server_url,
+                server_name=oauth_session.server_name,
+                user_id=oauth_session.user_id,
+                organization_id=oauth_session.organization_id,
+                authorization_url=oauth_session.authorization_url,
+                authorization_code=oauth_session.authorization_code,
+                access_token=oauth_session.access_token,
+                refresh_token=oauth_session.refresh_token,
+                token_type=oauth_session.token_type,
+                expires_at=oauth_session.expires_at,
+                scope=oauth_session.scope,
+                client_id=oauth_session.client_id,
+                client_secret=oauth_session.client_secret,
+                redirect_uri=oauth_session.redirect_uri,
+                status=oauth_session.status,
+                created_at=oauth_session.created_at,
+                updated_at=oauth_session.updated_at,
+            )
+
+    @enforce_types
+    async def update_oauth_session(self, session_id: str, session_update: MCPOAuthSessionUpdate, actor: PydanticUser) -> MCPOAuthSession:
+        """Update an existing OAuth session."""
+        async with db_registry.async_session() as session:
+            oauth_session = await MCPOAuth.read_async(db_session=session, identifier=session_id, actor=actor)
+
+            # Update fields that are provided
+            if session_update.authorization_url is not None:
+                oauth_session.authorization_url = session_update.authorization_url
+            if session_update.authorization_code is not None:
+                oauth_session.authorization_code = session_update.authorization_code
+            if session_update.access_token is not None:
+                oauth_session.access_token = session_update.access_token
+            if session_update.refresh_token is not None:
+                oauth_session.refresh_token = session_update.refresh_token
+            if session_update.token_type is not None:
+                oauth_session.token_type = session_update.token_type
+            if session_update.expires_at is not None:
+                oauth_session.expires_at = session_update.expires_at
+            if session_update.scope is not None:
+                oauth_session.scope = session_update.scope
+            if session_update.client_id is not None:
+                oauth_session.client_id = session_update.client_id
+            if session_update.client_secret is not None:
+                oauth_session.client_secret = session_update.client_secret
+            if session_update.redirect_uri is not None:
+                oauth_session.redirect_uri = session_update.redirect_uri
+            if session_update.status is not None:
+                oauth_session.status = session_update.status
+
+            # Always update the updated_at timestamp
+            oauth_session.updated_at = datetime.now()
+
+            oauth_session = await oauth_session.update_async(db_session=session, actor=actor)
+
+            return MCPOAuthSession(
+                id=oauth_session.id,
+                state=oauth_session.state,
+                server_url=oauth_session.server_url,
+                server_name=oauth_session.server_name,
+                user_id=oauth_session.user_id,
+                organization_id=oauth_session.organization_id,
+                authorization_url=oauth_session.authorization_url,
+                authorization_code=oauth_session.authorization_code,
+                access_token=oauth_session.access_token,
+                refresh_token=oauth_session.refresh_token,
+                token_type=oauth_session.token_type,
+                expires_at=oauth_session.expires_at,
+                scope=oauth_session.scope,
+                client_id=oauth_session.client_id,
+                client_secret=oauth_session.client_secret,
+                redirect_uri=oauth_session.redirect_uri,
+                status=oauth_session.status,
+                created_at=oauth_session.created_at,
+                updated_at=oauth_session.updated_at,
+            )
+
+    @enforce_types
+    async def delete_oauth_session(self, session_id: str, actor: PydanticUser) -> None:
+        """Delete an OAuth session."""
+        async with db_registry.async_session() as session:
+            try:
+                oauth_session = await MCPOAuth.read_async(db_session=session, identifier=session_id, actor=actor)
+                await oauth_session.hard_delete_async(db_session=session, actor=actor)
+            except NoResultFound:
+                raise ValueError(f"OAuth session with id {session_id} not found.")
+
+    @enforce_types
+    async def cleanup_expired_oauth_sessions(self, max_age_hours: int = 24) -> int:
+        """Clean up expired OAuth sessions and return the count of deleted sessions."""
+        cutoff_time = datetime.now() - timedelta(hours=max_age_hours)
+
+        async with db_registry.async_session() as session:
+            from sqlalchemy import select
+
+            # Find expired sessions
+            result = await session.execute(select(MCPOAuth).where(MCPOAuth.created_at < cutoff_time))
+            expired_sessions = result.scalars().all()
+
+            # Delete expired sessions using async ORM method
+            for oauth_session in expired_sessions:
+                await oauth_session.hard_delete_async(db_session=session, actor=None)
+
+            if expired_sessions:
+                logger.info(f"Cleaned up {len(expired_sessions)} expired OAuth sessions")
+
+            return len(expired_sessions)
