@@ -5,6 +5,8 @@ import { MessageBufferAutoclearSwitch } from './components/MessageBufferAutoclea
 import { AgentType } from './components/AgentType/AgentType';
 import { MessageBufferLengthSlider } from './components/MessageBufferLengthSlider/MessageBufferLengthSlider';
 import { SleeptimeAgentFrequencyInput } from './components/SleeptimeAgentFrequencyInput/SleeptimeAgentFrequencyInput';
+import { MaxFilesInput } from './components/MaxFilesInput/MaxFilesInput';
+import { WindowCharLimitInput } from './components/WindowCharLimitInput/WindowCharLimitInput';
 
 function AgentAdvancedSettingsView() {
   const { agentType, isSleeptimeAgent } = useCurrentAgentMetaData();
@@ -14,6 +16,8 @@ function AgentAdvancedSettingsView() {
       <VStack>
         <AgentType />
         <MessageBufferAutoclearSwitch />
+        <MaxFilesInput />
+        <WindowCharLimitInput />
       </VStack>
       <VStack gap="xlarge">
         {agentType === 'voice_convo_agent' && <MessageBufferLengthSlider />}

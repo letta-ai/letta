@@ -290,6 +290,18 @@
         "label": "Sleep-time agent frequency",
         "tooltip": "The step frequency at which the sleep-time agent is invoked. Set to 1 to run the sleep-time agent on every primary agent step.",
         "error": "Failed to update sleep-time agent frequency value"
+      },
+      "maxFilesOpen": {
+        "label": "Max files open",
+        "tooltip": "Maximum number of files that can be open at once for this agent. Setting this too high may exceed the context window, which will break the agent",
+        "placeholder": "Enter limit",
+        "invalidInput": "Value must be greater than 0"
+      },
+      "windowCharLimit": {
+        "label": "Per-file view character limit",
+        "tooltip": "The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent",
+        "placeholder": "Enter limit",
+        "invalidInput": "Value must be greater than 1000"
       }
     }
   },
