@@ -1573,6 +1573,18 @@ export const $Block = {
       description: 'Character limit of the block.',
       default: 5000,
     },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The associated project id.',
+    },
     name: {
       anyOf: [
         {
@@ -1724,6 +1736,18 @@ export const $BlockUpdate = {
       ],
       title: 'Limit',
       description: 'Character limit of the block.',
+    },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The associated project id.',
     },
     name: {
       anyOf: [
@@ -4203,6 +4227,18 @@ export const $CreateBlock = {
       description: 'Character limit of the block.',
       default: 5000,
     },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The associated project id.',
+    },
     name: {
       anyOf: [
         {
@@ -5356,6 +5392,18 @@ export const $Group = {
       title: 'Description',
       description: '',
     },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The associated project id.',
+    },
     shared_block_ids: {
       items: {
         type: 'string',
@@ -5519,6 +5567,18 @@ export const $GroupCreate = {
         },
       },
     },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The associated project id.',
+    },
     shared_block_ids: {
       items: {
         type: 'string',
@@ -5601,6 +5661,18 @@ export const $GroupUpdate = {
       ],
       title: 'Manager Config',
       description: '',
+    },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The associated project id.',
     },
     shared_block_ids: {
       anyOf: [

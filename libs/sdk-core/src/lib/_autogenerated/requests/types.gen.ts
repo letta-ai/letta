@@ -524,6 +524,10 @@ export type Block = {
    */
   limit?: number;
   /**
+   * The associated project id.
+   */
+  project_id?: string | null;
+  /**
    * Name of the block if it is a template.
    */
   name?: string | null;
@@ -579,6 +583,10 @@ export type BlockUpdate = {
    * Character limit of the block.
    */
   limit?: number | null;
+  /**
+   * The associated project id.
+   */
+  project_id?: string | null;
   /**
    * Name of the block if it is a template.
    */
@@ -1363,6 +1371,10 @@ export type CreateBlock = {
    */
   limit?: number;
   /**
+   * The associated project id.
+   */
+  project_id?: string | null;
+  /**
    * Name of the block if it is a template.
    */
   name?: string | null;
@@ -1855,6 +1867,10 @@ export type Group = {
   manager_type: ManagerType;
   agent_ids: Array<string>;
   description: string;
+  /**
+   * The associated project id.
+   */
+  project_id?: string | null;
   shared_block_ids?: Array<string>;
   manager_agent_id?: string | null;
   termination_token?: string | null;
@@ -1881,6 +1897,10 @@ export type GroupCreate = {
     | DynamicManager
     | SleeptimeManager
     | VoiceSleeptimeManager;
+  /**
+   * The associated project id.
+   */
+  project_id?: string | null;
   shared_block_ids?: Array<string>;
 };
 
@@ -1894,6 +1914,10 @@ export type GroupUpdate = {
     | SleeptimeManagerUpdate
     | VoiceSleeptimeManagerUpdate
     | null;
+  /**
+   * The associated project id.
+   */
+  project_id?: string | null;
   shared_block_ids?: Array<string> | null;
 };
 
@@ -6046,6 +6070,10 @@ export type ListBlocksData = {
    * Name of the block
    */
   name?: string | null;
+  /**
+   * Search blocks by project id
+   */
+  projectId?: string | null;
   /**
    * Whether to include only templates
    */

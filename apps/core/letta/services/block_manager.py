@@ -178,6 +178,7 @@ class BlockManager:
         template_name: Optional[str] = None,
         identity_id: Optional[str] = None,
         identifier_keys: Optional[List[str]] = None,
+        project_id: Optional[str] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
@@ -209,6 +210,9 @@ class BlockManager:
 
             if template_name:
                 query = query.where(BlockModel.template_name == template_name)
+
+            if project_id:
+                query = query.where(BlockModel.project_id == project_id)
 
             needs_distinct = False
 

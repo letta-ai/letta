@@ -2017,6 +2017,7 @@ export const useLlmsServiceListEmbeddingModelsSuspense = <
  * @param data.name Name of the block
  * @param data.identityId Search agents by identifier id
  * @param data.identifierKeys Search agents by identifier keys
+ * @param data.projectId Search blocks by project id
  * @param data.limit Number of blocks to return
  * @param data.userId
  * @returns Block Successful Response
@@ -2033,6 +2034,7 @@ export const useBlocksServiceListBlocksSuspense = <
     label,
     limit,
     name,
+    projectId,
     templatesOnly,
     userId,
   }: {
@@ -2041,6 +2043,7 @@ export const useBlocksServiceListBlocksSuspense = <
     label?: string;
     limit?: number;
     name?: string;
+    projectId?: string;
     templatesOnly?: boolean;
     userId?: string;
   } = {},
@@ -2049,7 +2052,16 @@ export const useBlocksServiceListBlocksSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseBlocksServiceListBlocksKeyFn(
-      { identifierKeys, identityId, label, limit, name, templatesOnly, userId },
+      {
+        identifierKeys,
+        identityId,
+        label,
+        limit,
+        name,
+        projectId,
+        templatesOnly,
+        userId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2059,6 +2071,7 @@ export const useBlocksServiceListBlocksSuspense = <
         label,
         limit,
         name,
+        projectId,
         templatesOnly,
         userId,
       }) as TData,

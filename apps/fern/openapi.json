@@ -6553,6 +6553,24 @@
             "description": "Search agents by identifier keys"
           },
           {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search blocks by project id",
+              "title": "Project Id"
+            },
+            "description": "Search blocks by project id"
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -11527,6 +11545,18 @@
             "description": "Character limit of the block.",
             "default": 5000
           },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The associated project id."
+          },
           "name": {
             "anyOf": [
               {
@@ -11664,6 +11694,18 @@
             ],
             "title": "Limit",
             "description": "Character limit of the block."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The associated project id."
           },
           "name": {
             "anyOf": [
@@ -14056,6 +14098,18 @@
             "description": "Character limit of the block.",
             "default": 5000
           },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The associated project id."
+          },
           "name": {
             "anyOf": [
               {
@@ -14427,6 +14481,18 @@
             "title": "Limit",
             "description": "Character limit of the block.",
             "default": 5000
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The associated project id."
           },
           "name": {
             "anyOf": [
@@ -15142,6 +15208,18 @@
             "title": "Description",
             "description": ""
           },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The associated project id."
+          },
           "shared_block_ids": {
             "items": {
               "type": "string"
@@ -15302,6 +15380,18 @@
               }
             }
           },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The associated project id."
+          },
           "shared_block_ids": {
             "items": {
               "type": "string"
@@ -15382,6 +15472,18 @@
             ],
             "title": "Manager Config",
             "description": ""
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The associated project id."
           },
           "shared_block_ids": {
             "anyOf": [

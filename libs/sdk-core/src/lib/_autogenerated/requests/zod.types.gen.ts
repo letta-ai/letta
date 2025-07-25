@@ -848,6 +848,14 @@ export type Block = z.infer<typeof Block>;
 export const Block = z.object({
   value: z.string(),
   limit: z.union([z.number(), z.undefined()]).optional(),
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   name: z
     .union([
       z.string(),
@@ -1149,6 +1157,14 @@ export const Group = z.object({
   manager_type: ManagerType,
   agent_ids: z.array(z.string()),
   description: z.string(),
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   shared_block_ids: z.union([z.array(z.string()), z.undefined()]).optional(),
   manager_agent_id: z
     .union([
@@ -1754,6 +1770,9 @@ export const BlockUpdate = z.object({
     .optional(),
   limit: z
     .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+  project_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
   name: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -3328,6 +3347,14 @@ export type CreateBlock = z.infer<typeof CreateBlock>;
 export const CreateBlock = z.object({
   value: z.string(),
   limit: z.union([z.number(), z.undefined()]).optional(),
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   name: z
     .union([
       z.string(),
@@ -4032,6 +4059,14 @@ export const GroupCreate = z.object({
       z.undefined(),
     ])
     .optional(),
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   shared_block_ids: z.union([z.array(z.string()), z.undefined()]).optional(),
 });
 
@@ -4111,6 +4146,9 @@ export const GroupUpdate = z.object({
         ]),
       ),
     ])
+    .optional(),
+  project_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
   shared_block_ids: z
     .union([
@@ -8783,6 +8821,9 @@ export const get_List_blocks = {
           z.null(),
           z.array(z.union([z.array(z.string()), z.null()])),
         ])
+        .optional(),
+      project_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       limit: z
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])

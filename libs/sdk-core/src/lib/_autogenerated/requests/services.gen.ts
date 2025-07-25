@@ -3614,6 +3614,7 @@ export class BlocksService {
    * @param data.name Name of the block
    * @param data.identityId Search agents by identifier id
    * @param data.identifierKeys Search agents by identifier keys
+   * @param data.projectId Search blocks by project id
    * @param data.limit Number of blocks to return
    * @param data.userId
    * @returns Block Successful Response
@@ -3632,6 +3633,7 @@ export class BlocksService {
         name: data.name,
         identity_id: data.identityId,
         identifier_keys: data.identifierKeys,
+        project_id: data.projectId,
         limit: data.limit,
       },
       errors: {

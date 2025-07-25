@@ -2008,6 +2008,36 @@
                                         {}
                                       ]
                                     },
+                                    "project_id": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
                                     "name": {
                                       "oneOf": [
                                         {
@@ -2263,6 +2293,36 @@
                                             },
                                             {}
                                           ]
+                                        },
+                                        "project_id": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         },
                                         "name": {
                                           "oneOf": [
@@ -3837,6 +3897,36 @@
                                   "description": {
                                     "type": "string"
                                   },
+                                  "project_id": {
+                                    "oneOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "format": "null",
+                                        "nullable": true
+                                      },
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            }
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      {}
+                                    ],
+                                    "nullable": true
+                                  },
                                   "shared_block_ids": {
                                     "oneOf": [
                                       {
@@ -4130,6 +4220,36 @@
                                         },
                                         "description": {
                                           "type": "string"
+                                        },
+                                        "project_id": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         },
                                         "shared_block_ids": {
                                           "oneOf": [
@@ -6959,6 +7079,36 @@
                                         {}
                                       ]
                                     },
+                                    "project_id": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
                                     "name": {
                                       "oneOf": [
                                         {
@@ -7214,6 +7364,36 @@
                                             },
                                             {}
                                           ]
+                                        },
+                                        "project_id": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         },
                                         "name": {
                                           "oneOf": [
@@ -8788,6 +8968,36 @@
                                   "description": {
                                     "type": "string"
                                   },
+                                  "project_id": {
+                                    "oneOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "format": "null",
+                                        "nullable": true
+                                      },
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            }
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      {}
+                                    ],
+                                    "nullable": true
+                                  },
                                   "shared_block_ids": {
                                     "oneOf": [
                                       {
@@ -9081,6 +9291,36 @@
                                         },
                                         "description": {
                                           "type": "string"
+                                        },
+                                        "project_id": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         },
                                         "shared_block_ids": {
                                           "oneOf": [

@@ -710,7 +710,7 @@ def test_attach_sleeptime_block(client: Letta):
     sleeptime_id = [id for id in agent_ids if id != agent.id][0]
 
     # attach a new block
-    block = client.blocks.create(label="test", value="test")
+    block = client.blocks.create(label="test", value="test")  # , project_id="test")
     client.agents.blocks.attach(agent_id=agent.id, block_id=block.id)
 
     # verify block is attached to both agents
@@ -719,6 +719,9 @@ def test_attach_sleeptime_block(client: Letta):
 
     blocks = client.agents.blocks.list(agent_id=sleeptime_id)
     assert block.id in [b.id for b in blocks]
+
+    # blocks = client.blocks.list(project_id="test")
+    # assert block.id in [b.id for b in blocks]
 
     # cleanup
     client.agents.delete(agent.id)
