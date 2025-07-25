@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from fastapi import HTTPException
 from sqlalchemy import null
 
 import letta.constants as constants
@@ -199,7 +200,14 @@ class MCPManager:
         """Update an MCP server by its name."""
         mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor)
         if not mcp_server_id:
-            raise ValueError(f"MCP server {mcp_server_name} not found")
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "MCPServerNotFoundError",
+                    "message": f"MCP server {mcp_server_name} not found",
+                    "mcp_server_name": mcp_server_name,
+                },
+            )
         return await self.update_mcp_server_by_id(mcp_server_id, mcp_server_update, actor)
 
     @enforce_types
@@ -240,7 +248,14 @@ class MCPManager:
             mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor)
             mcp_server = await MCPServerModel.read_async(db_session=session, identifier=mcp_server_id, actor=actor)
             if not mcp_server:
-                raise ValueError(f"MCP server {mcp_server_name} not found")
+                raise HTTPException(
+                    status_code=404,  # Not Found
+                    detail={
+                        "code": "MCPServerNotFoundError",
+                        "message": f"MCP server {mcp_server_name} not found",
+                        "mcp_server_name": mcp_server_name,
+                    },
+                )
             return mcp_server.to_pydantic()
 
     # @enforce_types
