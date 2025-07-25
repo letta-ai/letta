@@ -10,6 +10,7 @@ import {
   Typography,
   VStack,
   OnboardingAsideFocus,
+  TokenIcon,
 } from '@letta-cloud/ui-component-library';
 import {
   useAgentBaseTypeName,
@@ -21,6 +22,7 @@ import { UpdateNameDialog } from '../../shared/UpdateAgentNameDialog/UpdateAgent
 import { useADETour } from '../../hooks/useADETour/useADETour';
 import { ModelSelector } from './ModelSelector/ModelSelector';
 import { SystemPromptEditor } from '../AdvancedSettingsPanel/components/SystemPromptEditor/SystemPromptEditor';
+import { IdentityViewer } from '../IdentityViewer/IdentityViewer';
 
 function AgentIdentifierToCopy() {
   const currentAgent = useCurrentAgent();
@@ -106,6 +108,7 @@ export function AgentSettingsPanel() {
 
   const t = useTranslations('ADE/AgentSettingsPanel');
 
+  const { isLocal } = useCurrentAgentMetaData();
   const { capitalized: baseName } = useAgentBaseTypeName();
 
   if (!currentAgent.llm_config) {
@@ -114,32 +117,51 @@ export function AgentSettingsPanel() {
 
   return (
     <PanelMainContent>
-      <VStack gap={false}>
+      <VStack gap="small">
+        <VStack gap={false}>
+          <HStack fullWidth align="end">
+            <RawInput
+              fullWidth
+              label={t('agentName.label')}
+              value={currentAgent.name}
+              disabled
+              size="small"
+            />
+            <UpdateNameDialog
+              trigger={
+                <Button
+                  size="small"
+                  hideLabel
+                  data-testid="update-agent-name-button"
+                  preIcon={<EditIcon />}
+                  color="secondary"
+                  label={t('agentName.edit', { baseName })}
+                />
+              }
+            />
+          </HStack>
+          <AgentIdentifierToCopy />
+        </VStack>
+
         <HStack fullWidth align="end">
-          <RawInput
-            fullWidth
-            label={t('agentName.label')}
-            value={currentAgent.name}
-            disabled
-            size="small"
-          />
-          <UpdateNameDialog
-            trigger={
-              <Button
-                size="small"
-                hideLabel
-                data-testid="update-agent-name-button"
-                preIcon={<EditIcon />}
-                color="secondary"
-                label={t('agentName.edit', { baseName })}
-              />
-            }
-          />
+          <ModelSelector llmConfig={currentAgent.llm_config} />
+          {!isLocal && (
+            <Button
+              size="small"
+              hideLabel
+              href="/models"
+              target="_blank"
+              preIcon={<TokenIcon />}
+              color="secondary"
+              label={t('viewSupportedModels')}
+            />
+          )}
         </HStack>
-        <AgentIdentifierToCopy />
       </VStack>
-      <SystemPromptEditor />
-      <ModelSelector llmConfig={currentAgent.llm_config} />
+      <VStack gap="large">
+        <IdentityViewer />
+        <SystemPromptEditor />
+      </VStack>
     </PanelMainContent>
   );
 }

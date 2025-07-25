@@ -9,13 +9,13 @@ import { useCurrentAgent } from '../../../../hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   Alert,
-  Button,
   Dialog,
   FormField,
   FormProvider,
   HStack,
-  InfoTooltip,
+  RawInputContainer,
   TextArea,
+  Tooltip,
   Typography,
   useForm,
   VStack,
@@ -97,6 +97,7 @@ function SystemPromptEditorDialog(props: SystemPromptEditorDialogProps) {
         confirmText={t('SystemPromptEditor.dialog.save')}
         onSubmit={form.handleSubmit(handleSubmit)}
         onOpenChange={setIsExpanded}
+        disableSubmit={!canUpdateAgent}
         hideFooter={!canUpdateAgent}
         errorMessage={isError ? t('SystemPromptEditor.error') : ''}
         title={t('SystemPromptEditor.dialog.title')}
@@ -154,8 +155,6 @@ export function SystemPromptEditor() {
 
   const currentAgent = useCurrentAgent();
 
-  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
-
   return (
     <>
       {isExpanded && (
@@ -165,23 +164,35 @@ export function SystemPromptEditor() {
           setIsExpanded={setIsExpanded}
         />
       )}
-      <HStack align="center" fullWidth justify="spaceBetween">
-        <HStack align="center">
-          <Typography variant="body3" color="lighter" semibold={true}>
-            {t('SystemPromptEditor.label')}
-          </Typography>
-          <InfoTooltip text={t('SystemPromptEditor.tooltip')} />
-        </HStack>
-        <Button
-          size="small"
-          disabled={!canUpdateAgent}
-          onClick={() => {
-            setIsExpanded(true);
-          }}
-          color="secondary"
-          label={t('SystemPromptEditor.trigger')}
-        />
-      </HStack>
+      <RawInputContainer
+        infoTooltip={{
+          text: t('SystemPromptEditor.tooltip'),
+        }}
+        label={t('SystemPromptEditor.label')}
+      >
+        <Tooltip asChild content={t('SystemPromptEditor.trigger')}>
+          <div>
+            <HStack
+              as="button"
+              onClick={() => {
+                setIsExpanded(true);
+              }}
+              border
+              color="background-grey2"
+              padding="xsmall"
+            >
+              <Typography
+                noWrap
+                color="muted"
+                variant="body3"
+                className="whitespace-pre-wrap line-clamp-2"
+              >
+                {currentAgent.system}
+              </Typography>
+            </HStack>
+          </div>
+        </Tooltip>
+      </RawInputContainer>
     </>
   );
 }

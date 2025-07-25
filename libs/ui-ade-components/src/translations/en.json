@@ -611,6 +611,7 @@
     "placeholder": "Loading model..."
   },
   "ADE/AgentSettingsPanel": {
+    "viewSupportedModels": "Configure and view all models",
     "IdentityElement": {
       "remove": "Remove"
     },
@@ -665,7 +666,7 @@
     },
     "mobileTitle": "{baseName}",
     "SystemPromptEditor": {
-      "trigger": "Configure",
+      "trigger": "Edit system prompt",
       "title": "Core System Prompt",
       "characterCount": "{count} CHARS",
       "updatedAt": "Last updated on {date}",
