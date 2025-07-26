@@ -1,142 +1,426 @@
 'use client';
-import React, { Fragment, useMemo } from 'react';
 import {
+  Button,
   DashboardPageLayout,
   DashboardPageSection,
   DataTable,
-  HStack,
-  IndeterminateProgress,
-  Typography,
+  Dialog,
+  DotsHorizontalIcon,
+  DropdownMenu,
+  DropdownMenuItem,
+  FormField,
+  FormProvider,
+  SingleFileUpload,
+  UploadIcon,
+  useForm,
   VStack,
+  HStack,
+  Typography,
+  LoadingEmptyStatusComponent,
+  ArticleIcon,
+  VerticalDotsIcon,
+  TrashIcon,
 } from '@letta-cloud/ui-component-library';
-import type { Job } from '@letta-cloud/sdk-core';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslations } from '@letta-cloud/translations';
+import type { FileMetadata } from '@letta-cloud/sdk-core';
+import { useSourcesServiceRetrieveSource } from '@letta-cloud/sdk-core';
 import {
-  useJobsServiceListActiveJobs,
-  useSourcesServiceRetrieveSource,
+  UseJobsServiceListActiveJobsKeyFn,
+  UseSourcesServiceListSourceFilesKeyFn,
+  useSourcesServiceUploadFileToSource,
+  useSourcesServiceGetFileMetadata,
 } from '@letta-cloud/sdk-core';
+import { useSourcesServiceListSourceFiles } from '@letta-cloud/sdk-core';
 import { useCurrentDataSourceId } from './hooks';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useCurrentUser } from '$web/client/hooks';
-import { useTranslations } from '@letta-cloud/translations';
+import { z } from 'zod';
+import { useQueryClient } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { DeleteFileDialog } from '@letta-cloud/ui-ade-components';
+import type { DeleteFilePayload } from '@letta-cloud/ui-ade-components';
+import { useUserHasPermission } from '$web/client/hooks';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { useFormatters } from '@letta-cloud/utils-client';
+import { DeleteDataSourceDialog } from '@letta-cloud/ui-ade-components';
 
-const columns: Array<
-  ColumnDef<{
-    detail: string;
-    name: string;
-  }>
-> = [
-  {
-    header: 'Name',
-    accessorKey: 'name',
-  },
-  {
-    header: 'Detail',
-    accessorKey: 'detail',
-  },
-];
+const uploadToFormValuesSchema = z.object({
+  file: z.custom<File>((v) => v instanceof File),
+});
 
-function DataSourceInfo() {
-  const t = useTranslations('data-sources/home/page');
+type UploadToFormValues = z.infer<typeof uploadToFormValuesSchema>;
+
+interface UploadFileDialogProps {
+  limit: number;
+}
+
+function UploadFileDialog({ limit }: UploadFileDialogProps) {
+  const t = useTranslations('data-sources/files/page');
   const dataSourceId = useCurrentDataSourceId();
-  const { data } = useSourcesServiceRetrieveSource({
-    sourceId: dataSourceId,
+
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const queryClient = useQueryClient();
+  const { mutate, isPending } = useSourcesServiceUploadFileToSource({
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: UseSourcesServiceListSourceFilesKeyFn({
+          sourceId: dataSourceId,
+          after: undefined,
+          limit,
+        }),
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: UseJobsServiceListActiveJobsKeyFn(),
+      });
+
+      setIsDialogOpen(false);
+    },
   });
 
-  const tableData = useMemo(() => {
-    if (!data?.embedding_config) {
-      return [];
-    }
+  const form = useForm<UploadToFormValues>({
+    resolver: zodResolver(uploadToFormValuesSchema),
+    mode: 'onChange',
+  });
 
-    const configData = Object.entries({
-      ...data.embedding_config,
-      ...data.metadata,
-    })
-      .map(([key, value]) => ({
-        name: key,
-        detail: typeof value === 'string' ? value : JSON.stringify(value),
-      }))
-      .filter((row) => row.detail !== undefined);
+  useEffect(() => {
+    return () => {
+      form.reset();
+    };
+  }, [form]);
 
-    const instructionsRow = data.instructions
-      ? [{ name: t('instructions'), detail: data.instructions }]
-      : [];
-
-    return [...instructionsRow, ...configData];
-  }, [data, t]);
-
-  return <DataTable columns={columns} data={tableData} />;
-}
-
-interface JobItemProps {
-  job: Job;
-}
-
-function JobItem(props: JobItemProps) {
-  const { job } = props;
-  const { metadata } = job;
-
-  const contentName = useMemo(() => {
-    const filename = metadata?.filename;
-
-    if (typeof filename === 'string') {
-      return `Processing ${filename}`;
-    }
-
-    return 'Processing unknown file';
-  }, [metadata?.filename]);
-
-  return (
-    <HStack fullWidth>
-      <IndeterminateProgress
-        content={contentName}
-        statusMessage="Indeterminate time"
-      />
-    </HStack>
-  );
-}
-
-function DashboardJobList() {
-  const user = useCurrentUser();
-  const { data } = useJobsServiceListActiveJobs(
-    { userId: user?.id },
-    undefined,
-    {
-      refetchInterval: 5000,
-      enabled: !!user?.id,
+  const onSubmit = useCallback(
+    (values: UploadToFormValues) => {
+      mutate({
+        formData: { file: values.file },
+        sourceId: dataSourceId,
+      });
     },
+    [dataSourceId, mutate],
   );
 
-  if (!data || data?.length === 0) {
+  const [canUpdateDataSource] = useUserHasPermission(
+    ApplicationServices.UPDATE_DATA_SOURCE,
+  );
+
+  if (!canUpdateDataSource) {
     return null;
   }
 
   return (
-    <VStack gap={false} fullWidth border>
-      <HStack padding="small" borderBottom>
-        <Typography bold>Active Jobs</Typography>
-      </HStack>
-      <VStack paddingX="small" paddingY="large" gap="large" fullWidth>
-        {data?.map((job, index) => (
-          <Fragment key={job.id}>
-            <JobItem key={job.id} job={job} />
-            {index !== data.length - 1 && <HStack fullWidth border />}
-          </Fragment>
-        ))}
-      </VStack>
-    </VStack>
+    <FormProvider {...form}>
+      <Dialog
+        onOpenChange={setIsDialogOpen}
+        isOpen={isDialogOpen}
+        onSubmit={form.handleSubmit(onSubmit)}
+        title={t('uploadDialog.title')}
+        confirmText={t('uploadDialog.confirmText')}
+        isConfirmBusy={isPending}
+        trigger={
+          <Button
+            label={t('uploadDialog.triggerLabel')}
+            preIcon={<UploadIcon />}
+          />
+        }
+      >
+        <FormField
+          render={({ field }) => (
+            <SingleFileUpload fullWidth {...field} hideLabel label="file" />
+          )}
+          name="file"
+        />
+      </Dialog>
+    </FormProvider>
   );
 }
 
-function DataSourceHomePage() {
+interface FileStatsProps {
+  file: FileMetadata;
+}
+
+function FileStats(props: FileStatsProps) {
+  const t = useTranslations('data-sources/files/page');
+  const { file } = props;
+
+  const { file_name, file_size } = file;
+
+  const fileTypeName = useMemo(() => {
+    const parts = (file_name || '').split('.');
+    if (parts.length > 1) {
+      return parts[parts.length - 1].toUpperCase();
+    }
+    return t('fileType.defaultType');
+  }, [file_name, t]);
+
+  const { dynamicFileSize } = useFormatters();
+
   return (
-    <DashboardPageLayout title="Source info">
-      <DashboardPageSection>
-        <DashboardJobList />
+    <HStack gap="medium" align="center">
+      <HStack gap="small">
+        <ArticleIcon color="lighter" />
+        <Typography color="lighter" variant="body2">
+          {fileTypeName}
+        </Typography>
+      </HStack>
 
-        <DataSourceInfo />
-      </DashboardPageSection>
-    </DashboardPageLayout>
+      <Typography color="lighter" variant="body2">
+        {dynamicFileSize(file_size || 0)}
+      </Typography>
+    </HStack>
   );
 }
 
-export default DataSourceHomePage;
+interface FileViewDialogProps {
+  file: FileMetadata;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function FileViewDialog({ file, isOpen, onClose }: FileViewDialogProps) {
+  const t = useTranslations('data-sources/files/page');
+  const { data } = useSourcesServiceGetFileMetadata(
+    {
+      fileId: file.id || '',
+      sourceId: file.source_id || '',
+      includeContent: true,
+    },
+    undefined,
+    {
+      enabled: !!file.id && isOpen,
+    },
+  );
+
+  const title = useMemo(() => {
+    if (file.file_name) {
+      return (
+        file.file_name.split('.').slice(0, -1).join('.') ||
+        t('fileType.untitled')
+      );
+    }
+    return t('fileType.untitled');
+  }, [file.file_name, t]);
+
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <Dialog
+      trigger={null}
+      size="xlarge"
+      title={title}
+      hideFooter
+      headerVariant="emphasis"
+      isOpen={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+    >
+      <VStack fullWidth overflow="hidden" fullHeight paddingBottom>
+        <HStack align="center">
+          <FileStats file={file} />
+        </HStack>
+        <HStack
+          padding="small"
+          overflowY="auto"
+          collapseHeight
+          flex
+          border
+          color="background"
+        >
+          {data ? (
+            data.content ? (
+              <Typography>{data.content}</Typography>
+            ) : (
+              <Typography italic>{t('fileContent.noContent')}</Typography>
+            )
+          ) : (
+            <LoadingEmptyStatusComponent
+              isLoading
+              loadingMessage={t('fileContent.loading')}
+            />
+          )}
+        </HStack>
+      </VStack>
+    </Dialog>
+  );
+}
+
+function DataSourceFilesPage() {
+  const sourceId = useCurrentDataSourceId();
+  const t = useTranslations('data-sources/files/page');
+  const [limit, setLimit] = useState<number>(0);
+  const [cursor, setCursor] = useState<FileMetadata | undefined>(undefined);
+
+  const { data: source } = useSourcesServiceRetrieveSource({
+    sourceId,
+  });
+
+  const { data: files, isError } = useSourcesServiceListSourceFiles(
+    {
+      sourceId,
+      limit,
+      after: cursor?.id,
+    },
+    undefined,
+    {
+      enabled: limit > 0,
+    },
+  );
+
+  const [fileToDelete, setFileToDelete] = useState<Omit<
+    DeleteFilePayload,
+    'onClose'
+  > | null>(null);
+
+  const [fileToView, setFileToView] = useState<FileMetadata | null>(null);
+  const { dynamicFileSize } = useFormatters();
+
+  const fileTableColumns: Array<ColumnDef<FileMetadata>> = useMemo(
+    () => [
+      {
+        header: t('table.columns.name'),
+        accessorKey: 'file_name',
+      },
+      {
+        header: t('table.columns.fileSize'),
+        accessorKey: 'file_size',
+        cell: ({ row }) => {
+          return (
+            <Typography>
+              {dynamicFileSize(row.original.file_size || 0)}
+            </Typography>
+          );
+        },
+      },
+      {
+        header: '',
+        id: 'actions',
+        cell: ({ cell }) => {
+          return (
+            <DropdownMenu
+              triggerAsChild
+              trigger={
+                <Button
+                  label={t('actions')}
+                  hideLabel
+                  preIcon={<DotsHorizontalIcon />}
+                  color="tertiary"
+                />
+              }
+            >
+              <DropdownMenuItem
+                onClick={() => {
+                  setFileToDelete({
+                    sourceId,
+                    fileId: cell.row.original.id || '',
+                    fileName: cell.row.original.file_name || '',
+                  });
+                }}
+                label={t('deleteFile')}
+              />
+            </DropdownMenu>
+          );
+        },
+        accessorKey: 'id',
+      },
+      {
+        header: '',
+        id: 'view',
+        meta: {
+          style: {
+            columnAlign: 'right',
+          },
+        },
+        accessorKey: 'id',
+        cell: ({ cell }) => (
+          <Button
+            color="secondary"
+            label={t('viewButton')}
+            onClick={() => {
+              setFileToView(cell.row.original);
+            }}
+          />
+        ),
+      },
+    ],
+    [sourceId, t, dynamicFileSize],
+  );
+
+  return (
+    <>
+      {fileToDelete && (
+        <DeleteFileDialog
+          limit={limit}
+          sourceId={sourceId}
+          fileId={fileToDelete.fileId}
+          fileName={fileToDelete.fileName}
+          onClose={() => {
+            setFileToDelete(null);
+          }}
+        />
+      )}
+      <FileViewDialog
+        file={fileToView || ({} as FileMetadata)}
+        isOpen={!!fileToView}
+        onClose={() => {
+          setFileToView(null);
+        }}
+      />
+      <DashboardPageLayout
+        actions={
+          <HStack>
+            <UploadFileDialog limit={limit} />
+            {source && (
+              <DropdownMenu
+                triggerAsChild
+                align="end"
+                trigger={
+                  <Button
+                    color="tertiary"
+                    hideLabel
+                    label={t('menuLabel')}
+                    preIcon={<VerticalDotsIcon />}
+                  />
+                }
+              >
+                <DeleteDataSourceDialog
+                  onSuccess={() => {
+                    window.location.href = '/data-sources';
+                  }}
+                  trigger={
+                    <DropdownMenuItem
+                      doNotCloseOnSelect
+                      preIcon={<TrashIcon />}
+                      label={t('delete')}
+                    />
+                  }
+                  source={source}
+                />
+              </DropdownMenu>
+            )}
+          </HStack>
+        }
+        title={t('title')}
+        encapsulatedFullHeight
+      >
+        <DashboardPageSection fullHeight>
+          <DataTable
+            columns={fileTableColumns}
+            data={files || []}
+            isLoading={!files}
+            autofitHeight
+            onSetCursor={setCursor}
+            onLimitChange={setLimit}
+            noResultsText={t('emptyMessage')}
+            errorMessage={isError ? t('emptyMessage') : ''}
+          />
+        </DashboardPageSection>
+      </DashboardPageLayout>
+    </>
+  );
+}
+
+export default DataSourceFilesPage;

@@ -29,8 +29,6 @@ export interface StarterKit {
 
 export const defaultModel = 'openai/gpt-4o-mini';
 
-export const defaultEmbeddingModel = 'openai/text-embedding-3-small';
-
 export function isAStarterKitName(
   templateName: string,
 ): templateName is keyof typeof STARTER_KITS {

@@ -22,7 +22,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCurrentAgent } from '../../../../hooks';
+import { useCurrentAgent, useCurrentAgentMetaData } from '../../../../hooks';
 
 interface CreateDataSourceModalProps {
   trigger: React.ReactNode;
@@ -76,6 +76,8 @@ export function CreateDataSourceModal(props: CreateDataSourceModalProps) {
     [form, reset],
   );
 
+  const { isLocal } = useCurrentAgentMetaData();
+
   const errorMessage = useMemo(() => {
     if (error) {
       if (isAPIError(error)) {
@@ -109,7 +111,7 @@ export function CreateDataSourceModal(props: CreateDataSourceModalProps) {
           requestBody: {
             name,
             instructions,
-            embedding_config,
+            embedding_config: isLocal ? embedding_config : undefined,
           },
         },
         {
@@ -174,9 +176,10 @@ export function CreateDataSourceModal(props: CreateDataSourceModalProps) {
       );
     },
     [
+      embedding_config,
+      isLocal,
       attachDataSource,
       createDataSource,
-      embedding_config,
       agentId,
       isPending,
       handleOpenChange,

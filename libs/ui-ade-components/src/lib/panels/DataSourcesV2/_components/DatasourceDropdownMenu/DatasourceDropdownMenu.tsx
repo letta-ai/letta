@@ -11,18 +11,15 @@ import {
   DropdownMenuItem,
   Dialog,
   Typography,
-  Alert,
   FormField,
   FormProvider,
   RawInput,
   useForm,
-  VStack,
   LinkOffIcon,
 } from '@letta-cloud/ui-component-library';
 import {
   type AgentState,
   useAgentsServiceDetachSourceFromAgent,
-  useSourcesServiceDeleteSource,
   useSourcesServiceModifySource,
   UseAgentsServiceRetrieveAgentKeyFn,
 } from '@letta-cloud/sdk-core';
@@ -30,6 +27,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCurrentAgent } from '../../../../hooks';
+import { DeleteDataSourceDialog } from '../DeleteDatasourceDialog/DeleteDatasourceDialog';
 
 // Rename Modal as a child component
 const renameDataSourceSchema = z.object({
@@ -227,127 +225,6 @@ function DetachDataSourceDialog({ source }: { source: Source }) {
   );
 }
 
-// Delete Modal as a child component
-function DeleteDataSourceDialog({ source }: { source: Source }) {
-  const { id: agentId } = useCurrentAgent();
-  const t = useTranslations('ADE/EditDataSourcesPanel.DeleteDataSourceModal');
-  const queryClient = useQueryClient();
-  const [isOpen, setIsOpen] = React.useState(false);
-
-  const deleteDataSourceSchema = z.object({
-    confirmName: z.string().refine((value) => value === source.name, {
-      message: t('confirmName.error'),
-    }),
-  });
-
-  type DeleteDataSourceFormValues = z.infer<typeof deleteDataSourceSchema>;
-
-  const form = useForm<DeleteDataSourceFormValues>({
-    resolver: zodResolver(deleteDataSourceSchema),
-    defaultValues: {
-      confirmName: '',
-    },
-  });
-
-  const { mutate: detachSource, isPending: isDetaching } =
-    useAgentsServiceDetachSourceFromAgent();
-  const {
-    mutate: deleteSource,
-    isPending: isDeleting,
-    isError,
-  } = useSourcesServiceDeleteSource();
-
-  const isPending = isDetaching || isDeleting;
-
-  const handleDelete = useCallback(() => {
-    // First detach from agent, then delete
-    detachSource(
-      {
-        agentId,
-        sourceId: source.id || '',
-      },
-      {
-        onSuccess: () => {
-          deleteSource(
-            {
-              sourceId: source.id || '',
-            },
-            {
-              onSuccess: () => {
-                queryClient.setQueriesData<AgentState | undefined>(
-                  {
-                    queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-                      agentId,
-                    }),
-                  },
-                  (oldData) => {
-                    if (!oldData) {
-                      return oldData;
-                    }
-                    return {
-                      ...oldData,
-                      sources: oldData.sources.filter(
-                        (currentSource) => currentSource.id !== source.id,
-                      ),
-                    };
-                  },
-                );
-
-                form.reset();
-                setIsOpen(false);
-              },
-            },
-          );
-        },
-      },
-    );
-  }, [agentId, deleteSource, detachSource, form, queryClient, source.id]);
-
-  return (
-    <FormProvider {...form}>
-      <Dialog
-        errorMessage={isError ? t('error') : undefined}
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        onSubmit={form.handleSubmit(handleDelete)}
-        title={t('title')}
-        confirmText={t('confirm')}
-        isConfirmBusy={isPending}
-        testId="delete-data-source-dialog"
-        trigger={
-          <DropdownMenuItem
-            doNotCloseOnSelect
-            preIcon={<TrashIcon />}
-            label={t('trigger')}
-          />
-        }
-      >
-        <VStack gap="form">
-          <Alert
-            title={t('description', {
-              sourceName: source.name,
-            })}
-            variant="destructive"
-          />
-          <FormField
-            render={({ field }) => (
-              <RawInput
-                fullWidth
-                {...field}
-                size="small"
-                label={t('confirmName.label')}
-                placeholder={source.name}
-                data-testid="delete-data-source-confirm-input"
-              />
-            )}
-            name="confirmName"
-          />
-        </VStack>
-      </Dialog>
-    </FormProvider>
-  );
-}
-
 export interface DatasourceDropdownMenuProps {
   source: Source;
   trigger?: React.ReactNode;
@@ -377,7 +254,16 @@ export function DatasourceDropdownMenu(props: DatasourceDropdownMenuProps) {
     >
       <RenameDataSourceDialog source={source} />
       <DetachDataSourceDialog source={source} />
-      <DeleteDataSourceDialog source={source} />
+      <DeleteDataSourceDialog
+        trigger={
+          <DropdownMenuItem
+            doNotCloseOnSelect
+            preIcon={<TrashIcon />}
+            label={t('delete')}
+          />
+        }
+        source={source}
+      />
     </DropdownMenu>
   );
 }

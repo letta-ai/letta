@@ -19,12 +19,6 @@ import {
   Typography,
   useForm,
   VStack,
-  Select,
-  isBrandKey,
-  brandKeyToLogo,
-  brandKeyToName,
-  isMultiValue,
-  OptionTypeSchemaSingle,
   BillingLink,
   Badge,
   DropdownMenu,
@@ -33,7 +27,6 @@ import {
   CaretDownIcon,
 } from '@letta-cloud/ui-component-library';
 import { isAPIError, type Source } from '@letta-cloud/sdk-core';
-import { useModelsServiceListEmbeddingModels } from '@letta-cloud/sdk-core';
 import {
   useSourcesServiceCreateSource,
   UseSourcesServiceListSourcesKeyFn,
@@ -54,7 +47,6 @@ import Link from 'next/link';
 const createDataSourceSchema = z.object({
   name: z.string().min(3),
   instructions: z.string(),
-  embedding_config_model: OptionTypeSchemaSingle,
 });
 
 type CreateDataSourceSchemaType = z.infer<typeof createDataSourceSchema>;
@@ -64,15 +56,17 @@ function CreateDataSourceDialog() {
   const t = useTranslations('data-sources/page');
 
   const queryClient = useQueryClient();
-  const { mutate, isPending, error } = useSourcesServiceCreateSource({
-    onSuccess: (response) => {
-      void queryClient.invalidateQueries({
-        queryKey: UseSourcesServiceListSourcesKeyFn(),
-      });
+  const { mutate, isPending, isSuccess, error } = useSourcesServiceCreateSource(
+    {
+      onSuccess: (response) => {
+        void queryClient.invalidateQueries({
+          queryKey: UseSourcesServiceListSourcesKeyFn(),
+        });
 
-      push(`/data-sources/${response.id}`);
+        push(`/data-sources/${response.id}`);
+      },
     },
-  });
+  );
 
   const errorMessage = useMemo(() => {
     if (error) {
@@ -88,37 +82,6 @@ function CreateDataSourceDialog() {
     return undefined;
   }, [error, t]);
 
-  const { data: embeddingModels, isLoading } =
-    useModelsServiceListEmbeddingModels();
-
-  const formattedModelsList = useMemo(() => {
-    if (!embeddingModels) {
-      return [];
-    }
-
-    const modelEndpointMap = embeddingModels.reduce(
-      (acc, model) => {
-        acc[model.embedding_endpoint_type] =
-          acc[model.embedding_endpoint_type] || [];
-
-        acc[model.embedding_endpoint_type].push(model.embedding_model);
-
-        return acc;
-      },
-      {} as Record<string, string[]>,
-    );
-
-    return Object.entries(modelEndpointMap).map(([key, value]) => ({
-      icon: isBrandKey(key) ? brandKeyToLogo(key) : '',
-      label: isBrandKey(key) ? brandKeyToName(key) : key,
-      options: value.map((model) => ({
-        icon: isBrandKey(key) ? brandKeyToLogo(key) : '',
-        label: model,
-        value: model,
-      })),
-    }));
-  }, [embeddingModels]);
-
   const form = useForm<CreateDataSourceSchemaType>({
     resolver: zodResolver(createDataSourceSchema),
     defaultValues: {
@@ -129,24 +92,14 @@ function CreateDataSourceDialog() {
 
   const handleSubmit = useCallback(
     (values: CreateDataSourceSchemaType) => {
-      const embeddingModel = embeddingModels?.find(
-        (model) =>
-          model.embedding_model === values.embedding_config_model.value,
-      );
-
-      if (!embeddingModel) {
-        return;
-      }
-
       mutate({
         requestBody: {
           name: values.name,
           instructions: values.instructions,
-          embedding_config: embeddingModel,
         },
       });
     },
-    [embeddingModels, mutate],
+    [mutate],
   );
 
   const [canCreateDataSource] = useUserHasPermission(
@@ -162,7 +115,7 @@ function CreateDataSourceDialog() {
       <Dialog
         title={t('CreateDataSourceDialog.title')}
         confirmText={t('CreateDataSourceDialog.createButton')}
-        isConfirmBusy={isPending}
+        isConfirmBusy={isPending || isSuccess}
         errorMessage={errorMessage}
         trigger={
           <Button
@@ -179,26 +132,6 @@ function CreateDataSourceDialog() {
               fullWidth
               label={t('CreateDataSourceDialog.name.label')}
               {...field}
-            />
-          )}
-        />
-        <FormField
-          name="embedding_config_model"
-          render={({ field }) => (
-            <Select
-              fullWidth
-              hideIconsOnOptions
-              isLoading={isLoading}
-              onSelect={(value) => {
-                if (isMultiValue(value)) {
-                  return;
-                }
-
-                field.onChange(value);
-              }}
-              value={field.value}
-              label={t('CreateDataSourceDialog.embeddingModel.label')}
-              options={formattedModelsList}
             />
           )}
         />

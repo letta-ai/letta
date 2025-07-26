@@ -9,11 +9,16 @@ import {
   RawSelect,
 } from '@letta-cloud/ui-component-library';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../../../../hooks';
+import {
+  useCurrentAgent,
+  useCurrentAgentMetaData,
+  useSyncUpdateCurrentAgent,
+} from '../../../../hooks';
 import type { AgentState } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
 import { useEmbeddingModels } from '../../../../hooks/useEmbeddingModels/useEmbeddingModels';
 import { useDebouncedValue } from '@mantine/hooks';
+import { DEFAULT_EMBEDDING_MODEL } from '@letta-cloud/types';
 
 interface EmbeddingConfig {
   embeddingConfig?: AgentState['embedding_config'];
@@ -21,7 +26,7 @@ interface EmbeddingConfig {
 
 export function EmbeddingSelector(props: EmbeddingConfig) {
   const { embeddingConfig } = props;
-  const t = useTranslations('ADE/AgentSettingsPanel');
+  const t = useTranslations('ADE/EmbeddingConfiguration');
   const { syncUpdateCurrentAgent, error } = useSyncUpdateCurrentAgent();
 
   const embeddingModels = useEmbeddingModels();
@@ -115,15 +120,28 @@ export function EmbeddingSelector(props: EmbeddingConfig) {
 
 export function EmbeddingConfiguration() {
   const currentAgent = useCurrentAgent();
-  const t = useTranslations('ADE/AdvancedSettings');
+  const { isLocal } = useCurrentAgentMetaData();
+  const t = useTranslations('ADE/EmbeddingConfiguration');
 
   return (
     <>
-      <EmbeddingSelector embeddingConfig={currentAgent.embedding_config} />
+      {isLocal ? (
+        <EmbeddingSelector embeddingConfig={currentAgent.embedding_config} />
+      ) : (
+        <RawInput
+          fullWidth
+          size="small"
+          label={t('embeddingInput.label')}
+          value={DEFAULT_EMBEDDING_MODEL}
+          description={t('embeddingInput.description')}
+          disabled
+        />
+      )}
+
       <RawInput
         fullWidth
         size="small"
-        label={t('AdvancedSettingsPanel.embeddingDimensions.label')}
+        label={t('embeddingDimensions.label')}
         value={currentAgent.embedding_config?.embedding_dim || '0'}
         type="number"
         disabled
@@ -131,7 +149,7 @@ export function EmbeddingConfiguration() {
       <RawInput
         fullWidth
         size="small"
-        label={t('AdvancedSettingsPanel.embeddingChunkSize.label')}
+        label={t('embeddingChunkSize.label')}
         value={currentAgent.embedding_config?.embedding_chunk_size || '0'}
         type="number"
         disabled

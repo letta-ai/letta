@@ -222,3 +222,4 @@ export const AgentFileAccessLevels = z.enum([
   'none',
 ]);
 
+export const DEFAULT_EMBEDDING_MODEL = 'openai/text-embedding-3-small';

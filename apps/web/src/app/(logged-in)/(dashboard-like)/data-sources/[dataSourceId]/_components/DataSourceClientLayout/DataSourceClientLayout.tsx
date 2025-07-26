@@ -22,19 +22,9 @@ export function DataSourceClientLayout(props: DataSourceClientLayoutProps) {
       projectTitle={<SidebarTitle name={source?.name || ''} />}
       navigationItems={[
         {
-          id: 'source-info',
-          label: t('navigation.sourceInfo'),
-          href: `/data-sources/${source?.id || ''}`,
-        },
-        {
           id: 'files',
           label: t('navigation.files'),
-          href: `/data-sources/${source?.id || ''}/files`,
-        },
-        {
-          id: 'jobs',
-          label: t('navigation.jobs'),
-          href: `/data-sources/${source?.id || ''}/jobs`,
+          href: `/data-sources/${source?.id || ''}`,
         },
       ]}
     >

@@ -24,6 +24,7 @@ import { updateAgentMiddleware } from './libs/updateAgentMiddleware/updateAgentM
 import { contentModerationMiddleware } from './libs/contentModerationMiddleware/contentModerationMiddleware';
 import { stripeWebhook } from './webhooks/stripeWebhook/stripeWebhook';
 import { trackingMiddleware } from './libs/trackingMiddleware/trackingMiddleware';
+import { datasourceMiddleware } from './libs/datasourceMiddleware/datasourceMiddleware';
 
 interface ExpressMeta {
   req: {
@@ -148,6 +149,7 @@ export function startServer() {
   app.use(projectHeaderMiddleware);
   app.use(updateAgentMiddleware);
   app.use(trackingMiddleware);
+  app.use(datasourceMiddleware);
 
   /* tsRestMiddleware needs to be last */
   const s = initServer();

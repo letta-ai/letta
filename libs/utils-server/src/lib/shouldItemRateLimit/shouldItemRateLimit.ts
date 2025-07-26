@@ -34,6 +34,8 @@ const agentsOtherRoute = pathToRegexp(
 const agentsRoute = pathToRegexp('/v1/agents');
 const toolsRoute = pathToRegexp('/v1/tools');
 const sourcesRoute = pathToRegexp('/v1/sources');
+const foldersRoute = pathToRegexp('/v1/folders');
+
 // const groupsRoute = pathToRegexp('/v1/groups');
 const identitiesRoute = pathToRegexp('/v1/identities');
 const blocksRoute = pathToRegexp('/v1/blocks');
@@ -180,6 +182,10 @@ export async function shouldItemRateLimit(
   }
 
   if (sourcesRoute.test(payload.path)) {
+    return canCreateSource(payload);
+  }
+
+  if (foldersRoute.test(payload.path)) {
     return canCreateSource(payload);
   }
 

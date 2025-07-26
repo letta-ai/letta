@@ -275,12 +275,6 @@
       "tooltip": "The number of messages to keep in memory before triggering a memory update."
     },
     "AdvancedSettingsPanel": {
-      "embeddingDimensions": {
-        "label": "Embedding dimensions"
-      },
-      "embeddingChunkSize": {
-        "label": "Embedding chunk size"
-      },
       "messageBufferAutoclear": {
         "label": "Reset message buffer",
         "tooltip": "If enabled, the agent will not remember messages from previous steps (though the agent will still retain state via memory). Not recommended unless you have an advanced use case."
@@ -683,9 +677,7 @@
         "characterCount": "{count} characters"
       }
     },
-    "embeddingInput": {
-      "label": "Embedding model"
-    },
+
     "agentName": {
       "label": "Name",
       "edit": "Edit {baseName} name"
@@ -706,6 +698,19 @@
     "capitalized": {
       "template": "Template",
       "agent": "Agent"
+    }
+  },
+  "ADE/EmbeddingConfiguration": {
+    "error": "There was an error loading the embedding configuration, please try again or contact support.",
+    "embeddingDimensions": {
+      "label": "Embedding dimensions"
+    },
+    "embeddingChunkSize": {
+      "label": "Embedding chunk size"
+    },
+    "embeddingInput": {
+      "label": "Embedding model",
+      "description": "Letta cloud uses a standard embedding model to ensure consistent data embedding across all agents."
     }
   },
   "ADE/ArchivalMemories": {
