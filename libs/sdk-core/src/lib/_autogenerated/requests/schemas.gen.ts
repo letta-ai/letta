@@ -4626,6 +4626,18 @@ export const $FileBlock = {
       description: 'Character limit of the block.',
       default: 5000,
     },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The associated project id.',
+    },
     name: {
       anyOf: [
         {

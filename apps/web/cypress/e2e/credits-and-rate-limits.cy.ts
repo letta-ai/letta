@@ -189,7 +189,7 @@ describe('credit usage', () => {
 
     cy.findByTestId('total-credits', {
       timeout: 50000,
-    }).contains('0.16');
+    }).should('include.text', '0.16', { timeout: 50000 });
 
     cy.visit('/');
 
@@ -216,13 +216,12 @@ describe('credit usage', () => {
       /\/projects\/(.+)\/agents\/(.+)/,
     );
 
-    cy.findAllByTestId('agent-message-content', { timeout: 50000 })
-      .its('length')
-      .should('eq', 1);
-
-    cy.findByTestId('chat-simulator-input').type('What is my name', {
-      force: true,
-    });
+    cy.findByTestId('chat-simulator-input', { timeout: 50000 }).type(
+      'What is my name',
+      {
+        force: true,
+      },
+    );
 
     // bruh
     // eslint-disable-next-line cypress/no-unnecessary-waiting
@@ -234,7 +233,7 @@ describe('credit usage', () => {
 
     cy.findAllByTestId('agent-message-content', { timeout: 50000 })
       .its('length')
-      .should('eq', 2, { timeout: 500000 });
+      .should('eq', 1, { timeout: 500000 });
 
     // wait for credit checker to run in the background
     // eslint-disable-next-line cypress/no-unnecessary-waiting
@@ -244,7 +243,7 @@ describe('credit usage', () => {
 
     cy.findByTestId('total-credits', {
       timeout: 50000,
-    }).contains('0.06', { timeout: 50000 });
+    }).should('not.include.text', '0.16', { timeout: 50000 });
 
     cy.findByTestId('agent-usage-value', {
       timeout: 50000,

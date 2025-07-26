@@ -32,6 +32,7 @@ import {
   EditIcon,
   CircleIcon,
   SmallInvaderOutlineIcon,
+  JSONViewer,
 } from '@letta-cloud/ui-component-library';
 import type {
   AgentMessage,
@@ -53,7 +54,7 @@ import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { jsonrepair } from 'jsonrepair';
 import { useTranslations } from '@letta-cloud/translations';
-import { get } from 'lodash-es';
+import { get, isObject } from 'lodash-es';
 import { useGetMessagesWorker } from './useGetMessagesWorker/useGetMessagesWorker';
 import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
@@ -917,17 +918,43 @@ export function Messages(props: MessagesProps) {
               };
             }
           } else {
-            let isContentJson = false;
+            let parsedJSON: object | undefined;
             try {
-              JSON.parse(content);
-              isContentJson = true;
+              parsedJSON = JSON.parse(content);
+
+              if (!isObject(parsedJSON)) {
+                parsedJSON = undefined;
+              }
             } catch {
-              isContentJson = false;
+              parsedJSON = undefined;
             }
 
             if (mode === 'simple' || mode === 'interactive') {
-              if (isContentJson) {
-                return null;
+              if (parsedJSON) {
+                if ('type' in parsedJSON && parsedJSON.type === 'heartbeat') {
+                  return null;
+                }
+
+                return {
+                  type: agentMessage.message_type,
+                  stepId: agentMessage.step_id,
+                  id: `${agentMessage.id}-${agentMessage.message_type}`,
+                  content: (
+                    <VStack
+                      border
+                      padding="small"
+                      color="background-grey"
+                      className="rounded-sm"
+                    >
+                      <JSONViewer data={content} />
+                    </VStack>
+                  ),
+                  raw: content,
+                  timestamp: new Date(agentMessage.date).toISOString(),
+                  name: 'User',
+                  editId: agentMessage.id,
+                  isError: isErroredMessage,
+                };
               }
 
               return {
@@ -947,7 +974,7 @@ export function Messages(props: MessagesProps) {
               };
             }
 
-            if (isContentJson) {
+            if (parsedJSON) {
               const tryParseResp = tryFallbackParseJson(content);
 
               if (tryParseResp) {
@@ -1035,10 +1062,19 @@ export function Messages(props: MessagesProps) {
         extractMessage(message, mode, allMessages),
       )
       .filter((message) => !!message)
-      .sort(
-        (a, b) =>
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-      );
+      .sort((a, b) => {
+        if (!a || !b) return 0;
+
+        const dateA = new Date(a.timestamp).getTime();
+        const dateB = new Date(b.timestamp).getTime();
+
+        // if dates are the same, order by id
+        if (dateA === dateB) {
+          return a.id.localeCompare(b.id);
+        }
+
+        return dateA - dateB;
+      });
 
     // group messages by name
 
@@ -1154,6 +1190,7 @@ export function Messages(props: MessagesProps) {
         mode !== 'simple' && (
           <LoadingEmptyStatusComponent
             loaderVariant="spinner"
+            loaderFillColor="background-grey"
             emptyMessage={t('noMessages')}
           />
         )}

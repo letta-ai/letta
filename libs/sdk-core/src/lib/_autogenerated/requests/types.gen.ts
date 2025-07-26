@@ -1555,6 +1555,10 @@ export type FileBlock = {
    */
   limit?: number;
   /**
+   * The associated project id.
+   */
+  project_id?: string | null;
+  /**
    * Name of the block if it is a template.
    */
   name?: string | null;

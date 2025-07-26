@@ -921,6 +921,14 @@ export type FileBlock = z.infer<typeof FileBlock>;
 export const FileBlock = z.object({
   value: z.string(),
   limit: z.union([z.number(), z.undefined()]).optional(),
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   name: z
     .union([
       z.string(),

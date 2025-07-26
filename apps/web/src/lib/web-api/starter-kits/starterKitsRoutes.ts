@@ -167,6 +167,7 @@ async function createAgentFromStarterKit(
         embedding: defaultEmbeddingModel,
         tool_ids: toolIds,
         project_id: project.id,
+        initial_message_sequence: [],
       },
     },
     {
@@ -299,6 +300,7 @@ async function createTemplateFromStarterKit(
           ? starterKit.agentState.model
           : defaultModel,
       embedding: defaultEmbeddingModel,
+      initial_message_sequence: [],
     },
   });
 
