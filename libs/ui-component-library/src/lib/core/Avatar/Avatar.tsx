@@ -7,25 +7,22 @@ import { useMemo } from 'react';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 
-const avatarVariants = cva(
-  'relative flex shrink-0 overflow-hidden text-sm rounded-[2px]',
-  {
-    variants: {
-      size: {
-        xxsmall: 'h-[16px] w-[16px] text-[10px]',
-        xsmall: 'h-[18px] w-[18px] text-[10px]',
-        small: 'h-biHeight-sm w-biWidth-sm',
-        medium: 'h-[36px] w-[36px]',
-        large: 'h-[40px] w-[40px] text-base',
-        xlarge: 'h-[48px] w-[48px] text-base',
-        xxlarge: 'h-[72px] w-[72px] text-[28px]',
-      },
-    },
-    defaultVariants: {
-      size: 'medium',
+const avatarVariants = cva('relative flex shrink-0 overflow-hidden text-sm', {
+  variants: {
+    size: {
+      xxsmall: 'h-[16px] w-[16px] text-[10px]',
+      xsmall: 'h-[18px] w-[18px] text-[10px]',
+      small: 'h-biHeight-sm w-biWidth-sm',
+      medium: 'h-[36px] w-[36px]',
+      large: 'h-[40px] w-[40px] text-base',
+      xlarge: 'h-[48px] w-[48px] text-base',
+      xxlarge: 'h-[72px] w-[72px] text-[28px]',
     },
   },
-);
+  defaultVariants: {
+    size: 'medium',
+  },
+});
 
 type AvatarVariantProps = VariantProps<typeof avatarVariants>;
 

@@ -129,7 +129,7 @@ function DashboardJobList() {
 
 function DataSourceHomePage() {
   return (
-    <DashboardPageLayout title="Source Info">
+    <DashboardPageLayout title="Source info">
       <DashboardPageSection>
         <DashboardJobList />
 

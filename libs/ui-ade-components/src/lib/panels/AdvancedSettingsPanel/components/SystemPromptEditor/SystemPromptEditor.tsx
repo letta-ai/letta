@@ -177,15 +177,15 @@ export function SystemPromptEditor() {
               onClick={() => {
                 setIsExpanded(true);
               }}
-              border
-              color="background-grey2"
               padding="xsmall"
+              gap="small"
+              className="border rounded-[2px] bg-background-grey2 dark:bg-card-background border-background-grey2-border dark:border-background-grey3-border w-full"
             >
               <Typography
                 noWrap
-                color="muted"
-                variant="body3"
-                className="whitespace-pre-wrap line-clamp-2"
+                color="lighter"
+                variant="body4"
+                className="whitespace-pre-wrap line-clamp-2 text-left"
               >
                 {currentAgent.system}
               </Typography>

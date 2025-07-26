@@ -2853,7 +2853,7 @@
   },
   "data-sources/layout": {
     "navigation": {
-      "sourceInfo": "Source Info",
+      "sourceInfo": "Source info",
       "files": "Files",
       "jobs": "Ingestion jobs"
     }
@@ -2885,7 +2885,7 @@
     "description": "Migrations are a way to update your agent templates to the latest version of Letta. This is useful when you want to take advantage of new features or bug fixes."
   },
   "data-sources/files/page": {
-    "title": "Source Files",
+    "title": "Source files",
     "emptyMessage": "This source has no files",
     "loading": "Loading files",
     "error": "There was an error loading files, please try again or contact support.",
