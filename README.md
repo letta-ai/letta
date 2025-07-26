@@ -221,3 +221,15 @@ just desktop
 ## Why is my letta desktop "letta" not updating?
 
 There is a weird caching issue with letta, just edit the main.ts file in apps/electron, and it should work (even adding a new line)
+
+# AgentFile.directory
+
+```sh
+# Run the necessary services in separate windows
+just core
+just web
+just cloud-api
+
+# Then run the directory site
+just afd
+```
