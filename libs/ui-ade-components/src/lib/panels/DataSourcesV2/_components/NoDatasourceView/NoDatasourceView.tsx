@@ -1,7 +1,7 @@
 import { useTranslations } from '@letta-cloud/translations';
 import {
   Button,
-  DatabaseIcon,
+  FolderIcon,
   LinkIcon,
   LoadingEmptyStatusComponent,
   PanelMainContent,
@@ -27,7 +27,7 @@ export function NoDatasourceView() {
       >
         <LoadingEmptyStatusComponent
           noMinHeight
-          iconOverride={<DatabaseIcon size="xxlarge" />}
+          iconOverride={<FolderIcon size="xxlarge" />}
           emptyAction={
             <VStack align="center" gap="small">
               <AttachDataSourceModal
@@ -35,7 +35,7 @@ export function NoDatasourceView() {
                   <Button
                     fullWidth
                     data-testid="attach-data-source"
-                    color="primary"
+                    color="secondary"
                     preIcon={<LinkIcon />}
                     size="small"
                     label={t('attach')}

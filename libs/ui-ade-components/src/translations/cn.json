@@ -414,7 +414,8 @@
     },
     "TemplateDescription": {
       "placeholder": "输入此模板的描述",
-      "label": "描述"
+      "label": "描述",
+      "tooltip": "描述不会显示给智能体。"
     },
     "tags": {
       "label": "智能体标签",

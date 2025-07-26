@@ -398,7 +398,7 @@
         "genericError": "There was an error uploading the file, please try again or contact support."
       }
     },
-    "title": "Filesystem ({count})",
+    "title": "Filesystem",
     "errorDetaching": "There was an error detaching this folder, please try again or contact support.",
     "editName": {
       "label": "Folder name",
@@ -421,11 +421,11 @@
       },
       "instructions": {
         "label": "Instructions",
-        "details": "Provide your agent with relevant instructions for how to use files uploaded to this folder.",
+        "details": "Explain to your agent how the files in the folder should be used.",
         "placeholder": "For example: 'These are files that contain information about my startup plans'"
       },
       "name": {
-        "description": "Folder names are unique identifiers for your folders, they are used to reference the folder agent's runtime.",
+        "description": "Folder names are unique and are visible to your agent.",
         "label": "Name",
         "placeholder": "my-folder-name"
       },
@@ -488,7 +488,7 @@
       "confirm": "Update",
       "error": "There was an error updating this folder, please try again or contact support.",
       "instructions": {
-        "details": "Provide your agent with relevant instructions for how to use files uploaded to this folder.",
+        "details": "Explain to your agent how the files in the folder should be used.",
         "label": "Source instructions",
         "placeholder": "For example: 'These are files that contain information about my startup plans'"
       }
@@ -540,9 +540,9 @@
     }
   },
   "ADE/DataSources/FileOpenStatus": {
-    "open": "This file is being read by the {agentType} agent, click to stop the {agentType} agent from reading it",
+    "open": "File is open, click to close.",
+    "closed": "File is closed, click to open.",
     "simulated": "simulated",
-    "closed": "This file is not being read by the {agentType} agent, click to force the {agentType} agent to read it",
     "failedToClose": "Failed to close file, please check your logs or contact support.",
     "failedToOpen": "Failed to open file, please check your logs or contact support."
   },
@@ -622,7 +622,7 @@
     },
     "AgentType": {
       "label": "Agent type",
-      "tooltip": "The underlying agent architecture type. Cannot be changed after agent creation."
+      "tooltip": "Cannot be changed after agent creation"
     },
     "IdentitiesEditorDialog": {
       "error": "There was an error updating the identities, please try again or contact support.",
@@ -643,7 +643,7 @@
     },
     "IdentityViewer": {
       "launchLink": "This identity is managed by a launch link, and cannot be unlinked from this agent. To remove this identity, please delete the agent itself.",
-      "tooltip": "Identities are entities that can be used to organize and identify your agents. You can add multiple identities to your agent.",
+      "tooltip": "Identities are used to organize your users",
       "label": {
         "multiple": "Identities",
         "singular": "Identity"
@@ -656,11 +656,12 @@
     },
     "TemplateDescription": {
       "placeholder": "Enter a description for this template",
-      "label": "Description"
+      "label": "Description",
+      "tooltip": "Descriptions are not shown to the agent"
     },
     "tags": {
       "label": "Tags",
-      "tooltip": "Tags are used to organize and identify your agents. You can add multiple tags to your agent.",
+      "tooltip": "Tags can be used to organize your agents",
       "placeholder": "Enter tags...",
       "noOptions": "No existing tags found, you can create a new tag by typing it in and pressing enter"
     },
@@ -670,7 +671,7 @@
       "title": "Core System Prompt",
       "characterCount": "{count} CHARS",
       "updatedAt": "Last updated on {date}",
-      "tooltip": "Edit the (read-only) system prompt of your agent - be careful to ensure your system instructions reflect the current toolset and memory configuration of your agent.",
+      "tooltip": "The (read-only) system prompt for your agent",
       "label": "System instructions",
       "error": "There was an error while updating the system prompt, please try again or contact support.",
       "expand": "Show full system prompt editor",
@@ -678,7 +679,7 @@
         "title": "Update System Instructions",
         "label": "System Instructions",
         "save": "Update",
-        "info": "The system instructions are not editable by the agent itself (unlike core memory).",
+        "info": "System instructions are not editable by the agent. Make sure they reflect the current toolset and memory configuration of your agent.",
         "characterCount": "{count} characters"
       }
     },
@@ -824,7 +825,7 @@
       "label": "Toggle Memory Type",
       "agent": {
         "label": "Blocks",
-        "tooltip": "Core memory is composed of blocks that can be edited by the agent"
+        "tooltip": "Memory blocks are always visible read/write sections of the context window"
       },
       "templated": {
         "label": "Template",
@@ -1160,8 +1161,8 @@
   },
   "ADE/AgentSimulator": {
     "liveAgentWarning": {
-      "label": "Live agent",
-      "tooltip": "You are editing a live agent, be aware that editing this agent may impact live deployments"
+      "label": "Deployed",
+      "tooltip": "Editing this agent may impact live deployments"
     },
     "QuickOnboarding": {
       "title": "Message your agent",
@@ -2114,7 +2115,7 @@
       "rules": "Tool rules ({ruleCount})",
       "removeTool": "Detach tool",
       "lettaCoreTools": "Letta core tools ({toolCount})",
-      "lettaCoreToolsInfo": "Default tools added to agents to enable memory management",
+      "lettaCoreToolsInfo": "Default tools for memory management",
       "otherTools": "Other tools ({toolCount})"
     },
     "RemoveToolDialog": {

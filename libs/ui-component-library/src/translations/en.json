@@ -114,7 +114,7 @@
       }
     },
     "CoreMemoryEditorHeader": {
-      "editable": "This memory block can be edited by the agent tools",
+      "editable": "This block is read-write (editable)",
       "simulatedDiff": "The template and simulated core memory are different",
       "preserved": "This memory block is preserved across agent versions, if you edit it, changes will not be applied to existing agents",
       "limit": {
@@ -129,7 +129,7 @@
         "locked": "Editor is locked",
         "unlocked": "Editor is unlocked"
       },
-      "readOnly": "This memory block cannot be edited by tools, it is read-only",
+      "readOnly": "This block is read-only",
       "migrationLock": "This memory block will not be overwritten by the migration process"
     }
   },

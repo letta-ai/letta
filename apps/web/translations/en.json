@@ -2112,11 +2112,11 @@
         "createAgent": {
           "title": "Create a new agent",
           "cta": "Create agent",
-          "description": "Create an agent on your server"
+          "description": "Create a stateful agent on your local Letta server"
         },
         "viewAgents": {
-          "title": "View all agents",
-          "description": "View agents on your server",
+          "title": "View existing agents",
+          "description": "View all agents running on your local Letta server",
           "cta": "View agents"
         }
       }

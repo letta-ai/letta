@@ -7,7 +7,6 @@ import {
   VerticalDotsIcon,
   TrashIcon,
   EditIcon,
-  DatabaseIcon,
   DropdownMenu,
   DropdownMenuItem,
   Dialog,
@@ -18,6 +17,7 @@ import {
   RawInput,
   useForm,
   VStack,
+  LinkOffIcon,
 } from '@letta-cloud/ui-component-library';
 import {
   type AgentState,
@@ -217,7 +217,7 @@ function DetachDataSourceDialog({ source }: { source: Source }) {
         <DropdownMenuItem
           data-testid="detach-data-source-dialog-trigger"
           doNotCloseOnSelect
-          preIcon={<DatabaseIcon />}
+          preIcon={<LinkOffIcon />}
           label={t('trigger')}
         />
       }

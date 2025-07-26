@@ -16,7 +16,6 @@ import {
   FormProvider,
   Input,
   TextArea,
-  Typography,
   useForm,
   VStack,
 } from '@letta-cloud/ui-component-library';
@@ -216,9 +215,6 @@ export function CreateDataSourceModal(props: CreateDataSourceModalProps) {
             name="name"
           />
 
-          <Typography color="lighter" variant="body2">
-            {t('CreateDataSourceDialog.instructions.details')}
-          </Typography>
           <FormField
             render={({ field }) => (
               <TextArea
@@ -226,6 +222,7 @@ export function CreateDataSourceModal(props: CreateDataSourceModalProps) {
                 minRows={3}
                 fullWidth
                 {...field}
+                description={t('CreateDataSourceDialog.instructions.details')}
                 label={t('CreateDataSourceDialog.instructions.label')}
                 placeholder={t(
                   'CreateDataSourceDialog.instructions.placeholder',

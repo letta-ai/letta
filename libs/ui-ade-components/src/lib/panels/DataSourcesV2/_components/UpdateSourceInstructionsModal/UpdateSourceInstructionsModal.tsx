@@ -11,7 +11,6 @@ import {
   FormField,
   FormProvider,
   TextArea,
-  Typography,
   useForm,
 } from '@letta-cloud/ui-component-library';
 import { useQueryClient } from '@tanstack/react-query';
@@ -118,7 +117,6 @@ export function UpdateSourceInstructionsModal(
         testId="update-source-instructions-modal"
         trigger={trigger}
       >
-        <Typography>{t('instructions.details')}</Typography>
         <FormField
           render={({ field }) => (
             <TextArea
@@ -126,6 +124,7 @@ export function UpdateSourceInstructionsModal(
               minRows={3}
               fullWidth
               {...field}
+              description={t('instructions.details')}
               hideLabel
               label={t('instructions.label')}
               placeholder={t('instructions.placeholder')}
