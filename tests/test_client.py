@@ -593,13 +593,6 @@ def test_attach_detach_agent_source(client: Letta, agent: AgentState):
     # Create a source
     source = client.sources.create(
         name="test_source",
-        embedding_config={  # TODO: change this
-            "embedding_endpoint": "https://embeddings.memgpt.ai",
-            "embedding_model": "BAAI/bge-large-en-v1.5",
-            "embedding_dim": 1024,
-            "embedding_chunk_size": 300,
-            "embedding_endpoint_type": "hugging-face",
-        },
     )
     initial_sources = client.agents.sources.list(agent_id=agent.id)
     assert source.id not in [s.id for s in initial_sources]
