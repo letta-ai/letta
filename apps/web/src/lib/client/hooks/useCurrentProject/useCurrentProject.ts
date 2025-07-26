@@ -28,12 +28,14 @@ export function useCurrentProject(): UseCurrentProjectReturnType {
   });
 
   if (pathname.startsWith('/development-servers')) {
+    const slug = pathname.split('/').slice(0, 3).join('/'); // Extract slug from path /development-servers/{slug}
+
     return {
       updatedAt: '',
       id: '',
       name: t('remoteDevelopment'),
-      slug: '/development-servers/local',
-      path: '/development-servers/local',
+      slug,
+      path: slug,
     };
   }
 
