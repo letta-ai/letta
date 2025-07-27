@@ -272,7 +272,11 @@ function SimulatedMemory(props: SimulatedMemoryProps) {
   const memories = useSortedMemories(agent);
 
   if (!agent) {
-    return <LettaLoaderPanel />;
+    return (
+      <VStack paddingTop="xxsmall" fullHeight gap="medium">
+        <LettaLoaderPanel />
+      </VStack>
+    );
   }
 
   return (
