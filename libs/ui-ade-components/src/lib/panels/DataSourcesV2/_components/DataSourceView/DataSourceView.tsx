@@ -1,9 +1,9 @@
 import {
   Button,
   CaretDownIcon,
+  FolderIcon,
   HStack,
   PlusIcon,
-  Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useDataSourceContext } from '../../hooks/useDataSourceContext/useDataSourceContext';
@@ -29,23 +29,19 @@ function DataSourceViewHeader(props: DataSourceViewHeaderProps) {
   return (
     <HStack fullWidth justify="spaceBetween" align="center" padding="small">
       <HStack gap="small" align="center">
-        <Typography variant="body2" bold>
-          {source.name}
-        </Typography>
-        <HStack gap={false}>
-          <DataSourceSelector
-            trigger={
-              <Button
-                label={t('selectDataSource')}
-                size="xsmall"
-                color="tertiary"
-                hideLabel
-                preIcon={<CaretDownIcon />}
-              />
-            }
-          />
-          <DatasourceDropdownMenu source={source} />
-        </HStack>
+        <DataSourceSelector
+          trigger={
+            <Button
+              label={source.name}
+              size="small"
+              color="secondary"
+              _use_rarely_className="!font-semibold [&]:!border-none"
+              preIcon={<FolderIcon />}
+              postIcon={<CaretDownIcon />}
+            />
+          }
+        />
+        <DatasourceDropdownMenu source={source} />
       </HStack>
       <HStack>
         <UploadFileModal
