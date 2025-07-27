@@ -13,7 +13,7 @@ import {
   HR,
   HStack,
   Input,
-  LettaInvaderIcon,
+  SmallInvaderOutlineIcon,
   MiniApp,
   PlusIcon,
   Tooltip,
@@ -363,8 +363,8 @@ function ToolManagerNavigationSidebar() {
           isExpanded={isExpanded}
           title={
             <HStack align="center" collapseWidth className="gap-2">
-              <div className="bg-agent min-w-[24px] flex items-center justify-center h-[24px]">
-                <LettaInvaderIcon color="white" />
+              <div className="bg-agent text-agent-content min-w-[24px] flex items-center justify-center h-[24px] rounded-[2px]">
+                <SmallInvaderOutlineIcon />
               </div>
               <Tooltip asChild content={name}>
                 <Typography

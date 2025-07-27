@@ -107,13 +107,14 @@ interface IconAvatarProps extends AvatarVariantProps {
   icon: React.ReactNode;
   backgroundColor?: string;
   textColor?: string;
+  className?: string;
 }
 
 export function IconAvatar(props: IconAvatarProps) {
-  const { icon, textColor, size, backgroundColor } = props;
+  const { icon, textColor, size, backgroundColor, className } = props;
 
   return (
-    <AvatarRoot size={size}>
+    <AvatarRoot size={size} className={className}>
       <AvatarFallback
         style={{
           color: textColor || 'var(--color-primary-content)',

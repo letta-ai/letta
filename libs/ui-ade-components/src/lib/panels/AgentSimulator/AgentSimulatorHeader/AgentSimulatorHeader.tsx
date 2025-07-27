@@ -106,7 +106,7 @@ export function AgentSimulatorHeader() {
       fullWidth
       align="center"
       position="absolute"
-      zIndex="rightAboveZero"
+      zIndex="agentSimulatorHeader"
       justify="spaceBetween"
       color="transparent"
       className="pointer-events-none"

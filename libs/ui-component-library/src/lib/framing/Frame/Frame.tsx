@@ -23,6 +23,7 @@ const frameVariants = cva('', {
     zIndex: {
       base: 'z-[0]',
       rightAboveZero: 'z-rightAboveZero',
+      agentSimulatorHeader: 'z-agentSimulatorHeader',
       sidebarNavOverlay: 'z-sidebarNavOverlay',
       sidebarNav: 'z-sidebarNav',
       header: 'z-header',

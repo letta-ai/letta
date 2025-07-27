@@ -351,6 +351,7 @@ function MessageGroup({ group }: MessageGroupType) {
           backgroundColor={backgroundColor}
           icon={icon}
           size={'xxsmall'}
+          className="rounded-[2px]"
         />
         <Typography variant="body4" className="tracking-[0.04em] font-bold">
           {name.toUpperCase()}

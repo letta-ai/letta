@@ -229,7 +229,7 @@ function DesktopLayout() {
                 {
                   id: 'datasources',
                   label: datasourcesTitle,
-                  minHeight: 300,
+                  minHeight: 200,
                   content: <DataSourcesPanel />,
                 },
                 {
@@ -264,7 +264,7 @@ function DesktopLayout() {
             />
           </VStack>
         </Panel>
-        <PanelResizeHandle className="w-[1px] bg-border" />
+        <PanelResizeHandle className="w-[1px]" />
         <Panel
           defaultSize={layoutConfig?.panelLayout[1] || 40}
           className="h-full ade-panel"
@@ -311,7 +311,7 @@ function DesktopLayout() {
         </Panel>
         {networkInspectorOpen.isOpen && (
           <>
-            <PanelResizeHandle className="w-[1px] bg-border" />
+            <PanelResizeHandle className="w-[1px]" />
             <Panel
               defaultSize={20}
               defaultValue={20}

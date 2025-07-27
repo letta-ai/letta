@@ -577,19 +577,14 @@ export function ContextWindowPanel() {
               },
             })}
           </Typography>
-          <HStack
-            /* eslint-disable-next-line react/forbid-component-props */
-            style={{ marginRight: 45 }}
-          >
-            <Typography color="muted" variant="body4">
-              {t('ContextWindowPreview.remainingTokens', {
-                percentageRemaining: formatNumber(percentageRemaining, {
-                  maximumFractionDigits: 2,
-                  style: 'percent',
-                }),
-              })}
-            </Typography>
-          </HStack>
+          <Typography color="muted" variant="body4">
+            {t('ContextWindowPreview.remainingTokens', {
+              percentageRemaining: formatNumber(percentageRemaining, {
+                maximumFractionDigits: 2,
+                style: 'percent',
+              }),
+            })}
+          </Typography>
         </HStack>
       </HStack>
     </VStack>

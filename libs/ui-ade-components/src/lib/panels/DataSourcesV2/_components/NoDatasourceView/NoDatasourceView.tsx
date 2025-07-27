@@ -17,7 +17,7 @@ export function NoDatasourceView() {
   return (
     <PanelMainContent>
       <VStack
-        className="min-h-[300px]"
+        className="min-h-[200px]"
         align="center"
         justify="center"
         fullWidth

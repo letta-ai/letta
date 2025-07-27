@@ -82,13 +82,18 @@ pre[class*='language-'] {
 
 :root {
   --comment-color: #878390;
-  --keyword-color: #9c5f2d;
-  --string-color: #277827;
+  --keyword-color: hsl(10, 66%, 55%);
+  --string-color: hsl(120, 39%, 47%);
   --base-code-color: #55585b;
-  --bool-color: #a260c9;
-  --property-color: #960ce6;
-  --operator-color: #2a2abd;
+  --bool-color: hsl(278, 49%, 58%);
+  --property-color: hsl(278, 49%, 58%);
+  --operator-color: hsl(240, 33%, 47%);
   --regex-color: #b7881a;
+}
+
+/* Dark mode overrides */
+[data-mode='dark'] {
+  --operator-color: hsl(240, 33%, 62%);
 }
 
 .token.comment,

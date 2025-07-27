@@ -19,6 +19,7 @@ export function buildConfig(appDir: string): Config {
       extend: {
         zIndex: {
           rightAboveZero: '1',
+          agentSimulatorHeader: '2',
           sidebarNavOverlay: '5',
           sidebarNav: '6',
           header: '7',
