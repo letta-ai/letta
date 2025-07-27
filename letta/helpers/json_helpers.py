@@ -7,7 +7,7 @@ def json_loads(data):
     return json.loads(data, strict=False)
 
 
-def json_dumps(data, indent=2) -> str:
+def json_dumps(data, indent=2):
     def safe_serializer(obj):
         if isinstance(obj, datetime):
             return obj.isoformat()

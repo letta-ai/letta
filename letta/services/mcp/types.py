@@ -46,12 +46,3 @@ class StdioServerConfig(BaseServerConfig):
         if self.env is not None:
             values["env"] = self.env
         return values
-
-
-class OauthStreamEvent(str, Enum):
-    CONNECTION_ATTEMPT = "connection_attempt"
-    SUCCESS = "success"
-    ERROR = "error"
-    OAUTH_REQUIRED = "oauth_required"
-    AUTHORIZATION_URL = "authorization_url"
-    WAITING_FOR_AUTH = "waiting_for_auth"

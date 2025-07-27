@@ -908,12 +908,11 @@ def test_async_function_detection(add_integers_tool, async_add_integers_tool, te
     assert async_sandbox.is_async_function
 
 
-@pytest.mark.asyncio
-async def test_async_template_selection(add_integers_tool, async_add_integers_tool, test_user):
+def test_async_template_selection(add_integers_tool, async_add_integers_tool, test_user):
     """Test that correct templates are selected for sync vs async functions"""
     # Test sync function uses regular template
     sync_sandbox = AsyncToolSandboxE2B(add_integers_tool.name, {}, test_user, tool_object=add_integers_tool)
-    sync_script = await sync_sandbox.generate_execution_script(agent_state=None)
+    sync_script = sync_sandbox.generate_execution_script(agent_state=None)
     print("=== SYNC SCRIPT ===")
     print(sync_script)
     print("=== END SYNC SCRIPT ===")
@@ -922,7 +921,7 @@ async def test_async_template_selection(add_integers_tool, async_add_integers_to
 
     # Test async function uses async template
     async_sandbox = AsyncToolSandboxE2B(async_add_integers_tool.name, {}, test_user, tool_object=async_add_integers_tool)
-    async_script = await async_sandbox.generate_execution_script(agent_state=None)
+    async_script = async_sandbox.generate_execution_script(agent_state=None)
     print("=== ASYNC SCRIPT ===")
     print(async_script)
     print("=== END ASYNC SCRIPT ===")

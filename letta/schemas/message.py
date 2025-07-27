@@ -41,7 +41,7 @@ from letta.schemas.letta_message_content import (
     get_letta_message_content_union_str_json_schema,
 )
 from letta.system import unpack_message
-from letta.utils import parse_json, validate_function_response
+from letta.utils import parse_json
 
 
 def add_inner_thoughts_to_tool_call(
@@ -251,10 +251,10 @@ class Message(BaseMessage):
         include_err: Optional[bool] = None,
     ) -> List[LettaMessage]:
         """Convert message object (in DB format) to the style used by the original Letta API"""
+        messages = []
 
-        # TODO (cliandy): break this into more manageable pieces
         if self.role == MessageRole.assistant:
-            messages = []
+
             # Handle reasoning
             if self.content:
                 # Check for ReACT-style COT inside of TextContent
@@ -348,7 +348,7 @@ class Message(BaseMessage):
                         # We need to unpack the actual message contents from the function call
                         try:
                             func_args = parse_json(tool_call.function.arguments)
-                            message_string = validate_function_response(func_args[assistant_message_tool_kwarg], 0, truncate=False)
+                            message_string = func_args[assistant_message_tool_kwarg]
                         except KeyError:
                             raise ValueError(f"Function call {tool_call.function.name} missing {assistant_message_tool_kwarg} argument")
                         messages.append(
@@ -380,106 +380,99 @@ class Message(BaseMessage):
                                 is_err=self.is_err,
                             )
                         )
-
         elif self.role == MessageRole.tool:
-            messages = [self._convert_tool_message()]
+            # This is type ToolReturnMessage
+            # Try to interpret the function return, recall that this is how we packaged:
+            # def package_function_response(was_success, response_string, timestamp=None):
+            #     formatted_time = get_local_time() if timestamp is None else timestamp
+            #     packaged_message = {
+            #         "status": "OK" if was_success else "Failed",
+            #         "message": response_string,
+            #         "time": formatted_time,
+            #     }
+            if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
+                text_content = self.content[0].text
+            else:
+                raise ValueError(f"Invalid tool return (no text object on message): {self.content}")
+
+            try:
+                function_return = parse_json(text_content)
+                text_content = str(function_return.get("message", text_content))
+                status = function_return["status"]
+                if status == "OK":
+                    status_enum = "success"
+                elif status == "Failed":
+                    status_enum = "error"
+                else:
+                    raise ValueError(f"Invalid status: {status}")
+            except json.JSONDecodeError:
+                raise ValueError(f"Failed to decode function return: {text_content}")
+            assert self.tool_call_id is not None
+            messages.append(
+                # TODO make sure this is what the API returns
+                # function_return may not match exactly...
+                ToolReturnMessage(
+                    id=self.id,
+                    date=self.created_at,
+                    tool_return=text_content,
+                    status=self.tool_returns[0].status if self.tool_returns else status_enum,
+                    tool_call_id=self.tool_call_id,
+                    stdout=self.tool_returns[0].stdout if self.tool_returns else None,
+                    stderr=self.tool_returns[0].stderr if self.tool_returns else None,
+                    name=self.name,
+                    otid=Message.generate_otid_from_id(self.id, len(messages)),
+                    sender_id=self.sender_id,
+                    step_id=self.step_id,
+                    is_err=self.is_err,
+                )
+            )
         elif self.role == MessageRole.user:
-            messages = [self._convert_user_message()]
+            # This is type UserMessage
+            if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
+                text_content = self.content[0].text
+            elif self.content:
+                text_content = self.content
+            else:
+                raise ValueError(f"Invalid user message (no text object on message): {self.content}")
+
+            message = unpack_message(text_content)
+            messages.append(
+                UserMessage(
+                    id=self.id,
+                    date=self.created_at,
+                    content=message,
+                    name=self.name,
+                    otid=self.otid,
+                    sender_id=self.sender_id,
+                    step_id=self.step_id,
+                    is_err=self.is_err,
+                )
+            )
         elif self.role == MessageRole.system:
-            messages = [self._convert_system_message()]
+            # This is type SystemMessage
+            if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
+                text_content = self.content[0].text
+            else:
+                raise ValueError(f"Invalid system message (no text object on system): {self.content}")
+
+            messages.append(
+                SystemMessage(
+                    id=self.id,
+                    date=self.created_at,
+                    content=text_content,
+                    name=self.name,
+                    otid=self.otid,
+                    sender_id=self.sender_id,
+                    step_id=self.step_id,
+                )
+            )
         else:
-            raise ValueError(f"Unknown role: {self.role}")
+            raise ValueError(self.role)
 
-        return messages[::-1] if reverse else messages
+        if reverse:
+            messages.reverse()
 
-    def _convert_tool_message(self) -> ToolReturnMessage:
-        """Convert tool role message to ToolReturnMessage
-
-        the tool return is packaged as follows:
-            packaged_message = {
-                "status": "OK" if was_success else "Failed",
-                "message": response_string,
-                "time": formatted_time,
-            }
-        """
-        if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
-            text_content = self.content[0].text
-        else:
-            raise ValueError(f"Invalid tool return (no text object on message): {self.content}")
-
-        try:
-            function_return = parse_json(text_content)
-            message_text = str(function_return.get("message", text_content))
-            status = self._parse_tool_status(function_return["status"])
-        except json.JSONDecodeError:
-            raise ValueError(f"Failed to decode function return: {text_content}")
-
-        assert self.tool_call_id is not None
-
-        return ToolReturnMessage(
-            id=self.id,
-            date=self.created_at,
-            tool_return=message_text,
-            status=self.tool_returns[0].status if self.tool_returns else status,
-            tool_call_id=self.tool_call_id,
-            stdout=self.tool_returns[0].stdout if self.tool_returns else None,
-            stderr=self.tool_returns[0].stderr if self.tool_returns else None,
-            name=self.name,
-            otid=Message.generate_otid_from_id(self.id, 0),
-            sender_id=self.sender_id,
-            step_id=self.step_id,
-            is_err=self.is_err,
-        )
-
-    @staticmethod
-    def _parse_tool_status(status: str) -> Literal["success", "error"]:
-        """Convert tool status string to enum value"""
-        if status == "OK":
-            return "success"
-        elif status == "Failed":
-            return "error"
-        else:
-            raise ValueError(f"Invalid status: {status}")
-
-    def _convert_user_message(self) -> UserMessage:
-        """Convert user role message to UserMessage"""
-        # Extract text content
-        if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
-            text_content = self.content[0].text
-        elif self.content:
-            text_content = self.content
-        else:
-            raise ValueError(f"Invalid user message (no text object on message): {self.content}")
-
-        message = unpack_message(text_content)
-
-        return UserMessage(
-            id=self.id,
-            date=self.created_at,
-            content=message,
-            name=self.name,
-            otid=self.otid,
-            sender_id=self.sender_id,
-            step_id=self.step_id,
-            is_err=self.is_err,
-        )
-
-    def _convert_system_message(self) -> SystemMessage:
-        """Convert system role message to SystemMessage"""
-        if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
-            text_content = self.content[0].text
-        else:
-            raise ValueError(f"Invalid system message (no text object on system): {self.content}")
-
-        return SystemMessage(
-            id=self.id,
-            date=self.created_at,
-            content=text_content,
-            name=self.name,
-            otid=self.otid,
-            sender_id=self.sender_id,
-            step_id=self.step_id,
-        )
+        return messages
 
     @staticmethod
     def dict_to_message(

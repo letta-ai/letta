@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Any, Dict, Optional, Union
 
 from pydantic import Field
@@ -11,7 +10,6 @@ from letta.functions.mcp_client.types import (
     StdioServerConfig,
     StreamableHTTPServerConfig,
 )
-from letta.orm.mcp_oauth import OAuthSessionStatus
 from letta.schemas.letta_base import LettaBase
 
 
@@ -121,71 +119,3 @@ class UpdateStreamableHTTPMCPServer(LettaBase):
 
 UpdateMCPServer = Union[UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer]
 RegisterMCPServer = Union[RegisterSSEMCPServer, RegisterStdioMCPServer, RegisterStreamableHTTPMCPServer]
-
-
-# OAuth-related schemas
-class BaseMCPOAuth(LettaBase):
-    __id_prefix__ = "mcp-oauth"
-
-
-class MCPOAuthSession(BaseMCPOAuth):
-    """OAuth session for MCP server authentication."""
-
-    id: str = BaseMCPOAuth.generate_id_field()
-    state: str = Field(..., description="OAuth state parameter")
-    server_id: Optional[str] = Field(None, description="MCP server ID")
-    server_url: str = Field(..., description="MCP server URL")
-    server_name: str = Field(..., description="MCP server display name")
-
-    # User and organization context
-    user_id: Optional[str] = Field(None, description="User ID associated with the session")
-    organization_id: str = Field(..., description="Organization ID associated with the session")
-
-    # OAuth flow data
-    authorization_url: Optional[str] = Field(None, description="OAuth authorization URL")
-    authorization_code: Optional[str] = Field(None, description="OAuth authorization code")
-
-    # Token data
-    access_token: Optional[str] = Field(None, description="OAuth access token")
-    refresh_token: Optional[str] = Field(None, description="OAuth refresh token")
-    token_type: str = Field(default="Bearer", description="Token type")
-    expires_at: Optional[datetime] = Field(None, description="Token expiry time")
-    scope: Optional[str] = Field(None, description="OAuth scope")
-
-    # Client configuration
-    client_id: Optional[str] = Field(None, description="OAuth client ID")
-    client_secret: Optional[str] = Field(None, description="OAuth client secret")
-    redirect_uri: Optional[str] = Field(None, description="OAuth redirect URI")
-
-    # Session state
-    status: OAuthSessionStatus = Field(default=OAuthSessionStatus.PENDING, description="Session status")
-
-    # Timestamps
-    created_at: datetime = Field(default_factory=datetime.now, description="Session creation time")
-    updated_at: datetime = Field(default_factory=datetime.now, description="Last update time")
-
-
-class MCPOAuthSessionCreate(BaseMCPOAuth):
-    """Create a new OAuth session."""
-
-    server_url: str = Field(..., description="MCP server URL")
-    server_name: str = Field(..., description="MCP server display name")
-    user_id: Optional[str] = Field(None, description="User ID associated with the session")
-    organization_id: str = Field(..., description="Organization ID associated with the session")
-    state: Optional[str] = Field(None, description="OAuth state parameter")
-
-
-class MCPOAuthSessionUpdate(BaseMCPOAuth):
-    """Update an existing OAuth session."""
-
-    authorization_url: Optional[str] = Field(None, description="OAuth authorization URL")
-    authorization_code: Optional[str] = Field(None, description="OAuth authorization code")
-    access_token: Optional[str] = Field(None, description="OAuth access token")
-    refresh_token: Optional[str] = Field(None, description="OAuth refresh token")
-    token_type: Optional[str] = Field(None, description="Token type")
-    expires_at: Optional[datetime] = Field(None, description="Token expiry time")
-    scope: Optional[str] = Field(None, description="OAuth scope")
-    client_id: Optional[str] = Field(None, description="OAuth client ID")
-    client_secret: Optional[str] = Field(None, description="OAuth client secret")
-    redirect_uri: Optional[str] = Field(None, description="OAuth redirect URI")
-    status: Optional[OAuthSessionStatus] = Field(None, description="Session status")

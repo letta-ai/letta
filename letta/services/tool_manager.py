@@ -106,10 +106,8 @@ class ToolManager:
 
     @enforce_types
     @trace_method
-    def create_or_update_mcp_tool(
-        self, tool_create: ToolCreate, mcp_server_name: str, mcp_server_id: str, actor: PydanticUser
-    ) -> PydanticTool:
-        metadata = {MCP_TOOL_TAG_NAME_PREFIX: {"server_name": mcp_server_name, "server_id": mcp_server_id}}
+    def create_or_update_mcp_tool(self, tool_create: ToolCreate, mcp_server_name: str, actor: PydanticUser) -> PydanticTool:
+        metadata = {MCP_TOOL_TAG_NAME_PREFIX: {"server_name": mcp_server_name}}
         return self.create_or_update_tool(
             PydanticTool(
                 tool_type=ToolType.EXTERNAL_MCP, name=tool_create.json_schema["name"], metadata_=metadata, **tool_create.model_dump()
@@ -118,10 +116,8 @@ class ToolManager:
         )
 
     @enforce_types
-    async def create_mcp_tool_async(
-        self, tool_create: ToolCreate, mcp_server_name: str, mcp_server_id: str, actor: PydanticUser
-    ) -> PydanticTool:
-        metadata = {MCP_TOOL_TAG_NAME_PREFIX: {"server_name": mcp_server_name, "server_id": mcp_server_id}}
+    async def create_mcp_tool_async(self, tool_create: ToolCreate, mcp_server_name: str, actor: PydanticUser) -> PydanticTool:
+        metadata = {MCP_TOOL_TAG_NAME_PREFIX: {"server_name": mcp_server_name}}
         return await self.create_or_update_tool_async(
             PydanticTool(
                 tool_type=ToolType.EXTERNAL_MCP, name=tool_create.json_schema["name"], metadata_=metadata, **tool_create.model_dump()

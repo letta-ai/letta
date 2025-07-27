@@ -36,10 +36,7 @@ class SandboxToolExecutor(ToolExecutor):
     ) -> ToolExecutionResult:
 
         # Store original memory state
-        if agent_state:
-            orig_memory_str = await agent_state.memory.compile_async()
-        else:
-            orig_memory_str = None
+        orig_memory_str = agent_state.memory.compile() if agent_state else None
 
         try:
             # Prepare function arguments
@@ -61,8 +58,7 @@ class SandboxToolExecutor(ToolExecutor):
 
             # Verify memory integrity
             if agent_state:
-                new_memory_str = await agent_state.memory.compile_async()
-                assert orig_memory_str == new_memory_str, "Memory should not be modified in a sandbox tool"
+                assert orig_memory_str == agent_state.memory.compile(), "Memory should not be modified in a sandbox tool"
 
             # Update agent memory if needed
             if tool_execution_result.agent_state is not None:

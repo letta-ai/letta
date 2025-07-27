@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from sqlalchemy import JSON, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from letta.orm.mixins import ProjectMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.step import Step as PydanticStep
@@ -14,7 +13,7 @@ if TYPE_CHECKING:
     from letta.orm.provider import Provider
 
 
-class Step(SqlalchemyBase, ProjectMixin):
+class Step(SqlalchemyBase):
     """Tracks all metadata for agent step."""
 
     __tablename__ = "steps"
@@ -53,6 +52,9 @@ class Step(SqlalchemyBase, ProjectMixin):
     trace_id: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="The trace id of the agent step.")
     feedback: Mapped[Optional[str]] = mapped_column(
         None, nullable=True, doc="The feedback for this step. Must be either 'positive' or 'negative'."
+    )
+    project_id: Mapped[Optional[str]] = mapped_column(
+        None, nullable=True, doc="The project that the agent that executed this step belongs to (cloud only)."
     )
 
     # Relationships (foreign keys)

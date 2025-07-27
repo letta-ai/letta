@@ -1,17 +1,17 @@
 import uuid
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from letta.orm.mixins import OrganizationMixin, ProjectMixin
+from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.identity import Identity as PydanticIdentity
 from letta.schemas.identity import IdentityProperty
 
 
-class Identity(SqlalchemyBase, OrganizationMixin, ProjectMixin):
+class Identity(SqlalchemyBase, OrganizationMixin):
     """Identity ORM class"""
 
     __tablename__ = "identities"
@@ -32,6 +32,7 @@ class Identity(SqlalchemyBase, OrganizationMixin, ProjectMixin):
     identifier_key: Mapped[str] = mapped_column(nullable=False, doc="External, user-generated identifier key of the identity.")
     name: Mapped[str] = mapped_column(nullable=False, doc="The name of the identity.")
     identity_type: Mapped[str] = mapped_column(nullable=False, doc="The type of the identity.")
+    project_id: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The project id of the identity.")
     properties: Mapped[List["IdentityProperty"]] = mapped_column(
         JSON, nullable=False, default=list, doc="List of properties associated with the identity"
     )

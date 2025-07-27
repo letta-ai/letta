@@ -24,7 +24,6 @@ class Group(GroupBase):
     manager_type: ManagerType = Field(..., description="")
     agent_ids: List[str] = Field(..., description="")
     description: str = Field(..., description="")
-    project_id: Optional[str] = Field(None, description="The associated project id.")
     shared_block_ids: List[str] = Field([], description="")
     # Pattern fields
     manager_agent_id: Optional[str] = Field(None, description="")
@@ -139,7 +138,6 @@ class GroupCreate(BaseModel):
     agent_ids: List[str] = Field(..., description="")
     description: str = Field(..., description="")
     manager_config: ManagerConfigUnion = Field(RoundRobinManager(), description="")
-    project_id: Optional[str] = Field(None, description="The associated project id.")
     shared_block_ids: List[str] = Field([], description="")
 
 
@@ -147,5 +145,4 @@ class GroupUpdate(BaseModel):
     agent_ids: Optional[List[str]] = Field(None, description="")
     description: Optional[str] = Field(None, description="")
     manager_config: Optional[ManagerConfigUpdateUnion] = Field(None, description="")
-    project_id: Optional[str] = Field(None, description="The associated project id.")
     shared_block_ids: Optional[List[str]] = Field(None, description="")

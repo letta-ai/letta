@@ -242,7 +242,7 @@ class Settings(BaseSettings):
     uvicorn_reload: bool = False
     uvicorn_timeout_keep_alive: int = 5
 
-    use_uvloop: bool = Field(default=False, description="Enable uvloop as asyncio event loop.")
+    use_uvloop: bool = Field(default=True, description="Enable uvloop as asyncio event loop.")
     use_granian: bool = Field(default=False, description="Use Granian for workers")
     sqlalchemy_tracing: bool = False
 
@@ -277,10 +277,6 @@ class Settings(BaseSettings):
     pinecone_source_index: Optional[str] = "sources"
     pinecone_agent_index: Optional[str] = "recall"
     upsert_pinecone_indices: bool = False
-
-    # File processing timeout settings
-    file_processing_timeout_minutes: int = 30
-    file_processing_timeout_error_message: str = "File processing timed out after {} minutes. Please try again."
 
     @property
     def letta_pg_uri(self) -> str:
@@ -331,11 +327,6 @@ class LogSettings(BaseSettings):
     verbose_telemetry_logging: bool = Field(False)
 
 
-class TelemetrySettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="letta_telemetry_", extra="ignore")
-    profiler: bool | None = Field(False, description="Enable use of the profiler.")
-
-
 # singleton
 settings = Settings(_env_parse_none_str="None")
 test_settings = TestSettings()
@@ -343,4 +334,3 @@ model_settings = ModelSettings()
 tool_settings = ToolSettings()
 summarizer_settings = SummarizerSettings()
 log_settings = LogSettings()
-telemetry_settings = TelemetrySettings()
