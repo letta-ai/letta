@@ -1646,7 +1646,7 @@ class AgentManager:
 
         # note: we only update the system prompt if the core memory is changed
         # this means that the archival/recall memory statistics may be someout out of date
-        curr_memory_str = agent_state.memory.compile(
+        curr_memory_str = await agent_state.memory.compile_async(
             sources=agent_state.sources,
             tool_usage_rules=tool_rules_solver.compile_tool_rule_prompts(),
             max_files_open=agent_state.max_files_open,
@@ -1836,14 +1836,12 @@ class AgentManager:
         agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor, include_relationships=["memory", "sources"])
         system_message = await self.message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)
         temp_tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
-        if (
-            new_memory.compile(
-                sources=agent_state.sources,
-                tool_usage_rules=temp_tool_rules_solver.compile_tool_rule_prompts(),
-                max_files_open=agent_state.max_files_open,
-            )
-            not in system_message.content[0].text
-        ):
+        new_memory_str = await new_memory.compile_async(
+            sources=agent_state.sources,
+            tool_usage_rules=temp_tool_rules_solver.compile_tool_rule_prompts(),
+            max_files_open=agent_state.max_files_open,
+        )
+        if new_memory_str not in system_message.content[0].text:
             # update the blocks (LRW) in the DB
             for label in agent_state.memory.list_block_labels():
                 updated_value = new_memory.get_block(label).value
