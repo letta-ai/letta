@@ -55,6 +55,7 @@ from letta.schemas.block import BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ActorType, AgentStepStatus, FileProcessingStatus, JobStatus, JobType, MessageRole, ProviderType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
+from letta.schemas.file import FileMetadata
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate, IdentityUpsert
 from letta.schemas.job import BatchJob
@@ -268,8 +269,11 @@ def mcp_tool(server, default_user):
         },
     )
     mcp_server_name = "test"
+    mcp_server_id = "test-server-id"  # Mock server ID for testing
     tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
-    tool = server.tool_manager.create_or_update_mcp_tool(tool_create=tool_create, mcp_server_name=mcp_server_name, actor=default_user)
+    tool = server.tool_manager.create_or_update_mcp_tool(
+        tool_create=tool_create, mcp_server_name=mcp_server_name, mcp_server_id=mcp_server_id, actor=default_user
+    )
     yield tool
 
 
@@ -2133,6 +2137,8 @@ async def test_list_agents_query_text_pagination(server: SyncServer, default_use
         actor=default_user,
     )
 
+    await asyncio.sleep(0.1)
+
     agent2 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="Search Agent Two",
@@ -2144,6 +2150,8 @@ async def test_list_agents_query_text_pagination(server: SyncServer, default_use
         ),
         actor=default_user,
     )
+
+    await asyncio.sleep(0.1)
 
     agent3 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
@@ -3469,6 +3477,7 @@ def test_create_mcp_tool(server: SyncServer, mcp_tool, default_user, default_org
     assert mcp_tool.created_by_id == default_user.id
     assert mcp_tool.tool_type == ToolType.EXTERNAL_MCP
     assert mcp_tool.metadata_[MCP_TOOL_TAG_NAME_PREFIX]["server_name"] == "test"
+    assert mcp_tool.metadata_[MCP_TOOL_TAG_NAME_PREFIX]["server_id"] == "test-server-id"
 
 
 # Test should work with both SQLite and PostgreSQL
@@ -6570,14 +6579,14 @@ async def test_file_status_race_condition_prevention(server, default_user, defau
         processing_status=FileProcessingStatus.PARSING,
     )
 
-    # Simulate race condition: Try to update from PENDING again (stale read)
-    # This should fail because the file is already in PARSING
-    with pytest.raises(ValueError, match="Invalid state transition.*parsing.*PARSING"):
-        await server.file_manager.update_file_status(
-            file_id=created.id,
-            actor=default_user,
-            processing_status=FileProcessingStatus.PARSING,
-        )
+    # Simulate race condition: Try to update from PARSING to PARSING again (stale read)
+    # This should now be allowed (same-state transition) to prevent race conditions
+    updated_again = await server.file_manager.update_file_status(
+        file_id=created.id,
+        actor=default_user,
+        processing_status=FileProcessingStatus.PARSING,
+    )
+    assert updated_again.processing_status == FileProcessingStatus.PARSING
 
     # Move to ERROR
     await server.file_manager.update_file_status(
@@ -6679,6 +6688,43 @@ async def test_file_status_update_with_chunks_progress(server, default_user, def
     )
     assert updated.processing_status == FileProcessingStatus.COMPLETED
     assert updated.chunks_embedded == 100  # preserved
+
+
+@pytest.mark.asyncio
+async def test_same_state_transitions_allowed(server, default_user, default_source):
+    """Test that same-state transitions are allowed to prevent race conditions."""
+    # Create file
+    created = await server.file_manager.create_file(
+        FileMetadata(
+            file_name="same_state_test.txt",
+            source_id=default_source.id,
+            processing_status=FileProcessingStatus.PENDING,
+        ),
+        default_user,
+    )
+
+    # Test PARSING -> PARSING
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.PARSING)
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.PARSING
+    )
+    assert updated.processing_status == FileProcessingStatus.PARSING
+
+    # Test EMBEDDING -> EMBEDDING
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.EMBEDDING)
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.EMBEDDING, chunks_embedded=5
+    )
+    assert updated.processing_status == FileProcessingStatus.EMBEDDING
+    assert updated.chunks_embedded == 5
+
+    # Test COMPLETED -> COMPLETED
+    await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.COMPLETED)
+    updated = await server.file_manager.update_file_status(
+        file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.COMPLETED, total_chunks=10
+    )
+    assert updated.processing_status == FileProcessingStatus.COMPLETED
+    assert updated.total_chunks == 10
 
 
 @pytest.mark.asyncio
@@ -8508,6 +8554,83 @@ async def test_create_mcp_server(server, default_user, event_loop):
     assert tool.name == tool_name
     assert f"mcp:{created_server.server_name}" in tool.tags, f"Expected tag {f'mcp:{created_server.server_name}'}, got {tool.tags}"
     print("TAGS", tool.tags)
+
+
+async def test_get_mcp_servers_by_ids(server, default_user, event_loop):
+    from letta.schemas.mcp import MCPServer, MCPServerType, SSEServerConfig, StdioServerConfig
+    from letta.settings import tool_settings
+
+    if tool_settings.mcp_read_from_config:
+        return
+
+    # Create multiple MCP servers for testing
+    servers_data = [
+        {
+            "name": "test_server_1",
+            "config": StdioServerConfig(
+                server_name="test_server_1", type=MCPServerType.STDIO, command="echo 'test1'", args=["arg1"], env={"ENV1": "value1"}
+            ),
+            "type": MCPServerType.STDIO,
+        },
+        {
+            "name": "test_server_2",
+            "config": SSEServerConfig(server_name="test_server_2", server_url="https://test2.example.com/sse"),
+            "type": MCPServerType.SSE,
+        },
+        {
+            "name": "test_server_3",
+            "config": SSEServerConfig(server_name="test_server_3", server_url="https://test3.example.com/mcp"),
+            "type": MCPServerType.STREAMABLE_HTTP,
+        },
+    ]
+
+    created_servers = []
+    for server_data in servers_data:
+        if server_data["type"] == MCPServerType.STDIO:
+            mcp_server = MCPServer(server_name=server_data["name"], server_type=server_data["type"], stdio_config=server_data["config"])
+        else:
+            mcp_server = MCPServer(
+                server_name=server_data["name"], server_type=server_data["type"], server_url=server_data["config"].server_url
+            )
+
+        created = await server.mcp_manager.create_or_update_mcp_server(mcp_server, actor=default_user)
+        created_servers.append(created)
+
+    # Test fetching multiple servers by IDs
+    server_ids = [s.id for s in created_servers]
+    fetched_servers = await server.mcp_manager.get_mcp_servers_by_ids(server_ids, actor=default_user)
+
+    assert len(fetched_servers) == len(created_servers)
+    fetched_ids = {s.id for s in fetched_servers}
+    expected_ids = {s.id for s in created_servers}
+    assert fetched_ids == expected_ids
+
+    # Test fetching subset of servers
+    subset_ids = server_ids[:2]
+    subset_servers = await server.mcp_manager.get_mcp_servers_by_ids(subset_ids, actor=default_user)
+    assert len(subset_servers) == 2
+    assert all(s.id in subset_ids for s in subset_servers)
+
+    # Test fetching with empty list
+    empty_result = await server.mcp_manager.get_mcp_servers_by_ids([], actor=default_user)
+    assert empty_result == []
+
+    # Test fetching with non-existent ID mixed with valid IDs
+    mixed_ids = [server_ids[0], "non-existent-id", server_ids[1]]
+    mixed_result = await server.mcp_manager.get_mcp_servers_by_ids(mixed_ids, actor=default_user)
+    # Should only return the existing servers
+    assert len(mixed_result) == 2
+    assert all(s.id in server_ids for s in mixed_result)
+
+    # Test that servers from different organizations are not returned
+    # This would require creating another user/org, but for now we'll just verify
+    # that the function respects the actor's organization
+    all_servers = await server.mcp_manager.list_mcp_servers(actor=default_user)
+    all_server_ids = [s.id for s in all_servers]
+    bulk_fetched = await server.mcp_manager.get_mcp_servers_by_ids(all_server_ids, actor=default_user)
+
+    # All fetched servers should belong to the same organization
+    assert all(s.organization_id == default_user.organization_id for s in bulk_fetched)
 
 
 # ======================================================================================================================

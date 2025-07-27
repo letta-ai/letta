@@ -1,4 +1,7 @@
+from typing import Optional
+
 from mcp import ClientSession
+from mcp.client.auth import OAuthClientProvider
 from mcp.client.streamable_http import streamablehttp_client
 
 from letta.functions.mcp_client.types import BaseServerConfig, StreamableHTTPServerConfig
@@ -9,10 +12,12 @@ logger = get_logger(__name__)
 
 
 class AsyncStreamableHTTPMCPClient(AsyncBaseMCPClient):
+    def __init__(self, server_config: StreamableHTTPServerConfig, oauth_provider: Optional[OAuthClientProvider] = None):
+        super().__init__(server_config, oauth_provider)
+
     async def _initialize_connection(self, server_config: BaseServerConfig) -> None:
         if not isinstance(server_config, StreamableHTTPServerConfig):
             raise ValueError("Expected StreamableHTTPServerConfig")
-
         try:
             # Prepare headers for authentication
             headers = {}
@@ -23,11 +28,18 @@ class AsyncStreamableHTTPMCPClient(AsyncBaseMCPClient):
             if server_config.auth_header and server_config.auth_token:
                 headers[server_config.auth_header] = server_config.auth_token
 
-            # Use streamablehttp_client context manager with headers if provided
-            if headers:
-                streamable_http_cm = streamablehttp_client(server_config.server_url, headers=headers)
+            # Use OAuth provider if available, otherwise use regular headers
+            if self.oauth_provider:
+                streamable_http_cm = streamablehttp_client(
+                    server_config.server_url, headers=headers if headers else None, auth=self.oauth_provider
+                )
             else:
-                streamable_http_cm = streamablehttp_client(server_config.server_url)
+                # Use streamablehttp_client context manager with headers if provided
+                if headers:
+                    streamable_http_cm = streamablehttp_client(server_config.server_url, headers=headers)
+                else:
+                    streamable_http_cm = streamablehttp_client(server_config.server_url)
+
             read_stream, write_stream, _ = await self.exit_stack.enter_async_context(streamable_http_cm)
 
             # Create and enter the ClientSession context manager

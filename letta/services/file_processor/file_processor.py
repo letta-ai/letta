@@ -69,6 +69,15 @@ class FileProcessor:
                     raise ValueError("No chunks created from text")
                 all_chunks.extend(chunks)
 
+            # Update with chunks length
+            file_metadata = await self.file_manager.update_file_status(
+                file_id=file_metadata.id,
+                actor=self.actor,
+                processing_status=FileProcessingStatus.EMBEDDING,
+                total_chunks=len(all_chunks),
+                chunks_embedded=0,
+            )
+
             all_passages = await self.embedder.generate_embedded_passages(
                 file_id=file_metadata.id,
                 source_id=source_id,
@@ -177,9 +186,7 @@ class FileProcessor:
                 "file_processor.ocr_completed",
                 {"filename": filename, "pages_extracted": len(ocr_response.pages), "text_length": len(raw_markdown_text)},
             )
-            file_metadata = await self.file_manager.update_file_status(
-                file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.EMBEDDING
-            )
+
             file_metadata = await self.file_manager.upsert_file_content(file_id=file_metadata.id, text=raw_markdown_text, actor=self.actor)
 
             await self.agent_manager.insert_file_into_context_windows(
@@ -241,13 +248,7 @@ class FileProcessor:
                     file_id=file_metadata.id,
                     actor=self.actor,
                     processing_status=FileProcessingStatus.COMPLETED,
-                )
-            else:
-                await self.file_manager.update_file_status(
-                    file_id=file_metadata.id,
-                    actor=self.actor,
-                    total_chunks=len(all_passages),
-                    chunks_embedded=0,
+                    chunks_embedded=len(all_passages),
                 )
 
             return all_passages
@@ -286,6 +287,7 @@ class FileProcessor:
             document_annotation=None,
         )
 
+    # TODO: The file state machine here is kind of out of date, we need to match with the correct one above
     @trace_method
     async def process_imported_file(self, file_metadata: FileMetadata, source_id: str) -> List[Passage]:
         """Process an imported file that already has content - skip OCR, do chunking/embedding"""

@@ -42,7 +42,7 @@ def get_local_time_timezone(timezone=DEFAULT_TIMEZONE):
     return formatted_time
 
 
-def get_local_time(timezone=DEFAULT_TIMEZONE):
+def get_local_time(timezone: str | None = DEFAULT_TIMEZONE):
     if timezone is not None:
         time_str = get_local_time_timezone(timezone)
     else:

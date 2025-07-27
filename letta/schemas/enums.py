@@ -102,6 +102,10 @@ class FileProcessingStatus(str, Enum):
     COMPLETED = "completed"
     ERROR = "error"
 
+    def is_terminal_state(self) -> bool:
+        """Check if the processing status is in a terminal state (completed or error)."""
+        return self in (FileProcessingStatus.COMPLETED, FileProcessingStatus.ERROR)
+
 
 class ToolType(str, Enum):
     CUSTOM = "custom"

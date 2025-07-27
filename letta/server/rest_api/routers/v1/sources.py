@@ -2,6 +2,7 @@ import asyncio
 import mimetypes
 import os
 import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Optional
 
@@ -392,6 +393,31 @@ async def get_file_metadata(
     # Verify the file belongs to the specified source
     if file_metadata.source_id != source_id:
         raise HTTPException(status_code=404, detail=f"File with id={file_id} not found in source {source_id}.")
+
+    # Check for timeout if status is not terminal
+    if not file_metadata.processing_status.is_terminal_state():
+        if file_metadata.created_at:
+            # Handle timezone differences between PostgreSQL (timezone-aware) and SQLite (timezone-naive)
+            if settings.letta_pg_uri_no_default:
+                # PostgreSQL: both datetimes are timezone-aware
+                timeout_threshold = datetime.now(timezone.utc) - timedelta(minutes=settings.file_processing_timeout_minutes)
+                file_created_at = file_metadata.created_at
+            else:
+                # SQLite: both datetimes should be timezone-naive
+                timeout_threshold = datetime.utcnow() - timedelta(minutes=settings.file_processing_timeout_minutes)
+                file_created_at = file_metadata.created_at
+
+            if file_created_at < timeout_threshold:
+                # Move file to error status with timeout message
+                timeout_message = settings.file_processing_timeout_error_message.format(settings.file_processing_timeout_minutes)
+                try:
+                    file_metadata = await server.file_manager.update_file_status(
+                        file_id=file_metadata.id, actor=actor, processing_status=FileProcessingStatus.ERROR, error_message=timeout_message
+                    )
+                except ValueError as e:
+                    # state transition was blocked - log it but don't fail the request
+                    logger.warning(f"Could not update file to timeout error state: {str(e)}")
+                    # continue with existing file_metadata
 
     if should_use_pinecone() and file_metadata.processing_status == FileProcessingStatus.EMBEDDING:
         ids = await list_pinecone_index_for_files(file_id=file_id, actor=actor)

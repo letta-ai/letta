@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Dict, List
 
+from letta.constants import MCP_TOOL_TAG_NAME_PREFIX
 from letta.errors import AgentFileExportError, AgentFileImportError
 from letta.helpers.pinecone_utils import should_use_pinecone
 from letta.log import get_logger
@@ -13,6 +14,7 @@ from letta.schemas.agent_file import (
     FileSchema,
     GroupSchema,
     ImportResult,
+    MCPServerSchema,
     MessageSchema,
     SourceSchema,
     ToolSchema,
@@ -20,6 +22,7 @@ from letta.schemas.agent_file import (
 from letta.schemas.block import Block
 from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.file import FileMetadata
+from letta.schemas.mcp import MCPServer
 from letta.schemas.message import Message
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
@@ -92,7 +95,7 @@ class AgentSerializationManager:
             ToolSchema.__id_prefix__: 0,
             MessageSchema.__id_prefix__: 0,
             FileAgentSchema.__id_prefix__: 0,
-            # MCPServerSchema.__id_prefix__: 0,
+            MCPServerSchema.__id_prefix__: 0,
         }
 
     def _reset_state(self):
@@ -258,6 +261,53 @@ class AgentSerializationManager:
         file_schema.source_id = self._map_db_to_file_id(file_metadata.source_id, SourceSchema.__id_prefix__, allow_new=False)
         return file_schema
 
+    async def _extract_unique_mcp_servers(self, tools: List, actor: User) -> List:
+        """Extract unique MCP servers from tools based on metadata, using server_id if available, otherwise falling back to server_name."""
+        mcp_server_ids = set()
+        mcp_server_names = set()
+        for tool in tools:
+            # Check if tool has MCP metadata
+            if tool.metadata_ and MCP_TOOL_TAG_NAME_PREFIX in tool.metadata_:
+                mcp_metadata = tool.metadata_[MCP_TOOL_TAG_NAME_PREFIX]
+                # TODO: @jnjpng clean this up once we fully migrate to server_id being the main identifier
+                if "server_id" in mcp_metadata:
+                    mcp_server_ids.add(mcp_metadata["server_id"])
+                elif "server_name" in mcp_metadata:
+                    mcp_server_names.add(mcp_metadata["server_name"])
+
+        # Fetch MCP servers by ID
+        mcp_servers = []
+        fetched_server_ids = set()
+        if mcp_server_ids:
+            try:
+                mcp_servers = await self.mcp_manager.get_mcp_servers_by_ids(list(mcp_server_ids), actor)
+                fetched_server_ids.update([mcp_server.id for mcp_server in mcp_servers])
+            except Exception as e:
+                logger.warning(f"Failed to fetch MCP servers by IDs {mcp_server_ids}: {e}")
+
+        # Fetch MCP servers by name if not already fetched by ID
+        if mcp_server_names:
+            for server_name in mcp_server_names:
+                try:
+                    mcp_server = await self.mcp_manager.get_mcp_server(server_name, actor)
+                    if mcp_server and mcp_server.id not in fetched_server_ids:
+                        mcp_servers.append(mcp_server)
+                except Exception as e:
+                    logger.warning(f"Failed to fetch MCP server by name {server_name}: {e}")
+
+        return mcp_servers
+
+    def _convert_mcp_server_to_schema(self, mcp_server: MCPServer) -> MCPServerSchema:
+        """Convert MCPServer to MCPServerSchema with ID remapping and auth scrubbing"""
+        try:
+            mcp_file_id = self._map_db_to_file_id(mcp_server.id, MCPServerSchema.__id_prefix__, allow_new=False)
+            mcp_schema = MCPServerSchema.from_mcp_server(mcp_server)
+            mcp_schema.id = mcp_file_id
+            return mcp_schema
+        except Exception as e:
+            logger.error(f"Failed to convert MCP server {mcp_server.id}: {e}")
+            raise
+
     async def export(self, agent_ids: List[str], actor: User) -> AgentFileSchema:
         """
         Export agents and their related entities to AgentFileSchema format.
@@ -289,6 +339,13 @@ class AgentSerializationManager:
             tool_set = self._extract_unique_tools(agent_states)
             block_set = self._extract_unique_blocks(agent_states)
 
+            # Extract MCP servers from tools BEFORE conversion (must be done before ID mapping)
+            mcp_server_set = await self._extract_unique_mcp_servers(tool_set, actor)
+
+            # Map MCP server IDs before converting schemas
+            for mcp_server in mcp_server_set:
+                self._map_db_to_file_id(mcp_server.id, MCPServerSchema.__id_prefix__)
+
             # Extract sources and files from agent states BEFORE conversion (with caching)
             source_set, file_set = await self._extract_unique_sources_and_files_from_agents(agent_states, actor, files_agents_cache)
 
@@ -301,6 +358,7 @@ class AgentSerializationManager:
             block_schemas = [self._convert_block_to_schema(block) for block in block_set]
             source_schemas = [self._convert_source_to_schema(source) for source in source_set]
             file_schemas = [self._convert_file_to_schema(file_metadata) for file_metadata in file_set]
+            mcp_server_schemas = [self._convert_mcp_server_to_schema(mcp_server) for mcp_server in mcp_server_set]
 
             logger.info(f"Exporting {len(agent_ids)} agents to agent file format")
 
@@ -312,7 +370,7 @@ class AgentSerializationManager:
                 files=file_schemas,
                 sources=source_schemas,
                 tools=tool_schemas,
-                # mcp_servers=[],  # TODO: Extract and convert MCP servers
+                mcp_servers=mcp_server_schemas,
                 metadata={"revision_id": await get_latest_alembic_revision()},
                 created_at=datetime.now(timezone.utc),
             )
@@ -359,7 +417,20 @@ class AgentSerializationManager:
             # in-memory cache for file metadata to avoid repeated db calls
             file_metadata_cache = {}  # Maps database file ID to FileMetadata
 
-            # 1. Create tools first (no dependencies) - using bulk upsert for efficiency
+            # 1. Create MCP servers first (tools depend on them)
+            if schema.mcp_servers:
+                for mcp_server_schema in schema.mcp_servers:
+                    server_data = mcp_server_schema.model_dump(exclude={"id"})
+                    filtered_server_data = self._filter_dict_for_model(server_data, MCPServer)
+                    create_schema = MCPServer(**filtered_server_data)
+
+                    # Note: We don't have auth info from export, so the user will need to re-configure auth.
+                    # TODO: @jnjpng store metadata about obfuscated metadata to surface to the user
+                    created_mcp_server = await self.mcp_manager.create_or_update_mcp_server(create_schema, actor)
+                    file_to_db_ids[mcp_server_schema.id] = created_mcp_server.id
+                    imported_count += 1
+
+            # 2. Create tools (may depend on MCP servers) - using bulk upsert for efficiency
             if schema.tools:
                 # convert tool schemas to pydantic tools
                 pydantic_tools = []
@@ -559,6 +630,7 @@ class AgentSerializationManager:
             (schema.files, FileSchema.__id_prefix__),
             (schema.sources, SourceSchema.__id_prefix__),
             (schema.tools, ToolSchema.__id_prefix__),
+            (schema.mcp_servers, MCPServerSchema.__id_prefix__),
         ]
 
         for entities, expected_prefix in entity_checks:
@@ -601,6 +673,7 @@ class AgentSerializationManager:
             ("files", schema.files),
             ("sources", schema.sources),
             ("tools", schema.tools),
+            ("mcp_servers", schema.mcp_servers),
         ]
 
         for entity_type, entities in entity_collections:
@@ -705,3 +778,11 @@ class AgentSerializationManager:
             raise AgentFileImportError(f"Schema validation failed: {'; '.join(errors)}")
 
         logger.info("Schema validation passed")
+
+    def _filter_dict_for_model(self, data: dict, model_cls):
+        """Filter a dictionary to only include keys that are in the model fields"""
+        try:
+            allowed = model_cls.model_fields.keys()  # Pydantic v2
+        except AttributeError:
+            allowed = model_cls.__fields__.keys()  # Pydantic v1
+        return {k: v for k, v in data.items() if k in allowed}

@@ -1,4 +1,6 @@
+import asyncio
 import json
+from collections.abc import AsyncGenerator
 from typing import Any, Dict, List, Optional, Union
 
 from composio.client import ComposioClientError, HTTPError, NoItemsFound
@@ -11,27 +13,38 @@ from composio.exceptions import (
     EnumStringNotFound,
 )
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
+from starlette.responses import StreamingResponse
 
 from letta.errors import LettaToolCreateError
 from letta.functions.functions import derive_openai_json_schema
 from letta.functions.mcp_client.exceptions import MCPTimeoutError
-from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
+from letta.functions.mcp_client.types import MCPTool, SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
 from letta.helpers.composio_helpers import get_composio_api_key
+from letta.helpers.decorators import deprecated
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
 from letta.orm.errors import UniqueConstraintViolationError
+from letta.orm.mcp_oauth import OAuthSessionStatus
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.letta_message_content import TextContent
-from letta.schemas.mcp import UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer
+from letta.schemas.mcp import MCPOAuthSessionCreate, UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer
 from letta.schemas.message import Message
 from letta.schemas.tool import Tool, ToolCreate, ToolRunFromSource, ToolUpdate
+from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
-from letta.services.mcp.sse_client import AsyncSSEMCPClient
+from letta.services.mcp.oauth_utils import (
+    MCPOAuthSession,
+    create_oauth_provider,
+    drill_down_exception,
+    get_oauth_success_html,
+    oauth_stream_event,
+)
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
-from letta.services.mcp.streamable_http_client import AsyncStreamableHTTPMCPClient
+from letta.services.mcp.types import OauthStreamEvent
 from letta.settings import tool_settings
 
 router = APIRouter(prefix="/tools", tags=["tools"])
@@ -475,7 +488,11 @@ async def add_mcp_tool(
             )
 
         tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
-        return await server.tool_manager.create_mcp_tool_async(tool_create=tool_create, mcp_server_name=mcp_server_name, actor=actor)
+        # For config-based servers, use the server name as ID since they don't have database IDs
+        mcp_server_id = mcp_server_name
+        return await server.tool_manager.create_mcp_tool_async(
+            tool_create=tool_create, mcp_server_name=mcp_server_name, mcp_server_id=mcp_server_id, actor=actor
+        )
 
     else:
         return await server.mcp_manager.add_tool_from_mcp_server(mcp_server_name=mcp_server_name, mcp_tool_name=mcp_tool_name, actor=actor)
@@ -608,35 +625,26 @@ async def delete_mcp_server_from_config(
         return [server.to_config() for server in all_servers]
 
 
-@router.post("/mcp/servers/test", response_model=List[MCPTool], operation_id="test_mcp_server")
+@deprecated("Deprecated in favor of /mcp/servers/connect which handles OAuth flow via SSE stream")
+@router.post("/mcp/servers/test", operation_id="test_mcp_server")
 async def test_mcp_server(
     request: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig] = Body(...),
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     Test connection to an MCP server without adding it.
-    Returns the list of available tools if successful.
+    Returns the list of available tools if successful, or OAuth information if OAuth is required.
     """
     client = None
     try:
-        # create a temporary MCP client based on the server type
-        if request.type == MCPServerType.SSE:
-            if not isinstance(request, SSEServerConfig):
-                request = SSEServerConfig(**request.model_dump())
-            client = AsyncSSEMCPClient(request)
-        elif request.type == MCPServerType.STREAMABLE_HTTP:
-            if not isinstance(request, StreamableHTTPServerConfig):
-                request = StreamableHTTPServerConfig(**request.model_dump())
-            client = AsyncStreamableHTTPMCPClient(request)
-        elif request.type == MCPServerType.STDIO:
-            if not isinstance(request, StdioServerConfig):
-                request = StdioServerConfig(**request.model_dump())
-            client = AsyncStdioMCPClient(request)
-        else:
-            raise ValueError(f"Invalid MCP server type: {request.type}")
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        client = await server.mcp_manager.get_mcp_client(request, actor)
 
         await client.connect_to_server()
         tools = await client.list_tools()
-        return tools
+
+        return {"status": "success", "tools": tools}
     except ConnectionError as e:
         raise HTTPException(
             status_code=400,
@@ -672,6 +680,160 @@ async def test_mcp_server(
                 logger.warning(f"Error during MCP client cleanup: {cleanup_error}")
 
 
+@router.post(
+    "/mcp/servers/connect",
+    response_model=None,
+    responses={
+        200: {
+            "description": "Successful response",
+            "content": {
+                "text/event-stream": {"description": "Server-Sent Events stream"},
+            },
+        }
+    },
+    operation_id="connect_mcp_server",
+)
+async def connect_mcp_server(
+    request: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig] = Body(...),
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+) -> StreamingResponse:
+    """
+    Connect to an MCP server with support for OAuth via SSE.
+    Returns a stream of events handling authorization state and exchange if OAuth is required.
+    """
+
+    async def oauth_stream_generator(
+        request: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig],
+    ) -> AsyncGenerator[str, None]:
+        client = None
+        oauth_provider = None
+        temp_client = None
+        connect_task = None
+
+        try:
+            # Acknolwedge connection attempt
+            yield oauth_stream_event(OauthStreamEvent.CONNECTION_ATTEMPT, server_name=request.server_name)
+
+            actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+
+            # Create MCP client with respective transport type
+            try:
+                client = await server.mcp_manager.get_mcp_client(request, actor)
+            except ValueError as e:
+                yield oauth_stream_event(OauthStreamEvent.ERROR, message=str(e))
+                return
+
+            # Try normal connection first for flows that don't require OAuth
+            try:
+                await client.connect_to_server()
+                tools = await client.list_tools(serialize=True)
+                yield oauth_stream_event(OauthStreamEvent.SUCCESS, tools=tools)
+                return
+            except ConnectionError:
+                # TODO: jnjpng make this connection error check more specific to the 401 unauthorized error
+                if isinstance(client, AsyncStdioMCPClient):
+                    logger.warning(f"OAuth not supported for stdio")
+                    yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"OAuth not supported for stdio")
+                    return
+                # Continue to OAuth flow
+                logger.info(f"Attempting OAuth flow for {request}...")
+            except Exception as e:
+                yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"Connection failed: {str(e)}")
+                return
+
+            # OAuth required, yield state to client to prepare to handle authorization URL
+            yield oauth_stream_event(OauthStreamEvent.OAUTH_REQUIRED, message="OAuth authentication required")
+
+            # Create OAuth session to persist the state of the OAuth flow
+            session_create = MCPOAuthSessionCreate(
+                server_url=request.server_url,
+                server_name=request.server_name,
+                user_id=actor.id,
+                organization_id=actor.organization_id,
+            )
+            oauth_session = await server.mcp_manager.create_oauth_session(session_create, actor)
+            session_id = oauth_session.id
+
+            # Create OAuth provider for the instance of the stream connection
+            # Note: Using the correct API path for the callback
+            # do not edit this this is the correct url
+            redirect_uri = f"http://localhost:8283/v1/tools/mcp/oauth/callback/{session_id}"
+            oauth_provider = await create_oauth_provider(session_id, request.server_url, redirect_uri, server.mcp_manager, actor)
+
+            # Get authorization URL by triggering OAuth flow
+            temp_client = None
+            try:
+                temp_client = await server.mcp_manager.get_mcp_client(request, actor, oauth_provider)
+
+                # Run connect_to_server in background to avoid blocking
+                # This will trigger the OAuth flow and the redirect_handler will save the authorization URL to database
+                connect_task = asyncio.create_task(temp_client.connect_to_server())
+
+                # Give the OAuth flow time to trigger and save the URL
+                await asyncio.sleep(1.0)
+
+                # Fetch the authorization URL from database and yield state to client to proceed with handling authorization URL
+                auth_session = await server.mcp_manager.get_oauth_session_by_id(session_id, actor)
+                if auth_session and auth_session.authorization_url:
+                    yield oauth_stream_event(OauthStreamEvent.AUTHORIZATION_URL, url=auth_session.authorization_url, session_id=session_id)
+
+            except Exception as e:
+                logger.error(f"Error triggering OAuth flow: {e}")
+                yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"Failed to trigger OAuth: {str(e)}")
+
+                # Clean up active resources
+                if connect_task and not connect_task.done():
+                    connect_task.cancel()
+                    try:
+                        await connect_task
+                    except asyncio.CancelledError:
+                        pass
+                if temp_client:
+                    try:
+                        await temp_client.cleanup()
+                    except Exception as cleanup_error:
+                        logger.warning(f"Error during temp MCP client cleanup: {cleanup_error}")
+                return
+
+            # Wait for user authorization (with timeout), client should render loading state until user completes the flow and /mcp/oauth/callback/{session_id} is hit
+            yield oauth_stream_event(OauthStreamEvent.WAITING_FOR_AUTH, message="Waiting for user authorization...")
+
+            # Callback handler will poll for authorization code and state and update the OAuth session
+            await connect_task
+
+            tools = await temp_client.list_tools(serialize=True)
+
+            yield oauth_stream_event(OauthStreamEvent.SUCCESS, tools=tools)
+            return
+        except Exception as e:
+            detailed_error = drill_down_exception(e)
+            logger.error(f"Error in OAuth stream:\n{detailed_error}")
+            yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"Internal error: {detailed_error}")
+        finally:
+            if connect_task and not connect_task.done():
+                connect_task.cancel()
+                try:
+                    await connect_task
+                except asyncio.CancelledError:
+                    pass
+            if client:
+                try:
+                    await client.cleanup()
+                except Exception as cleanup_error:
+                    detailed_error = drill_down_exception(cleanup_error)
+                    logger.warning(f"Error during MCP client cleanup: {detailed_error}")
+            if temp_client:
+                try:
+                    await temp_client.cleanup()
+                except Exception as cleanup_error:
+                    # TODO: @jnjpng fix async cancel scope issue
+                    # detailed_error = drill_down_exception(cleanup_error)
+                    logger.warning(f"Aysnc cleanup confict during temp MCP client cleanup: {cleanup_error}")
+
+    return StreamingResponseWithStatusCode(oauth_stream_generator(request), media_type="text/event-stream")
+
+
 class CodeInput(BaseModel):
     code: str = Field(..., description="Python source code to parse for JSON schema")
 
@@ -691,6 +853,45 @@ async def generate_json_schema(
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to generate schema: {str(e)}")
+
+
+# TODO: @jnjpng need to route this through cloud API for production
+@router.get("/mcp/oauth/callback/{session_id}", operation_id="mcp_oauth_callback", response_class=HTMLResponse)
+async def mcp_oauth_callback(
+    session_id: str,
+    code: Optional[str] = Query(None, description="OAuth authorization code"),
+    state: Optional[str] = Query(None, description="OAuth state parameter"),
+    error: Optional[str] = Query(None, description="OAuth error"),
+    error_description: Optional[str] = Query(None, description="OAuth error description"),
+):
+    """
+    Handle OAuth callback for MCP server authentication.
+    """
+    try:
+        oauth_session = MCPOAuthSession(session_id)
+
+        if error:
+            error_msg = f"OAuth error: {error}"
+            if error_description:
+                error_msg += f" - {error_description}"
+            await oauth_session.update_session_status(OAuthSessionStatus.ERROR)
+            return {"status": "error", "message": error_msg}
+
+        if not code or not state:
+            await oauth_session.update_session_status(OAuthSessionStatus.ERROR)
+            return {"status": "error", "message": "Missing authorization code or state"}
+
+        # Store authorization code
+        success = await oauth_session.store_authorization_code(code, state)
+        if not success:
+            await oauth_session.update_session_status(OAuthSessionStatus.ERROR)
+            return {"status": "error", "message": "Invalid state parameter"}
+
+        return HTMLResponse(content=get_oauth_success_html(), status_code=200)
+
+    except Exception as e:
+        logger.error(f"OAuth callback error: {e}")
+        return {"status": "error", "message": f"OAuth callback failed: {str(e)}"}
 
 
 class GenerateToolInput(BaseModel):

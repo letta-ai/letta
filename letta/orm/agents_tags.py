@@ -9,6 +9,7 @@ class AgentsTags(Base):
     __table_args__ = (
         UniqueConstraint("agent_id", "tag", name="unique_agent_tag"),
         Index("ix_agents_tags_agent_id_tag", "agent_id", "tag"),
+        Index("ix_agents_tags_tag_agent_id", "tag", "agent_id"),
     )
 
     # # agent generates its own id

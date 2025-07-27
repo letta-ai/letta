@@ -99,8 +99,8 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
 
         # Make sure sandbox directory exists
         sandbox_dir = os.path.expanduser(local_configs.sandbox_dir)
-        if not os.path.exists(sandbox_dir) or not os.path.isdir(sandbox_dir):
-            os.makedirs(sandbox_dir)
+        if not await asyncio.to_thread(lambda: os.path.exists(sandbox_dir) and os.path.isdir(sandbox_dir)):
+            await asyncio.to_thread(os.makedirs, sandbox_dir)
 
         # If using a virtual environment, ensure it's prepared in parallel
         venv_preparation_task = None
@@ -109,11 +109,18 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
             venv_preparation_task = asyncio.create_task(self._prepare_venv(local_configs, venv_path, env))
 
         # Generate and write execution script (always with markers, since we rely on stdout)
-        with tempfile.NamedTemporaryFile(mode="w", dir=sandbox_dir, suffix=".py", delete=False) as temp_file:
-            code = self.generate_execution_script(agent_state=agent_state, wrap_print_with_markers=True)
-            temp_file.write(code)
-            temp_file.flush()
-            temp_file_path = temp_file.name
+        code = await self.generate_execution_script(agent_state=agent_state, wrap_print_with_markers=True)
+
+        async def write_temp_file(dir, content):
+            def _write():
+                with tempfile.NamedTemporaryFile(mode="w", dir=dir, suffix=".py", delete=False) as temp_file:
+                    temp_file.write(content)
+                    temp_file.flush()
+                    return temp_file.name
+
+            return await asyncio.to_thread(_write)
+
+        temp_file_path = await write_temp_file(sandbox_dir, code)
 
         try:
             # If we started a venv preparation task, wait for it to complete
@@ -159,14 +166,14 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
             from letta.settings import settings
 
             if not settings.debug:
-                os.remove(temp_file_path)
+                await asyncio.to_thread(os.remove, temp_file_path)
 
     @trace_method
     async def _prepare_venv(self, local_configs, venv_path: str, env: Dict[str, str]):
         """
         Prepare virtual environment asynchronously (in a background thread).
         """
-        if self.force_recreate_venv or not os.path.isdir(venv_path):
+        if self.force_recreate_venv or not await asyncio.to_thread(os.path.isdir, venv_path):
             sandbox_dir = os.path.expanduser(local_configs.sandbox_dir)
             log_event(name="start create_venv_for_local_sandbox", attributes={"venv_path": venv_path})
             await asyncio.to_thread(
