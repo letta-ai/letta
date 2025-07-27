@@ -593,6 +593,7 @@ def test_attach_detach_agent_source(client: Letta, agent: AgentState):
     # Create a source
     source = client.sources.create(
         name="test_source",
+        embedding="letta/letta-free",
     )
     initial_sources = client.agents.sources.list(agent_id=agent.id)
     assert source.id not in [s.id for s in initial_sources]
