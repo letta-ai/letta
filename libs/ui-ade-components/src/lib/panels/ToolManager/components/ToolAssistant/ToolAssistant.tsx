@@ -11,6 +11,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import './ToolAssistant.scss';
 import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
+import { useToolValidation } from '../../hooks/useToolValidation/useToolValidation';
 import { useTranslations } from '@letta-cloud/translations';
 
 interface ToolAssistantProps {
@@ -21,6 +22,7 @@ export function ToolAssistant(props: ToolAssistantProps) {
   const { tool } = props;
   const t = useTranslations('ToolsEditor/LocalToolsViewer');
   const { stagedTool, setStagedTool } = useStagedCode(tool);
+  const { validationErrors } = useToolValidation(stagedTool.source_code || '');
   const [useCodingAgent, setUseCodingAgent] = useState(false);
   const [promptInput, setPromptInput] = useState('');
 
@@ -50,12 +52,14 @@ export function ToolAssistant(props: ToolAssistantProps) {
         requestBody: {
           tool_name: tool.name || '',
           starter_code: stagedTool.source_code || '',
-          validation_errors: [],
+          validation_errors: validationErrors.map(
+            (error) => `Line ${error.line}: ${error.message}`,
+          ),
           prompt: prompt,
         },
       });
     },
-    [generateTool, stagedTool, tool],
+    [generateTool, stagedTool, tool, validationErrors],
   );
 
   return (

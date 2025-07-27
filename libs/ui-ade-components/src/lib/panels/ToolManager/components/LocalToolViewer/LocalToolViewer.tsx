@@ -42,10 +42,7 @@ import React, {
   useState,
 } from 'react';
 import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
-import {
-  type PythonValidatorError,
-  usePythonValidator,
-} from '@letta-cloud/utils-client';
+import { useToolValidation } from '../../hooks/useToolValidation/useToolValidation';
 import { useDebouncedCallback, useDebouncedValue } from '@mantine/hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import { ToolSimulator } from '../ToolSimulator/ToolSimulator';
@@ -191,34 +188,11 @@ function CodeEditor(props: CodeEditorProps) {
   const { tool } = props;
   const { stagedTool, setStagedTool } = useStagedCode(tool);
 
-  const { validatePython } = usePythonValidator();
-
-  const [debouncedCode] = useDebouncedValue(stagedTool.source_code || '', 500);
+  const { validationErrorsToLineNumberMap } = useToolValidation(
+    stagedTool.source_code || '',
+  );
 
   const debouncedSetStagedTool = useDebouncedCallback(setStagedTool, 500);
-  const [validationErrors, setValidationErrors] = useState<
-    PythonValidatorError[]
-  >([]);
-  useEffect(() => {
-    if (validatePython) {
-      void validatePython(debouncedCode).then(({ errors }) => {
-        setValidationErrors(errors);
-      });
-    }
-  }, [debouncedCode, validatePython]);
-
-  const validationErrorsToLineNumberMap = useMemo(() => {
-    return validationErrors.reduce((acc, error) => {
-      if (!error.line) {
-        return acc;
-      }
-
-      return {
-        ...acc,
-        [error.line]: error.message,
-      };
-    }, {});
-  }, [validationErrors]);
 
   const [localCode, setLocalCode] = useState<string>(
     stagedTool.source_code || '',
