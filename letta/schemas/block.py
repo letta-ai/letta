@@ -19,7 +19,6 @@ class BaseBlock(LettaBase, validate_assignment=True):
     value: str = Field(..., description="Value of the block.")
     limit: int = Field(CORE_MEMORY_BLOCK_CHAR_LIMIT, description="Character limit of the block.")
 
-    project_id: Optional[str] = Field(None, description="The associated project id.")
     # template data (optional)
     template_name: Optional[str] = Field(None, description="Name of the block if it is a template.", alias="name")
     is_template: bool = Field(False, description="Whether the block is a template (e.g. saved human/persona options).")
@@ -113,7 +112,6 @@ class BlockUpdate(BaseBlock):
 
     limit: Optional[int] = Field(None, description="Character limit of the block.")
     value: Optional[str] = Field(None, description="Value of the block.")
-    project_id: Optional[str] = Field(None, description="The associated project id.")
 
     class Config:
         extra = "ignore"  # Ignores extra fields
@@ -126,7 +124,6 @@ class CreateBlock(BaseBlock):
     limit: int = Field(CORE_MEMORY_BLOCK_CHAR_LIMIT, description="Character limit of the block.")
     value: str = Field(..., description="Value of the block.")
 
-    project_id: Optional[str] = Field(None, description="The associated project id.")
     # block templates
     is_template: bool = False
     template_name: Optional[str] = Field(None, description="Name of the block if it is a template.", alias="name")

@@ -133,46 +133,11 @@ class Memory(BaseModel, validate_assignment=True):
         except Exception as e:
             raise ValueError(f"Prompt template is not compatible with current memory structure: {str(e)}")
 
-    async def set_prompt_template_async(self, prompt_template: str):
-        """
-        Async version of set_prompt_template that doesn't block the event loop.
-        """
-        try:
-            # Validate Jinja2 syntax with async enabled
-            Template(prompt_template, enable_async=True)
-
-            # Validate compatibility with current memory structure - use async rendering
-            template = Template(prompt_template, enable_async=True)
-            await template.render_async(blocks=self.blocks, file_blocks=self.file_blocks, sources=[], max_files_open=None)
-
-            # If we get here, the template is valid and compatible
-            self.prompt_template = prompt_template
-        except TemplateSyntaxError as e:
-            raise ValueError(f"Invalid Jinja2 template syntax: {str(e)}")
-        except Exception as e:
-            raise ValueError(f"Prompt template is not compatible with current memory structure: {str(e)}")
-
     def compile(self, tool_usage_rules=None, sources=None, max_files_open=None) -> str:
         """Generate a string representation of the memory in-context using the Jinja2 template"""
         try:
             template = Template(self.prompt_template)
             return template.render(
-                blocks=self.blocks,
-                file_blocks=self.file_blocks,
-                tool_usage_rules=tool_usage_rules,
-                sources=sources,
-                max_files_open=max_files_open,
-            )
-        except TemplateSyntaxError as e:
-            raise ValueError(f"Invalid Jinja2 template syntax: {str(e)}")
-        except Exception as e:
-            raise ValueError(f"Prompt template is not compatible with current memory structure: {str(e)}")
-
-    async def compile_async(self, tool_usage_rules=None, sources=None, max_files_open=None) -> str:
-        """Async version of compile that doesn't block the event loop"""
-        try:
-            template = Template(self.prompt_template, enable_async=True)
-            return await template.render_async(
                 blocks=self.blocks,
                 file_blocks=self.file_blocks,
                 tool_usage_rules=tool_usage_rules,

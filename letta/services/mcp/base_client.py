@@ -1,9 +1,9 @@
+import asyncio
 from contextlib import AsyncExitStack
 from typing import Optional, Tuple
 
 from mcp import ClientSession
 from mcp import Tool as MCPTool
-from mcp.client.auth import OAuthClientProvider
 from mcp.types import TextContent
 
 from letta.functions.mcp_client.types import BaseServerConfig
@@ -14,12 +14,14 @@ logger = get_logger(__name__)
 
 # TODO: Get rid of Async prefix on this class name once we deprecate old sync code
 class AsyncBaseMCPClient:
-    def __init__(self, server_config: BaseServerConfig, oauth_provider: Optional[OAuthClientProvider] = None):
+    def __init__(self, server_config: BaseServerConfig):
         self.server_config = server_config
-        self.oauth_provider = oauth_provider
         self.exit_stack = AsyncExitStack()
         self.session: Optional[ClientSession] = None
         self.initialized = False
+        # Track the task that created this client
+        self._creation_task = asyncio.current_task()
+        self._cleanup_queue = asyncio.Queue(maxsize=1)
 
     async def connect_to_server(self):
         try:
@@ -46,25 +48,9 @@ class AsyncBaseMCPClient:
     async def _initialize_connection(self, server_config: BaseServerConfig) -> None:
         raise NotImplementedError("Subclasses must implement _initialize_connection")
 
-    async def list_tools(self, serialize: bool = False) -> list[MCPTool]:
+    async def list_tools(self) -> list[MCPTool]:
         self._check_initialized()
         response = await self.session.list_tools()
-        if serialize:
-            serializable_tools = []
-            for tool in response.tools:
-                if hasattr(tool, "model_dump"):
-                    # Pydantic model - use model_dump
-                    serializable_tools.append(tool.model_dump())
-                elif hasattr(tool, "dict"):
-                    # Older Pydantic model - use dict()
-                    serializable_tools.append(tool.dict())
-                elif hasattr(tool, "__dict__"):
-                    # Regular object - use __dict__
-                    serializable_tools.append(tool.__dict__)
-                else:
-                    # Fallback - convert to string
-                    serializable_tools.append(str(tool))
-            return serializable_tools
         return response.tools
 
     async def execute_tool(self, tool_name: str, tool_args: dict) -> Tuple[str, bool]:
@@ -93,7 +79,29 @@ class AsyncBaseMCPClient:
 
     # TODO: still hitting some async errors for voice agents, need to fix
     async def cleanup(self):
+        """Clean up resources - ensure this runs in the same task"""
+        if hasattr(self, "_cleanup_task"):
+            # If we're in a different task, schedule cleanup in original task
+            current_task = asyncio.current_task()
+            if current_task != self._creation_task:
+                # Create a future to signal completion
+                cleanup_done = asyncio.Future()
+                self._cleanup_queue.put_nowait((self.exit_stack, cleanup_done))
+                await cleanup_done
+                return
+
+        # Normal cleanup
         await self.exit_stack.aclose()
 
     def to_sync_client(self):
         raise NotImplementedError("Subclasses must implement to_sync_client")
+
+    async def __aenter__(self):
+        """Enter the async context manager."""
+        await self.connect_to_server()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Exit the async context manager."""
+        await self.cleanup()
+        return False  # Don't suppress exceptions

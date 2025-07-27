@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from letta.orm.block import Block
 from letta.orm.custom_columns import EmbeddingConfigColumn, LLMConfigColumn, ResponseFormatColumn, ToolRulesColumn
 from letta.orm.identity import Identity
-from letta.orm.mixins import OrganizationMixin, ProjectMixin
+from letta.orm.mixins import OrganizationMixin
 from letta.orm.organization import Organization
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.agent import AgentState as PydanticAgentState
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from letta.orm.tool import Tool
 
 
-class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, AsyncAttrs):
+class Agent(SqlalchemyBase, OrganizationMixin, AsyncAttrs):
     __tablename__ = "agents"
     __pydantic_model__ = PydanticAgentState
     __table_args__ = (Index("ix_agents_created_at", "created_at", "id"),)
@@ -67,6 +67,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, AsyncAttrs):
     embedding_config: Mapped[Optional[EmbeddingConfig]] = mapped_column(
         EmbeddingConfigColumn, doc="the embedding configuration object for this agent."
     )
+    project_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The id of the project the agent belongs to.")
     template_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The id of the template the agent belongs to.")
     base_template_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The base template id of the agent.")
 

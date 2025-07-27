@@ -92,7 +92,7 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
         # Finally, get any that are passed explicitly into the `run` function call
         if additional_env_vars:
             env_vars.update(additional_env_vars)
-        code = await self.generate_execution_script(agent_state=agent_state)
+        code = self.generate_execution_script(agent_state=agent_state)
 
         try:
             log_event(

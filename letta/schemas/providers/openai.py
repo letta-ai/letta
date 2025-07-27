@@ -202,7 +202,7 @@ class OpenAIProvider(Provider):
                 if model_type not in ["text->embedding"]:
                     continue
             else:
-                logger.debug(
+                logger.info(
                     f"Skipping embedding models for %s by default, as we don't assume embeddings are supported."
                     "Please open an issue on GitHub if support is required.",
                     self.base_url,

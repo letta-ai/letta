@@ -359,8 +359,6 @@ class LettaAgent(BaseAgent):
             # Update step if it needs to be updated
             finally:
                 if settings.track_stop_reason:
-                    if step_progression == StepProgression.FINISHED and should_continue:
-                        continue
                     self.logger.info("Running final update. Step Progression: %s", step_progression)
                     try:
                         if step_progression < StepProgression.STEP_LOGGED:
@@ -588,8 +586,6 @@ class LettaAgent(BaseAgent):
                 # Update step if it needs to be updated
             finally:
                 if settings.track_stop_reason:
-                    if step_progression == StepProgression.FINISHED and should_continue:
-                        continue
                     self.logger.info("Running final update. Step Progression: %s", step_progression)
                     try:
                         if step_progression < StepProgression.STEP_LOGGED:
@@ -901,8 +897,6 @@ class LettaAgent(BaseAgent):
             # Update step if it needs to be updated
             finally:
                 if settings.track_stop_reason:
-                    if step_progression == StepProgression.FINISHED and should_continue:
-                        continue
                     self.logger.info("Running final update. Step Progression: %s", step_progression)
                     try:
                         if step_progression < StepProgression.STEP_LOGGED:

@@ -141,7 +141,7 @@ def package_user_message(
     return json_dumps(packaged_message)
 
 
-def package_function_response(was_success: bool, response_string: str, timezone: str | None) -> str:
+def package_function_response(was_success, response_string, timezone):
     formatted_time = get_local_time(timezone=timezone)
     packaged_message = {
         "status": "OK" if was_success else "Failed",
