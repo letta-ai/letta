@@ -1685,6 +1685,15 @@
         "dependencies": "Dependencies",
         "settings": "Settings"
       }
+    },
+    "ToolAssistant": {
+      "label": "Ask Letta",
+      "title": "Help me code",
+      "generate": "Generate",
+      "prompt": "Ask the Letta coding assistant to help you write your tool",
+      "promptLabel": "Prompt",
+      "placeholder": "Enter a prompt to generate or modify your code",
+      "error": "An error occurred while generating the tool. Please try again."
     }
   },
   "ToolsEditor/LettaToolViewer": {

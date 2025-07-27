@@ -50,6 +50,7 @@ import { useDebouncedCallback, useDebouncedValue } from '@mantine/hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import { ToolSimulator } from '../ToolSimulator/ToolSimulator';
 import { DependencyViewer } from '../DependencyViewer/DependencyViewer';
+import { ToolAssistant } from '../ToolAssistant/ToolAssistant';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
@@ -57,6 +58,7 @@ import { get, isEqual } from 'lodash-es';
 import { pythonCodeParser } from '@letta-cloud/utils-shared';
 import { atom, useAtom } from 'jotai';
 import { ToolSettings } from '../ToolsSettings/ToolSettings';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface CurrentToolContextState {
   tool: Tool;
@@ -222,17 +224,35 @@ function CodeEditor(props: CodeEditorProps) {
     stagedTool.source_code || '',
   );
 
-  const handleResetLocalCode = useCallback(() => {
-    setLocalCode(tool.source_code || '');
-  }, [tool.source_code]);
-
   useEffect(() => {
+    function handleResetLocalCode() {
+      setLocalCode(tool.source_code || '');
+    }
+
     document.addEventListener('resetStagedTool', handleResetLocalCode);
 
     return () => {
       document.removeEventListener('resetStagedTool', handleResetLocalCode);
     };
-  }, [handleResetLocalCode]);
+  }, [tool.source_code]);
+
+  useEffect(() => {
+    function handleUpdateLocalCode(event: CustomEvent<{ code: string }>) {
+      setLocalCode(event.detail.code);
+    }
+
+    document.addEventListener(
+      'updateLocalCode',
+      handleUpdateLocalCode as EventListener,
+    );
+
+    return () => {
+      document.removeEventListener(
+        'updateLocalCode',
+        handleUpdateLocalCode as EventListener,
+      );
+    };
+  }, []);
 
   const handleCodeChange = useCallback(
     (code: string) => {
@@ -927,6 +947,7 @@ export function LocalToolViewer(props: LocalToolsViewerProps) {
   const { tool } = props;
 
   const { tools } = useCurrentAgent();
+  const { data: isAIAssistantEnabled } = useFeatureFlag('AI_TOOL_ASSISTANT');
 
   const isAttached = useMemo(() => {
     return tools?.some((t) => t.id === tool.id);
@@ -954,6 +975,7 @@ export function LocalToolViewer(props: LocalToolsViewerProps) {
         >
           <HStack align="center">
             <CodeButton />
+            {isAIAssistantEnabled && <ToolAssistant tool={tool} />}
           </HStack>
 
           <HStack align="center">

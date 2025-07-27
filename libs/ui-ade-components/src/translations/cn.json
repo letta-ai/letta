@@ -1109,6 +1109,15 @@
         "codeAndDependencies": "代码和依赖项",
         "settings": "设置"
       }
+    },
+    "ToolAssistant": {
+      "label": "询问Letta",
+      "title": "帮我写代码",
+      "generate": "生成",
+      "prompt": "向Letta编程助手寻求帮助来编写您的工具",
+      "promptLabel": "提示词",
+      "placeholder": "输入提示词来生成或修改您的代码",
+      "error": "生成工具时发生错误。请重试。"
     }
   },
   "ToolsEditor/LettaToolViewer": {
