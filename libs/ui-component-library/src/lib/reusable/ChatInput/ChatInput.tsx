@@ -606,7 +606,12 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                         type="submit"
                         color="primary"
                         preIcon={<SendIcon />}
-                        disabled={disabled || isDraggedOver || hasImageErrors}
+                        disabled={
+                          disabled ||
+                          isDraggedOver ||
+                          hasImageErrors ||
+                          (!text.trim() && images.length === 0)
+                        }
                         label={t('send')}
                         hideLabel
                         square={true}
@@ -666,7 +671,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                   color="secondary"
                   hideLabel
                   preIcon={<SendIcon />}
-                  disabled={disabled}
+                  disabled={disabled || (!text.trim() && images.length === 0)}
                   label={t('send')}
                 />
               )}
