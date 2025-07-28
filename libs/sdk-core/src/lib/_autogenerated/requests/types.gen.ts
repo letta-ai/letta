@@ -2440,6 +2440,10 @@ export type LettaAsyncRequest = {
    */
   include_return_message_types?: Array<MessageType> | null;
   /**
+   * If set to True, enables reasoning before responses or tool calls from the agent.
+   */
+  enable_thinking?: string;
+  /**
    * Optional callback URL to POST to when the job completes
    */
   callback_url?: string | null;
@@ -2474,6 +2478,10 @@ export type LettaBatchRequest = {
    * Only return specified message types in the response. If `None` (default) returns all messages.
    */
   include_return_message_types?: Array<MessageType> | null;
+  /**
+   * If set to True, enables reasoning before responses or tool calls from the agent.
+   */
+  enable_thinking?: string;
   /**
    * The ID of the agent to send this batch request for
    */
@@ -2528,6 +2536,10 @@ export type LettaRequest = {
    * Only return specified message types in the response. If `None` (default) returns all messages.
    */
   include_return_message_types?: Array<MessageType> | null;
+  /**
+   * If set to True, enables reasoning before responses or tool calls from the agent.
+   */
+  enable_thinking?: string;
 };
 
 export type LettaRequestConfig = {
@@ -2608,6 +2620,10 @@ export type LettaStreamingRequest = {
    * Only return specified message types in the response. If `None` (default) returns all messages.
    */
   include_return_message_types?: Array<MessageType> | null;
+  /**
+   * If set to True, enables reasoning before responses or tool calls from the agent.
+   */
+  enable_thinking?: string;
   /**
    * Flag to determine if individual tokens should be streamed. Set to True for token streaming (requires stream_steps = True).
    */

@@ -6844,6 +6844,13 @@ export const $LettaAsyncRequest = {
       description:
         'Only return specified message types in the response. If `None` (default) returns all messages.',
     },
+    enable_thinking: {
+      type: 'string',
+      title: 'Enable Thinking',
+      description:
+        'If set to True, enables reasoning before responses or tool calls from the agent.',
+      default: true,
+    },
     callback_url: {
       anyOf: [
         {
@@ -6929,6 +6936,13 @@ export const $LettaBatchRequest = {
       title: 'Include Return Message Types',
       description:
         'Only return specified message types in the response. If `None` (default) returns all messages.',
+    },
+    enable_thinking: {
+      type: 'string',
+      title: 'Enable Thinking',
+      description:
+        'If set to True, enables reasoning before responses or tool calls from the agent.',
+      default: true,
     },
     agent_id: {
       type: 'string',
@@ -7051,6 +7065,13 @@ export const $LettaRequest = {
       title: 'Include Return Message Types',
       description:
         'Only return specified message types in the response. If `None` (default) returns all messages.',
+    },
+    enable_thinking: {
+      type: 'string',
+      title: 'Enable Thinking',
+      description:
+        'If set to True, enables reasoning before responses or tool calls from the agent.',
+      default: true,
     },
   },
   type: 'object',
@@ -7203,6 +7224,13 @@ export const $LettaStreamingRequest = {
       title: 'Include Return Message Types',
       description:
         'Only return specified message types in the response. If `None` (default) returns all messages.',
+    },
+    enable_thinking: {
+      type: 'string',
+      title: 'Enable Thinking',
+      description:
+        'If set to True, enables reasoning before responses or tool calls from the agent.',
+      default: true,
     },
     stream_tokens: {
       type: 'boolean',

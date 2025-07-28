@@ -118,6 +118,12 @@ all_configs = [
     "ollama.json",  #  TODO (cliandy): enable this in ollama testing
 ]
 
+reasoning_configs = [
+    "openai-o1.json",
+    "openai-o3.json",
+    "openai-o4-mini.json",
+]
+
 
 requested = os.getenv("LLM_CONFIG_FILE")
 filenames = [requested] if requested else all_configs
@@ -157,6 +163,43 @@ def assert_greeting_with_assistant_message_response(
     if not token_streaming:
         assert USER_MESSAGE_RESPONSE in messages[index].content
     assert messages[index].otid and messages[index].otid[-1] == "1"
+    index += 1
+
+    if streaming:
+        assert isinstance(messages[index], LettaStopReason)
+        assert messages[index].stop_reason == "end_turn"
+        index += 1
+        assert isinstance(messages[index], LettaUsageStatistics)
+        assert messages[index].prompt_tokens > 0
+        assert messages[index].completion_tokens > 0
+        assert messages[index].total_tokens > 0
+        assert messages[index].step_count > 0
+
+
+def assert_greeting_no_reasoning_response(
+    messages: List[Any],
+    streaming: bool = False,
+    token_streaming: bool = False,
+    from_db: bool = False,
+) -> None:
+    """
+    Asserts that the messages list follows the expected sequence without reasoning:
+    AssistantMessage (no ReasoningMessage when put_inner_thoughts_in_kwargs is False).
+    """
+    expected_message_count = 3 if streaming else 2 if from_db else 1
+    assert len(messages) == expected_message_count
+
+    index = 0
+    if from_db:
+        assert isinstance(messages[index], UserMessage)
+        assert messages[index].otid == USER_MESSAGE_OTID
+        index += 1
+
+    # Agent Step 1 - should be AssistantMessage directly, no reasoning
+    assert isinstance(messages[index], AssistantMessage)
+    if not token_streaming:
+        assert USER_MESSAGE_RESPONSE in messages[index].content
+    assert messages[index].otid and messages[index].otid[-1] == "0"
     index += 1
 
     if streaming:
@@ -463,10 +506,10 @@ def agent_state(client: Letta) -> AgentState:
     )
     yield agent_state_instance
 
-    try:
-        client.agents.delete(agent_state_instance.id)
-    except Exception as e:
-        logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
+    # try:
+    #     client.agents.delete(agent_state_instance.id)
+    # except Exception as e:
+    #     logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
 
 
 @pytest.fixture(scope="function")
@@ -485,10 +528,10 @@ def agent_state_no_tools(client: Letta) -> AgentState:
     )
     yield agent_state_instance
 
-    try:
-        client.agents.delete(agent_state_instance.id)
-    except Exception as e:
-        logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
+    # try:
+    #     client.agents.delete(agent_state_instance.id)
+    # except Exception as e:
+    #     logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
 
 
 # ------------------------------
@@ -1309,17 +1352,17 @@ def test_job_creation_for_send_message(
 
 
 # TODO (cliandy): MERGE BACK IN POST
-# @pytest.mark.parametrize(
-#     "llm_config",
-#     TESTED_LLM_CONFIGS,
-#     ids=[c.model for c in TESTED_LLM_CONFIGS],
-# )
-# def test_async_job_cancellation(
-#     disable_e2b_api_key: Any,
-#     client: Letta,
-#     agent_state: AgentState,
-#     llm_config: LLMConfig,
-# ) -> None:
+# # @pytest.mark.parametrize(
+# #     "llm_config",
+# #     TESTED_LLM_CONFIGS,
+# #     ids=[c.model for c in TESTED_LLM_CONFIGS],
+# # )
+# # def test_async_job_cancellation(
+# #     disable_e2b_api_key: Any,
+# #     client: Letta,
+# #     agent_state: AgentState,
+# #     llm_config: LLMConfig,
+# # ) -> None:
 #     """
 #     Test that an async job can be cancelled and the cancellation is reflected in the job status.
 #     """
@@ -1457,3 +1500,86 @@ def test_job_creation_for_send_message(
 #
 #     # This test primarily validates that the implementation doesn't break under simulated disconnection
 #     assert True  # If we get here without errors, the architecture is sound
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_inner_thoughts_false_non_reasoner_models(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    # get the config filename
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a reasoning model
+    if not config_filename or config_filename in reasoning_configs:
+        pytest.skip(f"Skipping test for reasoning model {llm_config.model}")
+
+    # create a new config with all reasoning fields turned off
+    new_llm_config = llm_config.model_dump()
+    new_llm_config["put_inner_thoughts_in_kwargs"] = False
+    new_llm_config["enable_reasoner"] = False
+    new_llm_config["max_reasoning_tokens"] = 0
+    adjusted_llm_config = LLMConfig(**new_llm_config)
+
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=adjusted_llm_config)
+    response = client.agents.messages.create(
+        agent_id=agent_state.id,
+        messages=USER_MESSAGE_FORCE_REPLY,
+    )
+    assert_greeting_no_reasoning_response(response.messages)
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert_greeting_no_reasoning_response(messages_from_db, from_db=True)
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_inner_thoughts_false_non_reasoner_models_streaming(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    # get the config filename
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a reasoning model
+    if not config_filename or config_filename in reasoning_configs:
+        pytest.skip(f"Skipping test for reasoning model {llm_config.model}")
+
+    # create a new config with all reasoning fields turned off
+    new_llm_config = llm_config.model_dump()
+    new_llm_config["put_inner_thoughts_in_kwargs"] = False
+    new_llm_config["enable_reasoner"] = False
+    new_llm_config["max_reasoning_tokens"] = 0
+    adjusted_llm_config = LLMConfig(**new_llm_config)
+
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=adjusted_llm_config)
+    response = client.agents.messages.create_stream(
+        agent_id=agent_state.id,
+        messages=USER_MESSAGE_FORCE_REPLY,
+    )
+    messages = accumulate_chunks(list(response))
+    assert_greeting_no_reasoning_response(messages, streaming=True)
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert_greeting_no_reasoning_response(messages_from_db, from_db=True)

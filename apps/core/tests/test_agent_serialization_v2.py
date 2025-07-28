@@ -1169,12 +1169,10 @@ class TestAgentFileImportWithProcessing:
         # When using Pinecone, status stays at embedding until chunks are confirmed uploaded
         if should_use_pinecone():
             assert imported_file.processing_status.value == "embedding"
-            assert imported_file.total_chunks == 1  # Pinecone tracks chunk counts
-            assert imported_file.chunks_embedded == 0
         else:
             assert imported_file.processing_status.value == "completed"
-            assert imported_file.total_chunks is None
-            assert imported_file.chunks_embedded is None
+        assert imported_file.total_chunks == 1  # Pinecone tracks chunk counts
+        assert imported_file.chunks_embedded == 0
 
     async def test_import_multiple_files_processing(self, server, agent_serialization_manager, default_user, other_user):
         """Test import processes multiple files efficiently."""

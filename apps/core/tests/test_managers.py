@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 import random
@@ -7,6 +8,7 @@ import string
 import time
 from datetime import datetime, timedelta, timezone
 from typing import List
+from unittest.mock import Mock
 
 # tests/test_file_content_flow.py
 import pytest
@@ -37,7 +39,6 @@ from letta.constants import (
     MULTI_AGENT_TOOLS,
 )
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
-from letta.embeddings import embedding_model
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.functions.mcp_client.types import MCPTool
 from letta.helpers import ToolRulesSolver
@@ -93,16 +94,7 @@ from letta.utils import calculate_file_defaults_based_on_context_window
 from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
 from tests.utils import random_string
 
-DEFAULT_EMBEDDING_CONFIG = EmbeddingConfig(
-    embedding_endpoint_type="hugging-face",
-    embedding_endpoint="https://embeddings.memgpt.ai",
-    embedding_model="letta-free",
-    embedding_dim=1024,
-    embedding_chunk_size=300,
-    azure_endpoint=None,
-    azure_version=None,
-    azure_deployment=None,
-)
+DEFAULT_EMBEDDING_CONFIG = EmbeddingConfig.default_config(provider="openai")
 CREATE_DELAY_SQLITE = 1
 USING_SQLITE = not bool(os.getenv("LETTA_PG_URI"))
 
@@ -2717,10 +2709,28 @@ async def test_agent_list_passages_filtering(server, default_user, sarah_agent, 
     assert len(date_filtered) == 5
 
 
+@pytest.fixture
+def mock_embeddings():
+    """Load mock embeddings from JSON file"""
+    fixture_path = os.path.join(os.path.dirname(__file__), "data", "test_embeddings.json")
+    with open(fixture_path, "r") as f:
+        return json.load(f)
+
+
+@pytest.fixture
+def mock_embed_model(mock_embeddings):
+    """Mock embedding model that returns predefined embeddings"""
+    mock_model = Mock()
+    mock_model.get_text_embedding = lambda text: mock_embeddings.get(text, [0.0] * 1536)
+    return mock_model
+
+
 @pytest.mark.asyncio
-async def test_agent_list_passages_vector_search(server, default_user, sarah_agent, default_source, default_file, event_loop):
+async def test_agent_list_passages_vector_search(
+    server, default_user, sarah_agent, default_source, default_file, event_loop, mock_embed_model
+):
     """Test vector search functionality of agent passages"""
-    embed_model = embedding_model(DEFAULT_EMBEDDING_CONFIG)
+    embed_model = mock_embed_model
 
     # Create passages with known embeddings
     passages = []

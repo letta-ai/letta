@@ -3679,6 +3679,7 @@ export const LettaBatchRequest = z.object({
       z.undefined(),
     ])
     .optional(),
+  enable_thinking: z.union([z.string(), z.undefined()]).optional(),
   agent_id: z.string(),
 });
 
@@ -4472,6 +4473,7 @@ export const LettaAsyncRequest = z.object({
       z.undefined(),
     ])
     .optional(),
+  enable_thinking: z.union([z.string(), z.undefined()]).optional(),
   callback_url: z
     .union([
       z.string(),
@@ -4502,6 +4504,7 @@ export const LettaRequest = z.object({
       z.undefined(),
     ])
     .optional(),
+  enable_thinking: z.union([z.string(), z.undefined()]).optional(),
 });
 
 export type LettaRequestConfig = z.infer<typeof LettaRequestConfig>;
@@ -4900,6 +4903,7 @@ export const LettaStreamingRequest = z.object({
       z.undefined(),
     ])
     .optional(),
+  enable_thinking: z.union([z.string(), z.undefined()]).optional(),
   stream_tokens: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
