@@ -2930,7 +2930,7 @@ export class AgentsService {
    * @param data.agentId
    * @param data.maxMessageLength Maximum number of messages to retain after summarization.
    * @param data.userId
-   * @returns AgentState Successful Response
+   * @returns void Successful Response
    * @throws ApiError
    */
   public static summarizeAgentConversation(

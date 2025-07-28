@@ -8328,7 +8328,7 @@ export const post_Summarize_agent_conversation = {
         .optional(),
     }),
   }),
-  response: AgentState,
+  response: z.unknown(),
 };
 
 export type get_List_groups = typeof get_List_groups;

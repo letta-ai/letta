@@ -5822,7 +5822,7 @@ export type SummarizeAgentConversationData = {
   userId?: string | null;
 };
 
-export type SummarizeAgentConversationResponse = AgentState;
+export type SummarizeAgentConversationResponse = void;
 
 export type ListGroupsData = {
   /**
@@ -8032,7 +8032,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: AgentState;
+        204: void;
         /**
          * Validation Error
          */
