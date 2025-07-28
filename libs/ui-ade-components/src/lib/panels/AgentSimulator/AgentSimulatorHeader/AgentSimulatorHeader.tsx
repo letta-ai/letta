@@ -115,15 +115,14 @@ export function AgentSimulatorHeader() {
         <AgentStatus />
       </div>
       <HStack
-        border
         gap={false}
         align="center"
         color="background-grey2"
-        className="pointer-events-auto"
+        className="pointer-events-auto border border-background-grey3-border"
       >
         <AgentVariablesContainer />
 
-        <HStack borderX>
+        <HStack className="border-x border-background-grey3-border">
           <ControlChatroomRenderMode />
         </HStack>
         <AgentFlushButton />
