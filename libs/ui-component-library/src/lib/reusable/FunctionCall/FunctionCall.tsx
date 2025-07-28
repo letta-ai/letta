@@ -6,8 +6,8 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   ContextWindowIcon,
-  FunctionIcon,
   HeartbeatIcon,
+  TerminalIcon,
 } from '../../icons';
 import { Tooltip } from '../../core/Tooltip/Tooltip';
 import { Typography } from '../../core/Typography/Typography';
@@ -176,7 +176,7 @@ export function FunctionCall(props: FunctionCallProps) {
             align="center"
             className={cn(
               variant === 'default'
-                ? 'px-2 pr-3 py-1 bg-background-grey3 text-background-grey3-content cursor-pointer'
+                ? 'px-2 pr-3 py-1 bg-background text-text-default cursor-pointer border border-grey3'
                 : '',
               variant === 'inspector'
                 ? 'px-2 pr-3 w-full py-2 border cursor-pointer'
@@ -185,11 +185,11 @@ export function FunctionCall(props: FunctionCallProps) {
           >
             <HStack gap="small">
               {!open ? (
-                <ChevronRightIcon size="small" />
+                <ChevronRightIcon size="xsmall" />
               ) : (
-                <ChevronDownIcon size="small" />
+                <ChevronDownIcon size="xsmall" />
               )}
-              <FunctionIcon size="small" />
+              <TerminalIcon size="small" />
               <Typography bold variant="body3">
                 {name}
               </Typography>

@@ -67,13 +67,26 @@
   --destructive: 336, 98%, 37%;
   --destructive-content: 0 0% 98%;
 
-  --background-success: 120, 50%, 92%;
-  --background-success-content: 120, 61%, 20%;
+  --chip-destructive: 336, 88%, 97%;
+  --chip-destructive-content: 336, 96%, 9%;
+  --chip-destructive-border: 335, 88%, 94%;
+
+  --chip-warning: 42, 100%, 92%;
+  --chip-warning-content: 42, 57%, 19%;
+  --chip-warning-border: 42, 100%, 88%;
+
+  --background-success: 120, 60%, 96%;
+  --background-success-content: 120, 49%, 22%;
+  --background-success-border: 120, 59%, 92%;
 
   --button-border: 0.58 0.03 66%;
 
   --warning: 40, 100%, 50%;
   --warning-content: 40, 100%, 85%;
+
+  --background-warning: 44, 99%, 67%, 0.24;
+  --background-warning-content: 44, 58%, 19%;
+  --background-warning-border: 44, 99%, 67%, 0.16;
 
   --sidebar-color: 240, 11%, 98%;
 
@@ -89,9 +102,6 @@
   --destructive-diff: 10, 100%, 60%, 0.16;
   --destructive-diff-content: 10, 67%, 48%;
 
-  --background-warning: 44, 99%, 67%, 0.24;
-  --background-warning-content: 44, 58%, 19%;
-  --background-warning-border: 44, 99%, 67%, 0.16;
 
   --background-grey2-border: 210, 13%, 94%;
   --background-grey3-border: 210, 3%, 89%;
@@ -322,6 +332,14 @@
   --background-warning-content: 44, 100%, 86%;
   --background-warning-border: 44, 99%, 67%, 0.16;
 
+  --chip-destructive: 335, 47%, 18%;
+  --chip-destructive-content: 336, 84%, 78%;
+  --chip-destructive-border: 336, 55%, 28%;
+
+  --chip-warning: 42, 36%, 21%;
+  --chip-warning-content: 42, 100%, 87%;
+  --chip-warning-border: 41, 23%, 33%;
+
   --background-grey2-border: 0, 0%, 13%;
   --background-grey3-border: 200, 3%, 17%;
 
@@ -351,6 +369,10 @@
 
   --toggle-selector-border: 210, 3%, 28%;
   --ade-scrollbar: 210, 10%, 96%;
+
+  --background-success: 120, 7%, 19%;
+  --background-success-content: 120, 53%, 60%;
+  --background-success-border: 120, 9%, 29%;
 }
 
 html {

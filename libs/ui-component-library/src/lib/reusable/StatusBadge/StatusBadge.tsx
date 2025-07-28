@@ -43,6 +43,8 @@ export function StatusBadge(props: StatusBadgeProps) {
       preIcon={statusInfo.icon}
       content={statusInfo.message}
       variant={statusInfo.color}
+      size="small"
+      border
     />
   );
 }

@@ -98,6 +98,7 @@ export function buildConfig(appDir: string): Config {
           'background-success': {
             DEFAULT: 'hsl(var(--background-success))',
             content: 'hsl(var(--background-success-content))',
+            border: 'hsl(var(--background-success-border))',
           },
           background: {
             hover: 'hsl(var(--background-hover))',
@@ -232,6 +233,11 @@ export function buildConfig(appDir: string): Config {
             DEFAULT: 'hsl(var(--chip-destructive))',
             border: 'hsl(var(--chip-destructive-border))',
             content: 'hsl(var(--chip-destructive-content))',
+          },
+          'chip-warning': {
+            DEFAULT: 'hsl(var(--chip-warning))',
+            border: 'hsl(var(--chip-warning-border))',
+            content: 'hsl(var(--chip-warning-content))',
           },
         },
         borderRadius: {

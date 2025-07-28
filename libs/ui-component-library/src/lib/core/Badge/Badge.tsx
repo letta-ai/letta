@@ -23,10 +23,11 @@ const badgeVariants = cva(
         default:
           'bg-background-grey2 text-background-grey2-content border-background-grey2-border',
         warning:
-          'bg-background-warning text-background-warning-content border-background-warning-border',
+          'bg-chip-warning text-chip-warning-content border-chip-warning-border',
         destructive:
           'bg-chip-destructive text-chip-destructive-content border-chip-destructive-border',
-        success: 'bg-background-success text-background-success-content',
+        success:
+          'bg-background-success text-background-success-content border-background-success-border',
         info: 'text-brand-light-content bg-brand-light',
         chipStandard:
           'bg-chip-standard text-chip-standard-content border-chip-standard-border',
