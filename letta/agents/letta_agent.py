@@ -1130,7 +1130,7 @@ class LettaAgent(BaseAgent):
         return new_in_context_messages
 
     @trace_method
-    async def summarize_conversation_history(self) -> AgentState:
+    async def summarize_conversation_history(self) -> None:
         """Called when the developer explicitly triggers compaction via the API"""
         agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=self.agent_id, actor=self.actor)
         message_ids = agent_state.message_ids

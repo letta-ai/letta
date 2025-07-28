@@ -1386,7 +1386,7 @@ async def preview_raw_payload(
         )
 
 
-@router.post("/{agent_id}/summarize", response_model=AgentState, operation_id="summarize_agent_conversation")
+@router.post("/{agent_id}/summarize", status_code=204, operation_id="summarize_agent_conversation")
 async def summarize_agent_conversation(
     agent_id: str,
     request_obj: Request,  # FastAPI Request
@@ -1419,9 +1419,10 @@ async def summarize_agent_conversation(
             telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
             message_buffer_min=max_message_length,
         )
-        return await agent.summarize_conversation_history()
-
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="Summarization is not currently supported for this agent configuration. Please contact Letta support.",
-    )
+        await agent.summarize_conversation_history()
+        # Summarization completed, return 204 No Content
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Summarization is not currently supported for this agent configuration. Please contact Letta support.",
+        )
