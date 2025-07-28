@@ -326,7 +326,9 @@ export function RawInputContainer(props: RawInputContainerProps) {
       otherContent={
         <>
           {errorMessage && (
-            <Typography color="destructive">{errorMessage}</Typography>
+            <Typography color="destructive" variant="body3">
+              {errorMessage}
+            </Typography>
           )}
           {description && (
             <RawFormDescription id={id || ''}>{description}</RawFormDescription>
