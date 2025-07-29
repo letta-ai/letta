@@ -41,29 +41,42 @@ class MCPServer(BaseMCPServer):
     last_updated_by_id: Optional[str] = Field(None, description="The id of the user that made this Tool.")
     metadata_: Optional[Dict[str, Any]] = Field(default_factory=dict, description="A dictionary of additional metadata for the tool.")
 
-    def to_config(self) -> Union[SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig]:
+    def to_config(
+        self,
+        environment_variables: Optional[Dict[str, str]] = None,
+        resolve_variables: bool = True,
+    ) -> Union[SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig]:
         if self.server_type == MCPServerType.SSE:
-            return SSEServerConfig(
+            config = SSEServerConfig(
                 server_name=self.server_name,
                 server_url=self.server_url,
                 auth_header=MCP_AUTH_HEADER_AUTHORIZATION if self.token and not self.custom_headers else None,
                 auth_token=f"{MCP_AUTH_TOKEN_BEARER_PREFIX} {self.token}" if self.token and not self.custom_headers else None,
                 custom_headers=self.custom_headers,
             )
+            if resolve_variables:
+                config.resolve_environment_variables(environment_variables)
+            return config
         elif self.server_type == MCPServerType.STDIO:
             if self.stdio_config is None:
                 raise ValueError("stdio_config is required for STDIO server type")
+            if resolve_variables:
+                self.stdio_config.resolve_environment_variables(environment_variables)
             return self.stdio_config
         elif self.server_type == MCPServerType.STREAMABLE_HTTP:
             if self.server_url is None:
                 raise ValueError("server_url is required for STREAMABLE_HTTP server type")
-            return StreamableHTTPServerConfig(
+
+            config = StreamableHTTPServerConfig(
                 server_name=self.server_name,
                 server_url=self.server_url,
                 auth_header=MCP_AUTH_HEADER_AUTHORIZATION if self.token and not self.custom_headers else None,
                 auth_token=f"{MCP_AUTH_TOKEN_BEARER_PREFIX} {self.token}" if self.token and not self.custom_headers else None,
                 custom_headers=self.custom_headers,
             )
+            if resolve_variables:
+                config.resolve_environment_variables(environment_variables)
+            return config
         else:
             raise ValueError(f"Unsupported server type: {self.server_type}")
 

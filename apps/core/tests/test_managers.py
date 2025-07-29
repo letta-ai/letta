@@ -8554,7 +8554,7 @@ async def test_create_mcp_server(server, default_user, event_loop):
     tool_name = "ask_question"
     tool_args = {"repoName": "letta-ai/letta", "question": "What is the primary programming language of this repository?"}
     result = await server.mcp_manager.execute_mcp_server_tool(
-        created_server.server_name, tool_name=tool_name, tool_args=tool_args, actor=default_user
+        created_server.server_name, tool_name=tool_name, tool_args=tool_args, actor=default_user, environment_variables={}
     )
     print(result)
 

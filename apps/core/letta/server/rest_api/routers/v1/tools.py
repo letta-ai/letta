@@ -394,7 +394,7 @@ async def list_mcp_servers(server: SyncServer = Depends(get_letta_server), user_
     else:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=user_id)
         mcp_servers = await server.mcp_manager.list_mcp_servers(actor=actor)
-        return {server.server_name: server.to_config() for server in mcp_servers}
+        return {server.server_name: server.to_config(resolve_variables=False) for server in mcp_servers}
 
 
 # NOTE: async because the MCP client/session calls are async
@@ -639,6 +639,7 @@ async def test_mcp_server(
     client = None
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        request.resolve_environment_variables()
         client = await server.mcp_manager.get_mcp_client(request, actor)
 
         await client.connect_to_server()
@@ -719,6 +720,7 @@ async def connect_mcp_server(
 
             # Create MCP client with respective transport type
             try:
+                request.resolve_environment_variables()
                 client = await server.mcp_manager.get_mcp_client(request, actor)
             except ValueError as e:
                 yield oauth_stream_event(OauthStreamEvent.ERROR, message=str(e))
