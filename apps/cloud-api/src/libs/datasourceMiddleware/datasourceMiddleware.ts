@@ -34,10 +34,12 @@ export function datasourceMiddleware(
   }
 
   if (req.body?.embedding) {
-    res.status(400).json({
-      error: 'Embedding is not allowed in cloud API',
-    });
-    return;
+    if (req.body.embedding !== DEFAULT_EMBEDDING_MODEL) {
+      res.status(400).json({
+        error: 'Embedding is not customizable in cloud API',
+      });
+      return;
+    }
   }
 
   if (req.body?.embedding_chunk_size) {
