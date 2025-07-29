@@ -140,6 +140,8 @@ navigation:
             path: pages/agents/multiuser.mdx
           - page: Agent File (.af)
             path: pages/agents/agentfile.mdx
+          - page: Scheduling
+            path: pages/agents/scheduling.mdx
           - section: Voice Agents
             path: pages/voice/voice.mdx
             contents:
