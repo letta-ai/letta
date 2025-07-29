@@ -66,7 +66,12 @@ class MCPManager:
 
     @enforce_types
     async def execute_mcp_server_tool(
-        self, mcp_server_name: str, tool_name: str, tool_args: Optional[Dict[str, Any]], actor: PydanticUser
+        self,
+        mcp_server_name: str,
+        tool_name: str,
+        tool_args: Optional[Dict[str, Any]],
+        environment_variables: Dict[str, str],
+        actor: PydanticUser,
     ) -> Tuple[str, bool]:
         """Call a specific tool from a specific MCP server."""
         from letta.settings import tool_settings
@@ -75,7 +80,7 @@ class MCPManager:
             # read from DB
             mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor=actor)
             mcp_config = await self.get_mcp_server_by_id_async(mcp_server_id, actor=actor)
-            server_config = mcp_config.to_config()
+            server_config = mcp_config.to_config(environment_variables)
         else:
             # read from config file
             mcp_config = self.read_mcp_config()

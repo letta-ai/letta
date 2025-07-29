@@ -35,8 +35,17 @@ class ExternalMCPToolExecutor(ToolExecutor):
 
         mcp_manager = MCPManager()
         # TODO: may need to have better client connection management
+
+        environment_variables = {}
+        if agent_state:
+            environment_variables = agent_state.get_agent_env_vars_as_dict()
+
         function_response, success = await mcp_manager.execute_mcp_server_tool(
-            mcp_server_name=mcp_server_name, tool_name=function_name, tool_args=function_args, actor=actor
+            mcp_server_name=mcp_server_name,
+            tool_name=function_name,
+            tool_args=function_args,
+            environment_variables=environment_variables,
+            actor=actor,
         )
 
         return ToolExecutionResult(
