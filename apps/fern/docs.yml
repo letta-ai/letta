@@ -112,6 +112,8 @@ navigation:
                 path: pages/agents/stateful_workflows.mdx
           - page: Context Hierarchy
             path: pages/agents/context_hierarchy.mdx
+          - page: Heartbeats
+            path: pages/agents/heartbeats.mdx
           - section: Memory
             path: pages/agents/memory.mdx
             contents:
@@ -119,7 +121,7 @@ navigation:
                 path: pages/agents/memory_blocks.mdx
               - page: Agentic Context Engineering
                 path: pages/agents/context_engineering.mdx
-          - page: Filesystem 
+          - page: Filesystem
             path: pages/agents/filesystem.mdx
           - page: Streaming Responses
             path: pages/agents/streaming.mdx
