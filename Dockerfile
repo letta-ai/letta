@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-ARG LETTA_ENVIRONMENT=PRODUCTION
+ARG LETTA_ENVIRONMENT=DEV
 ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT} \
     POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_IN_PROJECT=1 \
@@ -65,7 +65,7 @@ RUN apt-get update && \
 COPY otel/otel-collector-config-file.yaml /etc/otel/config-file.yaml
 COPY otel/otel-collector-config-clickhouse.yaml /etc/otel/config-clickhouse.yaml
 
-ARG LETTA_ENVIRONMENT=PRODUCTION
+ARG LETTA_ENVIRONMENT=DEV
 ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT} \
     VIRTUAL_ENV="/app/.venv" \
     PATH="/app/.venv/bin:$PATH" \
