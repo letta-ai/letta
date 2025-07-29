@@ -41,7 +41,7 @@ from letta.server.server import SyncServer
 from letta.services.summarizer.enums import SummarizationMode
 from letta.services.telemetry_manager import NoopTelemetryManager
 from letta.settings import settings
-from letta.utils import safe_create_task
+from letta.utils import safe_create_task, truncate_file_visible_content
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
 
@@ -478,14 +478,23 @@ async def open_file(
     if not file_metadata:
         raise HTTPException(status_code=404, detail=f"File with id={file_id} not found")
 
+    # Process file content with line numbers using LineChunker
+    from letta.services.file_processor.chunker.line_chunker import LineChunker
+
+    content_lines = LineChunker().chunk_text(file_metadata=file_metadata, validate_range=False)
+    visible_content = "\n".join(content_lines)
+
+    # Truncate if needed
+    visible_content = truncate_file_visible_content(visible_content, True, per_file_view_window_char_limit)
+
     # Use enforce_max_open_files_and_open for efficient LRU handling
-    closed_files, was_already_open = await server.file_agent_manager.enforce_max_open_files_and_open(
+    closed_files, was_already_open, _ = await server.file_agent_manager.enforce_max_open_files_and_open(
         agent_id=agent_id,
         file_id=file_id,
         file_name=file_metadata.file_name,
         source_id=file_metadata.source_id,
         actor=actor,
-        visible_content=file_metadata.content[:per_file_view_window_char_limit] if file_metadata.content else "",
+        visible_content=visible_content,
         max_files_open=max_files_open,
     )
 

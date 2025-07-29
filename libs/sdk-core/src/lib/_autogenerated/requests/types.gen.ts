@@ -1696,10 +1696,6 @@ export type FileMetadata = {
    * The update date of the file.
    */
   updated_at?: string | null;
-  /**
-   * Whether this file is deleted or not.
-   */
-  is_deleted?: boolean;
 };
 
 export type FileProcessingStatus =

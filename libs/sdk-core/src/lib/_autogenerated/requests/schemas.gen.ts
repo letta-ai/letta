@@ -4993,12 +4993,6 @@ export const $FileMetadata = {
       title: 'Updated At',
       description: 'The update date of the file.',
     },
-    is_deleted: {
-      type: 'boolean',
-      title: 'Is Deleted',
-      description: 'Whether this file is deleted or not.',
-      default: false,
-    },
   },
   additionalProperties: false,
   type: 'object',

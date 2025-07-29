@@ -17,7 +17,6 @@ class ChunkingStrategy(str, Enum):
     CODE = "code"  # Line-based chunking for code files
     STRUCTURED_DATA = "structured_data"  # Line-based chunking for JSON, XML, etc.
     DOCUMENTATION = "documentation"  # Paragraph-aware chunking for Markdown, HTML
-    PROSE = "prose"  # Character-based wrapping for plain text
     LINE_BASED = "line_based"  # Default line-based chunking
 
 
@@ -44,7 +43,7 @@ class FileTypeRegistry:
         """Register all default supported file types."""
         # Document formats
         self.register(".pdf", "application/pdf", False, "PDF document", ChunkingStrategy.LINE_BASED)
-        self.register(".txt", "text/plain", True, "Plain text file", ChunkingStrategy.PROSE)
+        self.register(".txt", "text/plain", True, "Plain text file", ChunkingStrategy.LINE_BASED)
         self.register(".md", "text/markdown", True, "Markdown document", ChunkingStrategy.DOCUMENTATION)
         self.register(".markdown", "text/markdown", True, "Markdown document", ChunkingStrategy.DOCUMENTATION)
         self.register(".json", "application/json", True, "JSON data file", ChunkingStrategy.STRUCTURED_DATA)

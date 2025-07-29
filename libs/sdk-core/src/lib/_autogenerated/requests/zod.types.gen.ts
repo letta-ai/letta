@@ -3886,7 +3886,6 @@ export const FileMetadata = z.object({
       z.undefined(),
     ])
     .optional(),
-  is_deleted: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
 export type FileStats = z.infer<typeof FileStats>;
