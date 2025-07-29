@@ -1604,6 +1604,46 @@
                                   {}
                                 ],
                                 "nullable": true
+                              },
+                              "compatibility_type": {
+                                "oneOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": ["gguf"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": ["mlx"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": ["gguf"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": ["mlx"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
                               }
                             },
                             "required": [
@@ -6662,6 +6702,46 @@
                                       "oneOf": [
                                         {
                                           "type": "number"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
+                              },
+                              "compatibility_type": {
+                                "oneOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": ["gguf"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": ["mlx"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": ["gguf"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": ["mlx"]
                                         },
                                         {
                                           "type": "string",

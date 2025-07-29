@@ -1,4 +1,5 @@
 import os
+import uuid
 from datetime import datetime
 from typing import List, Literal, Optional, Set
 
@@ -351,21 +352,40 @@ def initialize_message_sequence(
     first_user_message = get_login_event(agent_state.timezone)  # event letting Letta know the user just logged in
 
     if include_initial_boot_message:
+        llm_config = agent_state.llm_config
+        uuid_str = str(uuid.uuid4())
+
+        # Some LMStudio models (e.g. ministral) require the tool call ID to be 9 alphanumeric characters
+        tool_call_id = uuid_str[:9] if llm_config.provider_name == "lmstudio_openai" else uuid_str
+
         if agent_state.agent_type == AgentType.sleeptime_agent:
             initial_boot_messages = []
-        elif agent_state.llm_config.model is not None and "gpt-3.5" in agent_state.llm_config.model:
-            initial_boot_messages = get_initial_boot_messages("startup_with_send_message_gpt35", agent_state.timezone)
+        elif llm_config.model is not None and "gpt-3.5" in llm_config.model:
+            initial_boot_messages = get_initial_boot_messages("startup_with_send_message_gpt35", agent_state.timezone, tool_call_id)
         else:
-            initial_boot_messages = get_initial_boot_messages("startup_with_send_message", agent_state.timezone)
-        messages = (
-            [
-                {"role": "system", "content": full_system_message},
-            ]
-            + initial_boot_messages
-            + [
-                {"role": "user", "content": first_user_message},
-            ]
-        )
+            initial_boot_messages = get_initial_boot_messages("startup_with_send_message", agent_state.timezone, tool_call_id)
+
+        # Some LMStudio models (e.g. meta-llama-3.1) require the user message before any tool calls
+        if llm_config.provider_name == "lmstudio_openai":
+            messages = (
+                [
+                    {"role": "system", "content": full_system_message},
+                ]
+                + [
+                    {"role": "user", "content": first_user_message},
+                ]
+                + initial_boot_messages
+            )
+        else:
+            messages = (
+                [
+                    {"role": "system", "content": full_system_message},
+                ]
+                + initial_boot_messages
+                + [
+                    {"role": "user", "content": first_user_message},
+                ]
+            )
 
     else:
         messages = [

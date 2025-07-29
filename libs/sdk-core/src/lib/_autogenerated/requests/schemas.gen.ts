@@ -6768,6 +6768,19 @@ export const $LLMConfig = {
       description:
         "Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. From OpenAI: Number between -2.0 and 2.0.",
     },
+    compatibility_type: {
+      anyOf: [
+        {
+          type: 'string',
+          enum: ['gguf', 'mlx'],
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Compatibility Type',
+      description: 'The framework compatibility type for the model.',
+    },
   },
   type: 'object',
   required: ['model', 'model_endpoint_type', 'context_window'],

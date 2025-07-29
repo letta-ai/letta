@@ -2381,6 +2381,10 @@ export type LLMConfig = {
    * Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. From OpenAI: Number between -2.0 and 2.0.
    */
   frequency_penalty?: number | null;
+  /**
+   * The framework compatibility type for the model.
+   */
+  compatibility_type?: 'gguf' | 'mlx' | null;
 };
 
 /**

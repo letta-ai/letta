@@ -352,6 +352,15 @@ export const LLMConfig = z.object({
       z.undefined(),
     ])
     .optional(),
+  compatibility_type: z
+    .union([
+      z.literal('gguf'),
+      z.literal('mlx'),
+      z.null(),
+      z.array(z.union([z.literal('gguf'), z.literal('mlx'), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type TextContent = z.infer<typeof TextContent>;
