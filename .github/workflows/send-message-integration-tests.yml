@@ -34,7 +34,8 @@ jobs:
               "claude-3-7-sonnet.json",
               "claude-3-7-sonnet-extended.json",
               "gemini-1.5-pro.json",
-              "together-qwen-2.5-72b-instruct.json"
+              "gemini-2.5-pro.json",
+              "gemini-2.5-flash.json"
             ]
           }
         }

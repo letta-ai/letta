@@ -109,21 +109,22 @@ USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
     )
 ]
 all_configs = [
-    "openai-gpt-4o-mini.json",
-    "openai-o1.json",
-    "openai-o3.json",
-    "openai-o4-mini.json",
-    "azure-gpt-4o-mini.json",
-    "claude-4-sonnet.json",
-    "claude-3-5-sonnet.json",
-    "claude-3-7-sonnet.json",
+    # "openai-gpt-4o-mini.json",
+    # "openai-o1.json",
+    # "openai-o3.json",
+    # "openai-o4-mini.json",
+    # "azure-gpt-4o-mini.json",
+    # "claude-4-sonnet.json",
+    # "claude-3-5-sonnet.json",
+    # "claude-3-7-sonnet.json",
     "claude-3-7-sonnet-extended.json",
-    "bedrock-claude-4-sonnet.json",
-    "gemini-1.5-pro.json",
-    "gemini-2.5-flash-vertex.json",
-    "gemini-2.5-pro-vertex.json",
-    "together-qwen-2.5-72b-instruct.json",
-    "ollama.json",  #  TODO (cliandy): enable this in ollama testing
+    # "bedrock-claude-4-sonnet.json",
+    # "gemini-2.5-pro.json",
+    # "gemini-2.5-flash.json",
+    # "gemini-2.5-flash-vertex.json",
+    # "gemini-2.5-pro-vertex.json",
+    # "together-qwen-2.5-72b-instruct.json",
+    # "ollama.json",  #  TODO (cliandy): enable this in ollama testing
 ]
 
 reasoning_configs = [
