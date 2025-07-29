@@ -356,6 +356,16 @@
       }
     }
   },
+  "ADE/DataSources/FileStatus": {
+    "errorTooltip": "处理文件时出错，点击查看错误",
+    "statuses": {
+      "parsing": "解析中",
+      "error": "上传错误",
+      "pending": "等待中",
+      "embedding": "嵌入中",
+      "embeddingWithProgress": "嵌入中 {percentage}%"
+    }
+  },
   "StepsViewer": {
     "messages": "消息",
     "statistics": {

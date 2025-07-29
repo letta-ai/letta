@@ -556,7 +556,8 @@
       "parsing": "Parsing",
       "error": "Upload error",
       "pending": "Pending",
-      "embedding": "Embedding"
+      "embedding": "Embedding",
+      "embeddingWithProgress": "Embedding {percentage}%"
     }
   },
   "ADE/DataSources/FileViewFooter": {
