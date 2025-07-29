@@ -4,6 +4,7 @@ import {
   Accordion,
   CloseIcon,
   EditIcon,
+  EyeOpenIcon,
   HStack,
   LinkOffIcon,
   OnboardingAsideFocus,
@@ -19,7 +20,7 @@ import { Dialog } from '@letta-cloud/ui-component-library';
 import { Button, PanelMainContent } from '@letta-cloud/ui-component-library';
 import { useCurrentAgent } from '../../hooks';
 import type { AgentState, ToolType } from '@letta-cloud/sdk-core';
-import { useAgentsServiceDetachTool } from '@letta-cloud/sdk-core';
+import { useAgentsServiceDetachTool, isLettaTool } from '@letta-cloud/sdk-core';
 import { UseAgentsServiceRetrieveAgentKeyFn } from '@letta-cloud/sdk-core';
 
 import { useQueryClient } from '@tanstack/react-query';
@@ -151,42 +152,50 @@ function ToolsList(props: ToolsListProps) {
       .toSorted((a, b) => {
         return a.name?.localeCompare(b.name || '') || 0;
       })
-      .map((tool) => ({
-        name: tool.name || '',
-        id: tool.id || '',
-        onClick: () => {
-          openToolManager('/current-agent-tools', tool.id);
-        },
-        type: tool.tool_type || 'custom',
-        icon: <SpecificToolIcon toolType={tool.tool_type} />,
-        actionNode: (
-          <HStack gap={false}>
-            <Button
-              hideLabel
-              size="xsmall"
-              color="tertiary"
-              preIcon={<EditIcon />}
-              label={t('ToolsList.editTool')}
-              onClick={() => {
-                openToolManager('/current-agent-tools', tool.id);
-              }}
-            />
-            <Button
-              hideLabel
-              size="xsmall"
-              color="tertiary"
-              preIcon={<LinkOffIcon />}
-              label={t('ToolsList.removeTool')}
-              onClick={() => {
-                setRemoveToolPayload({
-                  toolName: tool.name || '',
-                  toolId: tool.id || '',
-                });
-              }}
-            />
-          </HStack>
-        ),
-      }));
+      .map((tool) => {
+        const isCoreTool = isLettaTool(tool);
+
+        return {
+          name: tool.name || '',
+          id: tool.id || '',
+          onClick: () => {
+            openToolManager('/current-agent-tools', tool.id);
+          },
+          type: tool.tool_type || 'custom',
+          icon: <SpecificToolIcon toolType={tool.tool_type} />,
+          actionNode: (
+            <HStack gap={false}>
+              <Button
+                hideLabel
+                size="xsmall"
+                color="tertiary"
+                preIcon={isCoreTool ? <EyeOpenIcon /> : <EditIcon />}
+                label={
+                  isCoreTool
+                    ? t('ToolsList.viewDetails')
+                    : t('ToolsList.editTool')
+                }
+                onClick={() => {
+                  openToolManager('/current-agent-tools', tool.id);
+                }}
+              />
+              <Button
+                hideLabel
+                size="xsmall"
+                color="tertiary"
+                preIcon={<LinkOffIcon />}
+                label={t('ToolsList.removeTool')}
+                onClick={() => {
+                  setRemoveToolPayload({
+                    toolName: tool.name || '',
+                    toolId: tool.id || '',
+                  });
+                }}
+              />
+            </HStack>
+          ),
+        };
+      });
   }, [currentTools, openToolManager, search, t]);
 
   const lettaTools = useMemo(() => {

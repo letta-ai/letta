@@ -2129,6 +2129,7 @@
       "lettaTools": "Core ({count})",
       "customTools": "Custom ({count})",
       "editTool": "Edit tool",
+      "viewDetails": "View details",
       "attachCoreTool": "Attach core tool",
       "attachCustomTool": "Attach custom tool",
       "rules": "Tool rules ({ruleCount})",

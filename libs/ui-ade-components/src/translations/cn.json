@@ -1520,6 +1520,7 @@
     },
     "ToolsList": {
       "editTool": "编辑工具",
+      "viewDetails": "查看详情",
       "attachCoreTool": "附加核心工具",
       "attachCustomTool": "附加自定义工具",
       "rules": "工具规则 ({ruleCount})",
