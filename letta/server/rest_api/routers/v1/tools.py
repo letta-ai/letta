@@ -636,7 +636,7 @@ async def test_mcp_server(
 ):
     """
     Test connection to an MCP server without adding it.
-    Returns the list of available tools if successful, or OAuth information if OAuth is required.
+    Returns the list of available tools if successful.
     """
     client = None
     try:
