@@ -22,6 +22,7 @@ from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX
 from letta.errors import ContextWindowExceededError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import AsyncTimer, get_utc_time, get_utc_timestamp_ns, ns_to_ms
+from letta.helpers.reasoning_helper import scrub_inner_thoughts_from_messages
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
@@ -1168,6 +1169,9 @@ class LettaAgent(BaseAgent):
             num_archival_memories=self.num_archival_memories,
             tool_rules_solver=tool_rules_solver,
         )
+
+        # scrub inner thoughts from messages if reasoning is completely disabled
+        in_context_messages = scrub_inner_thoughts_from_messages(in_context_messages, agent_state.llm_config)
 
         tools = [
             t
