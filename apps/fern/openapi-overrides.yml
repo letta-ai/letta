@@ -43,6 +43,57 @@ paths:
       x-fern-sdk-group-name:
         - tools
       x-fern-sdk-method-name: upsert_base_tools
+  /v1/tools/mcp/oauth/callback/{session_id}:
+    get:
+      x-fern-ignore: true
+  /v1/tools/mcp/servers:
+    get:
+      summary: "List MCP Servers"
+    put:
+      summary: "Add MCP Server To Config"
+  /v1/tools/mcp/servers/{mcp_server_name}/tools:
+    get:
+      summary: "List MCP Tools By Server"
+  /v1/tools/mcp/servers/{mcp_server_name}/{mcp_tool_name}:
+    post:
+      summary: "Add MCP Tool"
+  /v1/tools/mcp/servers/{mcp_server_name}:
+    patch:
+      summary: "Update MCP Server"
+    delete:
+      summary: "Delete MCP Server From Config"
+  /v1/tools/mcp/servers/test:
+    post:
+      x-fern-availability: deprecated
+      summary: "Test MCP Server"
+  /v1/tools/mcp/servers/connect:
+    post:
+      x-fern-streaming:
+        format: sse
+      summary: "Connect MCP Server"
+      responses:
+        '200':
+          content:
+            text/event-stream:
+              schema:
+                x-fern-type-name: StreamingResponse
+                type: object
+                properties:
+                  event:
+                    type: string
+                    enum:
+                      - connection_attempt
+                      - success
+                      - error
+                      - oauth_required
+                      - authorization_url
+                      - waiting_for_auth
+                  message:
+                    type: string
+                  tools:
+                    $ref: '#/components/schemas/MCPTool'
+                required:
+                  - event
   /v1/sources/{source_id}:
     get:
       x-fern-sdk-group-name:

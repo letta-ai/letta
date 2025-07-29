@@ -927,7 +927,7 @@
       "post": {
         "tags": ["tools"],
         "summary": "Test Mcp Server",
-        "description": "Test connection to an MCP server without adding it.\nReturns the list of available tools if successful, or OAuth information if OAuth is required.",
+        "description": "Test connection to an MCP server without adding it.\nReturns the list of available tools if successful.",
         "operationId": "test_mcp_server",
         "parameters": [],
         "requestBody": {

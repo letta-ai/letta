@@ -3541,7 +3541,7 @@ export const useToolsServiceAddMcpTool = <
 /**
  * Test Mcp Server
  * Test connection to an MCP server without adding it.
- * Returns the list of available tools if successful, or OAuth information if OAuth is required.
+ * Returns the list of available tools if successful.
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
