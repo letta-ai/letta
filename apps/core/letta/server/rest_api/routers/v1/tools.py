@@ -971,7 +971,7 @@ async def generate_tool_from_prompt(
         response_data = await llm_client.request_async(request_data, llm_config)
         response = llm_client.convert_response_to_chat_completion(response_data, input_messages, llm_config)
         output = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
-        pip_requirements = [PipRequirement(name=k, version=v) for k, v in json.loads(output["pip_requirements_json"]).items()]
+        pip_requirements = [PipRequirement(name=k, version=v or None) for k, v in json.loads(output["pip_requirements_json"]).items()]
         return GenerateToolOutput(
             tool=Tool(
                 name=request.tool_name,
