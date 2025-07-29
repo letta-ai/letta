@@ -437,6 +437,29 @@ export function JSONSchemaViewer(props: JSONSchemaViewerProps) {
     }
   }, [setStagedTool, parsedJsonSchema]);
 
+  useEffect(() => {
+    function handleJsonSchemaUpdate(
+      event: CustomEvent<{ schema: ToolJSONSchema }>,
+    ) {
+      if (event.detail.schema) {
+        setJsonSchemaString(JSON.stringify(event.detail.schema, null, 2));
+        setParsingError(null);
+      }
+    }
+
+    document.addEventListener(
+      'updateJsonSchema',
+      handleJsonSchemaUpdate as EventListener,
+    );
+
+    return () => {
+      document.removeEventListener(
+        'updateJsonSchema',
+        handleJsonSchemaUpdate as EventListener,
+      );
+    };
+  }, [setJsonSchemaString]);
+
   const { mutate, isPending, error, reset } =
     useToolsServiceGenerateJsonSchema();
 

@@ -34,12 +34,20 @@ export function ToolAssistant(props: ToolAssistantProps) {
     onSuccess: (response) => {
       if (response.tool.source_code) {
         setStagedTool((prev) => ({ ...prev, ...response.tool }));
+        document.dispatchEvent(
+          new CustomEvent('updateLocalCode', {
+            detail: { code: response.tool.source_code },
+          }),
+        );
       }
-      document.dispatchEvent(
-        new CustomEvent('updateLocalCode', {
-          detail: { code: response.tool.source_code },
-        }),
-      );
+
+      if (response.tool.json_schema) {
+        document.dispatchEvent(
+          new CustomEvent('updateJsonSchema', {
+            detail: { schema: response.tool.json_schema },
+          }),
+        );
+      }
 
       setUseCodingAgent(false);
       setPromptInput('');
