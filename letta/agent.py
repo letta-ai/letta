@@ -1298,7 +1298,7 @@ class Agent(BaseAgent):
         )
 
     async def get_context_window_async(self) -> ContextWindowOverview:
-        if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
+        if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" and os.getenv("ANTHROPIC_API_KEY"):
             return await self.get_context_window_from_anthropic_async()
         return await self.get_context_window_from_tiktoken_async()
 
