@@ -55,7 +55,7 @@ module small_runners {
   env = "dev"
   project_id = "memgpt-428419"
   region = "us-central1"
-  zone = "us-central1-a"
+  zone = "us-central1-c"
 
   # pool-level config
   pool_name_prefix = "ci-runners-small"
@@ -113,7 +113,7 @@ module ollama_gpu_runners {
 }
 
 
-# # lmstudio
+# lmstudio
 # module gpu_runners {
 #   source = "../../../modules/gcp_mig"
 
@@ -124,10 +124,10 @@ module ollama_gpu_runners {
 #   zone = "us-central1-a"
 
 #   # pool-level config
-#   pool_name_prefix = "ci-runners-gpu"
+#   pool_name_prefix = "ci-runners-gpu-lmstudio"
 #   runner_labels = "gpu,lmstudio"
 #   runner_image = "family/gpu-runner-dev"
-#   machine_type = "g2-standard-4"
+#   machine_type = "e2-standard-8"
 #   ssh_pubkey = "letta:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILflk18SwzkU5NS9CPylt3vszYJas365wX7OCTbxPWXw"
 #   sa_email = "ci-runner-sa-dev@memgpt-428419.iam.gserviceaccount.com"
 

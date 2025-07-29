@@ -32,6 +32,7 @@ resource "google_compute_instance_template" "pool_template" {
 
   scheduling {
     provisioning_model = "SPOT"
+    instance_termination_action = "STOP"
     preemptible = true
     automatic_restart  = false
     on_host_maintenance = "TERMINATE"
