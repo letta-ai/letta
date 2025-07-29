@@ -28,10 +28,12 @@ const DialogClose = DialogPrimitive.Close;
 
 interface DialogContextState {
   isInDialog: boolean;
+  portalId: string;
 }
 
 export const DialogContext = React.createContext<DialogContextState>({
   isInDialog: false,
+  portalId: 'dialog-dropdown-content',
 });
 
 export function useDialogContext() {
@@ -265,6 +267,10 @@ const dialogVariants = cva('', {
     maintainAspectRatio: {
       true: '',
     },
+    fullHeight: {
+      true: 'h-full',
+      false: '',
+    },
     size: {
       small: 'max-w-sm',
       medium: 'max-w-md',
@@ -431,6 +437,7 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
   hideCancel?: boolean;
   hideConfirm?: boolean;
   hideFooter?: boolean;
+  fullHeight?: boolean;
   maintainAspectRatio?: boolean;
   color?: 'background-grey' | 'background';
   additionalActions?: React.ReactNode;
@@ -449,6 +456,7 @@ export function Dialog(props: DialogProps) {
     maintainAspectRatio,
     onOpenChange,
     title,
+    fullHeight,
     testId,
     hideFooter,
     children,
@@ -507,7 +515,7 @@ export function Dialog(props: DialogProps) {
         errorMessage={errorMessage}
         errorAdditionalMessage={errorAdditionalMessage}
         errorMessageAction={errorMessageAction}
-        className={dialogVariants({ size, maintainAspectRatio })}
+        className={dialogVariants({ size, fullHeight, maintainAspectRatio })}
         onInteractOutside={(e) => {
           if (preventCloseFromOutside) {
             e.preventDefault();
@@ -519,7 +527,9 @@ export function Dialog(props: DialogProps) {
         }}
         aria-describedby=""
       >
-        <DialogContext.Provider value={{ isInDialog: true }}>
+        <DialogContext.Provider
+          value={{ portalId: 'dialog-dropdown-content', isInDialog: true }}
+        >
           <DialogHeader variant={headerVariant}>
             <DialogTitle variant={headerVariant}>{title}</DialogTitle>
           </DialogHeader>

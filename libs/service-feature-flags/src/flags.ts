@@ -97,6 +97,11 @@ export const featureFlags = {
     expiryDate: '2025-08-15',
     flagValue: z.boolean(),
   },
+  MEMORY_BLOCK_VIEWER: {
+    description: 'Memory block viewer',
+    expiryDate: '2025-08-15',
+    flagValue: z.boolean(),
+  },
   AI_TOOL_ASSISTANT: {
     description: 'AI Tool Assistant',
     expiryDate: '2025-08-15',

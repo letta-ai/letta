@@ -24,6 +24,50 @@ async def list_blocks(
     identifier_keys: Optional[List[str]] = Query(None, description="Search agents by identifier keys"),
     project_id: Optional[str] = Query(None, description="Search blocks by project id"),
     limit: Optional[int] = Query(50, description="Number of blocks to return"),
+    before: Optional[str] = Query(
+        None,
+        description="Cursor for pagination. If provided, returns blocks before this cursor.",
+    ),
+    after: Optional[str] = Query(
+        None,
+        description="Cursor for pagination. If provided, returns blocks after this cursor.",
+    ),
+    label_search: Optional[str] = Query(
+        None,
+        description=("Search blocks by label. If provided, returns blocks that match this label. " "This is a full-text search on labels."),
+    ),
+    description_search: Optional[str] = Query(
+        None,
+        description=(
+            "Search blocks by description. If provided, returns blocks that match this description. "
+            "This is a full-text search on block descriptions."
+        ),
+    ),
+    value_search: Optional[str] = Query(
+        None,
+        description=("Search blocks by value. If provided, returns blocks that match this value."),
+    ),
+    connected_to_agents_count_gt: Optional[int] = Query(
+        None,
+        description=(
+            "Filter blocks by the number of connected agents. "
+            "If provided, returns blocks that have more than this number of connected agents."
+        ),
+    ),
+    connected_to_agents_count_lt: Optional[int] = Query(
+        None,
+        description=(
+            "Filter blocks by the number of connected agents. "
+            "If provided, returns blocks that have less than this number of connected agents."
+        ),
+    ),
+    connected_to_agents_count_eq: Optional[List[int]] = Query(
+        None,
+        description=(
+            "Filter blocks by the exact number of connected agents. "
+            "If provided, returns blocks that have exactly this number of connected agents."
+        ),
+    ),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -32,11 +76,19 @@ async def list_blocks(
         actor=actor,
         label=label,
         is_template=templates_only,
+        value_search=value_search,
+        label_search=label_search,
+        description_search=description_search,
         template_name=name,
         identity_id=identity_id,
         identifier_keys=identifier_keys,
         project_id=project_id,
+        before=before,
+        connected_to_agents_count_gt=connected_to_agents_count_gt,
+        connected_to_agents_count_lt=connected_to_agents_count_lt,
+        connected_to_agents_count_eq=connected_to_agents_count_eq,
         limit=limit,
+        after=after,
     )
 
 

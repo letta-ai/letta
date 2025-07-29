@@ -1,7 +1,7 @@
 import { useTranslations } from '@letta-cloud/translations';
 import {
   Button,
-  FolderIcon,
+  FolderOpenIcon,
   LinkIcon,
   LoadingEmptyStatusComponent,
   PanelMainContent,
@@ -27,13 +27,14 @@ export function NoDatasourceView() {
       >
         <LoadingEmptyStatusComponent
           noMinHeight
-          iconOverride={<FolderIcon size="xxlarge" />}
+          iconOverride={<FolderOpenIcon color="muted" size="xxlarge" />}
           emptyAction={
             <VStack align="center" gap="small">
               <AttachDataSourceModal
                 trigger={
                   <Button
                     fullWidth
+                    bold
                     data-testid="attach-data-source"
                     color="secondary"
                     preIcon={<LinkIcon />}
@@ -48,8 +49,8 @@ export function NoDatasourceView() {
                     data-testid="create-new-data-source"
                     size="small"
                     fullWidth
-                    color="tertiary"
                     preIcon={<PlusIcon />}
+                    color="tertiary"
                     label={t('new')}
                   />
                 }

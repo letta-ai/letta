@@ -11,6 +11,7 @@ import {
   IdentitiesIcon,
   HR,
   CogIcon,
+  TwoMemoryBlocksIcon,
 } from '@letta-cloud/ui-component-library';
 import React, { useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
@@ -23,6 +24,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useDevelopmentServerStatus } from '$web/client/hooks/useDevelopmentServerStatus/useDevelopmentServerStatus';
 import semver from 'semver/preload';
 import type { DevelopmentServerConfig } from '@letta-cloud/utils-client';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface LocalProjectLayoutProps {
   children: React.ReactNode;
@@ -117,6 +119,7 @@ function DashboardLayout(props: DashboardLayoutProps) {
   }, [servers, developmentServerId]);
 
   const { push } = useRouter();
+  const { data: isMemoryBlocksEnabled } = useFeatureFlag('MEMORY_BLOCK_VIEWER');
 
   const items = useMemo(() => {
     return [
@@ -138,6 +141,16 @@ function DashboardLayout(props: DashboardLayoutProps) {
         label: t('nav.identities'),
         href: `/development-servers/${developmentServerId}/identities`,
       },
+      ...(isMemoryBlocksEnabled
+        ? [
+            {
+              id: 'blocks',
+              icon: <TwoMemoryBlocksIcon />,
+              label: t('nav.blocks'),
+              href: `/development-servers/${developmentServerId}/blocks`,
+            },
+          ]
+        : []),
       ...(developmentServerId !== 'local'
         ? [
             {
@@ -149,7 +162,7 @@ function DashboardLayout(props: DashboardLayoutProps) {
           ]
         : []),
     ];
-  }, [developmentServerId, t]);
+  }, [isMemoryBlocksEnabled, developmentServerId, t]);
 
   return (
     <DashboardWithSidebarWrapper

@@ -53,6 +53,9 @@
     "addFile": "Add file",
     "selectDataSource": "View attached folders"
   },
+  "ADE/AttachMemoryBlockDialog": {
+    "title": "Attach Memory Block"
+  },
   "ADE/DataSourcesPanel/NoDatasourceView": {
     "title": "No folders attached",
     "new": "Create new",
@@ -701,6 +704,102 @@
       "agent": "Agent"
     }
   },
+  "ADE/MemoryBlock": {
+    "AttachMemoryBlockButton": {
+      "attachMemoryBlock": "Attach",
+      "attachError": "There was an error attaching this memory block, please try again or contact support.",
+      "memoryBlockAttached": "Attached"
+    },
+    "noDescription": "No description",
+    "noValue": "No value"
+  },
+  "ADE/SearchMemoryBlocks": {
+    "SharedAgentsBlock": {
+      "tooltip": "This block is shared with {count} agents"
+    },
+    "next": "Next",
+    "prev": "Previous",
+    "query": "Search blocks",
+    "useQueryDefinition": {
+      "blockDescription": {
+        "name": "Block Description",
+        "operator": {
+          "operators": {
+            "contains": "contains"
+          },
+          "label": "Operator"
+        },
+        "value": {
+          "label": "Value",
+          "placeholder": "my-block-description",
+          "description": "The block description to filter by"
+        }
+      },
+      "blockValue": {
+        "name": "Block Value",
+        "operator": {
+          "operators": {
+            "contains": "contains"
+          },
+          "label": "Operator"
+        },
+        "value": {
+          "label": "Value",
+          "placeholder": "my-block-value",
+          "description": "The block value to filter by"
+        }
+      },
+      "attachedAgentsCount": {
+        "name": "Count of attached agents is",
+        "operator": {
+          "operators": {
+            "equals": "equals",
+            "greaterThan": "greater than",
+            "lessThan": "less than"
+          },
+          "label": "Operator"
+        },
+        "value": {
+          "label": "Value",
+          "placeholder": "1",
+          "description": "The number of agents attached to the block to filter by"
+        }
+      },
+      "identities": {
+        "name": "Identity",
+        "operator": {
+          "operators": {
+            "equals": "equals"
+          },
+          "label": "Operator"
+        },
+        "value": {
+          "label": "Value",
+          "placeholder": "my-identity-name",
+          "description": "The identity name to filter by",
+          "error": "Please enter a valid identity name",
+          "noResults": "No identities found",
+          "loading": "Searching identities...",
+          "search": "Search identities",
+          "searchPlaceholder": "Search identities"
+        }
+      },
+      "blockName": {
+        "name": "Block Name",
+        "operator": {
+          "operators": {
+            "equals": "equals",
+            "contains": "contains"
+          },
+          "label": "Operator"
+        },
+        "value": {
+          "label": "Value",
+          "placeholder": "my-agent-name"
+        }
+      }
+    }
+  },
   "ADE/EmbeddingConfiguration": {
     "error": "There was an error loading the embedding configuration, please try again or contact support.",
     "embeddingDimensions": {
@@ -814,6 +913,7 @@
     },
     "MemoryWrapper": {
       "addMemory": "Create block",
+      "attachMemory": "Attach existing",
       "emptyMemoryBlock": "No memory blocks yet"
     },
     "advancedEditor": "Advanced",
@@ -920,6 +1020,13 @@
   "development-servers/hooks": {
     "localAgents": "Local agents"
   },
+  "ADE/AdvancedCoreMemoryEditor/DetachMemoryBlock": {
+    "title": "Detach Memory Block",
+    "trigger": "Detach",
+    "description": "Are you sure you want to detach this memory block? This will remove the memory block from this agent, but any other agents that use this memory block will still have it.",
+    "confirm": "Detach",
+    "error": "There was an error detaching this memory block, please try again or contact support."
+  },
   "ADE/AdvancedCoreMemoryEditor": {
     "CoreMemoryMobileNav": {
       "label": "Select memory"
@@ -1005,6 +1112,7 @@
       "createBlockError": "There was an unexpected error creating the memory block, please try again or contact support. (ReportId: HBC1)"
     },
     "CoreMemorySidebar": {
+      "attach": "Attach block",
       "noResults": "No results found",
       "search": {
         "label": "Search by label",

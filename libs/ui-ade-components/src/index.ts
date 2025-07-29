@@ -1,4 +1,7 @@
+export * from './lib/AppContext/AppContext';
+
 export * from './lib/ADELayout/ADELayout';
+export * from './lib/SearchMemoryBlocks/SearchMemoryBlocks';
 import en from './translations/en.json';
 
 export { en };
@@ -30,3 +33,4 @@ export * from './lib/panels/ToolRules/ToolRulesVisual';
 export * from './lib/ViewMessageTrace/ViewMessageTrace';
 export * from './lib/hooks/useADELayoutConfig/useADELayoutConfig';
 export * from './lib/panels/DataSourcesV2/_components/DeleteDatasourceDialog/DeleteDatasourceDialog';
+export * from './lib/hooks/useQueryIdenities/useQueryIdentities';

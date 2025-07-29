@@ -32,6 +32,8 @@ import type { ExampleBlockPayload } from './ExampleBlocks';
 import { ExampleBlocks } from './ExampleBlocks';
 import { useSetAtom } from 'jotai/index';
 import { currentAdvancedCoreMemoryAtom } from '../currentAdvancedCoreMemoryAtom';
+import { useADEAppContext } from '../../../AppContext/AppContext';
+import { UseBlocksServiceInfiniteQuery } from '../../../SearchMemoryBlocks/SearchMemoryBlocks';
 
 interface CreateNewMemoryBlockDialogProps {
   trigger: React.ReactNode;
@@ -139,8 +141,10 @@ export function CreateNewMemoryBlockDialog(
   props: CreateNewMemoryBlockDialogProps,
 ) {
   const { trigger } = props;
+  const { projectId } = useADEAppContext();
   const [open, setOpen] = React.useState(false);
   const t = useTranslations('CreateNewMemoryBlockDialog');
+
   const queryClient = useQueryClient();
   const { agentId: currentAgentId } = useCurrentAgentMetaData();
   const agent = useCurrentAgent();
@@ -252,6 +256,7 @@ export function CreateNewMemoryBlockDialog(
             limit: parseInt(values.characterLimit, 10),
             description: values.description,
             read_only: values.readonly,
+            project_id: projectId,
           },
         },
         {
@@ -260,6 +265,11 @@ export function CreateNewMemoryBlockDialog(
               toast.error(t('errors.createBlockError'));
               return;
             }
+
+            void queryClient.invalidateQueries({
+              queryKey: UseBlocksServiceInfiniteQuery({}).slice(0, 2),
+              exact: false,
+            });
 
             attachBlock(
               {
@@ -295,6 +305,7 @@ export function CreateNewMemoryBlockDialog(
       );
     },
     [
+      projectId,
       currentAgentId,
       createBlock,
       t,

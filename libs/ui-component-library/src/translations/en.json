@@ -19,6 +19,9 @@
     "totalDurationTooltip": "This is the total time it took to execute everything in this response, including Letta, LLM and tool execution times and any delays",
     "stepDurationTooltip": "This is the total time it took to execute this step, including Letta, LLM and tool execution times and any delays"
   },
+  "components/QueryBuilderWrapper": {
+    "search": "Search"
+  },
   "components/PageSelector": {
     "loadPreviousPage": "Load previous page",
     "loadNextPage": "Load next page"

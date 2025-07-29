@@ -604,7 +604,9 @@ export function DynamicApp(props: DynamicAppProps) {
 
   return (
     <DialogRoot modal={false} open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContext.Provider value={{ isInDialog: true }}>
+      <DialogContext.Provider
+        value={{ portalId: 'dynamicapp-dropdown-content', isInDialog: true }}
+      >
         {trigger && (
           <DialogTrigger ref={triggerRef} asChild>
             {trigger}
@@ -627,7 +629,7 @@ export function DynamicApp(props: DynamicAppProps) {
               }
             }}
           >
-            <div id="dialog-dropdown-content" className="z-dropdown" />
+            <div id="dynamicapp-dropdown-content" className="z-dropdown" />
             <div
               ref={windowRef}
               style={isFullscreen ? { maxWidth } : contentStyle}

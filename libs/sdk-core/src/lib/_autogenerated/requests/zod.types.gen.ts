@@ -8848,6 +8848,34 @@ export const get_List_blocks = {
       limit: z
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
         .optional(),
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      label_search: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      description_search: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      value_search: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      connected_to_agents_count_gt: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      connected_to_agents_count_lt: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      connected_to_agents_count_eq: z
+        .union([
+          z.array(z.number()),
+          z.null(),
+          z.array(z.union([z.array(z.number()), z.null()])),
+        ])
+        .optional(),
     }),
     header: z.object({
       user_id: z

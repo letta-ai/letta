@@ -1263,37 +1263,61 @@ export type BlocksServiceListBlocksQueryResult<
 export const useBlocksServiceListBlocksKey = 'BlocksServiceListBlocks';
 export const UseBlocksServiceListBlocksKeyFn = (
   {
+    after,
+    before,
+    connectedToAgentsCountEq,
+    connectedToAgentsCountGt,
+    connectedToAgentsCountLt,
+    descriptionSearch,
     identifierKeys,
     identityId,
     label,
+    labelSearch,
     limit,
     name,
     projectId,
     templatesOnly,
     userId,
+    valueSearch,
   }: {
+    after?: string;
+    before?: string;
+    connectedToAgentsCountEq?: number[];
+    connectedToAgentsCountGt?: number;
+    connectedToAgentsCountLt?: number;
+    descriptionSearch?: string;
     identifierKeys?: string[];
     identityId?: string;
     label?: string;
+    labelSearch?: string;
     limit?: number;
     name?: string;
     projectId?: string;
     templatesOnly?: boolean;
     userId?: string;
+    valueSearch?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useBlocksServiceListBlocksKey,
   ...(queryKey ?? [
     {
+      after,
+      before,
+      connectedToAgentsCountEq,
+      connectedToAgentsCountGt,
+      connectedToAgentsCountLt,
+      descriptionSearch,
       identifierKeys,
       identityId,
       label,
+      labelSearch,
       limit,
       name,
       projectId,
       templatesOnly,
       userId,
+      valueSearch,
     },
   ]),
 ];

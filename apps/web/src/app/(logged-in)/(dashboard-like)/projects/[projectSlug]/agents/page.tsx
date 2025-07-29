@@ -1,7 +1,9 @@
 'use client';
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
+  compileSearchTerms,
   DotsVerticalIcon,
+  QueryBuilderWrapper,
   SortableHeader,
 } from '@letta-cloud/ui-component-library';
 import type {
@@ -15,7 +17,6 @@ import {
   isGenericQueryCondition,
   MiddleTruncate,
   QueryBuilder,
-  SearchIcon,
   DropdownMenu,
   DropdownMenuItem,
 } from '@letta-cloud/ui-component-library';
@@ -38,11 +39,7 @@ import { webApi, webApiQueryKeys } from '$web/client';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
-import {
-  type AgentState,
-  IdentitiesService,
-  useIdentitiesServiceListIdentities,
-} from '@letta-cloud/sdk-core';
+import type { AgentState } from '@letta-cloud/sdk-core';
 import { TagService, useTagServiceListTags } from '@letta-cloud/sdk-core';
 import { useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
@@ -64,6 +61,7 @@ import {
   cloudQueryKeys,
 } from '@letta-cloud/sdk-cloud-api';
 import { TrashIcon } from '@letta-cloud/ui-component-library';
+import { useQueryIdentities } from '@letta-cloud/ui-ade-components';
 
 const TEMPLATE_SEARCH_LIMIT = 10;
 
@@ -208,33 +206,6 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
   );
 }
 
-function useQueryIdentities() {
-  const { id: currentProjectId } = useCurrentProject();
-  const { data: defaultIdentities } = useIdentitiesServiceListIdentities({
-    projectId: currentProjectId,
-  });
-
-  const handleLoadIdentities = useCallback(async (query: string) => {
-    try {
-      const response = await IdentitiesService.listIdentities({
-        name: query,
-      });
-
-      return response.map((identity) => ({
-        label: identity.name,
-        value: identity.id,
-      }));
-    } catch {
-      return [];
-    }
-  }, []);
-
-  return {
-    handleLoadIdentities,
-    defaultIdentities,
-  };
-}
-
 interface UseQueryDefinitionResponse {
   fieldDefinitions: FieldDefinitions;
   initialQuery: QueryBuilderQuery;
@@ -305,7 +276,10 @@ function useQueryDefinition() {
       },
     });
 
-  const { defaultIdentities, handleLoadIdentities } = useQueryIdentities();
+  const { defaultIdentities, handleLoadIdentities } = useQueryIdentities({
+    projectId: currentProjectId,
+    valueType: 'id',
+  });
 
   const handleLoadOptions = useCallback(
     async (query: string) => {
@@ -708,40 +682,7 @@ function DeployedAgentsPage() {
   // FIXED: Updated compiledQuery to handle empty values properly
   const compiledQuery = useMemo(() => {
     const val = {
-      search: query.root.items
-        .map((item) => {
-          if (isGenericQueryCondition(item) || !item.queryData) {
-            return null;
-          }
-
-          return {
-            field: item.field,
-            ...Object.entries(item.queryData).reduce((acc, [key, value]) => {
-              if (!value) {
-                return acc;
-              }
-
-              if (Array.isArray(value)) {
-                // Handle multi-value fields (like tags)
-                const values = value.map((val) => val?.value).filter(Boolean);
-                return {
-                  ...acc,
-                  [key]: values,
-                };
-              }
-
-              return {
-                ...acc,
-                [key]: value?.value || '',
-              };
-            }, {}),
-          };
-        })
-        .filter(Boolean) as Array<{
-        field: string;
-        operator?: string;
-        value?: string[] | string;
-      }>,
+      search: compileSearchTerms(query.root.items),
       limit,
       project_id: currentProjectId,
       combinator: 'AND' as const,
@@ -1091,49 +1032,16 @@ function DeployedAgentsPage() {
               setQuery(draftQuery);
             }}
           >
-            <VStack paddingY="xxsmall">
-              <Typography bold variant="body2" color="lighter">
-                {t('search.label')}
-              </Typography>
-            </VStack>
-            <VStack
-              gap={false}
-              border
-              padding={'small'}
-              color={'background-grey'}
-            >
-              <VStack>
-                <QueryBuilder
-                  key={queryBuilderKey}
-                  query={draftQuery}
-                  onSetQuery={(query) => {
-                    setDraftQuery(query);
-                  }}
-                  definition={fieldDefinitions}
-                />
-              </VStack>
-              <HStack
-                /*eslint-disable-next-line react/forbid-component-props */
-                className="mt-[-30px] pointer-events-none"
-                fullWidth
-                align="center"
-                justify="end"
-              >
-                <HStack
-                  /*eslint-disable-next-line react/forbid-component-props */
-                  className="pointer-events-auto"
-                  align="center"
-                  justify="end"
-                >
-                  <Button
-                    type="submit"
-                    preIcon={<SearchIcon />}
-                    label={t('search.button')}
-                    color="secondary"
-                  />
-                </HStack>
-              </HStack>
-            </VStack>
+            <QueryBuilderWrapper label={t('search.label')}>
+              <QueryBuilder
+                key={queryBuilderKey}
+                query={draftQuery}
+                onSetQuery={(query) => {
+                  setDraftQuery(query);
+                }}
+                definition={fieldDefinitions}
+              />
+            </QueryBuilderWrapper>
           </form>
           <HStack fullHeight position="relative" fullWidth>
             <DataTable

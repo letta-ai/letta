@@ -572,7 +572,7 @@ function CreatableAsyncSelectPrimitive(_props: AsyncSelectProps) {
 
   const [mounted, setMounted] = React.useState(false);
   const [open, setOpen] = React.useState(false);
-  const { isInDialog } = useDialogContext();
+  const { isInDialog, portalId } = useDialogContext();
 
   const [menuPortalTarget, setMenuPortalTarget] =
     React.useState<HTMLElement | null>(null);
@@ -584,13 +584,13 @@ function CreatableAsyncSelectPrimitive(_props: AsyncSelectProps) {
     }
 
     if (isInDialog) {
-      if (document.getElementById('dialog-dropdown-content')) {
-        setMenuPortalTarget(document.getElementById('dialog-dropdown-content'));
+      if (document.getElementById(portalId)) {
+        setMenuPortalTarget(document.getElementById(portalId));
       }
     } else {
       setMenuPortalTarget(document.body);
     }
-  }, [isInDialog]);
+  }, [isInDialog, portalId]);
 
   useEffect(() => {
     setMounted(true);

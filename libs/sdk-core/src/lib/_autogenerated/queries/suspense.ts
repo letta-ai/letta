@@ -2019,6 +2019,14 @@ export const useLlmsServiceListEmbeddingModelsSuspense = <
  * @param data.identifierKeys Search agents by identifier keys
  * @param data.projectId Search blocks by project id
  * @param data.limit Number of blocks to return
+ * @param data.before Cursor for pagination. If provided, returns blocks before this cursor.
+ * @param data.after Cursor for pagination. If provided, returns blocks after this cursor.
+ * @param data.labelSearch Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels.
+ * @param data.descriptionSearch Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions.
+ * @param data.valueSearch Search blocks by value. If provided, returns blocks that match this value.
+ * @param data.connectedToAgentsCountGt Filter blocks by the number of connected agents. If provided, returns blocks that have more than this number of connected agents.
+ * @param data.connectedToAgentsCountLt Filter blocks by the number of connected agents. If provided, returns blocks that have less than this number of connected agents.
+ * @param data.connectedToAgentsCountEq Filter blocks by the exact number of connected agents. If provided, returns blocks that have exactly this number of connected agents.
  * @param data.userId
  * @returns Block Successful Response
  * @throws ApiError
@@ -2029,23 +2037,39 @@ export const useBlocksServiceListBlocksSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
+    before,
+    connectedToAgentsCountEq,
+    connectedToAgentsCountGt,
+    connectedToAgentsCountLt,
+    descriptionSearch,
     identifierKeys,
     identityId,
     label,
+    labelSearch,
     limit,
     name,
     projectId,
     templatesOnly,
     userId,
+    valueSearch,
   }: {
+    after?: string;
+    before?: string;
+    connectedToAgentsCountEq?: number[];
+    connectedToAgentsCountGt?: number;
+    connectedToAgentsCountLt?: number;
+    descriptionSearch?: string;
     identifierKeys?: string[];
     identityId?: string;
     label?: string;
+    labelSearch?: string;
     limit?: number;
     name?: string;
     projectId?: string;
     templatesOnly?: boolean;
     userId?: string;
+    valueSearch?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -2053,27 +2077,43 @@ export const useBlocksServiceListBlocksSuspense = <
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseBlocksServiceListBlocksKeyFn(
       {
+        after,
+        before,
+        connectedToAgentsCountEq,
+        connectedToAgentsCountGt,
+        connectedToAgentsCountLt,
+        descriptionSearch,
         identifierKeys,
         identityId,
         label,
+        labelSearch,
         limit,
         name,
         projectId,
         templatesOnly,
         userId,
+        valueSearch,
       },
       queryKey,
     ),
     queryFn: () =>
       BlocksService.listBlocks({
+        after,
+        before,
+        connectedToAgentsCountEq,
+        connectedToAgentsCountGt,
+        connectedToAgentsCountLt,
+        descriptionSearch,
         identifierKeys,
         identityId,
         label,
+        labelSearch,
         limit,
         name,
         projectId,
         templatesOnly,
         userId,
+        valueSearch,
       }) as TData,
     ...options,
   });

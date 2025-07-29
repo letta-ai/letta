@@ -6581,6 +6581,153 @@
               "title": "Limit"
             },
             "description": "Number of blocks to return"
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Cursor for pagination. If provided, returns blocks before this cursor.",
+              "title": "Before"
+            },
+            "description": "Cursor for pagination. If provided, returns blocks before this cursor."
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Cursor for pagination. If provided, returns blocks after this cursor.",
+              "title": "After"
+            },
+            "description": "Cursor for pagination. If provided, returns blocks after this cursor."
+          },
+          {
+            "name": "label_search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels.",
+              "title": "Label Search"
+            },
+            "description": "Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels."
+          },
+          {
+            "name": "description_search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions.",
+              "title": "Description Search"
+            },
+            "description": "Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions."
+          },
+          {
+            "name": "value_search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search blocks by value. If provided, returns blocks that match this value.",
+              "title": "Value Search"
+            },
+            "description": "Search blocks by value. If provided, returns blocks that match this value."
+          },
+          {
+            "name": "connected_to_agents_count_gt",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter blocks by the number of connected agents. If provided, returns blocks that have more than this number of connected agents.",
+              "title": "Connected To Agents Count Gt"
+            },
+            "description": "Filter blocks by the number of connected agents. If provided, returns blocks that have more than this number of connected agents."
+          },
+          {
+            "name": "connected_to_agents_count_lt",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter blocks by the number of connected agents. If provided, returns blocks that have less than this number of connected agents.",
+              "title": "Connected To Agents Count Lt"
+            },
+            "description": "Filter blocks by the number of connected agents. If provided, returns blocks that have less than this number of connected agents."
+          },
+          {
+            "name": "connected_to_agents_count_eq",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter blocks by the exact number of connected agents. If provided, returns blocks that have exactly this number of connected agents.",
+              "title": "Connected To Agents Count Eq"
+            },
+            "description": "Filter blocks by the exact number of connected agents. If provided, returns blocks that have exactly this number of connected agents."
           }
         ],
         "responses": {

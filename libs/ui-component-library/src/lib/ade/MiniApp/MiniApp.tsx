@@ -42,7 +42,9 @@ export function MiniApp(props: MiniAppProps) {
       open={isOpen}
       onOpenChange={onOpenChange}
     >
-      <DialogContext.Provider value={{ isInDialog: true }}>
+      <DialogContext.Provider
+        value={{ portalId: 'miniapp-dropdown-content', isInDialog: true }}
+      >
         {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
         <DialogPortal>
           <DialogPrimitive.Overlay
@@ -53,7 +55,7 @@ export function MiniApp(props: MiniAppProps) {
           />
 
           <DialogPrimitive.Content>
-            <div id="dialog-dropdown-content" className="z-dropdown" />
+            <div id="miniapp-dropdown-content" className="z-dropdown" />
 
             <div
               className={cn(

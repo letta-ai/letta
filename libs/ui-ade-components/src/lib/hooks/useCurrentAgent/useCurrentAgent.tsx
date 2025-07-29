@@ -15,6 +15,7 @@ export function useCurrentAgent() {
     },
     undefined,
     {
+      enabled: !!agentId,
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
       refetchOnMount: false,

@@ -2,6 +2,7 @@ import {
   Button,
   CoreMemoryEditor,
   EmptyBlockIcon,
+  LinkIcon,
   MemoryBlocksIcon,
   type MemoryType,
   OnboardingAsideFocus,
@@ -19,7 +20,7 @@ import { VStack } from '@letta-cloud/ui-component-library';
 import { PanelMainContent } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent } from '../../hooks';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import React, { useMemo } from 'react';
 import { useSortedMemories } from '@letta-cloud/utils-client';
 import { useUpdateMemory } from '../../hooks';
@@ -34,13 +35,11 @@ import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useADETour } from '../../hooks/useADETour/useADETour';
 import './EditCoreMemoriesPanel.css';
 import type { Block } from '@letta-cloud/sdk-core';
-import { useBlocksServiceListAgentsForBlock } from '@letta-cloud/sdk-core';
-import { useRouter } from 'next/navigation';
-import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
-import { useADEAppContext } from '../../AppContext/AppContext';
 import { CreateNewMemoryBlockDialog } from './CreateNewMemoryBlockDialog/CreateNewMemoryBlockDialog';
 import { useQuickADETour } from '../../hooks/useQuickADETour/useQuickADETour';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import { AttachMemoryBlockDialog } from './AttachMemoryBlockDialog/AttachMemoryBlockDialog';
+import { useSharedAgents } from '../../hooks/useSharedAgents/useSharedAgents';
 
 interface AdvancedEditorPayload {
   label: string;
@@ -57,67 +56,8 @@ interface EditMemoryFormProps extends AdvancedEditorPayload {
 function EditMemoryForm(props: EditMemoryFormProps) {
   const { label, memory, memoryType, minimal, hasSimulatedDiff, disabled } =
     props;
-  const { id } = useCurrentAgent();
-  const { isLocal } = useCurrentAgentMetaData();
-  const { projectSlug } = useADEAppContext();
 
-  const { data: agents } = useBlocksServiceListAgentsForBlock(
-    {
-      blockId: memory.id || '',
-      includeRelationships: [],
-    },
-    undefined,
-    {
-      enabled: !!memory.id,
-    },
-  );
-
-  const { push } = useRouter();
-
-  const handleMoveToAgent = useCallback(
-    (agentId: string) => {
-      if (CURRENT_RUNTIME === 'letta-desktop') {
-        push(`/dashboard/agents/${agentId}`);
-
-        return;
-      }
-
-      if (projectSlug) {
-        if (!isLocal) {
-          push(`/projects/${projectSlug}/agents/${agentId}`);
-          return;
-        }
-
-        push(`${projectSlug}/agents/${agentId}`);
-        return;
-      }
-
-      push('/agents');
-    },
-    [isLocal, projectSlug, push],
-  );
-
-  const sharedAgents = useMemo(() => {
-    if (!agents) {
-      return [];
-    }
-
-    return agents
-      .toSorted((a, b) => {
-        if (a.id === id) return -1;
-        if (b.id === id) return 1;
-        return a.name.localeCompare(b.name);
-      })
-      .map((agent) => ({
-        id: agent.id,
-        name: agent.name,
-        agentType: agent.agent_type,
-        onClick() {
-          handleMoveToAgent(agent.id);
-        },
-        isCurrentAgent: agent.id === id,
-      }));
-  }, [agents, handleMoveToAgent, id]);
+  const sharedAgents = useSharedAgents(memory.id || '');
 
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
 
@@ -192,12 +132,14 @@ function MemoryWrapper(props: MemoryWrapperProps) {
         fullHeight
         border="dashed"
       >
-        <VStack paddingY="small">
-          <EmptyBlockIcon size="xlarge" />
+        <VStack paddingBottom="small" align="center">
+          <VStack paddingY="small">
+            <EmptyBlockIcon size="xlarge" />
+          </VStack>
+          <Typography color="lighter" variant="body2">
+            {t('MemoryWrapper.emptyMemoryBlock')}
+          </Typography>
         </VStack>
-        <Typography color="lighter" variant="body2">
-          {t('MemoryWrapper.emptyMemoryBlock')}
-        </Typography>
         <CreateNewMemoryBlockDialog
           trigger={
             <Button
@@ -205,6 +147,16 @@ function MemoryWrapper(props: MemoryWrapperProps) {
               bold
               label={t('MemoryWrapper.addMemory')}
               color="secondary"
+              size="small"
+            />
+          }
+        />
+        <AttachMemoryBlockDialog
+          trigger={
+            <Button
+              preIcon={<LinkIcon />}
+              label={t('MemoryWrapper.attachMemory')}
+              color="tertiary"
               size="small"
             />
           }

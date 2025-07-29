@@ -3616,6 +3616,14 @@ export class BlocksService {
    * @param data.identifierKeys Search agents by identifier keys
    * @param data.projectId Search blocks by project id
    * @param data.limit Number of blocks to return
+   * @param data.before Cursor for pagination. If provided, returns blocks before this cursor.
+   * @param data.after Cursor for pagination. If provided, returns blocks after this cursor.
+   * @param data.labelSearch Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels.
+   * @param data.descriptionSearch Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions.
+   * @param data.valueSearch Search blocks by value. If provided, returns blocks that match this value.
+   * @param data.connectedToAgentsCountGt Filter blocks by the number of connected agents. If provided, returns blocks that have more than this number of connected agents.
+   * @param data.connectedToAgentsCountLt Filter blocks by the number of connected agents. If provided, returns blocks that have less than this number of connected agents.
+   * @param data.connectedToAgentsCountEq Filter blocks by the exact number of connected agents. If provided, returns blocks that have exactly this number of connected agents.
    * @param data.userId
    * @returns Block Successful Response
    * @throws ApiError
@@ -3635,6 +3643,14 @@ export class BlocksService {
         identifier_keys: data.identifierKeys,
         project_id: data.projectId,
         limit: data.limit,
+        before: data.before,
+        after: data.after,
+        label_search: data.labelSearch,
+        description_search: data.descriptionSearch,
+        value_search: data.valueSearch,
+        connected_to_agents_count_gt: data.connectedToAgentsCountGt,
+        connected_to_agents_count_lt: data.connectedToAgentsCountLt,
+        connected_to_agents_count_eq: data.connectedToAgentsCountEq,
       },
       errors: {
         422: 'Validation Error',

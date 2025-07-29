@@ -1809,8 +1809,12 @@
       "mcpServers": "MCP servers"
     }
   },
+  "dashboard/blocks": {
+    "title": "Memory blocks"
+  },
   "projects/(projectSlug)/layout": {
     "nav": {
+      "blocks": "Memory blocks",
       "return": "All projects",
       "home": "Dashboard",
       "templates": "Templates",
@@ -1841,6 +1845,7 @@
     "noTemplates": "You have no templates in this project, create one below",
     "createTemplate": "New template"
   },
+
   "ADE/DeployedAgentsPanel": {
     "title": "Deployed Agents",
     "deployAgent": {
@@ -2061,6 +2066,7 @@
   "development-servers/layout": {
     "title": "Local Project",
     "nav": {
+      "blocks": "Memory blocks",
       "identities": "Identities",
       "dashboard": "Dashboard",
       "agents": "Agents",

@@ -11,6 +11,7 @@ import {
   HStack,
   Input,
   isMultiValue,
+  LinkIcon,
   LoadingEmptyStatusComponent,
   PlusIcon,
   RawInput,
@@ -42,6 +43,9 @@ import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { CreateNewMemoryBlockDialog } from './CreateNewMemoryBlockDialog/CreateNewMemoryBlockDialog';
 import './AdvancedCoreMemoryEditor.scss';
 import { currentAdvancedCoreMemoryAtom } from './currentAdvancedCoreMemoryAtom';
+import { AttachMemoryBlockDialog } from './AttachMemoryBlockDialog/AttachMemoryBlockDialog';
+import { UseBlocksServiceInfiniteQuery } from '../../SearchMemoryBlocks/SearchMemoryBlocks';
+import { DetachMemoryBlock } from './DetachMemoryBlock/DetachMemoryBlock';
 
 interface MemoryWarningProps {
   rootLabel: string;
@@ -255,7 +259,10 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
               />
             )}
           </HStack>
-          <DeleteMemoryBlockDialog blockId={memory.id || ''} />
+          <HStack gap={false}>
+            <DetachMemoryBlock blockId={memory.id || ''} />
+            <DeleteMemoryBlockDialog blockId={memory.id || ''} />
+          </HStack>
         </HStack>
         <Form onSubmit={form.handleSubmit(handleUpdate)}>
           <MemoryWarning rootLabel={memory.label || ''} />
@@ -395,6 +402,11 @@ function DeleteMemoryBlockDialog(props: DeleteMemoryBlockDialogProps) {
       },
       {
         onSuccess: () => {
+          void queryClient.invalidateQueries({
+            queryKey: UseBlocksServiceInfiniteQuery({}).slice(0, 2),
+            exact: false,
+          });
+
           queryClient.setQueriesData<AgentState | undefined>(
             {
               queryKey: UseAgentsServiceRetrieveAgentKeyFn({
@@ -557,6 +569,19 @@ function CoreMemoryMobileNav() {
           )
         }
       />
+      {canUpdateAgent && (
+        <AttachMemoryBlockDialog
+          trigger={
+            <Button
+              hideLabel
+              preIcon={<LinkIcon />}
+              data-testid="create-new-memory-block-item"
+              color="tertiary"
+              label={t('CoreMemorySidebar.attach')}
+            />
+          }
+        />
+      )}
     </HStack>
   );
 }
@@ -623,19 +648,34 @@ function CoreMemorySidebar() {
             setSearch(e.target.value);
           }}
         />
-        <CreateNewMemoryBlockDialog
-          trigger={
-            canUpdateAgent && (
-              <Button
-                preIcon={<PlusIcon />}
-                data-testid="create-new-memory-block-item"
-                color="secondary"
-                size="small"
-                label={t('CoreMemorySidebar.create')}
-              />
-            )
-          }
-        />
+        <HStack align="center">
+          <CreateNewMemoryBlockDialog
+            trigger={
+              canUpdateAgent && (
+                <Button
+                  preIcon={<PlusIcon />}
+                  data-testid="create-new-memory-block-item"
+                  color="secondary"
+                  size="small"
+                  label={t('CoreMemorySidebar.create')}
+                />
+              )
+            }
+          />
+          {canUpdateAgent && (
+            <AttachMemoryBlockDialog
+              trigger={
+                <Button
+                  preIcon={<LinkIcon />}
+                  data-testid="create-new-memory-block-item"
+                  color="tertiary"
+                  size="small"
+                  label={t('CoreMemorySidebar.attach')}
+                />
+              }
+            />
+          )}
+        </HStack>
       </VStack>
       <VStack collapseHeight flex overflowY="auto">
         <VStack>
@@ -746,13 +786,30 @@ function EditorContent() {
           <CreateNewMemoryBlockDialog
             trigger={
               canUpdateAgent && (
-                <Button
-                  preIcon={<PlusIcon />}
-                  data-testid="create-new-memory-block-item"
-                  color="secondary"
-                  size="small"
-                  label={t('CoreMemorySidebar.create')}
-                />
+                <VStack>
+                  <CreateNewMemoryBlockDialog
+                    trigger={
+                      <Button
+                        preIcon={<PlusIcon />}
+                        data-testid="create-new-memory-block-item"
+                        color="secondary"
+                        size="small"
+                        label={t('CoreMemorySidebar.create')}
+                      />
+                    }
+                  />
+                  <AttachMemoryBlockDialog
+                    trigger={
+                      <Button
+                        size="small"
+                        hideLabel
+                        preIcon={<LinkIcon />}
+                        color="tertiary"
+                        label={t('CoreMemorySidebar.attach')}
+                      />
+                    }
+                  />
+                </VStack>
               )
             }
           />

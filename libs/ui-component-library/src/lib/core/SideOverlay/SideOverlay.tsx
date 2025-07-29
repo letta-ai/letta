@@ -71,7 +71,9 @@ export function SideOverlay(props: SideOverlayProps) {
       open={isOpen}
       onOpenChange={onOpenChange}
     >
-      <DialogContext.Provider value={{ isInDialog: true }}>
+      <DialogContext.Provider
+        value={{ portalId: 'sideoverlay-dropdown-content', isInDialog: true }}
+      >
         {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
         <DialogPortal>
           {overlay && (

@@ -193,6 +193,7 @@ function CoreMemoryEditorHeader(props: CoreMemoryEditorHeaderProps) {
                 agents={sharedAgents}
                 trigger={
                   <InfoChip
+                    as="div"
                     variant="brand"
                     value={`${sharedAgents.length}`}
                     label={t('CoreMemoryEditorHeader.sharedAgents', {

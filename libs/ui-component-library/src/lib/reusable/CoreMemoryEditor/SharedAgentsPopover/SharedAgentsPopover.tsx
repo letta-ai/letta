@@ -39,17 +39,18 @@ function AgentBadge(props: AgentBadgeProps) {
 
 interface SharedMemoryIndicatorProps {
   agents: SharedAgent[];
+  allowSingleAgent?: boolean;
   trigger: React.ReactNode;
 }
 
 export function SharedAgentsPopover(props: SharedMemoryIndicatorProps) {
-  const { agents, trigger } = props;
+  const { agents, allowSingleAgent = false, trigger } = props;
 
   if (!agents?.length) {
     return null;
   }
 
-  if (agents.length === 1) {
+  if (agents.length === 1 && !allowSingleAgent) {
     return null;
   }
 

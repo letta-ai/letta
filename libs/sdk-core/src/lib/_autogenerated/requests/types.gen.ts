@@ -6071,6 +6071,30 @@ export type ListEmbeddingModelsResponse = Array<EmbeddingConfig>;
 
 export type ListBlocksData = {
   /**
+   * Cursor for pagination. If provided, returns blocks after this cursor.
+   */
+  after?: string | null;
+  /**
+   * Cursor for pagination. If provided, returns blocks before this cursor.
+   */
+  before?: string | null;
+  /**
+   * Filter blocks by the exact number of connected agents. If provided, returns blocks that have exactly this number of connected agents.
+   */
+  connectedToAgentsCountEq?: Array<number> | null;
+  /**
+   * Filter blocks by the number of connected agents. If provided, returns blocks that have more than this number of connected agents.
+   */
+  connectedToAgentsCountGt?: number | null;
+  /**
+   * Filter blocks by the number of connected agents. If provided, returns blocks that have less than this number of connected agents.
+   */
+  connectedToAgentsCountLt?: number | null;
+  /**
+   * Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions.
+   */
+  descriptionSearch?: string | null;
+  /**
    * Search agents by identifier keys
    */
   identifierKeys?: Array<string> | null;
@@ -6082,6 +6106,10 @@ export type ListBlocksData = {
    * Labels to include (e.g. human, persona)
    */
   label?: string | null;
+  /**
+   * Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels.
+   */
+  labelSearch?: string | null;
   /**
    * Number of blocks to return
    */
@@ -6099,6 +6127,10 @@ export type ListBlocksData = {
    */
   templatesOnly?: boolean;
   userId?: string | null;
+  /**
+   * Search blocks by value. If provided, returns blocks that match this value.
+   */
+  valueSearch?: string | null;
 };
 
 export type ListBlocksResponse = Array<Block>;

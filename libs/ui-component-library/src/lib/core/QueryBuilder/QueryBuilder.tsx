@@ -51,6 +51,7 @@ type QueryDefinition =
 interface FieldDefinition {
   id: string;
   name: string;
+  single?: boolean;
   queries: QueryDefinition[];
 }
 
@@ -426,6 +427,45 @@ type QueryCombinators = 'AND' | 'OR';
 interface GenericQueryCondition {
   combinator: QueryCombinators;
   items: Array<GenericQueryCondition | GenericQueryItem>;
+}
+
+export function compileSearchTerms(
+  items: Array<GenericQueryCondition | GenericQueryItem>,
+) {
+  return items
+    .map((item) => {
+      if (isGenericQueryCondition(item) || !item.queryData) {
+        return null;
+      }
+
+      return {
+        field: item.field,
+        ...Object.entries(item.queryData).reduce((acc, [key, value]) => {
+          if (!value) {
+            return acc;
+          }
+
+          if (Array.isArray(value)) {
+            // Handle multi-value fields (like tags)
+            const values = value.map((val) => val?.value).filter(Boolean);
+            return {
+              ...acc,
+              [key]: values,
+            };
+          }
+
+          return {
+            ...acc,
+            [key]: value?.value || '',
+          };
+        }, {}),
+      };
+    })
+    .filter(Boolean) as Array<{
+    field: string;
+    operator?: string;
+    value?: string[] | string;
+  }>;
 }
 
 export function isGenericQueryCondition(

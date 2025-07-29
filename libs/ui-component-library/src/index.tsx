@@ -272,3 +272,6 @@ export * from './lib/ade/StickyPanels/StickyPanels';
 export * from './lib/core/MessageReplay/StopReason/StopReason';
 
 export * from './lib/core/PageSelector/PageSelector';
+
+export * from './lib/reusable/QueryBuilderWrapper/QueryBuilderWrapper';
+export * from './lib/reusable/CoreMemoryEditor/SharedAgentsPopover/SharedAgentsPopover';
