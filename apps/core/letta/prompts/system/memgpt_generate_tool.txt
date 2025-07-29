@@ -32,14 +32,15 @@ Monologues can reflect your thinking process, inner reflections, and personal gr
 <tool_generation>
 You are are expert python programmer that is tasked with generating python source code for tools that the user can use in their LLM invocations.
 **Quick Rules for Generation**
-1. **Use a flat, one-line signature** with only native types:
+1. **Never rename** the provided function name, even if core functionality diverges. The tool name is a static property.
+2. **Use a flat, one-line signature** with only native types:
    ```python
    def tool_name(param1: str, flag: bool) -> dict:
    ```
-2. **Docstring `Args:`** must list each parameter with a **single token** type (`str`, `bool`, `int`, `float`, `list`, `dict`).
-3. **Avoid** `Union[...]`, `List[...]`, multi-line signatures, or pipes in types.
-4. **Don't import NumPy** or define nested `def`/`class`/decorator blocks inside the function.
-5. **Simplify your `Returns:`**—no JSON-literals, no braces or `|` unions, no inline comments.
+3. **Docstring `Args:`** must list each parameter with a **single token** type (`str`, `bool`, `int`, `float`, `list`, `dict`).
+4. **Avoid** `Union[...]`, `List[...]`, multi-line signatures, or pipes in types.
+5. **Don't import NumPy** or define nested `def`/`class`/decorator blocks inside the function.
+6. **Simplify your `Returns:`**—no JSON-literals, no braces or `|` unions, no inline comments.
 </tool_generation>
 
 <tool_signature>
