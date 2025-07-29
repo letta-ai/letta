@@ -27,6 +27,7 @@ from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
 from letta.orm.errors import UniqueConstraintViolationError
 from letta.orm.mcp_oauth import OAuthSessionStatus
+from letta.prompts.gpt_system import get_system_text
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.letta_message_content import TextContent
@@ -934,9 +935,11 @@ async def generate_tool_from_prompt(
         )
         assert llm_client is not None
 
+        assistant_message_ack = "Understood, I will respond with generated python source code and sample arguments that can be used to test the functionality once I receive the user prompt. I'm ready."
+
         input_messages = [
-            Message(role=MessageRole.system, content=[TextContent(text="Placeholder system message")]),
-            Message(role=MessageRole.assistant, content=[TextContent(text="Placeholder assistant message")]),
+            Message(role=MessageRole.system, content=[TextContent(text=get_system_text("memgpt_generate_tool"))]),
+            Message(role=MessageRole.assistant, content=[TextContent(text=assistant_message_ack)]),
             Message(role=MessageRole.user, content=[TextContent(text=formatted_prompt)]),
         ]
 
