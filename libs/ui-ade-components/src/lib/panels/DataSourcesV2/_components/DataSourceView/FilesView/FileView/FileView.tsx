@@ -196,12 +196,12 @@ function FileStats(props: FileStatsProps) {
     <HStack gap="medium" align="center">
       <HStack gap="small">
         <ArticleIcon color="lighter" />
-        <Typography color="lighter" variant="body2">
+        <Typography color="lighter" variant="body3">
           {fileTypeName}
         </Typography>
       </HStack>
 
-      <Typography color="lighter" variant="body2">
+      <Typography color="lighter" variant="body3">
         {dynamicFileSize(file_size || 0)}
       </Typography>
     </HStack>
@@ -241,7 +241,13 @@ function FileStatus(props: FileStatusProps) {
   switch (file.processing_status) {
     case undefined:
       return (
-        <Badge border variant="warning" busy content={t('statuses.parsing')} />
+        <Badge
+          border
+          variant="warning"
+          busy
+          size="small"
+          content={t('statuses.parsing')}
+        />
       );
     case 'error':
       return (
@@ -254,6 +260,7 @@ function FileStatus(props: FileStatusProps) {
                   border
                   preIcon={<CancelIcon />}
                   variant="destructive"
+                  size="small"
                   content={t('statuses.error')}
                 />
               </Tooltip>
@@ -263,11 +270,23 @@ function FileStatus(props: FileStatusProps) {
       );
     case 'pending':
       return (
-        <Badge border busy variant="warning" content={t('statuses.pending')} />
+        <Badge
+          border
+          busy
+          variant="warning"
+          size="small"
+          content={t('statuses.pending')}
+        />
       );
     case 'parsing':
       return (
-        <Badge border busy variant="warning" content={t('statuses.parsing')} />
+        <Badge
+          border
+          busy
+          variant="warning"
+          size="small"
+          content={t('statuses.parsing')}
+        />
       );
     case 'embedding':
       return (
@@ -275,6 +294,7 @@ function FileStatus(props: FileStatusProps) {
           border
           busy
           variant="success"
+          size="small"
           content={t('statuses.embedding')}
         />
       );
@@ -397,7 +417,7 @@ export function FileView(props: FileViewProps) {
         </>
       )}
       <HStack align="center">
-        <Typography fullWidth overflow="ellipsis" noWrap>
+        <Typography fullWidth overflow="ellipsis" noWrap variant="body3">
           {file_name}
         </Typography>
         <FileStatus file={file} />
