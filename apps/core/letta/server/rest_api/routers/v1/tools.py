@@ -33,6 +33,7 @@ from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.mcp import MCPOAuthSessionCreate, UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer
 from letta.schemas.message import Message
+from letta.schemas.pip_requirement import PipRequirement
 from letta.schemas.tool import Tool, ToolCreate, ToolRunFromSource, ToolUpdate
 from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
 from letta.server.rest_api.utils import get_letta_server
@@ -970,11 +971,13 @@ async def generate_tool_from_prompt(
         response_data = await llm_client.request_async(request_data, llm_config)
         response = llm_client.convert_response_to_chat_completion(response_data, input_messages, llm_config)
         output = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
+        pip_requirements = [PipRequirement(name=k, version=v) for k, v in json.loads(output["pip_requirements_json"]).items()]
         return GenerateToolOutput(
             tool=Tool(
                 name=request.tool_name,
                 source_type="python",
                 source_code=output["raw_source_code"],
+                pip_requirements=pip_requirements,
             ),
             sample_args=json.loads(output["sample_args_json"]),
             response=response.choices[0].message.content,
