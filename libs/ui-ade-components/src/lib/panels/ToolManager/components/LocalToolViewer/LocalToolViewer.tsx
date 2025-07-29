@@ -48,6 +48,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import { ToolSimulator } from '../ToolSimulator/ToolSimulator';
 import { DependencyViewer } from '../DependencyViewer/DependencyViewer';
 import { ToolAssistant } from '../ToolAssistant/ToolAssistant';
+import { ToolArgumentsProvider } from './ToolArgumentsContext';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
@@ -952,39 +953,41 @@ export function LocalToolViewer(props: LocalToolsViewerProps) {
 
   return (
     <CurrentToolProvider tool={tool}>
-      <VStack gap={false} fullWidth fullHeight>
-        <ToolActionsHeader
-          idToAttach={tool.id || ''}
-          attachedId={isAttached ? tool.id : undefined}
-          type={tool.tool_type || 'custom'}
-          name={tool.name || ''}
-          actions={<ToolActions tool={tool} />}
-        />
-        <HStack
-          overflowY="auto"
-          fullWidth
-          align="center"
-          borderTop
-          justify="spaceBetween"
-          borderBottom
-          height="header-sm"
-          paddingX="medium"
-        >
-          <HStack align="center">
-            <CodeButton />
-            {isAIAssistantEnabled && <ToolAssistant tool={tool} />}
-          </HStack>
+      <ToolArgumentsProvider>
+        <VStack gap={false} fullWidth fullHeight>
+          <ToolActionsHeader
+            idToAttach={tool.id || ''}
+            attachedId={isAttached ? tool.id : undefined}
+            type={tool.tool_type || 'custom'}
+            name={tool.name || ''}
+            actions={<ToolActions tool={tool} />}
+          />
+          <HStack
+            overflowY="auto"
+            fullWidth
+            align="center"
+            borderTop
+            justify="spaceBetween"
+            borderBottom
+            height="header-sm"
+            paddingX="medium"
+          >
+            <HStack align="center">
+              <CodeButton />
+              {isAIAssistantEnabled && <ToolAssistant tool={tool} />}
+            </HStack>
 
-          <HStack align="center">
-            <RestoreToolButton />
-            <SchemaChangeWarning />
-            <EditModes />
+            <HStack align="center">
+              <RestoreToolButton />
+              <SchemaChangeWarning />
+              <EditModes />
+            </HStack>
           </HStack>
-        </HStack>
-        <HStack collapseHeight fullWidth flex gap={false}>
-          <LocalToolPanels tool={tool} />
-        </HStack>
-      </VStack>
+          <HStack collapseHeight fullWidth flex gap={false}>
+            <LocalToolPanels tool={tool} />
+          </HStack>
+        </VStack>
+      </ToolArgumentsProvider>
     </CurrentToolProvider>
   );
 }

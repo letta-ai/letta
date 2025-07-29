@@ -12,6 +12,7 @@ import {
 import './ToolAssistant.scss';
 import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
 import { useToolValidation } from '../../hooks/useToolValidation/useToolValidation';
+import { useToolArguments } from '../LocalToolViewer/ToolArgumentsContext';
 import { useTranslations } from '@letta-cloud/translations';
 
 interface ToolAssistantProps {
@@ -22,6 +23,7 @@ export function ToolAssistant(props: ToolAssistantProps) {
   const { tool } = props;
   const t = useTranslations('ToolsEditor/LocalToolsViewer');
   const { stagedTool, setStagedTool } = useStagedCode(tool);
+  const { updateSampleArguments } = useToolArguments();
   const { validationErrors } = useToolValidation(stagedTool.source_code || '');
   const [useCodingAgent, setUseCodingAgent] = useState(false);
   const [promptInput, setPromptInput] = useState('');
@@ -47,6 +49,9 @@ export function ToolAssistant(props: ToolAssistantProps) {
             detail: { schema: response.tool.json_schema },
           }),
         );
+      }
+      if (response.sample_args) {
+        updateSampleArguments(response.sample_args);
       }
 
       setUseCodingAgent(false);

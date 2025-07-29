@@ -34,6 +34,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
 import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../../../../hooks';
+import { useToolArguments } from '../LocalToolViewer/ToolArgumentsContext';
 import { pythonCodeParser } from '@letta-cloud/utils-shared';
 import { useCurrentTool } from '../LocalToolViewer/LocalToolViewer';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
@@ -332,8 +333,16 @@ type ToolInputType = 'args' | 'environment';
 
 function ToolInput(props: ToolInputProps) {
   const { defaultArguments, isToolRunning, onRunTool } = props;
-  const [stagedArguments, setStagedArguments] =
-    useState<ResizableKeyValueEditorDefinition[]>(defaultArguments);
+  const { sampleArguments } = useToolArguments();
+
+  const [stagedArguments, setStagedArguments] = useState<
+    ResizableKeyValueEditorDefinition[]
+  >(() => {
+    if (sampleArguments.length > 0) {
+      return sampleArguments;
+    }
+    return defaultArguments || [];
+  });
 
   const { tool_exec_environment_variables } = useCurrentAgent();
 
@@ -349,6 +358,12 @@ function ToolInput(props: ToolInputProps) {
     useState<ResizableKeyValueEditorDefinition[]>(defaultEnvironment);
 
   const [toolInput, setToolInput] = useState<ToolInputType>('args');
+
+  useEffect(() => {
+    if (sampleArguments.length > 0) {
+      setStagedArguments(sampleArguments);
+    }
+  }, [sampleArguments]);
 
   const handleRunTool = useCallback(() => {
     const args: ToolRunFromSource['args'] = stagedArguments.reduce(
