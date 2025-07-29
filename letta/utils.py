@@ -418,7 +418,6 @@ NOUN_BANK = [
     "unicorn",
     "vaccination",
     "wolverine",
-    "xenophobia",
     "yam",
     "zeppelin",
     "accordion",
