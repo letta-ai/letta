@@ -101,6 +101,8 @@ def requires_auto_tool_choice(llm_config: LLMConfig) -> bool:
         return True
     if llm_config.handle and "vllm" in llm_config.handle:
         return True
+    if llm_config.compatibility_type == "mlx":
+        return True
     return False
 
 

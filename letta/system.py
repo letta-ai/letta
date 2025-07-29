@@ -1,5 +1,4 @@
 import json
-import uuid
 import warnings
 from typing import Optional
 
@@ -13,7 +12,7 @@ from .helpers.datetime_helpers import get_local_time
 from .helpers.json_helpers import json_dumps
 
 
-def get_initial_boot_messages(version, timezone):
+def get_initial_boot_messages(version, timezone, tool_call_id):
     if version == "startup":
         initial_boot_message = INITIAL_BOOT_MESSAGE
         messages = [
@@ -21,7 +20,6 @@ def get_initial_boot_messages(version, timezone):
         ]
 
     elif version == "startup_with_send_message":
-        tool_call_id = str(uuid.uuid4())
         messages = [
             # first message includes both inner monologue and function call to send_message
             {
@@ -53,7 +51,6 @@ def get_initial_boot_messages(version, timezone):
         ]
 
     elif version == "startup_with_send_message_gpt35":
-        tool_call_id = str(uuid.uuid4())
         messages = [
             # first message includes both inner monologue and function call to send_message
             {
