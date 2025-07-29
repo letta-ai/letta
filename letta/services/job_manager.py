@@ -831,8 +831,8 @@ class JobManager:
             logger.error(error_message)
             result["callback_error"] = error_message
             # Continue silently - callback failures should not affect job completion
-
-        return result
+        finally:
+            return result
 
     @trace_method
     async def _dispatch_callback_async(self, callback_info: dict) -> dict:
@@ -860,5 +860,5 @@ class JobManager:
             logger.error(error_message)
             result["callback_error"] = error_message
             # Continue silently - callback failures should not affect job completion
-
-        return result
+        finally:
+            return result
