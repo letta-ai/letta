@@ -142,6 +142,7 @@ class LettaFileToolExecutor(ToolExecutor):
         # Process each file
         opened_files = []
         all_closed_files = []
+        all_previous_ranges = {}  # Collect all previous ranges from all files
 
         for file_request in file_requests:
             file_name = file_request.file_name
@@ -181,7 +182,7 @@ class LettaFileToolExecutor(ToolExecutor):
             visible_content = "\n".join(content_lines)
 
             # Handle LRU eviction and file opening
-            closed_files, was_already_open = await self.files_agents_manager.enforce_max_open_files_and_open(
+            closed_files, was_already_open, previous_ranges = await self.files_agents_manager.enforce_max_open_files_and_open(
                 agent_id=agent_state.id,
                 file_id=file_id,
                 file_name=file_name,
@@ -189,42 +190,45 @@ class LettaFileToolExecutor(ToolExecutor):
                 actor=self.actor,
                 visible_content=visible_content,
                 max_files_open=agent_state.max_files_open,
+                start_line=start + 1 if start is not None else None,  # convert to 1-indexed for user display
+                end_line=end if end is not None else None,  # end is already exclusive in slicing, so this is correct
             )
 
             opened_files.append(file_name)
             all_closed_files.extend(closed_files)
+            all_previous_ranges.update(previous_ranges)  # Merge previous ranges from this file
 
         # Update access timestamps for all opened files efficiently
         await self.files_agents_manager.mark_access_bulk(agent_id=agent_state.id, file_names=file_names, actor=self.actor)
 
-        # Build success message
-        if len(file_requests) == 1:
-            # Single file - maintain existing format
-            file_request = file_requests[0]
-            file_name = file_request.file_name
-            offset = file_request.offset
-            length = file_request.length
-            if offset is not None and length is not None:
-                end_line = offset + length - 1
-                success_msg = (
-                    f"Successfully opened file {file_name}, lines {offset} to {end_line} are now visible in memory block <{file_name}>"
-                )
-            elif offset is not None:
-                success_msg = f"Successfully opened file {file_name}, lines {offset} to end are now visible in memory block <{file_name}>"
-            else:
-                success_msg = f"Successfully opened file {file_name}, entire file is now visible in memory block <{file_name}>"
-        else:
-            # Multiple files - show individual ranges if specified
-            file_summaries = []
-            for req in file_requests:
-                if req.offset is not None and req.length is not None:
-                    end_line = req.offset + req.length - 1
-                    file_summaries.append(f"{req.file_name} (lines {req.offset}-{end_line})")
-                elif req.offset is not None:
-                    file_summaries.append(f"{req.file_name} (lines {req.offset}-end)")
+        # Helper function to format previous range info
+        def format_previous_range(file_name: str) -> str:
+            if file_name in all_previous_ranges:
+                old_start, old_end = all_previous_ranges[file_name]
+                if old_start is not None and old_end is not None:
+                    return f" (previously lines {old_start}-{old_end})"
+                elif old_start is not None:
+                    return f" (previously lines {old_start}-end)"
                 else:
-                    file_summaries.append(req.file_name)
-            success_msg = f"Successfully opened {len(file_requests)} files: {', '.join(file_summaries)}"
+                    return " (previously full file)"
+            return ""
+
+        # Build unified success message - treat single and multiple files consistently
+        file_summaries = []
+        for req in file_requests:
+            previous_info = format_previous_range(req.file_name)
+            if req.offset is not None and req.length is not None:
+                end_line = req.offset + req.length - 1
+                file_summaries.append(f"{req.file_name} (lines {req.offset}-{end_line}){previous_info}")
+            elif req.offset is not None:
+                file_summaries.append(f"{req.file_name} (lines {req.offset}-end){previous_info}")
+            else:
+                file_summaries.append(f"{req.file_name}{previous_info}")
+
+        if len(file_requests) == 1:
+            success_msg = f"* Opened {file_summaries[0]}"
+        else:
+            success_msg = f"* Opened {len(file_requests)} files: {', '.join(file_summaries)}"
 
         # Add information about closed files
         if closed_by_close_all_others:

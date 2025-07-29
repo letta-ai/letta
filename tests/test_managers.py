@@ -8733,6 +8733,71 @@ async def test_update_file_agent_by_file_name(server, file_attachment, default_u
     )
     assert updated.is_open is False
     assert updated.visible_content == "updated"
+    assert updated.start_line is None  # start_line should default to None
+    assert updated.end_line is None  # end_line should default to None
+
+
+@pytest.mark.asyncio
+async def test_file_agent_line_tracking(server, default_user, sarah_agent, default_source):
+    """Test that line information is captured when opening files with line ranges"""
+    from letta.schemas.file import FileMetadata as PydanticFileMetadata
+
+    # Create a test file with multiple lines
+    test_content = "line 1\nline 2\nline 3\nline 4\nline 5"
+    file_metadata = PydanticFileMetadata(
+        file_name="test_lines.txt",
+        organization_id=default_user.organization_id,
+        source_id=default_source.id,
+    )
+    file = await server.file_manager.create_file(file_metadata=file_metadata, actor=default_user, text=test_content)
+
+    # Test opening with line range using enforce_max_open_files_and_open
+    closed_files, was_already_open, previous_ranges = await server.file_agent_manager.enforce_max_open_files_and_open(
+        agent_id=sarah_agent.id,
+        file_id=file.id,
+        file_name=file.file_name,
+        source_id=file.source_id,
+        actor=default_user,
+        visible_content="2: line 2\n3: line 3",
+        max_files_open=sarah_agent.max_files_open,
+        start_line=2,  # 1-indexed
+        end_line=4,  # exclusive
+    )
+
+    # Retrieve and verify line tracking
+    retrieved = await server.file_agent_manager.get_file_agent_by_id(
+        agent_id=sarah_agent.id,
+        file_id=file.id,
+        actor=default_user,
+    )
+
+    assert retrieved.start_line == 2
+    assert retrieved.end_line == 4
+    assert previous_ranges == {}  # No previous range since it wasn't open before
+
+    # Test opening without line range - should clear line info and capture previous range
+    closed_files, was_already_open, previous_ranges = await server.file_agent_manager.enforce_max_open_files_and_open(
+        agent_id=sarah_agent.id,
+        file_id=file.id,
+        file_name=file.file_name,
+        source_id=file.source_id,
+        actor=default_user,
+        visible_content="full file content",
+        max_files_open=sarah_agent.max_files_open,
+        start_line=None,
+        end_line=None,
+    )
+
+    # Retrieve and verify line info is cleared
+    retrieved = await server.file_agent_manager.get_file_agent_by_id(
+        agent_id=sarah_agent.id,
+        file_id=file.id,
+        actor=default_user,
+    )
+
+    assert retrieved.start_line is None
+    assert retrieved.end_line is None
+    assert previous_ranges == {file.file_name: (2, 4)}  # Should capture the previous range
 
 
 @pytest.mark.asyncio
@@ -9131,7 +9196,7 @@ async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, defa
     time.sleep(0.1)
 
     # Now "open" the last file using the efficient method
-    closed_files, was_already_open = await server.file_agent_manager.enforce_max_open_files_and_open(
+    closed_files, was_already_open, _ = await server.file_agent_manager.enforce_max_open_files_and_open(
         agent_id=sarah_agent.id,
         file_id=files[-1].id,
         file_name=files[-1].file_name,
@@ -9205,7 +9270,7 @@ async def test_lru_no_eviction_when_reopening_same_file(server, default_user, sa
     time.sleep(0.1)
 
     # "Reopen" the last file (which is already open)
-    closed_files, was_already_open = await server.file_agent_manager.enforce_max_open_files_and_open(
+    closed_files, was_already_open, _ = await server.file_agent_manager.enforce_max_open_files_and_open(
         agent_id=sarah_agent.id,
         file_id=files[-1].id,
         file_name=files[-1].file_name,

@@ -2,14 +2,14 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from letta.constants import FILE_IS_TRUNCATED_WARNING
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.block import FileBlock as PydanticFileBlock
 from letta.schemas.file import FileAgent as PydanticFileAgent
+from letta.utils import truncate_file_visible_content
 
 if TYPE_CHECKING:
     pass
@@ -77,6 +77,12 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
         nullable=False,
         doc="UTC timestamp when this agent last accessed the file.",
     )
+    start_line: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True, doc="Starting line number (1-indexed) when file was opened with line range."
+    )
+    end_line: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True, doc="Ending line number (exclusive) when file was opened with line range."
+    )
 
     # relationships
     agent: Mapped["Agent"] = relationship(
@@ -87,13 +93,7 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
 
     # TODO: This is temporary as we figure out if we want FileBlock as a first class citizen
     def to_pydantic_block(self, per_file_view_window_char_limit: int) -> PydanticFileBlock:
-        visible_content = self.visible_content if self.visible_content and self.is_open else ""
-
-        # Truncate content and add warnings here when converting from FileAgent to Block
-        if len(visible_content) > per_file_view_window_char_limit:
-            truncated_warning = f"...[TRUNCATED]\n{FILE_IS_TRUNCATED_WARNING}"
-            visible_content = visible_content[: per_file_view_window_char_limit - len(truncated_warning)]
-            visible_content += truncated_warning
+        visible_content = truncate_file_visible_content(self.visible_content, self.is_open, per_file_view_window_char_limit)
 
         return PydanticFileBlock(
             value=visible_content,
