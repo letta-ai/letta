@@ -86,7 +86,10 @@ const lettaServerLogs = new ServerLogs();
 })();
 
 import * as todesktop from '@todesktop/runtime';
-import { getIsEmbeddedPostgres } from './utils/getIsEmbeddedPostgres/getIsEmbeddedPostgres';
+import {
+  getIsEmbeddedPostgres,
+  getIsLocalServer,
+} from './utils/getIsEmbeddedPostgres/getIsEmbeddedPostgres';
 import { getIsSQLLiteConfig } from './utils/getIsSQLLiteConfig/getIsSQLLiteConfig';
 
 todesktop.init();
@@ -259,6 +262,10 @@ export default class App {
     if (!config) {
       console.log('No desktop config found. Please set one up...');
 
+      return;
+    }
+
+    if (getIsLocalServer(config)) {
       return;
     }
 

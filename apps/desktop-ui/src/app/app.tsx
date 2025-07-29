@@ -29,10 +29,11 @@ import { ServerStatus } from './pages/ServerStatus/ServerStatus';
 import { SetupProvider } from './pages/SetupProvider/SetupProvider';
 import { Settings } from './pages/Settings/Settings';
 import { IdentitiesTable } from '@letta-cloud/ui-ade-components';
+import { useDesktopConfig } from './hooks/useDesktopConfig/useDesktopConfig';
 
 function Sidebar() {
   const t = useTranslations('App');
-
+  const { desktopConfig } = useDesktopConfig();
   const location = useLocation();
 
   return (
@@ -55,15 +56,17 @@ function Sidebar() {
           label={t('Sidebar.identities')}
         ></Button>
       </Link>
-      <Link to="/dashboard/server-status">
-        <Button
-          hideLabel
-          active={location.pathname === '/dashboard/server-status'}
-          preIcon={<TerminalIcon />}
-          color="tertiary"
-          label={t('Sidebar.serverStatus')}
-        ></Button>
-      </Link>
+      {desktopConfig && desktopConfig.databaseConfig.type !== 'local' && (
+        <Link to="/dashboard/server-status">
+          <Button
+            hideLabel
+            active={location.pathname === '/dashboard/server-status'}
+            preIcon={<TerminalIcon />}
+            color="tertiary"
+            label={t('Sidebar.serverStatus')}
+          ></Button>
+        </Link>
+      )}
       <Link to="/dashboard/integrations">
         <Button
           hideLabel

@@ -25,7 +25,7 @@ const POSTGRESCONNECTION_STRING_REGEX =
   /^postgres(?:ql)?:\/\/(?:[^:]+:[^@]+@)?[^:]+:\d+\/[^?]+(?:\?.+)?$/;
 
 const EditDatabaseSettingsConfigSchema = z.object({
-  type: z.enum(['embedded', 'external']),
+  type: z.enum(['embedded', 'external', 'local']),
   connectionString: z.string().optional(),
 });
 
@@ -86,8 +86,8 @@ function EditDatabaseSettingsDialog(props: EditDatabaseSettingsDialogProps) {
         value: 'embedded',
       },
       {
-        label: t('DatabaseSettings.types.external'),
-        value: 'external',
+        label: t('DatabaseSettings.types.local'),
+        value: 'local',
       },
     ];
   }, [t]);
@@ -103,6 +103,17 @@ function EditDatabaseSettingsDialog(props: EditDatabaseSettingsDialogProps) {
         databaseConfig: {
           type: values.type,
           embeddedType: 'sqlite',
+        },
+      });
+      return;
+    }
+
+    if (values.type === 'local') {
+      void handleSetDesktopConfig({
+        version: '1',
+        databaseConfig: {
+          type: values.type,
+          url: 'http://localhost:8283',
         },
       });
       return;
@@ -157,46 +168,48 @@ function EditDatabaseSettingsDialog(props: EditDatabaseSettingsDialogProps) {
                     value: 'embedded',
                   },
                   {
-                    label: t('DatabaseSettings.types.external'),
-                    value: 'external',
+                    label: t('DatabaseSettings.types.local'),
+                    value: 'local',
                   },
                 ]}
               />
             );
           }}
         />
-        <FormField
-          name="connectionString"
-          render={({ field }) => {
-            return (
-              <Input
-                disabled={type !== 'external'}
-                fullWidth
-                label={t('EditDatabaseSettingsDialog.connectionString.label')}
-                {...field}
-                value={type === 'external' ? field.value : ''}
-                description={
-                  type !== 'external'
-                    ? t(
-                        'EditDatabaseSettingsDialog.connectionString.descriptionNone',
-                      )
-                    : t(
-                        'EditDatabaseSettingsDialog.connectionString.description',
-                      )
-                }
-                placeholder={
-                  type !== 'external'
-                    ? t(
-                        'EditDatabaseSettingsDialog.connectionString.placeholderNone',
-                      )
-                    : t(
-                        'EditDatabaseSettingsDialog.connectionString.placeholder',
-                      )
-                }
-              />
-            );
-          }}
-        />
+        {type === 'external' && (
+          <FormField
+            name="connectionString"
+            render={({ field }) => {
+              return (
+                <Input
+                  disabled={type !== 'external'}
+                  fullWidth
+                  label={t('EditDatabaseSettingsDialog.connectionString.label')}
+                  {...field}
+                  value={type === 'external' ? field.value : ''}
+                  description={
+                    type !== 'external'
+                      ? t(
+                          'EditDatabaseSettingsDialog.connectionString.descriptionNone',
+                        )
+                      : t(
+                          'EditDatabaseSettingsDialog.connectionString.description',
+                        )
+                  }
+                  placeholder={
+                    type !== 'external'
+                      ? t(
+                          'EditDatabaseSettingsDialog.connectionString.placeholderNone',
+                        )
+                      : t(
+                          'EditDatabaseSettingsDialog.connectionString.placeholder',
+                        )
+                  }
+                />
+              );
+            }}
+          />
+        )}
       </Dialog>
     </FormProvider>
   );
@@ -232,9 +245,12 @@ function DatabaseSettings() {
             </Typography>
             <HStack>
               <Typography variant="body3">
-                {desktopConfig?.databaseConfig.type === 'external'
-                  ? t('DatabaseSettings.types.external')
-                  : t('DatabaseSettings.types.embedded')}
+                {desktopConfig?.databaseConfig.type === 'external' &&
+                  t('DatabaseSettings.types.external')}
+                {desktopConfig?.databaseConfig.type === 'embedded' &&
+                  t('DatabaseSettings.types.embedded')}
+                {desktopConfig?.databaseConfig.type === 'local' &&
+                  t('DatabaseSettings.types.local')}
               </Typography>
             </HStack>
           </VStack>

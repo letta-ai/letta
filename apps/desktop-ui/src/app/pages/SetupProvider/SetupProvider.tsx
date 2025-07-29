@@ -6,19 +6,17 @@ import {
   Badge,
   Button,
   HStack,
-  LettaLogoIcon,
+  InvaderSharedAgentIcon,
+  LettaInvaderSleeptimeIcon,
   LettaLogoMarkDynamic,
   LoadingEmptyStatusComponent,
   MiniApp,
-  PostgresIcon,
   Steps,
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import type { DesktopConfigSchemaType } from '@letta-cloud/types';
-import { ConfigureExternalDatabaseStep } from './ConfigureExternalDatabaseStep/ConfigureExternalDatabaseStep';
-import { generateConnectionString } from '../../utils/generateConnectionString';
 
 interface ConfigureDatabaseTypeStepProps {
   goToNextStep: (
@@ -32,15 +30,22 @@ function ConfigureDatabaseTypeStep(props: ConfigureDatabaseTypeStepProps) {
   const t = useTranslations('SetupProvider');
 
   return (
-    <VStack padding fullWidth justify="center" color="background" fullHeight>
+    <VStack
+      padding
+      fullWidth
+      align="center"
+      justify="center"
+      color="background"
+      fullHeight
+    >
       <VStack
         fullHeight
-        paddingX
         paddingTop="xxlarge"
+        paddingX
         gap="xlarge"
         width="contained"
       >
-        <VStack justify="start">
+        <VStack paddingTop justify="start">
           <LettaLogoMarkDynamic size="xxlarge" />
           <Typography align="left" variant="heading1">
             {t('configureDatabase')}
@@ -55,10 +60,12 @@ function ConfigureDatabaseTypeStep(props: ConfigureDatabaseTypeStepProps) {
             badge={
               <Badge
                 variant="success"
+                size="small"
                 content={t('ConfigureDatabaseTypeStep.bringYourOwn.badge')}
               />
             }
-            largeImage={<PostgresIcon size="xxlarge" />}
+            color="background"
+            largeImage={<InvaderSharedAgentIcon size="xlarge" />}
             title={t('ConfigureDatabaseTypeStep.bringYourOwn.label')}
             description={t(
               'ConfigureDatabaseTypeStep.bringYourOwn.description',
@@ -71,16 +78,14 @@ function ConfigureDatabaseTypeStep(props: ConfigureDatabaseTypeStepProps) {
             badge={
               <HStack>
                 <Badge
+                  size="small"
                   variant="default"
                   content={t('ConfigureDatabaseTypeStep.embedded.noSetup')}
                 />
-                <Badge
-                  variant="warning"
-                  content={t('ConfigureDatabaseTypeStep.embedded.badge')}
-                />
               </HStack>
             }
-            largeImage={<LettaLogoIcon size="xxlarge" />}
+            color="background"
+            largeImage={<LettaInvaderSleeptimeIcon size="xxlarge" />}
             title={t('ConfigureDatabaseTypeStep.embedded.label')}
             description={t('ConfigureDatabaseTypeStep.embedded.description')}
             onClick={() => {
@@ -141,7 +146,13 @@ function SetupDialog() {
   const handleSelectDatabaseType = useCallback(
     (databaseType: DesktopConfigSchemaType['databaseConfig']['type']) => {
       if (databaseType === 'external') {
-        setStep(2);
+        void handleSetDesktopConfig({
+          version: '1',
+          databaseConfig: {
+            type: 'local',
+            url: 'http://localhost:8283',
+          },
+        });
 
         return;
       }
@@ -190,20 +201,6 @@ function SetupDialog() {
             />,
             <ConfigureDatabaseTypeStep
               goToNextStep={handleSelectDatabaseType}
-            />,
-            <ConfigureExternalDatabaseStep
-              onBack={() => {
-                setStep(1);
-              }}
-              goToNextStep={(config) => {
-                void handleSetDesktopConfig({
-                  version: '1',
-                  databaseConfig: {
-                    type: 'external',
-                    connectionString: generateConnectionString(config),
-                  },
-                });
-              }}
             />,
           ]}
           currentStep={step}

@@ -10,9 +10,15 @@ export const DesktopExternalDatabaseSchema = z.object({
   connectionString: z.string(),
 });
 
+export const LocalServerSchema = z.object({
+  type: z.literal('local'),
+  url: z.string().url(),
+});
+
 const DesktopDiscriminatedUnionDatabaseSchema = z.discriminatedUnion('type', [
   DesktopEmbeddedDatabaseSchema,
   DesktopExternalDatabaseSchema,
+  LocalServerSchema,
 ]);
 
 export const DesktopConfigSchema = z.object({
