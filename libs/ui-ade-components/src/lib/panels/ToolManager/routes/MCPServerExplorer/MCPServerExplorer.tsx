@@ -4,8 +4,12 @@ import {
   NiceGridDisplay,
   PlusIcon,
   VStack,
+  HStack,
+  RawInput,
+  SearchIcon,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
+import { useState, useMemo } from 'react';
 import { AddServerDialog } from '../MCPServers/AddMCPServerDialog/AddMCPServerDialog';
 import type { CustomUrlRecommendedServer } from './hooks/useRecommendedMCPServers/useRecommendedMCPServers';
 import { useRecommendedMCPServers } from './hooks/useRecommendedMCPServers/useRecommendedMCPServers';
@@ -39,16 +43,46 @@ function ServerSetupDialog({ server }: { server: CustomUrlRecommendedServer }) {
 export function MCPServerExplorer() {
   const t = useTranslations('ToolsEditor/MCPServerExplorer');
   const recommendedServers = useRecommendedMCPServers();
+  const [search, setSearch] = useState('');
+
+  const filteredServers = useMemo(() => {
+    if (!search.trim()) {
+      return recommendedServers;
+    }
+
+    const searchLower = search.toLowerCase();
+    return recommendedServers.filter((server) => {
+      const name = server.name?.toLowerCase() || '';
+      const description = server.description?.toLowerCase() || '';
+      return name.includes(searchLower) || description.includes(searchLower);
+    });
+  }, [recommendedServers, search]);
 
   return (
     <VStack
-      paddingTop="medium"
+      paddingTop="xsmall"
       fullHeight
       overflow="hidden"
       fullWidth
       gap={false}
     >
       <VStack gap="large" paddingX="xlarge" paddingBottom="xlarge">
+        <HStack>
+          <HStack border fullWidth>
+            <RawInput
+              preIcon={<SearchIcon />}
+              placeholder={t('search.placeholder')}
+              label={t('search.label')}
+              hideLabel
+              fullWidth
+              color="transparent"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+              }}
+            />
+          </HStack>
+        </HStack>
         <NiceGridDisplay>
           <AddServerDialog
             trigger={
@@ -59,7 +93,7 @@ export function MCPServerExplorer() {
               />
             }
           />
-          {recommendedServers.map((server) => {
+          {filteredServers.map((server) => {
             // Use the new unified component for all servers
             return (
               <ServerSetupDialog

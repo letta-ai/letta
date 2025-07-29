@@ -1774,5 +1774,67 @@
     },
     "memgpt": "默认",
     "sleepTime": "睡眠时间"
+  },
+  "ToolsEditor/MCPServerExplorer": {
+    "search": {
+      "placeholder": "搜索MCP服务器...",
+      "label": "搜索MCP服务器"
+    },
+    "CustomSetupServer": {
+      "customUrlInputRequired": "请输入MCP服务器URL以连接到您的Letta实例。",
+      "errorMessage": "连接自定义服务器时出错，请检查您的URL并重试或联系客服。",
+      "instructionsTitle": "设置说明",
+      "customUrlInputPlaceholder": "在此输入您的自定义MCP服务器URL",
+      "customUrlInputLabel": "自定义URL"
+    },
+    "StreamableHttpSetupServer": {
+      "serverUrlRequired": "请输入有效的服务器URL。",
+      "apiKeyRequired": "请输入您的API密钥。",
+      "apiKeyOptionalLabel": "API密钥（可选）",
+      "customUrlLabel": "自定义URL",
+      "errorMessage": "连接服务器时出错，请检查您的URL和API密钥并重试或联系客服。",
+      "instructionsTitle": "设置说明",
+      "serverUrlPlaceholder": "https://mcp.zapier.com/api/mcp/mcp",
+      "serverUrlLabel": "服务器URL",
+      "apiKeyPlaceholder": "输入您的API密钥",
+      "apiKeyLabel": "API密钥"
+    },
+    "GitHubSetupServer": {
+      "serverUrlRequired": "请输入有效的服务器URL。",
+      "apiKeyRequired": "请输入您的GitHub个人访问令牌。",
+      "errorMessage": "连接GitHub时出错，请检查您的URL和令牌并重试或联系客服。",
+      "instructionsTitle": "设置说明",
+      "serverUrlPlaceholder": "https://api.githubcopilot.com/mcp/",
+      "serverUrlLabel": "服务器URL",
+      "apiKeyPlaceholder": "输入您的GitHub个人访问令牌",
+      "apiKeyLabel": "GitHub个人访问令牌"
+    },
+    "DeepWikiSetupServer": {
+      "errorMessage": "添加DeepWiki服务器时出错，请重试或联系客服。",
+      "instructionsTitle": "设置说明"
+    },
+    "OpenAccessMCPServer": {
+      "openLabel": "开放访问",
+      "instructions": "这是一个免费服务，不需要任何身份验证或API密钥。点击\"添加服务器\"将其连接到您的Letta实例。",
+      "instructionsTitle": "设置说明",
+      "errorMessage": "添加服务器时出错，请重试或联系客服。"
+    },
+    "ApiKeyRequiredMCPServer": {
+      "apiKeyLabel": "需要API密钥",
+      "addedLabel": "已添加API密钥"
+    },
+    "PatKeyRequiredMCPServer": {
+      "patKeyLabel": "需要个人访问令牌"
+    },
+    "ServerUrlRequiredMCPServer": {
+      "serverUrlLabel": "需要服务器URL"
+    },
+    "types": {
+      "custom": {
+        "label": "自定义服务器",
+        "description": "向您的Letta实例添加自定义模型上下文协议服务器。"
+      }
+    },
+    "alreadyAddedLabel": "已添加"
   }
 }

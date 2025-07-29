@@ -1531,6 +1531,10 @@
     }
   },
   "ToolsEditor/MCPServerExplorer": {
+    "search": {
+      "placeholder": "Search MCP servers...",
+      "label": "Search MCP servers"
+    },
     "CustomSetupServer": {
       "customUrlInputRequired": "Please enter a MCP server URL to connect to your Letta instance.",
       "errorMessage": "There was an error connecting to the custom server, please check your URL and try again or contact support.",
