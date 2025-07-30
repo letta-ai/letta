@@ -5,10 +5,8 @@ import {
   CTACard,
   DashboardPageLayout,
   DashboardPageSection,
-  Frame,
   HStack,
   LettaLoader,
-  Logo,
   NiceGridDisplay,
   LettaInvaderOutlineIcon,
   SearchIcon,
@@ -19,15 +17,9 @@ import {
 import { useTranslations } from '@letta-cloud/translations';
 import { ConnectToLocalServerCommand, Tutorials } from '$web/client/components';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocalStorageWithLoadingState } from '@letta-cloud/utils-client';
-import {
-  CLOUD_UPSELL_URL,
-  SUPPORTED_LETTA_AGENTS_VERSIONS,
-} from '$web/constants';
+import { SUPPORTED_LETTA_AGENTS_VERSIONS } from '$web/constants';
 import { useHealthServiceHealthCheck } from '@letta-cloud/sdk-core';
 
-import AdBannerTwo from './ad_banner_two.webp';
-import Image from 'next/image';
 import semver from 'semver/preload';
 import Link from 'next/link';
 import CreateAgentDialog from '../components/CreateAgentDialog/CreateAgentDialog';
@@ -133,12 +125,6 @@ function DevelopmentServersDashboardPage() {
         ),
     });
 
-  const [isDismissed, setIsDismissed, isLoadingDismissed] =
-    useLocalStorageWithLoadingState<boolean>(
-      'development-servers/dashboard/page/upgrade-banner',
-      false,
-    );
-
   return (
     <DashboardPageLayout
       headerBottomPadding="large"
@@ -190,46 +176,6 @@ function DevelopmentServersDashboardPage() {
               title={t('gettingStarted.actions.viewAgents.title')}
               subtitle={t('gettingStarted.actions.viewAgents.description')}
             />
-            {isDismissed && !isLoadingDismissed && (
-              <VStack
-                justify="spaceBetween"
-                padding
-                overflow="hidden"
-                position="relative"
-              >
-                <button
-                  onClick={() => {
-                    setIsDismissed(false);
-                  }}
-                >
-                  <Logo size="large" color="steel" />
-                </button>
-                <VStack>
-                  <Typography color="white" variant="heading5">
-                    {t('gettingStarted.actions.cloudSignup.title')}
-                  </Typography>
-                  <Typography color="white">
-                    {t('gettingStarted.actions.cloudSignup.details')}
-                  </Typography>
-                </VStack>
-                <Frame>
-                  <Button
-                    href={CLOUD_UPSELL_URL}
-                    target="_blank"
-                    color="primary"
-                    label={t('gettingStarted.actions.cloudSignup.cta')}
-                  />
-                </Frame>
-                <Frame
-                  color="brand"
-                  position="absolute"
-                  /* eslint-disable-next-line react/forbid-component-props */
-                  className="top-0 right-0 z-[-1]"
-                >
-                  <Image src={AdBannerTwo} alt="" />
-                </Frame>
-              </VStack>
-            )}
           </NiceGridDisplay>
         ) : (
           <NiceGridDisplay>
