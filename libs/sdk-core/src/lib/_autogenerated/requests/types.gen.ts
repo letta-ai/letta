@@ -4916,6 +4916,16 @@ export type LettaAssistantMessageContentUnion = TextContent;
 
 export type LettaUserMessageContentUnion = TextContent | ImageContent;
 
+/**
+ * Ping messages are a keep-alive to prevent SSE streams from timing out during long running requests.
+ */
+export type LettaPing = {
+  /**
+   * The type of the message.
+   */
+  message_type: 'ping';
+};
+
 export type DeleteToolData = {
   toolId: string;
   userId?: string | null;

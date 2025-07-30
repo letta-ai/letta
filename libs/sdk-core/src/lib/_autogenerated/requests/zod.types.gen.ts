@@ -6400,6 +6400,11 @@ export const UserUpdate = z.object({
     .optional(),
 });
 
+export type LettaPing = z.infer<typeof LettaPing>;
+export const LettaPing = z.object({
+  message_type: z.string(),
+});
+
 export type delete_Delete_tool = typeof delete_Delete_tool;
 export const delete_Delete_tool = {
   method: z.literal('DELETE'),
