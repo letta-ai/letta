@@ -1061,28 +1061,42 @@ async def send_message_streaming(
                         else SummarizationMode.PARTIAL_EVICT_MESSAGE_BUFFER
                     ),
                 )
-            from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
+            from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode, add_keepalive_to_stream
 
             if request.stream_tokens and model_compatible_token_streaming and not_letta_endpoint:
+                raw_stream = agent_loop.step_stream(
+                    input_messages=request.messages,
+                    max_steps=request.max_steps,
+                    use_assistant_message=request.use_assistant_message,
+                    request_start_timestamp_ns=request_start_timestamp_ns,
+                    include_return_message_types=request.include_return_message_types,
+                )
+                # Conditionally wrap with keepalive based on settings
+                if settings.enable_keepalive:
+                    stream = add_keepalive_to_stream(raw_stream, keepalive_interval=settings.keepalive_interval)
+                else:
+                    stream = raw_stream
+
                 result = StreamingResponseWithStatusCode(
-                    agent_loop.step_stream(
-                        input_messages=request.messages,
-                        max_steps=request.max_steps,
-                        use_assistant_message=request.use_assistant_message,
-                        request_start_timestamp_ns=request_start_timestamp_ns,
-                        include_return_message_types=request.include_return_message_types,
-                    ),
+                    stream,
                     media_type="text/event-stream",
                 )
             else:
+                raw_stream = agent_loop.step_stream_no_tokens(
+                    request.messages,
+                    max_steps=request.max_steps,
+                    use_assistant_message=request.use_assistant_message,
+                    request_start_timestamp_ns=request_start_timestamp_ns,
+                    include_return_message_types=request.include_return_message_types,
+                )
+                # Conditionally wrap with keepalive based on settings
+                if settings.enable_keepalive:
+                    stream = add_keepalive_to_stream(raw_stream, keepalive_interval=settings.keepalive_interval)
+                else:
+                    stream = raw_stream
+
                 result = StreamingResponseWithStatusCode(
-                    agent_loop.step_stream_no_tokens(
-                        request.messages,
-                        max_steps=request.max_steps,
-                        use_assistant_message=request.use_assistant_message,
-                        request_start_timestamp_ns=request_start_timestamp_ns,
-                        include_return_message_types=request.include_return_message_types,
-                    ),
+                    stream,
                     media_type="text/event-stream",
                 )
         else:
