@@ -4906,6 +4906,7 @@ export const LettaStreamingRequest = z.object({
     .optional(),
   enable_thinking: z.union([z.string(), z.undefined()]).optional(),
   stream_tokens: z.union([z.boolean(), z.undefined()]).optional(),
+  include_pings: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
 export type LocalSandboxConfig = z.infer<typeof LocalSandboxConfig>;

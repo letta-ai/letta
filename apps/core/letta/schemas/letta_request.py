@@ -42,6 +42,10 @@ class LettaStreamingRequest(LettaRequest):
         default=False,
         description="Flag to determine if individual tokens should be streamed. Set to True for token streaming (requires stream_steps = True).",
     )
+    include_pings: bool = Field(
+        default=False,
+        description="Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts.",
+    )
 
 
 class LettaAsyncRequest(LettaRequest):
