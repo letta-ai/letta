@@ -194,6 +194,10 @@ class Settings(BaseSettings):
     debug: Optional[bool] = False
     cors_origins: Optional[list] = cors_origins
 
+    # SSE Streaming keepalive settings
+    enable_keepalive: bool = Field(True, description="Enable keepalive messages in SSE streams to prevent timeouts")
+    keepalive_interval: float = Field(15.0, description="Seconds between keepalive messages (default: 15)")
+
     # default handles
     default_llm_handle: Optional[str] = None
     default_embedding_handle: Optional[str] = None
