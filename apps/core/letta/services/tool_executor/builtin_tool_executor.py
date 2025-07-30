@@ -168,13 +168,14 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         # Initialize Firecrawl client
         app = AsyncFirecrawlApp(api_key=firecrawl_api_key)
 
-        # Process all search tasks in parallel
-        search_task_coroutines = [
-            self._process_single_search_task(app, task, limit, return_raw, api_key_source, agent_state) for task in search_tasks
-        ]
-
-        # Execute all searches concurrently
-        search_results = await asyncio.gather(*search_task_coroutines, return_exceptions=True)
+        # Process all search tasks serially
+        search_results = []
+        for task in search_tasks:
+            try:
+                result = await self._process_single_search_task(app, task, limit, return_raw, api_key_source, agent_state)
+                search_results.append(result)
+            except Exception as e:
+                search_results.append(e)
 
         # Build final response as a mapping of query -> result
         final_results = {}
@@ -218,7 +219,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
             return {"query": task.query, "question": task.question, "error": "No search results found."}
 
         # If raw results requested, return them directly
-        if return_raw:
+        if True:  # return_raw:
             return {"query": task.query, "question": task.question, "raw_results": search_result}
 
         # Check if OpenAI API key is available for semantic parsing
