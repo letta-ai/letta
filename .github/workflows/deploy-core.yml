@@ -83,6 +83,7 @@ jobs:
           COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
+          NEXT_PUBLIC_CURRENT_HOST: https://app.letta.com
           LETTA_PG_PASSWORD: ${{ secrets.LETTA_PG_PASSWORD }}
           LETTA_PG_USER: ${{ secrets.LETTA_PG_USER }}
           LETTA_PG_DB: ${{ secrets.LETTA_PG_DB }}
