@@ -12,6 +12,7 @@ a = Analysis(
         ('DEP_PATH/pgserver/pginstall', 'pgserver/pginstall')
     ],
     datas=[
+        ('DEP_PATH/letta/templates', 'letta/templates'),
         ('DEP_PATH/letta/humans/examples', 'letta/humans/examples'),
         ('DEP_PATH/letta/personas/examples', 'letta/personas/examples'),
         ('DEP_PATH/letta/prompts/system', 'letta/prompts/system'),
