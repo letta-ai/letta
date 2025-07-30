@@ -19,6 +19,14 @@ from letta.services.job_manager import JobManager
 logger = get_logger(__name__)
 
 
+class JobCancelledException(Exception):
+    """Exception raised when a job is explicitly cancelled (not due to client timeout)"""
+
+    def __init__(self, job_id: str, message: str = None):
+        self.job_id = job_id
+        super().__init__(message or f"Job {job_id} was explicitly cancelled")
+
+
 async def add_keepalive_to_stream(
     stream_generator: AsyncIterator[str | bytes],
     keepalive_interval: float = 30.0,
@@ -134,8 +142,8 @@ async def cancellation_aware_stream_wrapper(
                         # Send cancellation event to client
                         cancellation_event = {"message_type": "stop_reason", "stop_reason": "cancelled"}
                         yield f"data: {json.dumps(cancellation_event)}\n\n"
-                        # Raise CancelledError to interrupt the stream
-                        raise asyncio.CancelledError(f"Job {job_id} was cancelled")
+                        # Raise custom exception for explicit job cancellation
+                        raise JobCancelledException(job_id, f"Job {job_id} was cancelled")
                 except Exception as e:
                     # Log warning but don't fail the stream if cancellation check fails
                     logger.warning(f"Failed to check job cancellation for job {job_id}: {e}")
@@ -144,9 +152,13 @@ async def cancellation_aware_stream_wrapper(
 
             yield chunk
 
+    except JobCancelledException:
+        # Re-raise JobCancelledException to distinguish from client timeout
+        logger.info(f"Stream for job {job_id} was explicitly cancelled and cleaned up")
+        raise
     except asyncio.CancelledError:
-        # Re-raise CancelledError to ensure proper cleanup
-        logger.info(f"Stream for job {job_id} was cancelled and cleaned up")
+        # Re-raise CancelledError (likely client timeout) to ensure proper cleanup
+        logger.info(f"Stream for job {job_id} was cancelled (likely client timeout) and cleaned up")
         raise
     except Exception as e:
         logger.error(f"Error in cancellation-aware stream wrapper for job {job_id}: {e}")
@@ -215,12 +227,12 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                     }
                 )
 
-        # This should be handled properly upstream?
-        except asyncio.CancelledError as exc:
-            logger.warning("Stream was cancelled by client or job cancellation")
-            # Handle cancellation gracefully
+        # Handle explicit job cancellations (should not throw error)
+        except JobCancelledException as exc:
+            logger.info(f"Stream was explicitly cancelled for job {exc.job_id}")
+            # Handle explicit cancellation gracefully without error
             more_body = False
-            cancellation_resp = {"error": {"message": "Stream cancelled"}}
+            cancellation_resp = {"message": "Job was cancelled"}
             cancellation_event = f"event: cancelled\ndata: {json.dumps(cancellation_resp)}\n\n".encode(self.charset)
             if not self.response_started:
                 await send(
@@ -235,6 +247,31 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                 {
                     "type": "http.response.body",
                     "body": cancellation_event,
+                    "more_body": more_body,
+                }
+            )
+            return
+
+        # Handle client timeouts (should throw error to inform user)
+        except asyncio.CancelledError as exc:
+            logger.warning("Stream was cancelled due to client timeout or unexpected disconnection")
+            # Handle unexpected cancellation with error
+            more_body = False
+            error_resp = {"error": {"message": "Request was unexpectedly cancelled (likely due to client timeout or disconnection)"}}
+            error_event = f"event: error\ndata: {json.dumps(error_resp)}\n\n".encode(self.charset)
+            if not self.response_started:
+                await send(
+                    {
+                        "type": "http.response.start",
+                        "status": 408,  # Request Timeout
+                        "headers": self.raw_headers,
+                    }
+                )
+                raise
+            await send(
+                {
+                    "type": "http.response.body",
+                    "body": error_event,
                     "more_body": more_body,
                 }
             )
