@@ -973,8 +973,11 @@ export function LocalToolViewer(props: LocalToolsViewerProps) {
             paddingX="medium"
           >
             <HStack align="center">
-              <CodeButton />
-              {isAIAssistantEnabled && <ToolAssistant tool={tool} />}
+              {isAIAssistantEnabled ? (
+                <ToolAssistant tool={tool} />
+              ) : (
+                <CodeButton />
+              )}
             </HStack>
 
             <HStack align="center">

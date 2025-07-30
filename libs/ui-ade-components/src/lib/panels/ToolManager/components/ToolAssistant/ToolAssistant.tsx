@@ -2,18 +2,26 @@ import { useState, useCallback } from 'react';
 import { useToolsServiceGenerateTool, type Tool } from '@letta-cloud/sdk-core';
 import {
   Button,
-  Dialog,
   VStack,
   HStack,
-  RawTextArea,
   Typography,
   WandStarsIcon,
+  Popover,
+  Alert,
+  Badge,
+  Form,
+  FormField,
+  TextArea,
+  useForm,
+  FormProvider,
 } from '@letta-cloud/ui-component-library';
 import './ToolAssistant.scss';
 import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
 import { useToolValidation } from '../../hooks/useToolValidation/useToolValidation';
 import { useToolArguments } from '../LocalToolViewer/ToolArgumentsContext';
 import { useTranslations } from '@letta-cloud/translations';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 interface ToolAssistantProps {
   tool: Tool;
@@ -25,11 +33,11 @@ export function ToolAssistant(props: ToolAssistantProps) {
   const { stagedTool, setStagedTool } = useStagedCode(tool);
   const { updateSampleArguments } = useToolArguments();
   const { validationErrors } = useToolValidation(stagedTool.source_code || '');
-  const [useCodingAgent, setUseCodingAgent] = useState(false);
-  const [promptInput, setPromptInput] = useState('');
+  const [isCodingAgentOpen, setIsCodingAgentOpen] = useState(false);
 
   const {
     mutate: generateTool,
+    reset,
     isPending,
     isError,
   } = useToolsServiceGenerateTool({
@@ -54,9 +62,19 @@ export function ToolAssistant(props: ToolAssistantProps) {
         updateSampleArguments(response.sample_args);
       }
 
-      setUseCodingAgent(false);
-      setPromptInput('');
+      setIsCodingAgentOpen(false);
     },
+  });
+
+  const formSchema = z.object({
+    prompt: z.string().min(1, t('ToolAssistant.promptRequired')),
+  });
+
+  type FormData = z.infer<typeof formSchema>;
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {},
   });
 
   const handleGenerateTool = useCallback(
@@ -68,7 +86,7 @@ export function ToolAssistant(props: ToolAssistantProps) {
           validation_errors: validationErrors.map(
             (error) => `Line ${error.line}: ${error.message}`,
           ),
-          prompt: prompt,
+          prompt: prompt.trim(),
         },
       });
     },
@@ -76,57 +94,73 @@ export function ToolAssistant(props: ToolAssistantProps) {
   );
 
   return (
-    <Dialog
-      title={t('ToolAssistant.title')}
+    <Popover
+      align="start"
       onOpenChange={(open) => {
-        setUseCodingAgent(open);
+        setIsCodingAgentOpen(open);
         if (!open) {
-          setPromptInput('');
+          form.reset();
+          reset();
         }
       }}
-      confirmText={t('ToolAssistant.generate')}
-      isConfirmBusy={isPending}
-      isOpen={useCodingAgent}
-      errorMessage={isError ? t('ToolAssistant.error') : undefined}
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (promptInput.trim() === '') return;
-        handleGenerateTool(promptInput);
-      }}
+      open={isCodingAgentOpen}
+      className="w-[400px] rounded-sm shadow-sm"
+      triggerAsChild
       trigger={
         <Button
+          color="secondary"
           label={t('ToolAssistant.label')}
-          color="brand"
-          animate
           size="small"
-          onClick={() => {
-            setUseCodingAgent((prev) => !prev);
-          }}
           preIcon={<WandStarsIcon />}
-          _use_rarely_className="ai-tool-assistant"
         />
       }
     >
-      <VStack fullWidth gap="large">
-        <HStack fullWidth align="center">
-          <WandStarsIcon size="xsmall" />
-          <Typography variant="body3">{t('ToolAssistant.prompt')}</Typography>
-        </HStack>
-        <RawTextArea
-          value={promptInput}
-          label={t('ToolAssistant.promptLabel')}
-          hideLabel
-          onChange={(e) => {
-            setPromptInput(e.target.value);
-          }}
-          placeholder={t('ToolAssistant.placeholder')}
-          rows={4}
-          autosize
-          minRows={4}
-          maxRows={10}
-          fullWidth
-        />
-      </VStack>
-    </Dialog>
+      <FormProvider {...form}>
+        <Form
+          onSubmit={form.handleSubmit((data) => {
+            handleGenerateTool(data.prompt);
+          })}
+        >
+          <VStack color="background" padding fullWidth gap="large">
+            {isError && <Alert title={t('ToolAssistant.error')} />}
+            <HStack>
+              <HStack fullWidth align="center">
+                <WandStarsIcon size="small" />
+                <Typography bold variant="body3">
+                  {t('ToolAssistant.prompt')}
+                </Typography>
+              </HStack>
+              <Badge size="small" variant="warning" content="BETA" />
+            </HStack>
+            <FormField
+              render={({ field }) => (
+                <TextArea
+                  {...field}
+                  label={t('ToolAssistant.promptLabel')}
+                  hideLabel
+                  disabled={isPending}
+                  placeholder={t('ToolAssistant.placeholder')}
+                  rows={4}
+                  autosize
+                  minRows={4}
+                  maxRows={10}
+                  fullWidth
+                />
+              )}
+              name="prompt"
+            />
+            <HStack fullWidth justify="end">
+              <Button
+                type="submit"
+                color="secondary"
+                label={t('ToolAssistant.generate')}
+                size="small"
+                busy={isPending}
+              />
+            </HStack>
+          </VStack>
+        </Form>
+      </FormProvider>
+    </Popover>
   );
 }

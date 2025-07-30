@@ -1803,9 +1803,10 @@
       "label": "Ask Letta",
       "title": "Help me code",
       "generate": "Generate",
-      "prompt": "Ask the Letta coding assistant to help you write your tool",
+      "prompt": "Have Letta generate code for you",
       "promptLabel": "Prompt",
-      "placeholder": "Enter a prompt to generate or modify your code",
+      "promptRequired": "Please provide a prompt for Letta to generate code.",
+      "placeholder": "Write me a tool that rolls a random number",
       "error": "An error occurred while generating the tool. Please try again."
     }
   },
