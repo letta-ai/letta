@@ -102,6 +102,7 @@ aioboto3 = {version = "^14.3.0", optional = true}
 pinecone = {extras = ["asyncio"], version = "^7.3.0", optional = true}
 markitdown = {extras = ["docx", "pdf", "pptx"], version = "^0.1.2"}
 google-cloud-profiler = {version = "^4.1.0", optional = true}
+orjson = "^3.11.1"
 
 
 [tool.poetry.extras]
