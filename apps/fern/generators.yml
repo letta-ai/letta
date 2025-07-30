@@ -5,8 +5,8 @@ auth-schemes:
     type: optional<string>
 api:
   auth: token
-  headers: 
-    X-Project: 
+  headers:
+    X-Project:
       type: optional<string>
       name: project
   specs:
@@ -19,7 +19,7 @@ groups:
   python-sdk:
     generators:
       - name: fernapi/fern-python-sdk
-        version: 4.3.14
+        version: 4.25.6
         output:
           location: pypi
           package-name: letta-client
@@ -38,7 +38,7 @@ groups:
   ts-sdk:
     generators:
       - name: fernapi/fern-typescript-node-sdk
-        version: 0.46.9
+        version: 2.4.2
         output:
           location: npm
           package-name: "@letta-ai/letta-client"
@@ -50,6 +50,8 @@ groups:
           allowCustomFetcher: true
           skipResponseValidation: true
           includeApiReference: true
-          extraDependencies:
-            dedent: "^1.0.0"
+          streamType: "wrapper"
+          fileResponseType: "stream"
+          formDataSupport: "Node16"
+          fetchSupport: "node-fetch"
         smart-casing: true
