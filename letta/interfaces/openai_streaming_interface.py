@@ -9,6 +9,7 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns, ns_to_ms
 from letta.llm_api.openai_client import is_openai_reasoning_model
+from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.log import get_logger
 from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
@@ -19,6 +20,7 @@ from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
 from letta.server.rest_api.json_parser import OptimisticJSONParser
 from letta.streaming_utils import JSONInnerThoughtsExtractor
+from letta.utils import count_tokens
 
 logger = get_logger(__name__)
 
@@ -30,7 +32,14 @@ class OpenAIStreamingInterface:
     and detection of tool call events.
     """
 
-    def __init__(self, use_assistant_message: bool = False, put_inner_thoughts_in_kwarg: bool = False):
+    def __init__(
+        self,
+        use_assistant_message: bool = False,
+        put_inner_thoughts_in_kwarg: bool = False,
+        is_openai_proxy: bool = False,
+        messages: Optional[list] = None,
+        tools: Optional[list] = None,
+    ):
         self.use_assistant_message = use_assistant_message
         self.assistant_message_tool_name = DEFAULT_MESSAGE_TOOL
         self.assistant_message_tool_kwarg = DEFAULT_MESSAGE_TOOL_KWARG
@@ -53,9 +62,18 @@ class OpenAIStreamingInterface:
         self.message_id = None
         self.model = None
 
-        # token counters
+        # Token counters (from OpenAI usage)
         self.input_tokens = 0
         self.output_tokens = 0
+
+        # Fallback token counters (using tiktoken cl200k-base)
+        self.fallback_input_tokens = 0
+        self.fallback_output_tokens = 0
+
+        # Store messages and tools for fallback counting
+        self.is_openai_proxy = is_openai_proxy
+        self.messages = messages or []
+        self.tools = tools or []
 
         self.content_buffer: list[str] = []
         self.tool_call_name: str | None = None
@@ -95,6 +113,18 @@ class OpenAIStreamingInterface:
         Iterates over the OpenAI stream, yielding SSE events.
         It also collects tokens and detects if a tool call is triggered.
         """
+        # Fallback input token counting - this should only be required for non-OpenAI providers using the OpenAI client (e.g. LMStudio)
+        if self.is_openai_proxy:
+            if self.messages:
+                # Convert messages to dict format for token counting
+                message_dicts = [msg.to_openai_dict() if hasattr(msg, "to_openai_dict") else msg for msg in self.messages]
+                self.fallback_input_tokens = num_tokens_from_messages(message_dicts)  # fallback to gpt-4 cl100k-base
+
+            if self.tools:
+                # Convert tools to dict format for token counting
+                tool_dicts = [tool["function"] if isinstance(tool, dict) and "function" in tool else tool for tool in self.tools]
+                self.fallback_input_tokens += num_tokens_from_functions(tool_dicts)
+
         first_chunk = True
         try:
             async with stream:
@@ -112,6 +142,9 @@ class OpenAIStreamingInterface:
                         metric_attributes = get_ctx_attributes()
                         metric_attributes["model.name"] = chunk.model
                         MetricRegistry().ttft_ms_histogram.record(ns_to_ms(ttft_ns), metric_attributes)
+
+                        if self.is_openai_proxy:
+                            self.fallback_output_tokens += count_tokens(chunk.model_dump_json())
 
                         first_chunk = False
 
@@ -152,6 +185,9 @@ class OpenAIStreamingInterface:
                                 updates_main_json, updates_inner_thoughts = self.function_args_reader.process_fragment(
                                     tool_call.function.arguments
                                 )
+
+                                if self.is_openai_proxy:
+                                    self.fallback_output_tokens += count_tokens(tool_call.function.arguments)
 
                                 # If we have inner thoughts, we should output them as a chunk
                                 if updates_inner_thoughts:
