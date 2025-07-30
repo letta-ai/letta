@@ -197,6 +197,7 @@ describe-web:
         --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         --set secrets.OPENAI_API_KEY=${OPENAI_API_KEY} \
         --set secrets.COMPOSIO_API_KEY=${COMPOSIO_API_KEY} \
+        --set secrets.NEXT_PUBLIC_CURRENT_HOST=${NEXT_PUBLIC_CURRENT_HOST} \
         --set secrets.LETTA_PG_PASSWORD=${LETTA_PG_PASSWORD} \
         --set secrets.LETTA_PG_USER=${LETTA_PG_USER} \
         --set secrets.LETTA_PG_DB=${LETTA_PG_DB} \
