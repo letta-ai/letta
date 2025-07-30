@@ -131,10 +131,10 @@ class LettaBuiltinToolExecutor(ToolExecutor):
                  Each result includes ranked snippets with their source URLs and relevance scores,
                  corresponding to each search task.
         """
-        # TODO: Temporary, maybe deprecate this field?
-        if return_raw:
-            logger.warning("WARNING! return_raw was set to True, we default to False always. Deprecate this field.")
-        return_raw = False
+        # # TODO: Temporary, maybe deprecate this field?
+        # if return_raw:
+        #     logger.warning("WARNING! return_raw was set to True, we default to False always. Deprecate this field.")
+        # return_raw = False
         try:
             from firecrawl import AsyncFirecrawlApp
         except ImportError:
