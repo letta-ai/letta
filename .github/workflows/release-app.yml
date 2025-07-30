@@ -13,6 +13,94 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: taiki-e/install-action@just
+
+      - name: Set up python 3.12
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Load cached Poetry Binary
+        id: cached-poetry-binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.local
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-1.8.3
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.3
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Restore node_modules cache if exist
+        id: cache-nodemodules
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-node-modules-${{ env.node-version }}
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Restore NPM cache if exist
+        id: cache-npm
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-npm-${{ env.node-version }}
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-${{ env.cache-name }}
+
+      - name: Bump version
+        run: npm version ${{ github.event.inputs.app_version }}
+        working-directory: apps/desktop-electron
+
+      - name: Install dependencies
+        run: npm install
+
+      # # TODO strip this out eventually, only used for pgvector install
+      # - name: Install Postgres via Homebrew
+      #   run: |
+      #     brew update
+      #     brew install postgresql@16
+      #     brew link postgresql@16 --force || true
+
+      # - name: Prepare desktop (postgres Mac)
+      #   run: just prepare-desktop-postgres-macos
+
+      - name: Prepare desktop (rebuild deps)
+        run: just prepare-desktop
+
+      - name: Test poetry
+        run: poetry --version
+
+      - name: Build elf
+        run: node scripts/desktop-builders/src/generators/build-python-app/build-python-app.js
+
+      - name: Check disk usage
+        run: du -sh apps/desktop-electron/resources/* || true
+
+      - name: List all resource files
+        run: find apps/desktop-electron/resources/ | wc -l
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: letta.elf
+          path: apps/desktop-core/dist/letta
+          overwrite: true
+
   build-exe:
     defaults:
       run:
@@ -113,7 +201,7 @@ jobs:
 
   # Rest of the workflow remains unchanged
   build-electron:
-    needs: build-exe
+    needs: [build-exe, build-linux]
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -198,6 +286,16 @@ jobs:
         run: |
           echo "Verifying exe"
           file apps/desktop-electron/dist/letta.exe
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: letta.elf
+          path: apps/desktop-electron/dist/
+
+      - name: Verify elf
+        run: |
+          echo "Verifying elf"
+          file apps/desktop-electron/dist/letta.elf
 
       - name: Download Windows Postgres binaries
         uses: actions/download-artifact@v4

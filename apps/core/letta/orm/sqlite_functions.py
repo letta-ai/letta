@@ -154,10 +154,10 @@ def register_functions(dbapi_connection, connection_record):
                 print("Detected aiosqlite connection - sqlite-vec will be loaded per-query")
             else:
                 # For sync connections
-                dbapi_connection.enable_load_extension(True)
-                sqlite_vec.load(dbapi_connection)
-                dbapi_connection.enable_load_extension(False)
-                print("Successfully loaded sqlite-vec extension (sync)")
+                # dbapi_connection.enable_load_extension(True)
+                # sqlite_vec.load(dbapi_connection)
+                # dbapi_connection.enable_load_extension(False)
+                print("sqlite3 extension loading")  # Successfully loaded sqlite-vec extension (sync)")
         except Exception as e:
             raise RuntimeError(f"Failed to load sqlite-vec extension: {e}")
 

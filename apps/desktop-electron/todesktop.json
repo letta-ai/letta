@@ -3,7 +3,7 @@
   "icon": "dist/assets/icon.png",
   "appFiles": ["dist/**/*", "scripts/before-build.js", "resources/**"],
   "appPath": ".",
-  "uploadSizeLimit": 900,
+  "uploadSizeLimit": 1000,
   "schemaVersion": 1,
   "nodeVersion": "22.11.0",
   "copyright": "Copyright © 2025 Letta",

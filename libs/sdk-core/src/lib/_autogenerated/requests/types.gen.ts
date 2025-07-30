@@ -656,9 +656,6 @@ export type ChatCompletionAudioParam = {
     | 'ballad'
     | 'coral'
     | 'echo'
-    | 'fable'
-    | 'onyx'
-    | 'nova'
     | 'sage'
     | 'shimmer'
     | 'verse';

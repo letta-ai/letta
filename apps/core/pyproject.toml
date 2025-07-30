@@ -93,8 +93,8 @@ matplotlib = "^3.10.1"
 asyncpg = {version = "^0.30.0", optional = true}
 tavily-python = "^0.7.2"
 mistralai = "^1.8.1"
-uvloop = {version = "^0.21.0", optional = true}
-granian = {version = "^2.3.2", extras = ["uvloop", "reload"], optional = true}
+uvloop = {version = "^0.21.0", optional = true, markers = "sys_platform != 'win32'"}
+granian = {version = "^2.3.2", extras = ["reload"], optional = true}
 redis = {version = "^6.2.0", optional = true}
 structlog = "^25.4.0"
 certifi = "^2025.6.15"
@@ -102,6 +102,7 @@ aioboto3 = {version = "^14.3.0", optional = true}
 pinecone = {extras = ["asyncio"], version = "^7.3.0", optional = true}
 markitdown = {extras = ["docx", "pdf", "pptx"], version = "^0.1.2"}
 google-cloud-profiler = {version = "^4.1.0", optional = true}
+sqlite-vec = {version = "^0.1.7a2", optional = true}
 orjson = "^3.11.1"
 
 
@@ -117,7 +118,7 @@ external-tools = ["docker", "langchain", "wikipedia", "langchain-community", "fi
 tests = ["wikipedia"]
 bedrock = ["boto3", "aioboto3"]
 google = ["google-genai"]
-desktop = ["pyright", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust"]
+desktop = ["pyright", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust", "sqlite-vec"]
 all = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2", "pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "pyright", "pytest-order", "autoflake", "isort", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust", "uvloop", "granian", "redis", "pinecone", "google-cloud-profiler"]
 
 [tool.poetry.group.dev.dependencies]
@@ -133,6 +134,10 @@ pytest-json-report = "^1.5.0"
 [tool.poetry.group.sqlite.dependencies]
 aiosqlite = "^0.21.0"
 # https://github.com/asg017/sqlite-vec/issues/148
+sqlite-vec = "^0.1.7a2"
+
+
+[tool.poetry.group.desktop.dependencies]
 sqlite-vec = "^0.1.7a2"
 
 [tool.black]
