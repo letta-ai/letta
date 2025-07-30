@@ -104,13 +104,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         return out
 
     @trace_method
-    async def web_search(
-        self,
-        agent_state: "AgentState",
-        tasks: List[SearchTask],
-        limit: int = 3,
-        return_raw: bool = False,
-    ) -> str:
+    async def web_search(self, agent_state: "AgentState", tasks: List[SearchTask], limit: int = 1, return_raw: bool = True) -> str:
         """
         Search the web with a list of query/question pairs and extract passages that answer the corresponding questions.
 

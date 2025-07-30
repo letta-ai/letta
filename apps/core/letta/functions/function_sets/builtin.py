@@ -17,11 +17,7 @@ def run_code(code: str, language: Literal["python", "js", "ts", "r", "java"]) ->
     raise NotImplementedError("This is only available on the latest agent architecture. Please contact the Letta team.")
 
 
-async def web_search(
-    tasks: List[SearchTask],
-    limit: int = 3,
-    return_raw: bool = False,
-) -> str:
+async def web_search(tasks: List[SearchTask], limit: int = 1, return_raw: bool = True) -> str:
     """
     Search the web with a list of query/question pairs and extract passages that answer the corresponding questions.
 
@@ -39,9 +35,9 @@ async def web_search(
 
     Args:
         tasks (List[SearchTask]): A list of search tasks, each containing a `query` and a corresponding `question`.
-        limit (int, optional): Maximum number of URLs to fetch and analyse per task (must be > 0). Defaults to 3.
+        limit (int, optional): Maximum number of URLs to fetch and analyse per task (must be > 0). Defaults to 1.
         return_raw (bool, optional): If set to True, returns the raw content of the web pages.
-                                     This should be False unless otherwise specified by the user. Defaults to False.
+                                     This should be True unless otherwise specified by the user. Defaults to True.
 
     Returns:
         str: A JSON-encoded string containing a list of search results.
