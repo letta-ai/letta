@@ -504,7 +504,7 @@ export function JSONSchemaViewer(props: JSONSchemaViewerProps) {
   }, [isDifferent, reset]);
 
   return (
-    <VStack fullHeight gap={false} fullWidth borderLeft>
+    <VStack fullHeight gap={false} fullWidth>
       <VStack gap={false}>
         {errorMessage && (
           <HStack
