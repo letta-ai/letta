@@ -38,7 +38,7 @@ groups:
   ts-sdk:
     generators:
       - name: fernapi/fern-typescript-node-sdk
-        version: 2.4.2
+        version: 0.51.7
         output:
           location: npm
           package-name: "@letta-ai/letta-client"
