@@ -6,7 +6,8 @@ from e2b_code_interpreter import AsyncSandbox
 from letta.log import get_logger
 from letta.otel.tracing import log_event, trace_method
 from letta.schemas.agent import AgentState
-from letta.schemas.sandbox_config import SandboxConfig, SandboxType
+from letta.schemas.enums import SandboxType
+from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.services.helpers.tool_parser_helper import parse_stdout_best_effort
@@ -42,22 +43,6 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
         agent_state: Optional[AgentState] = None,
         additional_env_vars: Optional[Dict] = None,
     ) -> ToolExecutionResult:
-        """
-        Run the tool in a sandbox environment asynchronously,
-        *always* using a subprocess for execution.
-        """
-        result = await self.run_e2b_sandbox(agent_state=agent_state, additional_env_vars=additional_env_vars)
-
-        # Simple console logging for demonstration
-        for log_line in (result.stdout or []) + (result.stderr or []):
-            print(f"Tool execution log: {log_line}")
-
-        return result
-
-    @trace_method
-    async def run_e2b_sandbox(
-        self, agent_state: Optional[AgentState] = None, additional_env_vars: Optional[Dict] = None
-    ) -> ToolExecutionResult:
         if self.provided_sandbox_config:
             sbx_config = self.provided_sandbox_config
         else:
@@ -76,30 +61,15 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
         # await sbx.set_timeout(sbx_config.get_e2b_config().timeout)
 
         # Get environment variables for the sandbox
-        # TODO: We set limit to 100 here, but maybe we want it uncapped? Realistically this should be fine.
-        env_vars = {}
-        if self.provided_sandbox_env_vars:
-            env_vars.update(self.provided_sandbox_env_vars)
-        else:
-            db_env_vars = await self.sandbox_config_manager.get_sandbox_env_vars_as_dict_async(
-                sandbox_config_id=sbx_config.id, actor=self.user, limit=100
-            )
-            env_vars.update(db_env_vars)
-        # Get environment variables for this agent specifically
-        if agent_state:
-            env_vars.update(agent_state.get_agent_env_vars_as_dict())
-
-        # Finally, get any that are passed explicitly into the `run` function call
-        if additional_env_vars:
-            env_vars.update(additional_env_vars)
+        envs = await self._gather_env_vars(agent_state, additional_env_vars, sbx_config.id, is_local=False)
         code = await self.generate_execution_script(agent_state=agent_state)
 
         try:
             log_event(
                 "e2b_execution_started",
-                {"tool": self.tool_name, "sandbox_id": e2b_sandbox.sandbox_id, "code": code, "env_vars": env_vars},
+                {"tool": self.tool_name, "sandbox_id": e2b_sandbox.sandbox_id, "code": code, "env_vars": envs},
             )
-            execution = await e2b_sandbox.run_code(code, envs=env_vars)
+            execution = await e2b_sandbox.run_code(code, envs=envs)
 
             if execution.results:
                 func_return, agent_state = parse_stdout_best_effort(execution.results[0].text)

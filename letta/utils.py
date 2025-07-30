@@ -1190,7 +1190,7 @@ async def get_latest_alembic_revision() -> str:
                 return "unknown"
 
     except Exception as e:
-        logger.error(f"Error getting latest alembic revision: {e}")
+        logger.error("Error getting latest alembic revision: %s", e)
         return "unknown"
 
 
