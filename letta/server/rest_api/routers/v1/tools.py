@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 from collections.abc import AsyncGenerator
 from typing import Any, Dict, List, Optional, Union
 
@@ -40,7 +41,7 @@ from letta.server.server import SyncServer
 from letta.services.mcp.oauth_utils import MCPOAuthSession, create_oauth_provider, drill_down_exception, oauth_stream_event
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.mcp.types import OauthStreamEvent
-from letta.settings import settings, tool_settings
+from letta.settings import tool_settings
 
 router = APIRouter(prefix="/tools", tags=["tools"])
 
@@ -754,7 +755,7 @@ async def connect_mcp_server(
             oauth_session = await server.mcp_manager.create_oauth_session(session_create, actor)
             session_id = oauth_session.id
 
-            # TODO: @jnjpng make this check more robust
+            # TODO: @jnjpng make this check more robust and remove direct os.getenv
             # Check if request is from web frontend to determine redirect URI
             is_web_request = (
                 http_request
@@ -764,8 +765,8 @@ async def connect_mcp_server(
             )
 
             logo_uri = None
-            NEXT_PUBLIC_CURRENT_HOST = settings.next_public_current_host
-            LETTA_AGENTS_ENDPOINT = settings.letta_agents_endpoint
+            NEXT_PUBLIC_CURRENT_HOST = os.getenv("NEXT_PUBLIC_CURRENT_HOST")
+            LETTA_AGENTS_ENDPOINT = os.getenv("LETTA_AGENTS_ENDPOINT")
 
             if is_web_request and NEXT_PUBLIC_CURRENT_HOST:
                 redirect_uri = f"{NEXT_PUBLIC_CURRENT_HOST}/oauth/callback/{session_id}"
@@ -774,6 +775,9 @@ async def connect_mcp_server(
                 # API and SDK usage should call core server directly
                 redirect_uri = f"{LETTA_AGENTS_ENDPOINT}/v1/tools/mcp/oauth/callback/{session_id}"
             else:
+                logger.error(
+                    f"No redirect URI found for request and base urls: {http_request} {NEXT_PUBLIC_CURRENT_HOST} {LETTA_AGENTS_ENDPOINT}"
+                )
                 raise HTTPException(status_code=400, detail="No redirect URI found")
 
             # Create OAuth provider for the instance of the stream connection
