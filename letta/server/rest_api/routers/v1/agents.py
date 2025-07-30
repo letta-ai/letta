@@ -1071,8 +1071,8 @@ async def send_message_streaming(
                     request_start_timestamp_ns=request_start_timestamp_ns,
                     include_return_message_types=request.include_return_message_types,
                 )
-                # Conditionally wrap with keepalive based on settings
-                if settings.enable_keepalive:
+                # Conditionally wrap with keepalive based on request parameter
+                if request.include_pings and settings.enable_keepalive:
                     stream = add_keepalive_to_stream(raw_stream, keepalive_interval=settings.keepalive_interval)
                 else:
                     stream = raw_stream
@@ -1089,8 +1089,8 @@ async def send_message_streaming(
                     request_start_timestamp_ns=request_start_timestamp_ns,
                     include_return_message_types=request.include_return_message_types,
                 )
-                # Conditionally wrap with keepalive based on settings
-                if settings.enable_keepalive:
+                # Conditionally wrap with keepalive based on request parameter
+                if request.include_pings and settings.enable_keepalive:
                     stream = add_keepalive_to_stream(raw_stream, keepalive_interval=settings.keepalive_interval)
                 else:
                     stream = raw_stream
