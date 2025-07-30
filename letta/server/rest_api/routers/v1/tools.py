@@ -776,7 +776,7 @@ async def connect_mcp_server(
                 redirect_uri = f"{LETTA_AGENTS_ENDPOINT}/v1/tools/mcp/oauth/callback/{session_id}"
             else:
                 logger.error(
-                    f"No redirect URI found for request and base urls: {http_request} {NEXT_PUBLIC_CURRENT_HOST} {LETTA_AGENTS_ENDPOINT}"
+                    f"No redirect URI found for request and base urls: {http_request.headers} {NEXT_PUBLIC_CURRENT_HOST} {LETTA_AGENTS_ENDPOINT}"
                 )
                 raise HTTPException(status_code=400, detail="No redirect URI found")
 
