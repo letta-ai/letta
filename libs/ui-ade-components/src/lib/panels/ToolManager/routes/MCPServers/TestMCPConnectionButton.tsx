@@ -84,7 +84,10 @@ export function TestMCPConnectionButton({
     setAvailableTools([]);
     setOauthUrl(null);
 
-    if (serverType === MCPServerTypes.Sse || serverType === MCPServerTypes.StreamableHttp) {
+    if (
+      serverType === MCPServerTypes.Sse ||
+      serverType === MCPServerTypes.StreamableHttp
+    ) {
       if (!serverUrl) {
         setTestingStatus('failed');
         return;
@@ -236,7 +239,7 @@ export function TestMCPConnectionButton({
                 break;
 
               case OauthStreamEvent.OAUTH_REQUIRED:
-                setTestingStatus('oauth_required');
+                setTestingStatus('pending');
                 break;
 
               case OauthStreamEvent.AUTHORIZATION_URL:
@@ -284,7 +287,10 @@ export function TestMCPConnectionButton({
     setAvailableTools([]);
     setOauthUrl(null);
 
-    if (serverType === MCPServerTypes.Sse || serverType === MCPServerTypes.StreamableHttp) {
+    if (
+      serverType === MCPServerTypes.Sse ||
+      serverType === MCPServerTypes.StreamableHttp
+    ) {
       if (!serverUrl) {
         setTestingStatus('failed');
         return;

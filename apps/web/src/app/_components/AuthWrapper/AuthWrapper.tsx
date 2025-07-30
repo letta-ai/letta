@@ -1,0 +1,105 @@
+import { HStack, LettaLoader, VStack } from '@letta-cloud/ui-component-library';
+import React, { useEffect, useState } from 'react';
+import type { Ref } from 'react';
+import './AuthWrapper.scss';
+
+interface AuthWrapperProps {
+  children: React.ReactNode;
+  showLogo?: boolean;
+  logoRef?: Ref<HTMLDivElement> | null;
+  cardWidth?: number;
+  containerClassName?: string;
+  backgroundClassName?: string;
+  headerContent?: React.ReactNode;
+  footer?: React.ReactNode;
+  bottomCard?: React.ReactNode;
+}
+
+export function AuthWrapper(props: AuthWrapperProps) {
+  const {
+    children,
+    logoRef,
+    showLogo = true,
+    cardWidth = 400,
+    containerClassName = 'auth-container',
+    backgroundClassName = 'auth-background',
+    headerContent,
+    footer,
+    bottomCard,
+  } = props;
+
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setIsDarkMode(mediaQuery.matches);
+
+    function listener(e: MediaQueryListEvent) {
+      setIsDarkMode(e.matches);
+    }
+    mediaQuery.addEventListener('change', listener);
+
+    return () => {
+      mediaQuery.removeEventListener('change', listener);
+    };
+  }, []);
+
+  return (
+    <HStack
+      overflow="auto"
+      gap={false}
+      // eslint-disable-next-line react/forbid-component-props
+      className={`${containerClassName} max-h-[100dvh] box-content`}
+    >
+      <VStack
+        zIndex="rightAboveZero"
+        align="center"
+        justify="center"
+        fullHeight
+        fullWidth
+        color="background"
+        // eslint-disable-next-line react/forbid-component-props
+        className={backgroundClassName}
+        gap={null}
+      >
+        <VStack
+          // eslint-disable-next-line react/forbid-component-props
+          className={`w-full border card`}
+          // eslint-disable-next-line react/forbid-component-props
+          style={{
+            maxWidth: `${cardWidth}px`,
+            maxHeight: '100%',
+          }}
+          align="center"
+          gap="large"
+          justify="center"
+          padding="xxlarge"
+          color="background-grey"
+        >
+          {showLogo && (
+            <VStack paddingBottom="small" gap="xlarge" align="center" fullWidth>
+              <HStack justify="spaceBetween" align="center" fullWidth>
+                {showLogo && (
+                  <div
+                    className="relative lottie-non-interactive"
+                    ref={logoRef}
+                  >
+                    <LettaLoader
+                      variant="spinner3d"
+                      size="big"
+                      isDarkMode={isDarkMode}
+                    />
+                  </div>
+                )}
+                {headerContent}
+              </HStack>
+            </VStack>
+          )}
+          {children}
+          {footer}
+        </VStack>
+        {bottomCard}
+      </VStack>
+    </HStack>
+  );
+}

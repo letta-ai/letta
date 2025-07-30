@@ -898,7 +898,7 @@ export class ToolsService {
    * @param data.state OAuth state parameter
    * @param data.error OAuth error
    * @param data.errorDescription OAuth error description
-   * @returns string Successful Response
+   * @returns unknown Successful Response
    * @throws ApiError
    */
   public static mcpOauthCallback(

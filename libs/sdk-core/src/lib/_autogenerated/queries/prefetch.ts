@@ -221,7 +221,7 @@ export const prefetchUseToolsServiceListMcpToolsByServer = (
  * @param data.state OAuth state parameter
  * @param data.error OAuth error
  * @param data.errorDescription OAuth error description
- * @returns string Successful Response
+ * @returns unknown Successful Response
  * @throws ApiError
  */
 export const prefetchUseToolsServiceMcpOauthCallback = (

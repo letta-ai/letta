@@ -5105,7 +5105,7 @@ export type McpOauthCallbackData = {
   state?: string | null;
 };
 
-export type McpOauthCallbackResponse = string;
+export type McpOauthCallbackResponse = unknown;
 
 export type GenerateToolData = {
   requestBody: GenerateToolInput;
@@ -7060,7 +7060,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: string;
+        200: unknown;
         /**
          * Validation Error
          */

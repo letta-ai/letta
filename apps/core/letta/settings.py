@@ -267,6 +267,10 @@ class Settings(BaseSettings):
     # for OCR
     mistral_api_key: Optional[str] = None
 
+    # OAuth redirect URLs
+    letta_agents_endpoint: Optional[str] = os.getenv("LETTA_AGENTS_ENDPOINT")
+    next_public_current_host: Optional[str] = os.getenv("NEXT_PUBLIC_CURRENT_HOST")
+
     # LLM request timeout settings (model + embedding model)
     llm_request_timeout_seconds: float = Field(default=60.0, ge=10.0, le=1800.0, description="Timeout for LLM requests in seconds")
     llm_stream_timeout_seconds: float = Field(default=60.0, ge=10.0, le=1800.0, description="Timeout for LLM streaming requests in seconds")
