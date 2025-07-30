@@ -2927,6 +2927,17 @@ export type MessageType =
   | 'tool_call_message'
   | 'tool_return_message';
 
+export type ModalSandboxConfig = {
+  /**
+   * Time limit for the sandbox (in seconds).
+   */
+  timeout?: number;
+  /**
+   * A list of pip packages to install in the Modal sandbox
+   */
+  pip_requirements?: Array<string> | null;
+};
+
 export type OmittedReasoningContent = {
   /**
    * Indicates this is an omitted reasoning step.
@@ -3607,7 +3618,7 @@ export type SandboxConfigCreate = {
   /**
    * The configuration for the sandbox.
    */
-  config: LocalSandboxConfig | E2BSandboxConfig;
+  config: LocalSandboxConfig | E2BSandboxConfig | ModalSandboxConfig;
 };
 
 /**
@@ -3617,7 +3628,7 @@ export type SandboxConfigUpdate = {
   /**
    * The JSON configuration data for the sandbox.
    */
-  config?: LocalSandboxConfig | E2BSandboxConfig;
+  config?: LocalSandboxConfig | E2BSandboxConfig | ModalSandboxConfig;
 };
 
 export type SandboxEnvironmentVariable = {
@@ -3693,7 +3704,7 @@ export type SandboxEnvironmentVariableUpdate = {
   description?: string | null;
 };
 
-export type SandboxType = 'e2b' | 'local';
+export type SandboxType = 'e2b' | 'modal' | 'local';
 
 export type SleeptimeManager = {
   manager_type?: 'sleeptime';
@@ -4441,7 +4452,6 @@ export type ToolType =
   | 'letta_builtin'
   | 'letta_files_core'
   | 'external_composio'
-  | 'external_langchain'
   | 'external_mcp';
 
 export type ToolUpdate = {

@@ -2680,7 +2680,6 @@
                                     "letta_builtin",
                                     "letta_files_core",
                                     "external_composio",
-                                    "external_langchain",
                                     "external_mcp"
                                   ]
                                 },
@@ -7791,7 +7790,6 @@
                                     "letta_builtin",
                                     "letta_files_core",
                                     "external_composio",
-                                    "external_langchain",
                                     "external_mcp"
                                   ]
                                 },

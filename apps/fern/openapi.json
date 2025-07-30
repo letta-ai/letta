@@ -17808,6 +17808,33 @@
         ],
         "title": "MessageType"
       },
+      "ModalSandboxConfig": {
+        "properties": {
+          "timeout": {
+            "type": "integer",
+            "title": "Timeout",
+            "description": "Time limit for the sandbox (in seconds).",
+            "default": 300
+          },
+          "pip_requirements": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pip Requirements",
+            "description": "A list of pip packages to install in the Modal sandbox"
+          }
+        },
+        "type": "object",
+        "title": "ModalSandboxConfig"
+      },
       "OmittedReasoningContent": {
         "properties": {
           "type": {
@@ -19315,6 +19342,9 @@
               },
               {
                 "$ref": "#/components/schemas/E2BSandboxConfig"
+              },
+              {
+                "$ref": "#/components/schemas/ModalSandboxConfig"
               }
             ],
             "title": "Config",
@@ -19335,6 +19365,9 @@
               },
               {
                 "$ref": "#/components/schemas/E2BSandboxConfig"
+              },
+              {
+                "$ref": "#/components/schemas/ModalSandboxConfig"
               }
             ],
             "title": "Config",
@@ -19513,7 +19546,7 @@
       },
       "SandboxType": {
         "type": "string",
-        "enum": ["e2b", "local"],
+        "enum": ["e2b", "modal", "local"],
         "title": "SandboxType"
       },
       "SleeptimeManager": {
@@ -21412,7 +21445,6 @@
           "letta_builtin",
           "letta_files_core",
           "external_composio",
-          "external_langchain",
           "external_mcp"
         ],
         "title": "ToolType"

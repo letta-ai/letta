@@ -1136,14 +1136,14 @@ files = [
 
 [[package]]
 name = "click"
-version = "8.2.1"
+version = "8.1.8"
 description = "Composable command line interface toolkit"
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.7"
 groups = ["main", "dev"]
 files = [
-    {file = "click-8.2.1-py3-none-any.whl", hash = "sha256:61a3265b914e850b85317d0b3109c7f8cd35a670f963866005d6ef1d5175a12b"},
-    {file = "click-8.2.1.tar.gz", hash = "sha256:27c491cc05d968d271d5a1db13e3b5a184636d9d930f148c50b038f0d0646202"},
+    {file = "click-8.1.8-py3-none-any.whl", hash = "sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2"},
+    {file = "click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a"},
 ]
 
 [package.dependencies]
@@ -2809,6 +2809,26 @@ protobuf = ">=5.26.1,<6.0dev"
 setuptools = "*"
 
 [[package]]
+name = "grpclib"
+version = "0.4.8"
+description = "Pure-Python gRPC implementation for asyncio"
+optional = true
+python-versions = ">=3.8"
+groups = ["main"]
+markers = "extra == \"cloud-tool-sandbox\""
+files = [
+    {file = "grpclib-0.4.8-py3-none-any.whl", hash = "sha256:a5047733a7acc1c1cee6abf3c841c7c6fab67d2844a45a853b113fa2e6cd2654"},
+    {file = "grpclib-0.4.8.tar.gz", hash = "sha256:d8823763780ef94fed8b2c562f7485cf0bbee15fc7d065a640673667f7719c9a"},
+]
+
+[package.dependencies]
+h2 = ">=3.1.0,<5"
+multidict = "*"
+
+[package.extras]
+protobuf = ["protobuf (>=3.20.0)"]
+
+[[package]]
 name = "h11"
 version = "0.16.0"
 description = "A pure-Python, bring-your-own-I/O implementation of HTTP/1.1"
@@ -2818,6 +2838,36 @@ groups = ["main"]
 files = [
     {file = "h11-0.16.0-py3-none-any.whl", hash = "sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86"},
     {file = "h11-0.16.0.tar.gz", hash = "sha256:4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1"},
+]
+
+[[package]]
+name = "h2"
+version = "4.2.0"
+description = "Pure-Python HTTP/2 protocol implementation"
+optional = true
+python-versions = ">=3.9"
+groups = ["main"]
+markers = "extra == \"cloud-tool-sandbox\""
+files = [
+    {file = "h2-4.2.0-py3-none-any.whl", hash = "sha256:479a53ad425bb29af087f3458a61d30780bc818e4ebcf01f0b536ba916462ed0"},
+    {file = "h2-4.2.0.tar.gz", hash = "sha256:c8a52129695e88b1a0578d8d2cc6842bbd79128ac685463b887ee278126ad01f"},
+]
+
+[package.dependencies]
+hpack = ">=4.1,<5"
+hyperframe = ">=6.1,<7"
+
+[[package]]
+name = "hpack"
+version = "4.1.0"
+description = "Pure-Python HPACK header encoding"
+optional = true
+python-versions = ">=3.9"
+groups = ["main"]
+markers = "extra == \"cloud-tool-sandbox\""
+files = [
+    {file = "hpack-4.1.0-py3-none-any.whl", hash = "sha256:157ac792668d995c657d93111f46b4535ed114f0c9c8d672271bbec7eae1b496"},
+    {file = "hpack-4.1.0.tar.gz", hash = "sha256:ec5eca154f7056aa06f196a557655c5b009b382873ac8d1e66e79e87535f1dca"},
 ]
 
 [[package]]
@@ -2921,6 +2971,19 @@ files = [
 
 [package.dependencies]
 pyreadline3 = {version = "*", markers = "sys_platform == \"win32\" and python_version >= \"3.8\""}
+
+[[package]]
+name = "hyperframe"
+version = "6.1.0"
+description = "Pure-Python HTTP/2 framing"
+optional = true
+python-versions = ">=3.9"
+groups = ["main"]
+markers = "extra == \"cloud-tool-sandbox\""
+files = [
+    {file = "hyperframe-6.1.0-py3-none-any.whl", hash = "sha256:b03380493a519fce58ea5af42e4a42317bf9bd425596f7a0835ffce80f1a42e5"},
+    {file = "hyperframe-6.1.0.tar.gz", hash = "sha256:f630908a00854a7adeabd6382b43923a4c4cd4b821fcb527e6ab9e15382a3b08"},
+]
 
 [[package]]
 name = "identify"
@@ -4498,6 +4561,34 @@ typing-inspection = ">=0.4.0"
 [package.extras]
 agents = ["authlib (>=1.5.2,<2.0)", "griffe (>=1.7.3,<2.0)", "mcp (>=1.0,<2.0) ; python_version >= \"3.10\""]
 gcp = ["google-auth (>=2.27.0)", "requests (>=2.32.3)"]
+
+[[package]]
+name = "modal"
+version = "1.1.0"
+description = "Python client library for Modal"
+optional = true
+python-versions = ">=3.9"
+groups = ["main"]
+markers = "extra == \"cloud-tool-sandbox\""
+files = [
+    {file = "modal-1.1.0-py3-none-any.whl", hash = "sha256:985f47427f214e098768995782fda3915141af5f84007815db0c10c45e4a6a16"},
+    {file = "modal-1.1.0.tar.gz", hash = "sha256:190ea96d45fbdfd6d6cb545a736bf1ef5599511d346ae94cfd773528a33b6097"},
+]
+
+[package.dependencies]
+aiohttp = "*"
+certifi = "*"
+click = ">=8.1.0,<8.2.0"
+grpclib = ">=0.4.7,<0.4.9"
+protobuf = ">=3.19,<4.24.0 || >4.24.0,<7.0"
+rich = ">=12.0.0"
+synchronicity = ">=0.10.1,<0.11.0"
+toml = "*"
+typer = ">=0.9"
+types-certifi = "*"
+types-toml = "*"
+typing_extensions = ">=4.6,<5.0"
+watchfiles = "*"
 
 [[package]]
 name = "mpmath"
@@ -7375,6 +7466,26 @@ files = [
 ]
 
 [[package]]
+name = "sigtools"
+version = "4.0.1"
+description = "Utilities for working with inspect.Signature objects."
+optional = true
+python-versions = ">=3.6"
+groups = ["main"]
+markers = "extra == \"cloud-tool-sandbox\""
+files = [
+    {file = "sigtools-4.0.1-py2.py3-none-any.whl", hash = "sha256:d216b4cf920bbab0fce636ddc429ed8463a5b533d9e1492acb45a2a1bc36ac6c"},
+    {file = "sigtools-4.0.1.tar.gz", hash = "sha256:4b8e135a9cd4d2ea00da670c093372d74e672ba3abb87f4c98d8e73dea54445c"},
+]
+
+[package.dependencies]
+attrs = "*"
+
+[package.extras]
+test = ["coverage", "mock", "repeated-test (>=2.2.1)", "sphinx"]
+tests = ["coverage", "mock", "repeated-test (>=2.2.1)", "sphinx"]
+
+[[package]]
 name = "simple-websocket"
 version = "1.1.0"
 description = "Simple WebSocket server and client for Python"
@@ -7710,6 +7821,23 @@ mpmath = ">=1.1.0,<1.4"
 dev = ["hypothesis (>=6.70.0)", "pytest (>=7.1.0)"]
 
 [[package]]
+name = "synchronicity"
+version = "0.10.1"
+description = "Export blocking and async library versions from a single async implementation"
+optional = true
+python-versions = ">=3.8"
+groups = ["main"]
+markers = "extra == \"cloud-tool-sandbox\""
+files = [
+    {file = "synchronicity-0.10.1-py3-none-any.whl", hash = "sha256:af9c077586cf4895aea88fe9104d966f50b8fac730f79117383591acb5489952"},
+    {file = "synchronicity-0.10.1.tar.gz", hash = "sha256:4af861f215a11b885e18cf2985ba8b3a1aa0000d440a9b615402f724a453a8c2"},
+]
+
+[package.dependencies]
+sigtools = ">=4.0.1"
+typing-extensions = ">=4.12.2"
+
+[[package]]
 name = "tavily-python"
 version = "0.7.10"
 description = "Python wrapper for the Tavily API"
@@ -7807,10 +7935,10 @@ files = [
 name = "toml"
 version = "0.10.2"
 description = "Python Library for Tom's Obvious, Minimal Language"
-optional = false
+optional = true
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 groups = ["main"]
-markers = "python_version == \"3.10\""
+markers = "extra == \"cloud-tool-sandbox\" or python_version == \"3.10\""
 files = [
     {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},
     {file = "toml-0.10.2.tar.gz", hash = "sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f"},
@@ -7937,6 +8065,32 @@ click = ">=8.0.0"
 rich = ">=10.11.0"
 shellingham = ">=1.3.0"
 typing-extensions = ">=3.7.4.3"
+
+[[package]]
+name = "types-certifi"
+version = "2021.10.8.3"
+description = "Typing stubs for certifi"
+optional = true
+python-versions = "*"
+groups = ["main"]
+markers = "extra == \"cloud-tool-sandbox\""
+files = [
+    {file = "types-certifi-2021.10.8.3.tar.gz", hash = "sha256:72cf7798d165bc0b76e1c10dd1ea3097c7063c42c21d664523b928e88b554a4f"},
+    {file = "types_certifi-2021.10.8.3-py3-none-any.whl", hash = "sha256:b2d1e325e69f71f7c78e5943d410e650b4707bb0ef32e4ddf3da37f54176e88a"},
+]
+
+[[package]]
+name = "types-toml"
+version = "0.10.8.20240310"
+description = "Typing stubs for toml"
+optional = true
+python-versions = ">=3.8"
+groups = ["main"]
+markers = "extra == \"cloud-tool-sandbox\""
+files = [
+    {file = "types-toml-0.10.8.20240310.tar.gz", hash = "sha256:3d41501302972436a6b8b239c850b26689657e25281b48ff0ec06345b8830331"},
+    {file = "types_toml-0.10.8.20240310-py3-none-any.whl", hash = "sha256:627b47775d25fa29977d9c70dc0cbab3f314f32c8d8d0c012f2ef5de7aaec05d"},
+]
 
 [[package]]
 name = "typing-extensions"
@@ -8145,7 +8299,7 @@ description = "Simple, modern and high performance file watching and code reload
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"experimental\" or extra == \"all\""
+markers = "extra == \"experimental\" or extra == \"all\" or extra == \"cloud-tool-sandbox\""
 files = [
     {file = "watchfiles-1.1.0-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:27f30e14aa1c1e91cb653f03a63445739919aef84c8d2517997a83155e7a2fcc"},
     {file = "watchfiles-1.1.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:3366f56c272232860ab45c77c3ca7b74ee819c8e1f6f35a7125556b198bbc6df"},
@@ -8851,7 +9005,7 @@ cffi = ["cffi (>=1.11)"]
 [extras]
 all = ["autoflake", "black", "docker", "fastapi", "google-cloud-profiler", "granian", "isort", "langchain", "langchain-community", "locust", "pexpect", "pg8000", "pgvector", "pinecone", "pre-commit", "psycopg2", "psycopg2-binary", "pyright", "pytest-asyncio", "pytest-order", "redis", "uvicorn", "uvloop", "wikipedia"]
 bedrock = ["aioboto3", "boto3"]
-cloud-tool-sandbox = ["e2b-code-interpreter"]
+cloud-tool-sandbox = ["e2b-code-interpreter", "modal"]
 desktop = ["docker", "fastapi", "langchain", "langchain-community", "locust", "pyright", "sqlite-vec", "uvicorn", "wikipedia"]
 dev = ["autoflake", "black", "isort", "locust", "pexpect", "pre-commit", "pyright", "pytest-asyncio", "pytest-order"]
 experimental = ["google-cloud-profiler", "granian", "uvloop"]
@@ -8866,4 +9020,4 @@ tests = ["wikipedia"]
 [metadata]
 lock-version = "2.1"
 python-versions = "<3.14,>=3.10"
-content-hash = "6ed92bd1cd08f0365c819c140b131634763d0f35035ad32c536c397cd99f0259"
+content-hash = "6511c865acfab5a77a5c4a3952b48e403cfdc02ddc7210e08349c4bb5d93295f"

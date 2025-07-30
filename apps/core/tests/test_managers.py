@@ -54,7 +54,7 @@ from letta.schemas.agent import CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import ActorType, AgentStepStatus, FileProcessingStatus, JobStatus, JobType, MessageRole, ProviderType
+from letta.schemas.enums import ActorType, AgentStepStatus, FileProcessingStatus, JobStatus, JobType, MessageRole, ProviderType, SandboxType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
@@ -76,7 +76,7 @@ from letta.schemas.organization import OrganizationUpdate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.pip_requirement import PipRequirement
 from letta.schemas.run import Run as PydanticRun
-from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate, SandboxType
+from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.source import SourceUpdate
 from letta.schemas.tool import Tool as PydanticTool
@@ -3560,9 +3560,9 @@ def test_update_tool_by_id(server: SyncServer, print_tool, default_user):
     assert updated_tool.tool_type == ToolType.CUSTOM
 
     # Dangerous: we bypass safety to give it another tool type
-    server.tool_manager.update_tool_by_id(print_tool.id, tool_update, actor=default_user, updated_tool_type=ToolType.EXTERNAL_LANGCHAIN)
+    server.tool_manager.update_tool_by_id(print_tool.id, tool_update, actor=default_user, updated_tool_type=ToolType.EXTERNAL_MCP)
     updated_tool = server.tool_manager.get_tool_by_id(print_tool.id, actor=default_user)
-    assert updated_tool.tool_type == ToolType.EXTERNAL_LANGCHAIN
+    assert updated_tool.tool_type == ToolType.EXTERNAL_MCP
 
 
 def test_update_tool_source_code_refreshes_schema_and_name(server: SyncServer, print_tool, default_user):

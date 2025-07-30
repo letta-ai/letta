@@ -6,11 +6,12 @@ from letta.orm.errors import NoResultFound
 from letta.orm.sandbox_config import SandboxConfig as SandboxConfigModel
 from letta.orm.sandbox_config import SandboxEnvironmentVariable as SandboxEnvVarModel
 from letta.otel.tracing import trace_method
+from letta.schemas.enums import SandboxType
 from letta.schemas.environment_variables import SandboxEnvironmentVariable as PydanticEnvVar
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.sandbox_config import LocalSandboxConfig
 from letta.schemas.sandbox_config import SandboxConfig as PydanticSandboxConfig
-from letta.schemas.sandbox_config import SandboxConfigCreate, SandboxConfigUpdate, SandboxType
+from letta.schemas.sandbox_config import SandboxConfigCreate, SandboxConfigUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.utils import enforce_types, printd
@@ -493,10 +494,7 @@ class SandboxConfigManager:
         self, sandbox_config_id: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50
     ) -> Dict[str, str]:
         env_vars = await self.list_sandbox_env_vars_async(sandbox_config_id, actor, after, limit)
-        result = {}
-        for env_var in env_vars:
-            result[env_var.key] = env_var.value
-        return result
+        return {env_var.key: env_var.value for env_var in env_vars}
 
     @enforce_types
     @trace_method

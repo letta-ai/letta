@@ -8059,6 +8059,34 @@ export const $MessageType = {
   title: 'MessageType',
 } as const;
 
+export const $ModalSandboxConfig = {
+  properties: {
+    timeout: {
+      type: 'integer',
+      title: 'Timeout',
+      description: 'Time limit for the sandbox (in seconds).',
+      default: 300,
+    },
+    pip_requirements: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Pip Requirements',
+      description: 'A list of pip packages to install in the Modal sandbox',
+    },
+  },
+  type: 'object',
+  title: 'ModalSandboxConfig',
+} as const;
+
 export const $OmittedReasoningContent = {
   properties: {
     type: {
@@ -9726,6 +9754,9 @@ export const $SandboxConfigCreate = {
         {
           $ref: '#/components/schemas/E2BSandboxConfig',
         },
+        {
+          $ref: '#/components/schemas/ModalSandboxConfig',
+        },
       ],
       title: 'Config',
       description: 'The configuration for the sandbox.',
@@ -9746,6 +9777,9 @@ export const $SandboxConfigUpdate = {
         },
         {
           $ref: '#/components/schemas/E2BSandboxConfig',
+        },
+        {
+          $ref: '#/components/schemas/ModalSandboxConfig',
         },
       ],
       title: 'Config',
@@ -9942,7 +9976,7 @@ export const $SandboxEnvironmentVariableUpdate = {
 
 export const $SandboxType = {
   type: 'string',
-  enum: ['e2b', 'local'],
+  enum: ['e2b', 'modal', 'local'],
   title: 'SandboxType',
 } as const;
 
@@ -11970,7 +12004,6 @@ export const $ToolType = {
     'letta_builtin',
     'letta_files_core',
     'external_composio',
-    'external_langchain',
     'external_mcp',
   ],
   title: 'ToolType',

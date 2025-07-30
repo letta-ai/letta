@@ -1,3 +1,4 @@
+import os
 import pickle
 import uuid
 from abc import ABC, abstractmethod
@@ -188,5 +189,20 @@ class AsyncToolSandboxBase(ABC):
         """
         return False  # Default to False for local execution
 
-    def _update_env_vars(self):
-        pass  # TODO
+    async def _gather_env_vars(self, agent_state: AgentState | None, additional_env_vars: dict[str, str], sbx_id: str, is_local: bool):
+        env = os.environ.copy() if is_local else {}
+        if self.provided_sandbox_env_vars:
+            env.update(self.provided_sandbox_env_vars)
+        else:
+            env_vars = await self.sandbox_config_manager.get_sandbox_env_vars_as_dict_async(
+                sandbox_config_id=sbx_id, actor=self.user, limit=None
+            )
+            env.update(env_vars)
+
+        if agent_state:
+            env.update(agent_state.get_agent_env_vars_as_dict())
+
+        if additional_env_vars:
+            env.update(additional_env_vars)
+
+        return env

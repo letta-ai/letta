@@ -40,7 +40,7 @@ from letta.schemas.block import Block, BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 
 # openai schemas
-from letta.schemas.enums import JobStatus, MessageStreamStatus, ProviderCategory, ProviderType
+from letta.schemas.enums import JobStatus, MessageStreamStatus, ProviderCategory, ProviderType, SandboxType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
 from letta.schemas.group import GroupCreate, ManagerType, SleeptimeManager, VoiceSleeptimeManager
 from letta.schemas.job import Job, JobUpdate
@@ -69,7 +69,7 @@ from letta.schemas.providers import (
     TogetherProvider,
     XAIProvider,
 )
-from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxConfigCreate, SandboxType
+from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxConfigCreate
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.usage import LettaUsageStatistics

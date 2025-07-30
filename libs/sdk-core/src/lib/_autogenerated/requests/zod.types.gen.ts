@@ -1028,7 +1028,6 @@ export const ToolType = z.union([
   z.literal('letta_builtin'),
   z.literal('letta_files_core'),
   z.literal('external_composio'),
-  z.literal('external_langchain'),
   z.literal('external_mcp'),
 ]);
 
@@ -5001,6 +5000,18 @@ export const MCPTool = z.intersection(
   }),
 );
 
+export type ModalSandboxConfig = z.infer<typeof ModalSandboxConfig>;
+export const ModalSandboxConfig = z.object({
+  timeout: z.number().optional(),
+  pip_requirements: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+});
+
 export type Organization = z.infer<typeof Organization>;
 export const Organization = z.object({
   id: z.string().optional(),
@@ -5518,7 +5529,11 @@ export const SSEServerConfig = z.object({
 });
 
 export type SandboxType = z.infer<typeof SandboxType>;
-export const SandboxType = z.union([z.literal('e2b'), z.literal('local')]);
+export const SandboxType = z.union([
+  z.literal('e2b'),
+  z.literal('modal'),
+  z.literal('local'),
+]);
 
 export type SandboxConfig = z.infer<typeof SandboxConfig>;
 export const SandboxConfig = z.object({
@@ -5547,7 +5562,10 @@ export const SandboxConfigCreate = z.object({
   config: z.union([
     LocalSandboxConfig,
     E2BSandboxConfig,
-    z.array(z.union([LocalSandboxConfig, E2BSandboxConfig])),
+    ModalSandboxConfig,
+    z.array(
+      z.union([LocalSandboxConfig, E2BSandboxConfig, ModalSandboxConfig]),
+    ),
   ]),
 });
 
@@ -5557,7 +5575,10 @@ export const SandboxConfigUpdate = z.object({
     .union([
       LocalSandboxConfig,
       E2BSandboxConfig,
-      z.array(z.union([LocalSandboxConfig, E2BSandboxConfig])),
+      ModalSandboxConfig,
+      z.array(
+        z.union([LocalSandboxConfig, E2BSandboxConfig, ModalSandboxConfig]),
+      ),
     ])
     .optional(),
 });

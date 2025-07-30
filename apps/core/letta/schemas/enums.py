@@ -153,3 +153,9 @@ class DuplicateFileHandling(str, Enum):
     SKIP = "skip"  # skip files with duplicate names
     ERROR = "error"  # error when duplicate names are encountered
     SUFFIX = "suffix"  # add numeric suffix to make names unique (default behavior)
+
+
+class SandboxType(str, Enum):
+    E2B = "e2b"
+    MODAL = "modal"
+    LOCAL = "local"
