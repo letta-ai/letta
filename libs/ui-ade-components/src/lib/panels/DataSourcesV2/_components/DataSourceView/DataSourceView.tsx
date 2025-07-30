@@ -84,7 +84,13 @@ export function DataSourceView() {
   return (
     <VStack overflowY="hidden" gap={false} fullWidth fullHeight>
       <DataSourceViewHeader source={selectedDataSource} />
-      <VStack fullHeight overflowY="hidden" fullWidth paddingX="small">
+      <VStack
+        fullHeight
+        overflowY="hidden"
+        fullWidth
+        paddingX="small"
+        paddingBottom="small"
+      >
         <DataSourceCompatibilityWarning source={selectedDataSource} />
         <InstructionsView source={selectedDataSource} />
         <FilesView sourceId={selectedDataSource.id || ''} />
