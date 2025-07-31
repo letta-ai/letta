@@ -25,7 +25,6 @@ const CATEGORY_KEYS: NavigationKeys[] = [
   'current',
   'customTools',
   'lettaTools',
-  'composioTools',
   'mcpServers',
   'addMCPServers',
 ];

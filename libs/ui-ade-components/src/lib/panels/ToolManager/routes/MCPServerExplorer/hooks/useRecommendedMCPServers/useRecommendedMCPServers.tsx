@@ -12,6 +12,7 @@ import {
   ApifyIcon,
   ExaIcon,
   HuggingFaceIcon,
+  ComposioLogoMarkDynamic,
 } from '@letta-cloud/ui-component-library';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
@@ -34,6 +35,7 @@ export interface RecommendedServer {
   name: string;
   id:
     | 'apify'
+    | 'composio'
     | 'deepwiki'
     | 'exa'
     | 'github'
@@ -220,6 +222,26 @@ export function useRecommendedMCPServers(): RecommendedServer[] {
         logo: <HuggingFaceIcon />,
         name: 'Hugging Face',
         description: t('huggingface.description'),
+      },
+      {
+        id: 'composio',
+        baseUrl: 'https://mcp.composio.dev',
+        setup: {
+          type: 'custom-url',
+          baseUrl: '',
+          requiresApiKey: false,
+          requiresServerUrl: true,
+          instructions: t.rich('composio.instructions', {
+            link: (chunks) => (
+              <Link target="_blank" href="https://mcp.composio.dev">
+                {chunks}
+              </Link>
+            ),
+          }),
+        },
+        logo: <ComposioLogoMarkDynamic />,
+        name: 'Composio',
+        description: t('composio.description'),
       },
     ];
 

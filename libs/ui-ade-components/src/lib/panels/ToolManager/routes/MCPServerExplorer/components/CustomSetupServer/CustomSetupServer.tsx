@@ -20,6 +20,7 @@ import { MCPServerTypes } from '../../../MCPServers/types';
 import { generateServerName } from '../../../MCPServers/AddMCPServerDialog/AddMCPServerDialog';
 import { useMCPServerDialog } from '../../hooks/useMCPServerDialog/useMCPServerDialog';
 import type { CustomUrlRecommendedServer } from '../../hooks/useRecommendedMCPServers/useRecommendedMCPServers';
+import { SERVER_CONFIGS } from '../../constants';
 
 interface CustomSetupServerProps {
   server: CustomUrlRecommendedServer;
@@ -27,6 +28,7 @@ interface CustomSetupServerProps {
 
 export function CustomSetupServer(props: CustomSetupServerProps) {
   const t = useTranslations('ToolsEditor/MCPServerExplorer');
+  const config = SERVER_CONFIGS[props.server.id];
 
   const customInputSchema = z.object({
     input: z
@@ -60,9 +62,11 @@ export function CustomSetupServer(props: CustomSetupServerProps) {
         baseName = `${appName.charAt(0).toUpperCase() + appName.slice(1)} (Pipedream)`;
       }
 
+      const serverType = config?.type || 'sse';
+
       const requestBody = {
         server_name: generateServerName(baseName, existingServers),
-        type: 'sse' as const,
+        type: serverType,
         server_url: data.input,
         auth_header: null,
         auth_token: null,
@@ -71,7 +75,7 @@ export function CustomSetupServer(props: CustomSetupServerProps) {
 
       mutate({ requestBody });
     },
-    [mutate, props.server.name, existingServers],
+    [mutate, props.server.name, existingServers, config?.type],
   );
 
   return (
@@ -120,7 +124,11 @@ export function CustomSetupServer(props: CustomSetupServerProps) {
           )}
         />
         <TestMCPConnectionButton
-          serverType={MCPServerTypes.Sse}
+          serverType={
+            config?.type === 'streamable_http'
+              ? MCPServerTypes.StreamableHttp
+              : MCPServerTypes.Sse
+          }
           data-testid={`test-connection-${watchedInput}`}
         />
         <Alert title={t('CustomSetupServer.instructionsTitle')}>

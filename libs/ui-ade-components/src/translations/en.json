@@ -1636,6 +1636,10 @@
     "huggingface": {
       "description": "Hugging Face MCP gives your AI assistant access to thousands of open-source models, datasets, and tools from the Hugging Face ecosystem.",
       "instructions": "Hugging Face MCP is a free service that provides access to models and datasets. No authentication required. Visit the <link>Hugging Face MCP website</link> to learn more."
+    },
+    "composio": {
+      "description": "Composio provides access to thousands of tools and services through a single HTTP stream connection. No API keys needed - just connect your accounts and get your unique server URL.",
+      "instructions": "Visit <link>mcp.composio.dev</link> to sign up, connect your accounts, and get your unique server URL. Then paste your server URL here to connect."
     }
   },
   "ToolsEditor/MCPServerExplorer": {
@@ -2031,10 +2035,9 @@
       "lettaTools": "Base tools <count></count>",
       "multiAgentTools": "Multi-agent <count></count>",
       "dependencies": "Dependencies",
-      "integrationTools": "Other integrations",
-      "composioTools": "Composio",
       "mcpServerHeader": "MCP servers",
       "mcpServers": "Connected servers <count></count>",
+      "composioTools": "Composio tools",
       "create": "Create tool"
     }
   },

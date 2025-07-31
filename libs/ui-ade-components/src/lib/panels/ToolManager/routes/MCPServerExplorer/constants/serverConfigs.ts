@@ -38,7 +38,7 @@ export const SERVER_CONFIGS = {
   },
   pipedream: {
     type: 'sse',
-    auth: 'none',
+    auth: 'server_url',
     urlField: 'input',
     customNaming: true,
   },
@@ -46,6 +46,12 @@ export const SERVER_CONFIGS = {
     type: 'streamable_http',
     auth: 'none',
     staticUrl: 'https://huggingface.co/mcp',
+    customNaming: false,
+  },
+  composio: {
+    type: 'streamable_http',
+    auth: 'server_url',
+    urlField: 'input',
     customNaming: false,
   },
 } as const;

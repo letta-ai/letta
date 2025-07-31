@@ -38,7 +38,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@letta-cloud/ui-styles';
 import { useLocalStorage } from '@mantine/hooks';
-import { useIsComposioConnected } from './hooks/useIsComposioConnected/useIsComposioConnected';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { LIST_TOOLS_PAYLOAD } from './routes/MyTools/MyTools';
 import { useCurrentAgent } from '../../hooks';
@@ -484,19 +483,6 @@ function ToolManagerNavigationSidebar() {
             />
           </HStack>
         </SidebarSection>
-        <HR />
-        <SidebarSection
-          isExpanded={isExpanded}
-          title={t('ToolManagerNavigationSidebar.integrationTools')}
-        >
-          <SidebarButton
-            hideLabel={!isExpanded}
-            label={details.composioTools.title}
-            path="/composio"
-            icon={details.composioTools.icon}
-            isExpanded={isExpanded}
-          />
-        </SidebarSection>
       </VStack>
     </VStack>
   );
@@ -522,7 +508,6 @@ export function ToolManager() {
   } = useToolManagerState();
 
   useToolsServiceListTools();
-  useIsComposioConnected();
 
   const t = useTranslations('ToolManager');
 

@@ -1,6 +1,5 @@
 import { useTranslations } from '@letta-cloud/translations';
 import {
-  ComposioLogoMarkDynamic,
   CustomToolIcon,
   LettaToolIcon,
   McpIcon,
@@ -105,14 +104,6 @@ export function useToolManagerRouteCopy() {
           count: () => (toolCount ? `(${lettaToolCount})` : ''),
         }),
         icon: <LettaToolIcon />,
-      },
-      composioTool: {
-        title: '',
-        icon: <ComposioLogoMarkDynamic />,
-      },
-      composioTools: {
-        title: t('ToolManagerNavigationSidebar.composioTools'),
-        icon: <ComposioLogoMarkDynamic />,
       },
       mcpServers: {
         title: t.rich('ToolManagerNavigationSidebar.mcpServers', {

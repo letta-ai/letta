@@ -25,19 +25,18 @@ function ServerSetupDialog({ server }: { server: CustomUrlRecommendedServer }) {
   const config = SERVER_CONFIGS[server.id];
   if (!config) return null;
 
-  // For now, return the existing components based on server type
-  if (server.id === 'pipedream') {
-    return <CustomSetupServer server={server} />;
+  // Use the auth type to determine which component to use
+  switch (config.auth) {
+    case 'server_url':
+      return <CustomSetupServer server={server} />;
+    case 'none':
+      return <FreeMCPServerDialog server={server} />;
+    case 'custom_headers':
+      return <GitHubSetupServer server={server} />;
+    case 'api_key':
+    default:
+      return <StreamableHttpSetupServer server={server} />;
   }
-  if (server.id === 'deepwiki' || server.id === 'huggingface') {
-    return <FreeMCPServerDialog server={server} />;
-  }
-  if (server.id === 'github') {
-    return <GitHubSetupServer server={server} />;
-  }
-
-  // Default to StreamableHttpSetupServer for all other servers
-  return <StreamableHttpSetupServer server={server} />;
 }
 
 export function MCPServerExplorer() {

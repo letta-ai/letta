@@ -1323,8 +1323,6 @@
       "toolVariables": "变量",
       "customTools": "自定义工具",
       "lettaTools": "Letta工具",
-      "integrationTools": "外部工具",
-      "composioTools": "Composio",
       "mcpServers": "MCP服务器",
       "create": "创建工具"
     }

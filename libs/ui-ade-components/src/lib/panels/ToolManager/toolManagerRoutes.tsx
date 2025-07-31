@@ -2,8 +2,6 @@ import { CurrentAgentTools } from './routes/CurrentAgentTools/CurrentAgentTools'
 import type { NavigationKeys } from './hooks/useToolManagerRouteCopy/useToolManagerRouteCopy';
 import { MyTools } from './routes/MyTools/MyTools';
 import { LettaTools } from './routes/LettaTools/LettaTools';
-import { ComposioToolsRoot } from './routes/ComposioToolsRoot/ComposioToolsRoot';
-import { ComposioSpecificAppTools } from './routes/ComposioSpecificAppTools/ComposioSpecificAppTools';
 import { MCPServers } from './routes/MCPServers/MCPServers';
 import { ToolRulesEditor } from '../ToolRules/ToolRules';
 import { ToolVariables } from './routes/ToolVariables/ToolVariables';
@@ -27,17 +25,6 @@ export const toolManagerRoutes = [
     key: 'toolRules',
     component: <ToolRulesEditor />,
   },
-  {
-    path: '/composio/:appKey',
-    key: 'composioTool',
-    component: <ComposioSpecificAppTools />,
-  },
-  {
-    path: '/composio',
-    key: 'composioTools',
-    component: <ComposioToolsRoot />,
-  },
-
   {
     path: '/mcp-servers',
     key: 'mcpServers',
