@@ -19,6 +19,7 @@ from letta.constants import (
     LOCAL_ONLY_MULTI_AGENT_TOOLS,
     MCP_TOOL_TAG_NAME_PREFIX,
 )
+from letta.errors import LettaToolNameConflictError
 from letta.functions.functions import derive_openai_json_schema, load_function_set
 from letta.log import get_logger
 from letta.orm.enums import ToolType
@@ -301,6 +302,16 @@ class ToolManager:
 
     @enforce_types
     @trace_method
+    async def tool_name_exists_async(self, tool_name: str, actor: PydanticUser) -> bool:
+        """Check if a tool with the given name exists in the user's organization (lightweight check)."""
+        async with db_registry.async_session() as session:
+            query = select(func.count(ToolModel.id)).where(ToolModel.name == tool_name, ToolModel.organization_id == actor.organization_id)
+            result = await session.execute(query)
+            count = result.scalar()
+            return count > 0
+
+    @enforce_types
+    @trace_method
     async def list_tools_async(
         self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, upsert_base_tools: bool = True
     ) -> List[PydanticTool]:
@@ -379,22 +390,39 @@ class ToolManager:
         self, tool_id: str, tool_update: ToolUpdate, actor: PydanticUser, updated_tool_type: Optional[ToolType] = None
     ) -> PydanticTool:
         """Update a tool by its ID with the given ToolUpdate object."""
+        # First, check if source code update would cause a name conflict
+        update_data = tool_update.model_dump(to_orm=True, exclude_none=True)
+        new_name = None
+        new_schema = None
+
+        if "source_code" in update_data.keys() and "json_schema" not in update_data.keys():
+            # Derive the new schema and name from the source code
+            new_schema = derive_openai_json_schema(source_code=update_data["source_code"])
+            new_name = new_schema["name"]
+
+            # Get current tool to check if name is changing
+            current_tool = self.get_tool_by_id(tool_id=tool_id, actor=actor)
+
+            # Check if the name is changing and if so, verify it doesn't conflict
+            if new_name != current_tool.name:
+                # Check if a tool with the new name already exists
+                existing_tool = self.get_tool_by_name(tool_name=new_name, actor=actor)
+                if existing_tool:
+                    raise LettaToolNameConflictError(tool_name=new_name)
+
+        # Now perform the update within the session
         with db_registry.session() as session:
             # Fetch the tool by ID
             tool = ToolModel.read(db_session=session, identifier=tool_id, actor=actor)
 
             # Update tool attributes with only the fields that were explicitly set
-            update_data = tool_update.model_dump(to_orm=True, exclude_none=True)
             for key, value in update_data.items():
                 setattr(tool, key, value)
 
-            # If source code is changed and a new json_schema is not provided, we want to auto-refresh the schema
-            if "source_code" in update_data.keys() and "json_schema" not in update_data.keys():
-                pydantic_tool = tool.to_pydantic()
-                new_schema = derive_openai_json_schema(source_code=pydantic_tool.source_code)
-
+            # If we already computed the new schema, apply it
+            if new_schema is not None:
                 tool.json_schema = new_schema
-                tool.name = new_schema["name"]
+                tool.name = new_name
 
             if updated_tool_type:
                 tool.tool_type = updated_tool_type
@@ -408,22 +436,39 @@ class ToolManager:
         self, tool_id: str, tool_update: ToolUpdate, actor: PydanticUser, updated_tool_type: Optional[ToolType] = None
     ) -> PydanticTool:
         """Update a tool by its ID with the given ToolUpdate object."""
+        # First, check if source code update would cause a name conflict
+        update_data = tool_update.model_dump(to_orm=True, exclude_none=True)
+        new_name = None
+        new_schema = None
+
+        if "source_code" in update_data.keys() and "json_schema" not in update_data.keys():
+            # Derive the new schema and name from the source code
+            new_schema = derive_openai_json_schema(source_code=update_data["source_code"])
+            new_name = new_schema["name"]
+
+            # Get current tool to check if name is changing
+            current_tool = await self.get_tool_by_id_async(tool_id=tool_id, actor=actor)
+
+            # Check if the name is changing and if so, verify it doesn't conflict
+            if new_name != current_tool.name:
+                # Check if a tool with the new name already exists
+                name_exists = await self.tool_name_exists_async(tool_name=new_name, actor=actor)
+                if name_exists:
+                    raise LettaToolNameConflictError(tool_name=new_name)
+
+        # Now perform the update within the session
         async with db_registry.async_session() as session:
             # Fetch the tool by ID
             tool = await ToolModel.read_async(db_session=session, identifier=tool_id, actor=actor)
 
             # Update tool attributes with only the fields that were explicitly set
-            update_data = tool_update.model_dump(to_orm=True, exclude_none=True)
             for key, value in update_data.items():
                 setattr(tool, key, value)
 
-            # If source code is changed and a new json_schema is not provided, we want to auto-refresh the schema
-            if "source_code" in update_data.keys() and "json_schema" not in update_data.keys():
-                pydantic_tool = tool.to_pydantic()
-                new_schema = derive_openai_json_schema(source_code=pydantic_tool.source_code)
-
+            # If we already computed the new schema, apply it
+            if new_schema is not None:
                 tool.json_schema = new_schema
-                tool.name = new_schema["name"]
+                tool.name = new_name
 
             if updated_tool_type:
                 tool.tool_type = updated_tool_type

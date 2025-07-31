@@ -49,6 +49,17 @@ class LettaToolCreateError(LettaError):
         super().__init__(message=message or self.default_error_message)
 
 
+class LettaToolNameConflictError(LettaError):
+    """Error raised when a tool name already exists."""
+
+    def __init__(self, tool_name: str):
+        super().__init__(
+            message=f"Tool with name '{tool_name}' already exists in your organization",
+            code=ErrorCode.INVALID_ARGUMENT,
+            details={"tool_name": tool_name},
+        )
+
+
 class LettaConfigurationError(LettaError):
     """Error raised when there are configuration-related issues."""
 
