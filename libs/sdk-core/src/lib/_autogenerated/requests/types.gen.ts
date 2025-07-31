@@ -274,6 +274,10 @@ export type AgentState = {
    * The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.
    */
   per_file_view_window_char_limit?: number | null;
+  /**
+   * If set to True, the agent will be hidden.
+   */
+  hidden?: boolean | null;
 };
 
 /**
@@ -1334,6 +1338,10 @@ export type CreateAgentRequest = {
    * The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.
    */
   per_file_view_window_char_limit?: number | null;
+  /**
+   * If set to True, the agent will be hidden.
+   */
+  hidden?: boolean | null;
   actor_id?: string | null;
 };
 
@@ -4623,6 +4631,10 @@ export type UpdateAgent = {
    * The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.
    */
   per_file_view_window_char_limit?: number | null;
+  /**
+   * If set to True, the agent will be hidden.
+   */
+  hidden?: boolean | null;
 };
 
 export type UpdateAssistantMessage = {

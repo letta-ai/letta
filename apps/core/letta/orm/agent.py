@@ -100,6 +100,9 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, AsyncAttrs):
         Integer, nullable=True, doc="The per-file view window character limit for this agent."
     )
 
+    # indexing controls
+    hidden: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=None, doc="If set to True, the agent will be hidden.")
+
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="agents", lazy="raise")
     tool_exec_environment_variables: Mapped[List["AgentEnvironmentVariable"]] = relationship(
@@ -210,6 +213,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, AsyncAttrs):
             "timezone": self.timezone,
             "max_files_open": self.max_files_open,
             "per_file_view_window_char_limit": self.per_file_view_window_char_limit,
+            "hidden": self.hidden,
             # optional field defaults
             "tags": [],
             "tools": [],
@@ -297,6 +301,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, AsyncAttrs):
             "last_run_duration_ms": self.last_run_duration_ms,
             "max_files_open": self.max_files_open,
             "per_file_view_window_char_limit": self.per_file_view_window_char_limit,
+            "hidden": self.hidden,
         }
         optional_fields = {
             "tags": [],

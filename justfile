@@ -347,6 +347,14 @@ test-cloud-api:
     cd apps/cloud-api && cp -R node_modules ../../
     cd apps/cloud-api && npm run test:e2e
 
+test-cloud-api-lite:
+    @echo "🚧 Running tests for cloud API..."
+    cd apps/cloud-api && npm run test:e2e
+
+migrate-core:
+    @echo "🚧 Migrating the core database..."
+    npm run core:database:migrate
+
 database-compatibility:
     @echo "🚧 Running database database-compatibility tests..."
     cd apps/cloud-api && cp -R node_modules ../../

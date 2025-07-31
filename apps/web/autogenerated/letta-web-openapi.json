@@ -4712,6 +4712,36 @@
                             ],
                             "nullable": true
                           },
+                          "hidden": {
+                            "oneOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "format": "null",
+                                "nullable": true
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "boolean"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    }
+                                  ],
+                                  "nullable": true
+                                }
+                              },
+                              {}
+                            ],
+                            "nullable": true
+                          },
                           "template": {
                             "type": "string"
                           }
@@ -9808,6 +9838,36 @@
                                   "oneOf": [
                                     {
                                       "type": "number"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    }
+                                  ],
+                                  "nullable": true
+                                }
+                              },
+                              {}
+                            ],
+                            "nullable": true
+                          },
+                          "hidden": {
+                            "oneOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "format": "null",
+                                "nullable": true
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "boolean"
                                     },
                                     {
                                       "type": "string",

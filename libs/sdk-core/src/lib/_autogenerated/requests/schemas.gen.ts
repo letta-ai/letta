@@ -824,6 +824,18 @@ export const $AgentState = {
       description:
         'The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.',
     },
+    hidden: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Hidden',
+      description: 'If set to True, the agent will be hidden.',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -4147,6 +4159,18 @@ export const $CreateAgentRequest = {
       title: 'Per File View Window Char Limit',
       description:
         'The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.',
+    },
+    hidden: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Hidden',
+      description: 'If set to True, the agent will be hidden.',
     },
     actor_id: {
       anyOf: [
@@ -12542,6 +12566,18 @@ export const $UpdateAgent = {
       title: 'Per File View Window Char Limit',
       description:
         'The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.',
+    },
+    hidden: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Hidden',
+      description: 'If set to True, the agent will be hidden.',
     },
   },
   type: 'object',

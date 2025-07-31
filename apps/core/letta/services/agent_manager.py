@@ -1034,6 +1034,7 @@ class AgentManager:
         include_relationships: Optional[List[str]] = None,
         ascending: bool = True,
         sort_by: Optional[str] = "created_at",
+        show_hidden_agents: Optional[bool] = None,
     ) -> List[PydanticAgentState]:
         """
         Retrieves agents with optimized filtering and optional field selection.
@@ -1055,6 +1056,7 @@ class AgentManager:
             include_relationships (Optional[List[str]]): List of fields to load for performance optimization.
             ascending (bool): Sort agents in ascending order.
             sort_by (Optional[str]): Sort agents by this field.
+            show_hidden_agents (bool): If True, include agents marked as hidden in the results.
 
         Returns:
             List[PydanticAgentState]: The filtered list of matching agents.
@@ -1068,6 +1070,10 @@ class AgentManager:
             query = _apply_identity_filters(query, identity_id, identifier_keys)
             query = _apply_tag_filter(query, tags, match_all_tags)
             query = _apply_relationship_filters(query, include_relationships)
+
+            # Apply hidden filter
+            if not show_hidden_agents:
+                query = query.where((AgentModel.hidden.is_(None)) | (AgentModel.hidden == False))
             query = await _apply_pagination_async(query, before, after, session, ascending=ascending, sort_by=sort_by)
 
             if limit:

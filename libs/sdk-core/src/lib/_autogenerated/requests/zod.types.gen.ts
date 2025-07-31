@@ -1453,6 +1453,14 @@ export const AgentState = z.object({
       z.undefined(),
     ])
     .optional(),
+  hidden: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type AuthSchemeField = z.infer<typeof AuthSchemeField>;
@@ -3644,6 +3652,9 @@ export const CreateAgentRequest = z.object({
     .optional(),
   per_file_view_window_char_limit: z
     .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+  hidden: z
+    .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
     .optional(),
   actor_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -6237,6 +6248,9 @@ export const UpdateAgent = z.object({
     .optional(),
   per_file_view_window_char_limit: z
     .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+  hidden: z
+    .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
     .optional(),
 });
 
