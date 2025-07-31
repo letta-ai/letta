@@ -50,8 +50,4 @@ groups:
           allowCustomFetcher: true
           skipResponseValidation: true
           includeApiReference: true
-          streamType: "wrapper"
-          fileResponseType: "stream"
-          formDataSupport: "Node16"
-          fetchSupport: "node-fetch"
         smart-casing: true
