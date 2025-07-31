@@ -10,9 +10,14 @@ import {
 interface ConfigSectionProps {
   configValue: string;
   onChange: (value: string) => void;
+  isOpen?: boolean;
 }
 
-export function ConfigSection({ configValue, onChange }: ConfigSectionProps) {
+export function ConfigSection({
+  configValue,
+  onChange,
+  isOpen = false,
+}: ConfigSectionProps) {
   const t = useTranslations('ToolsEditor/MCPServers');
   const accordionId = useId();
 
@@ -24,6 +29,7 @@ export function ConfigSection({ configValue, onChange }: ConfigSectionProps) {
           {t('AddServerDialog.advancedSettings.label')}
         </Typography>
       }
+      defaultOpen={isOpen}
     >
       <VStack gap="form" paddingTop>
         <RawCodeEditor

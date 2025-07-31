@@ -151,6 +151,7 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
           <ConfigSection
             configValue={configValue}
             onChange={handleConfigChange}
+            isOpen
           />
           <TestMCPConnectionButton serverType={MCPServerTypes.Stdio} />
           <MCPFormActions

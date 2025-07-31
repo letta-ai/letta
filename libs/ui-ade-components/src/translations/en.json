@@ -1906,8 +1906,8 @@
         "removeVariable": "Remove variable"
       },
       "advancedSettings": {
-        "label": "Advanced Settings",
-        "config": "Configuration",
+        "label": "JSON Configuration",
+        "config": "",
         "description": "Requires a valid JSON to auto-fill server parameters. Supports configurations for popular MCP clients such as Cursor, Windsurf, Claude Desktop, etc.",
         "placeholder": "'{'\n\t\"mcpServers\": '{'\n\t\t\"server-name\": '{'\n\t\t\t\"command\": \"npx\",\n\t\t\t\"args\": [\n\t\t\t\t\"mcp-remote\",\n\t\t\t\t\"https://remote.mcp.server/mcp\",\n\t\t\t\t\"--header\",\n\t\t\t\t\"Authorization: Bearer $'{'AUTH_TOKEN'}'\"\n\t\t\t],\n\t\t\t\"env\": '{'\n\t\t\t\t\"AUTH_TOKEN\": \"...\"\n\t\t\t'}'\n\t\t'}'\n\t'}'\n'}'"
       },
