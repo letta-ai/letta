@@ -122,6 +122,12 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
         description="The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.",
     )
 
+    # indexing controls
+    hidden: Optional[bool] = Field(
+        None,
+        description="If set to True, the agent will be hidden.",
+    )
+
     def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
         # Get environment variables for this agent specifically
         per_agent_env_vars = {}
@@ -236,6 +242,10 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         None,
         description="The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.",
     )
+    hidden: Optional[bool] = Field(
+        None,
+        description="If set to True, the agent will be hidden.",
+    )
 
     @field_validator("name")
     @classmethod
@@ -337,6 +347,10 @@ class UpdateAgent(BaseModel):
     per_file_view_window_char_limit: Optional[int] = Field(
         None,
         description="The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.",
+    )
+    hidden: Optional[bool] = Field(
+        None,
+        description="If set to True, the agent will be hidden.",
     )
 
     class Config:

@@ -86,6 +86,11 @@ async def list_agents(
         "created_at",
         description="Field to sort by. Options: 'created_at' (default), 'last_run_completion'",
     ),
+    show_hidden_agents: bool | None = Query(
+        False,
+        include_in_schema=False,
+        description="If set to True, include agents marked as hidden in the results.",
+    ),
 ):
     """
     List all agents associated with a given user.
@@ -115,6 +120,7 @@ async def list_agents(
         include_relationships=include_relationships,
         ascending=ascending,
         sort_by=sort_by,
+        show_hidden_agents=show_hidden_agents,
     )
 
 
