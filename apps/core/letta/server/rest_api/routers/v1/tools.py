@@ -16,7 +16,7 @@ from httpx import HTTPStatusError
 from pydantic import BaseModel, Field
 from starlette.responses import StreamingResponse
 
-from letta.errors import LettaToolCreateError
+from letta.errors import LettaToolCreateError, LettaToolNameConflictError
 from letta.functions.functions import derive_openai_json_schema
 from letta.functions.mcp_client.exceptions import MCPTimeoutError
 from letta.functions.mcp_client.types import MCPTool, SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
@@ -191,6 +191,10 @@ async def modify_tool(
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
         return await server.tool_manager.update_tool_by_id_async(tool_id=tool_id, tool_update=request, actor=actor)
+    except LettaToolNameConflictError as e:
+        # HTTP 409 == Conflict
+        print(f"Tool name conflict during update: {e}")
+        raise HTTPException(status_code=409, detail=str(e))
     except LettaToolCreateError as e:
         # HTTP 400 == Bad Request
         print(f"Error occurred during tool update: {e}")

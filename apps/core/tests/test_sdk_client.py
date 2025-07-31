@@ -1085,3 +1085,142 @@ def test_agent_tools_list(client: LettaSDKClient):
     finally:
         # Clean up
         client.agents.delete(agent_id=agent_state.id)
+
+
+def test_update_tool_source_code_changes_name(client: LettaSDKClient):
+    """Test that updating a tool's source code correctly changes its name"""
+    import textwrap
+
+    # Create initial tool
+    def initial_tool(x: int) -> int:
+        """
+        Multiply a number by 2
+
+        Args:
+            x: The input number
+        Returns:
+            The input multiplied by 2
+        """
+        return x * 2
+
+    # Create the tool
+    tool = client.tools.upsert_from_function(func=initial_tool)
+    assert tool.name == "initial_tool"
+
+    try:
+        # Define new function source code with different name
+        new_source_code = textwrap.dedent(
+            """
+        def updated_tool(x: int, y: int) -> int:
+            '''
+            Add two numbers together
+
+            Args:
+                x: First number
+                y: Second number
+            Returns:
+                Sum of x and y
+            '''
+            return x + y
+        """
+        ).strip()
+
+        # Update the tool's source code
+        updated = client.tools.modify(tool_id=tool.id, source_code=new_source_code)
+
+        # Verify the name changed
+        assert updated.name == "updated_tool"
+        assert updated.source_code == new_source_code
+
+        # Verify the schema was updated for the new parameters
+        assert updated.json_schema is not None
+        assert updated.json_schema["name"] == "updated_tool"
+        assert updated.json_schema["description"] == "Add two numbers together"
+
+        # Check parameters
+        params = updated.json_schema.get("parameters", {})
+        properties = params.get("properties", {})
+        assert "x" in properties
+        assert "y" in properties
+        assert properties["x"]["type"] == "integer"
+        assert properties["y"]["type"] == "integer"
+        assert properties["x"]["description"] == "First number"
+        assert properties["y"]["description"] == "Second number"
+        assert params["required"] == ["x", "y"]
+
+    finally:
+        # Clean up
+        client.tools.delete(tool_id=tool.id)
+
+
+def test_update_tool_source_code_duplicate_name_error(client: LettaSDKClient):
+    """Test that updating a tool's source code to have the same name as another existing tool raises an error"""
+    import textwrap
+
+    # Create first tool
+    def first_tool(x: int) -> int:
+        """
+        Multiply a number by 2
+
+        Args:
+            x: The input number
+
+        Returns:
+            The input multiplied by 2
+        """
+        return x * 2
+
+    # Create second tool
+    def second_tool(x: int) -> int:
+        """
+        Multiply a number by 3
+
+        Args:
+            x: The input number
+
+        Returns:
+            The input multiplied by 3
+        """
+        return x * 3
+
+    # Create both tools
+    tool1 = client.tools.upsert_from_function(func=first_tool)
+    tool2 = client.tools.upsert_from_function(func=second_tool)
+
+    assert tool1.name == "first_tool"
+    assert tool2.name == "second_tool"
+
+    try:
+        # Try to update second_tool to have the same name as first_tool
+        new_source_code = textwrap.dedent(
+            """
+        def first_tool(x: int) -> int:
+            '''
+            Multiply a number by 4
+
+            Args:
+                x: The input number
+
+            Returns:
+                The input multiplied by 4
+            '''
+            return x * 4
+        """
+        ).strip()
+
+        # This should raise an error since first_tool already exists
+        with pytest.raises(Exception) as exc_info:
+            client.tools.modify(tool_id=tool2.id, source_code=new_source_code)
+
+        # Verify the error message indicates duplicate name
+        error_message = str(exc_info.value)
+        assert "already exists" in error_message.lower() or "duplicate" in error_message.lower() or "conflict" in error_message.lower()
+
+        # Verify that tool2 was not modified
+        tool2_check = client.tools.retrieve(tool_id=tool2.id)
+        assert tool2_check.name == "second_tool"  # Name should remain unchanged
+
+    finally:
+        # Clean up both tools
+        client.tools.delete(tool_id=tool1.id)
+        client.tools.delete(tool_id=tool2.id)
