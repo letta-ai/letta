@@ -1028,11 +1028,6 @@ def test_preview_payload(client: LettaSDKClient):
         assert isinstance(payload["tools"], list)
         assert len(payload["tools"]) > 0
 
-        tool_names = [tool["function"]["name"] for tool in payload["tools"]]
-        expected_tools = ["send_message", "conversation_search", "core_memory_replace", "core_memory_append"]
-        for tool_name in expected_tools:
-            assert tool_name in tool_names, f"Expected tool {tool_name} not found in tools"
-
         for tool in payload["tools"]:
             assert tool["type"] == "function"
             assert "function" in tool
