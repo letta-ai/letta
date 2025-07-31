@@ -29,6 +29,8 @@ import { adminContentViolationsRouter } from '$web/web-api/admin/contentViolatio
 import { observabilityRouter } from '$web/web-api/observability/observabilityRouter';
 import { agentfileRouter } from '$web/web-api/agentfile/agentfileRouter';
 import { simulatedAgentsRouter } from '$web/web-api/simulated-agents/simulatedAgentsRouter';
+import * as datasetItemsRouter from '$web/web-api/dataset-items/datasetItemsRouter';
+import * as datasetsRouter from '$web/web-api/datasets/datasetsRouter';
 
 export const router = {
   user: userRouter,
@@ -64,6 +66,8 @@ export const router = {
   },
   agentfile: agentfileRouter,
   simulatedAgents: simulatedAgentsRouter,
+  datasetItems: datasetItemsRouter,
+  dataset: datasetsRouter,
 };
 
 export * from './user/userRouter';
@@ -73,3 +77,5 @@ export * from './organizations/organizationsRouter';
 export * from './admin/whitelisted-emails/whitelistedEmailsRouter';
 export * from './feature-flags/featureFlagsRouter';
 export * from './ade-preferences/adePreferencesRouter';
+export * from './dataset-items/datasetItemsRouter';
+export * from './datasets/datasetsRouter';

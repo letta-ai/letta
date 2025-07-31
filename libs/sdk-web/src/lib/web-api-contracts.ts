@@ -93,6 +93,11 @@ import {
   simulatedAgentContracts,
   simulatedAgentQueryClientKeys,
 } from './public/simulatedAgentContracts';
+import {
+  datasetItemContracts,
+  datasetItemQueryKeys,
+} from './public/datasetItemContracts';
+import { datasetContracts, datasetQueryKeys } from './public/datasetContracts';
 
 export const contracts = {
   user: userContract,
@@ -128,6 +133,8 @@ export const contracts = {
     contentViolations: adminContentViolationsContracts,
   },
   agentfile: agentfileContracts,
+  datasetItems: datasetItemContracts,
+  dataset: datasetContracts,
 };
 
 export const queryClientKeys = {
@@ -160,6 +167,8 @@ export const queryClientKeys = {
     organizations: adminOrganizationsQueryClientKeys,
     contentViolations: adminContentViolationQueryKeys,
   },
+  datasetItems: datasetItemQueryKeys,
+  dataset: datasetQueryKeys,
 };
 
 export * from './public/projectContracts';
@@ -188,3 +197,5 @@ export * from './public/transactionsContracts';
 export * from './admin/adminContentViolationsContracts';
 export * from './public/observabilityContracts';
 export type * from './public/agentfileContracts';
+export * from './public/datasetItemContracts';
+export * from './public/datasetContracts';

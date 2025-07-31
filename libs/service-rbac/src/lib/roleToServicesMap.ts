@@ -12,6 +12,8 @@ const analystPermissions = [
   ApplicationServices.READ_TOOL,
   ApplicationServices.READ_TEMPLATES,
   ApplicationServices.MESSAGE_AGENT,
+  ApplicationServices.READ_DATASETS,
+  ApplicationServices.READ_DATASET_ITEMS,
 ];
 
 const editorPermissions = [
@@ -31,6 +33,12 @@ const editorPermissions = [
   ApplicationServices.DELETE_DATA_SOURCE,
   ApplicationServices.UPDATE_DATA_SOURCE,
   ApplicationServices.UPDATE_ORGANIZATION_ENVIRONMENT_VARIABLES,
+  ApplicationServices.CREATE_DATASETS,
+  ApplicationServices.UPDATE_DATASETS,
+  ApplicationServices.DELETE_DATASETS,
+  ApplicationServices.CREATE_DATASET_ITEM,
+  ApplicationServices.UPDATE_DATASET_ITEM,
+  ApplicationServices.DELETE_DATASET_ITEM,
 ];
 
 const adminPermissions = [

@@ -21,7 +21,7 @@ import type {
 } from '@letta-cloud/types';
 import type { ApplicationServices } from '@letta-cloud/service-rbac';
 import type { UserPresetRolesType } from '@letta-cloud/service-rbac';
-import type { DatasetCreateMessageTypeV1 } from '@letta-cloud/sdk-core';
+import type { DatasetItemCreateMessageType } from '@letta-cloud/sdk-core';
 
 export const emailWhitelist = pgTable('email_whitelist', {
   id: text('id')
@@ -1416,7 +1416,7 @@ export const datasetItems = pgTable('dataset_items', {
     .notNull()
     .references(() => datasets.id, { onDelete: 'cascade' }),
   createMessage: json('create_message')
-    .$type<DatasetCreateMessageTypeV1>()
+    .$type<DatasetItemCreateMessageType>()
     .notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
