@@ -164,25 +164,40 @@ function DataSourceCard(props: DataSourceCardProps) {
   const { formatDateAndTime } = useFormatters();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const { data: agentIds } = useSourcesServiceGetAgentsForSource({
+  const { data: agentIds, isLoading } = useSourcesServiceGetAgentsForSource({
     sourceId: dataSource.id || '',
   });
 
-  const agentCount = agentIds?.length || 0;
+  const agentCount = useMemo(() => {
+    if (isLoading || !agentIds) {
+      return '-';
+    }
+
+    return agentIds.length;
+  }, [isLoading, agentIds]);
 
   const handleBadgeClick = useCallback((event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
   }, []);
 
-  const badgeContent =
-    agentCount === 1
-      ? t('dataSourcesList.dataSourceItem.agentCount.single', {
-          count: agentCount,
-        })
-      : t('dataSourcesList.dataSourceItem.agentCount.plural', {
-          count: agentCount,
-        });
+  const badgeContent = useMemo(() => {
+    if (typeof agentCount !== 'number') {
+      return t('dataSourcesList.dataSourceItem.agentCount.plural', {
+        count: '-',
+      });
+    }
+
+    if (agentCount === 1) {
+      return t('dataSourcesList.dataSourceItem.agentCount.single', {
+        count: agentCount,
+      });
+    }
+
+    return t('dataSourcesList.dataSourceItem.agentCount.plural', {
+      count: agentCount,
+    });
+  }, [agentCount, t]);
 
   return (
     <Link href={`/data-sources/${dataSource.id}`}>
@@ -215,7 +230,7 @@ function DataSourceCard(props: DataSourceCardProps) {
                 </HStack>
               </VStack>
             </VStack>
-            {agentCount > 0 ? (
+            {typeof agentCount === 'number' && agentCount > 0 ? (
               <DropdownMenu
                 open={isDropdownOpen}
                 onOpenChange={setIsDropdownOpen}
