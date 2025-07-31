@@ -248,6 +248,7 @@ def safe_format(template: str, variables: dict) -> str:
     return escaped.format_map(PreserveMapping(variables))
 
 
+@trace_method
 def compile_system_message(
     system_prompt: str,
     in_context_memory: Memory,
@@ -327,6 +328,87 @@ def compile_system_message(
     return formatted_prompt
 
 
+@trace_method
+async def compile_system_message_async(
+    system_prompt: str,
+    in_context_memory: Memory,
+    in_context_memory_last_edit: datetime,  # TODO move this inside of BaseMemory?
+    timezone: str,
+    user_defined_variables: Optional[dict] = None,
+    append_icm_if_missing: bool = True,
+    template_format: Literal["f-string", "mustache", "jinja2"] = "f-string",
+    previous_message_count: int = 0,
+    archival_memory_size: int = 0,
+    tool_rules_solver: Optional[ToolRulesSolver] = None,
+    sources: Optional[List] = None,
+    max_files_open: Optional[int] = None,
+) -> str:
+    """Prepare the final/full system message that will be fed into the LLM API
+
+    The base system message may be templated, in which case we need to render the variables.
+
+    The following are reserved variables:
+      - CORE_MEMORY: the in-context memory of the LLM
+    """
+
+    # Add tool rule constraints if available
+    tool_constraint_block = None
+    if tool_rules_solver is not None:
+        tool_constraint_block = tool_rules_solver.compile_tool_rule_prompts()
+
+    if user_defined_variables is not None:
+        # TODO eventually support the user defining their own variables to inject
+        raise NotImplementedError
+    else:
+        variables = {}
+
+    # Add the protected memory variable
+    if IN_CONTEXT_MEMORY_KEYWORD in variables:
+        raise ValueError(f"Found protected variable '{IN_CONTEXT_MEMORY_KEYWORD}' in user-defined vars: {str(user_defined_variables)}")
+    else:
+        # TODO should this all put into the memory.__repr__ function?
+        memory_metadata_string = compile_memory_metadata_block(
+            memory_edit_timestamp=in_context_memory_last_edit,
+            previous_message_count=previous_message_count,
+            archival_memory_size=archival_memory_size,
+            timezone=timezone,
+        )
+
+        memory_with_sources = await in_context_memory.compile_async(
+            tool_usage_rules=tool_constraint_block, sources=sources, max_files_open=max_files_open
+        )
+        full_memory_string = memory_with_sources + "\n\n" + memory_metadata_string
+
+        # Add to the variables list to inject
+        variables[IN_CONTEXT_MEMORY_KEYWORD] = full_memory_string
+
+    if template_format == "f-string":
+        memory_variable_string = "{" + IN_CONTEXT_MEMORY_KEYWORD + "}"
+
+        # Catch the special case where the system prompt is unformatted
+        if append_icm_if_missing:
+            if memory_variable_string not in system_prompt:
+                # In this case, append it to the end to make sure memory is still injected
+                # warnings.warn(f"{IN_CONTEXT_MEMORY_KEYWORD} variable was missing from system prompt, appending instead")
+                system_prompt += "\n\n" + memory_variable_string
+
+        # render the variables using the built-in templater
+        try:
+            if user_defined_variables:
+                formatted_prompt = safe_format(system_prompt, variables)
+            else:
+                formatted_prompt = system_prompt.replace(memory_variable_string, full_memory_string)
+        except Exception as e:
+            raise ValueError(f"Failed to format system prompt - {str(e)}. System prompt value:\n{system_prompt}")
+
+    else:
+        # TODO support for mustache and jinja2
+        raise NotImplementedError(template_format)
+
+    return formatted_prompt
+
+
+@trace_method
 def initialize_message_sequence(
     agent_state: AgentState,
     memory_edit_timestamp: Optional[datetime] = None,
@@ -338,6 +420,76 @@ def initialize_message_sequence(
         memory_edit_timestamp = get_local_time()
 
     full_system_message = compile_system_message(
+        system_prompt=agent_state.system,
+        in_context_memory=agent_state.memory,
+        in_context_memory_last_edit=memory_edit_timestamp,
+        timezone=agent_state.timezone,
+        user_defined_variables=None,
+        append_icm_if_missing=True,
+        previous_message_count=previous_message_count,
+        archival_memory_size=archival_memory_size,
+        sources=agent_state.sources,
+        max_files_open=agent_state.max_files_open,
+    )
+    first_user_message = get_login_event(agent_state.timezone)  # event letting Letta know the user just logged in
+
+    if include_initial_boot_message:
+        llm_config = agent_state.llm_config
+        uuid_str = str(uuid.uuid4())
+
+        # Some LMStudio models (e.g. ministral) require the tool call ID to be 9 alphanumeric characters
+        tool_call_id = uuid_str[:9] if llm_config.provider_name == "lmstudio_openai" else uuid_str
+
+        if agent_state.agent_type == AgentType.sleeptime_agent:
+            initial_boot_messages = []
+        elif llm_config.model is not None and "gpt-3.5" in llm_config.model:
+            initial_boot_messages = get_initial_boot_messages("startup_with_send_message_gpt35", agent_state.timezone, tool_call_id)
+        else:
+            initial_boot_messages = get_initial_boot_messages("startup_with_send_message", agent_state.timezone, tool_call_id)
+
+        # Some LMStudio models (e.g. meta-llama-3.1) require the user message before any tool calls
+        if llm_config.provider_name == "lmstudio_openai":
+            messages = (
+                [
+                    {"role": "system", "content": full_system_message},
+                ]
+                + [
+                    {"role": "user", "content": first_user_message},
+                ]
+                + initial_boot_messages
+            )
+        else:
+            messages = (
+                [
+                    {"role": "system", "content": full_system_message},
+                ]
+                + initial_boot_messages
+                + [
+                    {"role": "user", "content": first_user_message},
+                ]
+            )
+
+    else:
+        messages = [
+            {"role": "system", "content": full_system_message},
+            {"role": "user", "content": first_user_message},
+        ]
+
+    return messages
+
+
+@trace_method
+async def initialize_message_sequence_async(
+    agent_state: AgentState,
+    memory_edit_timestamp: Optional[datetime] = None,
+    include_initial_boot_message: bool = True,
+    previous_message_count: int = 0,
+    archival_memory_size: int = 0,
+) -> List[dict]:
+    if memory_edit_timestamp is None:
+        memory_edit_timestamp = get_local_time()
+
+    full_system_message = await compile_system_message_async(
         system_prompt=agent_state.system,
         in_context_memory=agent_state.memory,
         in_context_memory_last_edit=memory_edit_timestamp,
