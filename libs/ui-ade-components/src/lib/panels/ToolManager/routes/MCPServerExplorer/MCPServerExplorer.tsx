@@ -65,7 +65,13 @@ export function MCPServerExplorer() {
       fullWidth
       gap={false}
     >
-      <VStack gap="large" paddingX="xlarge" paddingBottom="xlarge">
+      <VStack
+        gap="large"
+        paddingX="xlarge"
+        paddingBottom="xlarge"
+        overflowY="auto"
+        fullHeight
+      >
         <HStack>
           <HStack border fullWidth>
             <RawInput
