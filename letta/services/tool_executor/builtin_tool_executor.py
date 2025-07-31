@@ -219,7 +219,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
             return {"query": task.query, "question": task.question, "error": "No search results found."}
 
         # If raw results requested, return them directly
-        if True:  # return_raw:
+        if return_raw:
             return {"query": task.query, "question": task.question, "raw_results": search_result}
 
         # Check if OpenAI API key is available for semantic parsing
