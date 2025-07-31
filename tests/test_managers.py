@@ -767,7 +767,7 @@ async def test_create_agent_include_base_tools(server: SyncServer, default_user,
 
     # Assert the tools exist
     tool_names = [t.name for t in created_agent.tools]
-    expected_tools = calculate_base_tools(is_v2=False)
+    expected_tools = calculate_base_tools(is_v2=True)
     assert sorted(tool_names) == sorted(expected_tools)
 
 

@@ -174,7 +174,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     tool_rules: Optional[List[ToolRule]] = Field(None, description="The tool rules governing the agent.")
     tags: Optional[List[str]] = Field(None, description="The tags associated with the agent.")
     system: Optional[str] = Field(None, description="The system prompt used by the agent.")
-    agent_type: AgentType = Field(default_factory=lambda: AgentType.memgpt_agent, description="The type of agent.")
+    agent_type: AgentType = Field(default_factory=lambda: AgentType.memgpt_v2_agent, description="The type of agent.")
     llm_config: Optional[LLMConfig] = Field(None, description="The LLM configuration used by the agent.")
     embedding_config: Optional[EmbeddingConfig] = Field(None, description="The embedding configuration used by the agent.")
     # Note: if this is None, then we'll populate with the standard "more human than human" initial message sequence
