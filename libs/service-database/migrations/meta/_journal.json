@@ -589,6 +589,13 @@
       "when": 1751493395640,
       "tag": "0083_grey_blade",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1753980699406,
+      "tag": "0084_normal_pretty_boy",
+      "breakpoints": true
     }
   ]
 }

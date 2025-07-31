@@ -89,6 +89,10 @@ import {
   agentfileContracts,
   agentfileQueryClientKeys,
 } from './public/agentfileContracts';
+import {
+  simulatedAgentContracts,
+  simulatedAgentQueryClientKeys,
+} from './public/simulatedAgentContracts';
 
 export const contracts = {
   user: userContract,
@@ -112,6 +116,7 @@ export const contracts = {
   cloudAccessCode: cloudAccessCodeContract,
   transactions: transactionsContracts,
   observability: observabilityContracts,
+  simulatedAgents: simulatedAgentContracts,
   traces: tracesContracts,
   admin: {
     usage: adminUsageContracts,
@@ -146,6 +151,7 @@ export const queryClientKeys = {
   observability: observabilityQueryKeys,
   traces: tracesQueryKeys,
   agentfile: agentfileQueryClientKeys,
+  simulatedAgents: simulatedAgentQueryClientKeys,
   admin: {
     usage: adminUsageQueryKeys,
     users: adminUsersQueryClientKeys,

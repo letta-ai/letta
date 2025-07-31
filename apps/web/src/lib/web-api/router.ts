@@ -28,6 +28,7 @@ import { tracesRoutes } from '$web/web-api/traces/tracesRouter';
 import { adminContentViolationsRouter } from '$web/web-api/admin/contentViolations/adminContentViolationsRouter';
 import { observabilityRouter } from '$web/web-api/observability/observabilityRouter';
 import { agentfileRouter } from '$web/web-api/agentfile/agentfileRouter';
+import { simulatedAgentsRouter } from '$web/web-api/simulated-agents/simulatedAgentsRouter';
 
 export const router = {
   user: userRouter,
@@ -62,6 +63,7 @@ export const router = {
     contentViolations: adminContentViolationsRouter,
   },
   agentfile: agentfileRouter,
+  simulatedAgents: simulatedAgentsRouter,
 };
 
 export * from './user/userRouter';

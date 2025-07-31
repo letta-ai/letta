@@ -514,6 +514,63 @@ export const deployedAgentVariables = pgTable('deployed_agent_variables', {
     .$onUpdate(() => new Date()),
 });
 
+export const simulatedAgent = pgTable(
+  'simulated_agent',
+  {
+    agentId: text('agent_id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, {
+        onDelete: 'cascade',
+      }),
+    organizationId: text('organization_id')
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .notNull(),
+    isDefault: boolean('is_default').notNull().default(false),
+    agentTemplateId: text('agent_template_id')
+      .notNull()
+      .references(() => agentTemplates.id, {
+        onDelete: 'cascade',
+      }),
+    /* optional, if empty, it means it should use the latest version */
+    deployedAgentTemplateId: text('deployed_agent_template_id').references(
+      () => deployedAgentTemplates.id,
+      {
+        onDelete: 'cascade',
+      },
+    ),
+    variables: json('variables').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (self) => ({
+    // unique constraint on agentTemplateId + deployedAgentTemplateId + default
+    uniqueDefault: uniqueIndex('unique_default_simulated_agent').on(
+      self.agentTemplateId,
+      self.deployedAgentTemplateId,
+      self.isDefault,
+    ),
+  }),
+);
+
+export const simulatedAgentRelations = relations(simulatedAgent, ({ one }) => ({
+  agentTemplate: one(agentTemplates, {
+    fields: [simulatedAgent.agentTemplateId],
+    references: [agentTemplates.id],
+  }),
+  deployedAgentTemplate: one(deployedAgentTemplates, {
+    fields: [simulatedAgent.deployedAgentTemplateId],
+    references: [deployedAgentTemplates.id],
+  }),
+  project: one(projects, {
+    fields: [simulatedAgent.projectId],
+    references: [projects.id],
+  }),
+  organization: one(organizations, {
+    fields: [simulatedAgent.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
 export const agentSimulatorSessions = pgTable('agent_simulator_sessions', {
   id: text('id')
     .primaryKey()
