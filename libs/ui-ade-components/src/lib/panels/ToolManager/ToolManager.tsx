@@ -21,7 +21,7 @@ import {
   useForm,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useEffect } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { getMatchingRoute } from './toolManagerRoutes';
 import { useToolManagerRouteCopy } from './hooks/useToolManagerRouteCopy/useToolManagerRouteCopy';
@@ -41,6 +41,7 @@ import { useLocalStorage } from '@mantine/hooks';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { LIST_TOOLS_PAYLOAD } from './routes/MyTools/MyTools';
 import { useCurrentAgent } from '../../hooks';
+import { useViewportSize, useDebouncedValue } from '@mantine/hooks';
 
 interface CreateToolDialogProps {
   trigger: React.ReactNode;
@@ -301,6 +302,24 @@ function ExpandComponent(props: ExpandComponentProps) {
   );
 }
 
+// Custom hook for auto-collapsing sidebar based on viewport width
+function useAutoCollapseSidebar(
+  isExpanded: boolean,
+  setExpanded: (expanded: boolean) => void,
+) {
+  const { width = 0 } = useViewportSize();
+  const [debouncedWidth] = useDebouncedValue(width, 100);
+
+  useEffect(() => {
+    // Auto-collapse when viewport width is below 768px (tablet breakpoint)
+    if (debouncedWidth && debouncedWidth < 768 && isExpanded) {
+      setExpanded(false);
+    }
+  }, [debouncedWidth, isExpanded, setExpanded]);
+
+  return { debouncedWidth };
+}
+
 function ToolManagerNavigationSidebar() {
   const t = useTranslations('ToolManager');
   const details = useToolManagerRouteCopy();
@@ -308,6 +327,9 @@ function ToolManagerNavigationSidebar() {
     defaultValue: true,
     key: 'tool-manager-sidebar-expanded',
   });
+
+  // Add auto-collapse functionality
+  useAutoCollapseSidebar(isExpanded, setExpanded);
 
   const { closeToolManager } = useToolManagerState();
 
