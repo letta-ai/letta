@@ -217,7 +217,7 @@ def compile_memory_metadata_block(
     ]
 
     # Only include archival memory line if there are archival memories
-    if archival_memory_size > 0:
+    if archival_memory_size is not None and archival_memory_size > 0:
         metadata_lines.append(
             f"- {archival_memory_size} total memories you created are stored in archival memory (use tools to access them)"
         )
