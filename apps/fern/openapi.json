@@ -2637,10 +2637,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Search agents by project ID",
+              "description": "Search agents by project ID - this will default to your default project on cloud",
               "title": "Project Id"
             },
-            "description": "Search agents by project ID"
+            "description": "Search agents by project ID - this will default to your default project on cloud"
           },
           {
             "name": "template_id",

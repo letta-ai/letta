@@ -5441,7 +5441,7 @@ export type ListAgentsData = {
    */
   name?: string | null;
   /**
-   * Search agents by project ID
+   * Search agents by project ID - this will default to your default project on cloud
    */
   projectId?: string | null;
   /**

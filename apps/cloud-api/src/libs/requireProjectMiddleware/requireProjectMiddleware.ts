@@ -14,6 +14,7 @@ import {
 // agents route is handled in the agentsRouter itself
 const agentsRoute = pathToRegexp('/v1/agents');
 const identitiesRoute = pathToRegexp('/v1/identities');
+const blocksRoute = pathToRegexp('/v1/blocks');
 const agentsImportRoute = pathToRegexp('/v1/agents/import');
 
 export async function requireProjectMiddleware(
@@ -68,8 +69,9 @@ export async function requireProjectMiddleware(
 
   const isIdentitiesRoute = identitiesRoute.test(pathname);
   const isAgentsImportRoute = agentsImportRoute.test(pathname);
+  const isBlocksRoute = blocksRoute.test(pathname);
 
-  if (!isIdentitiesRoute && !isAgentsImportRoute) {
+  if (!isIdentitiesRoute && !isAgentsImportRoute && !isBlocksRoute) {
     next();
     return;
   }

@@ -25,6 +25,7 @@ import { contentModerationMiddleware } from './libs/contentModerationMiddleware/
 import { stripeWebhook } from './webhooks/stripeWebhook/stripeWebhook';
 import { trackingMiddleware } from './libs/trackingMiddleware/trackingMiddleware';
 import { datasourceMiddleware } from './libs/datasourceMiddleware/datasourceMiddleware';
+import { listMiddleware } from './libs/listMiddleware/listMiddleware';
 
 interface ExpressMeta {
   req: {
@@ -150,6 +151,7 @@ export function startServer() {
   app.use(updateAgentMiddleware);
   app.use(trackingMiddleware);
   app.use(datasourceMiddleware);
+  app.use(listMiddleware);
 
   /* tsRestMiddleware needs to be last */
   const s = initServer();
@@ -226,6 +228,24 @@ export function startServer() {
       // selfHandleResponse: true,
       ...(stream ? { buffer: stream } : {}),
       headers: header,
+      pathRewrite: (_, req) => {
+        // Parse the original URL to access query parameters
+        const url = new URL(req.url, `http://${req.headers.host}`);
+
+        // Extract the query parameters from the original URL
+        const queryParams = url.searchParams;
+        // merge the original query parameters with the new ones
+        const newQueryParams = new URLSearchParams(
+          req.query as Record<string, string>,
+        );
+
+        for (const [key, value] of newQueryParams.entries()) {
+          queryParams.set(key, value);
+        }
+
+        // Reconstruct the path with the updated query parameters
+        return `${url.pathname}${url.search}`;
+      },
       on: {
         // proxyReq: fixRequestBody,
         // proxyRes: responseInterceptor(

@@ -1729,7 +1729,7 @@ export class AgentsService {
    * @param data.after Cursor for pagination
    * @param data.limit Limit for pagination
    * @param data.queryText Search agents by name
-   * @param data.projectId Search agents by project ID
+   * @param data.projectId Search agents by project ID - this will default to your default project on cloud
    * @param data.templateId Search agents by template ID
    * @param data.baseTemplateId Search agents by base template ID
    * @param data.identityId Search agents by identity ID

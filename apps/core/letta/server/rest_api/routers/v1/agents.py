@@ -65,7 +65,7 @@ async def list_agents(
     after: str | None = Query(None, description="Cursor for pagination"),
     limit: int | None = Query(50, description="Limit for pagination"),
     query_text: str | None = Query(None, description="Search agents by name"),
-    project_id: str | None = Query(None, description="Search agents by project ID"),
+    project_id: str | None = Query(None, description="Search agents by project ID - this will default to your default project on cloud"),
     template_id: str | None = Query(None, description="Search agents by template ID"),
     base_template_id: str | None = Query(None, description="Search agents by base template ID"),
     identity_id: str | None = Query(None, description="Search agents by identity ID"),
