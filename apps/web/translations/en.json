@@ -1812,7 +1812,7 @@
   "mcpOauthCallback": {
     "processingAuthorization": "Authorizing...",
     "authorizationSuccessful": "Authorization Successful",
-    "successMessage": "You have connected to your MCP server successfully. Please return to Letta to view tools and finish adding your server.",
+    "successMessage": "You can now return to Letta to view tools and finish adding your MCP server.",
     "authorizationFailed": "Authorization Failed",
     "errorMessage": "An error occurred during authorization.",
     "tryAgainMessage": "Please close this window and try again.",
