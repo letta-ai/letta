@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 from openai.types.beta.function_tool import FunctionTool as OpenAITool
 
 from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT
+from letta.otel.tracing import trace_method
 from letta.schemas.block import Block, FileBlock
 from letta.schemas.message import Message
 
@@ -114,6 +115,7 @@ class Memory(BaseModel, validate_assignment=True):
         """Return the current Jinja2 template string."""
         return str(self.prompt_template)
 
+    @trace_method
     def set_prompt_template(self, prompt_template: str):
         """
         Set a new Jinja2 template string.
@@ -133,6 +135,7 @@ class Memory(BaseModel, validate_assignment=True):
         except Exception as e:
             raise ValueError(f"Prompt template is not compatible with current memory structure: {str(e)}")
 
+    @trace_method
     async def set_prompt_template_async(self, prompt_template: str):
         """
         Async version of set_prompt_template that doesn't block the event loop.
@@ -152,6 +155,7 @@ class Memory(BaseModel, validate_assignment=True):
         except Exception as e:
             raise ValueError(f"Prompt template is not compatible with current memory structure: {str(e)}")
 
+    @trace_method
     def compile(self, tool_usage_rules=None, sources=None, max_files_open=None) -> str:
         """Generate a string representation of the memory in-context using the Jinja2 template"""
         try:
@@ -168,6 +172,7 @@ class Memory(BaseModel, validate_assignment=True):
         except Exception as e:
             raise ValueError(f"Prompt template is not compatible with current memory structure: {str(e)}")
 
+    @trace_method
     async def compile_async(self, tool_usage_rules=None, sources=None, max_files_open=None) -> str:
         """Async version of compile that doesn't block the event loop"""
         try:
