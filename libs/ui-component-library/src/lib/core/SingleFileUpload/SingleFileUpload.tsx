@@ -1,6 +1,6 @@
 'use client';
 import * as React from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { makeInput, makeRawInput } from '../Form/Form';
 import { Typography } from '../Typography/Typography';
 import { VStack } from '../../framing/VStack/VStack';
@@ -10,6 +10,7 @@ import { HStack } from '../../framing/HStack/HStack';
 import { useTranslations } from '@letta-cloud/translations';
 import { Slot } from '@radix-ui/react-slot';
 import { cn } from '@letta-cloud/ui-styles';
+import { useDragAndDrop } from '../../hooks/useDragAndDrop/useDragAndDrop';
 
 interface SingleFileUploadProps {
   onChange: (file: File | undefined) => void;
@@ -38,68 +39,11 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
     accept,
   } = props;
 
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [isMultipleFiles, setIsMultipleFiles] = useState(false);
-  const dragCounter = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLElement>(null);
 
-  const handleDragEnter = useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      dragCounter.current++;
-
-      if (event.dataTransfer.items && event.dataTransfer.items.length > 0) {
-        const fileItems = Array.from(event.dataTransfer.items).filter(
-          (item) => item.kind === 'file',
-        );
-
-        if (fileItems.length > 0) {
-          setIsDragOver(true);
-          setIsMultipleFiles(fileItems.length > 1);
-        }
-      }
-    },
-    [],
-  );
-
-  const handleDragLeave = useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      dragCounter.current--;
-      if (dragCounter.current === 0) {
-        setIsDragOver(false);
-        setIsMultipleFiles(false);
-      }
-    },
-    [],
-  );
-
-  const handleDragOver = useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-
-      // Show not-allowed cursor for multiple files
-      if (event.dataTransfer.items) {
-        const fileItems = Array.from(event.dataTransfer.items).filter(
-          (item) => item.kind === 'file',
-        );
-        if (fileItems.length > 1) {
-          event.dataTransfer.dropEffect = 'none';
-        }
-      }
-    },
-    [],
-  );
-
-  const handleDropFile = useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      dragCounter.current = 0;
-      setIsDragOver(false);
-      setIsMultipleFiles(false);
-
-      const files = event.dataTransfer.files;
-
-      // Only accept the first file if multiple are dropped
+  const handleFilesSelected = useCallback(
+    (files: FileList) => {
       if (files.length > 0) {
         const file = files[0];
         onChange(file);
@@ -108,20 +52,20 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
     [onChange],
   );
 
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleChooseFile = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-
-      if (!file) {
-        return;
-      }
-
-      onChange(file);
-    },
-    [onChange],
-  );
+  const {
+    isDragging: isDragOver,
+    isMultipleFiles,
+    handleDragEnter,
+    handleDragLeave,
+    handleDragOver,
+    handleDrop,
+    handleFileInputChange,
+  } = useDragAndDrop({
+    onFilesSelected: handleFilesSelected,
+    acceptMultiple: false,
+    restrictMultipleFiles: true,
+    dropZoneRef,
+  });
 
   const triggerChooseFile = useCallback(() => {
     inputRef.current?.click();
@@ -146,13 +90,14 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
 
   return (
     <VStack
+      ref={dropZoneRef}
       fullWidth
       color="background-grey"
       className={cn(
         'w-full h-[250px] relative transition-colors duration-200',
         getDropZoneStyle(),
       )}
-      onDrop={handleDropFile}
+      onDrop={handleDrop}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -219,7 +164,7 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
         type="file"
         accept={accept}
         className="w-[0] h-0] absolute opacity-0"
-        onChange={handleChooseFile}
+        onChange={handleFileInputChange}
       />
     </VStack>
   );

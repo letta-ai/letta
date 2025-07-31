@@ -1,5 +1,5 @@
 import { useTranslations } from '@letta-cloud/translations';
-import React, { useCallback, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import {
   isAPIError,
   type ListSourceFilesResponse,
@@ -14,6 +14,7 @@ import {
   Typography,
   FileIcon,
   BillingLink,
+  useDragAndDrop,
 } from '@letta-cloud/ui-component-library';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@letta-cloud/ui-styles';
@@ -28,7 +29,7 @@ export function DataSourceFileUpload(props: NoFilesViewProps) {
   const { sourceId, onUploadComplete } = props;
   const t = useTranslations('ADE/EditDataSourcesPanel.NoFilesView');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const dropZoneRef = useRef<HTMLElement>(null);
   const queryClient = useQueryClient();
 
   const { mutate, error, isPending } = useSourcesServiceUploadFileToSource({
@@ -90,7 +91,7 @@ export function DataSourceFileUpload(props: NoFilesViewProps) {
   }, [error, t]);
 
   const handleFileSelect = useCallback(
-    (files: FileList | null) => {
+    (files: FileList) => {
       if (files && files.length > 0) {
         const file = files[0];
         mutate({
@@ -106,46 +107,22 @@ export function DataSourceFileUpload(props: NoFilesViewProps) {
     fileInputRef.current?.click();
   }, []);
 
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      handleFileSelect(e.target.files);
-    },
-    [handleFileSelect],
-  );
-
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
-      setIsDragging(true);
-    }
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsDragging(false);
-
-      const files = e.dataTransfer.files;
-      handleFileSelect(files);
-    },
-    [handleFileSelect],
-  );
+  const {
+    isDragging,
+    handleDragEnter,
+    handleDragLeave,
+    handleDragOver,
+    handleDrop,
+    handleFileInputChange,
+  } = useDragAndDrop({
+    onFilesSelected: handleFileSelect,
+    acceptMultiple: false,
+    dropZoneRef,
+  });
 
   return (
     <VStack
+      ref={dropZoneRef}
       fullWidth
       fullHeight
       padding="small"
@@ -162,7 +139,7 @@ export function DataSourceFileUpload(props: NoFilesViewProps) {
         ref={fileInputRef}
         type="file"
         className="hidden"
-        onChange={handleInputChange}
+        onChange={handleFileInputChange}
         accept={ACCEPTABLE_FILETYPES.join(',')}
       />
       <VStack align="center" gap="large">

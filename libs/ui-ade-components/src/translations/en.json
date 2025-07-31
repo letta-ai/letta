@@ -544,7 +544,10 @@
     "failedToOpen": "Failed to open file, please check your logs or contact support."
   },
   "ADE/DataSources/FilesView": {
-    "error": "There was an error loading files, please try again or contact support."
+    "error": "There was an error loading files, please try again or contact support.",
+    "dragAndDrop": {
+      "dropMessage": "Drop files here to upload"
+    }
   },
   "ADE/DataSources/FileViewActions": {
     "delete": "Delete file",

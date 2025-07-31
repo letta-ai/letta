@@ -64,6 +64,7 @@ export * from './lib/reusable/DashboardPageSection/DashboardPageSection';
 
 export * from './lib/reusable/DashboardEmptyArea/DashboardEmptyArea';
 export * from './lib/hooks';
+export * from './lib/hooks/useDragAndDrop/useDragAndDrop';
 
 export * from './lib/core/DropdownMenu/DropdownMenu';
 
