@@ -58,11 +58,9 @@ export function CurrentUserDetailsBlock() {
     <HStack fullWidth justify="spaceBetween" padding="large" align="start">
       <VStack gap={false} fullWidth align="start">
         <Typography bold>{user?.body.name}</Typography>
-        {data && (
-          <Typography variant="body2" color="lighter">
-            {data.body.name}
-          </Typography>
-        )}
+        <Typography variant="body2" color="lighter">
+          {data?.body.name || ''}
+        </Typography>
       </VStack>
       {tierCopy && <Badge variant={tierVariant} border content={tierCopy} />}
     </HStack>

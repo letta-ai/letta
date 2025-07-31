@@ -1,7 +1,7 @@
 'use server';
 import type { ReactNode } from 'react';
 import type { GetUserDataResponse } from '$web/server/auth';
-import { getUser } from '$web/server/auth';
+import { getUser, getOrganizationFromOrganizationId } from '$web/server/auth';
 import { redirect } from 'next/navigation';
 import {
   dehydrate,
@@ -37,6 +37,22 @@ export async function LoggedInLayout(props: InAppProps) {
       body: user,
     }),
   });
+
+  // Prefetch organization data to prevent layout shift in ProfilePopover
+  if (user?.activeOrganizationId) {
+    const organization = await getOrganizationFromOrganizationId(
+      user.activeOrganizationId,
+    );
+
+    if (organization) {
+      await queryClient.prefetchQuery({
+        queryKey: webApiQueryKeys.organizations.getCurrentOrganization,
+        queryFn: () => ({
+          body: organization,
+        }),
+      });
+    }
+  }
 
   const redirectTo = props.shouldRedirectTo(user);
 
