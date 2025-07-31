@@ -13,6 +13,8 @@ from letta.schemas.providers.openai import OpenAIProvider
 
 logger = get_logger(__name__)
 
+ollama_prefix = "/v1"
+
 
 class OllamaProvider(OpenAIProvider):
     """Ollama provider that uses the native /api/generate endpoint
@@ -43,13 +45,13 @@ class OllamaProvider(OpenAIProvider):
         for model in response_json["models"]:
             context_window = self.get_model_context_window(model["name"])
             if context_window is None:
-                print(f"Ollama model {model['name']} has no context window")
-                continue
+                print(f"Ollama model {model['name']} has no context window, using default 32000")
+                context_window = 32000
             configs.append(
                 LLMConfig(
                     model=model["name"],
-                    model_endpoint_type="ollama",
-                    model_endpoint=self.base_url,
+                    model_endpoint_type=ProviderType.ollama,
+                    model_endpoint=f"{self.base_url}{ollama_prefix}",
                     model_wrapper=self.default_prompt_formatter,
                     context_window=context_window,
                     handle=self.get_handle(model["name"]),
@@ -75,13 +77,14 @@ class OllamaProvider(OpenAIProvider):
         for model in response_json["models"]:
             embedding_dim = await self._get_model_embedding_dim_async(model["name"])
             if not embedding_dim:
-                print(f"Ollama model {model['name']} has no embedding dimension")
-                continue
+                print(f"Ollama model {model['name']} has no embedding dimension, using default 1024")
+                # continue
+                embedding_dim = 1024
             configs.append(
                 EmbeddingConfig(
                     embedding_model=model["name"],
-                    embedding_endpoint_type="ollama",
-                    embedding_endpoint=self.base_url,
+                    embedding_endpoint_type=ProviderType.ollama,
+                    embedding_endpoint=f"{self.base_url}{ollama_prefix}",
                     embedding_dim=embedding_dim,
                     embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
                     handle=self.get_handle(model["name"], is_embedding=True),

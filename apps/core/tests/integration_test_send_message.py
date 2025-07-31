@@ -108,47 +108,35 @@ USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
+
+# configs for models that are to dumb to do much other than messaging
+limited_configs = [
+    "ollama.json",
+    "together-qwen-2.5-72b-instruct.json",
+]
+
 all_configs = [
-    # "openai-gpt-4o-mini.json",
-    # "openai-o1.json",
-    # "openai-o3.json",
-    # "openai-o4-mini.json",
-    # "azure-gpt-4o-mini.json",
-    # "claude-4-sonnet.json",
-    # "claude-3-5-sonnet.json",
-    # "claude-3-7-sonnet.json",
+    "openai-gpt-4o-mini.json",
+    "openai-o1.json",
+    "openai-o3.json",
+    "openai-o4-mini.json",
+    "azure-gpt-4o-mini.json",
+    "claude-4-sonnet.json",
+    "claude-3-5-sonnet.json",
+    "claude-3-7-sonnet.json",
     "claude-3-7-sonnet-extended.json",
-    # "bedrock-claude-4-sonnet.json",
-    # "gemini-2.5-pro.json",
-    # "gemini-2.5-flash.json",
-    # "gemini-2.5-flash-vertex.json",
-    # "gemini-2.5-pro-vertex.json",
-    # "together-qwen-2.5-72b-instruct.json",
-    # "ollama.json",  #  TODO (cliandy): enable this in ollama testing
+    "bedrock-claude-4-sonnet.json",
+    "gemini-1.5-pro.json",
+    "gemini-2.5-flash-vertex.json",
+    "gemini-2.5-pro-vertex.json",
+    "ollama.json",
+    "together-qwen-2.5-72b-instruct.json",
 ]
 
 reasoning_configs = [
     "openai-o1.json",
     "openai-o3.json",
     "openai-o4-mini.json",
-    # "azure-gpt-4o-mini.json",
-    # "claude-4-sonnet.json",
-    # "claude-3-5-sonnet.json",
-    # "claude-3-7-sonnet.json",
-    # "claude-3-7-sonnet-extended.json",
-    # "bedrock-claude-4-sonnet.json",
-    # "gemini-1.5-pro.json",
-    # "gemini-2.5-flash-vertex.json",
-    # "gemini-2.5-pro-vertex.json",
-    # "together-qwen-2.5-72b-instruct.json",
-    # "ollama.json", #  TODO (cliandy): enable this in ollama testing
-    # TODO @jnjpng: not supported in CI yet, uncomment to test locally (requires lmstudio running locally with respective models loaded)
-    # "lmstudio-meta-llama-3.1-8b-instruct.json",
-    # "lmstudio-qwen-2.5-7b-instruct.json",
-    # "mlx-qwen-2.5-7b-instruct.json",
-    # "mlx-meta-llama-3.1-8b-instruct-8bit.json",
-    # "mlx-ministral-8b-instruct-2410.json",
-    # "bartowski-ministral-8b-instruct-2410.json"
 ]
 
 
@@ -360,7 +348,6 @@ def assert_tool_call_response(
 def validate_openai_format_scrubbing(messages: List[Dict[str, Any]]) -> None:
     """
     Validate that OpenAI format assistant messages with tool calls have no inner thoughts content.
-
     Args:
         messages: List of message dictionaries in OpenAI format
     """
@@ -383,7 +370,6 @@ def validate_openai_format_scrubbing(messages: List[Dict[str, Any]]) -> None:
 def validate_anthropic_format_scrubbing(messages: List[Dict[str, Any]]) -> None:
     """
     Validate that Anthropic/Claude format assistant messages with tool_use have no <thinking> tags.
-
     Args:
         messages: List of message dictionaries in Anthropic format
     """
@@ -424,7 +410,6 @@ def validate_anthropic_format_scrubbing(messages: List[Dict[str, Any]]) -> None:
 def validate_google_format_scrubbing(contents: List[Dict[str, Any]]) -> None:
     """
     Validate that Google/Gemini format model messages with functionCall have no thinking field.
-
     Args:
         contents: List of content dictionaries in Google format (uses 'contents' instead of 'messages')
     """
@@ -753,6 +738,18 @@ def test_url_image_input(
     Tests sending a message with a synchronous client.
     Verifies that the response messages follow the expected order.
     """
+    # get the config filename
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
@@ -779,6 +776,18 @@ def test_base64_image_input(
     Tests sending a message with a synchronous client.
     Verifies that the response messages follow the expected order.
     """
+    # get the config filename
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
@@ -886,6 +895,18 @@ def test_step_streaming_tool_call(
     Tests sending a streaming message with a synchronous client.
     Checks that each chunk in the stream has the correct message types.
     """
+    # get the config filename
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
@@ -1004,6 +1025,18 @@ def test_token_streaming_tool_call(
     Tests sending a streaming message with a synchronous client.
     Checks that each chunk in the stream has the correct message types.
     """
+    # get the config filename
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
@@ -1152,6 +1185,17 @@ def test_async_tool_call(
     Tests sending a message as an asynchronous job using the synchronous client.
     Waits for job completion and asserts that the result messages are as expected.
     """
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
 
@@ -1272,6 +1316,17 @@ def test_async_greeting_with_callback_url(
     Tests sending a message as an asynchronous job with callback URL functionality.
     Validates that callbacks are properly sent with correct payload structure.
     """
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
 
     with callback_server() as server:
@@ -1337,6 +1392,17 @@ def test_async_callback_failure_scenarios(
     Tests that job completion works even when callback URLs fail.
     This ensures callback failures don't affect job processing.
     """
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
 
     # Test with invalid callback URL - job should still complete
@@ -1375,6 +1441,18 @@ def test_async_callback_failure_scenarios(
 )
 def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, llm_config: LLMConfig):
     """Test that summarization is automatically triggered."""
+    # get the config filename
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model (runs too slow)
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     # pydantic prevents us for overriding the context window paramter in the passed LLMConfig
     new_llm_config = llm_config.model_dump()
     new_llm_config["context_window"] = 3000
@@ -1641,6 +1719,10 @@ def test_inner_thoughts_false_non_reasoner_models(
             config_filename = filename
             break
 
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     # skip if this is a reasoning model
     if not config_filename or config_filename in reasoning_configs:
         pytest.skip(f"Skipping test for reasoning model {llm_config.model}")
@@ -1681,6 +1763,10 @@ def test_inner_thoughts_false_non_reasoner_models_streaming(
         if config.model_dump() == llm_config.model_dump():
             config_filename = filename
             break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
 
     # skip if this is a reasoning model
     if not config_filename or config_filename in reasoning_configs:

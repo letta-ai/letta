@@ -865,7 +865,15 @@ async def send_message(
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex", "bedrock"]
+    model_compatible = agent.llm_config.model_endpoint_type in [
+        "anthropic",
+        "openai",
+        "together",
+        "google_ai",
+        "google_vertex",
+        "bedrock",
+        "ollama",
+    ]
 
     # Create a new run for execution tracking
     if settings.track_agent_run:
@@ -999,7 +1007,15 @@ async def send_message_streaming(
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex", "bedrock"]
+    model_compatible = agent.llm_config.model_endpoint_type in [
+        "anthropic",
+        "openai",
+        "together",
+        "google_ai",
+        "google_vertex",
+        "bedrock",
+        "ollama",
+    ]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"]
     not_letta_endpoint = agent.llm_config.model_endpoint != LETTA_MODEL_ENDPOINT
 
@@ -1194,6 +1210,7 @@ async def _process_message_background(
             "google_ai",
             "google_vertex",
             "bedrock",
+            "ollama",
         ]
         if agent_eligible and model_compatible:
             if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
@@ -1373,7 +1390,15 @@ async def preview_raw_payload(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex", "bedrock"]
+    model_compatible = agent.llm_config.model_endpoint_type in [
+        "anthropic",
+        "openai",
+        "together",
+        "google_ai",
+        "google_vertex",
+        "bedrock",
+        "ollama",
+    ]
 
     if agent_eligible and model_compatible:
         if agent.enable_sleeptime:
@@ -1433,7 +1458,15 @@ async def summarize_agent_conversation(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex", "bedrock"]
+    model_compatible = agent.llm_config.model_endpoint_type in [
+        "anthropic",
+        "openai",
+        "together",
+        "google_ai",
+        "google_vertex",
+        "bedrock",
+        "ollama",
+    ]
 
     if agent_eligible and model_compatible:
         agent = LettaAgent(
