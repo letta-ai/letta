@@ -21,6 +21,7 @@ import type {
 } from '@letta-cloud/types';
 import type { ApplicationServices } from '@letta-cloud/service-rbac';
 import type { UserPresetRolesType } from '@letta-cloud/service-rbac';
+import type { DatasetCreateMessageTypeV1 } from '@letta-cloud/sdk-core';
 
 export const emailWhitelist = pgTable('email_whitelist', {
   id: text('id')
@@ -81,6 +82,7 @@ export const orgRelationsTable = relations(organizations, ({ many, one }) => ({
       relationName: 'claimedOnboardingRewards',
     },
   ),
+  datasets: many(datasets),
 }));
 
 export const organizationClaimedOnboardingRewards = pgTable(
@@ -402,6 +404,7 @@ export const projectRelations = relations(projects, ({ one, many }) => ({
   deployedAgentTemplates: many(deployedAgentTemplates),
   agentTemplates: many(agentTemplates),
   deployedAgentsMetadata: many(deployedAgentMetadata),
+  datasets: many(datasets),
 }));
 
 export const agentTemplates = pgTable(
@@ -1372,5 +1375,58 @@ export const agentfileStatsRelations = relations(agentfileStats, ({ one }) => ({
   agentfilePermissions: one(agentfilePermissions, {
     fields: [agentfileStats.agentId],
     references: [agentfilePermissions.agentId],
+  }),
+}));
+
+export const datasets = pgTable('datasets', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  name: text('name').notNull(),
+  description: text('description'),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const datasetRelations = relations(datasets, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [datasets.organizationId],
+    references: [organizations.id],
+  }),
+  project: one(projects, {
+    fields: [datasets.projectId],
+    references: [projects.id],
+  }),
+  datasetItems: many(datasetItems),
+}));
+
+export const datasetItems = pgTable('dataset_items', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  datasetId: text('dataset_id')
+    .notNull()
+    .references(() => datasets.id, { onDelete: 'cascade' }),
+  createMessage: json('create_message')
+    .$type<DatasetCreateMessageTypeV1>()
+    .notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const datasetItemRelations = relations(datasetItems, ({ one }) => ({
+  dataset: one(datasets, {
+    fields: [datasetItems.datasetId],
+    references: [datasets.id],
   }),
 }));
