@@ -13,7 +13,6 @@ from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.tool_executor.tool_executor_base import ToolExecutor
 from letta.services.tool_sandbox.local_sandbox import AsyncToolSandboxLocal
-from letta.services.tool_sandbox.modal_sandbox import AsyncToolSandboxModal
 from letta.settings import tool_settings
 from letta.types import JsonDict
 from letta.utils import get_friendly_error_msg
@@ -22,6 +21,8 @@ logger = get_logger(__name__)
 
 if tool_settings.e2b_api_key:
     from letta.services.tool_sandbox.e2b_sandbox import AsyncToolSandboxE2B
+if tool_settings.modal_api_key:
+    from letta.services.tool_sandbox.modal_sandbox import AsyncToolSandboxModal
 
 
 class SandboxToolExecutor(ToolExecutor):
