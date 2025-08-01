@@ -84,6 +84,9 @@ class AsyncBaseMCPClient:
             # TODO move hardcoding to constants
             final_content = "Empty response from tool"
 
+        if result.isError:
+            logger.error(f"Tool execution failed: {result.errorMessage}")
+
         return final_content, result.isError
 
     def _check_initialized(self):
