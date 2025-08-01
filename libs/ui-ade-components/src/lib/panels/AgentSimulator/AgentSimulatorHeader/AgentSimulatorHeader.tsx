@@ -2,25 +2,31 @@ import {
   Badge,
   Button,
   HStack,
+  InfoTooltip,
+  Spinner,
   Tooltip,
+  Typography,
   VariableIcon,
   WarningIcon,
 } from '@letta-cloud/ui-component-library';
 import { AgentVariablesModal } from '../AgentVariablesModal/AgentVariablesModal';
 import React, { useMemo } from 'react';
-import { useCurrentSimulatedAgent } from '../../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
+import {
+  useCurrentSimulatedAgent,
+  useCurrentSimulatedAgentVariables,
+} from '../../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { getIsAgentState } from '@letta-cloud/sdk-core';
 import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
 import { useCurrentAgent, useCurrentAgentMetaData } from '../../../hooks';
 import { ControlChatroomRenderMode } from '../ChatroomContext/ChatroomContext';
 import { AgentSimulatorOptionsMenu } from '../AgentSimulatorOptionsMenu/AgentSimulatorOptionsMenu';
-import { FlushSimulationSessionDialog } from '../FlushAgentSimulationDialog/FlushAgentSimulationDialog';
 import { useTranslations } from '@letta-cloud/translations';
+import { FlushSimulationSessionDialog } from '../FlushAgentSimulationDialog/FlushAgentSimulationDialog';
 
 function AgentVariablesContainer() {
   const agentState = useCurrentAgent();
+  const variables = useCurrentSimulatedAgentVariables();
 
-  const { agentSession } = useCurrentSimulatedAgent();
   const t = useTranslations('ADE/AgentSimulator');
 
   const variableList = useMemo(() => {
@@ -32,15 +38,15 @@ function AgentVariablesContainer() {
   }, [agentState]);
   const hasVariableMismatch = useMemo(() => {
     // check if variable mismatch
-    const sessionVariables = agentSession?.body.memoryVariables || {};
+    const sessionVariables = variables?.memoryVariables || {};
 
     // it's ok if there's more variables defined in the session than in the agent, but not the other way around
     return variableList.some((variable) => !sessionVariables[variable]);
-  }, [agentSession?.body.memoryVariables, variableList]);
+  }, [variables, variableList]);
 
   const hasVariableIssue = useMemo(() => {
-    return hasVariableMismatch;
-  }, [hasVariableMismatch]);
+    return variables && hasVariableMismatch;
+  }, [hasVariableMismatch, variables]);
 
   return (
     <AgentVariablesModal
@@ -68,6 +74,10 @@ function AgentStatus() {
   const { isTemplate, isLocal } = useCurrentAgentMetaData();
   const t = useTranslations('ADE/AgentSimulator');
 
+  if (isTemplate) {
+    return <AgentSimulatedStatusWrapper />;
+  }
+
   if (isLocal || isTemplate) {
     // dont remove since it's used to determine layout of the header
     return <div />;
@@ -88,15 +98,52 @@ function AgentStatus() {
   );
 }
 
-function AgentFlushButton() {
-  const { isTemplate } = useCurrentAgentMetaData();
-  const { agentSession } = useCurrentSimulatedAgent();
+function AgentSimulatedStatus() {
+  const { simulatedAgentId } = useCurrentSimulatedAgent();
 
-  if (!(isTemplate && agentSession?.body.agentId)) {
-    return null;
+  if (!simulatedAgentId) {
+    return <Spinner size="small" />;
   }
 
   return <FlushSimulationSessionDialog />;
+}
+
+function AgentSimulatedStatusWrapper() {
+  const { isTemplate } = useCurrentAgentMetaData();
+  const t = useTranslations('ADE/AgentSimulator');
+
+  if (!isTemplate) {
+    return null;
+  }
+
+  return (
+    <HStack
+      gap={false}
+      align="center"
+      color="background-grey2"
+      className="pointer-events-auto border border-background-grey3-border h-biHeight-sm"
+    >
+      <HStack
+        paddingX="xsmall"
+        fullHeight
+        borderRight
+        gap="small"
+        align="center"
+      >
+        <Typography variant="body3" bold>
+          {t('simulated.label')}
+        </Typography>
+        <InfoTooltip text={t('simulated.tooltip')} />
+      </HStack>
+      <HStack
+        align="center"
+        justify="center"
+        className="h-biHeight-sm w-biWidth-sm"
+      >
+        <AgentSimulatedStatus />
+      </HStack>
+    </HStack>
+  );
 }
 
 export function AgentSimulatorHeader() {
@@ -109,7 +156,7 @@ export function AgentSimulatorHeader() {
       zIndex="agentSimulatorHeader"
       justify="spaceBetween"
       color="transparent"
-      className="pointer-events-none"
+      className="pointer-events-none "
     >
       <div className="pointer-events-auto">
         <AgentStatus />
@@ -118,14 +165,13 @@ export function AgentSimulatorHeader() {
         gap={false}
         align="center"
         color="background-grey2"
-        className="pointer-events-auto border border-background-grey3-border"
+        className="pointer-events-auto border h-biHeight-sm border-background-grey3-border"
       >
         <AgentVariablesContainer />
 
         <HStack className="border-x border-background-grey3-border">
           <ControlChatroomRenderMode />
         </HStack>
-        <AgentFlushButton />
         <AgentSimulatorOptionsMenu />
       </HStack>
     </HStack>

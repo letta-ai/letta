@@ -40,7 +40,7 @@ const computedMemoryStringAtom = atom<string | null>(null);
 
 function useContextWindowDetails() {
   const { system, llm_config, ...rest } = useCurrentAgent();
-  const { id, agentSession } = useCurrentSimulatedAgent();
+  const { id, simulatedAgent } = useCurrentSimulatedAgent();
 
   const [computedMemoryString, setComputedMemoryString] = useAtom(
     computedMemoryStringAtom,
@@ -58,8 +58,8 @@ function useContextWindowDetails() {
   );
 
   const memory = useMemo(() => {
-    return agentSession?.body.agent.memory || rest.memory;
-  }, [agentSession?.body.agent.memory, rest.memory]);
+    return simulatedAgent?.memory || rest.memory;
+  }, [simulatedAgent?.memory, rest.memory]);
 
   const { postMessage } = useCoreMemorySummaryWorker({
     onMessage: (message: MessageEvent<WorkerResponse>) => {

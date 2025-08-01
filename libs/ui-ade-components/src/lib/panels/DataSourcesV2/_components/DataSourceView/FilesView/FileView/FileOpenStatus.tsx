@@ -209,16 +209,16 @@ interface FileOpenStatusProps {
 }
 
 export function FileOpenStatus(props: FileOpenStatusProps) {
-  const simulatedAgent = useCurrentSimulatedAgent();
+  const { simulatedAgent } = useCurrentSimulatedAgent();
   const baseAgent = useCurrentAgent();
   const { isTemplate } = useCurrentAgentMetaData();
 
   const agent = useMemo(() => {
     if (isTemplate) {
-      return simulatedAgent.agentSession?.body.agent;
+      return simulatedAgent;
     }
     return baseAgent;
-  }, [baseAgent, isTemplate, simulatedAgent.agentSession?.body.agent]);
+  }, [baseAgent, isTemplate, simulatedAgent]);
 
   const { file } = props;
 

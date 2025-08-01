@@ -174,19 +174,19 @@ function MemoryWrapper(props: MemoryWrapperProps) {
 
 function DefaultMemory() {
   const agent = useCurrentAgent();
-  const { agentSession } = useCurrentSimulatedAgent();
+  const { simulatedAgent } = useCurrentSimulatedAgent();
 
   const simulatedMemoriesLabelMap = useMemo(() => {
     const map = new Map<string, Block>();
 
-    agentSession?.body.agent.memory?.blocks.forEach((block) => {
+    simulatedAgent?.memory?.blocks.forEach((block) => {
       if (block.label) {
         map.set(block.label, block);
       }
     });
 
     return map;
-  }, [agentSession]);
+  }, [simulatedAgent]);
 
   const memories = useSortedMemories(agent);
   return (
@@ -216,14 +216,11 @@ interface SimulatedMemoryProps {
 
 function SimulatedMemory(props: SimulatedMemoryProps) {
   const { minimal } = props;
-  const { agentSession } = useCurrentSimulatedAgent();
-  const agent = useMemo(() => {
-    return agentSession?.body.agent;
-  }, [agentSession]);
+  const { simulatedAgent } = useCurrentSimulatedAgent();
 
-  const memories = useSortedMemories(agent);
+  const memories = useSortedMemories(simulatedAgent);
 
-  if (!agent) {
+  if (!simulatedAgent) {
     return (
       <VStack paddingTop="xxsmall" fullHeight gap="medium">
         <LettaLoaderPanel />

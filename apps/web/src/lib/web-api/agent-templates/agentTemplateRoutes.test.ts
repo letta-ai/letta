@@ -13,6 +13,14 @@ jest.mock('@letta-cloud/service-database', () => ({
   db: mockDatabase,
 }));
 
+jest.mock('@letta-cloud/utils-server', () => ({
+  __esModule: true,
+  ...jest.requireActual('@letta-cloud/utils-server'),
+  createSimulatedAgent: jest.fn(async () => {
+    return true;
+  }),
+}));
+
 jest.mock('$web/server/auth', () => ({
   __esModule: true,
   ...jest.requireActual('$web/server/auth'),

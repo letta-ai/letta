@@ -80,7 +80,10 @@ export async function versionAgentTemplate(
 
   // if agent is a deployed agent, create a new agent template
   if (!agentTemplateId) {
-    const copiedAgent = await copyAgentById(agentId, lettaAgentsUserId);
+    const copiedAgent = await copyAgentById(agentId, lettaAgentsUserId, {
+      projectId,
+      hidden: true,
+    });
 
     if (!copiedAgent?.id) {
       return {
@@ -107,7 +110,10 @@ export async function versionAgentTemplate(
 
   const version = `${existingDeployedAgentTemplateCount.length + 1}`;
 
-  const createdAgent = await copyAgentById(agentId, lettaAgentsUserId);
+  const createdAgent = await copyAgentById(agentId, lettaAgentsUserId, {
+    projectId,
+    hidden: true,
+  });
 
   const deployedAgentTemplateId = createdAgent?.id;
 

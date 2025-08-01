@@ -30,13 +30,17 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { atom, useAtom } from 'jotai';
 import {
-  type GetAgentTemplateSimulatorSessionResponseBody,
   webApi,
+  type webApiContracts,
   webApiQueryKeys,
 } from '@letta-cloud/sdk-web';
 import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
-import { useCurrentSimulatedAgent } from '../../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
+import {
+  useCurrentSimulatedAgent,
+  useCurrentSimulatedAgentVariables,
+} from '../../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
+import type { ServerInferResponses } from '@ts-rest/core';
 
 function useAgentVariables() {
   const { isFromTemplate } = useCurrentAgentMetaData();
@@ -63,14 +67,8 @@ function DeployedAgentVariables() {
   if (!data) {
     return (
       <HStack borderBottom padding="small">
-        <Skeleton
-          /* eslint-disable-next-line react/forbid-component-props */
-          className="w-full h-[30px]"
-        />
-        <Skeleton
-          /* eslint-disable-next-line react/forbid-component-props */
-          className="w-full h-[30px]"
-        />
+        <Skeleton className="w-full h-[30px]" />
+        <Skeleton className="w-full h-[30px]" />
       </HStack>
     );
   }
@@ -249,7 +247,7 @@ function ToolVariables() {
 }
 
 function MemoryVariableEditorWrapper() {
-  const { agentSession } = useCurrentSimulatedAgent();
+  const variables = useCurrentSimulatedAgentVariables();
   const agentState = useCurrentAgent();
 
   const variableList = useMemo(() => {
@@ -260,13 +258,13 @@ function MemoryVariableEditorWrapper() {
     return findMemoryBlockVariables(agentState);
   }, [agentState]);
 
-  if (!agentSession?.body) {
+  if (!variables) {
     return <LettaLoader variant="grower" />;
   }
 
   const mergedVariables = {
     ...Object.fromEntries(variableList.map((key) => [key, ''])),
-    ...agentSession.body.memoryVariables,
+    ...variables.memoryVariables,
   };
 
   return <MemoryVariableEditor variables={mergedVariables} />;
@@ -279,8 +277,7 @@ interface MemoryVariableEditorProps {
 function MemoryVariableEditor(props: MemoryVariableEditorProps) {
   const { variables } = props;
   const queryClient = useQueryClient();
-  const { agentId: agentTemplateId } = useCurrentAgentMetaData();
-  const { tool_exec_environment_variables } = useCurrentAgent();
+  const { simulatedAgentId } = useCurrentSimulatedAgent();
   const t = useTranslations('ADE/AgentVariablesModal');
 
   const memoryVariableFormState = z.object({
@@ -299,13 +296,22 @@ function MemoryVariableEditor(props: MemoryVariableEditorProps) {
   const [_, setModalState] = useAtom(agentVariableModalState);
 
   const { mutate, isPending } =
-    webApi.agentTemplates.createAgentTemplateSimulatorSession.useMutation({
+    webApi.simulatedAgents.updateSimulatedAgentVariables.useMutation({
       onSuccess: (response) => {
-        queryClient.setQueriesData<GetAgentTemplateSimulatorSessionResponseBody>(
+        if (response.status !== 200) {
+          return;
+        }
+        queryClient.setQueriesData<
+          ServerInferResponses<
+            typeof webApiContracts.simulatedAgents.getSimulatedAgentVariables,
+            200
+          >
+        >(
           {
-            queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateSession({
-              agentTemplateId,
-            }),
+            queryKey:
+              webApiQueryKeys.simulatedAgents.getSimulatedAgentVariables(
+                simulatedAgentId || '',
+              ),
           },
           () => {
             return {
@@ -335,54 +341,16 @@ function MemoryVariableEditor(props: MemoryVariableEditorProps) {
         values.variables.map(({ key, value }) => [key, value]),
       );
 
-      mutate(
-        {
-          params: {
-            agentTemplateId,
-          },
-          body: {
-            memoryVariables: variableData,
-            toolVariables: Object.fromEntries(
-              (tool_exec_environment_variables || []).map(({ key, value }) => [
-                key,
-                value,
-              ]),
-            ),
-          },
+      mutate({
+        params: {
+          simulatedAgentId: simulatedAgentId || '',
         },
-        {
-          onSuccess: () => {
-            queryClient.setQueriesData<
-              GetAgentTemplateSimulatorSessionResponseBody | undefined
-            >(
-              {
-                queryKey:
-                  webApiQueryKeys.agentTemplates.getAgentTemplateSession({
-                    agentTemplateId,
-                  }),
-              },
-              (oldData) => {
-                if (!oldData) {
-                  return oldData;
-                }
-
-                return {
-                  status: 200,
-                  body: {
-                    ...oldData?.body,
-                    memoryVariables: {
-                      ...oldData?.body.memoryVariables,
-                      ...variableData,
-                    },
-                  },
-                };
-              },
-            );
-          },
+        body: {
+          memoryVariables: variableData,
         },
-      );
+      });
     },
-    [agentTemplateId, mutate, queryClient, tool_exec_environment_variables],
+    [simulatedAgentId, mutate],
   );
 
   return (
@@ -527,6 +495,7 @@ export function AgentVariablesModal(props: AgentVariablesModalProps) {
   const t = useTranslations('ADE/AgentVariablesModal');
   useAgentVariables();
 
+  const [isOpen, setIsOpen] = useAtom(agentVariableModalState);
   const { isTemplate } = useCurrentAgentMetaData();
   const title = useMemo(() => {
     if (isTemplate) {
@@ -539,6 +508,8 @@ export function AgentVariablesModal(props: AgentVariablesModalProps) {
   return (
     <DynamicApp
       defaultView="windowed"
+      onOpenChange={setIsOpen}
+      isOpen={isOpen}
       windowConfiguration={{
         minWidth: 480,
         minHeight: 400,

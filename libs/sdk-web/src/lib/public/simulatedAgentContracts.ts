@@ -6,6 +6,7 @@ const c = initContract();
 const SimulatedAgentMetaData = z.object({
   name: z.string(),
   id: z.string(),
+  agentId: z.string(),
   agentTemplateId: z.string(),
   deployedAgentTemplateId: z.string().nullable(),
   agentTemplateFullName: z.string(),
@@ -19,12 +20,32 @@ const getDefaultSimulatedAgentContract = c.query({
   pathParams: z.object({
     agentTemplateId: z.string(),
   }),
-  query: z.object({
-    memoryVariables: z.record(z.string()),
-    toolVariables: z.record(z.string()),
+  responses: {
+    200: SimulatedAgentMetaData,
+    404: z.object({
+      message: z.string(),
+    }),
+  },
+});
+
+const createSimulatedAgentContract = c.mutation({
+  path: '/simulated-agents',
+  method: 'POST',
+  body: z.object({
+    agentTemplateId: z.string(),
+    isDefault: z.boolean(),
+    deployedAgentTemplateId: z.string().nullable().optional(),
+    memoryVariables: z.record(z.string()).optional(),
   }),
   responses: {
     200: SimulatedAgentMetaData,
+    201: SimulatedAgentMetaData,
+    400: z.object({
+      message: z.string(),
+    }),
+    500: z.object({
+      message: z.string(),
+    }),
   },
 });
 
@@ -38,6 +59,80 @@ const deleteSimulatedAgentContract = c.mutation({
   responses: {
     200: z.object({
       success: z.boolean(),
+    }),
+  },
+});
+
+const flushSimulatedAgentContract = c.mutation({
+  path: '/simulated-agents/:simulatedAgentId/flush',
+  pathParams: z.object({
+    simulatedAgentId: z.string(),
+  }),
+  body: z.undefined(),
+  method: 'POST',
+  responses: {
+    200: SimulatedAgentMetaData,
+    404: z.object({
+      message: z.string(),
+    }),
+    500: z.object({
+      message: z.string(),
+    }),
+  },
+});
+
+const refreshSimulatedSessionContract = c.mutation({
+  path: '/simulated-agents/:simulatedAgentId/refresh',
+  pathParams: z.object({
+    simulatedAgentId: z.string(),
+  }),
+  body: z.undefined(),
+  method: 'POST',
+  responses: {
+    200: SimulatedAgentMetaData,
+    404: z.object({
+      message: z.string(),
+    }),
+    500: z.object({
+      message: z.string(),
+    }),
+  },
+});
+
+const getSimulatedAgentVariablesContract = c.query({
+  path: '/simulated-agents/:simulatedAgentId/variables',
+  method: 'GET',
+  pathParams: z.object({
+    simulatedAgentId: z.string(),
+  }),
+  responses: {
+    200: z.object({
+      memoryVariables: z.record(z.string()),
+    }),
+    404: z.object({
+      message: z.string(),
+    }),
+  },
+});
+
+const updateSimulatedAgentVariablesContract = c.mutation({
+  path: '/simulated-agents/:simulatedAgentId/variables',
+  method: 'PUT',
+  pathParams: z.object({
+    simulatedAgentId: z.string(),
+  }),
+  body: z.object({
+    memoryVariables: z.record(z.string()).optional(),
+  }),
+  responses: {
+    200: z.object({
+      memoryVariables: z.record(z.string()),
+    }),
+    404: z.object({
+      message: z.string(),
+    }),
+    500: z.object({
+      message: z.string(),
     }),
   },
 });
@@ -63,7 +158,12 @@ const listSimulatedAgentsContract = c.query({
 
 export const simulatedAgentContracts = c.router({
   getDefaultSimulatedAgent: getDefaultSimulatedAgentContract,
+  createSimulatedAgent: createSimulatedAgentContract,
   deleteSimulatedAgent: deleteSimulatedAgentContract,
+  flushSimulatedAgent: flushSimulatedAgentContract,
+  refreshSimulatedSession: refreshSimulatedSessionContract,
+  getSimulatedAgentVariables: getSimulatedAgentVariablesContract,
+  updateSimulatedAgentVariables: updateSimulatedAgentVariablesContract,
   listSimulatedAgents: listSimulatedAgentsContract,
 });
 
@@ -73,9 +173,34 @@ export const simulatedAgentQueryClientKeys = {
     'default',
     agentTemplateId,
   ],
+  createSimulatedAgent: (
+    agentTemplateId: string,
+    deployedAgentTemplateId?: string | null,
+  ) => ['simulated-agents', 'create', agentTemplateId, deployedAgentTemplateId],
   deleteSimulatedAgent: (simulatedAgentId: string) => [
     'simulated-agents',
     simulatedAgentId,
+  ],
+  flushSimulatedAgent: (simulatedAgentId: string) => [
+    'simulated-agents',
+    simulatedAgentId,
+    'flush',
+  ],
+  refreshSimulatedSession: (simulatedAgentId: string) => [
+    'simulated-agents',
+    simulatedAgentId,
+    'refresh',
+  ],
+  getSimulatedAgentVariables: (simulatedAgentId: string) => [
+    'simulated-agents',
+    simulatedAgentId,
+    'variables',
+  ],
+  updateSimulatedAgentVariables: (simulatedAgentId: string) => [
+    'simulated-agents',
+    simulatedAgentId,
+    'variables',
+    'update',
   ],
   listSimulatedAgents: (
     query: z.infer<typeof ListSimulatedAgentsQuerySchema>,

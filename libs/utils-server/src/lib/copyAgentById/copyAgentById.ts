@@ -18,14 +18,15 @@ interface CopyAgentByIdOptions {
   identityIds?: string[];
   initialMessageSequence?: CreateAgentRequest['initial_message_sequence'];
   baseTemplateId?: string;
-  projectId?: string;
+  projectId: string;
   name?: string;
+  hidden?: boolean;
 }
 
 export async function copyAgentById(
   baseAgentId: string,
   lettaAgentsUserId: string,
-  options: CopyAgentByIdOptions = {},
+  options: CopyAgentByIdOptions,
 ) {
   const {
     memoryVariables,
@@ -37,6 +38,7 @@ export async function copyAgentById(
     templateVersionId,
     identityIds,
     baseTemplateId,
+    hidden,
   } = options;
 
   const baseAgent = await AgentsService.retrieveAgent(
@@ -63,6 +65,7 @@ export async function copyAgentById(
     {
       requestBody: {
         ...lodash.omit(baseAgent, omittedFieldsOnCopy),
+        // TEMP FIX THIS IN ONE WEEEK SHUB - https://linear.app/letta/issue/LET-3511/fix-in-one-week
         project_id: projectId,
         template_id: templateVersionId,
         identity_ids: identityIds,
@@ -73,6 +76,7 @@ export async function copyAgentById(
         include_multi_agent_tools: false,
         tool_rules: baseAgent.tool_rules,
         tool_ids: agentBody.tool_ids,
+        hidden,
         name:
           name ||
           uniqueNamesGenerator({

@@ -27,3 +27,4 @@ export * from './lib/getTemporalConnectionConfig/getTemporalConnectionConfig';
 export * from './lib/checkIfUserIsAllVerified/checkIfUserIsAllVerified';
 export * from './lib/contentModerationCheck/contentModerationCheck';
 export * from './lib/markActiveAgent/markActiveAgent';
+export * from './lib/createSimulatedAgent/createSimulatedAgent';

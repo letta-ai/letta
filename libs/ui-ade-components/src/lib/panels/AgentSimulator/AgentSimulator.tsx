@@ -4,7 +4,6 @@ import {
   ChatInput,
   PersonIcon,
   SystemIcon,
-  toast,
   Typography,
   WarningIcon,
   Link,
@@ -20,7 +19,6 @@ import { useEffect } from 'react';
 import { useMemo } from 'react';
 import React, { useCallback, useRef, useState } from 'react';
 import type {
-  AgentState,
   Identity,
   LettaUserMessageContentUnion,
   LettaMessageUnion,
@@ -30,9 +28,7 @@ import type {
 } from '@letta-cloud/sdk-core';
 import { v4 as uuidv4 } from 'uuid';
 import { IdentitiesService } from '@letta-cloud/sdk-core';
-import { isAgentState } from '@letta-cloud/sdk-core';
 import { ErrorMessageSchema } from '@letta-cloud/sdk-core';
-import { useAgentsServiceListAgentSources } from '@letta-cloud/sdk-core';
 import {
   AgentMessageSchema,
   UseAgentsServiceListMessagesKeyFn,
@@ -42,16 +38,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { get } from 'lodash-es';
 import type { z } from 'zod';
 import { useTranslations } from '@letta-cloud/translations';
-import { useDebouncedCallback, useLocalStorage } from '@mantine/hooks';
+import { useLocalStorage } from '@mantine/hooks';
 import {
   useSetOnboardingStep,
   webApi,
   webApiQueryKeys,
 } from '@letta-cloud/sdk-web';
-import { compareAgentStates } from '@letta-cloud/utils-shared';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useCurrentAgentMetaData } from '../../hooks';
-import { useAtom } from 'jotai';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { jsonToCurl } from '@letta-cloud/utils-shared';
@@ -69,6 +63,7 @@ import { useNetworkRequest } from '../../hooks/useNetworkRequest/useNetworkReque
 import { useQuickADETour } from '../../hooks/useQuickADETour/useQuickADETour';
 import { ChatroomContext } from './ChatroomContext/ChatroomContext';
 import { AgentSimulatorHeader } from './AgentSimulatorHeader/AgentSimulatorHeader';
+import { useAtom } from 'jotai';
 
 type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
@@ -656,8 +651,6 @@ function useBillingTier() {
 
 export function AgentSimulator() {
   const t = useTranslations('ADE/AgentSimulator');
-  const agentState = useCurrentAgent();
-  const { id: agentId } = agentState;
   const [renderMode, setRenderMode] = useLocalStorage<MessagesDisplayMode>({
     defaultValue: 'interactive',
     key: 'chatroom-render-mode',
@@ -666,73 +659,7 @@ export function AgentSimulator() {
   const billingTier = useBillingTier();
 
   const { isLocal } = useCurrentAgentMetaData();
-  const { id: agentIdToUse, agentSession } = useCurrentSimulatedAgent();
-
-  const mounted = useRef(false);
-
-  const agentStateStore = useRef<AgentState>(agentState as AgentState);
-
-  const { mutate: updateSession } =
-    webApi.agentTemplates.refreshAgentTemplateSimulatorSession.useMutation({
-      onError: () => {
-        toast.error(t('refreshError'));
-      },
-    });
-
-  const { data: sourceList } = useAgentsServiceListAgentSources({
-    agentId: agentState.id || '',
-  });
-
-  const debounceUpdateSession = useDebouncedCallback(updateSession, 2000);
-
-  useEffect(() => {
-    if (!agentSession?.body.id) {
-      return;
-    }
-
-    // update session just in case
-    if (!mounted.current) {
-      debounceUpdateSession({
-        params: {
-          agentSessionId: agentSession.body.id,
-          agentTemplateId: agentId,
-        },
-      });
-    }
-
-    mounted.current = true;
-  }, [agentId, agentSession?.body.id, debounceUpdateSession, updateSession]);
-
-  useEffect(() => {
-    if (!agentSession?.body.id) {
-      return;
-    }
-
-    if (!isAgentState(agentState)) {
-      return;
-    }
-
-    // check if the agent state has changed
-    if (compareAgentStates(agentState, agentStateStore.current)) {
-      return;
-    }
-
-    agentStateStore.current = agentState;
-
-    // update the existing session
-    debounceUpdateSession({
-      params: {
-        agentSessionId: agentSession?.body.id,
-        agentTemplateId: agentId,
-      },
-    });
-  }, [
-    agentId,
-    agentSession?.body.id,
-    agentState,
-    debounceUpdateSession,
-    sourceList,
-  ]);
+  const { id: agentIdToUse } = useCurrentSimulatedAgent();
 
   const ref = useRef<ChatInputRef | null>(null);
 
@@ -907,6 +834,7 @@ export function AgentSimulator() {
   const identities = useSimulatorIdentities();
 
   const { currentStep, setStep } = useQuickADETour();
+  const agentState = useCurrentAgent();
 
   return (
     <AgentSimulatorOnboarding>

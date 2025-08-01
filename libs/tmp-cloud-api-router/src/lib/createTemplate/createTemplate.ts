@@ -2,6 +2,7 @@ import { AgentsService } from '@letta-cloud/sdk-core';
 import type { CreateAgentData } from '@letta-cloud/sdk-core';
 import { agentTemplates, db } from '@letta-cloud/service-database';
 import {
+  createSimulatedAgent,
   findUniqueAgentTemplateName,
   getTemplateProjectId,
 } from '@letta-cloud/utils-server';
@@ -67,7 +68,8 @@ export async function createTemplate(props: CreateTemplateOptions) {
       requestBody: {
         ...createAgentState,
         name,
-        project_id: getTemplateProjectId(projectId),
+        project_id: projectId,
+        hidden: true,
       },
     },
     {
@@ -86,23 +88,32 @@ export async function createTemplate(props: CreateTemplateOptions) {
     projectId: projectId,
   });
 
-  await cloudApiRouter.agents.versionAgentTemplate(
-    {
-      params: {
-        agent_id: agent.id,
+  await Promise.all([
+    cloudApiRouter.agents.versionAgentTemplate(
+      {
+        params: {
+          agent_id: agent.id,
+        },
+        body: {},
+        query: {},
       },
-      body: {},
-      query: {},
-    },
-    {
-      request: {
-        organizationId,
-        lettaAgentsUserId: lettaAgentsId,
-        userId,
-        source: 'web',
+      {
+        request: {
+          organizationId,
+          lettaAgentsUserId: lettaAgentsId,
+          userId,
+          source: 'web',
+        },
       },
-    },
-  );
+    ),
+    createSimulatedAgent({
+      memoryVariables: {},
+      agentTemplateId: agent.id,
+      organizationId,
+      lettaAgentsId,
+      projectId,
+    }),
+  ]);
 
   return {
     templateName: name,

@@ -1277,6 +1277,10 @@
     }
   },
   "ADE/AgentSimulator": {
+    "simulated": {
+      "label": "Simulated",
+      "tooltip": "The agent you are interacting with is a 'simulated agent', that represents the output state of your template"
+    },
     "liveAgentWarning": {
       "label": "Deployed",
       "tooltip": "Editing this agent may impact live deployments"

@@ -487,7 +487,7 @@ export const deployedAgentTemplates = pgTable(
 
 export const deployedAgentTemplatesRelations = relations(
   deployedAgentTemplates,
-  ({ one, many }) => ({
+  ({ one }) => ({
     organization: one(organizations, {
       fields: [deployedAgentTemplates.organizationId],
       references: [organizations.id],
@@ -518,9 +518,12 @@ export const deployedAgentVariables = pgTable('deployed_agent_variables', {
 });
 
 export const simulatedAgent = pgTable(
-  'simulated_agent',
+  'simulated_agent_real',
   {
-    agentId: text('agent_id').primaryKey(),
+    id: text('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    agentId: text('agent_id').unique().notNull(),
     projectId: text('project_id')
       .notNull()
       .references(() => projects.id, {
@@ -542,7 +545,12 @@ export const simulatedAgent = pgTable(
         onDelete: 'cascade',
       },
     ),
+    memoryVariables:
+      json('memory_variables').$type<MemoryVariableVersionOneType>(),
     variables: json('variables').notNull(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (self) => ({

@@ -80,6 +80,7 @@ import { useQuickADETour } from '../hooks/useQuickADETour/useQuickADETour';
 import { useRouter } from 'next/navigation';
 import { ADEAccordionGroup } from '../shared/ADEAccordionGroup/ADEAccordionGroup';
 import { useADELayoutConfig } from '../hooks/useADELayoutConfig/useADELayoutConfig';
+import { SimulatedAgentProvider } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 
 interface ADELayoutProps {
   user?: UserContextData['user'];
@@ -687,32 +688,34 @@ export function ADELayout(props: ADELayoutProps) {
       user={user}
       projectId={projectId}
     >
-      <Frame
-        overflow="hidden"
-        position="relative"
-        fullWidth
-        fullHeight
-        zIndex="rightAboveZero"
-      >
-        <HiddenOnMobile checkWithJs>
-          <QuickADEOnboarding />
-          <ADEOnboarding />
-          <DesktopLayout />
-        </HiddenOnMobile>
-        <VisibleOnMobile checkWithJs>
-          <MobileLayout />
-        </VisibleOnMobile>
-      </Frame>
-      <VStack
-        className="top-0 left-0 fixed z-[-1]"
-        position="fixed"
-        fullHeight
-        fullWidth
-        align="center"
-        justify="center"
-      >
-        <Logo size="large" color="steel" />
-      </VStack>
+      <SimulatedAgentProvider>
+        <Frame
+          overflow="hidden"
+          position="relative"
+          fullWidth
+          fullHeight
+          zIndex="rightAboveZero"
+        >
+          <HiddenOnMobile checkWithJs>
+            <QuickADEOnboarding />
+            <ADEOnboarding />
+            <DesktopLayout />
+          </HiddenOnMobile>
+          <VisibleOnMobile checkWithJs>
+            <MobileLayout />
+          </VisibleOnMobile>
+        </Frame>
+        <VStack
+          className="top-0 left-0 fixed z-[-1]"
+          position="fixed"
+          fullHeight
+          fullWidth
+          align="center"
+          justify="center"
+        >
+          <Logo size="large" color="steel" />
+        </VStack>
+      </SimulatedAgentProvider>
     </AppContextProvider>
   );
 }
