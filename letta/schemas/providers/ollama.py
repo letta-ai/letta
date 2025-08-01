@@ -134,8 +134,10 @@ class OllamaProvider(OpenAIProvider):
         try:
             model_info = response.json()
             # Try to extract context window from model parameters
-            if "model_info" in model_info and "llama.context_length" in model_info["model_info"]:
-                return int(model_info["model_info"]["llama.context_length"])
+            if "model_info" in model_info:
+                context_length = self._find_value_by_key_suffix(model_info.get("model_info", {}), "context_length")
+                if context_length is not None:
+                    return int(context_length)
         except Exception:
             pass
         logger.warning(f"Failed to get model context window for {model_name}")
@@ -151,4 +153,21 @@ class OllamaProvider(OpenAIProvider):
                 logger.warning("Ollama fetch model info error for %s: %s", model_name, response_json["error"])
             return None
 
-        return response_json["model_info"].get("embedding_length")
+        embeding_length = self._find_value_by_key_suffix(response_json.get("model_info", {}), "embedding_length")
+        if embeding_length is None:
+            logger.warning("Ollama model %s has no embedding length", model_name)
+            return None
+        
+        if isinstance(embeding_length, str) and embeding_length.isdigit():
+            embeding_length = int(embeding_length)
+            return int(embeding_length)
+        
+        logger.warning("Ollama model %s has invalid embedding length: %s", model_name, embeding_length)
+        return None
+    
+    def _find_value_by_key_suffix(self, d: dict, suffix: str):
+        for k, v in d.items():
+            if k.lower().endswith(suffix.lower()):
+                return v
+        return None
+

@@ -27,7 +27,7 @@ class RoundRobinMultiAgent(Agent):
         self.description = description
         self.max_turns = max_turns or len(agent_ids)
 
-    def step(
+    async def step(
         self,
         input_messages: List[MessageCreate],
         chaining: bool = True,

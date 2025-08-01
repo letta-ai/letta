@@ -62,7 +62,7 @@ def sse_formatter(data: Union[dict, str]) -> str:
 
 async def sse_async_generator(
     generator: AsyncGenerator,
-    usage_task: Optional[asyncio.Task] = None,
+    usage: Optional[LettaUsageStatistics] = None,
     finish_message=True,
     request_start_timestamp_ns: Optional[int] = None,
     llm_config: Optional[LLMConfig] = None,
@@ -109,30 +109,28 @@ async def sse_async_generator(
             yield sse_formatter(chunk)
 
         # If we have a usage task, wait for it and send its result
-        if usage_task is not None:
-            try:
-                usage = await usage_task
-                # Double-check the type
-                if not isinstance(usage, LettaUsageStatistics):
-                    err_msg = f"Expected LettaUsageStatistics, got {type(usage)}"
-                    logger.error(err_msg)
-                    raise ValueError(err_msg)
-                yield sse_formatter(usage.model_dump(exclude={"steps_messages"}))
+        try:
+            # Double-check the type
+            if not isinstance(usage, LettaUsageStatistics):
+                err_msg = f"Expected LettaUsageStatistics, got {type(usage)}"
+                logger.error(err_msg)
+                raise ValueError(err_msg)
+            yield sse_formatter(usage.model_dump(exclude={"steps_messages"}))
 
-            except ContextWindowExceededError as e:
-                capture_sentry_exception(e)
-                logger.error(f"ContextWindowExceededError error: {e}")
-                yield sse_formatter({"error": f"Stream failed: {e}", "code": str(e.code.value) if e.code else None})
+        except ContextWindowExceededError as e:
+            capture_sentry_exception(e)
+            logger.error(f"ContextWindowExceededError error: {e}")
+            yield sse_formatter({"error": f"Stream failed: {e}", "code": str(e.code.value) if e.code else None})
 
-            except RateLimitExceededError as e:
-                capture_sentry_exception(e)
-                logger.error(f"RateLimitExceededError error: {e}")
-                yield sse_formatter({"error": f"Stream failed: {e}", "code": str(e.code.value) if e.code else None})
+        except RateLimitExceededError as e:
+            capture_sentry_exception(e)
+            logger.error(f"RateLimitExceededError error: {e}")
+            yield sse_formatter({"error": f"Stream failed: {e}", "code": str(e.code.value) if e.code else None})
 
-            except Exception as e:
-                capture_sentry_exception(e)
-                logger.error(f"Caught unexpected Exception: {e}")
-                yield sse_formatter({"error": "Stream failed (internal error occurred)"})
+        except Exception as e:
+            capture_sentry_exception(e)
+            logger.error(f"Caught unexpected Exception: {e}")
+            yield sse_formatter({"error": "Stream failed (internal error occurred)"})
 
     except Exception as e:
         capture_sentry_exception(e)

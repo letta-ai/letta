@@ -84,7 +84,7 @@ class AsyncBaseMCPClient:
             # TODO move hardcoding to constants
             final_content = "Empty response from tool"
 
-        return final_content, not result.isError
+        return final_content, result.isError
 
     def _check_initialized(self):
         if not self.initialized:

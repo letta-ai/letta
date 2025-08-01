@@ -45,7 +45,7 @@ def send_message_to_agent_and_wait_for_reply(self: "Agent", message: str, other_
     )
 
 
-def send_message_to_agents_matching_tags(self: "Agent", message: str, match_all: List[str], match_some: List[str]) -> List[str]:
+async def send_message_to_agents_matching_tags(self: "Agent", message: str, match_all: List[str], match_some: List[str]) -> List[str]:
     """
     Sends a message to all agents within the same organization that match the specified tag criteria. Agents must possess *all* of the tags in `match_all` and *at least one* of the tags in `match_some` to receive the message.
 
@@ -71,16 +71,16 @@ def send_message_to_agents_matching_tags(self: "Agent", message: str, match_all:
     if not matching_agents:
         return []
 
-    def process_agent(agent_id: str) -> str:
+    async def process_agent(agent_id: str) -> str:
         """Loads an agent, formats the message, and executes .step()"""
         actor = self.user  # Ensure correct actor context
-        agent = server.load_agent(agent_id=agent_id, interface=None, actor=actor)
+        agent = await server.load_agent(agent_id=agent_id, interface=None, actor=actor)
 
         # Prepare the message
         messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=self.agent_state.name)]
 
         # Run .step() and return the response
-        usage_stats = agent.step(
+        usage_stats = await agent.step(
             input_messages=messages,
             chaining=True,
             max_chaining_steps=None,
@@ -98,19 +98,18 @@ def send_message_to_agents_matching_tags(self: "Agent", message: str, match_all:
 
         return json.dumps(response_data, indent=2)
 
-    # Use ThreadPoolExecutor for parallel execution
-    results = []
-    with ThreadPoolExecutor(max_workers=settings.multi_agent_concurrent_sends) as executor:
-        future_to_agent = {executor.submit(process_agent, agent_state.id): agent_state for agent_state in matching_agents}
-
-        for future in as_completed(future_to_agent):
-            try:
-                results.append(future.result())  # Collect results
-            except Exception as e:
-                # Log or handle failure for specific agents if needed
-                self.logger.exception(f"Error processing agent {future_to_agent[future]}: {e}")
-
-    return results
+    # Use asyncio.gather for parallel execution
+    tasks = [process_agent(agent_state.id) for agent_state in matching_agents]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    final_results = []
+    for i, result in enumerate(results):
+        if isinstance(result, Exception):
+            self.logger.exception(f"Error processing agent {matching_agents[i]}: {result}")
+        else:
+            final_results.append(result)
+    
+    return final_results
 
 
 def send_message_to_all_agents_in_group(self: "Agent", message: str) -> List[str]:

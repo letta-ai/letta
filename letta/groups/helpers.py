@@ -78,6 +78,7 @@ def load_multi_agent(
                 interface=interface,
                 user=actor,
                 group_id=group.id,
+                mcp_clients=mcp_clients,
                 agent_ids=group.agent_ids,
                 description=group.description,
                 sleeptime_agent_frequency=group.sleeptime_agent_frequency,

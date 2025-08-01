@@ -1,7 +1,7 @@
 import asyncio
 import threading
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from letta.agent import Agent, AgentState
 from letta.groups.helpers import stringify_message
@@ -16,6 +16,7 @@ from letta.schemas.usage import LettaUsageStatistics
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.services.group_manager import GroupManager
 from letta.services.job_manager import JobManager
+from letta.services.mcp.base_client import AsyncBaseMCPClient
 from letta.services.message_manager import MessageManager
 
 
@@ -25,7 +26,7 @@ class SleeptimeMultiAgent(Agent):
         interface: AgentInterface,
         agent_state: AgentState,
         user: User,
-        # mcp_clients: Optional[Dict[str, BaseMCPClient]] = None,
+        mcp_clients: Optional[Dict[str, AsyncBaseMCPClient]] = None,
         # custom
         group_id: str = "",
         agent_ids: List[str] = [],
@@ -41,7 +42,7 @@ class SleeptimeMultiAgent(Agent):
         self.message_manager = MessageManager()
         self.job_manager = JobManager()
         # TODO: add back MCP support with new agent loop
-        self.mcp_clients = {}
+        self.mcp_clients = mcp_clients or {}
 
     def _run_async_in_new_thread(self, coro):
         """Run an async coroutine in a new thread with its own event loop"""
@@ -159,7 +160,7 @@ class SleeptimeMultiAgent(Agent):
                 for m in participant_agent_messages
             ]
 
-            result = participant_agent.step(
+            result = await participant_agent.step(
                 input_messages=message_creates,
                 chaining=chaining,
                 max_chaining_steps=max_chaining_steps,
@@ -187,7 +188,7 @@ class SleeptimeMultiAgent(Agent):
             self.job_manager.update_job_by_id(job_id=run_id, job_update=job_update, actor=self.user)
             raise
 
-    def step(
+    async def step(
         self,
         input_messages: List[MessageCreate],
         chaining: bool = True,
@@ -218,7 +219,7 @@ class SleeptimeMultiAgent(Agent):
                 mcp_clients=self.mcp_clients,
             )
             # Perform main agent step
-            usage_stats = main_agent.step(
+            usage_stats = await main_agent.step(
                 input_messages=new_messages,
                 chaining=chaining,
                 max_chaining_steps=max_chaining_steps,

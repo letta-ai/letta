@@ -35,7 +35,7 @@ class SupervisorMultiAgent(Agent):
         self.agent_manager = AgentManager()
         self.tool_manager = ToolManager()
 
-    def step(
+    async def step(
         self,
         input_messages: List[MessageCreate],
         chaining: bool = True,
@@ -96,7 +96,7 @@ class SupervisorMultiAgent(Agent):
             )
 
             # Perform supervisor step
-            usage_stats = supervisor_agent.step(
+            usage_stats = await supervisor_agent.step(
                 input_messages=new_messages,
                 chaining=chaining,
                 max_chaining_steps=max_chaining_steps,

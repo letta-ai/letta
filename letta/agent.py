@@ -86,7 +86,7 @@ class BaseAgent(ABC):
     """
 
     @abstractmethod
-    def step(
+    async def step(
         self,
         input_messages: List[MessageCreate],
     ) -> LettaUsageStatistics:
@@ -170,11 +170,8 @@ class Agent(BaseAgent):
         self.logger = get_logger(agent_state.id)
 
         # MCPClient, state/sessions managed by the server
-        # TODO: This is temporary, as a bridge
-        self.mcp_clients = None
-        # TODO: no longer supported
-        # if mcp_clients:
-        #    self.mcp_clients = {client_id: client.to_sync_client() for client_id, client in mcp_clients.items()}
+        self.mcp_clients = mcp_clients
+                   
 
     def load_last_function_response(self):
         """Load the last function response from message history"""
@@ -440,7 +437,7 @@ class Agent(BaseAgent):
         raise Exception("Retries exhausted and no valid response received.")
 
     @trace_method
-    def _handle_ai_response(
+    async def _handle_ai_response(
         self,
         response_message: ChatCompletionMessage,  # TODO should we eventually move the Message creation outside of this function?
         override_tool_call_id: bool = False,
@@ -596,7 +593,7 @@ class Agent(BaseAgent):
                     },
                 )
 
-                tool_execution_result = self.execute_tool_and_persist_state(function_name, function_args, target_letta_tool)
+                tool_execution_result = await self.execute_tool_and_persist_state(function_name, function_args, target_letta_tool)
                 function_response = tool_execution_result.func_return
 
                 log_event(
@@ -748,7 +745,7 @@ class Agent(BaseAgent):
         return messages, heartbeat_request, function_failed
 
     @trace_method
-    def step(
+    async def step(
         self,
         input_messages: List[MessageCreate],
         # additional args
@@ -774,7 +771,7 @@ class Agent(BaseAgent):
             kwargs["first_message"] = False
             kwargs["step_count"] = step_count
             kwargs["last_function_failed"] = function_failed
-            step_response = self.inner_step(
+            step_response = await self.inner_step(
                 messages=next_input_messages,
                 put_inner_thoughts_first=put_inner_thoughts_first,
                 **kwargs,
@@ -852,7 +849,7 @@ class Agent(BaseAgent):
 
         return LettaUsageStatistics(**total_usage.model_dump(), step_count=step_count, steps_messages=steps_messages)
 
-    def inner_step(
+    async def inner_step(
         self,
         messages: List[Message],
         first_message: bool = False,
@@ -923,7 +920,7 @@ class Agent(BaseAgent):
             response_message = response.choices[0].message
 
             response_message.model_copy()  # TODO why are we copying here?
-            all_response_messages, heartbeat_request, function_failed = self._handle_ai_response(
+            all_response_messages, heartbeat_request, function_failed = await self._handle_ai_response(
                 response_message,
                 # TODO this is kind of hacky, find a better way to handle this
                 # the only time we set up message creation ahead of time is when streaming is on
@@ -1040,7 +1037,7 @@ class Agent(BaseAgent):
                     self.summarize_messages_inplace()
 
                     # Try step again
-                    return self.inner_step(
+                    return await self.inner_step(
                         messages=messages,
                         first_message=first_message,
                         first_message_retry_limit=first_message_retry_limit,
@@ -1069,7 +1066,7 @@ class Agent(BaseAgent):
                 traceback.print_exc()
                 raise e
 
-    def step_user_message(self, user_message_str: str, **kwargs) -> AgentStepResponse:
+    async def step_user_message(self, user_message_str: str, **kwargs) -> AgentStepResponse:
         """Takes a basic user message string, turns it into a stringified JSON with extra metadata, then sends it to the agent
 
         Example:
@@ -1100,7 +1097,7 @@ class Agent(BaseAgent):
             # created_at=timestamp,
         )
 
-        return self.inner_step(messages=[user_message], **kwargs)
+        return await self.inner_step(messages=[user_message], **kwargs)
 
     def summarize_messages_inplace(self):
         in_context_messages = self.agent_manager.get_in_context_messages(agent_id=self.agent_state.id, actor=self.user)
@@ -1593,7 +1590,7 @@ class Agent(BaseAgent):
         return context_window_breakdown.context_window_size_current
 
     # TODO: Refactor into separate class v.s. large if/elses here
-    def execute_tool_and_persist_state(self, function_name: str, function_args: dict, target_letta_tool: Tool) -> ToolExecutionResult:
+    async def execute_tool_and_persist_state(self, function_name: str, function_args: dict, target_letta_tool: Tool) -> ToolExecutionResult:
         """
         Execute tool modifications and persist the state of the agent.
         Note: only some agent state modifications will be persisted, such as data in the AgentState ORM and block data
@@ -1648,14 +1645,14 @@ class Agent(BaseAgent):
                 mcp_client = self.mcp_clients[server_name]
 
                 # Check that tool exists
-                available_tools = mcp_client.list_tools()
+                available_tools = await mcp_client.list_tools()
                 available_tool_names = [t.name for t in available_tools]
                 if function_name not in available_tool_names:
                     raise ValueError(
                         f"{function_name} is not available in MCP server {server_name}. Please check your `~/.letta/mcp_config.json` file."
                     )
 
-                function_response, is_error = mcp_client.execute_tool(tool_name=function_name, tool_args=function_args)
+                function_response, is_error = await mcp_client.execute_tool(tool_name=function_name, tool_args=function_args)
                 return ToolExecutionResult(
                     status="error" if is_error else "success",
                     func_return=function_response,

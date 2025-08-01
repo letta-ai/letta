@@ -11,7 +11,7 @@ services:
       - POSTGRES_PASSWORD=${LETTA_PG_PASSWORD:-letta}
       - POSTGRES_DB=${LETTA_PG_DB:-letta}
     volumes:
-      - ./.persist/pgdata:/var/lib/postgresql/data
+      - ../.persist/pgdata:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "${LETTA_PG_PORT:-5432}:5432"
@@ -21,7 +21,9 @@ services:
       timeout: 5s
       retries: 5
   letta_server:
-    image: letta/letta:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     hostname: letta-server
     depends_on:
       letta_db:
@@ -34,6 +36,7 @@ services:
     environment:
       - LETTA_PG_URI=${LETTA_PG_URI:-postgresql://${LETTA_PG_USER:-letta}:${LETTA_PG_PASSWORD:-letta}@${LETTA_DB_HOST:-letta-db}:${LETTA_PG_PORT:-5432}/${LETTA_PG_DB:-letta}}
       - LETTA_DEBUG=True
+      - ACCEPTABLE_ORIGINS=*
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}

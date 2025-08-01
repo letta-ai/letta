@@ -381,7 +381,7 @@ async def add_composio_tool(
 # Specific routes for MCP
 @router.get(
     "/mcp/servers",
-    response_model=dict[str, Union[SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig]],
+    response_model=dict[str, Union[StreamableHTTPServerConfig, SSEServerConfig, StdioServerConfig]],
     operation_id="list_mcp_servers",
 )
 async def list_mcp_servers(server: SyncServer = Depends(get_letta_server), user_id: Optional[str] = Header(None, alias="user_id")):
@@ -393,7 +393,7 @@ async def list_mcp_servers(server: SyncServer = Depends(get_letta_server), user_
     else:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=user_id)
         mcp_servers = await server.mcp_manager.list_mcp_servers(actor=actor)
-        return {server.server_name: server.to_config(resolve_variables=False) for server in mcp_servers}
+        return {server.server_name: server.to_config() for server in mcp_servers}
 
 
 # NOTE: async because the MCP client/session calls are async
@@ -499,11 +499,11 @@ async def add_mcp_tool(
 
 @router.put(
     "/mcp/servers",
-    response_model=List[Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig]],
+    response_model=List[Union[StdioServerConfig, StreamableHTTPServerConfig]],
     operation_id="add_mcp_server",
 )
 async def add_mcp_server_to_config(
-    request: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig] = Body(...),
+    request: Union[StdioServerConfig, StreamableHTTPServerConfig] = Body(...),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
@@ -567,7 +567,7 @@ async def add_mcp_server_to_config(
 
 @router.patch(
     "/mcp/servers/{mcp_server_name}",
-    response_model=Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig],
+    response_model=Union[StdioServerConfig, StreamableHTTPServerConfig, SSEServerConfig],
     operation_id="update_mcp_server",
 )
 async def update_mcp_server(
@@ -599,7 +599,7 @@ async def update_mcp_server(
 
 @router.delete(
     "/mcp/servers/{mcp_server_name}",
-    response_model=List[Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig]],
+    response_model=List[Union[StdioServerConfig, StreamableHTTPServerConfig, SSEServerConfig]],
     operation_id="delete_mcp_server",
 )
 async def delete_mcp_server_from_config(

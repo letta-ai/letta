@@ -46,7 +46,7 @@ async def create_chat_completions(
 
     actor = server.user_manager.get_user_or_default(user_id=user_id)
 
-    letta_agent = server.load_agent(agent_id=agent_id, actor=actor)
+    letta_agent = await server.load_agent(agent_id=agent_id, actor=actor)
     llm_config = letta_agent.agent_state.llm_config
     if llm_config.model_endpoint_type != "openai" or llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
         error_msg = f"You can only use models with type 'openai' for chat completions. This agent {agent_id} has llm_config: \n{llm_config.model_dump_json(indent=4)}"
@@ -98,22 +98,14 @@ async def send_message_to_agent_chat_completions(
 
         # Offload the synchronous message_func to a separate thread
         streaming_interface.stream_start()
-        asyncio.create_task(
-            asyncio.to_thread(
-                server.send_messages,
-                actor=actor,
-                agent_id=letta_agent.agent_state.id,
-                input_messages=messages,
-                interface=streaming_interface,
-                put_inner_thoughts_first=False,
-            )
-        )
+
+        await server.send_messages(actor=actor, agent_id=letta_agent.agent_state.id, input_messages=messages, interface=streaming_interface)
 
         # return a stream
         return StreamingResponse(
-            sse_async_generator(
+            await sse_async_generator(
                 streaming_interface.get_generator(),
-                usage_task=None,
+                usage=None,
                 finish_message=True,
             ),
             media_type="text/event-stream",
@@ -127,3 +119,7 @@ async def send_message_to_agent_chat_completions(
 
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"{e}")
+    finally:
+        logger.debug("Calling step_yield()")
+        if letta_agent:
+            letta_agent.interface.step_yield()

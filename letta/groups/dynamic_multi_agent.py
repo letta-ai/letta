@@ -33,7 +33,7 @@ class DynamicMultiAgent(Agent):
 
         self.tool_manager = ToolManager()
 
-    def step(
+    async def step(
         self,
         input_messages: List[MessageCreate],
         chaining: bool = True,
@@ -78,7 +78,7 @@ class DynamicMultiAgent(Agent):
 
                 # Perform manager step
                 manager_agent = agents[self.agent_state.id]
-                usage_stats = manager_agent.step(
+                usage_stats = await manager_agent.step(
                     input_messages=[manager_message],
                     chaining=chaining,
                     max_chaining_steps=max_chaining_steps,
@@ -107,7 +107,7 @@ class DynamicMultiAgent(Agent):
 
                 # Perform participant step
                 participant_agent = agents[speaker_id]
-                usage_stats = participant_agent.step(
+                usage_stats = await participant_agent.step(
                     input_messages=chat_history[message_index[speaker_id] :],
                     chaining=chaining,
                     max_chaining_steps=max_chaining_steps,

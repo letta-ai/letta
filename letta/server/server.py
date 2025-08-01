@@ -17,6 +17,7 @@ from fastapi.responses import StreamingResponse
 
 import letta.constants as constants
 import letta.server.utils as server_utils
+from letta.services.mcp.streamable_http_client import AsyncStreamableHTTPMCPClient
 import letta.system as system
 from letta.agent import Agent, save_agent
 from letta.config import LettaConfig
@@ -40,7 +41,7 @@ from letta.schemas.block import Block, BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 
 # openai schemas
-from letta.schemas.enums import JobStatus, MessageStreamStatus, ProviderCategory, ProviderType, SandboxType
+from letta.schemas.enums import JobStatus, MessageStreamStatus, ProviderCategory, ProviderType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
 from letta.schemas.group import GroupCreate, ManagerType, SleeptimeManager, VoiceSleeptimeManager
 from letta.schemas.job import Job, JobUpdate
@@ -67,10 +68,9 @@ from letta.schemas.providers import (
     OpenAIProvider,
     Provider,
     TogetherProvider,
-    VLLMProvider,
     XAIProvider,
 )
-from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxConfigCreate
+from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxConfigCreate, SandboxType
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.usage import LettaUsageStatistics
@@ -156,7 +156,7 @@ class Server(object):
         raise NotImplementedError
 
     @abstractmethod
-    def send_messages(self, user_id: str, agent_id: str, input_messages: List[MessageCreate]) -> None:
+    async def send_messages(self, user_id: str, agent_id: str, input_messages: List[MessageCreate]) -> None:
         """Send a list of messages to the agent"""
         raise NotImplementedError
 
@@ -406,45 +406,52 @@ class SyncServer(Server):
         # TODO: Replace this with the Anthropic client we have in house
         self.anthropic_async_client = AsyncAnthropic()
 
-    async def init_mcp_clients(self):
-        # TODO: remove this
-        mcp_server_configs = self.get_mcp_servers()
+    async def init_mcp_clients(self, actor: User) -> Dict[str, AsyncBaseMCPClient]:
+        mcp_servers = await self.mcp_manager.list_mcp_servers(actor=actor)
+        mcp_server_configs = {server.server_name: server.to_config() for server in mcp_servers}
+        
+        mcp_clients = {}
 
         for server_name, server_config in mcp_server_configs.items():
             if server_config.type == MCPServerType.SSE:
-                self.mcp_clients[server_name] = AsyncSSEMCPClient(server_config)
+                mcp_clients[server_name] = AsyncSSEMCPClient(server_config)
             elif server_config.type == MCPServerType.STDIO:
-                self.mcp_clients[server_name] = AsyncStdioMCPClient(server_config)
+                mcp_clients[server_name] = AsyncStdioMCPClient(server_config)
+            elif server_config.type == MCPServerType.STREAMABLE_HTTP:
+                mcp_clients[server_name] = AsyncStreamableHTTPMCPClient(server_config)
             else:
                 raise ValueError(f"Invalid MCP server config: {server_config}")
-
+            logger.debug(f"[Yuanzhi is debugging] Connecting to MCP server: {server_name}")
             try:
-                await self.mcp_clients[server_name].connect_to_server()
+                await mcp_clients[server_name].connect_to_server()
             except Exception as e:
                 logger.error(e)
-                self.mcp_clients.pop(server_name)
+                mcp_clients.pop(server_name)
 
         # Print out the tools that are connected
-        for server_name, client in self.mcp_clients.items():
+        for server_name, client in mcp_clients.items():
             logger.info(f"Attempting to fetch tools from MCP server: {server_name}")
             mcp_tools = await client.list_tools()
             logger.info(f"MCP tools connected: {', '.join([t.name for t in mcp_tools])}")
             logger.debug(f"MCP tools: {', '.join([str(t) for t in mcp_tools])}")
+        return mcp_clients
 
-    def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
+    async def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
         """Updated method to load agents from persisted storage"""
         agent_state = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
+        mcp_clients = await self.init_mcp_clients(actor=actor)
         # TODO: Think about how to integrate voice sleeptime into sleeptime
         # TODO: Voice sleeptime agents turn into normal agents when being messaged
         if agent_state.multi_agent_group and agent_state.multi_agent_group.manager_type != ManagerType.voice_sleeptime:
             return load_multi_agent(
-                group=agent_state.multi_agent_group, agent_state=agent_state, actor=actor, interface=interface, mcp_clients=self.mcp_clients
+                group=agent_state.multi_agent_group, agent_state=agent_state, actor=actor, interface=interface, mcp_clients=mcp_clients
             )
 
         interface = interface or self.default_interface_factory()
-        return Agent(agent_state=agent_state, interface=interface, user=actor, mcp_clients=self.mcp_clients)
 
-    def _step(
+        return Agent(agent_state=agent_state, interface=interface, user=actor, mcp_clients=mcp_clients)
+
+    async def _step(
         self,
         actor: User,
         agent_id: str,
@@ -458,7 +465,7 @@ class SyncServer(Server):
         logger.debug(f"Got input messages: {input_messages}")
         letta_agent = None
         try:
-            letta_agent = self.load_agent(agent_id=agent_id, interface=interface, actor=actor)
+            letta_agent = await self.load_agent(agent_id=agent_id, interface=interface, actor=actor)
             if letta_agent is None:
                 raise KeyError(f"Agent (user={actor.id}, agent={agent_id}) is not loaded")
 
@@ -471,7 +478,7 @@ class SyncServer(Server):
             else:
                 metadata = None
 
-            usage_stats = letta_agent.step(
+            usage_stats = await letta_agent.step(
                 input_messages=input_messages,
                 chaining=self.chaining,
                 max_chaining_steps=self.max_chaining_steps,
@@ -485,14 +492,10 @@ class SyncServer(Server):
             logger.error(f"Error in server._step: {e}")
             print(traceback.print_exc())
             raise
-        finally:
-            logger.debug("Calling step_yield()")
-            if letta_agent:
-                letta_agent.interface.step_yield()
 
         return usage_stats
 
-    def _command(self, user_id: str, agent_id: str, command: str) -> LettaUsageStatistics:
+    async def _command(self, user_id: str, agent_id: str, command: str) -> LettaUsageStatistics:
         """Process a CLI command"""
         # TODO: Thread actor directly through this function, since the top level caller most likely already retrieved the user
         actor = self.user_manager.get_user_or_default(user_id=user_id)
@@ -500,7 +503,7 @@ class SyncServer(Server):
         logger.debug(f"Got command: {command}")
 
         # Get the agent object (loaded in memory)
-        letta_agent = self.load_agent(agent_id=agent_id, actor=actor)
+        letta_agent = await self.load_agent(agent_id=agent_id, actor=actor)
         usage = None
 
         if command.lower() == "exit":
@@ -599,11 +602,11 @@ class SyncServer(Server):
 
         elif command.lower() == "heartbeat":
             input_message = system.get_heartbeat()
-            usage = self._step(actor=actor, agent_id=agent_id, input_message=input_message)
+            usage = await self._step(actor=actor, agent_id=agent_id, input_message=input_message)
 
         elif command.lower() == "memorywarning":
             input_message = system.get_token_limit_warning()
-            usage = self._step(actor=actor, agent_id=agent_id, input_message=input_message)
+            usage = await self._step(actor=actor, agent_id=agent_id, input_message=input_message)
 
         if not usage:
             usage = LettaUsageStatistics()
@@ -719,7 +722,7 @@ class SyncServer(Server):
         return self._step(actor=actor, agent_id=agent_id, input_messages=message)
 
     # TODO: Deprecate this
-    def send_messages(
+    async def send_messages(
         self,
         actor: User,
         agent_id: str,
@@ -737,7 +740,7 @@ class SyncServer(Server):
             interface.metadata = metadata
 
         # Run the agent state forward
-        return self._step(
+        return await self._step(
             actor=actor,
             agent_id=agent_id,
             input_messages=input_messages,
@@ -746,13 +749,13 @@ class SyncServer(Server):
         )
 
     # @LockingServer.agent_lock_decorator
-    def run_command(self, user_id: str, agent_id: str, command: str) -> LettaUsageStatistics:
+    async def run_command(self, user_id: str, agent_id: str, command: str) -> LettaUsageStatistics:
         """Run a command on the agent"""
         # If the input begins with a command prefix, attempt to process it as a command
         if command.startswith("/"):
             if len(command) > 1:
                 command = command[1:]  # strip the prefix
-        return self._command(user_id=user_id, agent_id=agent_id, command=command)
+        return await self._command(user_id=user_id, agent_id=agent_id, command=command)
 
     @trace_method
     def get_cached_llm_config(self, actor: User, **kwargs):
@@ -2251,7 +2254,7 @@ class SyncServer(Server):
 
             # Get the generator object off of the agent's streaming interface
             # This will be attached to the POST SSE request used under-the-hood
-            letta_agent = self.load_agent(agent_id=agent_id, actor=actor)
+            letta_agent = await self.load_agent(agent_id=agent_id, actor=actor)
 
             # Disable token streaming if not OpenAI or Anthropic
             # TODO: cleanup this logic
@@ -2302,23 +2305,13 @@ class SyncServer(Server):
 
             # Offload the synchronous message_func to a separate thread
             streaming_interface.stream_start()
-            task = asyncio.create_task(
-                asyncio.to_thread(
-                    self.send_messages,
-                    actor=actor,
-                    agent_id=agent_id,
-                    input_messages=input_messages,
-                    interface=streaming_interface,
-                    metadata=metadata,
-                )
-            )
-
+            usage = await self.send_messages(actor=actor, agent_id=agent_id, input_messages=input_messages, interface=streaming_interface, metadata=metadata)
             if stream_steps:
                 # return a stream
                 return StreamingResponse(
                     sse_async_generator(
                         streaming_interface.get_generator(),
-                        usage_task=task,
+                        usage=usage,
                         finish_message=include_final_message,
                         request_start_timestamp_ns=request_start_timestamp_ns,
                         llm_config=llm_config,
@@ -2366,6 +2359,10 @@ class SyncServer(Server):
 
             traceback.print_exc()
             raise HTTPException(status_code=500, detail=f"{e}")
+        finally:
+            logger.debug("Calling step_yield()")
+            if letta_agent:
+                letta_agent.interface.step_yield()
 
     @trace_method
     async def send_group_message_to_agent(
@@ -2418,48 +2415,47 @@ class SyncServer(Server):
         if metadata and hasattr(streaming_interface, "metadata"):
             streaming_interface.metadata = metadata
 
-        streaming_interface.stream_start()
-        task = asyncio.create_task(
-            asyncio.to_thread(
-                letta_multi_agent.step,
-                input_messages=input_messages,
-                chaining=self.chaining,
-                max_chaining_steps=self.max_chaining_steps,
-            )
-        )
+        try:
+            streaming_interface.stream_start()
 
-        if stream_steps:
-            # return a stream
-            return StreamingResponse(
-                sse_async_generator(
-                    streaming_interface.get_generator(),
-                    usage_task=task,
-                    finish_message=include_final_message,
-                ),
-                media_type="text/event-stream",
-            )
+            usage = await letta_multi_agent.step(input_messages=input_messages, chaining=self.chaining, max_chaining_steps=self.max_chaining_steps)
 
-        else:
-            # buffer the stream, then return the list
-            generated_stream = []
-            async for message in streaming_interface.get_generator():
-                assert (
-                    isinstance(message, LettaMessage) or isinstance(message, LegacyLettaMessage) or isinstance(message, MessageStreamStatus)
-                ), type(message)
-                generated_stream.append(message)
-                if message == MessageStreamStatus.done:
-                    break
+            if stream_steps:
+                # return a stream
+                return StreamingResponse(
+                    sse_async_generator(
+                        streaming_interface.get_generator(),
+                        usage=usage,
+                        finish_message=include_final_message,
+                    ),
+                    media_type="text/event-stream",
+                )
 
-            # Get rid of the stream status messages
-            filtered_stream = [d for d in generated_stream if not isinstance(d, MessageStreamStatus)]
-            usage = await task
+            else:
+                # buffer the stream, then return the list
+                generated_stream = []
+                async for message in streaming_interface.get_generator():
+                    assert (
+                        isinstance(message, LettaMessage) or isinstance(message, LegacyLettaMessage) or isinstance(message, MessageStreamStatus)
+                    ), type(message)
+                    generated_stream.append(message)
+                    if message == MessageStreamStatus.done:
+                        break
 
-            # By default the stream will be messages of type LettaMessage or LettaLegacyMessage
-            # If we want to convert these to Message, we can use the attached IDs
-            # NOTE: we will need to de-duplicate the Messsage IDs though (since Assistant->Inner+Func_Call)
-            # TODO: eventually update the interface to use `Message` and `MessageChunk` (new) inside the deque instead
-            return LettaResponse(
-                messages=filtered_stream,
-                stop_reason=LettaStopReason(stop_reason=StopReasonType.end_turn.value),
-                usage=usage,
-            )
+                # Get rid of the stream status messages
+                filtered_stream = [d for d in generated_stream if not isinstance(d, MessageStreamStatus)]
+                usage = await task
+
+                # By default the stream will be messages of type LettaMessage or LettaLegacyMessage
+                # If we want to convert these to Message, we can use the attached IDs
+                # NOTE: we will need to de-duplicate the Messsage IDs though (since Assistant->Inner+Func_Call)
+                # TODO: eventually update the interface to use `Message` and `MessageChunk` (new) inside the deque instead
+                return LettaResponse(
+                    messages=filtered_stream,
+                    stop_reason=LettaStopReason(stop_reason=StopReasonType.end_turn.value),
+                    usage=usage,
+                )
+        finally:
+            logger.debug("Calling step_yield()")
+            if letta_multi_agent:
+                letta_multi_agent.interface.step_yield()

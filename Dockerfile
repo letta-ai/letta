@@ -34,6 +34,10 @@ RUN pip install --no-cache-dir poetry==2.1.3
 
 # Copy dependency files first
 COPY pyproject.toml poetry.lock ./
+
+RUN poetry lock && \
+    poetry install --no-root --all-extras 
+
 # Then copy the rest of the application code
 COPY . .
 
@@ -86,6 +90,7 @@ COPY --from=builder /app .
 COPY init.sql /docker-entrypoint-initdb.d/
 
 EXPOSE 8283 5432 4317 4318
+RUN pip install alembic
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["./letta/server/startup.sh"]
