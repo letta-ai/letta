@@ -102,7 +102,7 @@ class GoogleVertexClient(LLMClientBase):
         unsupported_keys = ["default", "exclusiveMaximum", "exclusiveMinimum", "additionalProperties", "$schema"]
         keys_to_remove_at_this_level = [key for key in unsupported_keys if key in schema_part]
         for key_to_remove in keys_to_remove_at_this_level:
-            logger.warning(f"Removing unsupported keyword 	'{key_to_remove}' from schema part.")
+            logger.debug(f"Removing unsupported keyword 	'{key_to_remove}' from schema part.")
             del schema_part[key_to_remove]
 
         if schema_part.get("type") == "string" and "format" in schema_part:

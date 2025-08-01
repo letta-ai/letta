@@ -1,21 +1,17 @@
 import hashlib
 import json
-from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, model_validator
 
 from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.schemas.agent import AgentState
+from letta.schemas.enums import SandboxType
 from letta.schemas.letta_base import LettaBase, OrmMetadataBase
 from letta.schemas.pip_requirement import PipRequirement
 from letta.settings import tool_settings
 
-
 # Sandbox Config
-class SandboxType(str, Enum):
-    E2B = "e2b"
-    LOCAL = "local"
 
 
 class SandboxRunResult(BaseModel):
@@ -83,6 +79,15 @@ class E2BSandboxConfig(BaseModel):
         return data
 
 
+class ModalSandboxConfig(BaseModel):
+    timeout: int = Field(5 * 60, description="Time limit for the sandbox (in seconds).")
+    pip_requirements: Optional[List[str]] = Field(None, description="A list of pip packages to install in the Modal sandbox")
+
+    @property
+    def type(self) -> "SandboxType":
+        return SandboxType.MODAL
+
+
 class SandboxConfigBase(OrmMetadataBase):
     __id_prefix__ = "sandbox"
 
@@ -98,6 +103,9 @@ class SandboxConfig(SandboxConfigBase):
 
     def get_local_config(self) -> LocalSandboxConfig:
         return LocalSandboxConfig(**self.config)
+
+    def get_modal_config(self) -> ModalSandboxConfig:
+        return ModalSandboxConfig(**self.config)
 
     def fingerprint(self) -> str:
         # Only take into account type, org_id, and the config items
@@ -120,10 +128,12 @@ class SandboxConfig(SandboxConfigBase):
 
 
 class SandboxConfigCreate(LettaBase):
-    config: Union[LocalSandboxConfig, E2BSandboxConfig] = Field(..., description="The configuration for the sandbox.")
+    config: Union[LocalSandboxConfig, E2BSandboxConfig, ModalSandboxConfig] = Field(..., description="The configuration for the sandbox.")
 
 
 class SandboxConfigUpdate(LettaBase):
     """Pydantic model for updating SandboxConfig fields."""
 
-    config: Union[LocalSandboxConfig, E2BSandboxConfig] = Field(None, description="The JSON configuration data for the sandbox.")
+    config: Union[LocalSandboxConfig, E2BSandboxConfig, ModalSandboxConfig] = Field(
+        None, description="The JSON configuration data for the sandbox."
+    )

@@ -1,5 +1,5 @@
 {
-  "model": "gemini-2.5-flash-preview-04-17",
+  "model": "gemini-2.5-flash",
   "model_endpoint_type": "google_vertex",
   "model_endpoint": "https://us-central1-aiplatform.googleapis.com/v1/projects/memgpt-428419/locations/us-central1",
   "context_window": 1048576,

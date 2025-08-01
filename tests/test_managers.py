@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 import random
@@ -7,6 +8,7 @@ import string
 import time
 from datetime import datetime, timedelta, timezone
 from typing import List
+from unittest.mock import Mock
 
 # tests/test_file_content_flow.py
 import pytest
@@ -37,7 +39,6 @@ from letta.constants import (
     MULTI_AGENT_TOOLS,
 )
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
-from letta.embeddings import embedding_model
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.functions.mcp_client.types import MCPTool
 from letta.helpers import ToolRulesSolver
@@ -53,7 +54,7 @@ from letta.schemas.agent import CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import ActorType, AgentStepStatus, FileProcessingStatus, JobStatus, JobType, MessageRole, ProviderType
+from letta.schemas.enums import ActorType, AgentStepStatus, FileProcessingStatus, JobStatus, JobType, MessageRole, ProviderType, SandboxType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
@@ -75,7 +76,7 @@ from letta.schemas.organization import OrganizationUpdate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.pip_requirement import PipRequirement
 from letta.schemas.run import Run as PydanticRun
-from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate, SandboxType
+from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.source import SourceUpdate
 from letta.schemas.tool import Tool as PydanticTool
@@ -93,16 +94,7 @@ from letta.utils import calculate_file_defaults_based_on_context_window
 from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
 from tests.utils import random_string
 
-DEFAULT_EMBEDDING_CONFIG = EmbeddingConfig(
-    embedding_endpoint_type="hugging-face",
-    embedding_endpoint="https://embeddings.memgpt.ai",
-    embedding_model="letta-free",
-    embedding_dim=1024,
-    embedding_chunk_size=300,
-    azure_endpoint=None,
-    azure_version=None,
-    azure_deployment=None,
-)
+DEFAULT_EMBEDDING_CONFIG = EmbeddingConfig.default_config(provider="openai")
 CREATE_DELAY_SQLITE = 1
 USING_SQLITE = not bool(os.getenv("LETTA_PG_URI"))
 
@@ -775,7 +767,7 @@ async def test_create_agent_include_base_tools(server: SyncServer, default_user,
 
     # Assert the tools exist
     tool_names = [t.name for t in created_agent.tools]
-    expected_tools = calculate_base_tools(is_v2=False)
+    expected_tools = calculate_base_tools(is_v2=True)
     assert sorted(tool_names) == sorted(expected_tools)
 
 
@@ -2137,7 +2129,8 @@ async def test_list_agents_query_text_pagination(server: SyncServer, default_use
         actor=default_user,
     )
 
-    await asyncio.sleep(0.1)
+    # at least 1 second to force unique timestamps in sqlite for deterministic pagination assertions
+    await asyncio.sleep(1.1)
 
     agent2 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
@@ -2151,7 +2144,8 @@ async def test_list_agents_query_text_pagination(server: SyncServer, default_use
         actor=default_user,
     )
 
-    await asyncio.sleep(0.1)
+    # at least 1 second to force unique timestamps in sqlite for deterministic pagination assertions
+    await asyncio.sleep(1.1)
 
     agent3 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
@@ -2717,10 +2711,28 @@ async def test_agent_list_passages_filtering(server, default_user, sarah_agent, 
     assert len(date_filtered) == 5
 
 
+@pytest.fixture
+def mock_embeddings():
+    """Load mock embeddings from JSON file"""
+    fixture_path = os.path.join(os.path.dirname(__file__), "data", "test_embeddings.json")
+    with open(fixture_path, "r") as f:
+        return json.load(f)
+
+
+@pytest.fixture
+def mock_embed_model(mock_embeddings):
+    """Mock embedding model that returns predefined embeddings"""
+    mock_model = Mock()
+    mock_model.get_text_embedding = lambda text: mock_embeddings.get(text, [0.0] * 1536)
+    return mock_model
+
+
 @pytest.mark.asyncio
-async def test_agent_list_passages_vector_search(server, default_user, sarah_agent, default_source, default_file, event_loop):
+async def test_agent_list_passages_vector_search(
+    server, default_user, sarah_agent, default_source, default_file, event_loop, mock_embed_model
+):
     """Test vector search functionality of agent passages"""
-    embed_model = embedding_model(DEFAULT_EMBEDDING_CONFIG)
+    embed_model = mock_embed_model
 
     # Create passages with known embeddings
     passages = []
@@ -3548,9 +3560,9 @@ def test_update_tool_by_id(server: SyncServer, print_tool, default_user):
     assert updated_tool.tool_type == ToolType.CUSTOM
 
     # Dangerous: we bypass safety to give it another tool type
-    server.tool_manager.update_tool_by_id(print_tool.id, tool_update, actor=default_user, updated_tool_type=ToolType.EXTERNAL_LANGCHAIN)
+    server.tool_manager.update_tool_by_id(print_tool.id, tool_update, actor=default_user, updated_tool_type=ToolType.EXTERNAL_MCP)
     updated_tool = server.tool_manager.get_tool_by_id(print_tool.id, actor=default_user)
-    assert updated_tool.tool_type == ToolType.EXTERNAL_LANGCHAIN
+    assert updated_tool.tool_type == ToolType.EXTERNAL_MCP
 
 
 def test_update_tool_source_code_refreshes_schema_and_name(server: SyncServer, print_tool, default_user):
@@ -8544,7 +8556,7 @@ async def test_create_mcp_server(server, default_user, event_loop):
     tool_name = "ask_question"
     tool_args = {"repoName": "letta-ai/letta", "question": "What is the primary programming language of this repository?"}
     result = await server.mcp_manager.execute_mcp_server_tool(
-        created_server.server_name, tool_name=tool_name, tool_args=tool_args, actor=default_user
+        created_server.server_name, tool_name=tool_name, tool_args=tool_args, actor=default_user, environment_variables={}
     )
     print(result)
 
@@ -8721,6 +8733,71 @@ async def test_update_file_agent_by_file_name(server, file_attachment, default_u
     )
     assert updated.is_open is False
     assert updated.visible_content == "updated"
+    assert updated.start_line is None  # start_line should default to None
+    assert updated.end_line is None  # end_line should default to None
+
+
+@pytest.mark.asyncio
+async def test_file_agent_line_tracking(server, default_user, sarah_agent, default_source):
+    """Test that line information is captured when opening files with line ranges"""
+    from letta.schemas.file import FileMetadata as PydanticFileMetadata
+
+    # Create a test file with multiple lines
+    test_content = "line 1\nline 2\nline 3\nline 4\nline 5"
+    file_metadata = PydanticFileMetadata(
+        file_name="test_lines.txt",
+        organization_id=default_user.organization_id,
+        source_id=default_source.id,
+    )
+    file = await server.file_manager.create_file(file_metadata=file_metadata, actor=default_user, text=test_content)
+
+    # Test opening with line range using enforce_max_open_files_and_open
+    closed_files, was_already_open, previous_ranges = await server.file_agent_manager.enforce_max_open_files_and_open(
+        agent_id=sarah_agent.id,
+        file_id=file.id,
+        file_name=file.file_name,
+        source_id=file.source_id,
+        actor=default_user,
+        visible_content="2: line 2\n3: line 3",
+        max_files_open=sarah_agent.max_files_open,
+        start_line=2,  # 1-indexed
+        end_line=4,  # exclusive
+    )
+
+    # Retrieve and verify line tracking
+    retrieved = await server.file_agent_manager.get_file_agent_by_id(
+        agent_id=sarah_agent.id,
+        file_id=file.id,
+        actor=default_user,
+    )
+
+    assert retrieved.start_line == 2
+    assert retrieved.end_line == 4
+    assert previous_ranges == {}  # No previous range since it wasn't open before
+
+    # Test opening without line range - should clear line info and capture previous range
+    closed_files, was_already_open, previous_ranges = await server.file_agent_manager.enforce_max_open_files_and_open(
+        agent_id=sarah_agent.id,
+        file_id=file.id,
+        file_name=file.file_name,
+        source_id=file.source_id,
+        actor=default_user,
+        visible_content="full file content",
+        max_files_open=sarah_agent.max_files_open,
+        start_line=None,
+        end_line=None,
+    )
+
+    # Retrieve and verify line info is cleared
+    retrieved = await server.file_agent_manager.get_file_agent_by_id(
+        agent_id=sarah_agent.id,
+        file_id=file.id,
+        actor=default_user,
+    )
+
+    assert retrieved.start_line is None
+    assert retrieved.end_line is None
+    assert previous_ranges == {file.file_name: (2, 4)}  # Should capture the previous range
 
 
 @pytest.mark.asyncio
@@ -9119,7 +9196,7 @@ async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, defa
     time.sleep(0.1)
 
     # Now "open" the last file using the efficient method
-    closed_files, was_already_open = await server.file_agent_manager.enforce_max_open_files_and_open(
+    closed_files, was_already_open, _ = await server.file_agent_manager.enforce_max_open_files_and_open(
         agent_id=sarah_agent.id,
         file_id=files[-1].id,
         file_name=files[-1].file_name,
@@ -9193,7 +9270,7 @@ async def test_lru_no_eviction_when_reopening_same_file(server, default_user, sa
     time.sleep(0.1)
 
     # "Reopen" the last file (which is already open)
-    closed_files, was_already_open = await server.file_agent_manager.enforce_max_open_files_and_open(
+    closed_files, was_already_open, _ = await server.file_agent_manager.enforce_max_open_files_and_open(
         agent_id=sarah_agent.id,
         file_id=files[-1].id,
         file_name=files[-1].file_name,

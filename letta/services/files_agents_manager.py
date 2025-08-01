@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from sqlalchemy import and_, delete, func, or_, select, update
 
@@ -34,6 +34,8 @@ class FileAgentManager:
         max_files_open: int,
         is_open: bool = True,
         visible_content: Optional[str] = None,
+        start_line: Optional[int] = None,
+        end_line: Optional[int] = None,
     ) -> tuple[PydanticFileAgent, List[str]]:
         """
         Idempotently attach *file_id* to *agent_id* with LRU enforcement.
@@ -48,7 +50,7 @@ class FileAgentManager:
         """
         if is_open:
             # Use the efficient LRU + open method
-            closed_files, was_already_open = await self.enforce_max_open_files_and_open(
+            closed_files, was_already_open, _ = await self.enforce_max_open_files_and_open(
                 agent_id=agent_id,
                 file_id=file_id,
                 file_name=file_name,
@@ -56,6 +58,8 @@ class FileAgentManager:
                 actor=actor,
                 visible_content=visible_content or "",
                 max_files_open=max_files_open,
+                start_line=start_line,
+                end_line=end_line,
             )
 
             # Get the updated file agent to return
@@ -85,6 +89,8 @@ class FileAgentManager:
                         existing.visible_content = visible_content
 
                     existing.last_accessed_at = now_ts
+                    existing.start_line = start_line
+                    existing.end_line = end_line
 
                     await existing.update_async(session, actor=actor)
                     return existing.to_pydantic(), []
@@ -98,6 +104,8 @@ class FileAgentManager:
                     is_open=is_open,
                     visible_content=visible_content,
                     last_accessed_at=now_ts,
+                    start_line=start_line,
+                    end_line=end_line,
                 )
                 await assoc.create_async(session, actor=actor)
                 return assoc.to_pydantic(), []
@@ -112,6 +120,8 @@ class FileAgentManager:
         actor: PydanticUser,
         is_open: Optional[bool] = None,
         visible_content: Optional[str] = None,
+        start_line: Optional[int] = None,
+        end_line: Optional[int] = None,
     ) -> PydanticFileAgent:
         """Patch an existing association row."""
         async with db_registry.async_session() as session:
@@ -121,6 +131,10 @@ class FileAgentManager:
                 assoc.is_open = is_open
             if visible_content is not None:
                 assoc.visible_content = visible_content
+            if start_line is not None:
+                assoc.start_line = start_line
+            if end_line is not None:
+                assoc.end_line = end_line
 
             # touch timestamp
             assoc.last_accessed_at = datetime.now(timezone.utc)
@@ -373,8 +387,18 @@ class FileAgentManager:
     @enforce_types
     @trace_method
     async def enforce_max_open_files_and_open(
-        self, *, agent_id: str, file_id: str, file_name: str, source_id: str, actor: PydanticUser, visible_content: str, max_files_open: int
-    ) -> tuple[List[str], bool]:
+        self,
+        *,
+        agent_id: str,
+        file_id: str,
+        file_name: str,
+        source_id: str,
+        actor: PydanticUser,
+        visible_content: str,
+        max_files_open: int,
+        start_line: Optional[int] = None,
+        end_line: Optional[int] = None,
+    ) -> tuple[List[str], bool, Dict[str, tuple[Optional[int], Optional[int]]]]:
         """
         Efficiently handle LRU eviction and file opening in a single transaction.
 
@@ -387,7 +411,8 @@ class FileAgentManager:
             visible_content: Content to set for the opened file
 
         Returns:
-            Tuple of (closed_file_names, file_was_already_open)
+            Tuple of (closed_file_names, file_was_already_open, previous_ranges)
+            where previous_ranges maps file names to their old (start_line, end_line) ranges
         """
         async with db_registry.async_session() as session:
             # Single query to get ALL open files for this agent, ordered by last_accessed_at (oldest first)
@@ -422,6 +447,17 @@ class FileAgentManager:
                     other_open_files.append(file_agent)
 
             file_was_already_open = file_to_open is not None and file_to_open.is_open
+
+            # Capture previous line range if file was already open and we're changing the range
+            previous_ranges = {}
+            if file_was_already_open and file_to_open:
+                old_start = file_to_open.start_line
+                old_end = file_to_open.end_line
+                # Only record if there was a previous range or if we're setting a new range
+                if old_start is not None or old_end is not None or start_line is not None or end_line is not None:
+                    # Only record if the range is actually changing
+                    if old_start != start_line or old_end != end_line:
+                        previous_ranges[file_name] = (old_start, old_end)
 
             # Calculate how many files need to be closed
             current_other_count = len(other_open_files)
@@ -458,6 +494,8 @@ class FileAgentManager:
                 file_to_open.is_open = True
                 file_to_open.visible_content = visible_content
                 file_to_open.last_accessed_at = now_ts
+                file_to_open.start_line = start_line
+                file_to_open.end_line = end_line
                 await file_to_open.update_async(session, actor=actor)
             else:
                 # Create new file association
@@ -470,10 +508,12 @@ class FileAgentManager:
                     is_open=True,
                     visible_content=visible_content,
                     last_accessed_at=now_ts,
+                    start_line=start_line,
+                    end_line=end_line,
                 )
                 await new_file_agent.create_async(session, actor=actor)
 
-            return closed_file_names, file_was_already_open
+            return closed_file_names, file_was_already_open, previous_ranges
 
     @enforce_types
     @trace_method

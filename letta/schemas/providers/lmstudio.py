@@ -45,6 +45,12 @@ class LMStudioOpenAIProvider(OpenAIProvider):
                 continue
             model_name, context_window_size = check
 
+            if "compatibility_type" in model:
+                compatibility_type = model["compatibility_type"]
+            else:
+                warnings.warn(f"LMStudio OpenAI model missing 'compatibility_type' field: {model}")
+                continue
+
             configs.append(
                 LLMConfig(
                     model=model_name,
@@ -52,6 +58,7 @@ class LMStudioOpenAIProvider(OpenAIProvider):
                     model_endpoint=self.base_url,
                     context_window=context_window_size,
                     handle=self.get_handle(model_name),
+                    compatibility_type=compatibility_type,
                     provider_name=self.name,
                     provider_category=self.provider_category,
                 )

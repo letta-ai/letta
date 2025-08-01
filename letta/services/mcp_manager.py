@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from fastapi import HTTPException
 from sqlalchemy import null
+from starlette.requests import Request
 
 import letta.constants as constants
 from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
@@ -66,7 +67,12 @@ class MCPManager:
 
     @enforce_types
     async def execute_mcp_server_tool(
-        self, mcp_server_name: str, tool_name: str, tool_args: Optional[Dict[str, Any]], actor: PydanticUser
+        self,
+        mcp_server_name: str,
+        tool_name: str,
+        tool_args: Optional[Dict[str, Any]],
+        environment_variables: Dict[str, str],
+        actor: PydanticUser,
     ) -> Tuple[str, bool]:
         """Call a specific tool from a specific MCP server."""
         from letta.settings import tool_settings
@@ -75,7 +81,7 @@ class MCPManager:
             # read from DB
             mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor=actor)
             mcp_config = await self.get_mcp_server_by_id_async(mcp_server_id, actor=actor)
-            server_config = mcp_config.to_config()
+            server_config = mcp_config.to_config(environment_variables)
         else:
             # read from config file
             mcp_config = self.read_mcp_config()
@@ -581,3 +587,115 @@ class MCPManager:
                 logger.info(f"Cleaned up {len(expired_sessions)} expired OAuth sessions")
 
             return len(expired_sessions)
+
+    @enforce_types
+    async def handle_oauth_flow(
+        self,
+        request: Union[SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig],
+        actor: PydanticUser,
+        http_request: Optional[Request] = None,
+    ):
+        """
+        Handle OAuth flow for MCP server connection and yield SSE events.
+
+        Args:
+            request: The server configuration
+            actor: The user making the request
+            http_request: The HTTP request object
+
+        Yields:
+            SSE events during OAuth flow
+
+        Returns:
+            Tuple of (temp_client, connect_task) after yielding events
+        """
+        import asyncio
+
+        from letta.services.mcp.oauth_utils import create_oauth_provider, oauth_stream_event
+        from letta.services.mcp.types import OauthStreamEvent
+
+        # OAuth required, yield state to client to prepare to handle authorization URL
+        yield oauth_stream_event(OauthStreamEvent.OAUTH_REQUIRED, message="OAuth authentication required")
+
+        # Create OAuth session to persist the state of the OAuth flow
+        session_create = MCPOAuthSessionCreate(
+            server_url=request.server_url,
+            server_name=request.server_name,
+            user_id=actor.id,
+            organization_id=actor.organization_id,
+        )
+        oauth_session = await self.create_oauth_session(session_create, actor)
+        session_id = oauth_session.id
+
+        # TODO: @jnjpng make this check more robust and remove direct os.getenv
+        # Check if request is from web frontend to determine redirect URI
+        is_web_request = (
+            http_request
+            and http_request.headers
+            and http_request.headers.get("user-agent", "") == "Next.js Middleware"
+            and http_request.headers.__contains__("x-organization-id")
+        )
+
+        logo_uri = None
+        NEXT_PUBLIC_CURRENT_HOST = os.getenv("NEXT_PUBLIC_CURRENT_HOST")
+        LETTA_AGENTS_ENDPOINT = os.getenv("LETTA_AGENTS_ENDPOINT")
+
+        if is_web_request and NEXT_PUBLIC_CURRENT_HOST:
+            redirect_uri = f"{NEXT_PUBLIC_CURRENT_HOST}/oauth/callback/{session_id}"
+            logo_uri = f"{NEXT_PUBLIC_CURRENT_HOST}/seo/favicon.svg"
+        elif LETTA_AGENTS_ENDPOINT:
+            # API and SDK usage should call core server directly
+            redirect_uri = f"{LETTA_AGENTS_ENDPOINT}/v1/tools/mcp/oauth/callback/{session_id}"
+        else:
+            logger.error(
+                f"No redirect URI found for request and base urls: {http_request.headers if http_request else 'No headers'} {NEXT_PUBLIC_CURRENT_HOST} {LETTA_AGENTS_ENDPOINT}"
+            )
+            raise HTTPException(status_code=400, detail="No redirect URI found")
+
+        # Create OAuth provider for the instance of the stream connection
+        oauth_provider = await create_oauth_provider(session_id, request.server_url, redirect_uri, self, actor, logo_uri=logo_uri)
+
+        # Get authorization URL by triggering OAuth flow
+        temp_client = None
+        connect_task = None
+        try:
+            temp_client = await self.get_mcp_client(request, actor, oauth_provider)
+
+            # Run connect_to_server in background to avoid blocking
+            # This will trigger the OAuth flow and the redirect_handler will save the authorization URL to database
+            connect_task = asyncio.create_task(temp_client.connect_to_server())
+
+            # Give the OAuth flow time to trigger and save the URL
+            await asyncio.sleep(1.0)
+
+            # Fetch the authorization URL from database and yield state to client to proceed with handling authorization URL
+            auth_session = await self.get_oauth_session_by_id(session_id, actor)
+            if auth_session and auth_session.authorization_url:
+                yield oauth_stream_event(OauthStreamEvent.AUTHORIZATION_URL, url=auth_session.authorization_url, session_id=session_id)
+
+            # Wait for user authorization (with timeout), client should render loading state until user completes the flow and /mcp/oauth/callback/{session_id} is hit
+            yield oauth_stream_event(OauthStreamEvent.WAITING_FOR_AUTH, message="Waiting for user authorization...")
+
+            # Callback handler will poll for authorization code and state and update the OAuth session
+            await connect_task
+
+            tools = await temp_client.list_tools(serialize=True)
+            yield oauth_stream_event(OauthStreamEvent.SUCCESS, tools=tools)
+
+        except Exception as e:
+            logger.error(f"Error triggering OAuth flow: {e}")
+            yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"Failed to trigger OAuth: {str(e)}")
+            raise e
+        finally:
+            # Clean up resources
+            if connect_task and not connect_task.done():
+                connect_task.cancel()
+                try:
+                    await connect_task
+                except asyncio.CancelledError:
+                    pass
+            if temp_client:
+                try:
+                    await temp_client.cleanup()
+                except Exception as cleanup_error:
+                    logger.warning(f"Error during temp MCP client cleanup: {cleanup_error}")

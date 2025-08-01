@@ -130,37 +130,38 @@ class LineChunker:
         # Apply the appropriate chunking strategy
         if strategy == ChunkingStrategy.DOCUMENTATION:
             content_lines = self._chunk_by_sentences(text)
-        elif strategy == ChunkingStrategy.PROSE:
-            content_lines = self._chunk_by_characters(text)
         elif strategy == ChunkingStrategy.CODE:
             content_lines = self._chunk_by_lines(text, preserve_indentation=True)
         else:  # STRUCTURED_DATA or LINE_BASED
             content_lines = self._chunk_by_lines(text, preserve_indentation=False)
 
         total_chunks = len(content_lines)
-        chunk_type = (
-            "sentences" if strategy == ChunkingStrategy.DOCUMENTATION else "chunks" if strategy == ChunkingStrategy.PROSE else "lines"
-        )
+        chunk_type = "sentences" if strategy == ChunkingStrategy.DOCUMENTATION else "lines"
 
-        # Validate range if requested
-        if validate_range and (start is not None or end is not None):
-            if start is not None and start >= total_chunks:
-                # Convert to 1-indexed for user-friendly error message
-                start_display = start + 1
-                raise ValueError(
-                    f"File {file_metadata.file_name} has only {total_chunks} lines, but requested offset {start_display} is out of range"
-                )
-
-            if start is not None and end is not None and end > total_chunks:
-                # Convert to 1-indexed for user-friendly error message
-                start_display = start + 1
-                end_display = end
-                raise ValueError(
-                    f"File {file_metadata.file_name} has only {total_chunks} lines, but requested range {start_display} to {end_display} extends beyond file bounds"
-                )
-
-        # Handle start/end slicing
+        # Handle range validation and clamping
         if start is not None or end is not None:
+            # Always validate that start < end if both are specified
+            if start is not None and end is not None and start >= end:
+                if validate_range:
+                    raise ValueError(f"Invalid range: start ({start}) must be less than end ({end})")
+                # If validation is off, we still need to handle this case sensibly
+                # but we'll allow it to proceed with an empty result
+
+            # Always check that start is within bounds - this should error regardless of validation flag
+            if start is not None and start >= total_chunks:
+                raise ValueError(
+                    f"File {file_metadata.file_name} has only {total_chunks} {chunk_type}, but requested offset {start + 1} is out of range"
+                )
+
+            # Apply bounds checking
+            if start is not None:
+                start = max(0, start)  # Ensure non-negative
+
+            # Only clamp end if it exceeds the file length
+            if end is not None:
+                end = min(end, total_chunks)
+
+            # Apply slicing
             content_lines = content_lines[start:end]
             line_offset = start if start is not None else 0
         else:

@@ -11,11 +11,94 @@ from starlette.types import Send
 
 from letta.log import get_logger
 from letta.schemas.enums import JobStatus
+from letta.schemas.letta_ping import LettaPing
 from letta.schemas.user import User
 from letta.server.rest_api.utils import capture_sentry_exception
 from letta.services.job_manager import JobManager
 
 logger = get_logger(__name__)
+
+
+class JobCancelledException(Exception):
+    """Exception raised when a job is explicitly cancelled (not due to client timeout)"""
+
+    def __init__(self, job_id: str, message: str = None):
+        self.job_id = job_id
+        super().__init__(message or f"Job {job_id} was explicitly cancelled")
+
+
+async def add_keepalive_to_stream(
+    stream_generator: AsyncIterator[str | bytes],
+    keepalive_interval: float = 30.0,
+) -> AsyncIterator[str | bytes]:
+    """
+    Adds periodic keepalive messages to a stream to prevent connection timeouts.
+
+    Sends a keepalive ping every `keepalive_interval` seconds, regardless of
+    whether data is flowing. This ensures connections stay alive during long
+    operations like tool execution.
+
+    Args:
+        stream_generator: The original stream generator to wrap
+        keepalive_interval: Seconds between keepalive messages (default: 30)
+
+    Yields:
+        Original stream chunks interspersed with keepalive messages
+    """
+    # Use a queue to decouple the stream reading from keepalive timing
+    queue = asyncio.Queue()
+    stream_exhausted = False
+
+    async def stream_reader():
+        """Read from the original stream and put items in the queue."""
+        nonlocal stream_exhausted
+        try:
+            async for item in stream_generator:
+                await queue.put(("data", item))
+        finally:
+            stream_exhausted = True
+            await queue.put(("end", None))
+
+    # Start the stream reader task
+    reader_task = asyncio.create_task(stream_reader())
+
+    try:
+        while True:
+            try:
+                # Wait for data with a timeout equal to keepalive interval
+                msg_type, data = await asyncio.wait_for(queue.get(), timeout=keepalive_interval)
+
+                if msg_type == "end":
+                    # Stream finished
+                    break
+                elif msg_type == "data":
+                    yield data
+
+            except asyncio.TimeoutError:
+                # No data received within keepalive interval
+                if not stream_exhausted:
+                    # Send keepalive ping in the same format as [DONE]
+                    yield f"data: {LettaPing().model_dump_json()}\n\n"
+                else:
+                    # Stream is done but queue might be processing
+                    # Check if there's anything left
+                    try:
+                        msg_type, data = queue.get_nowait()
+                        if msg_type == "end":
+                            break
+                        elif msg_type == "data":
+                            yield data
+                    except asyncio.QueueEmpty:
+                        # Really done now
+                        break
+
+    finally:
+        # Clean up the reader task
+        reader_task.cancel()
+        try:
+            await reader_task
+        except asyncio.CancelledError:
+            pass
 
 
 # TODO (cliandy) wrap this and handle types
@@ -59,8 +142,8 @@ async def cancellation_aware_stream_wrapper(
                         # Send cancellation event to client
                         cancellation_event = {"message_type": "stop_reason", "stop_reason": "cancelled"}
                         yield f"data: {json.dumps(cancellation_event)}\n\n"
-                        # Raise CancelledError to interrupt the stream
-                        raise asyncio.CancelledError(f"Job {job_id} was cancelled")
+                        # Raise custom exception for explicit job cancellation
+                        raise JobCancelledException(job_id, f"Job {job_id} was cancelled")
                 except Exception as e:
                     # Log warning but don't fail the stream if cancellation check fails
                     logger.warning(f"Failed to check job cancellation for job {job_id}: {e}")
@@ -69,9 +152,13 @@ async def cancellation_aware_stream_wrapper(
 
             yield chunk
 
+    except JobCancelledException:
+        # Re-raise JobCancelledException to distinguish from client timeout
+        logger.info(f"Stream for job {job_id} was explicitly cancelled and cleaned up")
+        raise
     except asyncio.CancelledError:
-        # Re-raise CancelledError to ensure proper cleanup
-        logger.info(f"Stream for job {job_id} was cancelled and cleaned up")
+        # Re-raise CancelledError (likely client timeout) to ensure proper cleanup
+        logger.info(f"Stream for job {job_id} was cancelled (likely client timeout) and cleaned up")
         raise
     except Exception as e:
         logger.error(f"Error in cancellation-aware stream wrapper for job {job_id}: {e}")
@@ -140,12 +227,12 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                     }
                 )
 
-        # This should be handled properly upstream?
-        except asyncio.CancelledError as exc:
-            logger.warning("Stream was cancelled by client or job cancellation")
-            # Handle cancellation gracefully
+        # Handle explicit job cancellations (should not throw error)
+        except JobCancelledException as exc:
+            logger.info(f"Stream was explicitly cancelled for job {exc.job_id}")
+            # Handle explicit cancellation gracefully without error
             more_body = False
-            cancellation_resp = {"error": {"message": "Stream cancelled"}}
+            cancellation_resp = {"message": "Job was cancelled"}
             cancellation_event = f"event: cancelled\ndata: {json.dumps(cancellation_resp)}\n\n".encode(self.charset)
             if not self.response_started:
                 await send(
@@ -160,6 +247,31 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                 {
                     "type": "http.response.body",
                     "body": cancellation_event,
+                    "more_body": more_body,
+                }
+            )
+            return
+
+        # Handle client timeouts (should throw error to inform user)
+        except asyncio.CancelledError as exc:
+            logger.warning("Stream was cancelled due to client timeout or unexpected disconnection")
+            # Handle unexpected cancellation with error
+            more_body = False
+            error_resp = {"error": {"message": "Request was unexpectedly cancelled (likely due to client timeout or disconnection)"}}
+            error_event = f"event: error\ndata: {json.dumps(error_resp)}\n\n".encode(self.charset)
+            if not self.response_started:
+                await send(
+                    {
+                        "type": "http.response.start",
+                        "status": 408,  # Request Timeout
+                        "headers": self.raw_headers,
+                    }
+                )
+                raise
+            await send(
+                {
+                    "type": "http.response.body",
+                    "body": error_event,
                     "more_body": more_body,
                 }
             )

@@ -105,13 +105,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         return out
 
     @trace_method
-    async def web_search(
-        self,
-        agent_state: "AgentState",
-        tasks: List[SearchTask],
-        limit: int = 3,
-        return_raw: bool = False,
-    ) -> str:
+    async def web_search(self, agent_state: "AgentState", tasks: List[SearchTask], limit: int = 1, return_raw: bool = True) -> str:
         """
         Search the web with a list of query/question pairs and extract passages that answer the corresponding questions.
 
@@ -138,10 +132,10 @@ class LettaBuiltinToolExecutor(ToolExecutor):
                  Each result includes ranked snippets with their source URLs and relevance scores,
                  corresponding to each search task.
         """
-        # TODO: Temporary, maybe deprecate this field?
-        if return_raw:
-            logger.warning("WARNING! return_raw was set to True, we default to False always. Deprecate this field.")
-        return_raw = False
+        # # TODO: Temporary, maybe deprecate this field?
+        # if return_raw:
+        #     logger.warning("WARNING! return_raw was set to True, we default to False always. Deprecate this field.")
+        # return_raw = False
         try:
             from firecrawl import AsyncFirecrawlApp
         except ImportError:
@@ -175,13 +169,14 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         # Initialize Firecrawl client
         app = AsyncFirecrawlApp(api_key=firecrawl_api_key)
 
-        # Process all search tasks in parallel
-        search_task_coroutines = [
-            self._process_single_search_task(app, task, limit, return_raw, api_key_source, agent_state) for task in search_tasks
-        ]
-
-        # Execute all searches concurrently
-        search_results = await asyncio.gather(*search_task_coroutines, return_exceptions=True)
+        # Process all search tasks serially
+        search_results = []
+        for task in search_tasks:
+            try:
+                result = await self._process_single_search_task(app, task, limit, return_raw, api_key_source, agent_state)
+                search_results.append(result)
+            except Exception as e:
+                search_results.append(e)
 
         # Build final response as a mapping of query -> result
         final_results = {}

@@ -40,7 +40,7 @@ from letta.schemas.block import Block, BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 
 # openai schemas
-from letta.schemas.enums import JobStatus, MessageStreamStatus, ProviderCategory, ProviderType
+from letta.schemas.enums import JobStatus, MessageStreamStatus, ProviderCategory, ProviderType, SandboxType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
 from letta.schemas.group import GroupCreate, ManagerType, SleeptimeManager, VoiceSleeptimeManager
 from letta.schemas.job import Job, JobUpdate
@@ -67,9 +67,10 @@ from letta.schemas.providers import (
     OpenAIProvider,
     Provider,
     TogetherProvider,
+    VLLMProvider,
     XAIProvider,
 )
-from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxConfigCreate, SandboxType
+from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxConfigCreate
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.usage import LettaUsageStatistics
@@ -361,22 +362,17 @@ class SyncServer(Server):
             )
         if model_settings.vllm_api_base:
             # vLLM exposes both a /chat/completions and a /completions endpoint
+            # NOTE: to use the /chat/completions endpoint, you need to specify extra flags on vLLM startup
+            # see: https://docs.vllm.ai/en/stable/features/tool_calling.html
+            # e.g. "... --enable-auto-tool-choice --tool-call-parser hermes"
             self._enabled_providers.append(
-                VLLMCompletionsProvider(
+                VLLMProvider(
                     name="vllm",
                     base_url=model_settings.vllm_api_base,
                     default_prompt_formatter=model_settings.default_prompt_formatter,
                 )
             )
-            # NOTE: to use the /chat/completions endpoint, you need to specify extra flags on vLLM startup
-            # see: https://docs.vllm.ai/en/stable/features/tool_calling.html
-            # e.g. "... --enable-auto-tool-choice --tool-call-parser hermes"
-            self._enabled_providers.append(
-                VLLMChatCompletionsProvider(
-                    name="vllm",
-                    base_url=model_settings.vllm_api_base,
-                )
-            )
+
         if model_settings.aws_access_key_id and model_settings.aws_secret_access_key and model_settings.aws_default_region:
             self._enabled_providers.append(
                 BedrockProvider(

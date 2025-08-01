@@ -86,8 +86,10 @@ from letta.services.helpers.agent_manager_helper import (
     calculate_multi_agent_tools,
     check_supports_structured_output,
     compile_system_message,
+    compile_system_message_async,
     derive_system_message,
     initialize_message_sequence,
+    initialize_message_sequence_async,
     package_initial_message_sequence,
     validate_agent_exists_async,
 )
@@ -621,7 +623,7 @@ class AgentManager:
 
                 # initial message sequence (skip if _init_with_no_messages is True)
                 if not _init_with_no_messages:
-                    init_messages = self._generate_initial_message_sequence(
+                    init_messages = await self._generate_initial_message_sequence_async(
                         actor,
                         agent_state=result,
                         supplied_initial_message_sequence=agent_create.initial_message_sequence,
@@ -667,6 +669,35 @@ class AgentManager:
         return init_messages
 
     @enforce_types
+    async def _generate_initial_message_sequence_async(
+        self, actor: PydanticUser, agent_state: PydanticAgentState, supplied_initial_message_sequence: Optional[List[MessageCreate]] = None
+    ) -> List[Message]:
+        init_messages = await initialize_message_sequence_async(
+            agent_state=agent_state, memory_edit_timestamp=get_utc_time(), include_initial_boot_message=True
+        )
+        if supplied_initial_message_sequence is not None:
+            # We always need the system prompt up front
+            system_message_obj = PydanticMessage.dict_to_message(
+                agent_id=agent_state.id,
+                model=agent_state.llm_config.model,
+                openai_message_dict=init_messages[0],
+            )
+            # Don't use anything else in the pregen sequence, instead use the provided sequence
+            init_messages = [system_message_obj]
+            init_messages.extend(
+                package_initial_message_sequence(
+                    agent_state.id, supplied_initial_message_sequence, agent_state.llm_config.model, agent_state.timezone, actor
+                )
+            )
+        else:
+            init_messages = [
+                PydanticMessage.dict_to_message(agent_id=agent_state.id, model=agent_state.llm_config.model, openai_message_dict=msg)
+                for msg in init_messages
+            ]
+
+        return init_messages
+
+    @enforce_types
     @trace_method
     def append_initial_message_sequence_to_in_context_messages(
         self, actor: PydanticUser, agent_state: PydanticAgentState, initial_message_sequence: Optional[List[MessageCreate]] = None
@@ -679,7 +710,7 @@ class AgentManager:
     async def append_initial_message_sequence_to_in_context_messages_async(
         self, actor: PydanticUser, agent_state: PydanticAgentState, initial_message_sequence: Optional[List[MessageCreate]] = None
     ) -> PydanticAgentState:
-        init_messages = self._generate_initial_message_sequence(actor, agent_state, initial_message_sequence)
+        init_messages = await self._generate_initial_message_sequence_async(actor, agent_state, initial_message_sequence)
         return await self.append_to_in_context_messages_async(init_messages, agent_id=agent_state.id, actor=actor)
 
     @enforce_types
@@ -1034,6 +1065,7 @@ class AgentManager:
         include_relationships: Optional[List[str]] = None,
         ascending: bool = True,
         sort_by: Optional[str] = "created_at",
+        show_hidden_agents: Optional[bool] = None,
     ) -> List[PydanticAgentState]:
         """
         Retrieves agents with optimized filtering and optional field selection.
@@ -1055,6 +1087,7 @@ class AgentManager:
             include_relationships (Optional[List[str]]): List of fields to load for performance optimization.
             ascending (bool): Sort agents in ascending order.
             sort_by (Optional[str]): Sort agents by this field.
+            show_hidden_agents (bool): If True, include agents marked as hidden in the results.
 
         Returns:
             List[PydanticAgentState]: The filtered list of matching agents.
@@ -1068,6 +1101,10 @@ class AgentManager:
             query = _apply_identity_filters(query, identity_id, identifier_keys)
             query = _apply_tag_filter(query, tags, match_all_tags)
             query = _apply_relationship_filters(query, include_relationships)
+
+            # Apply hidden filter
+            if not show_hidden_agents:
+                query = query.where((AgentModel.hidden.is_(None)) | (AgentModel.hidden == False))
             query = await _apply_pagination_async(query, before, after, session, ascending=ascending, sort_by=sort_by)
 
             if limit:
@@ -1668,7 +1705,7 @@ class AgentManager:
 
         # update memory (TODO: potentially update recall/archival stats separately)
 
-        new_system_message_str = compile_system_message(
+        new_system_message_str = await compile_system_message_async(
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
@@ -1803,7 +1840,7 @@ class AgentManager:
 
         # Optionally add default initial messages after the system message
         if add_default_initial_messages:
-            init_messages = initialize_message_sequence(
+            init_messages = await initialize_message_sequence_async(
                 agent_state=agent_state, memory_edit_timestamp=get_utc_time(), include_initial_boot_message=True
             )
             # Skip index 0 (system message) since we preserved the original

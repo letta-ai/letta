@@ -526,10 +526,10 @@ async def test_local_sandbox_default(disable_e2b_api_key, add_integers_tool, tes
     args = {"x": 10, "y": 5}
 
     # Mock and assert correct pathway was invoked
-    with patch.object(AsyncToolSandboxLocal, "run_local_dir_sandbox") as mock_run_local_dir_sandbox:
+    with patch.object(AsyncToolSandboxLocal, "run") as mock_run:
         sandbox = AsyncToolSandboxLocal(add_integers_tool.name, args, user=test_user)
         await sandbox.run()
-        mock_run_local_dir_sandbox.assert_called_once()
+        mock_run.assert_called_once()
 
     # Run again to get actual response
     sandbox = AsyncToolSandboxLocal(add_integers_tool.name, args, user=test_user)
@@ -731,10 +731,10 @@ async def test_e2b_sandbox_default(check_e2b_key_is_set, add_integers_tool, test
     args = {"x": 10, "y": 5}
 
     # Mock and assert correct pathway was invoked
-    with patch.object(AsyncToolSandboxE2B, "run_e2b_sandbox") as mock_run_local_dir_sandbox:
+    with patch.object(AsyncToolSandboxE2B, "run") as mock_run:
         sandbox = AsyncToolSandboxE2B(add_integers_tool.name, args, user=test_user)
         await sandbox.run()
-        mock_run_local_dir_sandbox.assert_called_once()
+        mock_run.assert_called_once()
 
     # Run again to get actual response
     sandbox = AsyncToolSandboxE2B(add_integers_tool.name, args, user=test_user)

@@ -103,6 +103,5 @@ class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin, AsyncAttrs):
             chunks_embedded=self.chunks_embedded,
             created_at=self.created_at,
             updated_at=self.updated_at,
-            is_deleted=self.is_deleted,
             content=content_text,
         )

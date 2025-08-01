@@ -266,31 +266,65 @@ def test_web_search(
     # Basic structure assertions for the result data
     assert "query" in result_data, "Missing 'query' field in result"
     assert "question" in result_data, "Missing 'question' field in result"
-    assert "total_sources" in result_data, "Missing 'total_sources' field in result"
-    assert "total_citations" in result_data, "Missing 'total_citations' field in result"
-    assert "sources" in result_data, "Missing 'sources' field in result"
 
-    # Content assertions
-    assert result_data["total_sources"] > 0, "Should have found at least one source"
-    assert result_data["total_citations"] > 0, "Should have found at least one citation"
-    assert len(result_data["sources"]) == result_data["total_sources"], "Sources count mismatch"
+    # Check if we have the new response format with raw_results
+    if "raw_results" in result_data:
+        # New format with raw_results
+        assert "raw_results" in result_data, "Missing 'raw_results' field in result"
+        raw_results = result_data["raw_results"]
 
-    # Verify we found information about Charles Packer's education
-    found_education_info = False
-    for source in result_data["sources"]:
-        assert "url" in source, "Source missing URL"
-        assert "title" in source, "Source missing title"
-        assert "citations" in source, "Source missing citations"
+        assert "success" in raw_results, "Missing 'success' field in raw_results"
+        assert "data" in raw_results, "Missing 'data' field in raw_results"
 
-        for citation in source["citations"]:
-            assert "text" in citation, "Citation missing text"
-            # Note: removed "thinking" field check as it doesn't appear in the actual response
+        # Verify we got search results
+        assert len(raw_results["data"]) > 0, "Should have found at least one search result"
 
-            # Check if we found education-related information
-            if any(keyword in citation["text"].lower() for keyword in ["berkeley", "phd", "ph.d", "university", "student"]):
-                found_education_info = True
+        # Check if we found education-related information in the search results
+        found_education_info = False
+        for item in raw_results["data"]:
+            # Check in description
+            if "description" in item:
+                desc_lower = item["description"].lower()
+                if any(keyword in desc_lower for keyword in ["berkeley", "university", "education", "phd", "student"]):
+                    found_education_info = True
+                    break
 
-    assert found_education_info, "Should have found education-related information about Charles Packer"
+            # Also check in markdown content if available
+            if "markdown" in item:
+                markdown_lower = item["markdown"].lower()
+                if any(keyword in markdown_lower for keyword in ["berkeley", "university", "phd", "student"]):
+                    found_education_info = True
+                    break
+
+        # We should find education info since we now have successful scraping with markdown content
+        assert found_education_info, "Should have found education-related information about Charles Packer"
+
+    else:
+        # Parsed format with total_sources, total_citations, sources
+        assert "total_sources" in result_data, "Missing 'total_sources' field in result"
+        assert "total_citations" in result_data, "Missing 'total_citations' field in result"
+        assert "sources" in result_data, "Missing 'sources' field in result"
+
+        # Content assertions
+        assert result_data["total_sources"] > 0, "Should have found at least one source"
+        assert result_data["total_citations"] > 0, "Should have found at least one citation"
+        assert len(result_data["sources"]) == result_data["total_sources"], "Sources count mismatch"
+
+        # Verify we found information about Charles Packer's education
+        found_education_info = False
+        for source in result_data["sources"]:
+            assert "url" in source, "Source missing URL"
+            assert "title" in source, "Source missing title"
+            assert "citations" in source, "Source missing citations"
+
+            for citation in source["citations"]:
+                assert "text" in citation, "Citation missing text"
+
+                # Check if we found education-related information
+                if any(keyword in citation["text"].lower() for keyword in ["berkeley", "phd", "ph.d", "university", "student"]):
+                    found_education_info = True
+
+        assert found_education_info, "Should have found education-related information about Charles Packer"
 
     # API key source should be valid
     assert response_json["api_key_source"] in [
@@ -360,7 +394,7 @@ async def test_web_search_uses_agent_env_var_model():
 
         task = SearchTask(query="test query", question="test question")
 
-        await executor.web_search(agent_state=mock_agent_state, tasks=[task], limit=1)
+        await executor.web_search(agent_state=mock_agent_state, tasks=[task], limit=1, return_raw=False)
 
         # verify correct model was used
         mock_openai_client.beta.chat.completions.parse.assert_called_once()

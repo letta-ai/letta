@@ -41,7 +41,7 @@ from letta.server.server import SyncServer
 from letta.services.summarizer.enums import SummarizationMode
 from letta.services.telemetry_manager import NoopTelemetryManager
 from letta.settings import settings
-from letta.utils import safe_create_task
+from letta.utils import safe_create_task, truncate_file_visible_content
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
 
@@ -65,7 +65,7 @@ async def list_agents(
     after: str | None = Query(None, description="Cursor for pagination"),
     limit: int | None = Query(50, description="Limit for pagination"),
     query_text: str | None = Query(None, description="Search agents by name"),
-    project_id: str | None = Query(None, description="Search agents by project ID"),
+    project_id: str | None = Query(None, description="Search agents by project ID - this will default to your default project on cloud"),
     template_id: str | None = Query(None, description="Search agents by template ID"),
     base_template_id: str | None = Query(None, description="Search agents by base template ID"),
     identity_id: str | None = Query(None, description="Search agents by identity ID"),
@@ -85,6 +85,11 @@ async def list_agents(
     sort_by: str | None = Query(
         "created_at",
         description="Field to sort by. Options: 'created_at' (default), 'last_run_completion'",
+    ),
+    show_hidden_agents: bool | None = Query(
+        False,
+        include_in_schema=False,
+        description="If set to True, include agents marked as hidden in the results.",
     ),
 ):
     """
@@ -115,6 +120,7 @@ async def list_agents(
         include_relationships=include_relationships,
         ascending=ascending,
         sort_by=sort_by,
+        show_hidden_agents=show_hidden_agents,
     )
 
 
@@ -478,14 +484,23 @@ async def open_file(
     if not file_metadata:
         raise HTTPException(status_code=404, detail=f"File with id={file_id} not found")
 
+    # Process file content with line numbers using LineChunker
+    from letta.services.file_processor.chunker.line_chunker import LineChunker
+
+    content_lines = LineChunker().chunk_text(file_metadata=file_metadata, validate_range=False)
+    visible_content = "\n".join(content_lines)
+
+    # Truncate if needed
+    visible_content = truncate_file_visible_content(visible_content, True, per_file_view_window_char_limit)
+
     # Use enforce_max_open_files_and_open for efficient LRU handling
-    closed_files, was_already_open = await server.file_agent_manager.enforce_max_open_files_and_open(
+    closed_files, was_already_open, _ = await server.file_agent_manager.enforce_max_open_files_and_open(
         agent_id=agent_id,
         file_id=file_id,
         file_name=file_metadata.file_name,
         source_id=file_metadata.source_id,
         actor=actor,
-        visible_content=file_metadata.content[:per_file_view_window_char_limit] if file_metadata.content else "",
+        visible_content=visible_content,
         max_files_open=max_files_open,
     )
 
@@ -850,7 +865,15 @@ async def send_message(
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex", "bedrock"]
+    model_compatible = agent.llm_config.model_endpoint_type in [
+        "anthropic",
+        "openai",
+        "together",
+        "google_ai",
+        "google_vertex",
+        "bedrock",
+        "ollama",
+    ]
 
     # Create a new run for execution tracking
     if settings.track_agent_run:
@@ -984,7 +1007,15 @@ async def send_message_streaming(
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex", "bedrock"]
+    model_compatible = agent.llm_config.model_endpoint_type in [
+        "anthropic",
+        "openai",
+        "together",
+        "google_ai",
+        "google_vertex",
+        "bedrock",
+        "ollama",
+    ]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"]
     not_letta_endpoint = agent.llm_config.model_endpoint != LETTA_MODEL_ENDPOINT
 
@@ -1052,28 +1083,42 @@ async def send_message_streaming(
                         else SummarizationMode.PARTIAL_EVICT_MESSAGE_BUFFER
                     ),
                 )
-            from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
+            from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode, add_keepalive_to_stream
 
             if request.stream_tokens and model_compatible_token_streaming and not_letta_endpoint:
+                raw_stream = agent_loop.step_stream(
+                    input_messages=request.messages,
+                    max_steps=request.max_steps,
+                    use_assistant_message=request.use_assistant_message,
+                    request_start_timestamp_ns=request_start_timestamp_ns,
+                    include_return_message_types=request.include_return_message_types,
+                )
+                # Conditionally wrap with keepalive based on request parameter
+                if request.include_pings and settings.enable_keepalive:
+                    stream = add_keepalive_to_stream(raw_stream, keepalive_interval=settings.keepalive_interval)
+                else:
+                    stream = raw_stream
+
                 result = StreamingResponseWithStatusCode(
-                    agent_loop.step_stream(
-                        input_messages=request.messages,
-                        max_steps=request.max_steps,
-                        use_assistant_message=request.use_assistant_message,
-                        request_start_timestamp_ns=request_start_timestamp_ns,
-                        include_return_message_types=request.include_return_message_types,
-                    ),
+                    stream,
                     media_type="text/event-stream",
                 )
             else:
+                raw_stream = agent_loop.step_stream_no_tokens(
+                    request.messages,
+                    max_steps=request.max_steps,
+                    use_assistant_message=request.use_assistant_message,
+                    request_start_timestamp_ns=request_start_timestamp_ns,
+                    include_return_message_types=request.include_return_message_types,
+                )
+                # Conditionally wrap with keepalive based on request parameter
+                if request.include_pings and settings.enable_keepalive:
+                    stream = add_keepalive_to_stream(raw_stream, keepalive_interval=settings.keepalive_interval)
+                else:
+                    stream = raw_stream
+
                 result = StreamingResponseWithStatusCode(
-                    agent_loop.step_stream_no_tokens(
-                        request.messages,
-                        max_steps=request.max_steps,
-                        use_assistant_message=request.use_assistant_message,
-                        request_start_timestamp_ns=request_start_timestamp_ns,
-                        include_return_message_types=request.include_return_message_types,
-                    ),
+                    stream,
                     media_type="text/event-stream",
                 )
         else:
@@ -1165,6 +1210,7 @@ async def _process_message_background(
             "google_ai",
             "google_vertex",
             "bedrock",
+            "ollama",
         ]
         if agent_eligible and model_compatible:
             if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
@@ -1344,7 +1390,15 @@ async def preview_raw_payload(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex", "bedrock"]
+    model_compatible = agent.llm_config.model_endpoint_type in [
+        "anthropic",
+        "openai",
+        "together",
+        "google_ai",
+        "google_vertex",
+        "bedrock",
+        "ollama",
+    ]
 
     if agent_eligible and model_compatible:
         if agent.enable_sleeptime:
@@ -1386,7 +1440,7 @@ async def preview_raw_payload(
         )
 
 
-@router.post("/{agent_id}/summarize", response_model=AgentState, operation_id="summarize_agent_conversation")
+@router.post("/{agent_id}/summarize", status_code=204, operation_id="summarize_agent_conversation")
 async def summarize_agent_conversation(
     agent_id: str,
     request_obj: Request,  # FastAPI Request
@@ -1404,7 +1458,15 @@ async def summarize_agent_conversation(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "together", "google_ai", "google_vertex", "bedrock"]
+    model_compatible = agent.llm_config.model_endpoint_type in [
+        "anthropic",
+        "openai",
+        "together",
+        "google_ai",
+        "google_vertex",
+        "bedrock",
+        "ollama",
+    ]
 
     if agent_eligible and model_compatible:
         agent = LettaAgent(
@@ -1419,9 +1481,10 @@ async def summarize_agent_conversation(
             telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
             message_buffer_min=max_message_length,
         )
-        return await agent.summarize_conversation_history()
-
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="Summarization is not currently supported for this agent configuration. Please contact Letta support.",
-    )
+        await agent.summarize_conversation_history()
+        # Summarization completed, return 204 No Content
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Summarization is not currently supported for this agent configuration. Please contact Letta support.",
+        )

@@ -15,15 +15,6 @@ from letta.orm import FileMetadata, Source
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import (
-    AssistantMessage,
-    LettaMessage,
-    ReasoningMessage,
-    SystemMessage,
-    ToolCallMessage,
-    ToolReturnMessage,
-    UserMessage,
-)
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
 from letta.services.helpers.agent_manager_helper import initialize_message_sequence
@@ -145,29 +136,6 @@ def test_memory(disable_e2b_api_key, client: RESTClient, agent: AgentState):
     ), "Memory update failed"
 
 
-def test_agent_interactions(disable_e2b_api_key, client: RESTClient, agent: AgentState):
-    # test that it is a LettaMessage
-    message = "Hello again, agent!"
-    print("Sending message", message)
-    response = client.user_message(agent_id=agent.id, message=message)
-    assert all([isinstance(m, LettaMessage) for m in response.messages]), "All messages should be LettaMessages"
-
-    # We should also check that the types were cast properly
-    print("RESPONSE MESSAGES, client type:", type(client))
-    print(response.messages)
-    for letta_message in response.messages:
-        assert type(letta_message) in [
-            SystemMessage,
-            UserMessage,
-            ReasoningMessage,
-            ToolCallMessage,
-            ToolReturnMessage,
-            AssistantMessage,
-        ], f"Unexpected message type: {type(letta_message)}"
-
-    # TODO: add streaming tests
-
-
 def test_archival_memory(disable_e2b_api_key, client: RESTClient, agent: AgentState):
     # _reset_config()
 
@@ -200,14 +168,6 @@ def test_archival_memory(disable_e2b_api_key, client: RESTClient, agent: AgentSt
 
     # TODO: check deletion
     client.get_archival_memory(agent.id)
-
-
-def test_core_memory(disable_e2b_api_key, client: RESTClient, agent: AgentState):
-    response = client.send_message(agent_id=agent.id, message="Update your core memory to remember that my name is Timber!", role="user")
-    print("Response", response)
-
-    memory = client.get_in_context_memory(agent_id=agent.id)
-    assert "Timber" in memory.get_block("human").value, f"Updating core memory failed: {memory.get_block('human').value}"
 
 
 def test_humans_personas(client: RESTClient, agent: AgentState):

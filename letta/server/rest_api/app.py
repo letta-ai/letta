@@ -28,6 +28,7 @@ from letta.schemas.letta_message_content import (
     create_letta_message_content_union_schema,
     create_letta_user_message_content_union_schema,
 )
+from letta.schemas.letta_ping import create_letta_ping_schema
 from letta.server.constants import REST_DEFAULT_PORT
 from letta.server.db import db_registry
 
@@ -67,6 +68,7 @@ def generate_openapi_schema(app: FastAPI):
     letta_docs["components"]["schemas"]["LettaMessageContentUnion"] = create_letta_message_content_union_schema()
     letta_docs["components"]["schemas"]["LettaAssistantMessageContentUnion"] = create_letta_assistant_message_content_union_schema()
     letta_docs["components"]["schemas"]["LettaUserMessageContentUnion"] = create_letta_user_message_content_union_schema()
+    letta_docs["components"]["schemas"]["LettaPing"] = create_letta_ping_schema()
 
     # Update the app's schema with our modified version
     app.openapi_schema = letta_docs

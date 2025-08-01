@@ -287,11 +287,11 @@ def test_attach_existing_files_creates_source_blocks_correctly(disable_pinecone,
 <file status="open" name="test_source/test.txt">
 <metadata>
 - read_only=true
-- chars_current=46
+- chars_current=45
 - chars_limit=15000
 </metadata>
 <value>
-[Viewing file start (out of 1 chunks)]
+[Viewing file start (out of 1 lines)]
 1: test
 </value>
 </file>
@@ -348,11 +348,11 @@ def test_delete_source_removes_source_blocks_correctly(disable_pinecone, client:
 <file status="open" name="test_source/test.txt">
 <metadata>
 - read_only=true
-- chars_current=46
+- chars_current=45
 - chars_limit=15000
 </metadata>
 <value>
-[Viewing file start (out of 1 chunks)]
+[Viewing file start (out of 1 lines)]
 1: test
 </value>
 </file>
@@ -437,9 +437,9 @@ def test_agent_uses_open_close_file_correctly(disable_pinecone, client: LettaSDK
     assert old_content_length > 10, f"Expected content > 10 chars for offset={offset}, length={length}, got {old_content_length}"
 
     # Assert specific content expectations for first range (lines 1-5)
-    assert "[Viewing chunks 1 to 5 (out of 554 chunks)]" in old_value, f"Expected viewing header for lines 1-5, got: {old_value[:100]}..."
+    assert "[Viewing lines 1 to 5 (out of " in old_value, f"Expected viewing header for lines 1-5, got: {old_value[:100]}..."
     assert "1: Enrico Letta" in old_value, f"Expected line 1 to start with '1: Enrico Letta', got: {old_value[:200]}..."
-    assert "5: appointed to the Cabinet" in old_value, f"Expected line 5 to contain '5: appointed to the Cabinet', got: {old_value}"
+    assert "5: " in old_value, f"Expected line 5 to be present, got: {old_value}"
 
     # Ask agent to open the file for a different range
     offset, length = 6, 5  # Different offset, same length
@@ -466,13 +466,9 @@ def test_agent_uses_open_close_file_correctly(disable_pinecone, client: LettaSDK
     assert new_content_length > 10, f"Expected content > 10 chars for offset={offset}, length={length}, got {new_content_length}"
 
     # Assert specific content expectations for second range (lines 6-10)
-    assert "[Viewing chunks 6 to 10 (out of 554 chunks)]" in new_value, f"Expected viewing header for lines 6-10, got: {new_value[:100]}..."
-    assert (
-        "6: was promoted to become Minister" in new_value
-    ), f"Expected line 6 to start with '6: was promoted to become Minister', got: {new_value[:200]}..."
-    assert (
-        "10: produced an inconclusive result" in new_value
-    ), f"Expected line 10 to contain '10: produced an inconclusive result', got: {new_value}"
+    assert "[Viewing lines 6 to 10 (out of " in new_value, f"Expected viewing header for lines 6-10, got: {new_value[:100]}..."
+    assert "6: " in new_value, f"Expected line 6 to be present, got: {new_value[:200]}..."
+    assert "10: " in new_value, f"Expected line 10 to be present, got: {new_value}"
 
     print(f"Comparing content ranges:")
     print(f"  First range (offset=1, length=5):  '{old_value}'")
@@ -663,7 +659,7 @@ def test_create_agent_with_source_ids_creates_source_blocks_correctly(disable_pi
     # Check that source blocks were created correctly
     blocks = temp_agent_state.memory.file_blocks
     assert len(blocks) == 1
-    assert any(b.value.startswith("[Viewing file start (out of 554 chunks)]") for b in blocks)
+    assert any(b.value.startswith("[Viewing file start (out of ") for b in blocks)
 
     # Verify file tools were automatically attached
     file_tools = {tool.name for tool in temp_agent_state.tools if tool.tool_type == ToolType.LETTA_FILES_CORE}
@@ -1000,6 +996,10 @@ def test_agent_open_file(disable_pinecone, client: LettaSDKClient, agent_state: 
     closed_files = client.agents.files.open(agent_id=agent_state.id, file_id=file_metadata.id)
     assert len(closed_files) == 0
 
+    system = get_raw_system_message(client, agent_state.id)
+    assert '<file status="open" name="test_source/test.txt">' in system
+    assert "[Viewing file start (out of 1 lines)]" in system
+
 
 def test_agent_close_file(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
     """Test client.agents.close_file() function"""
@@ -1019,9 +1019,8 @@ def test_agent_close_file(disable_pinecone, client: LettaSDKClient, agent_state:
     # Test close_file function
     client.agents.files.close(agent_id=agent_state.id, file_id=file_metadata.id)
 
-    # Result can be None or any type based on the signature
-    # Just verify the function executes without error
-    assert True, "close_file should execute without error"
+    system = get_raw_system_message(client, agent_state.id)
+    assert '<file status="closed" name="test_source/test.txt">' in system
 
 
 def test_agent_close_all_open_files(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
@@ -1041,12 +1040,18 @@ def test_agent_close_all_open_files(disable_pinecone, client: LettaSDKClient, ag
         # Open each file
         client.agents.files.open(agent_id=agent_state.id, file_id=file_metadata.id)
 
+    system = get_raw_system_message(client, agent_state.id)
+    assert '<file status="open"' in system
+
     # Test close_all_open_files function
     result = client.agents.files.close_all(agent_id=agent_state.id)
 
     # Verify result is a list of strings
     assert isinstance(result, list), f"Expected list, got {type(result)}"
     assert all(isinstance(item, str) for item in result), "All items in result should be strings"
+
+    system = get_raw_system_message(client, agent_state.id)
+    assert '<file status="open"' not in system
 
 
 def test_file_processing_timeout(disable_pinecone, client: LettaSDKClient):

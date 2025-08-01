@@ -7,21 +7,22 @@ from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from letta.local_llm.constants import DEFAULT_WRAPPER_NAME, INNER_THOUGHTS_KWARG
+from letta.schemas.enums import SandboxType
 from letta.services.summarizer.enums import SummarizationMode
 
 
 class ToolSettings(BaseSettings):
-    composio_api_key: Optional[str] = None
+    composio_api_key: str | None = Field(default=None, description="API key for Composio")
 
-    # E2B Sandbox configurations
-    e2b_api_key: Optional[str] = None
-    e2b_sandbox_template_id: Optional[str] = None  # Updated manually
+    # Sandbox Configurations
+    e2b_api_key: str | None = Field(default=None, description="API key for using E2B as a tool sandbox")
+    e2b_sandbox_template_id: str | None = Field(default=None, description="Template ID for E2B Sandbox. Updated Manually.")
 
-    # Tavily search
-    tavily_api_key: Optional[str] = None
+    modal_api_key: str | None = Field(default=None, description="API key for using Modal as a tool sandbox")
 
-    # Firecrawl search
-    firecrawl_api_key: Optional[str] = None
+    # Search Providers
+    tavily_api_key: str | None = Field(default=None, description="API key for using Tavily as a search provider.")
+    firecrawl_api_key: str | None = Field(default=None, description="API key for using Firecrawl as a search provider.")
 
     # Local Sandbox configurations
     tool_exec_dir: Optional[str] = None
@@ -35,6 +36,15 @@ class ToolSettings(BaseSettings):
     mcp_execute_tool_timeout: float = 60.0
     mcp_read_from_config: bool = False  # if False, will throw if attempting to read/write from file
     mcp_disable_stdio: bool = False
+
+    @property
+    def sandbox_type(self) -> SandboxType:
+        if self.e2b_api_key:
+            return SandboxType.E2B
+        elif self.modal_api_key:
+            return SandboxType.MODAL
+        else:
+            return SandboxType.LOCAL
 
 
 class SummarizerSettings(BaseSettings):
@@ -194,6 +204,10 @@ class Settings(BaseSettings):
     debug: Optional[bool] = False
     cors_origins: Optional[list] = cors_origins
 
+    # SSE Streaming keepalive settings
+    enable_keepalive: bool = Field(True, description="Enable keepalive messages in SSE streams to prevent timeouts")
+    keepalive_interval: float = Field(50.0, description="Seconds between keepalive messages (default: 50)")
+
     # default handles
     default_llm_handle: Optional[str] = None
     default_embedding_handle: Optional[str] = None
@@ -277,6 +291,11 @@ class Settings(BaseSettings):
     pinecone_source_index: Optional[str] = "sources"
     pinecone_agent_index: Optional[str] = "recall"
     upsert_pinecone_indices: bool = False
+
+    # For tpuf - currently only for archival memories
+    use_tpuf: bool = False
+    tpuf_api_key: Optional[str] = None
+    tpuf_region: str = "gcp-us-central1.turbopuffer.com"
 
     # File processing timeout settings
     file_processing_timeout_minutes: int = 30

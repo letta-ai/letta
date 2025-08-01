@@ -14,11 +14,10 @@ import letta.utils as utils
 from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, LETTA_DIR, LETTA_TOOL_EXECUTION_DIR
 from letta.orm import Provider, ProviderTrace, Step
 from letta.schemas.block import CreateBlock
-from letta.schemas.enums import MessageRole, ProviderCategory, ProviderType
+from letta.schemas.enums import MessageRole, ProviderCategory, ProviderType, SandboxType
 from letta.schemas.letta_message import LettaMessage, ReasoningMessage, SystemMessage, ToolCallMessage, ToolReturnMessage, UserMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.providers import ProviderCreate
-from letta.schemas.sandbox_config import SandboxType
 from letta.schemas.user import User
 from letta.server.db import db_registry
 
