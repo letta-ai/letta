@@ -4,6 +4,7 @@ from typing import Any, Optional, Set, Union
 
 from letta.constants import REDIS_EXCLUDE, REDIS_INCLUDE, REDIS_SET_DEFAULT_VAL
 from letta.log import get_logger
+from letta.settings import settings
 
 try:
     from redis import RedisError
@@ -294,8 +295,6 @@ async def get_redis_client() -> AsyncRedisClient:
     global _client_instance
     if _client_instance is None:
         try:
-            from letta.settings import settings
-
             # If Redis settings are not configured, use noop client
             if settings.redis_host is None or settings.redis_port is None:
                 logger.info("Redis not configured, using noop client")
