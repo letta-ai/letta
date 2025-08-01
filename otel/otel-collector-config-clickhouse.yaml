@@ -12,12 +12,6 @@ processors:
     send_batch_size: 1024
 
 exporters:
-  file:
-    path: /root/.letta/logs/traces.json
-    rotation:
-      max_megabytes: 100
-      max_days: 7
-      max_backups: 5
   clickhouse:
     endpoint: ${CLICKHOUSE_ENDPOINT}
     database: ${CLICKHOUSE_DATABASE}
@@ -40,4 +34,4 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [file, clickhouse]
+      exporters: [clickhouse]
