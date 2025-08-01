@@ -5,11 +5,26 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+  filelog:
+    include:
+      - /root/.letta/logs/Letta.log
+    multiline:
+      line_start_pattern: ^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
+    operators:
+      # Extract timestamp and other fields
+      - type: regex_parser
+        regex: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})\s+.*'
+      - type: time_parser
+        parse_from: attributes.timestamp
+        layout: '%Y-%m-%d %H:%M:%S,%L'
 
 processors:
   batch:
-    timeout: 1s
-    send_batch_size: 1024
+    timeout: 5s
+    send_batch_size: 512
+    max_queue_size: 4096
+    max_batch_size: 1024
+    throttle: true
 
 exporters:
   clickhouse:
@@ -17,21 +32,39 @@ exporters:
     database: ${CLICKHOUSE_DATABASE}
     username: ${CLICKHOUSE_USERNAME}
     password: ${CLICKHOUSE_PASSWORD}
-    timeout: 5s
+    timeout: 10s
     sending_queue:
-      queue_size: 100
+      queue_size: 500
+      enabled: true
     retry_on_failure:
       enabled: true
       initial_interval: 5s
       max_interval: 30s
       max_elapsed_time: 300s
+      backoff_multiplier: 1.5
+
+extensions:
+  health_check:
+  pprof:
+  zpages:
 
 service:
   telemetry:
     logs:
       level: error
+    metrics:
+      address: 0.0.0.0:8888
+  extensions: [health_check, pprof, zpages]
   pipelines:
     traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [clickhouse]
+    logs:
+      receivers: [filelog]
+      processors: [batch]
+      exporters: [clickhouse]
+    metrics:
       receivers: [otlp]
       processors: [batch]
       exporters: [clickhouse]
