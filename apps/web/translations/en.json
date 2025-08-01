@@ -2905,6 +2905,8 @@
     "emptyMessage": "This source has no files",
     "loading": "Loading files",
     "delete": "Delete folder",
+    "editInstructions": "Edit instructions",
+    "rename": "Rename folder",
     "error": "There was an error loading files, please try again or contact support.",
     "actions": "Actions",
     "deleteFile": "Delete file",

@@ -1477,6 +1477,8 @@
     "error": "Une erreur s'est produite lors du chargement des fichiers, veuillez réessayer ou contacter l'assistance.",
     "actions": "Actes",
     "deleteFile": "Supprimer le fichier",
+    "editInstructions": "Modifier les instructions",
+    "rename": "Renommer le dossier",
     "table": {
       "columns": {
         "name": "Nom",

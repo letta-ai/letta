@@ -33,4 +33,6 @@ export * from './lib/panels/ToolRules/ToolRulesVisual';
 export * from './lib/ViewMessageTrace/ViewMessageTrace';
 export * from './lib/hooks/useADELayoutConfig/useADELayoutConfig';
 export * from './lib/panels/DataSourcesV2/_components/DeleteDatasourceDialog/DeleteDatasourceDialog';
+export * from './lib/panels/DataSourcesV2/_components/RenameDataSourceDialog/RenameDataSourceDialog';
+export * from './lib/panels/DataSourcesV2/_components/UpdateSourceInstructionsModal/UpdateSourceInstructionsModal';
 export * from './lib/hooks/useQueryIdenities/useQueryIdentities';

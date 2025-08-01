@@ -2064,6 +2064,8 @@
     "error": "加载文件时出错，请重试或联系客服。",
     "actions": "操作",
     "deleteFile": "删除文件",
+    "editInstructions": "编辑说明",
+    "rename": "重命名文件夹",
     "table": {
       "columns": {
         "name": "名称",

@@ -20,6 +20,7 @@ import {
   ArticleIcon,
   VerticalDotsIcon,
   TrashIcon,
+  EditIcon,
 } from '@letta-cloud/ui-component-library';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
@@ -42,7 +43,11 @@ import type { DeleteFilePayload } from '@letta-cloud/ui-ade-components';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useFormatters } from '@letta-cloud/utils-client';
-import { DeleteDataSourceDialog } from '@letta-cloud/ui-ade-components';
+import {
+  DeleteDataSourceDialog,
+  RenameDataSourceDialog,
+  UpdateSourceInstructionsModal,
+} from '@letta-cloud/ui-ade-components';
 
 const uploadToFormValuesSchema = z.object({
   file: z.custom<File>((v) => v instanceof File),
@@ -386,6 +391,26 @@ function DataSourceFilesPage() {
                   />
                 }
               >
+                <UpdateSourceInstructionsModal
+                  source={source}
+                  trigger={
+                    <DropdownMenuItem
+                      doNotCloseOnSelect
+                      preIcon={<ArticleIcon />}
+                      label={t('editInstructions')}
+                    />
+                  }
+                />
+                <RenameDataSourceDialog
+                  source={source}
+                  trigger={
+                    <DropdownMenuItem
+                      doNotCloseOnSelect
+                      preIcon={<EditIcon />}
+                      label={t('rename')}
+                    />
+                  }
+                />
                 <DeleteDataSourceDialog
                   onSuccess={() => {
                     window.location.href = '/data-sources';
