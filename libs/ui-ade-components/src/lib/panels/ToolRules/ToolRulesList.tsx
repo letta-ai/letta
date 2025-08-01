@@ -22,6 +22,17 @@ import type {
 } from './types';
 import { ToolRulesSearchFilter } from './ToolRulesSearchFilter';
 import { ToolRuleEditor } from './ToolRuleEditors';
+import {
+  Button,
+  DropdownMenu,
+  DropdownDetailedMenuItem,
+  ChevronDownIcon,
+  StartIcon,
+  EndIcon,
+  ConstrainChildToolsIcon,
+  ContinueLoopIcon,
+  MaxCountPerStepIcon,
+} from '@letta-cloud/ui-component-library';
 
 // Add these type definitions at the top of the file
 interface ToolRuleItem {
@@ -33,6 +44,13 @@ interface ToolRuleItem {
 interface ToolGroup {
   toolName: string;
   rules: ToolRuleItem[];
+}
+
+interface RuleOption {
+  value: SupportedToolRuleNameTypes;
+  icon: React.ComponentType<any>;
+  title: string;
+  description: string;
 }
 
 // Add this CSS-in-JS styled component for the connections
@@ -99,18 +117,116 @@ function ConnectionLine({
           refY="2"
           orient="auto"
         >
-          <polygon points="0 0, 6 2, 0 4" fill="hsl(var(--muted))" />
+          <polygon points="0 0, 6 2, 0 4" fill="hsl(var(--steel))" />
         </marker>
       </defs>
       <path
         d={path}
-        // stroke="hsl(var(--muted))"
         stroke="hsl(var(--steel))"
         strokeWidth="1"
         fill="none"
         markerEnd={`url(#arrowhead-${toolName}-${ruleIndex})`}
       />
     </svg>
+  );
+}
+
+// New Tool Rule Button for specific tools
+interface NewToolRuleButtonForToolProps {
+  onSelect: (rule: SupportedToolRuleNameTypes) => void;
+  toolName: string;
+  existingRules: SupportedToolRuleTypes[];
+}
+
+function NewToolRuleButtonForTool({
+  onSelect,
+  toolName,
+  existingRules,
+}: NewToolRuleButtonForToolProps) {
+  const t = useTranslations('ADE/ToolRules');
+
+  const RULE_OPTIONS = useMemo(
+    (): RuleOption[] => [
+      {
+        value: 'run_first',
+        icon: StartIcon,
+        title: t('toolTypes.runFirst.title'),
+        description: t('toolTypes.runFirst.description'),
+      },
+      {
+        value: 'exit_loop',
+        icon: EndIcon,
+        title: t('toolTypes.exitLoop.title'),
+        description: t('toolTypes.exitLoop.description'),
+      },
+      {
+        value: 'required_before_exit',
+        icon: EndIcon,
+        title: t('toolTypes.requiredBeforeExit.title'),
+        description: t('toolTypes.requiredBeforeExit.description'),
+      },
+      {
+        value: 'constrain_child_tools',
+        icon: ConstrainChildToolsIcon,
+        title: t('toolTypes.constrainChildTools.title'),
+        description: t('toolTypes.constrainChildTools.description'),
+      },
+      {
+        value: 'continue_loop',
+        icon: ContinueLoopIcon,
+        title: t('toolTypes.continueLoop.title'),
+        description: t('toolTypes.continueLoop.description'),
+      },
+      {
+        value: 'max_count_per_step',
+        icon: MaxCountPerStepIcon,
+        title: t('toolTypes.maxCountPerStep.title'),
+        description: t('toolTypes.maxCountPerStep.description'),
+      },
+    ],
+    [t],
+  );
+
+  // Filter out rule types that already exist for this tool
+  const existingRuleTypes = existingRules
+    .filter((rule) => rule.tool_name === toolName)
+    .map((rule) => rule.type);
+
+  const availableRuleOptions = RULE_OPTIONS.filter(
+    (option) => !existingRuleTypes.includes(option.value),
+  );
+
+  // Don't render anything if no options are available
+  if (availableRuleOptions.length === 0) {
+    return null;
+  }
+
+  return (
+    <DropdownMenu
+      triggerAsChild
+      align="start"
+      trigger={
+        <Button
+          size="small"
+          postIcon={<ChevronDownIcon />}
+          label={t('ToolRuleList.newRule')}
+          color="tertiary"
+          bold
+        />
+      }
+    >
+      {availableRuleOptions.map(({ value, icon: Icon, title, description }) => (
+        <DropdownDetailedMenuItem
+          key={value}
+          description={description}
+          label={title}
+          preIcon={<Icon size="small" color="default" />}
+          onClick={() => {
+            onSelect(value);
+          }}
+        />
+      ))}
+    </DropdownMenu>
   );
 }
 
@@ -196,7 +312,13 @@ export function ToolRulesList(props: ToolRulesListProps) {
     );
 
     if (viewMode === 'tools') {
-      // Group by tool names, but only include tools with actual names
+      // Get all tools from the agent
+      const { tools } = currentAgent;
+      const allToolNames = (tools || [])
+        .map((tool) => tool.name || '')
+        .filter((name) => name.trim() !== '');
+
+      // Group by tool names, including tools with no rules
       const toolGroups = supportedRules.reduce(
         (acc, rule, index) => {
           const toolName = rule.tool_name;
@@ -215,6 +337,13 @@ export function ToolRulesList(props: ToolRulesListProps) {
         },
         {} as Record<string, ToolRuleItem[]>,
       );
+
+      // Ensure all tools are included, even if they have no rules
+      allToolNames.forEach((toolName) => {
+        if (!toolGroups[toolName]) {
+          toolGroups[toolName] = [];
+        }
+      });
 
       // Only filter if there's a search term
       const filteredToolGroups =
@@ -266,7 +395,7 @@ export function ToolRulesList(props: ToolRulesListProps) {
 
       return filtered;
     }
-  }, [search, toolRules, filterBy, viewMode]);
+  }, [search, toolRules, filterBy, viewMode, currentAgent]);
 
   const RULE_TEMPLATES = useMemo(
     (): Record<SupportedToolRuleNameTypes, SupportedToolRuleTypes> => ({
@@ -301,6 +430,18 @@ export function ToolRulesList(props: ToolRulesListProps) {
     },
     [RULE_TEMPLATES],
   ); // Add RULE_TEMPLATES to dependency array
+
+  // Add new function to handle tool-specific rule creation
+  const handleSelectRuleForTool = useCallback(
+    (rule: SupportedToolRuleNameTypes, toolName: string) => {
+      const newRule = {
+        ...RULE_TEMPLATES[rule],
+        tool_name: toolName,
+      };
+      setToolRules((prev) => [...prev, newRule]);
+    },
+    [RULE_TEMPLATES],
+  );
 
   const mounted = React.useRef(false);
 
@@ -380,23 +521,26 @@ export function ToolRulesList(props: ToolRulesListProps) {
     [],
   );
 
-  function renderToolRuleEditor(rule: SupportedToolRuleTypes, index: number) {
-    return (
-      <ToolRuleEditor
-        key={index}
-        rule={rule}
-        index={index}
-        onRemove={() => {
-          handleRemoveRule(index);
-        }}
-        onSubmit={(data) => {
-          handleSaveRule(index, data);
-        }}
-        toolRules={toolRules}
-        viewMode={viewMode}
-      />
-    );
-  }
+  const renderToolRuleEditor = useCallback(
+    (rule: SupportedToolRuleTypes, index: number) => {
+      return (
+        <ToolRuleEditor
+          key={index}
+          rule={rule}
+          index={index}
+          onRemove={() => {
+            handleRemoveRule(index);
+          }}
+          onSubmit={(data) => {
+            handleSaveRule(index, data);
+          }}
+          toolRules={toolRules}
+          viewMode={viewMode}
+        />
+      );
+    },
+    [toolRules, viewMode, handleRemoveRule, handleSaveRule],
+  );
 
   return (
     <VStack
@@ -448,20 +592,22 @@ export function ToolRulesList(props: ToolRulesListProps) {
                       <Typography variant="body2" color="default" semibold>
                         {toolName}
                       </Typography>
-                      {/* Bottom left handle for parent */}
-                      <div
-                        id={`handle-source-${toolName.replace(/\s+/g, '-')}`}
-                        style={{
-                          position: 'absolute',
-                          left: '6.5px',
-                          bottom: '-4px',
-                          width: '7px',
-                          height: '7px',
-                          borderRadius: '50%',
-                          backgroundColor: 'hsl(var(--steel))',
-                          zIndex: 2,
-                        }}
-                      />
+                      {/* Bottom left handle for parent - only show when there are rules */}
+                      {rules.length > 0 && (
+                        <div
+                          id={`handle-source-${toolName.replace(/\s+/g, '-')}`}
+                          style={{
+                            position: 'absolute',
+                            left: '6.5px',
+                            bottom: '-4px',
+                            width: '7px',
+                            height: '7px',
+                            borderRadius: '50%',
+                            backgroundColor: 'hsl(var(--steel))',
+                            zIndex: 2,
+                          }}
+                        />
+                      )}
                     </HStack>
                   </div>
 
@@ -473,32 +619,47 @@ export function ToolRulesList(props: ToolRulesListProps) {
                       ruleIndex={index}
                     />
                   ))}
-
-                  {/* eslint-disable-next-line react/forbid-component-props */}
                   <VStack gap="small" fullWidth className="pl-8">
-                    {rules.map(({ rule, index }, ruleIndex) =>
-                      rule.type ? (
-                        <div
-                          key={`${toolName}-${index}`}
-                          style={{ position: 'relative' }}
-                        >
-                          {/* Center left handle for child */}
+                    {rules.length === 0 ? (
+                      <Typography variant="body2" color="muted" italic>
+                        {t('ToolRuleList.noRulesAttached')}
+                      </Typography>
+                    ) : (
+                      rules.map(({ rule, index }, ruleIndex) =>
+                        rule.type ? (
                           <div
-                            id={`handle-target-${toolName.replace(/\s+/g, '-')}-${ruleIndex}`}
-                            style={{
-                              position: 'absolute',
-                              left: '-11px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              width: '12px',
-                              height: '12px',
-                              borderRadius: '50%',
-                            }}
-                          />
-                          {renderToolRuleEditor(rule, index)}
-                        </div>
-                      ) : null,
+                            key={`${toolName}-${index}`}
+                            style={{ position: 'relative' }}
+                          >
+                            {/* Center left handle for child */}
+                            <div
+                              id={`handle-target-${toolName.replace(/\s+/g, '-')}-${ruleIndex}`}
+                              style={{
+                                position: 'absolute',
+                                left: '-11px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                width: '12px',
+                                height: '12px',
+                                borderRadius: '50%',
+                              }}
+                            />
+                            {renderToolRuleEditor(rule, index)}
+                          </div>
+                        ) : null,
+                      )
                     )}
+
+                    {/* New Rule + dropdown */}
+                    <HStack>
+                      <NewToolRuleButtonForTool
+                        onSelect={(rule) => {
+                          handleSelectRuleForTool(rule, toolName);
+                        }}
+                        toolName={toolName}
+                        existingRules={toolRules}
+                      />
+                    </HStack>
                   </VStack>
                 </VStack>
               ))

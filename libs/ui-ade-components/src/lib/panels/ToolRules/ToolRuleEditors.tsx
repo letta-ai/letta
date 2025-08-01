@@ -408,9 +408,13 @@ export function ChildToolRuleEditor(props: ChildToolRuleEditorProps) {
                       onSelect={(value) => {
                         if (isMultiValue(value)) {
                           field.onChange(value.map((v) => v.value));
-                          return;
+                        } else if (value) {
+                          // Handle single value selection
+                          field.onChange([value.value]);
+                        } else {
+                          // Handle deselection
+                          field.onChange([]);
                         }
-                        return;
                       }}
                     />
                   </HStack>
@@ -449,9 +453,13 @@ export function ChildToolRuleEditor(props: ChildToolRuleEditorProps) {
                       onSelect={(value) => {
                         if (isMultiValue(value)) {
                           field.onChange(value.map((v) => v.value));
-                          return;
+                        } else if (value) {
+                          // Handle single value selection
+                          field.onChange([value.value]);
+                        } else {
+                          // Handle deselection
+                          field.onChange([]);
                         }
-                        return;
                       }}
                     />
                   </HStack>

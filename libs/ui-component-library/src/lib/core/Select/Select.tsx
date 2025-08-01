@@ -142,7 +142,7 @@ function useSelectComponents(selectProps: BaseSelectProps) {
             gap="small"
             border
             /* eslint-disable-next-line react/forbid-component-props */
-            style={{ borderColor: 'hsl(var(--steel))' }}
+            style={{ borderColor: 'hsl(var(--muted))' }}
           >
             {props.data.icon && (
               <Slot className="max-h-3 w-3">{props.data.icon}</Slot>

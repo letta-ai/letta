@@ -54,7 +54,8 @@
     "ToolRuleList": {
       "search": "按工具名称搜索规则",
       "newRule": "新规则",
-      "error": "保存规则时出错，请重试或联系客服，正在重置为上次保存的状态。"
+      "error": "保存规则时出错，请重试或联系客服，正在重置为上次保存的状态。",
+      "noRulesAttached": "当前没有附加规则。"
     },
     "ToolRuleItemWrapper": {
       "invalid": "无效规则",

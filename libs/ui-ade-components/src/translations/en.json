@@ -89,7 +89,8 @@
       "search": "Search rules by tool name",
       "newRule": "New rule",
       "error": "There was an error saving your rules, please try again or contact support, resetting to last saved state.",
-      "save": "Save"
+      "save": "Save",
+      "noRulesAttached": "No tool rules attached"
     },
     "ToolRuleItemWrapper": {
       "invalid": "Invalid rule",
