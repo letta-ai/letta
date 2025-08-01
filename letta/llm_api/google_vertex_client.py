@@ -34,10 +34,12 @@ class GoogleVertexClient(LLMClientBase):
 
     def _get_client(self):
         timeout_ms = int(settings.llm_request_timeout_seconds * 1000)
+        # Use vertex_ai_region if set, otherwise fall back to google_cloud_location
+        location = model_settings.vertex_ai_region or model_settings.google_cloud_location
         return genai.Client(
             vertexai=True,
             project=model_settings.google_cloud_project,
-            location=model_settings.google_cloud_location,
+            location=location,
             http_options=HttpOptions(api_version="v1", timeout=timeout_ms),
         )
 
