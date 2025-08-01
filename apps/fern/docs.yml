@@ -593,9 +593,11 @@ typography:
 
 redirects:
   - source: "/install"
-    destination: "/guides/desktop/install"
+    destination: "/guides/ade/desktop"
+  - source: "/desktop"
+    destination: "/guides/ade/desktop"
   - source: "/quickstart/desktop"
-    destination: "/guides/desktop/install"
+    destination: "/guides/ade/desktop"
   - source: "/quickstart/docker"
     destination: "/guides/selfhosting"
   - source: "/guides/server/pip"
