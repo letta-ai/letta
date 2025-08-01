@@ -61,21 +61,44 @@ function MCPServerList(props: MCPServerListProps) {
         isMobile={isMobile}
         search={search}
         onSearchChange={onSearchChange}
-        action={
-          <AddServerDialog
-            trigger={
+      />
+      <VStack overflowY="auto" collapseHeight flex gap={false}>
+        <AddServerDialog
+          trigger={
+            <HStack
+              paddingY="small"
+              paddingX="medium"
+              gap="small"
+              justify="spaceBetween"
+              align="center"
+              fullWidth
+              className="hover:bg-secondary-hover cursor-pointer"
+            >
+              <HStack fullWidth align="center" gap="medium">
+                <div className="pl-1">
+                  <MCPServerLogo serverUrl="" />
+                </div>
+                <VStack collapseWidth flex gap="text">
+                  <Typography
+                    fullWidth
+                    overflow="ellipsis"
+                    noWrap
+                    variant={isMobile ? 'body' : 'body2'}
+                  >
+                    {t('AddServerDialog.addMcpServer')}
+                  </Typography>
+                </VStack>
+              </HStack>
               <Button
-                size="small"
+                size="default"
                 hideLabel
                 preIcon={<PlusIcon />}
                 label={t('AddServerDialog.addServer')}
                 color="tertiary"
               />
-            }
-          />
-        }
-      />
-      <VStack overflowY="auto" collapseHeight flex gap={false}>
+            </HStack>
+          }
+        />
         {servers.map((server) => (
           <HStack
             paddingY="small"

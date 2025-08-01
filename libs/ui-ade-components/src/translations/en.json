@@ -1841,6 +1841,7 @@
     },
     "AddServerDialog": {
       "addServer": "Add Server",
+      "addMcpServer": "Add MCP server",
       "title": "Add Server",
       "description": "",
       "name": {

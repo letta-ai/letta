@@ -25,8 +25,8 @@ export function ToolSearchInput(props: ToolSearchInputProps) {
       >
         <input
           className={cn(
-            'w-full   bg-transparent ',
-            'focus:outline-none ',
+            'w-full bg-transparent',
+            'focus:outline-none',
             isMobile ? '' : 'text-[12px]',
           )}
           type="text"
