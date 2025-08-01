@@ -1833,6 +1833,10 @@
       "custom": {
         "label": "自定义服务器",
         "description": "向您的Letta实例添加自定义模型上下文协议服务器。"
+      },
+      "connected": {
+        "label": "查看已连接服务器",
+        "description": "查看和管理您当前连接的MCP服务器。"
       }
     },
     "alreadyAddedLabel": "已添加"

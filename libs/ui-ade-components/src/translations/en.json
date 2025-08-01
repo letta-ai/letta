@@ -1708,6 +1708,10 @@
       "custom": {
         "label": "Custom server",
         "description": "Add a custom Model Context Protocol server to your Letta instance."
+      },
+      "connected": {
+        "label": "View existing MCP servers",
+        "description": "View and manage your currently connected MCP servers."
       }
     },
     "alreadyAddedLabel": "Already Added"

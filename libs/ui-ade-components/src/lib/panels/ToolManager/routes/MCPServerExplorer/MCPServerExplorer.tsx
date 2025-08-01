@@ -7,6 +7,7 @@ import {
   HStack,
   RawInput,
   SearchIcon,
+  McpIcon,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useState, useMemo } from 'react';
@@ -20,6 +21,7 @@ import {
   StreamableHttpSetupServer,
 } from './components';
 import { SERVER_CONFIGS } from './constants';
+import { useToolManagerState } from '../../hooks/useToolManagerState/useToolManagerState';
 
 function ServerSetupDialog({ server }: { server: CustomUrlRecommendedServer }) {
   const config = SERVER_CONFIGS[server.id];
@@ -41,6 +43,7 @@ function ServerSetupDialog({ server }: { server: CustomUrlRecommendedServer }) {
 
 export function MCPServerExplorer() {
   const t = useTranslations('ToolsEditor/MCPServerExplorer');
+  const { setPath } = useToolManagerState();
   const recommendedServers = useRecommendedMCPServers();
   const [search, setSearch] = useState('');
 
@@ -89,6 +92,14 @@ export function MCPServerExplorer() {
           </HStack>
         </HStack>
         <NiceGridDisplay>
+          <ActionCard
+            icon={<McpIcon />}
+            title={t('types.connected.label')}
+            description={t('types.connected.description')}
+            onClick={() => {
+              setPath('/mcp-servers');
+            }}
+          />
           <AddServerDialog
             trigger={
               <ActionCard
