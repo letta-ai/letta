@@ -42,10 +42,20 @@ class OllamaProvider(OpenAIProvider):
 
         configs = []
         for model in response_json["models"]:
-            context_window = await self._get_model_context_window(model["name"])
+            model_details = await self._get_model_details_async(model["name"])
+            if not model_details or "completion" not in model_details.get("capabilities", []):
+                continue
+
+            context_window = None
+            model_info = model_details.get("model_info", {})
+            if architecture := model_info.get("general.architecture"):
+                if context_length := model_info.get(f"{architecture}.context_length"):
+                    context_window = int(context_length)
+
             if context_window is None:
                 print(f"Ollama model {model['name']} has no context window, using default 32000")
                 context_window = 32000
+
             configs.append(
                 LLMConfig(
                     model=model["name"],
@@ -74,11 +84,20 @@ class OllamaProvider(OpenAIProvider):
 
         configs = []
         for model in response_json["models"]:
-            embedding_dim = await self._get_model_embedding_dim(model["name"])
+            model_details = await self._get_model_details_async(model["name"])
+            if not model_details or "embedding" not in model_details.get("capabilities", []):
+                continue
+
+            embedding_dim = None
+            model_info = model_details.get("model_info", {})
+            if architecture := model_info.get("general.architecture"):
+                if embedding_length := model_info.get(f"{architecture}.embedding_length"):
+                    embedding_dim = int(embedding_length)
+
             if not embedding_dim:
                 print(f"Ollama model {model['name']} has no embedding dimension, using default 1024")
-                # continue
                 embedding_dim = 1024
+
             configs.append(
                 EmbeddingConfig(
                     embedding_model=model["name"],
@@ -91,7 +110,8 @@ class OllamaProvider(OpenAIProvider):
             )
         return configs
 
-    async def _get_model_context_window(self, model_name: str) -> int | None:
+    async def _get_model_details_async(self, model_name: str) -> dict | None:
+        """Get detailed information for a specific model from /api/show."""
         endpoint = f"{self.base_url}/api/show"
         payload = {"name": model_name}
 
@@ -102,39 +122,8 @@ class OllamaProvider(OpenAIProvider):
                         error_text = await response.text()
                         logger.warning(f"Failed to get model info for {model_name}: {response.status} - {error_text}")
                         return None
-
-                    response_json = await response.json()
-                    model_info = response_json.get("model_info", {})
-
-                    if architecture := model_info.get("general.architecture"):
-                        if context_length := model_info.get(f"{architecture}.context_length"):
-                            return int(context_length)
-
+                    return await response.json()
         except Exception as e:
-            logger.warning(f"Failed to get model context window for {model_name} with error: {e}")
-
-        return None
-
-    async def _get_model_embedding_dim(self, model_name: str) -> int | None:
-        endpoint = f"{self.base_url}/api/show"
-        payload = {"name": model_name}
-
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(endpoint, json=payload) as response:
-                    if response.status != 200:
-                        error_text = await response.text()
-                        logger.warning(f"Failed to get model info for {model_name}: {response.status} - {error_text}")
-                        return None
-
-                    response_json = await response.json()
-                    model_info = response_json.get("model_info", {})
-
-                    if architecture := model_info.get("general.architecture"):
-                        if embedding_length := model_info.get(f"{architecture}.embedding_length"):
-                            return int(embedding_length)
-
-        except Exception as e:
-            logger.warning(f"Failed to get model embedding dimension for {model_name} with error: {e}")
+            logger.warning(f"Failed to get model details for {model_name} with error: {e}")
 
         return None
