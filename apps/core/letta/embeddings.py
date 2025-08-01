@@ -233,7 +233,9 @@ def embedding_model(config: EmbeddingConfig, user_id: Optional[uuid.UUID] = None
 
     if endpoint_type == "openai":
         return OpenAIEmbeddings(
-            api_key=model_settings.openai_api_key, model=config.embedding_model, base_url=model_settings.openai_api_base
+            api_key=model_settings.openai_api_key,
+            model=config.embedding_model,
+            base_url=config.embedding_endpoint or model_settings.openai_api_base,
         )
 
     elif endpoint_type == "azure":

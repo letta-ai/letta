@@ -31,7 +31,7 @@ class LettaProvider(Provider):
             EmbeddingConfig(
                 embedding_model="letta-free",  # NOTE: renamed
                 embedding_endpoint_type="hugging-face",
-                embedding_endpoint="https://embeddings.memgpt.ai",
+                embedding_endpoint="https://bun-function-production-e310.up.railway.app/v1",
                 embedding_dim=1024,
                 embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
                 handle=self.get_handle("letta-free", is_embedding=True),

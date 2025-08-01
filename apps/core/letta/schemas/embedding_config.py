@@ -77,7 +77,7 @@ class EmbeddingConfig(BaseModel):
             )
         elif model_name == "letta":
             return cls(
-                embedding_endpoint="https://embeddings.memgpt.ai",
+                embedding_endpoint="https://bun-function-production-e310.up.railway.app/v1",
                 embedding_model="BAAI/bge-large-en-v1.5",
                 embedding_dim=1024,
                 embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
