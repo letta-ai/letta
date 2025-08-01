@@ -55,7 +55,7 @@ function ViewToggle(props: ViewToggleProps) {
           ? [
               {
                 icon: <CogIcon />,
-                hideLabel: true,
+                hideLabel: false,
                 label: t('ViewToggle.options.settings'),
                 value: 'settings',
               },
