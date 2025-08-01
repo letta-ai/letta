@@ -1832,7 +1832,53 @@
       "settings": "Settings",
       "observability": "Observability",
       "monitoring": "Monitoring",
-      "responses": "Responses"
+      "responses": "Responses",
+      "datasets": "Datasets"
+    }
+  },
+  "projects/(projectSlug)/datasets": {
+    "title": "Datasets",
+    "subtitle": "Manage your project datasets",
+    "createDataset": {
+      "title": "Create New Dataset",
+      "trigger": "Create Dataset",
+      "name": {
+        "label": "Name",
+        "placeholder": "Enter dataset name"
+      },
+      "description": {
+        "label": "Description",
+        "placeholder": "Enter dataset description (optional)"
+      },
+      "confirmText": "Create Dataset",
+      "confirmTextLoading": "Creating...",
+      "cancelText": "Cancel"
+    },
+    "table": {
+      "columns": {
+        "name": "Name",
+        "description": "Description",
+        "created": "Created",
+        "updated": "Updated"
+      },
+      "loading": "Loading datasets...",
+      "noResults": "No datasets found",
+      "errorMessage": "Failed to load datasets"
+    },
+    "datasetItems": {
+      "title": "Dataset Items",
+      "subtitle": "View and manage dataset prompts",
+      "backToDatasets": "Back to Datasets",
+      "table": {
+        "columns": {
+          "content": "Content",
+          "created": "Created",
+          "updated": "Updated"
+        },
+        "loading": "Loading prompts...",
+        "noResults": "No prompts found",
+        "errorMessage": "Failed to load prompts"
+      }
     }
   },
   "components/AgentTemplateCard": {

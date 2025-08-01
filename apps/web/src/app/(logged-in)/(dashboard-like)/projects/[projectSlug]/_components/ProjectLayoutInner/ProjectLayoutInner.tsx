@@ -12,6 +12,7 @@ import {
   MonitoringIcon,
   ListIcon,
   TwoMemoryBlocksIcon,
+  DataObjectIcon,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import type { PropsWithChildren } from 'react';
@@ -31,6 +32,7 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
   );
 
   const { data: isMemoryBlocksEnabled } = useFeatureFlag('MEMORY_BLOCK_VIEWER');
+  const { data: isDatasetsEnabled } = useFeatureFlag('DATASETS');
 
   return (
     <DashboardWithSidebarWrapper
@@ -106,6 +108,16 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
               label: t('nav.responses'),
               href: `/projects/${projectSlug}/responses`,
             },
+            ...(isDatasetsEnabled
+              ? [
+                  {
+                    icon: <DataObjectIcon />,
+                    id: 'datasets',
+                    label: t('nav.datasets'),
+                    href: `/projects/${projectSlug}/datasets`,
+                  },
+                ]
+              : []),
           ],
         },
       ]}
