@@ -28,7 +28,7 @@ First, install Poetry using [the official instructions here](https://python-poet
 Once Poetry is installed, navigate to the letta directory and install the Letta project with Poetry:
 ```shell
 cd letta
-poetry shell
+eval $(poetry env activate)
 poetry install --all-extras
 ```
 #### Setup PostgreSQL environment (optional)
