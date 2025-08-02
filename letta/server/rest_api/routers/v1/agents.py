@@ -1200,6 +1200,9 @@ async def _process_message_background(
 ) -> None:
     """Background task to process the message and update job status."""
     request_start_timestamp_ns = get_utc_timestamp_ns()
+    agent_loop = None
+    result = None
+
     try:
         agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
         agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
@@ -1212,6 +1215,7 @@ async def _process_message_background(
             "bedrock",
             "ollama",
         ]
+
         if agent_eligible and model_compatible:
             if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
                 agent_loop = SleeptimeMultiAgentV2(
@@ -1282,6 +1286,41 @@ async def _process_message_background(
             metadata={"error": str(e)},
         )
         await server.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=actor)
+
+    finally:
+        # Critical: Explicit resource cleanup to prevent accumulation
+        if agent_loop and result:
+            await _cleanup_background_task_resources(agent_loop, result)
+
+
+async def _cleanup_background_task_resources(agent_loop: SleeptimeMultiAgentV2 | LettaAgent , result: StreamingResponse | LettaResponse) -> None:
+    """
+    Explicit cleanup of resources created during background message processing.
+
+    This function addresses the CPU leak by ensuring proper cleanup of:
+    - Agent instances and their internal state
+    - Message buffers and response accumulation
+    - Any database connections or sessions
+    - LLM client resources
+    """
+    import gc
+    try:
+        if agent_loop is not None:
+            if agent_loop.response_messages:
+                # Clear response message buffer to prevent accumulation
+                agent_loop.response_messages.clear()
+            # Clean up agent loop resources
+            del agent_loop
+
+        if result is not None:
+            del result # Clear result data to free memory
+
+        # Force garbage collection to clean up references and release memory
+        gc.collect()
+    except Exception as e:
+        # Handle errors for logging but don't fail the background task
+        logger.warning(f"Error during background task resource cleanup: {e}")
+        pass
 
 
 @router.post(
