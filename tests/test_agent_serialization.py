@@ -161,6 +161,7 @@ def serialize_test_agent(server: SyncServer, default_user, default_organization,
     memory_blocks = [CreateBlock(label="human", value="BananaBoy"), CreateBlock(label="persona", value="I am a helpful assistant")]
     create_agent_request = CreateAgent(
         system="test system",
+        agent_type="memgpt_agent",
         memory_blocks=memory_blocks,
         llm_config=LLMConfig.default_config("gpt-4o-mini"),
         embedding_config=EmbeddingConfig.default_config(provider="openai"),

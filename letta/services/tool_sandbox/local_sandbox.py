@@ -11,7 +11,8 @@ from pydantic.config import JsonDict
 from letta.log import get_logger
 from letta.otel.tracing import log_event, trace_method
 from letta.schemas.agent import AgentState
-from letta.schemas.sandbox_config import SandboxConfig, SandboxType
+from letta.schemas.enums import SandboxType
+from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.services.helpers.tool_execution_helper import (
@@ -44,34 +45,16 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
         super().__init__(tool_name, args, user, tool_object, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars)
         self.force_recreate_venv = force_recreate_venv
 
+    @trace_method
     async def run(
         self,
         agent_state: Optional[AgentState] = None,
         additional_env_vars: Optional[Dict] = None,
     ) -> ToolExecutionResult:
         """
-        Run the tool in a sandbox environment asynchronously,
-        *always* using a subprocess for execution.
+        Run the tool in a local sandbox environment asynchronously.
+        Uses a subprocess for multi-core parallelism.
         """
-        result = await self.run_local_dir_sandbox(agent_state=agent_state, additional_env_vars=additional_env_vars)
-
-        # Simple console logging for demonstration
-        for log_line in (result.stdout or []) + (result.stderr or []):
-            print(f"Tool execution log: {log_line}")
-
-        return result
-
-    @trace_method
-    async def run_local_dir_sandbox(
-        self,
-        agent_state: Optional[AgentState],
-        additional_env_vars: Optional[Dict],
-    ) -> ToolExecutionResult:
-        """
-        Unified asynchronous method to run the tool in a local sandbox environment,
-        always via subprocess for multi-core parallelism.
-        """
-        # Get sandbox configuration
         if self.provided_sandbox_config:
             sbx_config = self.provided_sandbox_config
         else:

@@ -36,7 +36,7 @@ from letta.server.rest_api.utils import (
 )
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import compile_system_message
+from letta.services.helpers.agent_manager_helper import compile_system_message_async
 from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
@@ -145,7 +145,7 @@ class VoiceAgent(BaseAgent):
 
         in_context_messages = await self.message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=self.actor)
         memory_edit_timestamp = get_utc_time()
-        in_context_messages[0].content[0].text = compile_system_message(
+        in_context_messages[0].content[0].text = await compile_system_message_async(
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,

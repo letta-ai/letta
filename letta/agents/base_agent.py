@@ -17,7 +17,7 @@ from letta.schemas.message import Message, MessageCreate, MessageUpdate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
-from letta.services.helpers.agent_manager_helper import compile_system_message
+from letta.services.helpers.agent_manager_helper import compile_system_message_async
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.utils import united_diff
@@ -142,7 +142,7 @@ class BaseAgent(ABC):
             if num_archival_memories is None:
                 num_archival_memories = await self.passage_manager.agent_passage_size_async(actor=self.actor, agent_id=agent_state.id)
 
-            new_system_message_str = compile_system_message(
+            new_system_message_str = await compile_system_message_async(
                 system_prompt=agent_state.system,
                 in_context_memory=agent_state.memory,
                 in_context_memory_last_edit=memory_edit_timestamp,

@@ -12,7 +12,6 @@ from letta.schemas.passage import Passage
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.file_manager import FileManager
-from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.file_processor.chunker.llama_index_chunker import LlamaIndexChunker
 from letta.services.file_processor.embedder.base_embedder import BaseEmbedder
 from letta.services.file_processor.parser.base_parser import FileParser
@@ -35,7 +34,6 @@ class FileProcessor:
         max_file_size: int = 50 * 1024 * 1024,  # 50MB default
     ):
         self.file_parser = file_parser
-        self.line_chunker = LineChunker()
         self.embedder = embedder
         self.max_file_size = max_file_size
         self.file_manager = FileManager()

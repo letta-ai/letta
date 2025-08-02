@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from sqlalchemy import delete, or_, select
+from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from letta.log import get_logger
@@ -182,6 +182,12 @@ class BlockManager:
         before: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
+        label_search: Optional[str] = None,
+        description_search: Optional[str] = None,
+        value_search: Optional[str] = None,
+        connected_to_agents_count_gt: Optional[int] = None,
+        connected_to_agents_count_lt: Optional[int] = None,
+        connected_to_agents_count_eq: Optional[List[int]] = None,
         ascending: bool = True,
     ) -> List[PydanticBlock]:
         """Async version of get_blocks method. Retrieve blocks based on various optional filters."""
@@ -214,7 +220,63 @@ class BlockManager:
             if project_id:
                 query = query.where(BlockModel.project_id == project_id)
 
+            if label_search and not label:
+                query = query.where(BlockModel.label.ilike(f"%{label_search}%"))
+
+            if description_search:
+                query = query.where(BlockModel.description.ilike(f"%{description_search}%"))
+
+            if value_search:
+                query = query.where(BlockModel.value.ilike(f"%{value_search}%"))
+
             needs_distinct = False
+
+            needs_agent_count_join = any(
+                condition is not None
+                for condition in [connected_to_agents_count_gt, connected_to_agents_count_lt, connected_to_agents_count_eq]
+            )
+
+            # If any agent count filters are specified, create a single subquery and apply all filters
+            if needs_agent_count_join:
+                # Create a subquery to count agents per block
+                agent_count_subquery = (
+                    select(BlocksAgents.block_id, func.count(BlocksAgents.agent_id).label("agent_count"))
+                    .group_by(BlocksAgents.block_id)
+                    .subquery()
+                )
+
+                # Determine if we need a left join (for cases involving 0 counts)
+                needs_left_join = (connected_to_agents_count_lt is not None) or (
+                    connected_to_agents_count_eq is not None and 0 in connected_to_agents_count_eq
+                )
+
+                if needs_left_join:
+                    # Left join to include blocks with no agents
+                    query = query.outerjoin(agent_count_subquery, BlockModel.id == agent_count_subquery.c.block_id)
+                    # Use coalesce to treat NULL as 0 for blocks with no agents
+                    agent_count_expr = func.coalesce(agent_count_subquery.c.agent_count, 0)
+                else:
+                    # Inner join since we don't need blocks with no agents
+                    query = query.join(agent_count_subquery, BlockModel.id == agent_count_subquery.c.block_id)
+                    agent_count_expr = agent_count_subquery.c.agent_count
+
+                # Build the combined filter conditions
+                conditions = []
+
+                if connected_to_agents_count_gt is not None:
+                    conditions.append(agent_count_expr > connected_to_agents_count_gt)
+
+                if connected_to_agents_count_lt is not None:
+                    conditions.append(agent_count_expr < connected_to_agents_count_lt)
+
+                if connected_to_agents_count_eq is not None:
+                    conditions.append(agent_count_expr.in_(connected_to_agents_count_eq))
+
+                # Apply all conditions with AND logic
+                if conditions:
+                    query = query.where(and_(*conditions))
+
+                needs_distinct = True
 
             if identifier_keys:
                 query = query.join(BlockModel.identities).filter(

@@ -11,5 +11,6 @@
       "quantization": "Q4_0",
       "state": "not-loaded",
       "max_context_length": 2048
-    },
-    ...
+    }
+  ]
+}

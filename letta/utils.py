@@ -32,6 +32,7 @@ from letta.constants import (
     DEFAULT_CORE_MEMORY_SOURCE_CHAR_LIMIT,
     DEFAULT_MAX_FILES_OPEN,
     ERROR_MESSAGE_PREFIX,
+    FILE_IS_TRUNCATED_WARNING,
     LETTA_DIR,
     MAX_FILENAME_LENGTH,
     TOOL_CALL_ID_MAX_LEN,
@@ -417,7 +418,6 @@ NOUN_BANK = [
     "unicorn",
     "vaccination",
     "wolverine",
-    "xenophobia",
     "yam",
     "zeppelin",
     "accordion",
@@ -1190,7 +1190,7 @@ async def get_latest_alembic_revision() -> str:
                 return "unknown"
 
     except Exception as e:
-        logger.error(f"Error getting latest alembic revision: {e}")
+        logger.error("Error getting latest alembic revision: %s", e)
         return "unknown"
 
 
@@ -1223,3 +1223,15 @@ def calculate_file_defaults_based_on_context_window(context_window: Optional[int
         return 10, 40_000  # ~100k tokens
     else:  # Extremely large models (200K+)
         return 15, 40_000  # ~1505k tokens
+
+
+def truncate_file_visible_content(visible_content: str, is_open: bool, per_file_view_window_char_limit: int):
+    visible_content = visible_content if visible_content and is_open else ""
+
+    # Truncate content and add warnings here when converting from FileAgent to Block
+    if len(visible_content) > per_file_view_window_char_limit:
+        truncated_warning = f"...[TRUNCATED]\n{FILE_IS_TRUNCATED_WARNING}"
+        visible_content = visible_content[: per_file_view_window_char_limit - len(truncated_warning)]
+        visible_content += truncated_warning
+
+    return visible_content

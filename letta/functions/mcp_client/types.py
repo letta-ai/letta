@@ -1,5 +1,7 @@
+import re
+from abc import abstractmethod
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from mcp import Tool
 from pydantic import BaseModel, Field
@@ -7,6 +9,9 @@ from pydantic import BaseModel, Field
 # MCP Authentication Constants
 MCP_AUTH_HEADER_AUTHORIZATION = "Authorization"
 MCP_AUTH_TOKEN_BEARER_PREFIX = "Bearer"
+TEMPLATED_VARIABLE_REGEX = (
+    r"\{\{\s*([A-Z_][A-Z0-9_]*)\s*(?:\|\s*([^}]+?)\s*)?\}\}"  # Allows for optional whitespace around the variable name and default value
+)
 
 
 class MCPTool(Tool):
@@ -22,6 +27,91 @@ class MCPServerType(str, Enum):
 class BaseServerConfig(BaseModel):
     server_name: str = Field(..., description="The name of the server")
     type: MCPServerType
+
+    def is_templated_tool_variable(self, value: str) -> bool:
+        """
+        Check if string contains templated variables.
+
+        Args:
+            value: The value string to check
+
+        Returns:
+            True if the value contains templated variables in the format {{ VARIABLE_NAME }} or {{ VARIABLE_NAME | default }}, False otherwise
+        """
+        return bool(re.search(TEMPLATED_VARIABLE_REGEX, value))
+
+    def get_tool_variable(self, value: str, environment_variables: Dict[str, str]) -> Optional[str]:
+        """
+        Replace templated variables in a value string with their values from environment variables.
+        Supports fallback/default values with pipe syntax.
+
+        Args:
+            value: The value string that may contain templated variables (e.g., "Bearer {{ API_KEY | default_token }}")
+            environment_variables: Dictionary of environment variables
+
+        Returns:
+            The string with templated variables replaced, or None if no templated variables found
+        """
+
+        # If no templated variables found or default value provided, return the original value
+        if not self.is_templated_tool_variable(value):
+            return value
+
+        def replace_template(match):
+            variable_name = match.group(1)
+            default_value = match.group(2) if match.group(2) else None
+
+            # Try to get the value from environment variables
+            env_value = environment_variables.get(variable_name) if environment_variables else None
+
+            # Return environment value if found, otherwise return default value, otherwise return empty string
+            if env_value is not None:
+                return env_value
+            elif default_value is not None:
+                return default_value
+            else:
+                # If no environment value and no default, return the original template
+                return match.group(0)
+
+        # Replace all templated variables in the token
+        result = re.sub(TEMPLATED_VARIABLE_REGEX, replace_template, value)
+
+        # If the result still contains unreplaced templates, just return original value
+        if re.search(TEMPLATED_VARIABLE_REGEX, result):
+            logger.warning(f"Unable to resolve templated variable in value: {value}")
+            return value
+
+        return result
+
+    def resolve_custom_headers(
+        self, custom_headers: Optional[Dict[str, str]], environment_variables: Optional[Dict[str, str]] = None
+    ) -> Optional[Dict[str, str]]:
+        """
+        Resolve templated variables in custom headers dictionary.
+
+        Args:
+            custom_headers: Dictionary of custom headers that may contain templated variables
+            environment_variables: Dictionary of environment variables for resolving templates
+
+        Returns:
+            Dictionary with resolved header values, or None if custom_headers is None
+        """
+        if custom_headers is None:
+            return None
+
+        resolved_headers = {}
+        for key, value in custom_headers.items():
+            # Resolve templated variables in each header value
+            if self.is_templated_tool_variable(value):
+                resolved_headers[key] = self.get_tool_variable(value, environment_variables)
+            else:
+                resolved_headers[key] = value
+
+        return resolved_headers
+
+    @abstractmethod
+    def resolve_environment_variables(self, environment_variables: Optional[Dict[str, str]] = None) -> None:
+        raise NotImplementedError
 
 
 class SSEServerConfig(BaseServerConfig):
@@ -47,6 +137,12 @@ class SSEServerConfig(BaseServerConfig):
             return self.auth_token[len(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} ") :]
         return self.auth_token
 
+    def resolve_environment_variables(self, environment_variables: Optional[Dict[str, str]] = None) -> None:
+        if self.auth_token and super().is_templated_tool_variable(self.auth_token):
+            self.auth_token = super().get_tool_variable(self.auth_token, environment_variables)
+
+        self.custom_headers = super().resolve_custom_headers(self.custom_headers, environment_variables)
+
     def to_dict(self) -> dict:
         values = {
             "transport": "sse",
@@ -71,6 +167,10 @@ class StdioServerConfig(BaseServerConfig):
     command: str = Field(..., description="The command to run (MCP 'local' client will run this command)")
     args: List[str] = Field(..., description="The arguments to pass to the command")
     env: Optional[dict[str, str]] = Field(None, description="Environment variables to set")
+
+    # TODO: @jnjpng templated auth handling for stdio
+    def resolve_environment_variables(self, environment_variables: Optional[Dict[str, str]] = None) -> None:
+        pass
 
     def to_dict(self) -> dict:
         values = {
@@ -105,6 +205,12 @@ class StreamableHTTPServerConfig(BaseServerConfig):
         if self.auth_token and self.auth_token.startswith(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} "):
             return self.auth_token[len(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} ") :]
         return self.auth_token
+
+    def resolve_environment_variables(self, environment_variables: Optional[Dict[str, str]] = None) -> None:
+        if self.auth_token and super().is_templated_tool_variable(self.auth_token):
+            self.auth_token = super().get_tool_variable(self.auth_token, environment_variables)
+
+        self.custom_headers = super().resolve_custom_headers(self.custom_headers, environment_variables)
 
     def model_post_init(self, __context) -> None:
         """Validate the server URL format."""

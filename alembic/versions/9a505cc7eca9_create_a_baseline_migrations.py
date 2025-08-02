@@ -8,7 +8,6 @@ Create Date: 2024-10-11 14:19:19.875656
 
 from typing import Sequence, Union
 
-import pgvector
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
@@ -27,6 +26,8 @@ def upgrade() -> None:
     # Skip this migration for SQLite
     if not settings.letta_pg_uri_no_default:
         return
+
+    import pgvector
 
     op.create_table(
         "agent_source_mapping",

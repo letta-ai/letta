@@ -56,7 +56,6 @@ class FileMetadata(FileMetadataBase):
     # orm metadata, optional fields
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow, description="The creation date of the file.")
     updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow, description="The update date of the file.")
-    is_deleted: bool = Field(False, description="Whether this file is deleted or not.")
 
 
 class FileAgentBase(LettaBase):
@@ -76,8 +75,10 @@ class FileAgentBase(LettaBase):
     )
     last_accessed_at: Optional[datetime] = Field(
         default_factory=datetime.utcnow,
-        description="UTC timestamp of the agent’s most recent access to this file.",
+        description="UTC timestamp of the agent's most recent access to this file.",
     )
+    start_line: Optional[int] = Field(None, description="Starting line number (1-indexed) when file was opened with line range.")
+    end_line: Optional[int] = Field(None, description="Ending line number (exclusive) when file was opened with line range.")
 
 
 class FileAgent(FileAgentBase):
@@ -107,4 +108,3 @@ class FileAgent(FileAgentBase):
         default_factory=datetime.utcnow,
         description="Row last-update timestamp (UTC).",
     )
-    is_deleted: bool = Field(False, description="Soft-delete flag.")

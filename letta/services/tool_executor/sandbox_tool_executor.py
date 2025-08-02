@@ -5,19 +5,24 @@ from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_fun
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
+from letta.schemas.enums import SandboxType
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.tool_executor.tool_executor_base import ToolExecutor
-from letta.services.tool_sandbox.e2b_sandbox import AsyncToolSandboxE2B
 from letta.services.tool_sandbox.local_sandbox import AsyncToolSandboxLocal
 from letta.settings import tool_settings
 from letta.types import JsonDict
 from letta.utils import get_friendly_error_msg
 
 logger = get_logger(__name__)
+
+if tool_settings.e2b_api_key:
+    from letta.services.tool_sandbox.e2b_sandbox import AsyncToolSandboxE2B
+if tool_settings.modal_api_key:
+    from letta.services.tool_sandbox.modal_sandbox import AsyncToolSandboxModal
 
 
 class SandboxToolExecutor(ToolExecutor):
@@ -48,8 +53,12 @@ class SandboxToolExecutor(ToolExecutor):
             agent_state_copy = self._create_agent_state_copy(agent_state) if agent_state else None
 
             # Execute in sandbox depending on API key
-            if tool_settings.e2b_api_key:
+            if tool_settings.sandbox_type == SandboxType.E2B:
                 sandbox = AsyncToolSandboxE2B(
+                    function_name, function_args, actor, tool_object=tool, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars
+                )
+            elif tool_settings.sandbox_type == SandboxType.MODAL:
+                sandbox = AsyncToolSandboxModal(
                     function_name, function_args, actor, tool_object=tool, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars
                 )
             else:
@@ -58,6 +67,9 @@ class SandboxToolExecutor(ToolExecutor):
                 )
 
             tool_execution_result = await sandbox.run(agent_state=agent_state_copy)
+
+            log_lines = (tool_execution_result.stdout or []) + (tool_execution_result.stderr or [])
+            logger.debug("Tool execution log: %s", "\n".join(log_lines))
 
             # Verify memory integrity
             if agent_state:

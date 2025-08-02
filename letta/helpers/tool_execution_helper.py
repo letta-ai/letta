@@ -1,17 +1,7 @@
 from collections import OrderedDict
 from typing import Any, Dict, Optional
 
-from letta.constants import COMPOSIO_ENTITY_ENV_VAR_KEY, PRE_EXECUTION_MESSAGE_ARG
-from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
-from letta.functions.composio_helpers import execute_composio_action, generate_composio_action_from_func_name
-from letta.helpers.composio_helpers import get_composio_api_key
-from letta.orm.enums import ToolType
-from letta.schemas.agent import AgentState
-from letta.schemas.sandbox_config import SandboxRunResult
-from letta.schemas.tool import Tool
-from letta.schemas.user import User
-from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSandbox
-from letta.utils import get_friendly_error_msg
+from letta.constants import PRE_EXECUTION_MESSAGE_ARG
 
 
 def enable_strict_mode(tool_schema: Dict[str, Any]) -> Dict[str, Any]:
@@ -44,6 +34,7 @@ def add_pre_execution_message(tool_schema: Dict[str, Any], description: Optional
 
     Args:
         tool_schema (Dict[str, Any]): The original tool schema.
+        description (Optional[str]): Description of the tool schema. Defaults to None.
 
     Returns:
         Dict[str, Any]: A new tool schema with the `pre_execution_message` field added at the beginning.
@@ -117,57 +108,3 @@ def remove_request_heartbeat(tool_schema: Dict[str, Any]) -> Dict[str, Any]:
         schema["parameters"] = {**parameters, "properties": properties, "required": required}
 
     return schema
-
-
-# TODO: Deprecate the `execute_external_tool` function on the agent body
-def execute_external_tool(
-    agent_state: AgentState,
-    function_name: str,
-    function_args: dict,
-    target_letta_tool: Tool,
-    actor: User,
-    allow_agent_state_modifications: bool = False,
-) -> tuple[Any, Optional[SandboxRunResult]]:
-    # TODO: need to have an AgentState object that actually has full access to the block data
-    # this is because the sandbox tools need to be able to access block.value to edit this data
-    try:
-        if target_letta_tool.tool_type == ToolType.EXTERNAL_COMPOSIO:
-            action_name = generate_composio_action_from_func_name(target_letta_tool.name)
-            # Get entity ID from the agent_state
-            entity_id = None
-            for env_var in agent_state.tool_exec_environment_variables:
-                if env_var.key == COMPOSIO_ENTITY_ENV_VAR_KEY:
-                    entity_id = env_var.value
-            # Get composio_api_key
-            composio_api_key = get_composio_api_key(actor=actor)
-            function_response = execute_composio_action(
-                action_name=action_name, args=function_args, api_key=composio_api_key, entity_id=entity_id
-            )
-            return function_response, None
-        elif target_letta_tool.tool_type == ToolType.CUSTOM:
-            # Parse the source code to extract function annotations
-            annotations = get_function_annotations_from_source(target_letta_tool.source_code, function_name)
-            # Coerce the function arguments to the correct types based on the annotations
-            function_args = coerce_dict_args_by_annotations(function_args, annotations)
-
-            # execute tool in a sandbox
-            # TODO: allow agent_state to specify which sandbox to execute tools in
-            # TODO: This is only temporary, can remove after we publish a pip package with this object
-            if allow_agent_state_modifications:
-                agent_state_copy = agent_state.__deepcopy__()
-                agent_state_copy.tools = []
-                agent_state_copy.tool_rules = []
-            else:
-                agent_state_copy = None
-
-            tool_execution_result = ToolExecutionSandbox(function_name, function_args, actor).run(agent_state=agent_state_copy)
-            function_response, updated_agent_state = tool_execution_result.func_return, tool_execution_result.agent_state
-            # TODO: Bring this back
-            # if allow_agent_state_modifications and updated_agent_state is not None:
-            #     self.update_memory_if_changed(updated_agent_state.memory)
-            return function_response, tool_execution_result
-    except Exception as e:
-        # Need to catch error here, or else trunction wont happen
-        # TODO: modify to function execution error
-        function_response = get_friendly_error_msg(function_name=function_name, exception_name=type(e).__name__, exception_message=str(e))
-        return function_response, None

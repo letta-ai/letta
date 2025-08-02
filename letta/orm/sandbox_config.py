@@ -8,9 +8,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import AgentMixin, OrganizationMixin, SandboxConfigMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
+from letta.schemas.enums import SandboxType
 from letta.schemas.environment_variables import SandboxEnvironmentVariable as PydanticSandboxEnvironmentVariable
 from letta.schemas.sandbox_config import SandboxConfig as PydanticSandboxConfig
-from letta.schemas.sandbox_config import SandboxType
 
 if TYPE_CHECKING:
     from letta.orm.agent import Agent

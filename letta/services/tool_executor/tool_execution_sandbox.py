@@ -13,7 +13,8 @@ from letta.functions.helpers import generate_model_from_args_json_schema
 from letta.log import get_logger
 from letta.otel.tracing import log_event, trace_method
 from letta.schemas.agent import AgentState
-from letta.schemas.sandbox_config import SandboxConfig, SandboxType
+from letta.schemas.enums import SandboxType
+from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User

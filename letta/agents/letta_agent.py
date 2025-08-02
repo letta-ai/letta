@@ -22,6 +22,7 @@ from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX
 from letta.errors import ContextWindowExceededError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import AsyncTimer, get_utc_time, get_utc_timestamp_ns, ns_to_ms
+from letta.helpers.reasoning_helper import scrub_inner_thoughts_from_messages
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
@@ -756,6 +757,9 @@ class LettaAgent(BaseAgent):
                     interface = OpenAIStreamingInterface(
                         use_assistant_message=use_assistant_message,
                         put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs,
+                        is_openai_proxy=agent_state.llm_config.provider_name == "lmstudio_openai",
+                        messages=current_in_context_messages + new_in_context_messages,
+                        tools=request_data.get("tools", []),
                     )
                 else:
                     raise ValueError(f"Streaming not supported for {agent_state.llm_config}")
@@ -781,13 +785,20 @@ class LettaAgent(BaseAgent):
 
                 stream_end_time_ns = get_utc_timestamp_ns()
 
-                # update usage
+                # Some providers that rely on the OpenAI client currently e.g. LMStudio don't get usage metrics back on the last streaming chunk, fall back to manual values
+                if isinstance(interface, OpenAIStreamingInterface) and not interface.input_tokens and not interface.output_tokens:
+                    logger.warning(
+                        f"No token usage metrics received from OpenAI streaming interface for {agent_state.llm_config.model}, falling back to estimated values. Input tokens: {interface.fallback_input_tokens}, Output tokens: {interface.fallback_output_tokens}"
+                    )
+                    interface.input_tokens = interface.fallback_input_tokens
+                    interface.output_tokens = interface.fallback_output_tokens
+
                 usage.step_count += 1
                 usage.completion_tokens += interface.output_tokens
                 usage.prompt_tokens += interface.input_tokens
                 usage.total_tokens += interface.input_tokens + interface.output_tokens
                 MetricRegistry().message_output_tokens.record(
-                    interface.output_tokens, dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model})
+                    usage.completion_tokens, dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model})
                 )
 
                 # log LLM request time
@@ -814,9 +825,9 @@ class LettaAgent(BaseAgent):
                     agent_state,
                     tool_rules_solver,
                     UsageStatistics(
-                        completion_tokens=interface.output_tokens,
-                        prompt_tokens=interface.input_tokens,
-                        total_tokens=interface.input_tokens + interface.output_tokens,
+                        completion_tokens=usage.completion_tokens,
+                        prompt_tokens=usage.prompt_tokens,
+                        total_tokens=usage.total_tokens,
                     ),
                     reasoning_content=reasoning_content,
                     pre_computed_assistant_message_id=interface.letta_message_id,
@@ -861,8 +872,8 @@ class LettaAgent(BaseAgent):
                             # "stop_sequence": None,
                             "type": "message",
                             "usage": {
-                                "input_tokens": interface.input_tokens,
-                                "output_tokens": interface.output_tokens,
+                                "input_tokens": usage.prompt_tokens,
+                                "output_tokens": usage.completion_tokens,
                             },
                         },
                         step_id=step_id,
@@ -1130,7 +1141,7 @@ class LettaAgent(BaseAgent):
         return new_in_context_messages
 
     @trace_method
-    async def summarize_conversation_history(self) -> AgentState:
+    async def summarize_conversation_history(self) -> None:
         """Called when the developer explicitly triggers compaction via the API"""
         agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=self.agent_id, actor=self.actor)
         message_ids = agent_state.message_ids
@@ -1168,6 +1179,9 @@ class LettaAgent(BaseAgent):
             num_archival_memories=self.num_archival_memories,
             tool_rules_solver=tool_rules_solver,
         )
+
+        # scrub inner thoughts from messages if reasoning is completely disabled
+        in_context_messages = scrub_inner_thoughts_from_messages(in_context_messages, agent_state.llm_config)
 
         tools = [
             t

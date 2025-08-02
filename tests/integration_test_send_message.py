@@ -12,7 +12,7 @@ import httpx
 import pytest
 import requests
 from dotenv import load_dotenv
-from letta_client import AsyncLetta, Letta, MessageCreate, Run
+from letta_client import AsyncLetta, Letta, LettaRequest, MessageCreate, Run
 from letta_client.core.api_error import ApiError
 from letta_client.types import (
     AssistantMessage,
@@ -30,6 +30,7 @@ from letta_client.types import (
     UserMessage,
 )
 
+from letta.helpers.reasoning_helper import is_reasoning_completely_disabled
 from letta.llm_api.openai_client import is_openai_reasoning_model
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
@@ -71,6 +72,13 @@ USER_MESSAGE_FORCE_REPLY: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
+USER_MESSAGE_GREETING: List[MessageCreate] = [
+    MessageCreate(
+        role="user",
+        content=f"Hi!",
+        otid=USER_MESSAGE_OTID,
+    )
+]
 USER_MESSAGE_ROLL_DICE: List[MessageCreate] = [
     MessageCreate(
         role="user",
@@ -100,6 +108,13 @@ USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
+
+# configs for models that are to dumb to do much other than messaging
+limited_configs = [
+    "ollama.json",
+    "together-qwen-2.5-72b-instruct.json",
+]
+
 all_configs = [
     "openai-gpt-4o-mini.json",
     "openai-o1.json",
@@ -114,8 +129,14 @@ all_configs = [
     "gemini-1.5-pro.json",
     "gemini-2.5-flash-vertex.json",
     "gemini-2.5-pro-vertex.json",
+    "ollama.json",
     "together-qwen-2.5-72b-instruct.json",
-    "ollama.json",  #  TODO (cliandy): enable this in ollama testing
+]
+
+reasoning_configs = [
+    "openai-o1.json",
+    "openai-o3.json",
+    "openai-o4-mini.json",
 ]
 
 
@@ -157,6 +178,43 @@ def assert_greeting_with_assistant_message_response(
     if not token_streaming:
         assert USER_MESSAGE_RESPONSE in messages[index].content
     assert messages[index].otid and messages[index].otid[-1] == "1"
+    index += 1
+
+    if streaming:
+        assert isinstance(messages[index], LettaStopReason)
+        assert messages[index].stop_reason == "end_turn"
+        index += 1
+        assert isinstance(messages[index], LettaUsageStatistics)
+        assert messages[index].prompt_tokens > 0
+        assert messages[index].completion_tokens > 0
+        assert messages[index].total_tokens > 0
+        assert messages[index].step_count > 0
+
+
+def assert_greeting_no_reasoning_response(
+    messages: List[Any],
+    streaming: bool = False,
+    token_streaming: bool = False,
+    from_db: bool = False,
+) -> None:
+    """
+    Asserts that the messages list follows the expected sequence without reasoning:
+    AssistantMessage (no ReasoningMessage when put_inner_thoughts_in_kwargs is False).
+    """
+    expected_message_count = 3 if streaming else 2 if from_db else 1
+    assert len(messages) == expected_message_count
+
+    index = 0
+    if from_db:
+        assert isinstance(messages[index], UserMessage)
+        assert messages[index].otid == USER_MESSAGE_OTID
+        index += 1
+
+    # Agent Step 1 - should be AssistantMessage directly, no reasoning
+    assert isinstance(messages[index], AssistantMessage)
+    if not token_streaming:
+        assert USER_MESSAGE_RESPONSE in messages[index].content
+    assert messages[index].otid and messages[index].otid[-1] == "0"
     index += 1
 
     if streaming:
@@ -285,6 +343,96 @@ def assert_tool_call_response(
         assert messages[index].completion_tokens > 0
         assert messages[index].total_tokens > 0
         assert messages[index].step_count > 0
+
+
+def validate_openai_format_scrubbing(messages: List[Dict[str, Any]]) -> None:
+    """
+    Validate that OpenAI format assistant messages with tool calls have no inner thoughts content.
+    Args:
+        messages: List of message dictionaries in OpenAI format
+    """
+    assistant_messages_with_tools = []
+
+    for msg in messages:
+        if msg.get("role") == "assistant" and msg.get("tool_calls"):
+            assistant_messages_with_tools.append(msg)
+
+    # There should be at least one assistant message with tool calls
+    assert len(assistant_messages_with_tools) > 0, "Expected at least one OpenAI assistant message with tool calls"
+
+    # Check that assistant messages with tool calls have no text content (inner thoughts scrubbed)
+    for msg in assistant_messages_with_tools:
+        if "content" in msg:
+            content = msg["content"]
+            assert content is None
+
+
+def validate_anthropic_format_scrubbing(messages: List[Dict[str, Any]]) -> None:
+    """
+    Validate that Anthropic/Claude format assistant messages with tool_use have no <thinking> tags.
+    Args:
+        messages: List of message dictionaries in Anthropic format
+    """
+    claude_assistant_messages_with_tools = []
+
+    for msg in messages:
+        if (
+            msg.get("role") == "assistant"
+            and isinstance(msg.get("content"), list)
+            and any(item.get("type") == "tool_use" for item in msg.get("content", []))
+        ):
+            claude_assistant_messages_with_tools.append(msg)
+
+    # There should be at least one Claude assistant message with tool_use
+    assert len(claude_assistant_messages_with_tools) > 0, "Expected at least one Claude assistant message with tool_use"
+
+    # Check Claude format messages specifically
+    for msg in claude_assistant_messages_with_tools:
+        content_list = msg["content"]
+
+        # Strict validation: assistant messages with tool_use should have NO text content items at all
+        text_items = [item for item in content_list if item.get("type") == "text"]
+        assert len(text_items) == 0, (
+            f"Found {len(text_items)} text content item(s) in Claude assistant message with tool_use. "
+            f"When reasoning is disabled, there should be NO text items. "
+            f"Text items found: {[item.get('text', '') for item in text_items]}"
+        )
+
+        # Verify that the message only contains tool_use items
+        tool_use_items = [item for item in content_list if item.get("type") == "tool_use"]
+        assert len(tool_use_items) > 0, "Assistant message should have at least one tool_use item"
+        assert len(content_list) == len(tool_use_items), (
+            f"Assistant message should ONLY contain tool_use items when reasoning is disabled. "
+            f"Found {len(content_list)} total items but only {len(tool_use_items)} are tool_use items."
+        )
+
+
+def validate_google_format_scrubbing(contents: List[Dict[str, Any]]) -> None:
+    """
+    Validate that Google/Gemini format model messages with functionCall have no thinking field.
+    Args:
+        contents: List of content dictionaries in Google format (uses 'contents' instead of 'messages')
+    """
+    model_messages_with_function_calls = []
+
+    for content in contents:
+        if content.get("role") == "model" and isinstance(content.get("parts"), list):
+            for part in content["parts"]:
+                if "functionCall" in part:
+                    model_messages_with_function_calls.append(part)
+
+    # There should be at least one model message with functionCall
+    assert len(model_messages_with_function_calls) > 0, "Expected at least one Google model message with functionCall"
+
+    # Check Google format messages specifically
+    for part in model_messages_with_function_calls:
+        function_call = part["functionCall"]
+        args = function_call.get("args", {})
+
+        # Assert that there is no 'thinking' field in the function call arguments
+        assert (
+            "thinking" not in args
+        ), f"Found 'thinking' field in Google model functionCall args (inner thoughts not scrubbed): {args.get('thinking')}"
 
 
 def assert_image_input_response(
@@ -463,10 +611,10 @@ def agent_state(client: Letta) -> AgentState:
     )
     yield agent_state_instance
 
-    try:
-        client.agents.delete(agent_state_instance.id)
-    except Exception as e:
-        logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
+    # try:
+    #     client.agents.delete(agent_state_instance.id)
+    # except Exception as e:
+    #     logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
 
 
 @pytest.fixture(scope="function")
@@ -485,10 +633,10 @@ def agent_state_no_tools(client: Letta) -> AgentState:
     )
     yield agent_state_instance
 
-    try:
-        client.agents.delete(agent_state_instance.id)
-    except Exception as e:
-        logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
+    # try:
+    #     client.agents.delete(agent_state_instance.id)
+    # except Exception as e:
+    #     logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
 
 
 # ------------------------------
@@ -590,6 +738,18 @@ def test_url_image_input(
     Tests sending a message with a synchronous client.
     Verifies that the response messages follow the expected order.
     """
+    # get the config filename
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
@@ -616,6 +776,18 @@ def test_base64_image_input(
     Tests sending a message with a synchronous client.
     Verifies that the response messages follow the expected order.
     """
+    # get the config filename
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
@@ -723,6 +895,18 @@ def test_step_streaming_tool_call(
     Tests sending a streaming message with a synchronous client.
     Checks that each chunk in the stream has the correct message types.
     """
+    # get the config filename
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
@@ -841,6 +1025,18 @@ def test_token_streaming_tool_call(
     Tests sending a streaming message with a synchronous client.
     Checks that each chunk in the stream has the correct message types.
     """
+    # get the config filename
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
@@ -989,6 +1185,17 @@ def test_async_tool_call(
     Tests sending a message as an asynchronous job using the synchronous client.
     Waits for job completion and asserts that the result messages are as expected.
     """
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
 
@@ -1109,6 +1316,17 @@ def test_async_greeting_with_callback_url(
     Tests sending a message as an asynchronous job with callback URL functionality.
     Validates that callbacks are properly sent with correct payload structure.
     """
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
 
     with callback_server() as server:
@@ -1174,6 +1392,17 @@ def test_async_callback_failure_scenarios(
     Tests that job completion works even when callback URLs fail.
     This ensures callback failures don't affect job processing.
     """
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
 
     # Test with invalid callback URL - job should still complete
@@ -1212,6 +1441,18 @@ def test_async_callback_failure_scenarios(
 )
 def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, llm_config: LLMConfig):
     """Test that summarization is automatically triggered."""
+    # get the config filename
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model (runs too slow)
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
     # pydantic prevents us for overriding the context window paramter in the passed LLMConfig
     new_llm_config = llm_config.model_dump()
     new_llm_config["context_window"] = 3000
@@ -1309,17 +1550,17 @@ def test_job_creation_for_send_message(
 
 
 # TODO (cliandy): MERGE BACK IN POST
-# @pytest.mark.parametrize(
-#     "llm_config",
-#     TESTED_LLM_CONFIGS,
-#     ids=[c.model for c in TESTED_LLM_CONFIGS],
-# )
-# def test_async_job_cancellation(
-#     disable_e2b_api_key: Any,
-#     client: Letta,
-#     agent_state: AgentState,
-#     llm_config: LLMConfig,
-# ) -> None:
+# # @pytest.mark.parametrize(
+# #     "llm_config",
+# #     TESTED_LLM_CONFIGS,
+# #     ids=[c.model for c in TESTED_LLM_CONFIGS],
+# # )
+# # def test_async_job_cancellation(
+# #     disable_e2b_api_key: Any,
+# #     client: Letta,
+# #     agent_state: AgentState,
+# #     llm_config: LLMConfig,
+# # ) -> None:
 #     """
 #     Test that an async job can be cancelled and the cancellation is reflected in the job status.
 #     """
@@ -1457,3 +1698,161 @@ def test_job_creation_for_send_message(
 #
 #     # This test primarily validates that the implementation doesn't break under simulated disconnection
 #     assert True  # If we get here without errors, the architecture is sound
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_inner_thoughts_false_non_reasoner_models(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    # get the config filename
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
+    # skip if this is a reasoning model
+    if not config_filename or config_filename in reasoning_configs:
+        pytest.skip(f"Skipping test for reasoning model {llm_config.model}")
+
+    # create a new config with all reasoning fields turned off
+    new_llm_config = llm_config.model_dump()
+    new_llm_config["put_inner_thoughts_in_kwargs"] = False
+    new_llm_config["enable_reasoner"] = False
+    new_llm_config["max_reasoning_tokens"] = 0
+    adjusted_llm_config = LLMConfig(**new_llm_config)
+
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=adjusted_llm_config)
+    response = client.agents.messages.create(
+        agent_id=agent_state.id,
+        messages=USER_MESSAGE_FORCE_REPLY,
+    )
+    assert_greeting_no_reasoning_response(response.messages)
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert_greeting_no_reasoning_response(messages_from_db, from_db=True)
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_inner_thoughts_false_non_reasoner_models_streaming(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    # get the config filename
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
+    # skip if this is a reasoning model
+    if not config_filename or config_filename in reasoning_configs:
+        pytest.skip(f"Skipping test for reasoning model {llm_config.model}")
+
+    # create a new config with all reasoning fields turned off
+    new_llm_config = llm_config.model_dump()
+    new_llm_config["put_inner_thoughts_in_kwargs"] = False
+    new_llm_config["enable_reasoner"] = False
+    new_llm_config["max_reasoning_tokens"] = 0
+    adjusted_llm_config = LLMConfig(**new_llm_config)
+
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=adjusted_llm_config)
+    response = client.agents.messages.create_stream(
+        agent_id=agent_state.id,
+        messages=USER_MESSAGE_FORCE_REPLY,
+    )
+    messages = accumulate_chunks(list(response))
+    assert_greeting_no_reasoning_response(messages, streaming=True)
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert_greeting_no_reasoning_response(messages_from_db, from_db=True)
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_inner_thoughts_toggle_interleaved(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    # get the config filename
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a reasoning model
+    if not config_filename or config_filename in reasoning_configs:
+        pytest.skip(f"Skipping test for reasoning model {llm_config.model}")
+
+    # Only run on OpenAI, Anthropic, and Google models
+    if llm_config.model_endpoint_type not in ["openai", "anthropic", "google_ai", "google_vertex"]:
+        pytest.skip(f"Skipping `test_inner_thoughts_toggle_interleaved` for model endpoint type {llm_config.model_endpoint_type}")
+
+    assert not is_reasoning_completely_disabled(llm_config), "Reasoning should be enabled"
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+
+    # Send a message with inner thoughts
+    client.agents.messages.create(
+        agent_id=agent_state.id,
+        messages=USER_MESSAGE_GREETING,
+    )
+
+    # create a new config with all reasoning fields turned off
+    new_llm_config = llm_config.model_dump()
+    new_llm_config["put_inner_thoughts_in_kwargs"] = False
+    new_llm_config["enable_reasoner"] = False
+    new_llm_config["max_reasoning_tokens"] = 0
+    adjusted_llm_config = LLMConfig(**new_llm_config)
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=adjusted_llm_config)
+
+    # Preview the message payload of the next message
+    response = client.agents.messages.preview_raw_payload(
+        agent_id=agent_state.id,
+        request=LettaRequest(messages=USER_MESSAGE_FORCE_REPLY),
+    )
+
+    # Test our helper functions
+    assert is_reasoning_completely_disabled(adjusted_llm_config), "Reasoning should be completely disabled"
+
+    # Verify that assistant messages with tool calls have been scrubbed of inner thoughts
+    # Branch assertions based on model endpoint type
+    if llm_config.model_endpoint_type == "openai":
+        messages = response["messages"]
+        validate_openai_format_scrubbing(messages)
+    elif llm_config.model_endpoint_type == "anthropic":
+        messages = response["messages"]
+        validate_anthropic_format_scrubbing(messages)
+    elif llm_config.model_endpoint_type in ["google_ai", "google_vertex"]:
+        # Google uses 'contents' instead of 'messages'
+        contents = response.get("contents", response.get("messages", []))
+        validate_google_format_scrubbing(contents)

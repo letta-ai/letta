@@ -215,11 +215,7 @@ class AnthropicClient(LLMClientBase):
                 )
                 llm_config.put_inner_thoughts_in_kwargs = True
         else:
-            if llm_config.put_inner_thoughts_in_kwargs:
-                # tool_choice_type other than "auto" only plays nice if thinking goes inside the tool calls
-                tool_choice = {"type": "any", "disable_parallel_tool_use": True}
-            else:
-                tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
+            tool_choice = {"type": "any", "disable_parallel_tool_use": True}
             tools_for_request = [OpenAITool(function=f) for f in tools] if tools is not None else None
 
         # Add tool choice
