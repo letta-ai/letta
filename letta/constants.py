@@ -10,6 +10,7 @@ DEFAULT_TIMEZONE = "UTC"
 
 ADMIN_PREFIX = "/v1/admin"
 API_PREFIX = "/v1"
+OLLAMA_API_PREFIX = "/v1"
 OPENAI_API_PREFIX = "/openai"
 
 COMPOSIO_ENTITY_ENV_VAR_KEY = "COMPOSIO_ENTITY"
@@ -50,8 +51,9 @@ TOOL_CALL_ID_MAX_LEN = 29
 # Max steps for agent loop
 DEFAULT_MAX_STEPS = 50
 
-# minimum context window size
+# context window size
 MIN_CONTEXT_WINDOW = 4096
+DEFAULT_CONTEXT_WINDOW = 32000
 
 # number of concurrent embedding requests to sent
 EMBEDDING_BATCH_SIZE = 200
@@ -63,6 +65,7 @@ DEFAULT_MIN_MESSAGE_BUFFER_LENGTH = 15
 # embeddings
 MAX_EMBEDDING_DIM = 4096  # maximum supported embeding size - do NOT change or else DBs will need to be reset
 DEFAULT_EMBEDDING_CHUNK_SIZE = 300
+DEFAULT_EMBEDDING_DIM = 1024
 
 # tokenizers
 EMBEDDING_TO_TOKENIZER_MAP = {
