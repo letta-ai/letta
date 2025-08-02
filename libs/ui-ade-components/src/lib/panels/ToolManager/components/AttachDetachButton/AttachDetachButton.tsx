@@ -133,7 +133,7 @@ function AttachMCPTool(props: AttachMCPToolProps) {
   const { idToAttach } = props;
   const [mcpServerName, mcpToolName] = idToAttach.split(':');
   const t = useTranslations('ToolActionsHeader');
-  const { mutateAsync: addMCPTool } = useToolsServiceAddMcpTool();
+  const { mutateAsync: addMCPTool, isPending } = useToolsServiceAddMcpTool();
   const { id: agentId } = useCurrentAgent();
   const { addOptimisticTool, updateAgentTools, removeOptimisticTool } =
     useOptimisticAgentTools(agentId);
@@ -192,6 +192,7 @@ function AttachMCPTool(props: AttachMCPToolProps) {
     <Button
       color="secondary"
       preIcon={<AddLinkIcon />}
+      busy={isPending}
       label={t('AttachMCPTool.label')}
       onClick={handleAttach}
     />
