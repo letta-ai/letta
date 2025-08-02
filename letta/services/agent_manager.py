@@ -26,7 +26,7 @@ from letta.helpers.datetime_helpers import get_utc_time
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
 from letta.orm import Agent as AgentModel
-from letta.orm import AgentPassage, AgentsTags
+from letta.orm import AgentsTags, ArchivalPassage
 from letta.orm import Block as BlockModel
 from letta.orm import BlocksAgents
 from letta.orm import Group as GroupModel
@@ -1298,6 +1298,19 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    async def get_agent_archive_ids_async(self, agent_id: str, actor: PydanticUser) -> List[str]:
+        """Get all archive IDs associated with an agent."""
+        from letta.orm import ArchivesAgents
+
+        async with db_registry.async_session() as session:
+            # Direct query to archives_agents table for performance
+            query = select(ArchivesAgents.archive_id).where(ArchivesAgents.agent_id == agent_id)
+            result = await session.execute(query)
+            archive_ids = [row[0] for row in result.fetchall()]
+            return archive_ids
+
+    @enforce_types
+    @trace_method
     def delete_agent(self, agent_id: str, actor: PydanticUser) -> None:
         """
         Deletes an agent and its associated relationships.
@@ -2342,21 +2355,24 @@ class AgentManager:
                 main_query = main_query.limit(limit)
 
             # Execute query
-            results = list(session.execute(main_query))
+            result = session.execute(main_query)
 
             passages = []
-            for row in results:
+            for row in result:
                 data = dict(row._mapping)
-                if data["agent_id"] is not None:
-                    # This is an AgentPassage - remove source fields
+                if data.get("archive_id", None):
+                    # This is an ArchivalPassage - remove source fields
                     data.pop("source_id", None)
                     data.pop("file_id", None)
                     data.pop("file_name", None)
-                    passage = AgentPassage(**data)
-                else:
-                    # This is a SourcePassage - remove agent field
-                    data.pop("agent_id", None)
+                    passage = ArchivalPassage(**data)
+                elif data.get("source_id", None):
+                    # This is a SourcePassage - remove archive field
+                    data.pop("archive_id", None)
+                    data.pop("agent_id", None)  # For backward compatibility
                     passage = SourcePassage(**data)
+                else:
+                    raise ValueError(f"Passage data is malformed, is neither ArchivalPassage nor SourcePassage {data}")
                 passages.append(passage)
 
             return [p.to_pydantic() for p in passages]
@@ -2408,16 +2424,19 @@ class AgentManager:
             passages = []
             for row in result:
                 data = dict(row._mapping)
-                if data["agent_id"] is not None:
-                    # This is an AgentPassage - remove source fields
+                if data.get("archive_id", None):
+                    # This is an ArchivalPassage - remove source fields
                     data.pop("source_id", None)
                     data.pop("file_id", None)
                     data.pop("file_name", None)
-                    passage = AgentPassage(**data)
-                else:
-                    # This is a SourcePassage - remove agent field
-                    data.pop("agent_id", None)
+                    passage = ArchivalPassage(**data)
+                elif data.get("source_id", None):
+                    # This is a SourcePassage - remove archive field
+                    data.pop("archive_id", None)
+                    data.pop("agent_id", None)  # For backward compatibility
                     passage = SourcePassage(**data)
+                else:
+                    raise ValueError(f"Passage data is malformed, is neither ArchivalPassage nor SourcePassage {data}")
                 passages.append(passage)
 
             return [p.to_pydantic() for p in passages]
