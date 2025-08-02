@@ -67,7 +67,6 @@ services:
     volumes:
       - ./letta:/letta
       - ~/.letta/credentials:/root/.letta/credentials
-      - ./configs/server_config.yaml:/root/.letta/config
       - ./CONTRIBUTING.md:/CONTRIBUTING.md
       - ./tests/pytest_cache:/letta/.pytest_cache
       - ./tests/pytest.ini:/letta/pytest.ini
