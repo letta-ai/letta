@@ -2,11 +2,8 @@ import { useTranslations } from '@letta-cloud/translations';
 import {
   Alert,
   AnthropicLogoMarkDynamic,
-  AzureLogoMarkDynamic,
   Button,
   CommunicationsIcon,
-  ComposioLogoMarkDynamic,
-  DeepseekLogoMarkDynamic,
   DesktopPageLayout,
   Dialog,
   GeminiLogoMarkDynamic,
@@ -17,10 +14,8 @@ import {
   OllamaLogoMarkDynamic,
   OpenaiLogoMarkDynamic,
   RawInput,
-  TogetherAiLogoMarkDynamic,
   Typography,
   VStack,
-  XaiLogoMarkDynamic,
 } from '@letta-cloud/ui-component-library';
 import type { FormEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -98,6 +93,7 @@ function IntegrationConfigurationDialog(
         setIsOpen(open);
       }}
       title={t('IntegrationConfigurationDialog.title', { integrationName })}
+      confirmText="Save and restart server"
     >
       <VStack gap="form">
         <Alert
@@ -216,50 +212,6 @@ function SettingsEditor(props: SettingsEditorProps) {
         ],
       },
       {
-        icon: <OllamaLogoMarkDynamic />,
-        name: 'Ollama',
-        description: t('integrations.ollama.description'),
-        docsLink: 'https://docs.letta.com/guides/server/providers/ollama',
-        configSchema: [
-          { key: 'OLLAMA_BASE_URL', label: t('integrations.ollama.urlLabel') },
-        ],
-      },
-      {
-        icon: <AzureLogoMarkDynamic />,
-        name: 'Azure',
-        description: t('integrations.azure.description'),
-        docsLink:
-          'https://docs.letta.com/guides/server/providers/azure#enabling-azure-openai-models',
-        configSchema: [
-          { key: 'AZURE_API_KEY', label: t('integrations.azure.keyLabel') },
-          { key: 'AZURE_BASE_URL', label: t('integrations.azure.urlLabel') },
-        ],
-      },
-      {
-        icon: <ComposioLogoMarkDynamic />,
-        name: 'Composio',
-        description: t('integrations.composio.description'),
-        docsLink: 'https://docs.letta.com/guides/agents/tools#composio-tools',
-        configSchema: [
-          {
-            key: 'COMPOSIO_API_KEY',
-            label: t('integrations.composio.keyLabel'),
-          },
-        ],
-      },
-      {
-        icon: <LmstudioLogoMarkDynamic />,
-        name: 'LM Studio',
-        description: t('integrations.lmstudio.description'),
-        docsLink: 'https://docs.letta.com/guides/server/providers/lmstudio',
-        configSchema: [
-          {
-            key: 'LMSTUDIO_BASE_URL',
-            label: t('integrations.lmstudio.keyLabel'),
-          },
-        ],
-      },
-      {
         icon: <GeminiLogoMarkDynamic />,
         name: 'Google Gemini',
         description: t('integrations.gemini.description'),
@@ -272,38 +224,23 @@ function SettingsEditor(props: SettingsEditorProps) {
         ],
       },
       {
-        icon: <XaiLogoMarkDynamic />,
-        name: 'xAI',
-        description: t('integrations.xai.description'),
-        docsLink: 'https://docs.letta.com/guides/server/providers/xai',
+        icon: <OllamaLogoMarkDynamic />,
+        name: 'Ollama',
+        description: t('integrations.ollama.description'),
+        docsLink: 'https://docs.letta.com/guides/server/providers/ollama',
         configSchema: [
-          {
-            key: 'XAI_API_KEY',
-            label: t('integrations.xai.keyLabel'),
-          },
+          { key: 'OLLAMA_BASE_URL', label: t('integrations.ollama.urlLabel') },
         ],
       },
       {
-        icon: <DeepseekLogoMarkDynamic />,
-        name: 'DeepSeek',
-        description: t('integrations.deepseek.description'),
-        docsLink: 'https://docs.letta.com/guides/server/providers/deepseek',
+        icon: <LmstudioLogoMarkDynamic />,
+        name: 'LM Studio',
+        description: t('integrations.lmstudio.description'),
+        docsLink: 'https://docs.letta.com/guides/server/providers/lmstudio',
         configSchema: [
           {
-            key: 'DEEPSEEK_API_KEY',
-            label: t('integrations.deepseek.keyLabel'),
-          },
-        ],
-      },
-      {
-        icon: <TogetherAiLogoMarkDynamic />,
-        name: 'Together',
-        description: t('integrations.togetherai.description'),
-        docsLink: 'https://docs.letta.com/guides/server/providers/together',
-        configSchema: [
-          {
-            key: 'TOGETHER_API_KEY',
-            label: t('integrations.togetherai.keyLabel'),
+            key: 'LMSTUDIO_BASE_URL',
+            label: t('integrations.lmstudio.keyLabel'),
           },
         ],
       },

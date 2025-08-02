@@ -1,9 +1,9 @@
 {
   "Integrations": {
-    "title": "Integrations",
+    "title": "Integrations (local server only)",
     "loading": "Loading...",
     "learnMore": "Learn more",
-    "subtitle": "Below you can update the environment settings for the ADE.",
+    "subtitle": "Update the different environment variables on your Letta server",
     "label": "Environment Variables",
     "save": "Update environment",
     "configure": "Configure",
@@ -16,44 +16,44 @@
     "integrations": {
       "openAI": {
         "keyLabel": "OpenAI API Key",
-        "description": "Connect to the OpenAI API to use GPT models in the ADE"
+        "description": "Add your OpenAI API key to use OpenAI models in the ADE"
       },
       "anthropic": {
         "keyLabel": "Anthropic API Key",
-        "description": "Connect to the Anthropic API to use Anthropic models in the ADE"
+        "description": "Add your Anthropic API key to use Anthropic models in the ADE"
       },
       "ollama": {
         "urlLabel": "Ollama Base URL",
-        "description": "Connect to the Ollama API to use Ollama models in the ADE"
+        "description": "Add your Ollama URL to use Ollama models in the ADE"
       },
       "azure": {
         "keyLabel": "Azure API Key",
         "urlLabel": "Azure Base URL",
-        "description": "Connect to the Azure API to use Azure models in the ADE"
+        "description": "Add your Azure API key and base URL to use Azure models in the ADE"
       },
       "composio": {
         "keyLabel": "Composio API Key",
-        "description": "Connect to the Composio API to use Composio tools in the ADE"
+        "description": "Add your Composio API key to use Composio tools in the ADE"
       },
       "lmstudio": {
         "keyLabel": "LM Studio Base URL",
-        "description": "Connect to LM Studio to use LM Studio models in the ADE"
+        "description": "Add your LM Studio base URL to use LM Studio models in the ADE"
       },
       "gemini": {
         "keyLabel": "Gemini API Key",
-        "description": "Connect to the Gemini API to use Gemini models in the ADE"
+        "description": "Add your Gemini API key to use Gemini models in the ADE"
       },
       "togetherai": {
         "keyLabel": "Together API Key",
-        "description": "Connect to the Together API to use Together models in the ADE"
+        "description": "Add your Together API key to use Together models in the ADE"
       },
       "xai": {
         "keyLabel": "xAI API Key",
-        "description": "Connect to the xAI API to use Grok models in the ADE"
+        "description": "Add your xAI API key to use Grok models in the ADE"
       },
       "deepseek": {
         "keyLabel": "DeepSeek API Key",
-        "description": "Connect to the DeepSeek API to use DeepSeek models in the ADE"
+        "description": "Add your DeepSeek API key to use DeepSeek models in the ADE"
       },
       "other": {
         "name": "Don't see an integration that's supported in the docs?",
@@ -74,7 +74,7 @@
   },
   "Agents": {
     "title": "Agents",
-    "subtitle": "View and manage your agents below.",
+    "subtitle": "View and manage your agents below",
     "importAgent": "Import Agent",
     "createAgent": "Create Agent",
     "table": {
@@ -115,25 +115,25 @@
   },
   "ServerStatus": {
     "restart": "Restart",
-    "title": "Letta Server Logs",
-    "subtitle": "View the status of your server and the agents connected to it."
+    "title": "Letta server logs",
+    "subtitle": "View the status of your server"
   },
   "Settings": {
-    "title": "Desktop Settings",
-    "subtitle": "Update your desktop settings below.",
+    "title": "Letta Desktop settings",
+    "subtitle": "Update your settings below",
     "DatabaseSettings": {
       "edit": "Configure",
-      "title": "Database Settings",
-      "type": "Database Type",
+      "title": "Server settings",
+      "type": "Letta server type",
       "types": {
-        "external": "External Database",
-        "embedded": "Embedded Database",
-        "local": "Remote Letta Server"
+        "external": "Local server (external Database)",
+        "embedded": "Local server",
+        "local": "Remote server"
       },
       "connectionString": "Connection String"
     },
     "EditDatabaseSettingsDialog": {
-      "title": "Update Database Connection",
+      "title": "Update server connection",
       "externalOnly": "External data",
       "connectionString": {
         "label": "Connection String",
@@ -218,7 +218,7 @@
       "agents": "Agents",
       "identities": "Identities",
       "integrations": "Integrations",
-      "serverStatus": "Server Status"
+      "serverStatus": "Server logs"
     }
   }
 }

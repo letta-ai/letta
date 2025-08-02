@@ -51,7 +51,7 @@ function Navigation() {
   const t = useTranslations('AppHeader');
 
   return (
-    <HStack className="disable-app-header" gap={false}>
+    <HStack className="disable-app-header" gap="medium">
       <Button
         size="small"
         target="_blank"

@@ -110,16 +110,18 @@ export function ServerStatus() {
         padding="small"
         color="background-grey2"
         fullHeight
+        style={{ overflowX: 'hidden' }}
       >
         {logs.map((log, index) => (
-          <HStack key={index}>
-            <Typography color="muted" font="mono" variant="body2">
+          <HStack key={index} style={{ flexWrap: 'wrap' }}>
+            <Typography color="muted" font="mono" variant="body2" style={{ flexShrink: 0 }}>
               [{log.timestamp}]
             </Typography>
             <Typography
               color={log.type === 'error' ? 'destructive' : 'default'}
               font="mono"
               variant="body2"
+              style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
             >
               {log.message}
             </Typography>

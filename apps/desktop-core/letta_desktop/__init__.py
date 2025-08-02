@@ -38,6 +38,7 @@ import json
 
 
 print("Initializing Letta Desktop Service...", flush=True)
+print(f"Python version: {sys.version}", flush=True)
 
 
 def get_desktop_config():

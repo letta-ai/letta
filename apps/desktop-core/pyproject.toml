@@ -12,7 +12,7 @@ license = "Apache License"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "<3.14,>=3.10"
+python = "<3.14,>=3.11"
 letta = {path = "../core", extras=["desktop"]}
 pyinstaller = {version = "^6.11.1"}
 pg8000 = "^1.31.2"

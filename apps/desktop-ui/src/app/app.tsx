@@ -45,6 +45,7 @@ function Sidebar() {
           preIcon={<LettaInvaderIcon />}
           color="tertiary"
           label={t('Sidebar.agents')}
+          tooltipPlacement="right"
         ></Button>
       </Link>
       <Link to="/dashboard/identities">
@@ -54,6 +55,7 @@ function Sidebar() {
           preIcon={<IdentitiesIcon />}
           color="tertiary"
           label={t('Sidebar.identities')}
+          tooltipPlacement="right"
         ></Button>
       </Link>
       {desktopConfig && desktopConfig.databaseConfig.type !== 'local' && (
@@ -64,6 +66,7 @@ function Sidebar() {
             preIcon={<TerminalIcon />}
             color="tertiary"
             label={t('Sidebar.serverStatus')}
+            tooltipPlacement="right"
           ></Button>
         </Link>
       )}
@@ -74,6 +77,7 @@ function Sidebar() {
           preIcon={<CommunicationsIcon />}
           color="tertiary"
           label={t('Sidebar.integrations')}
+          tooltipPlacement="right"
         ></Button>
       </Link>
       <Link to="/dashboard/settings">
@@ -83,6 +87,7 @@ function Sidebar() {
           preIcon={<CogIcon />}
           color="tertiary"
           label={t('Sidebar.settings')}
+          tooltipPlacement="right"
         ></Button>
       </Link>
     </VStack>
