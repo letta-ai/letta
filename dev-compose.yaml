@@ -15,18 +15,36 @@ services:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U letta"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.2'
   letta_server:
-    image: letta/letta:latest
-    hostname: letta
+    image: letta_server
+    hostname: letta-server
     build:
       context: .
       dockerfile: Dockerfile
       target: runtime
+      args:
+        - LETTA_ENVIRONMENT=DEVELOPMENT
     depends_on:
-      - letta_db
+      letta_db:
+        condition: service_healthy
     ports:
       - "8083:8083"
       - "8283:8283"
+    env_file:
+      - .env
     environment:
       - LETTA_PG_DB=${LETTA_PG_DB:-letta}
       - LETTA_PG_USER=${LETTA_PG_USER:-letta}
@@ -34,6 +52,7 @@ services:
       - LETTA_PG_HOST=pgvector_db
       - LETTA_PG_PORT=5432
       - LETTA_DEBUG=True
+      - WATCHFILES_FORCE_POLLING=true
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
@@ -45,3 +64,42 @@ services:
       - VLLM_API_BASE=${VLLM_API_BASE}
       - OPENLLM_AUTH_TYPE=${OPENLLM_AUTH_TYPE}
       - OPENLLM_API_KEY=${OPENLLM_API_KEY}
+    volumes:
+      - ./letta:/letta
+      - ~/.letta/credentials:/root/.letta/credentials
+      - ./configs/server_config.yaml:/root/.letta/config
+      - ./CONTRIBUTING.md:/CONTRIBUTING.md
+      - ./tests/pytest_cache:/letta/.pytest_cache
+      - ./tests/pytest.ini:/letta/pytest.ini
+      - ./pyproject.toml:/pyproject.toml
+      - ./tests:/tests
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.5'
+        reservations:
+          memory: 512M
+          cpus: '0.3'
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - '8080:8080'
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.3'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
