@@ -166,7 +166,6 @@ class VoiceSleeptimeAgent(LettaAgent):
             memory = serialize_message_history(messages, context)
             self.agent_manager.passage_manager.insert_passage(
                 agent_state=agent_state,
-                agent_id=agent_state.id,
                 text=memory,
                 actor=self.actor,
             )

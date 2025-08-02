@@ -3060,8 +3060,8 @@ export type ParentToolRule = {
  * embedding (List[float]): The embedding of the passage.
  * embedding_config (EmbeddingConfig): The embedding configuration used by the passage.
  * created_at (datetime): The creation date of the passage.
- * user_id (str): The unique identifier of the user associated with the passage.
- * agent_id (str): The unique identifier of the agent associated with the passage.
+ * organization_id (str): The unique identifier of the organization associated with the passage.
+ * archive_id (str): The unique identifier of the archive containing this passage.
  * source_id (str): The data source of the passage.
  * file_id (str): The unique identifier of the file associated with the passage.
  */
@@ -3091,9 +3091,9 @@ export type Passage = {
    */
   organization_id?: string | null;
   /**
-   * The unique identifier of the agent associated with the passage.
+   * The unique identifier of the archive containing this passage.
    */
-  agent_id?: string | null;
+  archive_id?: string | null;
   /**
    * The data source of the passage.
    */
@@ -3156,9 +3156,9 @@ export type PassageUpdate = {
    */
   organization_id?: string | null;
   /**
-   * The unique identifier of the agent associated with the passage.
+   * The unique identifier of the archive containing this passage.
    */
-  agent_id?: string | null;
+  archive_id?: string | null;
   /**
    * The data source of the passage.
    */

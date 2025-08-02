@@ -5107,7 +5107,7 @@ export const Passage = z.object({
       z.undefined(),
     ])
     .optional(),
-  agent_id: z
+  archive_id: z
     .union([
       z.string(),
       z.null(),
@@ -5204,7 +5204,7 @@ export const PassageUpdate = z.object({
       z.undefined(),
     ])
     .optional(),
-  agent_id: z
+  archive_id: z
     .union([
       z.string(),
       z.null(),

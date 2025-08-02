@@ -176,7 +176,6 @@ class LettaCoreToolExecutor(ToolExecutor):
         """
         await PassageManager().insert_passage_async(
             agent_state=agent_state,
-            agent_id=agent_state.id,
             text=content,
             actor=actor,
         )

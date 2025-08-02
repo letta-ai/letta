@@ -18162,7 +18162,7 @@
             "description": "Whether this passage is deleted or not.",
             "default": false
           },
-          "agent_id": {
+          "archive_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -18171,8 +18171,8 @@
                 "type": "null"
               }
             ],
-            "title": "Agent Id",
-            "description": "The unique identifier of the agent associated with the passage."
+            "title": "Archive Id",
+            "description": "The unique identifier of the archive containing this passage."
           },
           "source_id": {
             "anyOf": [
@@ -18267,7 +18267,7 @@
         "type": "object",
         "required": ["text", "embedding", "embedding_config"],
         "title": "Passage",
-        "description": "Representation of a passage, which is stored in archival memory.\n\nParameters:\n    text (str): The text of the passage.\n    embedding (List[float]): The embedding of the passage.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the passage.\n    created_at (datetime): The creation date of the passage.\n    user_id (str): The unique identifier of the user associated with the passage.\n    agent_id (str): The unique identifier of the agent associated with the passage.\n    source_id (str): The data source of the passage.\n    file_id (str): The unique identifier of the file associated with the passage."
+        "description": "Representation of a passage, which is stored in archival memory.\n\nParameters:\n    text (str): The text of the passage.\n    embedding (List[float]): The embedding of the passage.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the passage.\n    created_at (datetime): The creation date of the passage.\n    organization_id (str): The unique identifier of the organization associated with the passage.\n    archive_id (str): The unique identifier of the archive containing this passage.\n    source_id (str): The data source of the passage.\n    file_id (str): The unique identifier of the file associated with the passage."
       },
       "PassageUpdate": {
         "properties": {
@@ -18327,7 +18327,7 @@
             "description": "Whether this passage is deleted or not.",
             "default": false
           },
-          "agent_id": {
+          "archive_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -18336,8 +18336,8 @@
                 "type": "null"
               }
             ],
-            "title": "Agent Id",
-            "description": "The unique identifier of the agent associated with the passage."
+            "title": "Archive Id",
+            "description": "The unique identifier of the archive containing this passage."
           },
           "source_id": {
             "anyOf": [
