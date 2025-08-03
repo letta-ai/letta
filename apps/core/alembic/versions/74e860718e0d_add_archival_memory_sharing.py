@@ -1,11 +1,12 @@
 """add archival memory sharing
 
 Revision ID: 74e860718e0d
-Revises: 4c6c9ef0387d
+Revises: 15b577c62f3f
 Create Date: 2025-07-30 16:15:49.424711
 
 """
 
+import time
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -54,25 +55,40 @@ def upgrade() -> None:
             sa.UniqueConstraint("name", "organization_id", name="unique_archive_name_per_org"),
         )
     else:
-        op.create_table(
-            "archives",
-            sa.Column("name", sa.String(), nullable=False),
-            sa.Column("description", sa.String(), nullable=True),
-            sa.Column("metadata_", sa.JSON(), nullable=True),
-            sa.Column("id", sa.String(), nullable=False),
-            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True),
-            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True),
-            sa.Column("is_deleted", sa.Boolean(), server_default=sa.text("FALSE"), nullable=False),
-            sa.Column("_created_by_id", sa.String(), nullable=True),
-            sa.Column("_last_updated_by_id", sa.String(), nullable=True),
-            sa.Column("organization_id", sa.String(), nullable=False),
-            sa.ForeignKeyConstraint(
-                ["organization_id"],
-                ["organizations.id"],
-            ),
-            sa.PrimaryKeyConstraint("id"),
-            sa.UniqueConstraint("name", "organization_id", name="unique_archive_name_per_org"),
+        # Check if archives table already exists
+        connection = op.get_bind()
+        result = connection.execute(
+            sa.text(
+                """
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'archives'
+                )
+            """
+            )
         )
+        archives_exists = result.scalar()
+
+        if not archives_exists:
+            op.create_table(
+                "archives",
+                sa.Column("name", sa.String(), nullable=False),
+                sa.Column("description", sa.String(), nullable=True),
+                sa.Column("metadata_", sa.JSON(), nullable=True),
+                sa.Column("id", sa.String(), nullable=False),
+                sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True),
+                sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True),
+                sa.Column("is_deleted", sa.Boolean(), server_default=sa.text("FALSE"), nullable=False),
+                sa.Column("_created_by_id", sa.String(), nullable=True),
+                sa.Column("_last_updated_by_id", sa.String(), nullable=True),
+                sa.Column("organization_id", sa.String(), nullable=False),
+                sa.ForeignKeyConstraint(
+                    ["organization_id"],
+                    ["organizations.id"],
+                ),
+                sa.PrimaryKeyConstraint("id"),
+                sa.UniqueConstraint("name", "organization_id", name="unique_archive_name_per_org"),
+            )
 
     op.create_index("ix_archives_created_at", "archives", ["created_at", "id"], unique=False)
     op.create_index("ix_archives_organization_id", "archives", ["organization_id"], unique=False)
@@ -211,49 +227,138 @@ def upgrade() -> None:
         # add archive_id to agent_passages
         op.add_column("agent_passages", sa.Column("archive_id", sa.String(), nullable=True))
 
-        # create default archives and migrate data
-        op.execute(
-            """
-            -- Create a unique archive for each agent that has passages
-            WITH agent_archives AS (
-                INSERT INTO archives (id, name, description, organization_id, created_at)
-                SELECT DISTINCT
-                    'archive-' || gen_random_uuid(),
-                    COALESCE(a.name, 'Agent ' || a.id) || '''s Archive',
-                    'Default archive created during migration',
-                    a.organization_id,
-                    NOW()
+        # get connection for batch processing
+        connection = op.get_bind()
+
+        # get total count of agents with passages
+        total_agents_result = connection.execute(
+            sa.text(
+                """
+                SELECT COUNT(DISTINCT a.id)
                 FROM agent_passages ap
                 JOIN agents a ON ap.agent_id = a.id
                 WHERE ap.is_deleted = FALSE
-                RETURNING id as archive_id,
-                          organization_id,
-                          SUBSTRING(name FROM 1 FOR LENGTH(name) - LENGTH('''s Archive')) as agent_name
-            )
-            -- Create archives_agents relationships
-            INSERT INTO archives_agents (agent_id, archive_id, is_owner, created_at)
-            SELECT
-                a.id as agent_id,
-                aa.archive_id,
-                TRUE,
-                NOW()
-            FROM agent_archives aa
-            JOIN agents a ON a.organization_id = aa.organization_id
-                AND (a.name = aa.agent_name OR ('Agent ' || a.id) = aa.agent_name);
-        """
-        )
-
-        # update agent_passages with archive_id
-        op.execute(
             """
-            UPDATE agent_passages ap
-            SET archive_id = ar.id
-            FROM agents a
-            JOIN archives ar ON ar.organization_id = a.organization_id
-                AND ar.name = COALESCE(a.name, 'Agent ' || a.id) || '''s Archive'
-            WHERE ap.agent_id = a.id;
-        """
+            )
         )
+        total_agents = total_agents_result.scalar()
+
+        if total_agents > 0:
+            print(f"Starting archival memory migration for {total_agents} agents...")
+            start_time = time.time()
+
+            batch_size = 1000
+            processed_agents = 0
+
+            # process agents in batches
+            while processed_agents < total_agents:
+                print(f"Processing batch {processed_agents + 1} to {min(processed_agents + batch_size, total_agents)} of {total_agents}...")
+
+                # create archives for this batch of agents
+                op.execute(
+                    sa.text(
+                        """
+                        WITH batch_agents AS (
+                            SELECT DISTINCT a.id, a.name, a.organization_id
+                            FROM agent_passages ap
+                            JOIN agents a ON ap.agent_id = a.id
+                            WHERE ap.is_deleted = FALSE
+                            AND NOT EXISTS (
+                                SELECT 1 FROM archives ar
+                                WHERE ar.organization_id = a.organization_id
+                                AND ar.name = COALESCE(a.name, 'Agent ' || a.id) || '''s Archive'
+                            )
+                            LIMIT :batch_size
+                        ),
+                        inserted_archives AS (
+                            INSERT INTO archives (id, name, description, organization_id, created_at)
+                            SELECT
+                                'archive-' || gen_random_uuid(),
+                                COALESCE(ba.name, 'Agent ' || ba.id) || '''s Archive',
+                                'Default archive created during migration',
+                                ba.organization_id,
+                                NOW()
+                            FROM batch_agents ba
+                            RETURNING id as archive_id,
+                                     organization_id,
+                                     SUBSTRING(name FROM 1 FOR LENGTH(name) - LENGTH('''s Archive')) as agent_name
+                        )
+                        -- create archives_agents relationships
+                        INSERT INTO archives_agents (agent_id, archive_id, is_owner, created_at)
+                        SELECT
+                            a.id as agent_id,
+                            ia.archive_id,
+                            TRUE,
+                            NOW()
+                        FROM inserted_archives ia
+                        JOIN agents a ON a.organization_id = ia.organization_id
+                            AND (a.name = ia.agent_name OR ('Agent ' || a.id) = ia.agent_name)
+                    """
+                    ).bindparams(batch_size=batch_size)
+                )
+
+                processed_agents += batch_size
+
+            print("Archive creation completed. Starting archive_id updates...")
+
+            # update agent_passages with archive_id in batches
+            total_passages_result = connection.execute(
+                sa.text(
+                    """
+                    SELECT COUNT(*)
+                    FROM agent_passages ap
+                    WHERE ap.archive_id IS NULL
+                    AND ap.is_deleted = FALSE
+                """
+                )
+            )
+            total_passages = total_passages_result.scalar()
+
+            if total_passages > 0:
+                print(f"Updating archive_id for {total_passages} passages...")
+
+                updated_passages = 0
+                update_batch_size = 5000  # larger batch size for updates
+
+                while updated_passages < total_passages:
+                    print(
+                        f"Updating passages {updated_passages + 1} to {min(updated_passages + update_batch_size, total_passages)} of {total_passages}..."
+                    )
+
+                    # Use connection.execute instead of op.execute to get rowcount
+                    result = connection.execute(
+                        sa.text(
+                            """
+                            UPDATE agent_passages ap
+                            SET archive_id = ar.id
+                            FROM agents a
+                            JOIN archives ar ON ar.organization_id = a.organization_id
+                                AND ar.name = COALESCE(a.name, 'Agent ' || a.id) || '''s Archive'
+                            WHERE ap.agent_id = a.id
+                            AND ap.archive_id IS NULL
+                            AND ap.is_deleted = FALSE
+                            AND ap.id IN (
+                                SELECT id FROM agent_passages
+                                WHERE archive_id IS NULL
+                                AND is_deleted = FALSE
+                                LIMIT :batch_size
+                            )
+                        """
+                        ).bindparams(batch_size=update_batch_size)
+                    )
+
+                    rows_updated = result.rowcount
+                    if rows_updated == 0:
+                        break  # no more rows to update
+
+                    updated_passages += rows_updated
+
+                print(f"Archive_id update completed. Updated {updated_passages} passages.")
+
+            elapsed_time = time.time() - start_time
+            print(f"Data migration completed successfully in {elapsed_time:.2f} seconds.")
+        else:
+            print("No agents with passages found. Skipping data migration.")
 
         # schema changes
         op.alter_column("agent_passages", "archive_id", nullable=False)
@@ -345,6 +450,12 @@ def downgrade() -> None:
         op.create_index("ix_agent_passages_org_agent", "agent_passages", ["organization_id", "agent_id"])
         op.create_index("agent_passages_org_idx", "agent_passages", ["organization_id"])
         op.create_index("agent_passages_created_at_id_idx", "agent_passages", ["created_at", "id"])
+
+        # drop new tables for SQLite
+        op.drop_table("archives_agents")
+        op.drop_index("ix_archives_organization_id", table_name="archives")
+        op.drop_index("ix_archives_created_at", table_name="archives")
+        op.drop_table("archives")
     else:
         # PostgreSQL:
         # rename table back
@@ -380,8 +491,8 @@ def downgrade() -> None:
         op.create_index("agent_passages_org_idx", "agent_passages", ["organization_id"])
         op.create_index("agent_passages_created_at_id_idx", "agent_passages", ["created_at", "id"])
 
-    # drop new tables (same for both)
-    op.drop_table("archives_agents")
-    op.drop_index("ix_archives_organization_id", table_name="archives")
-    op.drop_index("ix_archives_created_at", table_name="archives")
-    op.drop_table("archives")
+        # drop new tables for PostgreSQL
+        op.drop_table("archives_agents")
+        op.drop_index("ix_archives_organization_id", table_name="archives")
+        op.drop_index("ix_archives_created_at", table_name="archives")
+        op.drop_table("archives")
