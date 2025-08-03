@@ -27,17 +27,31 @@ export async function signInUserFromProviderLogin(
   const sessionId = crypto.randomUUID();
   const expires = Date.now() + SESSION_EXPIRY_MS;
 
-  await setCookie(CookieNames.LETTA_SESSION, {
-    sessionId,
-    expires,
-  });
+  await setCookie(
+    CookieNames.LETTA_SESSION,
+    {
+      sessionId,
+      expires,
+    },
+    {
+      expires: new Date(expires),
+    },
+  );
 
-  await setCookie(CookieNames.CLOUD_API_SESSION, {
-    sessionId,
-    expires,
-  });
+  await setCookie(
+    CookieNames.CLOUD_API_SESSION,
+    {
+      sessionId,
+      expires,
+    },
+    {
+      expires: new Date(expires),
+    },
+  );
 
-  (await cookies()).set(CookieNames.THEME, user.theme);
+  (await cookies()).set(CookieNames.THEME, user.theme, {
+    expires: new Date(expires),
+  });
 
   await setRedisData(
     'userIdToUserSession',
