@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON, Index, String, UniqueConstraint
+from sqlalchemy import JSON, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import OrganizationMixin
@@ -26,7 +26,6 @@ class Archive(SqlalchemyBase, OrganizationMixin):
     __pydantic_model__ = PydanticArchive
 
     __table_args__ = (
-        UniqueConstraint("name", "organization_id", name="unique_archive_name_per_org"),
         Index("ix_archives_created_at", "created_at", "id"),
         Index("ix_archives_organization_id", "organization_id"),
     )

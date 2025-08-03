@@ -52,7 +52,6 @@ def upgrade() -> None:
                 ["organizations.id"],
             ),
             sa.PrimaryKeyConstraint("id"),
-            sa.UniqueConstraint("name", "organization_id", name="unique_archive_name_per_org"),
         )
     else:
         # Check if archives table already exists
@@ -87,7 +86,6 @@ def upgrade() -> None:
                     ["organizations.id"],
                 ),
                 sa.PrimaryKeyConstraint("id"),
-                sa.UniqueConstraint("name", "organization_id", name="unique_archive_name_per_org"),
             )
 
     op.create_index("ix_archives_created_at", "archives", ["created_at", "id"], unique=False)
