@@ -262,9 +262,8 @@ def upgrade() -> None:
                             JOIN agents a ON ap.agent_id = a.id
                             WHERE ap.is_deleted = FALSE
                             AND NOT EXISTS (
-                                SELECT 1 FROM archives ar
-                                WHERE ar.organization_id = a.organization_id
-                                AND ar.name = COALESCE(a.name, 'Agent ' || a.id) || '''s Archive'
+                                SELECT 1 FROM archives_agents aa
+                                WHERE aa.agent_id = a.id
                             )
                             LIMIT :batch_size
                         ),
@@ -328,11 +327,9 @@ def upgrade() -> None:
                         sa.text(
                             """
                             UPDATE agent_passages ap
-                            SET archive_id = ar.id
-                            FROM agents a
-                            JOIN archives ar ON ar.organization_id = a.organization_id
-                                AND ar.name = COALESCE(a.name, 'Agent ' || a.id) || '''s Archive'
-                            WHERE ap.agent_id = a.id
+                            SET archive_id = aa.archive_id
+                            FROM archives_agents aa
+                            WHERE ap.agent_id = aa.agent_id
                             AND ap.archive_id IS NULL
                             AND ap.is_deleted = FALSE
                             AND ap.id IN (
