@@ -51,6 +51,7 @@ import {
   ImportAgentsDialog,
   Messages,
   DeleteAgentDialog,
+  AppContextProvider,
 } from '@letta-cloud/ui-ade-components';
 import type { InfiniteData } from '@tanstack/query-core';
 import {
@@ -62,6 +63,7 @@ import {
 } from '@letta-cloud/sdk-cloud-api';
 import { TrashIcon } from '@letta-cloud/ui-component-library';
 import { useQueryIdentities } from '@letta-cloud/ui-ade-components';
+import { useCurrentUser } from '$web/client/hooks';
 
 const TEMPLATE_SEARCH_LIMIT = 10;
 
@@ -94,115 +96,124 @@ interface DeployedAgentViewProps {
 function DeployedAgentView(props: DeployedAgentViewProps) {
   const { agent, onClose, onAgentUpdate } = props;
   const { name } = agent;
-  const { slug: currentProjectSlug } = useCurrentProject();
+  const { slug: currentProjectSlug, id: currentProjectId } =
+    useCurrentProject();
   const t = useTranslations('projects/(projectSlug)/agents/page');
+
+  const currentUser = useCurrentUser();
 
   const { data } = useAgentsServiceRetrieveAgent({
     agentId: agent.id || '',
   });
 
   return (
-    <div className="contents">
-      <Frame
-        onClick={onClose}
-        color="background-black"
-        fullHeight
-        fullWidth
-        /*eslint-disable-next-line react/forbid-component-props */
-        className="absolute z-[1] fade-in-5 opacity-10"
-      />
-      <VStack
-        /*eslint-disable-next-line react/forbid-component-props */
-        className="absolute z-10 sm:animate-in slide-in-from-right-10 sm:w-[70%] right-0"
-        color="background"
-        border
-        fullHeight
-        fullWidth
-      >
-        <HStack
-          padding
-          paddingY="small"
-          borderBottom
-          align="center"
+    <AppContextProvider
+      projectId={currentProjectId}
+      projectSlug={currentProjectSlug}
+      user={currentUser}
+    >
+      <div className="contents">
+        <Frame
+          onClick={onClose}
+          color="background-black"
+          fullHeight
           fullWidth
-          justify="spaceBetween"
+          /*eslint-disable-next-line react/forbid-component-props */
+          className="absolute z-[1] fade-in-5 opacity-10"
+        />
+        <VStack
+          /*eslint-disable-next-line react/forbid-component-props */
+          className="absolute z-10 sm:animate-in slide-in-from-right-10 sm:w-[70%] right-0"
+          color="background"
+          border
+          fullHeight
+          fullWidth
         >
-          <HStack align="center" gap="small">
-            <Typography align="left" bold variant="heading4">
-              {name}
-            </Typography>
-            <DropdownMenu
-              trigger={
-                <Button
-                  data-testid={`agent-actions-button:${agent.id}`}
-                  color="tertiary"
-                  label={t('actions')}
-                  preIcon={<DotsVerticalIcon />}
-                  size="default"
-                  hideLabel
-                />
-              }
-              triggerAsChild
-            >
-              <DeleteAgentDialog
-                agentId={agent.id || ''}
-                agentName={agent.name || ''}
+          <HStack
+            padding
+            paddingY="small"
+            borderBottom
+            align="center"
+            fullWidth
+            justify="spaceBetween"
+          >
+            <HStack align="center" gap="small">
+              <Typography align="left" bold variant="heading4">
+                {name}
+              </Typography>
+              <DropdownMenu
                 trigger={
-                  <DropdownMenuItem
-                    doNotCloseOnSelect
-                    preIcon={<TrashIcon />}
-                    label="Delete Agent"
+                  <Button
+                    data-testid={`agent-actions-button:${agent.id}`}
+                    color="tertiary"
+                    label={t('actions')}
+                    preIcon={<DotsVerticalIcon />}
+                    size="default"
+                    hideLabel
                   />
                 }
-                onSuccess={() => {
-                  onClose();
-                  onAgentUpdate();
-                }}
+                triggerAsChild
+              >
+                <DeleteAgentDialog
+                  agentId={agent.id || ''}
+                  agentName={agent.name || ''}
+                  trigger={
+                    <DropdownMenuItem
+                      doNotCloseOnSelect
+                      preIcon={<TrashIcon />}
+                      label="Delete Agent"
+                    />
+                  }
+                  onSuccess={() => {
+                    onClose();
+                    onAgentUpdate();
+                  }}
+                />
+              </DropdownMenu>
+            </HStack>
+
+            <HStack>
+              <Button
+                href={`/projects/${currentProjectSlug}/agents/${agent.id}`}
+                label={t('openInADE')}
+                color="secondary"
               />
-            </DropdownMenu>
-          </HStack>
 
-          <HStack>
-            <Button
-              href={`/projects/${currentProjectSlug}/agents/${agent.id}`}
-              label={t('openInADE')}
-              color="secondary"
-            />
-
-            <Button
-              onClick={onClose}
-              color="tertiary"
-              label={t('close')}
-              hideLabel
-              preIcon={<CloseIcon />}
-            />
+              <Button
+                onClick={onClose}
+                color="tertiary"
+                label={t('close')}
+                hideLabel
+                preIcon={<CloseIcon />}
+              />
+            </HStack>
           </HStack>
-        </HStack>
-        <VStack padding paddingY="small" overflowY="hidden" fullHeight>
-          {!data ? (
-            <VStack align="center" justify="center" fullHeight fullWidth>
-              <LettaLoader size="large" />
-            </VStack>
-          ) : (
-            <VStack fullHeight overflow="hidden" gap>
-              <Card>
-                <VStack>
-                  <RawInput
-                    inline
-                    label={t('agentId')}
-                    defaultValue={agent.id}
-                    readOnly
-                    allowCopy
-                    fullWidth
-                  />
-                </VStack>
-              </Card>
-              <AgentMessagesList agentId={agent.id || ''} />
-            </VStack>
-          )}
+          <VStack padding paddingY="small" overflowY="hidden" fullHeight>
+            {!data ? (
+              <VStack align="center" justify="center" fullHeight fullWidth>
+                <LettaLoader size="large" />
+              </VStack>
+            ) : (
+              <VStack fullHeight overflow="hidden" gap>
+                <Card>
+                  <VStack>
+                    <RawInput
+                      inline
+                      label={t('agentId')}
+                      defaultValue={agent.id}
+                      readOnly
+                      allowCopy
+                      fullWidth
+                    />
+                  </VStack>
+                </Card>
+                <AgentMessagesList agentId={agent.id || ''} />
+              </VStack>
+            )}
+          </VStack>
         </VStack>
-      </VStack>
-    </div>
+      </div>
+    </AppContextProvider>
   );
 }
 
