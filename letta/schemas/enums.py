@@ -132,7 +132,8 @@ class ToolSourceType(str, Enum):
     """Defines what a tool was derived from"""
 
     python = "python"
-    json = "json"
+    typescript = "typescript"
+    json = "json"  # TODO (cliandy): is this still valid?
 
 
 class ActorType(str, Enum):
