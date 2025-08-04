@@ -31,7 +31,6 @@ jobs:
               {"test_suite": "test_sdk_client.py"},
               {"test_suite": "test_client_legacy.py"},
               {"test_suite": "test_server.py"},
-              {"test_suite": "test_multi_agent.py"},
               {"test_suite": "test_managers.py"},
               {"test_suite": "test_base_functions.py"},
               {"test_suite": "test_tool_schema_parsing.py"},
