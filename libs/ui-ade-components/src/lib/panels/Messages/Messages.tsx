@@ -2,6 +2,7 @@
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -33,6 +34,7 @@ import {
   CircleIcon,
   SmallInvaderOutlineIcon,
   JSONViewer,
+  Spinner,
 } from '@letta-cloud/ui-component-library';
 import type {
   AgentMessage,
@@ -64,6 +66,8 @@ import { DebugTraceSidebar } from './DebugTraceSidebar/DebugTraceSidebar';
 import './Messages.scss';
 import { StepDetailBar } from './StepDetailBar/StepDetailBar';
 import { EditMessage } from './EditMessage/EditMessage';
+import { usePrependMessages } from './hooks/usePrependMessages';
+import { useScrollHandler } from './hooks/useScrollHandler';
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty
@@ -257,9 +261,10 @@ function Message({ message }: MessageProps) {
 
 interface MessageGroupType {
   group: AgentSimulatorMessageGroupType;
+  dataAnchor?: string;
 }
 
-function MessageGroup({ group }: MessageGroupType) {
+function MessageGroup({ group, dataAnchor }: MessageGroupType) {
   const { name, messages } = group;
 
   const sortedMessages = messages.sort(
@@ -327,6 +332,7 @@ function MessageGroup({ group }: MessageGroupType) {
       }}
       className="rounded-t-[0.375rem] gap-1.5 rounded-br-[0.375rem]"
       data-testid="message-group"
+      {...(dataAnchor && { 'data-anchor': dataAnchor })}
     >
       {firstMessageWithStepId?.stepId && (
         <div className="absolute right-[7px] top-[7px]">
@@ -393,15 +399,19 @@ export function Messages(props: MessagesProps) {
     injectSpaceForHeader,
     renderAgentsLink,
     mode,
-    isPanelActive,
+    isPanelActive: _isPanelActive,
     agentId,
   } = props;
 
   const ref = useRef<HTMLDivElement>(null);
   const hasScrolledInitially = useRef(false);
+  const { setPreserveNextPrepend, measureBefore, correctAfter } =
+    usePrependMessages(ref);
+
   const t = useTranslations('components/Messages');
   const [lastMessageReceived, setLastMessageReceived] =
     useState<LastMessageReceived | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
   const developmentServerConfig = useCurrentDevelopmentServerConfig();
   const { getMessages } = useGetMessagesWorker();
@@ -469,6 +479,11 @@ export function Messages(props: MessagesProps) {
         ...(query.pageParam.before ? { cursor: query.pageParam.before } : {}),
       })) as unknown as AgentMessage[];
 
+      // Check if we've reached the end (less than MESSAGE_LIMIT results)
+      if (Array.isArray(res) && res.length < MESSAGE_LIMIT) {
+        setHasReachedEnd(true);
+      }
+
       const data = queryClient.getQueriesData<
         InfiniteData<ListMessagesResponse>
       >({
@@ -517,6 +532,22 @@ export function Messages(props: MessagesProps) {
     },
     enabled: !isSendingMessage && !!agentId,
     initialPageParam: { before: '' },
+  });
+
+  const {
+    handleScroll,
+    resetFlags,
+    setHasReachedEnd,
+    getIsAutoLoading,
+    getHasReachedEnd,
+    cleanup,
+  } = useScrollHandler({
+    ref,
+    hasNextPage,
+    isFetching,
+    fetchNextPage,
+    measureBefore,
+    setPreserveNextPrepend,
   });
 
   useEffect(() => {
@@ -1120,52 +1151,71 @@ export function Messages(props: MessagesProps) {
     return groupedMessages;
   }, [extractMessage, mode, data]);
 
-  useEffect(() => {
-    if (ref.current) {
-      if (messageGroups.length > 0) {
-        setTimeout(() => {
-          if (!ref.current) {
-            return;
-          }
-
-          if (!hasScrolledInitially.current) {
-            ref.current.scrollTop = ref.current.scrollHeight;
-            hasScrolledInitially.current = true;
-          }
-        }, 10);
-      }
-
-      if (isSendingMessage) {
-        ref.current.scrollTop = ref.current.scrollHeight;
-      }
-    }
-  }, [messageGroups, isPanelActive, isSendingMessage]);
-
-  const lastMessageRefId = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!ref.current) {
-      return;
-    }
-
+  // Fast initial positioning - happens before paint
+  useLayoutEffect(() => {
     if (
-      lastMessageRefId.current === messageGroups[messageGroups.length - 1]?.id
+      !ref.current ||
+      hasScrolledInitially.current ||
+      messageGroups.length === 0
     ) {
       return;
     }
 
-    lastMessageRefId.current = messageGroups[messageGroups.length - 1]?.id;
+    const scroller = ref.current;
+    const prev = scroller.style.scrollBehavior;
 
-    // scroll down if new messages are received, and the user is within 300px of the bottom
-    const boundary = 300;
+    scroller.style.scrollBehavior = 'auto'; // Disable smooth scroll for instant positioning
+    scroller.scrollTop = scroller.scrollHeight; // Jump to bottom
+    scroller.style.scrollBehavior = prev || '';
 
-    const bottom =
-      ref.current.scrollHeight - ref.current.clientHeight - boundary;
+    hasScrolledInitially.current = true;
+    setInitialized(true); // Reveal after positioning
+  }, [messageGroups.length]);
 
-    if (ref.current.scrollTop >= bottom || isSendingMessage) {
-      ref.current.scrollTop = ref.current.scrollHeight;
+  const AutoLoadIndicator = useMemo(() => {
+    const isLoading = (getIsAutoLoading() || isFetching) && !getHasReachedEnd();
+
+    // Don't show indicator if we've reached the end or there's nothing more to load
+    if (getHasReachedEnd() || !hasNextPage) {
+      return null;
     }
-  }, [messageGroups, isSendingMessage]);
+
+    return (
+      <div className="flex justify-center py-4 min-h-[32px]">
+        {isLoading ? (
+          <Spinner size="small" />
+        ) : (
+          <div className="w-4 h-4" /> // Invisible placeholder to maintain height
+        )}
+      </div>
+    );
+  }, [isFetching, hasNextPage, getIsAutoLoading, getHasReachedEnd]);
+
+  // Reset flags when agentId changes
+  useEffect(() => {
+    resetFlags();
+    setInitialized(false);
+  }, [agentId, resetFlags]);
+
+  // When the topmost rendered group changes (after a prepend), compensate scroll
+  const firstRenderedId = messageGroups[0]?.id;
+  useLayoutEffect(() => {
+    if (ref.current) {
+      // Will no-op unless setPreserveNextPrepend(true) was called
+      correctAfter(ref.current);
+    }
+  }, [firstRenderedId, correctAfter]);
+
+  useEffect(() => {
+    const scrollContainer = ref.current;
+    if (!scrollContainer) return;
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+      cleanup();
+    };
+  }, [handleScroll, cleanup]);
 
   return (
     <VStack
@@ -1174,24 +1224,22 @@ export function Messages(props: MessagesProps) {
       fullWidth
       collapseHeight
       overflowY="auto"
-      className="relative"
+      className={cn(
+        'relative scroll-smooth',
+        !initialized && 'pointer-events-none',
+        initialized ? 'visible' : 'invisible',
+      )}
       gap="small"
       padding="small"
     >
-      {hasNextPage && (
-        <Button
-          busy={isFetching}
-          onClick={() => {
-            void fetchNextPage();
-          }}
-          fullWidth
-          color="secondary"
-          label="Load more"
-        />
-      )}
+      {AutoLoadIndicator}
       {injectSpaceForHeader && <div style={{ minHeight: 35 }} />}
-      {messageGroups.map((group) => (
-        <MessageGroup key={group.id} group={group} />
+      {messageGroups.map((group, index) => (
+        <MessageGroup
+          key={group.id}
+          group={group}
+          dataAnchor={index === 0 ? 'old-first' : undefined}
+        />
       ))}
       {hasNextPage && messageGroups.length === 0 && mode === 'simple' && (
         <Alert variant="info" title={t('noParsableMessages')} />
@@ -1215,7 +1263,7 @@ export function Messages(props: MessagesProps) {
         <LoadingEmptyStatusComponent
           isLoading
           loaderFillColor="background-grey"
-          loadingMessage={t('loadingMessages')}
+          hideText
           loaderVariant="spinner"
         />
       </div>
