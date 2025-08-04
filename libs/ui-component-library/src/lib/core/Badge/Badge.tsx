@@ -39,6 +39,11 @@ const badgeVariants = cva(
       uppercase: {
         true: 'uppercase',
       },
+      cursor: {
+        default: 'cursor-default',
+        pointer: 'cursor-pointer',
+        'not-allowed': 'cursor-not-allowed',
+      },
     },
     defaultVariants: {
       size: 'default',
@@ -66,6 +71,7 @@ export interface BadgeProps extends VariantProps<typeof badgeVariants> {
   className?: string;
   busy?: boolean;
   uppercase?: boolean;
+  cursor?: 'default' | 'not-allowed' | 'pointer';
   ref?: React.Ref<HTMLDivElement>;
 }
 
@@ -80,13 +86,14 @@ export function Badge(props: BadgeProps) {
     variant,
     uppercase,
     content,
+    cursor,
   } = props;
 
   return (
     <HStack
       ref={ref}
       className={cn(
-        badgeVariants({ size, border, uppercase, variant }),
+        badgeVariants({ size, border, uppercase, variant, cursor }),
         className,
       )}
       gap="small"

@@ -92,6 +92,7 @@ function AgentStatus() {
           size="small"
           variant="warning"
           content={t('liveAgentWarning.label')}
+          cursor="default"
         />
       </Tooltip>
     </HStack>
