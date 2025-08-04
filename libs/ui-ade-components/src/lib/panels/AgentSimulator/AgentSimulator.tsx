@@ -107,13 +107,14 @@ export function useSendMessage(
 
   const { baseUrl, password } = useLettaAgentsAPI();
 
-  useEffect(() => {
-    return () => {
-      if (abortController.current) {
-        abortController.current.abort();
-      }
-    };
-  }, []);
+  // Temporarily removing to diagnose SAD research agent
+  // useEffect(() => {
+  //   return () => {
+  //     if (abortController.current) {
+  //       abortController.current.abort();
+  //     }
+  //   };
+  // }, []);
 
   const sendMessage: SendMessageType = useCallback(
     async (payload: SendMessagePayload) => {
