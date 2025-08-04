@@ -114,7 +114,7 @@ function DesktopLayout() {
     archivalMemoriesTitle,
   } = useADETitleTranslations();
 
-  const { isTemplate, isLocal } = useCurrentAgentMetaData();
+  const { isTemplate } = useCurrentAgentMetaData();
 
   const {
     layoutConfig,
@@ -247,17 +247,13 @@ function DesktopLayout() {
                   minHeight: 150,
                   defaultOpen: false,
                 },
-                ...(isLocal
-                  ? [
-                      {
-                        id: 'embedding-config',
-                        label: 'Embedding Config',
-                        content: <EmbeddingConfigPanel />,
-                        minHeight: 200,
-                        defaultOpen: false,
-                      },
-                    ]
-                  : []),
+                {
+                  id: 'embedding-config',
+                  label: 'Embedding Config',
+                  content: <EmbeddingConfigPanel />,
+                  minHeight: 200,
+                  defaultOpen: false,
+                },
                 {
                   id: 'advanced-settings',
                   label: t('advancedSettings'),
