@@ -22,12 +22,12 @@ from letta.constants import (
 from letta.errors import LettaToolNameConflictError
 from letta.functions.functions import derive_openai_json_schema, load_function_set
 from letta.log import get_logger
-from letta.orm.enums import ToolType
 
 # TODO: Remove this once we translate all of these to the ORM
 from letta.orm.errors import NoResultFound
 from letta.orm.tool import Tool as ToolModel
 from letta.otel.tracing import trace_method
+from letta.schemas.enums import ToolType
 from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser

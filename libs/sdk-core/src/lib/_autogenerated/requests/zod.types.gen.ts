@@ -1028,6 +1028,7 @@ export const ToolType = z.union([
   z.literal('letta_builtin'),
   z.literal('letta_files_core'),
   z.literal('external_composio'),
+  z.literal('external_langchain'),
   z.literal('external_mcp'),
 ]);
 

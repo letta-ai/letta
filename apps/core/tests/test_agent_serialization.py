@@ -15,11 +15,10 @@ from rich.syntax import Syntax
 
 from letta.config import LettaConfig
 from letta.orm import Base
-from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState, CreateAgent
 from letta.schemas.block import Block, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import MessageRole
+from letta.schemas.enums import MessageRole, ToolType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
 from letta.schemas.organization import Organization

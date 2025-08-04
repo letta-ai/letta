@@ -46,7 +46,6 @@ from letta.helpers.datetime_helpers import AsyncTimer
 from letta.jobs.types import ItemUpdateInfo, RequestStatusUpdateInfo, StepStatusUpdateInfo
 from letta.orm import Base, Block
 from letta.orm.block_history import BlockHistory
-from letta.orm.enums import ToolType
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.orm.file import FileContent as FileContentModel
 from letta.orm.file import FileMetadata as FileMetadataModel
@@ -54,7 +53,17 @@ from letta.schemas.agent import CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import ActorType, AgentStepStatus, FileProcessingStatus, JobStatus, JobType, MessageRole, ProviderType, SandboxType
+from letta.schemas.enums import (
+    ActorType,
+    AgentStepStatus,
+    FileProcessingStatus,
+    JobStatus,
+    JobType,
+    MessageRole,
+    ProviderType,
+    SandboxType,
+    ToolType,
+)
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
@@ -841,7 +850,7 @@ async def test_upsert_base_tools_excludes_local_only_in_production(server: SyncS
 
 async def test_upsert_multi_agent_tools_only(server: SyncServer, default_user, set_letta_environment, event_loop):
     """Test that upserting only multi-agent tools respects production filtering."""
-    from letta.orm.enums import ToolType
+    from letta.schemas.enums import ToolType
 
     # Upsert only multi-agent tools
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_MULTI_AGENT_CORE})
