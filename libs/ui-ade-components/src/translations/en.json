@@ -305,7 +305,7 @@
   },
   "ADE/EditDataSourcesPanel/DataSourceCompatibilityWarning": {
     "title": "Compatibility error",
-    "description": "This folder's embedding config <embedding></embedding> does not match the agent config <agent></agent> you will not be able to use this folder until the models match. Edit embedding config in the advanced settings tab."
+    "description": "Embedding config <embedding></embedding> does not match agent config <agent></agent>. Edit in embedding configs."
   },
   "ADE/EditDataSourcesPanel": {
     "mobileTitle": "Filesystem",
