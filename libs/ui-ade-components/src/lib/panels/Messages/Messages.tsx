@@ -943,6 +943,10 @@ export function Messages(props: MessagesProps) {
                   return null;
                 }
 
+                if ('type' in parsedJSON && parsedJSON.type === 'login') {
+                  return null;
+                }
+
                 return {
                   type: agentMessage.message_type,
                   stepId: agentMessage.step_id,
