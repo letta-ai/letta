@@ -58,7 +58,6 @@ jobs:
         pipx install poetry==2.1.3
         poetry install -E dev -E postgres
         poetry run pytest -s tests/test_client.py
-#        poetry run pytest -s tests/test_client_legacy.py
 
     - name: Print docker logs if tests fail
       if: failure()
