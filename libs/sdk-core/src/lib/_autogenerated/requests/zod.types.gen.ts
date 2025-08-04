@@ -1045,6 +1045,19 @@ export const PipRequirement = z.object({
     .optional(),
 });
 
+export type NpmRequirement = z.infer<typeof NpmRequirement>;
+export const NpmRequirement = z.object({
+  name: z.string(),
+  version: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type Tool = z.infer<typeof Tool>;
 export const Tool = z.object({
   id: z.string().optional(),
@@ -1074,6 +1087,13 @@ export const Tool = z.object({
       z.array(PipRequirement),
       z.null(),
       z.array(z.union([z.array(PipRequirement), z.null()])),
+    ])
+    .optional(),
+  npm_requirements: z
+    .union([
+      z.array(NpmRequirement),
+      z.null(),
+      z.array(z.union([z.array(NpmRequirement), z.null()])),
     ])
     .optional(),
   created_by_id: z
@@ -5023,6 +5043,14 @@ export const ModalSandboxConfig = z.object({
       z.array(z.union([z.array(z.string()), z.null()])),
     ])
     .optional(),
+  npm_requirements: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+  language: z.union([z.literal('python'), z.literal('typescript')]).optional(),
 });
 
 export type Organization = z.infer<typeof Organization>;
@@ -6010,6 +6038,14 @@ export const ToolCreate = z.object({
       z.undefined(),
     ])
     .optional(),
+  npm_requirements: z
+    .union([
+      z.array(NpmRequirement),
+      z.null(),
+      z.array(z.union([z.array(NpmRequirement), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ToolRunFromSource = z.infer<typeof ToolRunFromSource>;
@@ -6057,6 +6093,14 @@ export const ToolRunFromSource = z.object({
       z.undefined(),
     ])
     .optional(),
+  npm_requirements: z
+    .union([
+      z.array(NpmRequirement),
+      z.null(),
+      z.array(z.union([z.array(NpmRequirement), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ToolUpdate = z.infer<typeof ToolUpdate>;
@@ -6091,6 +6135,13 @@ export const ToolUpdate = z.object({
       z.array(PipRequirement),
       z.null(),
       z.array(z.union([z.array(PipRequirement), z.null()])),
+    ])
+    .optional(),
+  npm_requirements: z
+    .union([
+      z.array(NpmRequirement),
+      z.null(),
+      z.array(z.union([z.array(NpmRequirement), z.null()])),
     ])
     .optional(),
 });

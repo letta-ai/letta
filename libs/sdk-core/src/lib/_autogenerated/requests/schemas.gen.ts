@@ -8113,9 +8113,57 @@ export const $ModalSandboxConfig = {
       title: 'Pip Requirements',
       description: 'A list of pip packages to install in the Modal sandbox',
     },
+    npm_requirements: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Npm Requirements',
+      description: 'A list of npm packages to install in the Modal sandbox',
+    },
+    language: {
+      type: 'string',
+      enum: ['python', 'typescript'],
+      title: 'Language',
+      default: 'python',
+    },
   },
   type: 'object',
   title: 'ModalSandboxConfig',
+} as const;
+
+export const $NpmRequirement = {
+  properties: {
+    name: {
+      type: 'string',
+      minLength: 1,
+      title: 'Name',
+      description: 'Name of the npm package.',
+    },
+    version: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Version',
+      description:
+        'Optional version of the package, following semantic versioning.',
+    },
+  },
+  type: 'object',
+  required: ['name'],
+  title: 'NpmRequirement',
 } as const;
 
 export const $OmittedReasoningContent = {
@@ -11153,6 +11201,21 @@ export const $Tool = {
       title: 'Pip Requirements',
       description: 'Optional list of pip packages required by this tool.',
     },
+    npm_requirements: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/NpmRequirement',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Npm Requirements',
+      description: 'Optional list of npm packages required by this tool.',
+    },
     created_by_id: {
       anyOf: [
         {
@@ -11546,6 +11609,21 @@ export const $ToolCreate = {
       title: 'Pip Requirements',
       description: 'Optional list of pip packages required by this tool.',
     },
+    npm_requirements: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/NpmRequirement',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Npm Requirements',
+      description: 'Optional list of npm packages required by this tool.',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -11926,6 +12004,21 @@ export const $ToolRunFromSource = {
       title: 'Pip Requirements',
       description: 'Optional list of pip packages required by this tool.',
     },
+    npm_requirements: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/NpmRequirement',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Npm Requirements',
+      description: 'Optional list of npm packages required by this tool.',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -12147,6 +12240,21 @@ export const $ToolUpdate = {
       ],
       title: 'Pip Requirements',
       description: 'Optional list of pip packages required by this tool.',
+    },
+    npm_requirements: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/NpmRequirement',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Npm Requirements',
+      description: 'Optional list of npm packages required by this tool.',
     },
   },
   type: 'object',

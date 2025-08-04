@@ -2948,6 +2948,24 @@ export type ModalSandboxConfig = {
    * A list of pip packages to install in the Modal sandbox
    */
   pip_requirements?: Array<string> | null;
+  /**
+   * A list of npm packages to install in the Modal sandbox
+   */
+  npm_requirements?: Array<string> | null;
+  language?: 'python' | 'typescript';
+};
+
+export type language = 'python' | 'typescript';
+
+export type NpmRequirement = {
+  /**
+   * Name of the npm package.
+   */
+  name: string;
+  /**
+   * Optional version of the package, following semantic versioning.
+   */
+  version?: string | null;
 };
 
 export type OmittedReasoningContent = {
@@ -4177,6 +4195,10 @@ export type Tool = {
    */
   pip_requirements?: Array<PipRequirement> | null;
   /**
+   * Optional list of npm packages required by this tool.
+   */
+  npm_requirements?: Array<NpmRequirement> | null;
+  /**
    * The id of the user that made this Tool.
    */
   created_by_id?: string | null;
@@ -4305,6 +4327,10 @@ export type ToolCreate = {
    * Optional list of pip packages required by this tool.
    */
   pip_requirements?: Array<PipRequirement> | null;
+  /**
+   * Optional list of npm packages required by this tool.
+   */
+  npm_requirements?: Array<NpmRequirement> | null;
 };
 
 export type ToolEnvVarSchema = {
@@ -4435,6 +4461,10 @@ export type ToolRunFromSource = {
    * Optional list of pip packages required by this tool.
    */
   pip_requirements?: Array<PipRequirement> | null;
+  /**
+   * Optional list of npm packages required by this tool.
+   */
+  npm_requirements?: Array<NpmRequirement> | null;
 };
 
 export type ToolSchema = {
@@ -4504,6 +4534,10 @@ export type ToolUpdate = {
    * Optional list of pip packages required by this tool.
    */
   pip_requirements?: Array<PipRequirement> | null;
+  /**
+   * Optional list of npm packages required by this tool.
+   */
+  npm_requirements?: Array<NpmRequirement> | null;
 };
 
 export type UpdateAgent = {
