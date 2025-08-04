@@ -92,8 +92,7 @@ export async function getAgentfile(
 
   return {
     status: SERVER_CODE.OK,
-    body: JSON.stringify({
-      ...JSON.parse(exportedAgentfile),
+    body: Object.assign({}, exportedAgentfile, {
       name: permissions.name || '',
       description: permissions.description || '',
     }),
