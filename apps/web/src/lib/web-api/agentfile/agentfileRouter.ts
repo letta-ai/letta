@@ -147,7 +147,7 @@ export async function updateAgentfileAccessLevel(
   request: UpdateAgentfileAccessLevelRequest,
 ): Promise<AgentfileResponse> {
   const { agentId } = request.params;
-  const { accessLevel } = request.body;
+  const agentfileDetails = request.body;
 
   const user = await getUser();
   if (!user) {
@@ -175,7 +175,7 @@ export async function updateAgentfileAccessLevel(
 
   const [updatedAccessLevel] = await db
     .update(agentfilePermissions)
-    .set({ accessLevel })
+    .set(agentfileDetails)
     .where(eq(agentfilePermissions.agentId, agentId))
     .returning({ accessLevel: agentfilePermissions.accessLevel });
 
