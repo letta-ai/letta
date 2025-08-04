@@ -14606,7 +14606,7 @@
           "embedding_dim"
         ],
         "title": "EmbeddingConfig",
-        "description": "Embedding model configuration. This object specifies all the information necessary to access an embedding model to usage with Letta, except for secret keys.\n\nAttributes:\n    embedding_endpoint_type (str): The endpoint type for the model.\n    embedding_endpoint (str): The endpoint for the model.\n    embedding_model (str): The model for the embedding.\n    embedding_dim (int): The dimension of the embedding.\n    embedding_chunk_size (int): The chunk size of the embedding.\n    azure_endpoint (:obj:`str`, optional): The Azure endpoint for the model (Azure only).\n    azure_version (str): The Azure version for the model (Azure only).\n    azure_deployment (str): The Azure deployment for the model (Azure only)."
+        "description": "Configuration for embedding model connection and processing parameters."
       },
       "FeedbackType": {
         "type": "string",
@@ -16671,7 +16671,7 @@
         "type": "object",
         "required": ["model", "model_endpoint_type", "context_window"],
         "title": "LLMConfig",
-        "description": "Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.\n\nAttributes:\n    model (str): The name of the LLM model.\n    model_endpoint_type (str): The endpoint type for the model.\n    model_endpoint (str): The endpoint for the model.\n    model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.\n    context_window (int): The context window size for the model.\n    put_inner_thoughts_in_kwargs (bool): Puts `inner_thoughts` as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.\n    temperature (float): The temperature to use when generating text with the model. A higher temperature will result in more random text.\n    max_tokens (int): The maximum number of tokens to generate."
+        "description": "Configuration for Language Model (LLM) connection and generation parameters."
       },
       "LettaAsyncRequest": {
         "properties": {
