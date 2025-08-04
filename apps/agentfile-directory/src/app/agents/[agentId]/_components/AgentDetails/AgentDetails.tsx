@@ -4,11 +4,12 @@ import {
   BlockViewer,
   BoltIcon,
   HStack,
+  Markdown,
   RawKeyValueEditor,
   TabGroup,
   ToolLanguageIcon,
   Typography,
-  VStack,
+  VStack
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { CenterContent } from '../../../../../lib/client/components/CenterContent/CenterContent';
@@ -84,9 +85,7 @@ function AgentOverview(props: AgentOverviewProps) {
     <>
       <CappedWidth>
         {description && (
-          <Typography variant="large" light>
-            {description}
-          </Typography>
+          <Markdown text={description} />
         )}
       </CappedWidth>
       <CappedWidth>
