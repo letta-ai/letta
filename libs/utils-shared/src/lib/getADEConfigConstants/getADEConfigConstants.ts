@@ -17,12 +17,13 @@ export function getADEConfigConstants() {
     },
     deserializeADELayoutConfig: (configString: string) => {
       try {
-        return GetADELayoutConfigOptionsSchema.parse(
-          JSON.parse(configString)
+        const output = GetADELayoutConfigOptionsSchema.parse(
+          JSON.parse(configString),
         );
+
+        return output;
       } catch (error) {
-        console.error('Error parsing ADE layout config:', error);
-        return undefined;
+        return null;
       }
     },
     generateCookieString: function (options: GetADELayoutConfigOptions) {

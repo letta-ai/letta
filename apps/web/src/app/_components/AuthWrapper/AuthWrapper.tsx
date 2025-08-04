@@ -81,7 +81,7 @@ export function AuthWrapper(props: AuthWrapperProps) {
               <HStack justify="spaceBetween" align="center" fullWidth>
                 {showLogo && (
                   <div
-                    className="relative lottie-non-interactive"
+                    className="relative  lottie-non-interactive w-[36px] h-[36px] min-h-[36px] min-w-[36px]"
                     ref={logoRef}
                   >
                     <LettaLoader
