@@ -76,6 +76,7 @@ function TransactionCost(props: TransactionCostProps) {
     return (
       <HStack>
         <Badge
+          size="small"
           variant="success"
           content={t('TransactionCost.standard.badge')}
         ></Badge>
@@ -88,6 +89,7 @@ function TransactionCost(props: TransactionCostProps) {
     return (
       <HStack>
         <Badge
+          size="small"
           variant="info"
           content={t('TransactionCost.premium.badge')}
         ></Badge>
