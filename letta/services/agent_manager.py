@@ -35,7 +35,6 @@ from letta.orm import Source as SourceModel
 from letta.orm import SourcePassage, SourcesAgents
 from letta.orm import Tool as ToolModel
 from letta.orm import ToolsAgents
-from letta.orm.enums import ToolType
 from letta.orm.errors import NoResultFound
 from letta.orm.sandbox_config import AgentEnvironmentVariable
 from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
@@ -47,7 +46,7 @@ from letta.schemas.block import DEFAULT_BLOCKS
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import ProviderType
+from letta.schemas.enums import ProviderType, ToolType
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.group import Group as PydanticGroup
 from letta.schemas.group import ManagerType
