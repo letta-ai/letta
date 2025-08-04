@@ -66,6 +66,8 @@ import { DebugTraceSidebar } from './DebugTraceSidebar/DebugTraceSidebar';
 import './Messages.scss';
 import { StepDetailBar } from './StepDetailBar/StepDetailBar';
 import { EditMessage } from './EditMessage/EditMessage';
+import { useADEAppContext } from '../../AppContext/AppContext';
+import { SelectDatasetPopover } from './Popover/SelectDatasetPopover';
 import { usePrependMessages } from './hooks/usePrependMessages';
 import { useScrollHandler } from './hooks/useScrollHandler';
 
@@ -194,9 +196,13 @@ interface MessageProps {
 function Message({ message }: MessageProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const t = useTranslations('components/Messages');
 
+  const { projectId } = useADEAppContext();
+
   const { data: enabledEditing } = useFeatureFlag('EDIT_MESSAGE');
+  const { data: isDatasetsEnabled } = useFeatureFlag('DATASETS');
 
   return (
     <VStack gap={false} fullWidth>
@@ -232,6 +238,14 @@ function Message({ message }: MessageProps) {
               {message.content}
             </div>
 
+            {isDatasetsEnabled && message.name === 'User' && (
+              <SelectDatasetPopover
+                message={message}
+                projectId={projectId}
+                isOpen={isPopoverOpen}
+                onOpenChange={setIsPopoverOpen}
+              />
+            )}
             {message.editId && enabledEditing && (
               <Button
                 preIcon={<EditIcon color="muted" size="small" />}
@@ -351,6 +365,7 @@ function MessageGroup({ group, dataAnchor }: MessageGroupType) {
           />
         </div>
       )}
+
       <HStack align="center" className="gap-1.5">
         <IconAvatar
           textColor={textColor}

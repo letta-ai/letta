@@ -242,8 +242,7 @@ export const VersionedTemplateType = c.type<{
 export type MCPServerItemType = SSEServerConfig | StdioServerConfig;
 
 export const DatasetItemCreateMessageSchema = z.object({
-  version: z.literal('1'),
-  data: z.array(z.record(z.any())), // Objects could be anything
+  data: z.record(z.any()), // Objects could be anything
 });
 
 export type DatasetItemCreateMessageType = z.infer<

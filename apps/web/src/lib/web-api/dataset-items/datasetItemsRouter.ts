@@ -5,76 +5,6 @@ import type { contracts } from '$web/web-api/contracts';
 import { and, eq } from 'drizzle-orm';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 
-type CreateDatasetItemPayload = ServerInferRequest<
-  typeof contracts.datasetItems.createDatasetItem
->;
-type CreateDatasetItemResponse = ServerInferResponses<
-  typeof contracts.datasetItems.createDatasetItem
->;
-
-export async function createDatasetItem(
-  req: CreateDatasetItemPayload,
-): Promise<CreateDatasetItemResponse> {
-  const { datasetId } = req.params;
-  const { createMessage } = req.body;
-
-  const { activeOrganizationId: organizationId, permissions } =
-    await getUserWithActiveOrganizationIdOrThrow();
-
-  if (!permissions.has(ApplicationServices.CREATE_DATASET_ITEM)) {
-    return {
-      status: 403,
-      body: null,
-    };
-  }
-
-  // Verify dataset exists and belongs to the organization
-  const dataset = await db.query.datasets.findFirst({
-    where: and(
-      eq(datasets.id, datasetId),
-      eq(datasets.organizationId, organizationId),
-    ),
-  });
-
-  if (!dataset) {
-    return {
-      status: 404,
-      body: {
-        message: 'Dataset not found',
-      },
-    };
-  }
-
-  try {
-    const [newDatasetItem] = await db
-      .insert(datasetItems)
-      .values({
-        datasetId,
-        createMessage: createMessage,
-      })
-      .returning();
-
-    return {
-      status: 201,
-      body: {
-        id: newDatasetItem.id,
-        datasetId: newDatasetItem.datasetId,
-        createMessage: newDatasetItem.createMessage,
-        createdAt: newDatasetItem.createdAt.toISOString(),
-        updatedAt: newDatasetItem.updatedAt.toISOString(),
-      },
-    };
-  } catch (_error) {
-    return {
-      status: 400,
-      body: {
-        message: 'Failed to create dataset item',
-        errorCode: 'default' as const,
-      },
-    };
-  }
-}
-
 type GetDatasetItemsRequest = ServerInferRequest<
   typeof contracts.datasetItems.getDatasetItems
 >;
@@ -366,4 +296,110 @@ export async function deleteDatasetItem(
     status: 204,
     body: null,
   };
+}
+
+type UpsertDatasetItemPayload = ServerInferRequest<
+  typeof contracts.datasetItems.upsertDatasetItem
+>;
+type UpsertDatasetItemResponse = ServerInferResponses<
+  typeof contracts.datasetItems.upsertDatasetItem
+>;
+
+export async function upsertDatasetItem(
+  req: UpsertDatasetItemPayload,
+): Promise<UpsertDatasetItemResponse> {
+  const { datasetId } = req.params;
+  const { createMessage } = req.body;
+
+  const { activeOrganizationId: organizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.CREATE_DATASET_ITEM)) {
+    return {
+      status: 403,
+      body: null,
+    };
+  }
+
+  // Verify dataset exists and belongs to the organization
+  const dataset = await db.query.datasets.findFirst({
+    where: and(
+      eq(datasets.id, datasetId),
+      eq(datasets.organizationId, organizationId),
+    ),
+  });
+
+  if (!dataset) {
+    return {
+      status: 404,
+      body: {
+        message: 'Dataset not found',
+      },
+    };
+  }
+
+  try {
+    // Get all items in the dataset to check for duplicates
+    const existingItems = await db.query.datasetItems.findMany({
+      where: eq(datasetItems.datasetId, datasetId),
+    });
+
+    const newContentNormalized = JSON.stringify(createMessage);
+
+    const existingItem = existingItems.find(
+      (item) => JSON.stringify(item.createMessage) === newContentNormalized,
+    );
+
+    if (existingItem) {
+      // Update existing item
+      const [updatedItem] = await db
+        .update(datasetItems)
+        .set({
+          createMessage: createMessage,
+          updatedAt: new Date(),
+        })
+        .where(eq(datasetItems.id, existingItem.id))
+        .returning();
+
+      return {
+        status: 200,
+        body: {
+          id: updatedItem.id,
+          datasetId: updatedItem.datasetId,
+          createMessage: updatedItem.createMessage,
+          createdAt: updatedItem.createdAt.toISOString(),
+          updatedAt: updatedItem.updatedAt.toISOString(),
+        },
+      };
+    } else {
+      // Create new item
+      const [newDatasetItem] = await db
+        .insert(datasetItems)
+        .values({
+          datasetId,
+          createMessage: createMessage,
+          createdAt: new Date(),
+        })
+        .returning();
+
+      return {
+        status: 201,
+        body: {
+          id: newDatasetItem.id,
+          datasetId: newDatasetItem.datasetId,
+          createMessage: newDatasetItem.createMessage,
+          createdAt: newDatasetItem.createdAt.toISOString(),
+          updatedAt: newDatasetItem.updatedAt.toISOString(),
+        },
+      };
+    }
+  } catch (_error) {
+    return {
+      status: 400,
+      body: {
+        message: 'Failed to upsert dataset item',
+        errorCode: 'default' as const,
+      },
+    };
+  }
 }

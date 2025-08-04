@@ -1140,6 +1140,18 @@
   "components/Messages": {
     "stepDurationTooltip": "The duration of this step",
     "reasoning": "Reasoning",
+    "saveToDataset": "Save to Dataset",
+    "selectDatasetPrompt": "Select a dataset to save this prompt to:",
+    "searchDatasets": "Search datasets",
+    "searchDatasetsPlaceholder": "Search datasets...",
+    "searching": "Searching...",
+    "loadingDatasets": "Loading datasets...",
+    "noDatasetsFound": "No datasets found",
+    "noDatasetsAvailable": "No datasets available",
+    "cancel": "Cancel",
+    "save": "Save",
+    "savedPromptToDatasets": "Saved prompt to [{datasetNames}]",
+    "savedPromptToDatasetsError": "Error saving prompt to [{datasetNames}]",
     "traceViewer": "Inspect response",
     "edit": {
       "start": "Edit message",

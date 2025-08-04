@@ -1,11 +1,10 @@
 import type { ComputeTokenCountWorkerPayload } from '../../types';
 
 declare global {
-  // eslint-disable-next-line no-var
   var importScripts: (str: string) => void;
-  // eslint-disable-next-line no-var
+
   var pyodide: any;
-  // eslint-disable-next-line no-var
+
   var loadPyodide: any;
 }
 

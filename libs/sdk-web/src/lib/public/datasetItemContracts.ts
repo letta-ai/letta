@@ -15,24 +15,23 @@ export const DatasetItemSchema = z.object({
 });
 
 export const DatasetItemsSchema = z.array(DatasetItemSchema);
-
 export type DatasetItemType = z.infer<typeof DatasetItemSchema>;
-export type DatasetItemsType = z.infer<typeof DatasetItemsSchema>;
 
-/* Create Dataset Item */
-export const CreateDatasetItemPayloadSchema = z.object({
+/* Upsert Dataset Item */
+export const UpsertDatasetItemPayloadSchema = z.object({
   createMessage: DatasetItemCreateMessageSchema,
 });
 
-const createDatasetItemContract = c.mutation({
-  method: 'POST',
+const upsertDatasetItemContract = c.mutation({
+  method: 'PUT',
   path: '/datasets/:datasetId/items',
   pathParams: z.object({
     datasetId: z.string(),
   }),
-  body: CreateDatasetItemPayloadSchema,
+  body: UpsertDatasetItemPayloadSchema,
   responses: {
-    201: DatasetItemSchema,
+    200: DatasetItemSchema, // Updated existing item
+    201: DatasetItemSchema, // Created new item
     400: z.object({
       message: z.string(),
       errorCode: z.enum(['validation', 'default']),
@@ -123,7 +122,7 @@ const deleteDatasetItemContract = c.mutation({
 });
 
 export const datasetItemContracts = {
-  createDatasetItem: createDatasetItemContract,
+  upsertDatasetItem: upsertDatasetItemContract,
   getDatasetItems: getDatasetItemsContract,
   getDatasetItem: getDatasetItemContract,
   updateDatasetItem: updateDatasetItemContract,
@@ -141,5 +140,10 @@ export const datasetItemQueryKeys = {
     'dataset-items',
     datasetId,
     datasetItemId,
+  ],
+  upsertDatasetItem: (datasetId: string) => [
+    'dataset-items',
+    datasetId,
+    'upsert',
   ],
 };

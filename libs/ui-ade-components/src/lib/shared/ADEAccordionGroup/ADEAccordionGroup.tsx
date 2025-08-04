@@ -15,7 +15,6 @@ interface PanelItem {
   id: string;
   label: string;
   content: ReactNode;
-  // eslint-disable-next-line @typescript-eslint/naming-convention
   WrapperComponent?: React.FunctionComponent<{
     children: ReactNode;
   }>;
