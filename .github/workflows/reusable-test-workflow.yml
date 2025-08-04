@@ -359,6 +359,12 @@ jobs:
             export OLLAMA_BASE_URL="http://localhost:11434"
           fi
 
+          # Set LMStudio base URL only for LMStudio tests
+          if [[ "${{ inputs.test-type }}" == "integration" && "${{ inputs.runner }}" == *"lmstudio"* ]]; then
+            export LLM_CONFIG_FILE="lmstudio.json"
+            export LMSTUDIO_BASE_URL="http://localhost:1234"
+          fi
+
           # Set VLLM base URL only for VLLM tests
           if [[ "${{ inputs.test-type }}" == "integration" && "${{ inputs.runner }}" == *"vllm"* ]]; then
             export LLM_CONFIG_FILE="vllm.json"

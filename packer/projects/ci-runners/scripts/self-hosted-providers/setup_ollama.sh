@@ -20,8 +20,8 @@ sudo systemctl start ollama
 # Wait for Ollama to be ready
 sleep 10
 
-# Pre-pull qwen3-32b for testing
-echo "Pre-pulling qwen3-32b..."
-ollama pull qwen3:32b
+# Pre-pull qwen2.5:7b for testing
+echo "Pre-pulling qwen2.5:7b..."
+ollama pull qwen2.5:7b
 
 echo "Ollama setup complete!"

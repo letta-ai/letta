@@ -1,4 +1,4 @@
-name: Self-Hosted Provider Integration - Ollama
+name: Self-Hosted Provider Integration - LMStudio
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ on:
   pull_request:
     paths:
       - 'apps/core/**'
-      - '.github/workflows/test-ollama.yml'
+      - '.github/workflows/test-lmstudio.yml'
       - '.github/workflows/reusable-test-workflow.yml'
 
 concurrency:
@@ -19,20 +19,19 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  test-ollama:
+  test-lmstudio:
     uses: ./.github/workflows/reusable-test-workflow.yml
     with:
       test-type: "integration"
       install-args: "-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google"
       test-command: "poetry run pytest -svv tests/"
       timeout-minutes: 60
-      runner: '["self-hosted", "gpu", "ollama"]'
+      runner: '["self-hosted", "gpu", "lmstudio"]'
       matrix-strategy: |
         {
           "fail-fast": false,
           "matrix": {
             "test_suite": [
-              "test_providers.py::test_ollama",
               "integration_test_send_message.py"
             ]
           }

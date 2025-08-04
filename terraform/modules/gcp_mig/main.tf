@@ -63,10 +63,10 @@ resource "google_compute_instance_template" "pool_template" {
   }
 }
 
-# Create an instance group manager
-resource "google_compute_instance_group_manager" "pool-manager" {
-  name = "${var.pool_name_prefix}-manager-${var.env}"
-  zone = var.zone
+# Create a regional instance group manager with multi-zone distribution
+resource "google_compute_region_instance_group_manager" "pool-manager" {
+  name   = "${var.pool_name_prefix}-manager-${var.env}"
+  region = var.region
 
   base_instance_name = "${var.pool_name_prefix}-${var.env}"
 
@@ -75,6 +75,9 @@ resource "google_compute_instance_group_manager" "pool-manager" {
   }
 
   target_size = var.min_runners
+
+  distribution_policy_zones = var.zones
+  distribution_policy_target_shape = var.distribution_policy_target_shape
 
   named_port {
     name = "http"

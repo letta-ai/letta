@@ -15,10 +15,16 @@ variable "region" {
   default     = "us-central1"
 }
 
-variable "zone" {
-  description = "GCP Zone"
+variable "zones" {
+  description = "List of GCP Zones for distribution"
+  type        = list(string)
+  default     = ["us-central1-a", "us-central1-b", "us-central1-c"]
+}
+
+variable "distribution_policy_target_shape" {
+  description = "Distribution policy target shape"
   type        = string
-  default     = "us-central1-a"
+  default     = "ANY"
 }
 
 variable "machine_type" {

@@ -24,7 +24,7 @@ module medium_runners {
   env = "dev"
   project_id = "memgpt-428419"
   region = "us-central1"
-  zone = "us-central1-a"
+  zones = ["us-central1-a", "us-central1-b", "us-central1-c", "us-central1-f"]
 
   # pool-level config
   pool_name_prefix = "ci-runners-medium"
@@ -55,7 +55,7 @@ module small_runners {
   env = "dev"
   project_id = "memgpt-428419"
   region = "us-central1"
-  zone = "us-central1-c"
+  zones = ["us-central1-a", "us-central1-b", "us-central1-c"]
 
   # pool-level config
   pool_name_prefix = "ci-runners-small"
@@ -86,8 +86,8 @@ module ollama_gpu_runners {
   env = "dev"
   project_id = "memgpt-428419"
   region = "us-central1"
-  zone = "us-central1-b"
-
+  zones = ["us-central1-a", "us-central1-b", "us-central1-c"]
+  distribution_policy_target_shape = "ANY"
   # pool-level config
   # gpu runners use the same image but have different startup commands
   pool_name_prefix = "ci-runners-gpu-ollama"
@@ -114,37 +114,37 @@ module ollama_gpu_runners {
 
 
 # lmstudio
-# module gpu_runners {
-#   source = "../../../modules/gcp_mig"
+module lmstudio_gpu_runners {
+  source = "../../../modules/gcp_mig"
 
-#   # global
-#   env = "dev"
-#   project_id = "memgpt-428419"
-#   region = "us-central1"
-#   zone = "us-central1-a"
+  # global
+  env = "dev"
+  project_id = "memgpt-428419"
+  region = "us-central1"
+  zones = ["us-central1-a", "us-central1-b", "us-central1-c"]
 
-#   # pool-level config
-#   pool_name_prefix = "ci-runners-gpu-lmstudio"
-#   runner_labels = "gpu,lmstudio"
-#   runner_image = "family/gpu-runner-dev"
-#   machine_type = "e2-standard-8"
-#   ssh_pubkey = "letta:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILflk18SwzkU5NS9CPylt3vszYJas365wX7OCTbxPWXw"
-#   sa_email = "ci-runner-sa-dev@memgpt-428419.iam.gserviceaccount.com"
+  # pool-level config
+  pool_name_prefix = "ci-runners-gpu-lmstudio"
+  runner_labels = "gpu,lmstudio"
+  runner_image = "family/gpu-runner-dev"
+  machine_type = "c2-standard-16"
+  ssh_pubkey = "letta:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILflk18SwzkU5NS9CPylt3vszYJas365wX7OCTbxPWXw"
+  sa_email = "ci-runner-sa-dev@memgpt-428419.iam.gserviceaccount.com"
 
-#   # disk
-#   disk_type = "pd-standard" # required for gpu instances (does not support hyperdisk)
-#   disk_size_gb = 128
+  # disk
+  disk_type = "pd-standard" # required for gpu instances (does not support hyperdisk)
+  disk_size_gb = 128
 
-#   # repo config
-#   github_org = "letta-ai"
-#   github_repo = "letta-cloud"
+  # repo config
+  github_org = "letta-ai"
+  github_repo = "letta-cloud"
 
-#   final_steps = file("${path.module}/files/lmstudio-final-steps.sh")
+  final_steps = file("${path.module}/files/lmstudio-final-steps.sh")
 
-#   # auto scaling config
-#   min_runners = 1
-#   max_runners = 1
-# }
+  # auto scaling config
+  min_runners = 1
+  max_runners = 1
+}
 
 # vllm
 module vllm_gpu_runners {
@@ -154,7 +154,7 @@ module vllm_gpu_runners {
   env = "dev"
   project_id = "memgpt-428419"
   region = "us-central1"
-  zone = "us-central1-c"
+  zones = ["us-central1-a", "us-central1-b", "us-central1-c"]
 
   # pool-level config
   pool_name_prefix = "ci-runners-gpu-vllm"
