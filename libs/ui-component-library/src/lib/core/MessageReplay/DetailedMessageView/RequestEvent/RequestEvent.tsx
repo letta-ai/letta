@@ -8,6 +8,7 @@ import {
   InfoTooltip,
   MiddleTruncate,
   StartIcon,
+  Tooltip,
   Typography,
   VStack,
 } from '../../../../../';
@@ -80,7 +81,7 @@ export function RequestEvent(props: RequestEventProps) {
   const messages = getIfMessages(requestPayload?.messages);
   const tools = getIfTools(requestPayload?.tools);
 
-  const { formatNumber } = useFormatters();
+  const { formatNumber, formatTokenSize } = useFormatters();
 
   return (
     <EventItem
@@ -110,7 +111,11 @@ export function RequestEvent(props: RequestEventProps) {
         {inputTokens && (
           <EventDetailRow
             label={t('attributes.inputTokens')}
-            value={formatNumber(inputTokens)}
+            value={
+              <Tooltip content={`${formatNumber(inputTokens)} ${t('tokens')}`}>
+                <span>{formatTokenSize(inputTokens)}</span>
+              </Tooltip>
+            }
           />
         )}
         {temperature && (

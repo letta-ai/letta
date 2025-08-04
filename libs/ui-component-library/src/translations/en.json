@@ -257,5 +257,6 @@
   "components/ImagePreview": {
     "removeFile": "Remove file",
     "openInFullSize": "Open in full size"
-  }
+  },
+  "tokens": "tokens"
 }

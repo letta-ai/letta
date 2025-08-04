@@ -1,3 +1,5 @@
+import { useCallback } from 'react';
+
 const defaultLocal = 'en-US';
 
 interface FormatFileSizeOptions {
@@ -174,6 +176,32 @@ export function useFormatters() {
     return val.toString();
   }
 
+  const formatTokenSize = useCallback(
+    (val: number) => {
+      if (val >= 50_000) {
+        if (val >= 1_000_000) {
+          // For millions, show up to 2 decimal places
+          const millions = val / 1_000_000;
+          if (millions % 1 === 0) {
+            return `${millions.toFixed(0)}M`;
+          } else {
+            return `${millions.toFixed(2)}M`;
+          }
+        } else {
+          // For thousands, show up to 2 decimal places
+          const thousands = val / 1_000;
+          if (thousands % 1 === 0) {
+            return `${thousands.toFixed(0)}k`;
+          } else {
+            return `${thousands.toFixed(2)}k`;
+          }
+        }
+      }
+      return formatNumber(val);
+    },
+    [formatNumber],
+  );
+
   function formatTime(
     date: Date | string,
     options?: Intl.DateTimeFormatOptions,
@@ -217,6 +245,7 @@ export function useFormatters() {
     formatCurrency,
     formatTime,
     formatShorthandNumber,
+    formatTokenSize,
     formatDateAndTime,
     formatDate,
   };

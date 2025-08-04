@@ -1221,7 +1221,8 @@
       },
       "temperature": "Temperature",
       "toolChoice": "Tool choice"
-    }
+    },
+    "tokens": "tokens"
   },
   "ADE/AgentSimulator/DetailedMessageView/TelemetryDetailsViewer/ResponseEvent": {
     "name": "Step output",
@@ -2290,7 +2291,8 @@
       "summaryMemory": "Recursive Memory",
       "recallMemory": "Recall Memory",
       "archivalMemory": "Archival Memory"
-    }
+    },
+    "tokens": "tokens"
   },
   "IdentityAgentsList": {
     "columns": {
@@ -2585,5 +2587,6 @@
       "maxLength": "Message length cannot exceed 1000",
       "default": "There was an error summarizing the conversation. Please try again."
     }
-  }
+  },
+  "tokens": "tokens"
 }

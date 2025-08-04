@@ -94,5 +94,6 @@
   "components/ImagePreview": {
     "removeFile": "移除文件",
     "openInFullSize": "打开全屏"
-  }
+  },
+  "tokens": "令牌"
 }

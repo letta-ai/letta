@@ -1552,7 +1552,8 @@
       "summaryMemory": "递归记忆",
       "recallMemory": "回忆记忆",
       "archivalMemory": "归档记忆"
-    }
+    },
+    "tokens": "令牌"
   },
   "IdentityAgentsList": {
     "columns": {
@@ -1775,6 +1776,25 @@
     "memgpt": "默认",
     "sleepTime": "睡眠时间"
   },
+  "ADE/AgentSimulator/DetailedMessageView/TelemetryDetailsViewer/RequestEvent": {
+    "name": "步骤输入",
+    "attributes": {
+      "model": "模型",
+      "inputTokens": "输入令牌",
+      "messages": {
+        "label": "消息",
+        "value": "{count}条消息",
+        "tooltip": "发送给LLM的消息数量"
+      },
+      "tools": {
+        "label": "工具",
+        "value": "{count}个工具"
+      },
+      "temperature": "温度",
+      "toolChoice": "工具选择"
+    },
+    "tokens": "令牌"
+  },
   "ToolsEditor/MCPServerExplorer": {
     "search": {
       "placeholder": "搜索MCP服务器...",
@@ -1840,5 +1860,6 @@
       }
     },
     "alreadyAddedLabel": "已添加"
-  }
+  },
+  "tokens": "令牌"
 }

@@ -11,6 +11,7 @@ import {
   DynamicApp,
   HStack,
   makeFormattedTooltip,
+  Tooltip,
   Typography,
   VerticalDelineatedTextChunker,
   VStack,
@@ -204,7 +205,7 @@ export function ContextWindowPanel() {
   } = useContextWindowDetails();
 
   const t = useTranslations('ADE/ContextEditorPanel');
-  const { formatNumber } = useFormatters();
+  const { formatNumber, formatTokenSize } = useFormatters();
 
   // Add percentage calculation
   const percentageRemaining = useMemo(() => {
@@ -555,24 +556,30 @@ export function ContextWindowPanel() {
             variant="body4"
           >
             {t.rich('ContextWindowPreview.usage', {
-              total: () =>
-                formatNumber(totalLength, {
-                  maximumFractionDigits: 0,
-                  minimumFractionDigits: 0,
-                }),
+              total: () => (
+                <Tooltip
+                  content={`${formatNumber(totalLength)} ${t('tokens')}`}
+                >
+                  <span>{formatTokenSize(totalLength)}</span>
+                </Tooltip>
+              ),
               used: () => {
                 return (
-                  <span
-                    className="font-semibold"
-                    style={{
-                      color:
-                        totalUsedLength > totalLength
-                          ? 'hsl(var(--destructive))'
-                          : 'hsl(var(--text-default))',
-                    }}
+                  <Tooltip
+                    content={`${formatNumber(totalUsedLength)} ${t('tokens')}`}
                   >
-                    {formatNumber(totalUsedLength)}
-                  </span>
+                    <span
+                      className="font-semibold"
+                      style={{
+                        color:
+                          totalUsedLength > totalLength
+                            ? 'hsl(var(--destructive))'
+                            : 'hsl(var(--text-default))',
+                      }}
+                    >
+                      {formatTokenSize(totalUsedLength)}
+                    </span>
+                  </Tooltip>
                 );
               },
             })}

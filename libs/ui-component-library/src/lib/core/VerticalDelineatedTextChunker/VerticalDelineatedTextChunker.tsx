@@ -4,6 +4,8 @@ import { useCallback, useId, useMemo } from 'react';
 import { VStack } from '../../framing/VStack/VStack';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { Typography } from '../Typography/Typography';
+import { useFormatters } from '@letta-cloud/utils-client';
+import { useTranslations } from '@letta-cloud/translations';
 
 export interface VerticalBarChartChunk {
   id: string;
@@ -23,6 +25,8 @@ interface VerticalBarChartProps {
 
 function VerticalBarChart(props: VerticalBarChartProps) {
   const { chunks, setSelectedChunkId, selectedChunkId, baseId } = props;
+  const { formatTokenSize, formatNumber } = useFormatters();
+  const t = useTranslations();
 
   const onClickBar = useCallback(
     (chunkId: string) => {
@@ -50,7 +54,11 @@ function VerticalBarChart(props: VerticalBarChartProps) {
     >
       {chunks.map(({ id, color, size, label }) => {
         return (
-          <Tooltip key={id} asChild content={`${label}: ${size}`}>
+          <Tooltip
+            key={id}
+            asChild
+            content={t('tokens', { label, size: formatNumber(size) })}
+          >
             <div
               id={`${baseId}-${id}-bar`}
               onClick={() => {
@@ -79,6 +87,8 @@ interface TextChunksProps {
 
 function TextChunks(props: TextChunksProps) {
   const { chunks, baseId, ref, totalContextSize } = props;
+  const { formatTokenSize, formatNumber } = useFormatters();
+  const t = useTranslations();
   return (
     <VStack ref={ref} gap={false} fullHeight overflow="auto">
       {chunks.map((c) => {
@@ -117,8 +127,12 @@ function TextChunks(props: TextChunksProps) {
                 </Typography>
               </HStack>
               <Typography color="lighter" variant="body2">
-                {c.size} tokens
-                {percentageOfTotal !== null && ` (${percentageOfTotal}%)`}
+                <Tooltip content={t('tokens', { size: formatNumber(c.size) })}>
+                  <span>
+                    {formatTokenSize(c.size)} {t('tokens')}
+                    {percentageOfTotal !== null && ` (${percentageOfTotal}%)`}
+                  </span>
+                </Tooltip>
               </Typography>
             </HStack>
             <div
