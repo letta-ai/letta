@@ -7,7 +7,7 @@ from letta.schemas.agent import AgentState, CreateAgent
 from letta.schemas.block import Block, CreateBlock
 from letta.schemas.enums import MessageRole
 from letta.schemas.file import FileAgent, FileAgentBase, FileMetadata, FileMetadataBase
-from letta.schemas.group import GroupCreate
+from letta.schemas.group import Group, GroupCreate
 from letta.schemas.mcp import MCPServer
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.source import Source, SourceCreate
@@ -99,6 +99,7 @@ class AgentSchema(CreateAgent):
     )
     messages: List[MessageSchema] = Field(default_factory=list, description="List of messages in the agent's conversation history")
     files_agents: List[FileAgentSchema] = Field(default_factory=list, description="List of file-agent relationships for this agent")
+    group_ids: List[str] = Field(default_factory=list, description="List of groups that the agent manages")
 
     @classmethod
     async def from_agent_state(
@@ -163,6 +164,7 @@ class AgentSchema(CreateAgent):
             in_context_message_ids=agent_state.message_ids or [],
             messages=message_schemas,  # Messages will be populated separately by the manager
             files_agents=[FileAgentSchema.from_file_agent(f) for f in files_agents],
+            group_ids=[agent_state.multi_agent_group.id] if agent_state.multi_agent_group else [],
             **create_agent.model_dump(),
         )
 
@@ -172,6 +174,21 @@ class GroupSchema(GroupCreate):
 
     __id_prefix__ = "group"
     id: str = Field(..., description="Human-readable identifier for this group in the file")
+
+    @classmethod
+    def from_group(cls, group: Group) -> "GroupSchema":
+        """Convert Group to GroupSchema"""
+
+        create_group = GroupCreate(
+            agent_ids=group.agent_ids,
+            description=group.description,
+            manager_config=group.manager_config,
+            project_id=group.project_id,
+            shared_block_ids=group.shared_block_ids,
+        )
+
+        # Create GroupSchema with the group's ID (will be remapped later)
+        return cls(id=group.id, **create_group.model_dump())
 
 
 class BlockSchema(CreateBlock):

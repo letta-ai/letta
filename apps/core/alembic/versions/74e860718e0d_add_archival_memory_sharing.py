@@ -246,14 +246,14 @@ def upgrade() -> None:
             start_time = time.time()
 
             batch_size = 1000
-            processed_agents = 0
 
             # process agents one by one to maintain proper relationships
             offset = 0
             while offset < total_agents:
                 # Get batch of agents that need archives
                 batch_result = connection.execute(
-                    sa.text("""
+                    sa.text(
+                        """
                         SELECT DISTINCT a.id, a.name, a.organization_id
                         FROM agent_passages ap
                         JOIN agents a ON ap.agent_id = a.id
@@ -264,22 +264,24 @@ def upgrade() -> None:
                         )
                         ORDER BY a.id
                         LIMIT :batch_size
-                    """).bindparams(batch_size=batch_size)
+                    """
+                    ).bindparams(batch_size=batch_size)
                 )
-                
+
                 agents_batch = batch_result.fetchall()
                 if not agents_batch:
                     break  # No more agents to process
-                
+
                 batch_count = len(agents_batch)
                 print(f"Processing batch of {batch_count} agents (offset: {offset})...")
-                
+
                 # Create archive and relationship for each agent
                 for agent_id, agent_name, org_id in agents_batch:
                     try:
                         # Create archive
                         archive_result = connection.execute(
-                            sa.text("""
+                            sa.text(
+                                """
                                 INSERT INTO archives (id, name, description, organization_id, created_at)
                                 VALUES (
                                     'archive-' || gen_random_uuid(),
@@ -289,26 +291,25 @@ def upgrade() -> None:
                                     NOW()
                                 )
                                 RETURNING id
-                            """).bindparams(
-                                archive_name=f"{agent_name or f'Agent {agent_id}'}'s Archive",
-                                org_id=org_id
-                            )
+                            """
+                            ).bindparams(archive_name=f"{agent_name or f'Agent {agent_id}'}'s Archive", org_id=org_id)
                         )
                         archive_id = archive_result.scalar()
-                        
+
                         # Create agent-archive relationship
                         connection.execute(
-                            sa.text("""
+                            sa.text(
+                                """
                                 INSERT INTO archives_agents (agent_id, archive_id, is_owner, created_at)
                                 VALUES (:agent_id, :archive_id, TRUE, NOW())
-                            """).bindparams(agent_id=agent_id, archive_id=archive_id)
+                            """
+                            ).bindparams(agent_id=agent_id, archive_id=archive_id)
                         )
                     except Exception as e:
                         print(f"Warning: Failed to create archive for agent {agent_id}: {e}")
                         # Continue with other agents
-                
+
                 offset += batch_count
-                processed_agents = offset
 
             print("Archive creation completed. Starting archive_id updates...")
 
