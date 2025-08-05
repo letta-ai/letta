@@ -159,7 +159,7 @@ class OllamaEmbeddings:
 
         with httpx.Client() as client:
             response = client.post(
-                f"{self.base_url}/api/embeddings",
+                f"{self.base_url}/embeddings",
                 headers=headers,
                 json=json_data,
             )
