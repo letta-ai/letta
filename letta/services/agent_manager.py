@@ -1479,7 +1479,7 @@ class AgentManager:
             ):
                 pydantic_tool = existing_pydantic_tool
             else:
-                pydantic_tool = self.tool_manager.create_or_update_tool(pydantic_tool, actor=actor)
+                pydantic_tool = self.tool_manager.create_or_update_tool(pydantic_tool, actor=actor, bypass_name_check=True)
 
             pydantic_agent = self.attach_tool(agent_id=pydantic_agent.id, tool_id=pydantic_tool.id, actor=actor)
 
