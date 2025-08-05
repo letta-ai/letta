@@ -39,6 +39,24 @@ async function getLaunchDarklyClient() {
     console.warn(
       'No LaunchDarkly SDK key provided, feature flags will default in the off state',
     );
+
+    return {
+      initialized: () => true,
+      waitForInitialization: async () => {
+        return;
+      },
+      allFlagsState: async () => ({}),
+      variation: async () => undefined,
+      identify: () => {
+        return;
+      },
+    } as unknown as LDClient;
+  }
+
+  if (!launchDarklySingleton) {
+    launchDarklySingleton = ld.init(environment.LAUNCH_DARKLY_SDK_KEY, {
+      stream: false,
+    });
   }
 
   if (!launchDarklySingleton.initialized()) {
