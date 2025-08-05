@@ -9,8 +9,8 @@ import {
   getClickhouseData,
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
-import { attachFilterByBaseTemplateIdToMetricsCounters } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToMetricsCounters/attachFilterByBaseTemplateIdToMetricsCounters';
 import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
+import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 
 type GetTotalMessagesPerDayRequest = ServerInferRequest<
   typeof contracts.observability.getTotalMessagesPerDay
@@ -70,16 +70,19 @@ export async function getTotalMessagesPerDay(
   const result = await client.query({
     query: `
       SELECT
-        toDate(time_window) as date,
-        SUM(value) as total_messages
-      FROM otel.letta_metrics_counters_1hour_view
-      WHERE metric_name = 'count_user_message'
-        AND organization_id = {organizationId: String}
-        AND project_id = {projectId: String}
-        AND time_window >= toDateTime({startDate: UInt32})
-        AND time_window <= toDateTime({endDate: UInt32})
-        ${attachFilterByBaseTemplateIdToMetricsCounters(request.query)}
-      GROUP BY toDate(time_window)
+        toDate(Timestamp) as date,
+        count() as total_messages
+      FROM otel_traces
+      WHERE (SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
+        SpanName = 'POST /v1/agents/{agent_id}/messages' OR
+        SpanName = 'POST /v1/agents/{agent_id}/messages/async')
+        AND SpanAttributes['project.id'] = {projectId: String}
+        AND SpanAttributes['organization.id'] = {organizationId: String}
+        AND ParentSpanId = ''
+        AND Timestamp >= {startDate: DateTime}
+        AND Timestamp <= {endDate: DateTime}
+        ${attachFilterByBaseTemplateIdToOtels(request.query)}
+      GROUP BY toDate(Timestamp)
       ORDER BY date DESC
     `,
     query_params: {

@@ -71,7 +71,7 @@ export async function getToolUsageByFrequency(
       SELECT
         toDate(time_window) as date,
         tool_name,
-        SUM(value) as usage_count
+        count() as usage_count
       FROM otel.letta_metrics_counters_1hour_view
       WHERE metric_name = 'count_tool_execution'
         AND organization_id = {organizationId: String}
@@ -79,9 +79,9 @@ export async function getToolUsageByFrequency(
         AND time_window >= toDateTime({startDate: UInt32})
         AND time_window <= toDateTime({endDate: UInt32})
         AND tool_name != ''
-        ${attachFilterByBaseTemplateIdToMetricsCounters(request.query)}
+      ${attachFilterByBaseTemplateIdToMetricsCounters(request.query)}
       GROUP BY toDate(time_window), tool_name
-      ORDER BY date DESC, usage_count DESC
+      ORDER BY date DESC, tool_name
     `,
     query_params: {
       startDate: Math.round(new Date(startDate).getTime() / 1000),
