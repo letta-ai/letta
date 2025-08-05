@@ -30,27 +30,24 @@ export function StopReason(props: StopReasonProps) {
     cancelled: t('stopReasonToolTip.cancelled'),
   } as const;
 
-  function getStopReasonBadgeVariant(
-    stopReason: string,
-  ): 'default' | 'destructive' | 'success' | 'warning' {
-    switch (stopReason) {
-      case 'end_turn':
-      case 'tool_rule':
-        return 'success';
-      case 'error':
-      case 'invalid_tool_call':
-      case 'no_tool_call':
-        return 'destructive';
-      case 'max_steps':
-      case 'cancelled':
-        return 'warning';
-      default:
-        return 'default';
-    }
-  }
+  const stopReasonTextMap: Record<StopReasonType, string> = {
+    end_turn: t('stopReasonText.end_turn'),
+    tool_rule: t('stopReasonText.tool_rule'),
+    error: t('stopReasonText.error'),
+    invalid_tool_call: t('stopReasonText.invalid_tool_call'),
+    no_tool_call: t('stopReasonText.no_tool_call'),
+    max_steps: t('stopReasonText.max_steps'),
+    cancelled: t('stopReasonText.cancelled'),
+  } as const;
 
   function isValidStopReason(reason: string): reason is StopReasonType {
     return reason in getStopReasonTooltipText;
+  }
+
+  function isValidStopReasonText(
+    reason: string,
+  ): reason is keyof typeof stopReasonTextMap {
+    return reason in stopReasonTextMap;
   }
 
   // Get tooltip text with type safety
@@ -58,13 +55,13 @@ export function StopReason(props: StopReasonProps) {
     ? getStopReasonTooltipText[stopReason]
     : t('stopReasonToolTip.default');
 
+  const stopReasonText = isValidStopReasonText(stopReason)
+    ? stopReasonTextMap[stopReason]
+    : t('stopReasonText.unknown');
+
   return (
     <HStack>
-      <Badge
-        size="small"
-        content={stopReason.replace('_', ' ').toUpperCase()}
-        variant={getStopReasonBadgeVariant(stopReason)}
-      />
+      {stopReasonText}
       <InfoTooltip text={tooltipText} />
     </HStack>
   );

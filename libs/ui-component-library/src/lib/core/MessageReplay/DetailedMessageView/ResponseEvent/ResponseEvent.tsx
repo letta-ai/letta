@@ -2,6 +2,7 @@ import type { ProviderTrace } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   Badge,
+  CopyButton,
   EndIcon,
   EventDetailRow,
   EventItem,
@@ -69,7 +70,11 @@ function TransactionCost(props: TransactionCostProps) {
   const { formatCurrency } = useFormatters();
 
   if (cost > 0) {
-    return <Typography>{formatCurrency(creditsToDollars(cost))}</Typography>;
+    return (
+      <Typography variant="body2">
+        {formatCurrency(creditsToDollars(cost))}
+      </Typography>
+    );
   }
 
   if (modelTier === 'free') {
@@ -101,6 +106,24 @@ function TransactionCost(props: TransactionCostProps) {
   return <Typography>{formatCurrency(0)}</Typography>;
 }
 
+interface LLMError {
+  message: string;
+}
+
+function getLLMError(traces: OtelTrace[]): LLMError | undefined {
+  const llmError = traces.find((trace) => {
+    return trace.SpanName === 'LettaAgent._handle_llm_error';
+  });
+
+  if (!llmError) {
+    return undefined;
+  }
+
+  return {
+    message: llmError.StatusMessage,
+  };
+}
+
 export function ResponseEvent(props: RequestEventProps) {
   const { responsePayload, stepId, traces, stopReason } = props;
 
@@ -109,6 +132,10 @@ export function ResponseEvent(props: RequestEventProps) {
   );
 
   const { formatNumber } = useFormatters();
+
+  const llmError = useMemo(() => {
+    return getLLMError(traces);
+  }, [traces]);
 
   const usage = getIfUsage(responsePayload?.usage);
 
@@ -121,17 +148,36 @@ export function ResponseEvent(props: RequestEventProps) {
             value={formatNumber(usage.output_tokens)}
           />
         )}
+        {!!stopReason && (
+          <EventDetailRow
+            label={t('attributes.stopReason')}
+            value={<StopReason stopReason={stopReason} />}
+          />
+        )}
         {!!traces && (
           <EventDetailRow
             label={t('attributes.cost')}
             value={<TransactionCost stepId={stepId} />}
           />
         )}
-        {!!stopReason && (
-          <EventDetailRow
-            label={t('attributes.stopReason')}
-            value={<StopReason stopReason={stopReason} />}
-          />
+        {!!llmError && (
+          <VStack gap="small" padding="xxsmall">
+            <HStack>
+              <Typography variant="body3" bold>
+                {t('attributes.llmError')}
+              </Typography>
+              <InfoTooltip text={t('attributes.llmErrorTooltip')} />
+            </HStack>
+
+            <VStack color="background-grey" padding="small" border fullWidth>
+              <Typography font="mono" variant="body2">
+                {llmError.message}
+              </Typography>
+              <HStack fullWidth justify="end">
+                <CopyButton size="xsmall" textToCopy={llmError.message} />
+              </HStack>
+            </VStack>
+          </VStack>
         )}
       </VStack>
     </EventItem>

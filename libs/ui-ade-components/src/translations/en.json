@@ -1247,6 +1247,8 @@
       "stepDuration": "Total step duration",
       "llmDuration": "LLM duration",
       "timeToFirstSecond": "Time to first token",
+      "llmError": "LLM Error",
+      "llmErrorTooltip": "There was an error coming from the LLM, read the raw response for more details",
       "stopReason": "Stop reason"
     },
     "TransactionCost": {

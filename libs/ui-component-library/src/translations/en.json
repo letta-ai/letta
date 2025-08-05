@@ -96,6 +96,16 @@
       "max_steps": "The agent reached the maximum number of steps allowed",
       "cancelled": "The agent processing was cancelled by the user",
       "default": "The reason the agent stopped processing"
+    },
+    "stopReasonText": {
+      "end_turn": "End of turn",
+      "tool_rule": "Tool rule",
+      "error": "Error",
+      "invalid_tool_call": "Invalid tool call",
+      "no_tool_call": "No tool call",
+      "max_steps": "Max steps reached",
+      "cancelled": "Cancelled",
+      "unknown": "Unknown"
     }
   },
   "components/CoreMemoryEditor": {
