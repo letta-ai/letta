@@ -113,7 +113,7 @@ function createContentFromChatInput(
   return [{ type: 'text' as const, text }, ...imageContent];
 }
 
-interface ChatInputProps {
+export interface ChatInputProps {
   errorActionButton?: React.ReactNode;
   onSendMessage: (
     role: RoleOption,

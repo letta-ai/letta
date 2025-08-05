@@ -547,7 +547,6 @@ export const simulatedAgent = pgTable(
     ),
     memoryVariables:
       json('memory_variables').$type<MemoryVariableVersionOneType>(),
-    variables: json('variables').notNull(),
     updatedAt: timestamp('updated_at')
       .notNull()
       .$onUpdate(() => new Date()),
@@ -1438,3 +1437,91 @@ export const datasetItemRelations = relations(datasetItems, ({ one }) => ({
     references: [datasets.id],
   }),
 }));
+
+export const abTests = pgTable('ab_tests', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const abTestsRelations = relations(abTests, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [abTests.organizationId],
+    references: [organizations.id],
+  }),
+  project: one(projects, {
+    fields: [abTests.projectId],
+    references: [projects.id],
+  }),
+  abTestTemplates: many(abTestAgentTemplates),
+}));
+
+export const abTestAgentTemplates = pgTable('ab_test_agent_templates', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  agentTemplateId: text('template_id').references(() => agentTemplates.id, {
+    onDelete: 'cascade',
+  }),
+  deployedAgentTemplateId: text('deployed_agent_template_id').references(
+    () => deployedAgentTemplates.id,
+    {
+      onDelete: 'cascade',
+    },
+  ),
+  abTestId: text('ab_test_id')
+    .notNull()
+    .references(() => abTests.id, { onDelete: 'cascade' }),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
+  simulatedAgentId: text('simulated_agent_id')
+    .notNull()
+    .references(() => simulatedAgent.id, { onDelete: 'cascade' }),
+});
+
+// should be 1:1 with an agentTemplate
+export const abTestAgentTemplatesRelations = relations(
+  abTestAgentTemplates,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [abTestAgentTemplates.organizationId],
+      references: [organizations.id],
+    }),
+    project: one(projects, {
+      fields: [abTestAgentTemplates.projectId],
+      references: [projects.id],
+    }),
+    abTest: one(abTests, {
+      fields: [abTestAgentTemplates.abTestId],
+      references: [abTests.id],
+    }),
+    deployedAgentTemplate: one(deployedAgentTemplates, {
+      fields: [abTestAgentTemplates.deployedAgentTemplateId],
+      references: [deployedAgentTemplates.id],
+    }),
+    agentTemplate: one(agentTemplates, {
+      fields: [abTestAgentTemplates.agentTemplateId],
+      references: [agentTemplates.id],
+    }),
+    simulatedAgent: one(simulatedAgent, {
+      fields: [abTestAgentTemplates.simulatedAgentId],
+      references: [simulatedAgent.id],
+    }),
+  }),
+);

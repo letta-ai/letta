@@ -1,6 +1,6 @@
 import { agentsContract, agentsQueryKeys } from './agentsContract';
 import { initTsrReactQuery } from '@ts-rest/react-query/v5';
-import { templatesContract } from './templatesContract';
+import { templateQueryKeys, templatesContract } from './templatesContract';
 import { clientSideAccessTokensContract } from './clientSideAccessTokensContract';
 import { projectsContract } from './projectsContract';
 
@@ -13,6 +13,7 @@ export const cloudContracts = {
 
 export const cloudQueryKeys = {
   agents: agentsQueryKeys,
+  templates: templateQueryKeys,
 };
 
 export * from './agentsContract';

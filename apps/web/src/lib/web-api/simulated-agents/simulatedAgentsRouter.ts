@@ -14,9 +14,9 @@ import {
   createSimulatedAgent as createSimulatedAgentUtil,
   copyAgentById,
   updateAgentFromAgentId,
+  recordMemoryVariablesToMemoryVariablesV1,
 } from '@letta-cloud/utils-server';
 import * as Sentry from '@sentry/nextjs';
-import type { MemoryVariableVersionOneType } from '@letta-cloud/types';
 import { MemoryVariableVersionOne } from '@letta-cloud/types';
 
 type GetDefaultSimulatedAgentRequest = ServerInferRequest<
@@ -424,19 +424,6 @@ function memoryVariablesV1ToRecordVariables(
   );
 }
 
-function recordMemoryVariablesToMemoryVariablesV1(
-  memoryVariables: Record<string, string>,
-): MemoryVariableVersionOneType {
-  return {
-    data: Object.entries(memoryVariables).map(([key, label]) => ({
-      key,
-      label,
-      type: 'string',
-    })),
-    version: '1',
-  };
-}
-
 type RefreshSimulatedSessionRequest = ServerInferRequest<
   typeof contracts.simulatedAgents.refreshSimulatedSession
 >;
@@ -493,7 +480,6 @@ async function refreshSimulatedSession(
   }
 
   try {
-    console.log(simulatedAgentRecord.memoryVariables);
     // Update the agent to match the current template state
     const updatedAgent = await updateAgentFromAgentId({
       agentToUpdateId: simulatedAgentRecord.agentId,
@@ -618,7 +604,7 @@ async function updateSimulatedAgentVariables(
       eq(simulatedAgent.organizationId, activeOrganizationId),
     ),
     columns: {
-      variables: true,
+      memoryVariables: true,
     },
   });
 

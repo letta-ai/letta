@@ -21,6 +21,7 @@ import { createTemplate } from 'tmp-cloud-api-router';
 import type { GeneralRequestContext } from '../../server';
 import { listTemplateAgentMigrations } from '$web/server/lib/listTemplateAgentMigrations/listTemplateAgentMigrations';
 import { abortTemplateAgentMigration } from '$web/server/lib/abortTemplateAgentMigration/abortTemplateAgentMigration';
+import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
 
 function randomThreeDigitNumber() {
   return Math.floor(Math.random() * 1000);
@@ -771,6 +772,95 @@ async function updateTemplateName(
   };
 }
 
+type GetAgentTemplateMemoryVariablesRequest = ServerInferRequest<
+  typeof contracts.agentTemplates.getAgentTemplateMemoryVariables
+>;
+
+type GetAgentTemplateMemoryVariablesResponse = ServerInferResponses<
+  typeof contracts.agentTemplates.getAgentTemplateMemoryVariables
+>;
+
+async function getAgentTemplateMemoryVariables(
+  req: GetAgentTemplateMemoryVariablesRequest,
+): Promise<GetAgentTemplateMemoryVariablesResponse> {
+  const { name } = req.query;
+  const { activeOrganizationId, permissions, lettaAgentsId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.READ_TEMPLATES)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
+
+  const [baseName, version] = name.split(':');
+
+  if (version === 'current') {
+    // get the current template Id
+    const currentTemplate = await db.query.agentTemplates.findFirst({
+      where: and(
+        eq(agentTemplates.organizationId, activeOrganizationId),
+        eq(agentTemplates.name, baseName),
+        isNull(agentTemplates.deletedAt),
+      ),
+    });
+
+    if (!currentTemplate) {
+      return {
+        status: 404,
+        body: {},
+      };
+    }
+
+    const agent = await AgentsService.retrieveAgent(
+      {
+        agentId: currentTemplate.id,
+      },
+      {
+        user_id: lettaAgentsId,
+      },
+    );
+
+    const memoryVariables = findMemoryBlockVariables(agent);
+
+    return {
+      status: 200,
+      body: {
+        memoryVariables,
+      },
+    };
+  }
+
+  const deployedAgentTemplate = await getDeployedTemplateByVersion(
+    name,
+    activeOrganizationId,
+  );
+
+  if (!deployedAgentTemplate) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  const memoryVariables = deployedAgentTemplate.memoryVariables?.data;
+
+  return {
+    status: 200,
+    body: {
+      memoryVariables: Array.isArray(memoryVariables)
+        ? memoryVariables.reduce((acc, curr) => {
+            if (typeof curr.key === 'string') {
+              acc.push(curr.key);
+            }
+            return acc;
+          }, [] as string[])
+        : [],
+    },
+  };
+}
+
 export const agentTemplateRoutes = {
   listAgentMigrations,
   abortAgentMigration,
@@ -782,4 +872,5 @@ export const agentTemplateRoutes = {
   updateTemplateName,
   getDeployedAgentTemplateById,
   importAgentFileAsTemplate,
+  getAgentTemplateMemoryVariables,
 };

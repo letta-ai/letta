@@ -112,6 +112,7 @@ export async function createTemplate(props: CreateTemplateOptions) {
       organizationId,
       lettaAgentsId,
       projectId,
+      isDefault: true,
     }),
   ]);
 

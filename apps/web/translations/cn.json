@@ -1347,6 +1347,98 @@
       "createAgentTemplate": "新建智能体模板"
     }
   },
+  "projects/ab-tests": {
+    "ABTestPage": {
+      "description": "描述"
+    },
+    "VariableSelector": {
+      "create": "创建测试智能体"
+    },
+    "AttachTemplateToSimulator": {
+      "title": "选择一个模板进行A/B测试",
+      "label": "模板",
+      "placeholder": "选择一个模板"
+    },
+    "VariableViewer": {
+      "noTemplateSelected": "如果您的模板有内存变量，它们将在这里显示以供填写。",
+      "noVariables": "此模板没有需要填写的变量。"
+    },
+    "VersionSelector": {
+      "label": "版本",
+      "latest": "{value}（最新）",
+      "placeholder": "选择一个版本"
+    },
+    "CreateABTest": {
+      "trigger": "创建"
+    },
+    "ABTests": {
+      "role": {
+        "user": "用户",
+        "system": "系统"
+      },
+      "loading": "正在加载您的测试...",
+      "loadingError": "加载A/B测试时发生错误，请重试或联系客服。"
+    },
+    "title": "所有A/B测试",
+    "table": {
+      "errorMessage": "加载A/B测试失败",
+      "noResults": "未找到A/B测试",
+      "loading": "正在加载A/B测试...",
+      "actions": {
+        "view": "查看A/B测试"
+      },
+      "columns": {
+        "name": "名称",
+        "description": "描述",
+        "createdAt": "创建时间",
+        "updatedAt": "更新时间"
+      }
+    },
+    "UpdateABTestNameDialog": {
+      "title": "重命名A/B测试",
+      "confirm": "更新",
+      "name": {
+        "label": "名称",
+        "description": "更新此A/B测试的名称。"
+      },
+      "error": {
+        "conflict": "此A/B测试名称已被使用，请选择另一个名称",
+        "validation": "无效的名称格式，请检查您的输入",
+        "default": "更新A/B测试名称时发生错误，请重试或联系客服。"
+      }
+    },
+    "UpdateDescriptionEditor": {
+      "title": "更新A/B测试描述",
+      "confirm": "更新",
+      "placeholder": "为此A/B测试输入描述...",
+      "description": {
+        "label": "描述",
+        "description": "更新此A/B测试的描述。"
+      },
+      "error": {
+        "validation": "无效的描述格式，请检查您的输入",
+        "default": "更新描述时发生错误，请重试或联系客服。"
+      }
+    },
+    "ConfirmDeleteABTestDialog": {
+      "title": "删除A/B测试",
+      "confirmMessage": "请确认您要删除{testName}",
+      "confirm": "删除",
+      "cancel": "取消",
+      "error": {
+        "default": "删除A/B测试时发生错误，请重试或联系客服。"
+      }
+    },
+    "DetachTemplateFromSimulator": {
+      "title": "分离模板",
+      "confirmMessage": "您确定要分离此模板吗？这将删除与此模拟智能体会话相关的所有数据。",
+      "confirm": "分离",
+      "cancel": "取消",
+      "error": {
+        "default": "分离模板时发生错误，请重试或联系客服。"
+      }
+    }
+  },
   "projects/(projectSlug)/layout": {
     "nav": {
       "return": "所有项目",

@@ -276,3 +276,5 @@ export * from './lib/core/PageSelector/PageSelector';
 
 export * from './lib/reusable/QueryBuilderWrapper/QueryBuilderWrapper';
 export * from './lib/reusable/CoreMemoryEditor/SharedAgentsPopover/SharedAgentsPopover';
+
+export * from './lib/reusable/CondensedDashboardPage/CondensedDashboardPage';

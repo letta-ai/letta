@@ -98,6 +98,7 @@ import {
   datasetItemQueryKeys,
 } from './public/datasetItemContracts';
 import { datasetContracts, datasetQueryKeys } from './public/datasetContracts';
+import { abTestContracts, abTestQueryKeys } from './public/abTestsContracts';
 
 export const contracts = {
   user: userContract,
@@ -135,6 +136,7 @@ export const contracts = {
   agentfile: agentfileContracts,
   datasetItems: datasetItemContracts,
   dataset: datasetContracts,
+  abTest: abTestContracts,
 };
 
 export const queryClientKeys = {
@@ -169,6 +171,7 @@ export const queryClientKeys = {
   },
   datasetItems: datasetItemQueryKeys,
   dataset: datasetQueryKeys,
+  abTest: abTestQueryKeys,
 };
 
 export * from './public/projectContracts';
@@ -199,3 +202,4 @@ export * from './public/observabilityContracts';
 export type * from './public/agentfileContracts';
 export * from './public/datasetItemContracts';
 export * from './public/datasetContracts';
+export * from './public/abTestsContracts';

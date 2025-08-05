@@ -617,6 +617,13 @@
       "when": 1753996833447,
       "tag": "0087_lovely_wild_pack",
       "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1754343843580,
+      "tag": "0088_handy_ikaris",
+      "breakpoints": true
     }
   ]
 }

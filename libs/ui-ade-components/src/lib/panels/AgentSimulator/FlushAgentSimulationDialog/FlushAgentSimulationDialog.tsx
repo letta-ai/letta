@@ -1,3 +1,4 @@
+'use client';
 import React, { useCallback, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import {
@@ -7,15 +8,19 @@ import {
   Typography,
 } from '@letta-cloud/ui-component-library';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
-import { useCurrentSimulatedAgent } from '../../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCurrentAgentMetaData } from '../../../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 
-export function FlushSimulationSessionDialog() {
+interface FlushSimulationSessionDialogProps {
+  templateId: string;
+  simulatedAgentId: string;
+}
+
+export function FlushSimulationSessionDialog(
+  props: FlushSimulationSessionDialogProps,
+) {
+  const { templateId, simulatedAgentId } = props;
   const [isOpen, setIsOpen] = useState(false);
   const t = useTranslations('ADE/AgentSimulator');
-  const { simulatedAgentId } = useCurrentSimulatedAgent();
-  const { agentId: templateId } = useCurrentAgentMetaData();
 
   const {
     mutate: flushAgentSimulation,

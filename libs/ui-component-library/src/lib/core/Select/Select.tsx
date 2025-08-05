@@ -48,6 +48,7 @@ export interface OptionType {
   description?: string;
   badge?: ReactNode;
   options?: OptionType[];
+  data?: Record<string, string>;
 }
 
 export function isMultiValue(

@@ -101,12 +101,18 @@ function AgentStatus() {
 
 function AgentSimulatedStatus() {
   const { simulatedAgentId } = useCurrentSimulatedAgent();
+  const { agentId: templateId } = useCurrentAgentMetaData();
 
   if (!simulatedAgentId) {
     return <Spinner size="small" />;
   }
 
-  return <FlushSimulationSessionDialog />;
+  return (
+    <FlushSimulationSessionDialog
+      simulatedAgentId={simulatedAgentId}
+      templateId={templateId}
+    />
+  );
 }
 
 function AgentSimulatedStatusWrapper() {

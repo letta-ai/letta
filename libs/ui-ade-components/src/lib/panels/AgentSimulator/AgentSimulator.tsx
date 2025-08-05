@@ -69,6 +69,7 @@ type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
 interface SendMessagePayload {
   role: RoleOption;
+  agentId: string;
   content: LettaUserMessageContentUnion[] | string;
 }
 
@@ -93,10 +94,7 @@ function extractMessageTextFromContent(
   return '';
 }
 
-export function useSendMessage(
-  agentId: string,
-  options: UseSendMessageOptions = {},
-) {
+export function useSendMessage(options: UseSendMessageOptions = {}) {
   const [isPending, setIsPending] = useAtom(isSendingMessageAtom);
   const abortController = useRef<AbortController>(undefined);
   const queryClient = useQueryClient();
@@ -118,7 +116,7 @@ export function useSendMessage(
 
   const sendMessage: SendMessageType = useCallback(
     async (payload: SendMessagePayload) => {
-      const { content, role } = payload;
+      const { content, role, agentId } = payload;
       const message = extractMessageTextFromContent(content);
       setIsPending(true);
       setFailedToSendMessage(false);
@@ -500,7 +498,6 @@ export function useSendMessage(
       }
     },
     [
-      agentId,
       baseUrl,
       isLocal,
       options,
@@ -670,7 +667,7 @@ export function AgentSimulator() {
     isError: hasFailedToSendMessage,
     isPending,
     errorCode,
-  } = useSendMessage(agentIdToUse || '', {
+  } = useSendMessage({
     onFailedToSendMessage: (message) => {
       ref.current?.setChatMessage(message);
     },
@@ -892,7 +889,7 @@ export function AgentSimulator() {
                     role: RoleOption,
                     content: LettaUserMessageContentUnion[] | string,
                   ) => {
-                    sendMessage({ role, content });
+                    sendMessage({ role, content, agentId: agentIdToUse || '' });
 
                     if (currentStep === 'message') {
                       setStep('memory');

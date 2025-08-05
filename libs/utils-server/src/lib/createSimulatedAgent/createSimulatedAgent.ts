@@ -1,6 +1,7 @@
 import { db, simulatedAgent } from '@letta-cloud/service-database';
 import { copyAgentById } from '../copyAgentById/copyAgentById';
 import type { AgentState } from '@letta-cloud/sdk-core';
+import type { MemoryVariableVersionOneType } from '@letta-cloud/types';
 
 interface CreateSimulatedAgentArgs {
   memoryVariables: Record<string, string>;
@@ -12,24 +13,20 @@ interface CreateSimulatedAgentArgs {
   isDefault?: boolean;
 }
 
-interface CreateSimulatedAgentResult {
-  agent: AgentState;
-  simulatedAgentRecord: {
-    agentId: string;
-    projectId: string;
-    organizationId: string;
-    isDefault: boolean;
-    agentTemplateId: string;
-    deployedAgentTemplateId: string | null;
-    variables: {
-      memoryVariables: Record<string, string>;
-    };
+export function recordMemoryVariablesToMemoryVariablesV1(
+  memoryVariables: Record<string, string>,
+): MemoryVariableVersionOneType {
+  return {
+    data: Object.entries(memoryVariables).map(([key, label]) => ({
+      key,
+      label,
+      type: 'string',
+    })),
+    version: '1',
   };
 }
 
-export async function createSimulatedAgent(
-  args: CreateSimulatedAgentArgs,
-): Promise<CreateSimulatedAgentResult> {
+export async function createSimulatedAgent(args: CreateSimulatedAgentArgs) {
   const {
     memoryVariables,
     agentTemplateId,
@@ -56,18 +53,19 @@ export async function createSimulatedAgent(
     agentId: agent.id,
     projectId: agent.project_id,
     organizationId,
-    isDefault: isDefault || deployedAgentTemplateId === null,
+    isDefault: isDefault,
     agentTemplateId,
     deployedAgentTemplateId,
-    variables: {
-      memoryVariables,
-    },
+    memoryVariables: recordMemoryVariablesToMemoryVariablesV1(memoryVariables),
   };
 
-  await db.insert(simulatedAgent).values(simulatedAgentData);
+  const [res] = await db
+    .insert(simulatedAgent)
+    .values(simulatedAgentData)
+    .returning();
 
   return {
     agent,
-    simulatedAgentRecord: simulatedAgentData,
+    simulatedAgentRecord: res,
   };
 }

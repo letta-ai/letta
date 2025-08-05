@@ -123,7 +123,7 @@ export const Typography = forwardRef<HTMLElement, TypographyProps>(
       ...rest
     } = props;
 
-    const Element = overrideEl || variantToElement[variant || 'body'] || 'p';
+    const Element = overrideEl || variantToElement[variant || 'body'] || 'span';
 
     return React.createElement(Element, {
       ref,
@@ -162,15 +162,16 @@ export function LoadedTypography(props: LoadedTypographyProps) {
   }, [text]);
 
   return (
-    <div className="relative w-fit">
+    <span className="relative w-fit">
       {doesTextExist ? (
-        <Typography {...rest} className="">
+        <Typography overrideEl="span" {...rest} className="">
           {text}
         </Typography>
       ) : (
         <Typography
           {...rest}
           role="presentation"
+          overrideEl="span"
           tabIndex={-1}
           className={cn(
             'pointer-events-none bg-gray-200 select-none  text-transparent animate-pulse',
@@ -179,6 +180,6 @@ export function LoadedTypography(props: LoadedTypographyProps) {
           {fillerText}
         </Typography>
       )}
-    </div>
+    </span>
   );
 }

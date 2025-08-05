@@ -13,6 +13,7 @@ import {
   ListIcon,
   TwoMemoryBlocksIcon,
   DataObjectIcon,
+  AbtestIcon,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import type { PropsWithChildren } from 'react';
@@ -108,18 +109,29 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
               label: t('nav.responses'),
               href: `/projects/${projectSlug}/responses`,
             },
-            ...(isDatasetsEnabled
-              ? [
+          ],
+        },
+        ...(isDatasetsEnabled
+          ? [
+              {
+                title: t('nav.evals'),
+                items: [
+                  {
+                    icon: <AbtestIcon />,
+                    id: 'ab-test',
+                    label: t('nav.ab'),
+                    href: `/projects/${projectSlug}/ab-tests`,
+                  },
                   {
                     icon: <DataObjectIcon />,
                     id: 'datasets',
                     label: t('nav.datasets'),
                     href: `/projects/${projectSlug}/datasets`,
                   },
-                ]
-              : []),
-          ],
-        },
+                ],
+              },
+            ]
+          : []),
       ]}
     >
       {props.children}

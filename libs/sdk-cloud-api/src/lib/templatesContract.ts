@@ -116,3 +116,11 @@ export const templatesContract = c.router({
   createAgentsFromTemplate,
   listTemplates,
 });
+
+export const templateQueryKeys = {
+  listTemplates: ['cloud', 'templates', 'list'],
+  listTemplatesWithSearch: (query: z.infer<typeof templatesQuery>) => [
+    ...templateQueryKeys.listTemplates,
+    query,
+  ],
+};

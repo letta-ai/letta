@@ -492,6 +492,98 @@
       "createAgentTemplate": "Nouveau modèle d'agent"
     }
   },
+  "projects/ab-tests": {
+    "ABTestPage": {
+      "description": "Description"
+    },
+    "VariableSelector": {
+      "create": "Créer un agent de test"
+    },
+    "AttachTemplateToSimulator": {
+      "title": "Sélectionner un modèle pour le test A/B",
+      "label": "Modèles",
+      "placeholder": "Sélectionner un modèle"
+    },
+    "VariableViewer": {
+      "noTemplateSelected": "Si votre modèle a des variables de mémoire, elles apparaîtront ici pour être remplies.",
+      "noVariables": "Ce modèle n'a pas de variables à remplir, appuyez sur 'Créer un agent de test' pour continuer."
+    },
+    "VersionSelector": {
+      "label": "Version",
+      "latest": "{value} (Dernière)",
+      "placeholder": "Sélectionner une version"
+    },
+    "CreateABTest": {
+      "trigger": "Créer"
+    },
+    "ABTests": {
+      "role": {
+        "user": "Utilisateur",
+        "system": "Système"
+      },
+      "loading": "Chargement de vos tests...",
+      "loadingError": "Une erreur s'est produite lors du chargement de vos tests A/B, veuillez réessayer ou contacter le support."
+    },
+    "title": "Tous les tests A/B",
+    "table": {
+      "errorMessage": "Échec du chargement des tests A/B",
+      "noResults": "Aucun test A/B trouvé",
+      "loading": "Chargement des tests A/B...",
+      "actions": {
+        "view": "Voir le test A/B"
+      },
+      "columns": {
+        "name": "Nom",
+        "description": "Description",
+        "createdAt": "Créé le",
+        "updatedAt": "Mis à jour le"
+      }
+    },
+    "UpdateABTestNameDialog": {
+      "title": "Renommer le test A/B",
+      "confirm": "Mettre à jour",
+      "name": {
+        "label": "Nom",
+        "description": "Mettre à jour le nom de ce test A/B."
+      },
+      "error": {
+        "conflict": "Ce nom de test A/B est déjà utilisé, veuillez choisir un autre nom",
+        "validation": "Format de nom invalide, veuillez vérifier votre saisie",
+        "default": "Une erreur s'est produite lors de la mise à jour du nom du test A/B, veuillez réessayer ou contacter le support."
+      }
+    },
+    "UpdateDescriptionEditor": {
+      "title": "Mettre à jour la description du test A/B",
+      "confirm": "Mettre à jour",
+      "placeholder": "Entrez une description pour ce test A/B...",
+      "description": {
+        "label": "Description",
+        "description": "Mettre à jour la description de ce test A/B."
+      },
+      "error": {
+        "validation": "Format de description invalide, veuillez vérifier votre saisie",
+        "default": "Une erreur s'est produite lors de la mise à jour de la description, veuillez réessayer ou contacter le support."
+      }
+    },
+    "ConfirmDeleteABTestDialog": {
+      "title": "Supprimer le test A/B",
+      "confirmMessage": "Veuillez confirmer que vous voulez supprimer {testName}",
+      "confirm": "Supprimer",
+      "cancel": "Annuler",
+      "error": {
+        "default": "Une erreur s'est produite lors de la suppression du test A/B, veuillez réessayer ou contacter le support."
+      }
+    },
+    "DetachTemplateFromSimulator": {
+      "title": "Détacher le modèle",
+      "confirmMessage": "Êtes-vous sûr de vouloir détacher ce modèle ? Cela supprimera toutes les données associées à cette session d'agent simulé.",
+      "confirm": "Détacher",
+      "cancel": "Annuler",
+      "error": {
+        "default": "Une erreur s'est produite lors du détachement du modèle, veuillez réessayer ou contacter le support."
+      }
+    }
+  },
   "projects/(projectSlug)/layout": {
     "nav": {
       "return": "Voir tous les projets",

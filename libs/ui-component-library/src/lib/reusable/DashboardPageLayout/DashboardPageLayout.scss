@@ -1,3 +1,7 @@
 .encapsulated-full-height {
   min-height: calc(100dvh - var(--header-height) - 8px);
 }
+
+.encapsulated-full-height-max {
+  max-height: calc(100dvh - var(--header-height) - 8px);
+}

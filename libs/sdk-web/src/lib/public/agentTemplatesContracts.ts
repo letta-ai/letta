@@ -245,6 +245,19 @@ const importAgentFileAsTemplateContract = c.mutation({
   },
 });
 
+const getAgentTemplateMemoryVariablesContract = c.query({
+  path: '/agent-templates-memory-variables',
+  method: 'GET',
+  query: z.object({
+    name: z.string(),
+  }),
+  responses: {
+    200: z.object({
+      memoryVariables: z.string().array(),
+    }),
+  },
+});
+
 const updateTemplateNameContract = c.mutation({
   method: 'PATCH',
   path: '/agent-templates/:agentTemplateId/name',
@@ -280,6 +293,7 @@ export const agentTemplatesContracts = c.router({
   importAgentFileAsTemplate: importAgentFileAsTemplateContract,
   abortAgentMigration: abortAgentMigrationContract,
   updateTemplateName: updateTemplateNameContract,
+  getAgentTemplateMemoryVariables: getAgentTemplateMemoryVariablesContract,
 });
 
 export const agentTemplatesQueryClientKeys = {
@@ -323,5 +337,10 @@ export const agentTemplatesQueryClientKeys = {
   abortAgentMigration: (workflowId: string) => [
     'abortAgentMigration',
     { workflowId },
+  ],
+  importAgentFileAsTemplate: ['importAgentFileAsTemplate'],
+  getAgentTemplateMemoryVariables: (name: string) => [
+    'getAgentTemplateMemoryVariables',
+    { name },
   ],
 };

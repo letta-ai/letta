@@ -1,0 +1,1 @@
+export { DetachTemplateFromSimulator } from './DetachTemplateFromSimulator';

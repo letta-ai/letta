@@ -49,7 +49,7 @@ export default function ChatPage() {
     sendMessage,
     isError: hasFailedToSendMessage,
     isPending,
-  } = useSendMessage(agentId || '', {
+  } = useSendMessage({
     onFailedToSendMessage: (message) => {
       ref.current?.setChatMessage(message);
     },
@@ -115,7 +115,7 @@ export default function ChatPage() {
               role: RoleOption,
               content: LettaUserMessageContentUnion[] | string,
             ) => {
-              sendMessage({ role, content });
+              sendMessage({ role, content, agentId });
             }}
             isSendingMessage={isPending}
           />

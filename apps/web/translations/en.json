@@ -1821,6 +1821,116 @@
   "dashboard/blocks": {
     "title": "Memory blocks"
   },
+  "projects/ab-tests/test": {
+    "root": "A/B Tests",
+    "trigger": "Actions",
+    "noDescription": "No description"
+  },
+  "projects/ab-tests": {
+    "SimulatorTemplateActions": {
+      "delete": "Delete simulated session",
+      "trigger": "Actions"
+    },
+    "ABTestHeaderActions": {
+      "trigger": "Actions",
+      "deleteABTest": "Delete A/B test",
+      "updateDescription": "Update description",
+      "updateName": "Update test name"
+    },
+    "ABTestPage": {
+      "description": "Description"
+    },
+    "VariableSelector": {
+      "create": "Create test agent"
+    },
+    "AttachTemplateToSimulator": {
+      "title": "Select a template to AB test",
+      "label": "Templates",
+      "placeholder": "Select a template"
+    },
+    "VariableViewer": {
+      "noTemplateSelected": "If your template has memory variables, those will appear here to be filled in.",
+      "noVariables": "This template has no variables to fill in, press 'Create Test Agent' to continue."
+    },
+    "VersionSelector": {
+      "label": "Version",
+      "latest": "{value} (Latest)",
+      "placeholder": "Select a version"
+    },
+    "CreateABTest": {
+      "trigger": "Create",
+      "error": "There was an error creating the A/B test, please try again or contact support."
+    },
+    "ABTests": {
+      "sendingMessage": "Sending message to your agents",
+      "notFound": "This AB Test cannot be found, check if you have permission to view it",
+      "role": {
+        "user": "User",
+        "system": "System"
+      },
+      "loading": "Loading your tests...",
+      "loadingError": "There was an error loading your A/B tests, please try again or contact support."
+    },
+    "title": "All AB Tests",
+    "table": {
+      "errorMessage": "Failed to load A/B tests",
+      "noResults": "No A/B tests found",
+      "loading": "Loading A/B tests...",
+      "actions": {
+        "view": "View A/B test"
+      },
+      "columns": {
+        "name": "Name",
+        "description": "Description",
+        "createdAt": "Created at",
+        "updatedAt": "Updated at"
+      }
+    },
+    "UpdateABTestNameDialog": {
+      "title": "Rename A/B Test",
+      "confirm": "Update",
+      "name": {
+        "label": "Name",
+        "description": "Update the name of this A/B test."
+      },
+      "error": {
+        "conflict": "This A/B test name is already in use, please choose another name",
+        "validation": "Invalid name format, please check your input",
+        "default": "There was an error updating the A/B test name, please try again or contact support."
+      }
+    },
+    "UpdateDescriptionEditor": {
+      "title": "Update A/B Test Description",
+      "confirm": "Update",
+      "placeholder": "Enter a description for this A/B test...",
+      "description": {
+        "label": "Description",
+        "description": "Update the description for this A/B test."
+      },
+      "error": {
+        "validation": "Invalid description format, please check your input",
+        "default": "There was an error updating the description, please try again or contact support."
+      }
+    },
+    "ConfirmDeleteABTestDialog": {
+      "title": "Delete A/B Test",
+      "confirmMessage": "Please confirm you want to delete {testName}",
+      "confirm": "Delete",
+      "cancel": "Cancel",
+      "error": {
+        "default": "There was an error deleting the A/B test, please try again or contact support."
+      }
+    },
+    "DetachTemplateFromSimulator": {
+      "title": "Delete Session",
+      "confirmMessage": "Are you sure you want to delete this session? It will delete all associated data with this simulated agent session.",
+      "confirm": "Delete",
+      "cancel": "Cancel",
+      "error": {
+        "default": "There was an error detaching the template, please try again or contact support."
+      }
+    }
+  },
   "projects/(projectSlug)/layout": {
     "nav": {
       "blocks": "Memory blocks",
@@ -1833,7 +1943,10 @@
       "observability": "Observability",
       "monitoring": "Monitoring",
       "responses": "Responses",
-      "datasets": "Datasets"
+      "datasets": "Datasets",
+      "evals": "Evals",
+      "ab": "A/B Tests",
+      "history": "Test History"
     }
   },
   "projects/(projectSlug)/datasets": {
